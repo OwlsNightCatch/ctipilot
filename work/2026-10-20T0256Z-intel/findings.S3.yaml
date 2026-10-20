@@ -1,0 +1,280 @@
+# work/2026-10-20T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-20T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-20T02:58:18Z
+ended_at: 2026-10-20T03:20:28Z
+duration_seconds: 1330
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 18
+  bridge_fetches: 78
+window_hours: 26
+items:
+
+  # ---------------------------------------------------------------------------
+  # 1. WPSplinter
+  # ---------------------------------------------------------------------------
+  - title: "WPSplinter: a pre-association memory-corruption flaw in Broadcom's legacy WPS Monitor Wi-Fi code gives code execution on routers and access points from radio range, with no CVE and no fix path for eCos-based gateways"
+    sources:
+      - { url: "https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/", publisher: "Quentin Kaiser (independent researcher)", date: "2026-10-16", role: "primary" }
+      - { url: "https://qkaiser.github.io/broadcom-wps/", publisher: "WPSplinter documentation page (Quentin Kaiser)", date: "2026-10-16", role: "primary" }
+      - { url: "https://github.com/qkaiser/broadcom-wps", publisher: "Broadcom WPS detection toolkit (Quentin Kaiser, GitHub)", date: "2026-10-14", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/unpatched-broadcom-wi-fi-flaw-lets.html", publisher: "The Hacker News", date: "2026-10-19", role: "corroborating" }
+      - { url: "https://www.techzine.eu/news/security/145085/broadcom-wpsplinter-vulnerability-leaves-millions-of-belgian-routers-vulnerable/", publisher: "Techzine Global", date: "2026-10-19", role: "corroborating" }
+      - { url: "https://securityaffairs.com/201268/iot/16-year-old-broadcom-wi-fi-bug-lets-attackers-take-over-routers-without-a-password.html", publisher: "Security Affairs", date: "2026-10-19", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, URL https://securityaffairs.com/ (listing) and feed https://securityaffairs.com/feed (item 'Broadcom Wi-Fi Bug' 2026-10-19) → drilled https://securityaffairs.com/201268/iot/16-year-old-broadcom-wi-fi-bug-lets-attackers-take-over-routers-without-a-password.html → primary: researcher blog https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/ → https://qkaiser.github.io/broadcom-wps/ (affected-device list, FAQ) → https://github.com/qkaiser/broadcom-wps (YARA and fingerprinting toolkit README) → corroboration: https://thehackernews.com/2026/10/unpatched-broadcom-wi-fi-flaw-lets.html and https://www.techzine.eu/news/security/145085/broadcom-wpsplinter-vulnerability-leaves-millions-of-belgian-routers-vulnerable/ (found via WebSearch 'Broadcom WPS flaw routers eCos no CVE Kaiser Hexacon')"
+    summary: |
+      Researcher Quentin Kaiser disclosed on 2026-10-16 (Hexacon, Paris; blog, a public documentation page named "WPSplinter" and a GitHub toolkit) a memory-corruption flaw in Broadcom's proprietary Wi-Fi Protected Setup code, the legacy "WPS Monitor" that reassembles fragmented EAP-WPS messages. The reassembled fragments are not constrained to the destination buffer, and the parser is reachable over the air before association, without the network key and without completing WPS enrollment. Kaiser reports controlled memory disclosure and arbitrary code execution: on an Orange Belgium ASKEY TCG3000 his shellcode read the Wi-Fi pre-shared key from NVRAM and sent it back in 802.11 frames, and on a Proximus Sagemcom-built BBOX3V+ he opened a reverse shell carried in 802.11 frames, so no outbound C2 connection exists to observe. He dates the code to at least 2010, says Broadcom shipped an incomplete patch in 2018 and then recommended moving to hostapd, and says Broadcom refused to assign a CVE (CERT/CC closed its case the same day because Broadcom is its own CNA). eCos-based platforms (BCM3380, BCM3383, BCM33834) therefore have no fix path; Linux-based platforms (BCM3390, BCM65xx, BCM68xx) are fixed only if the device maker switches to hostapd. As of 2026-10-15 none of the tested Belgian gateways had received a patch. His published, explicitly non-exhaustive affected-device list mixes confirmed and "verify firmware" entries and includes Cisco small-business routers and access points (RV110W, RV130W, RV215W, RV340W, WAP121, WAP125, WAP150, WAP361, WAP371, WAP571, WAP571E, WAP581), Netgear CG3100 and CG3700B, Sagemcom F@ST models, Askey TCG3000, Technicolor TC7210 and CGA4233, Nokia G-140W and G-240W series, ZTE F680 and 368N, TP-Link, Zyxel VMG3312, NetComm, Huawei B-series, ARRIS, Arcadyan and others. Kaiser reports no real-world attacks using the flaw (relayed by The Hacker News); the exploits shown are his own and have not been independently reproduced in public. Kaiser frames the class as suited to over-the-air "nearest neighbour" and hotel-network style attacks against devices defenders cannot see into.
+    region_nexus: "global; demonstrated only on Belgian ISP gateways, no Swiss operator or Swiss device is named in any source. The device list includes vendor families (Cisco small-business, Netgear, Zyxel, TP-Link, Nokia, ZTE) that Swiss offices may run; Swiss exposure is unverified"
+    primary_sector_nexus: "indirect: Wi-Fi access points, branch and home-office gateways and ISP-supplied routers at communal and cantonal sites; a proximity attack, so public-facing offices, hotels used by officials and shared buildings are the relevant exposure"
+    sector: "cross-sector (network infrastructure / Wi-Fi)"
+    cves: []
+    techniques: [T1669, T1210, T1557]
+    affected_products:
+      - "Broadcom WPS Monitor (legacy WPS EAP reassembly code in the Broadcom Wi-Fi SDK, eCos and Linux)"
+      - "Cisco RV110W / RV130W / RV215W / RV340W routers (listed by researcher)"
+      - "Cisco WAP121 / WAP125 / WAP150 / WAP361 / WAP371 / WAP571 / WAP571E / WAP581 access points (listed by researcher)"
+      - "Netgear CG3100 / CG3700B"
+      - "Sagemcom F@ST 3864 / 4353 / 5336 (BBOX3V+)"
+      - "Askey TCG3000"
+      - "Technicolor TC7210 / CGA4233"
+      - "Zyxel VMG3312-B10A / VMG3312-B10B"
+    entity_keys: []
+    new_entities:
+      - { key: "trend:wpsplinter-broadcom-wps-monitor", type: trend, name: "WPSplinter (Broadcom WPS Monitor EAP reassembly flaw)", aliases: ["WPSplinter", "Broadcom WPS EAP fragment reassembly vulnerability"], summary: "Researcher-named (Quentin Kaiser, Hexacon 2026-10-16) pre-association memory-corruption flaw in Broadcom's legacy WPS Monitor Wi-Fi code in routers and access points of dozens of vendors; Broadcom declined to assign a CVE and eCos-based platforms have no fix path (Kaiser, quentinkaiser.be, 2026-10-16)." }
+      - { key: "product:broadcom-wps-monitor", type: product, name: "Broadcom WPS Monitor", aliases: [], summary: "Broadcom's legacy WPS implementation in its Wi-Fi SDK (eCos and Linux), replaced by hostapd from 2018 per Broadcom as relayed by the researcher." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "The vulnerability can be triggered remotely over WiFi without knowledge of the network key or completion of a normal WPS enrollment. Exploitation provides controlled information disclosure and arbitrary code execution."
+        attribution: "Quentin Kaiser (independent researcher)"
+        source_url: "https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/"
+      - quote: "As of October 15th, 2026, none of these affected devices have been patched."
+        attribution: "Quentin Kaiser (independent researcher)"
+        source_url: "https://quentinkaiser.be/security/2026/10/16/one-parser-two-bugs/"
+      - quote: "Do not assume so. A settings toggle may not remove or fully disable the vulnerable parser."
+        attribution: "WPSplinter documentation page (Quentin Kaiser)"
+        source_url: "https://qkaiser.github.io/broadcom-wps/"
+      - quote: "No CVE has been assigned to the flaw, and no fix has been deployed to the affected routers, Kaiser says."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/unpatched-broadcom-wi-fi-flaw-lets.html"
+    extended_notes: |
+      SOURCING: all technical claims trace to one first-hand author (blog, documentation page, toolkit and slides are the same researcher); The Hacker News, Techzine and Security Affairs rewrite him and add no independent observation. No vendor or ISP statement exists yet and the working exploits have not been independently reproduced in public. Reliability B (named researcher with prior cable-modem work), credibility 2. Suggested priority notable, not critical.
+      CONTRADICTION TO SURFACE: Techzine says users can disable WPS in the modem settings; the researcher's own FAQ says not to assume that removes the parser, and The Hacker News says Kaiser points to no setting that blocks the attack. Treat WPS-off as unproven.
+      EXPOSURE: any Wi-Fi AP, router or gateway whose firmware contains Broadcom's legacy WPS Monitor (chip families BCM3380, BCM3383, BCM33834, BCM3390, BCM65xx, BCM68xx), reachable within radio range. A chipset match alone does not prove a given firmware is vulnerable. The toolkit says an AP that does not advertise WPS is not affected. Read the model against the researcher's list, run the published YARA rules over extracted firmware, or run the over-the-air fingerprinting script, which looks for Broadcom proprietary information elements and sends a zero-length fragmented EAP-WPS frame (wps_monitor answers NACK, hostapd answers ACK); it needs a monitor-mode adapter with a suitable driver. Both are triage aids, not confirmations.
+      DETECTION (concept, from the stated mechanism): the parser is reached before authentication, so AP association and authentication logs will not show the attack, and the shell the researcher demonstrates rides on 802.11 frames, so egress or DNS telemetry will show no C2. The practical levers are wireless IDS / controller telemetry for unknown stations sending EAP-WPS fragments to the AP, and unexpected AP crashes or reboots. The researcher publishes no network signature. Post-compromise: his proof reads the stored Wi-Fi key from the device and replays it, so a device that may have been exploited should be treated as having leaked its pre-shared key, and that key rotated after the device is replaced or isolated.
+      HARDENING: no vendor patch exists for eCos platforms; replacement is the practical option (The Hacker News). For Linux-based devices ask the device maker or ISP in writing whether the firmware moves WPS to hostapd, then verify with the toolkit. Because no CVE exists, CVE-driven vulnerability management will not flag this: it has to be an inventory match.
+      DEFENDER TAKEAWAY: a pre-auth, over-the-air code-execution class across ISP gateways and small-business access points with no CVE and no patch is invisible to scanners keyed on CVE ids; match the asset inventory against the researcher's list.
+      Related technique context: the researcher cites Volexity's "nearest neighbour" Wi-Fi technique (https://www.volexity.com/blog/2024/11/22/the-nearest-neighbor-attack-how-a-russian-apt-weaponized-nearby-wi-fi-networks-for-covert-access/, not fetched by this agent) and a Microsoft hotel-network report as the attacker use cases; not independently checked here.
+    borderline: true
+    borderline_reason: "no Swiss operator or device is named; included because it is primary technical research on an unpatchable, no-CVE, pre-auth over-the-air class whose published device list includes common small-business Wi-Fi gear (Cisco RV/WAP) and has a concrete inventory-match and over-the-air detection path"
+
+  # ---------------------------------------------------------------------------
+  # 2. PwnEscape
+  # ---------------------------------------------------------------------------
+  - title: "PwnEscape (CVE-2026-99999): guest-controlled checksum metadata makes the Linux host IPv4 stack rewrite an already-validated header, leaking host memory and, in the researcher's lab, escaping a KVM and Firecracker guest"
+    sources:
+      - { url: "https://pwn.ai/blog/pwnescape", publisher: "pwn.ai (Paulos Yibelo)", date: "2026-10-20", role: "primary" }
+      - { url: "https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge", publisher: "Vercel", date: "2026-10-14", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-99999", publisher: "Debian Security Tracker", date: "2026-10-20", role: "primary" }
+      - { url: "https://ubuntu.com/security/CVE-2026-99999", publisher: "Ubuntu Security", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://www.csoonline.com/article/4236460/linux-kernel-gets-a-fix-for-a-flaw-that-enabled-attackers-to-escape-vms.html", publisher: "CSO Online", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://socprime.com/blog/cve-2026-99999-analysis/", publisher: "SOC Prime", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://www.it-connect.tech/pwnescape-linux-flaw-lets-attackers-escape-a-kvm-vm/", publisher: "IT-Connect", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: socprime, URL https://socprime.com/blog/cve-2026-99999-analysis/ (feed https://socprime.com/blog/feed/ item 2026-10-16) → WebSearch ('PwnEscape pwn.ai Paulos Yibelo Vercel Sandbox Linux kernel skb_checksum_help guest-to-host') → pivot: CSO Online, URL https://www.csoonline.com/article/4236460/linux-kernel-gets-a-fix-for-a-flaw-that-enabled-attackers-to-escape-vms.html → pivot: IT-Connect, URL https://www.it-connect.tech/pwnescape-linux-flaw-lets-attackers-escape-a-kvm-vm/ (surfaced the researcher post link) → primary: https://pwn.ai/blog/pwnescape → Vercel recap https://vercel.com/blog/findings-from-the-1-million-dollar-vercel-sandbox-challenge → distro status https://security-tracker.debian.org/tracker/CVE-2026-99999 and https://ubuntu.com/security/CVE-2026-99999; KEV catalogue checked via bridge cisa-kev this run (no entry); EPSS via https://api.first.org/data/v1/epss?cve=CVE-2026-99999 (API data, not cited)"
+    summary: |
+      Paulos Yibelo of pwn.ai found, during Vercel's August 2026 sandbox challenge, that guest-controlled checksum-offload metadata (the pending-checksum state with csum_start and csum_offset) lets a deferred checksum completion write into an IPv4 header the host stack has already parsed. In the research geometry the first header byte changes from 0x45 to 0x4f, so the later fragmentation code treats a 20-byte header as 60 bytes and copies 32 bytes of host memory into the outgoing packet as IP options; the leak repeats for as long as the guest sends packets. The bug is in the Linux networking stack (ip_do_fragment and skb_checksum_help consumers), not in KVM or any hypervisor, and the researcher says it exposes a broader class of "deferred-metadata trust inversion". Demonstrated impact differs by stage: the memory leak ran against Vercel's production sandboxes; a host crash and host-root command execution were shown only on the researcher's own KVM and Firecracker machines configured like Vercel's (selected 64-byte kernel writes, four cold boots), and Vercel reports no access to customer data. The upstream fix, commit 6785011f8b16 "ipv4: validate checksum_start before completing checksum" by Michael S. Tsirkin (Red Hat), reached net.git on 2026-10-08 and mainline on 2026-10-14; its commit message calls it defence in depth and says a more complete validation at input is forthcoming, and the kernel text says others have since reproduced the issue independently. SOC Prime and IT-Connect list first fixed stable releases 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57 and 7.2.11; the Debian tracker confirms bookworm 6.1.190-1 and trixie 6.12.113-1 (DSA-6568-1) fixed, while the Ubuntu page fetched this run shows no release with a fix (statuses are only "Needs evaluation", "Not in release" or "Ignored") and carries the CVSS 3.1 base score 9.3 (vector AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H). The researcher states that exploits "in weaker configurations" should arrive in weeks and exploits against default hypervisor configurations in under a month. No exploitation in the wild is reported and the CVE is not in the CISA KEV catalogue as fetched this run.
+    region_nexus: "global; Linux-based virtualisation hosts and sandboxes anywhere"
+    primary_sector_nexus: "indirect: relevant to public-sector operators of Linux KVM, Firecracker or similar hosts that run untrusted or multi-tenant workloads (private clouds, CI runners, malware sandboxes, AI-agent code sandboxes); a local, guest-to-host primitive, not remotely reachable from the internet"
+    sector: "cross-sector (virtualisation / cloud infrastructure)"
+    cves: [CVE-2026-99999]
+    techniques: [T1611]
+    affected_products:
+      - "Linux kernel (IPv4 stack: ip_do_fragment and skb_checksum_help consumers, code present since 2.6.27 per the kernel CVE text relayed by SOC Prime)"
+      - "Debian GNU/Linux 12 (bookworm) kernel"
+      - "Debian GNU/Linux 13 (trixie) kernel"
+    entity_keys: ["product:linux-kernel", "product:vercel"]
+    new_entities:
+      - { key: "trend:pwnescape-linux-ipv4-checksum-guest-to-host-escape", type: trend, name: "PwnEscape (CVE-2026-99999)", aliases: ["PwnEscape", "CVE-2026-99999"], summary: "pwn.ai (Paulos Yibelo) research, found during Vercel's 2026 sandbox challenge: guest-controlled checksum metadata rewrites an already-validated IPv4 header in the Linux host stack, giving repeatable host-memory disclosure and, in the researcher's lab, a KVM guest-to-host escape; upstream fix 6785011f8b16 (pwn.ai, 2026-10-20; Vercel, 2026-10-14)." }
+    relation_suggestions:
+      - { subject: "trend:pwnescape-linux-ipv4-checksum-guest-to-host-escape", object: "product:linux-kernel", basis: "pwn.ai: the vulnerable component is the host Linux networking stack, not the hypervisor (pwn.ai, 2026-10-20)" }
+      - { subject: "trend:pwnescape-linux-ipv4-checksum-guest-to-host-escape", object: "product:vercel", basis: "pwn.ai and Vercel: the leak stage was demonstrated against Vercel production sandboxes during Vercel's sandbox challenge (Vercel, 2026-10-14)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "we expect exploits in weaker configurations to arrive in weeks, and exploits working in default hypervisor configurations to arrive in under a month"
+        attribution: "pwn.ai (Paulos Yibelo)"
+        source_url: "https://pwn.ai/blog/pwnescape"
+      - quote: "the vulnerability wasn't even in the hypervisor, it was in the Linux networking stack"
+        attribution: "pwn.ai (Paulos Yibelo)"
+        source_url: "https://pwn.ai/blog/pwnescape"
+      - quote: "The packet-related crash and code execution attacks were demonstrated on the researcher’s own KVM and Firecracker machines matching Vercel Sandbox configuration"
+        attribution: "CSO Online"
+        source_url: "https://www.csoonline.com/article/4236460/linux-kernel-gets-a-fix-for-a-flaw-that-enabled-attackers-to-escape-vms.html"
+      - quote: "This was discovered and reported by Paulos, and has been reporoduced by others independently since."
+        attribution: "Debian Security Tracker"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-99999"
+      - quote: "Updating only kernels running inside guest virtual machines does not eliminate the vulnerable host networking path described in the PwnEscape attack."
+        attribution: "SOC Prime"
+        source_url: "https://socprime.com/blog/cve-2026-99999-analysis/"
+    extended_notes: |
+      OVERLAP WARNING: this is vulnerability-triage territory (S1 likely sees the CVE through NVD or distro trackers). It is returned here because the primary is a research write-up (pwn.ai) with mechanism detail. The main agent should keep one entry.
+      Admiralty suggestion: reliability B (discoverer's own write-up, corroborated by the kernel CVE text and Vercel), credibility 1 for the bug and the leak stage, 2 for the lab-only host-root chain.
+      cve_table row: CVE-2026-99999 · Linux kernel IPv4 · CVSS 3.1 9.3 AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H (Ubuntu security page; SOC Prime repeats it; CSO Online says the NVD description lists the fixes) · EPSS 0.00211 (FIRST, 2026-10-19) · KEV no (bridge cisa-kev this run, 1748 entries) · exploited in the wild: no public evidence (SOC Prime, pwn.ai) · fixed: 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11, mainline 7.3-rc7 (SOC Prime/IT-Connect; distro kernels backport, so check the vendor advisory); Debian bookworm 6.1.190-1, trixie 6.12.113-1 (DSA-6568-1), sid 7.2.11-1 per the tracker; Ubuntu: no release shows a fix on the page fetched 2026-10-20 (last updated 2026-10-15; statuses Needs evaluation / Not in release / Ignored); Red Hat, SUSE not checked · type: untrusted metadata trust inversion / out-of-bounds read, guest-to-host · auth: none, but requires code execution inside a guest that reaches the host network path.
+      PREREQUISITES: attacker code running inside a guest VM or sandbox whose traffic traverses the host IPv4 stack with guest-supplied checksum-offload metadata (virtio-net style). Not remotely reachable from the internet. The researcher notes TUN and AF_PACKET scenarios without a VM were also discussed during upstream review.
+      EXPOSURE: Linux hosts that run guests with untrusted code. The fix must be on the HOST kernel and the host rebooted into it; patching guest kernels does not help. Verify the running kernel on every hypervisor or sandbox host, because distributions backport fixes without matching the upstream version numbers (SOC Prime).
+      DETECTION (concept, from the stated mechanism): unexplained host kernel crashes correlated with guest network activity; on guest-facing virtual interfaces, IPv4 packets or fragments carrying IP options (header length 60 bytes) from guests whose logical payload is tiny. The write-up gives the mechanism, not a detection recipe, so treat the packet-level hunt as an inference. If escape is suspected, treat the host, not just the guest, as compromised and review co-resident workloads and host secrets (SOC Prime guidance).
+      HARDENING: patch the host kernel; Vercel's own mitigations were Firecracker jailer restrictions, disabled nested virtualisation and limited host permissions per microVM, which reduce blast radius but do not fix the bug (Vercel recap, SOC Prime).
+      DEFENDER TAKEAWAY: public-sector operators of Linux virtualisation or code-execution sandboxes should treat this as a patch-the-host-and-reboot item inside the researcher's stated weeks-to-a-month exploit horizon; organisations on VMware, Hyper-V or Nutanix are not described as affected by any source (not checked).
+      The pwn.ai page carries the date 2026-10-20 in its metadata while CSO Online quoted the post on 2026-10-16, so the post was live by the 16th; the date shown is the page metadata, not necessarily first publication. pwn.ai promises a Part 2 on the allocator-sensitive host-write chain.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 3. Publica / PK Softech update
+  # ---------------------------------------------------------------------------
+  - title: "PK Softech and Publica: Blick reports an internal federal note calling the supplier incident 'gravierend' with the federal security organs (NDB, Defence, fedpol) most affected, the Federal Council briefed on 2026-10-14 and the cantons informed"
+    sources:
+      - { url: "https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp", publisher: "Blick (Raphael Rauch)", date: "2026-10-18", role: "primary" }
+    discovery_trace: "first seen at: blick-ch, feed URL https://www.blick.ch/rss.xml (41 items, window 2026-10-19 to 2026-10-20 only) and news sitemap https://www.blick.ch/news.xml (item 2026-10-18T07:57Z '«Besonders betroffen sind die Sicherheitsorgane»') → drilled https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp (extract). Corroboration attempted: WebSearch ('Publica Cyberangriff Nachrichtendienst NDB fedpol Daten betroffen Bundesrat PK Softech'), WebSearch ('Publica Bundesrat informiert Keller-Sutter ...'), WebSearch ('Publica Datenabfluss NDB Agenten Bundespersonal Blick ...') and https://www.srf.ch/news/schweiz/pensionskasse-des-bundes-wie-konnten-heikle-daten-bei-externer-softwarefirma-landen (2026-10-10, older) — none carries the security-organ, crisis-staff or canton claims, so the delta is single-source"
+    summary: |
+      Blick reports on 2026-10-18 that Federal Councillor Karin Keller-Sutter brought the matter to the Federal Council's Wednesday session (2026-10-14) about the cyberattack on the external software supplier of the federal pension fund Publica; the Finance Department's statement quoted by Blick says neither the Federal Council nor a department supervises Publica. Citing a confidential internal information note, Blick reports that the Confederation internally expects "considerable damage", calls the incident "serious", and warns current and retired federal employees of longer-term consequences, with "the security organs of the Confederation" named as especially affected: the Federal Intelligence Service (NDB), the Defence Group in the VBS and the Federal Office of Police (fedpol). Blick says the cantons were informed because a combination of certain stolen data sets might allow conclusions about Swiss defence capability, and describes internal concern that staff working abroad could be identified by matching stolen federal data with entry lists; that scenario is Blick's and its sources' reading, not an official finding. Publica's own statements quoted in the article say which data and how many people are affected is still being investigated, that it set up a crisis staff, and that it does not speculate on scenarios; the Federal Prosecutor's Office is investigating. Blick adds that clarification may take weeks or months and recalls the 2023 Xplain case, whose follow-up recommendation was that suppliers should receive test data rather than real data.
+    region_nexus: "Switzerland; federal administration, federal security organs and cantons"
+    primary_sector_nexus: "direct: federal employees and pensioners including intelligence, defence and police staff; supplier-held personal data of public-sector pension insureds"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    lookback: true
+    evidence:
+      - quote: "Der Bundesrat wurde am Mittwoch über die Situation im Nachgang zum Cyberangriff auf einen externen Softwareanbieter der Pensionskasse Publica informiert. Weder der Bundesrat noch ein Departement üben eine Aufsichtsfunktion über Publica aus."
+        attribution: "Blick (Raphael Rauch)"
+        source_url: "https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp"
+      - quote: "Der Bund geht intern von «erheblichen Schäden» aus und bezeichnet den Vorfall wörtlich als «gravierend»."
+        attribution: "Blick (Raphael Rauch)"
+        source_url: "https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp"
+      - quote: "Besonders betroffen sind die Sicherheitsorgane des Bundes», heisst es in der vertraulichen Informationsnotiz – also der Nachrichtendienst des Bundes (NDB), die Gruppe Verteidigung im VBS und das Bundesamt für Polizei (Fedpol)."
+        attribution: "Blick (Raphael Rauch)"
+        source_url: "https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp"
+      - quote: "Nach Blick-Informationen wurden auch die Kantone informiert."
+        attribution: "Blick (Raphael Rauch)"
+        source_url: "https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp"
+      - quote: "Welche Daten und wie viele Personen tatsächlich betroffen sind, wird derzeit untersucht."
+        attribution: "Blick (Raphael Rauch)"
+        source_url: "https://www.blick.ch/politik/daten-debakel-beim-bund-sicherheitsorgane-betroffen/jle39rp"
+    extended_notes: |
+      DELTA vs the existing entry (checked: it does not mention the Federal Council briefing, the crisis staff, the security organs or the cantons): (1) the Federal Council was briefed on 2026-10-14 (the Finance Department's wording is quoted in Blick, so the briefing itself rests on an official statement relayed by one outlet); (2) Blick's claim, from a confidential internal note it has seen, that the federal security organs are especially affected and that the cantons were told; (3) Publica set up a crisis staff.
+      CAUTION FOR THE COMPOSER: Blick has reliability C in the source list; the internal-note claims are uncorroborated and the agent-identification scenario is explicitly speculative in the article. Attribute everything to Blick ("Blick reports, citing a confidential internal note") and keep the official Publica and Finance Department statements separate. Suggested Admiralty: reliability C, credibility 3 for the internal-note claims; the Federal Council briefing and the "still being investigated" line are quoted official statements.
+      Why it matters to cantonal and federal defenders: if confirmed, the exposure is not only financial-fraud material (already in the entry) but data on security-sector staff, and the cantons being briefed suggests cantonal police and administrations may be in scope of follow-on guidance. No public primary from the Confederation yet carries these points; the 2026-10-08 federal release (https://www.admin.ch/de/newnsb/FjG4XOIms04s) was not re-fetched by this agent.
+      Blick's lookback could not be fully served: its RSS holds about 12 h and the news sitemap about 48 h, so Blick items from 2026-10-15 to 2026-10-17 were not enumerated (German and French WebSearch for Swiss cantonal or communal cyber incidents found nothing newer).
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 4. Microsoft YAM Store / Storm-2990
+  # ---------------------------------------------------------------------------
+  - title: "Microsoft: Storm-3119 (YAM Store) resells hijacked and fraudulently created Microsoft 365 and Google tenants to operators of the Storm-2990 phishing kits (CoGUI, Haozi, Iron Man System), and the Digital Crimes Unit disrupts the ecosystem"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/", publisher: "Microsoft Threat Intelligence and Digital Crimes Unit", date: "2026-10-14", role: "primary" }
+      - { url: "https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem", publisher: "Resecurity", date: "2026-10-14", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/global-takedown-hits-network-behind-1-billion-phishing-messages/", publisher: "BleepingComputer", date: "2026-10-14", role: "corroborating" }
+      - { url: "https://phisheye.com/blog/irontoll-iron-man-phaas-campaign", publisher: "PhishEye", date: "2026-10-18", role: "corroborating" }
+      - { url: "https://www.sans.org/newsletters/newsbites/xxviii-77", publisher: "SANS NewsBites", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: sans-newsbites, URL https://www.sans.org/newsletters/newsbites/xxviii-77 (issue 77, 2026-10-16, item 'Microsoft and Health-ISAC Disrupt Chinese Criminal Marketplace Platforms') → WebSearch ('Microsoft Digital Crimes Unit Health-ISAC CoGUI Iron Man YAM Store takedown court order Southern District of Florida') → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/global-takedown-hits-network-behind-1-billion-phishing-messages/ → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/ → partner research: Resecurity, URL https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem → PhishEye (listed in Microsoft's references), URL https://phisheye.com/blog/irontoll-iron-man-phaas-campaign"
+    summary: |
+      Microsoft Threat Intelligence and the Digital Crimes Unit report on 2026-10-14 a Chinese-language ecosystem it assesses with high confidence was built by Chinese-speaking developers: YAM Store (tracked Storm-3119), an initial access broker that sells accounts, licences and storage in compromised or fraudulently obtained Microsoft and Google tenants, and the developers behind the CoGUI, Haozi and Iron Man System phishing kits (Storm-2990), which Microsoft says enabled over one billion phishing emails and SMS messages to over 75,000 organisations since January 2026. Microsoft describes a five-stage YAM Store pipeline: automated tenant reconnaissance over Tor, takeover through admin panels that use a stolen application client secret in an application-only flow to reset passwords silently, assign education licences and grant privileges, abuse of SharePoint and OneDrive as bulk hosting after the actor self-provisions the PnP Management Shell service principal with broad Graph permissions (including AppCatalog.ReadWrite.All) in a compromised Global Administrator session, DNS and certificate management through Cloudflare, and an automated storefront. It also reports tenants created for fabricated organisations backed by expired or newly registered domains and likely AI-generated content. The Iron Man System kit carries over 2,300 templates for over 139 countries, including local government traffic and parking-fee authorities, law enforcement, healthcare, finance and transport, with geofencing, fake CAPTCHA gates, IP allow and block lists, Telegram bot notification and WebSocket-based live interaction; downstream actors used credential theft, device-code phishing and card fraud. Resecurity, which Microsoft names as industry partner, independently reports 2,360 templates across 130 countries and a self-hosted build registry; Microsoft and Health-ISAC obtained a US court order to seize domains. No source names Switzerland or a Swiss victim; Microsoft names healthcare, financial services, wholesale distribution and IT in Japan, the United States, Australia and India.
+    region_nexus: "global; Switzerland not named in any source. Template catalogue spans 130 to 139 countries and includes government-authority impersonation"
+    primary_sector_nexus: "indirect: government-impersonation lures (traffic and parking fees, law enforcement) and abuse of Microsoft 365 for Education style tenants and SharePoint/OneDrive hosting; relevance to Swiss public-sector tenants is an inference, no source states it"
+    sector: "cross-sector (phishing infrastructure / cloud identity)"
+    cves: []
+    techniques: [T1566.002, T1528, T1111, T1078.004, T1585.003, T1583.001, T1098.003]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID", "Microsoft SharePoint Online", "Microsoft OneDrive", "Google Workspace"]
+    entity_keys: ["product:microsoft-365", "product:google-workspace"]
+    new_entities:
+      - { key: "actor:storm-3119", type: actor, name: "Storm-3119 (YAM Store)", aliases: ["YAM Store", "YamStore"], summary: "Microsoft's designation for YAM Store, a Chinese-language initial access broker selling accounts, licences and storage in compromised or fraudulently created Microsoft 365 and Google tenants to phishing-kit operators (Microsoft, 2026-10-14)." }
+      - { key: "actor:storm-2990", type: actor, name: "Storm-2990", aliases: ["CoGUI", "Haozi", "Iron Man System"], summary: "Microsoft's designation for the developers of the CoGUI (NX/FA), Haozi (Phoenix) and Iron Man System phishing-as-a-service kits sold through YAM Store; over one billion phishing messages since January 2026 per Microsoft (Microsoft, 2026-10-14)." }
+    relation_suggestions:
+      - { subject: "actor:storm-2990", object: "actor:storm-3119", basis: "Microsoft: the Storm-2990 kits are advertised and fed with infrastructure through YAM Store (Microsoft, 2026-10-14)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Microsoft assesses with high confidence that these phishing kits were developed by Chinese-speaking threat actors"
+        attribution: "Microsoft Threat Intelligence and Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "YAM Store is an initial access broker (IAB) that sells infrastructure using compromised or fraudulently obtained environments in providers like Microsoft and Google."
+        attribution: "Microsoft Threat Intelligence and Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "self-provisions the PnP Management Shell service principal"
+        attribution: "Microsoft Threat Intelligence and Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "Microsoft assesses that the ecosystem is not limited to the abuse of Microsoft services and extends to other providers."
+        attribution: "Microsoft Threat Intelligence and Digital Crimes Unit"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/14/the-hidden-network-inside-the-phishing-infrastructure-ecosystem-powering-global-cybercrime/"
+      - quote: "Resecurity gained access to Iron Man’s infrastructure and found 2,360 phishing templates impersonating banks, retailers, healthcare providers, transportation authorities, police departments and government agencies across 130 countries."
+        attribution: "Resecurity"
+        source_url: "https://www.resecurity.com/blog/article/iron-man-yamstore-powering-a-global-phishing-as-a-service-ecosystem"
+    extended_notes: |
+      WHY THE SINGLE ITEM IS BORDERLINE: no Swiss nexus is stated, the primary (2026-10-14) sits about a day outside this record's 121 h lookback (SANS NewsBites #77 of 2026-10-16 and PhishEye's 2026-10-18 update are inside it), and no entry in the store covers it (prior_coverage grep for CoGUI, YAM Store, Iron Man: none). It carries named clusters and tenant-takeover mechanics a public-sector Microsoft 365 owner can act on, which is why it is returned for the main agent's decision; drop it if the day is crowded.
+      EXPOSURE (inference marked): any organisation whose Microsoft 365 or Google tenant has an application client secret that leaked can be taken over without a user session, because the actor uses an application-only flow. Education and non-profit tenant types are the ones YAM Store sells; the sources do not name Swiss schools. Separately, Swiss recipients may receive lures from kits that ship government, police and traffic-fee templates; no source documents Swiss templates.
+      DETECTION (from Microsoft's description, telemetry class first): Entra audit and sign-in logs for application-only authentication using an existing application secret followed by silent password resets, licence assignment, and role or permission grants; creation of the PnP Management Shell service principal in a tenant that never used it, with Graph consent that includes AppCatalog.ReadWrite.All and full SharePoint control; unusual bulk uploads and external sharing in SharePoint and OneDrive from a Global Administrator context. Inbound: links to legitimate-looking Microsoft or Google tenant domains hosting phishing pages, geofenced and CAPTCHA-gated, so sandboxes often see nothing. Microsoft lists Entra ID Protection, Defender for Office 365 and Defender XDR alert names but no hunt queries.
+      HARDENING (Microsoft): phishing-resistant MFA through Conditional Access for privileged accounts, lock down Global Administrator assignment, restrict MFA and passkey registration to trusted locations and devices, Safe Links applied to internal recipients, network protection, and sign-in prompts that name the application (relevant to device-code phishing). Rotate application client secrets that may have leaked.
+      TRIAGE (honest limit, inference): the lure red flags Microsoft lists (urgency, official branding, payment demand for a toll or fine) are generic; a SharePoint or OneDrive link is not itself malicious, so the discriminator would be a link to a tenant the recipient has no relationship with combined with a payment or credential demand.
+      Related: the 2026-10-19 entry on ICS calendar-invite phishing and EvilTokens device-code kits covers a different downstream tool; Microsoft says some Storm-2990 customers used device-code phishing too. Suggested Admiralty: reliability A (Microsoft for its own telemetry) with credibility 2 on attribution to Chinese-speaking developers (Microsoft's assessment, partly corroborated by Resecurity infiltration of the seller community), credibility 1 on the existence of the ecosystem and disruption.
+    borderline: true
+    borderline_reason: "no Swiss nexus stated; primary dated 2026-10-14 just outside the 121 h horizon of the record that surfaced it (SANS NewsBites); no prior store coverage; named clusters and M365 tenant-takeover mechanics are transferable to public-sector tenants"
+
+dropped_leads:
+  - { lead: "Darktrace CikaBika Bot (Rust Discord RAT; disk-image lure with French-language decoy)", url: "https://www.darktrace.com/blog/cikabika-bot-inside-a-discord-rat", reason: "primary dated 2026-10-14 (outside horizon), commodity chain (LNK, Nim loader, computerdefaults UAC bypass, DLL search-order hijack in the Edge directory, Discord C2), delivery unconfirmed, no attribution, no stated francophone targeting" }
+  - { lead: "Calif 'Big Fish' OpenBSD kernel LPE re-reported by Security Affairs 2026-10-19", url: "https://securityaffairs.com/201285/hacking/big-fish-openbsd-root-exploit-chains-a-37-year-old-bsd-bug-with-a-kernel-flaw.html", reason: "patched in September (errata 018 and 026), no CVE, no in-the-wild use, OpenBSD footprint in the constituency not established; the research page itself carries an older date (2026-08-10)" }
+  - { lead: "Plex2Shell (CVE-2026-96652, -96654, -96655, -96656): public PoC 2026-10-16, honeypot-observed exploitation 2026-10-17 installing miners and proxy software", url: "https://securityaffairs.com/201324/hacking/plex2shell-exploit-used-to-turn-vulnerable-plex-servers-into-crypto-miners.html", reason: "vulnerability-triage item for S1 (primary zmain.info/blog/plex2shell not fetched); consumer media server, no public-sector nexus found" }
+  - { lead: "SiteGuard Server Edition WAF CVE-2026-106931 exploited (vendor alert and JVN 2026-10-14)", url: "https://securityaffairs.com/201258/security/japans-siteguard-waf-flaw-cve-2026-106931-is-already-being-exploited.html", reason: "S1 item; Japan-market WAF, local-access command injection, no constituency nexus" }
+  - { lead: "KELA reports (Silent Ransom Group chat leak analysis, TeamPCP threat actor profile, AI Cybercrime Report Q4 2026)", url: "https://www.kelacyber.com/blog/silent-ransom-group-chat-leak-analyzed/", reason: "SRG blog dated 2026-10-13 (outside horizon; leak publicly reported 2026-10-07), archive authenticity unverified; the TeamPCP profile and the AI cybercrime report pages are undated, gated downloads whose public text carries no technical detail" }
+  - { lead: "AhnLab ASEC ARTEX series (#3 of 2026-10-13, #4 of 2026-10-15) on an AI penetration-testing tool seen on attacker infrastructure", url: "https://asec.ahnlab.com/en/95845/", reason: "outside the 98 h lookback of the record; ASEC items inside it are monthly and weekly digests (September APT trend report 2026-10-16, ransom and dark-web weekly) that re-summarise other labs" }
+  - { lead: "Sonatype Q3 2026 Open Source Malware Index (2026-10-08) and Hijacked TensorLake npm (2026-10-08)", url: "https://www.sonatype.com/blog/q3-2026-open-source-malware-index-when-compromise-compounds", reason: "outside the 98 h lookback; the index is a statistics report" }
+  - { lead: "D3Lab Italian SEND (pagoPA) phishing delivering an iOS WebKit exploit chain", url: "https://www.d3lab.net/an-italian-phishing-campaign-delivering-an-ios-exploit-chain/", reason: "dated 2026-09-22; surfaced only through a Security Affairs newsletter; noted as the reason d3lab is proposed as a candidate source" }
+  - { lead: "Blick 'Falsche Polizisten erbeuten Millionen' (2026-10-19)", url: "https://www.blick.ch/schweiz/telefonbetrug-falsche-polizisten-erbeuten-millionen/9mj5d4z", reason: "consumer fraud statistics and citizen advice (Vaud, St. Gallen cantonal police figures), no technique or constituency-defence content" }
+  - { lead: "Periodic reports seen but not in window: Microsoft Digital Defense Report 2026 (about 2026-10-01), ENISA Threat Landscape 2026 (2026-09-22), Cloudflare DDoS Threat Report H1 2026 (2026-08-11), Sonatype Q3 Open Source Malware Index (2026-10-08)", url: "https://blog.cloudflare.com/ddos-threat-report-2026-h1/", reason: "no `ANNUAL REPORT` flag owed for S3 this run: nothing periodic published inside the window; the only in-lookback periodic item is ASEC's September APT trend digest (2026-10-16), dropped as a digest" }
+candidate_sources:
+  - id: d3lab
+    publisher: "D3Lab (Italian anti-phishing and threat analysis lab, Andrea Draghetti)"
+    url: "https://www.d3lab.net/"
+    rss_url: "https://www.d3lab.net/feed/"
+    category: research
+    why: "Italian-language and English phishing and malware analysis with a steady cadence (feed returned 8 dated items, 2026-07-29 to 2026-09-22; direct transport works); covers Italian public-administration impersonation (SEND/pagoPA, Registro delle Imprese) and smishing kits relevant to Ticino and the Italian-speaking border; surfaced through the Security Affairs malware newsletter."
+coverage_gaps:
+  - source_id: redcanary
+    reason: "recipe change: https://redcanary.com/feed/ parses (10 items) but nothing is newer than 2026-08-20, and `extract https://redcanary.com/blog/` now returns the Zscaler blog index; the record needs repointing or retiring at the next audit (matches the 2026-10-11 audit note)."
+  - source_id: reliaquest
+    reason: "recipe note: sitemap `lastmod` is not a publication date (bulk re-index on 2026-10-13 and edits on 2026-10-14 touched posts dated 2025-05-20 and 2026-08-28), and the /blog/ listing is JS-loaded (extract returns the HTML shell). The working check is: sort the /blog/ sitemap by lastmod, then `extract` each candidate and read its `date:` metadata. No new post found."
+  - source_id: blick-ch
+    reason: "the 121 h lookback cannot be served: RSS holds about 12 h (41 items, 2026-10-19T16:18Z to 2026-10-20T01:23Z) and `url --direct https://www.blick.ch/news.xml` about 48 h (233 items, back to 2026-10-18T05:23Z), so Blick items of 2026-10-15 to 2026-10-17 were not enumerated; German and French WebSearch for Swiss communal and cantonal incidents added nothing."
+  - source_id: kela-cyber
+    reason: "listing and report pages carry no publication dates; individual reports are gated PDFs, so in-horizon status of TeamPCP profile and AI Cybercrime Report Q4 2026 could not be established from public pages."
+  - source_id: ahnlab-asec
+    reason: "`extract https://asec.ahnlab.com/en/` is served by the jina reader (trafilatura direct returns no body) and the English feed parses only via jina with no dates; per-post `extract` returns `Published Time`. Both the listing and the feed therefore cost reader credit; two of the three reader keys reported balance exhausted (HTTP 402) during this run."
+source_ledger:
+  - { id: blick-ch, tier: standard, attempted: true, transport: "feed + url --direct news.xml sitemap + extract", horizon_hours: 121, in_horizon_items: 2, returned: 1, note: "Publica delta (update-of); fake-police fraud statistics dropped; lookback only partly servable" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed + extract of /blog/", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "feed stale since 2026-08-20; blog now Zscaler index" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "bridge url sitemap.xml + extract of candidate posts", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "lastmod unreliable; no post newer than 2026-08-28 among the recently touched ones" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract listing + extract xxviii-77", horizon_hours: 121, in_horizon_items: 1, returned: 1, note: "issue 77 (2026-10-16) read in full: 8 items, 7 already covered or non-constituency; the Microsoft/Health-ISAC takedown item led to returned item 4" }
+  - { id: schneier, tier: standard, attempted: true, transport: "bridge url feed (jina fallback)", horizon_hours: 121, in_horizon_items: 4, returned: 0, note: "AI CAPTCHA solving, open-weight model backdoors, cryptanalysis effort: commentary, no defender-actionable item" }
+  - { id: securityaffairs, tier: standard, attempted: true, transport: "feed + extract + weekly newsletters", horizon_hours: 121, in_horizon_items: 10, returned: 1, note: "WPSplinter returned; OpenBSD, CikaBika, Plex2Shell, SiteGuard dropped or handed to S1; feed pagination parameter is ignored (returns the same 10 items)" }
+  - { id: ahnlab-asec, tier: standard, attempted: true, transport: "extract (jina) + feed (jina)", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "only the September APT trend digest (2026-10-16) is inside the horizon; ARTEX posts of 2026-10-13 and 2026-10-15 are outside" }
+  - { id: cloudflare-cf1, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-07" }
+  - { id: exodus-intelligence, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest item 2026-07-27 (bursty cadence)" }
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "extract research listing + WebFetch per report", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "undated gated reports; SRG blog 2026-10-13 outside horizon" }
+  - { id: netcraft, tier: candidate, attempted: true, transport: "bridge url /resources/blog", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "only the 2026-10-16 ICS calendar-invite post, already covered by entry 2026-10-19/ics-calendar-invite-phishing-auto-added-outlook-gmail" }
+  - { id: rts-info-regions-rss, tier: candidate, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "25 regional items 2026-10-15 to 2026-10-19, none cyber-related (the only adjacent one, Vaud fake police and bankers, is 2026-10-15 and consumer fraud)" }
+  - { id: socprime, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 98, in_horizon_items: 3, returned: 1, note: "PwnEscape returned via the pwn.ai primary; BeyondTrust post already covered; log-analysis post is marketing" }
+  - { id: sonatype, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-15 12:00, before the 98 h cut" }

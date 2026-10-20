@@ -1,0 +1,238 @@
+# work/2026-10-20T0256Z-intel/findings.FU1.yaml
+# FU1 - scoped follow-up for the S1 completeness duty (F5 October 2026 quarterly notification, Roundcube 1.6.20/1.7.5, Huntress living post).
+# Restart of a killed first spawn; started_at preserved from work/2026-10-20T0256Z-intel/FU1.started_at.
+domain: FU1
+run_id: 2026-10-20T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-20T03:31:27Z
+ended_at: 2026-10-20T03:53:39Z
+duration_seconds: 1332
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 8
+  bridge_fetches: 85   # approximate: extract/url/API calls incl. per-CVE NVD + EUVD loops
+items:
+  # ---------------------------------------------------------------- ITEM 1 (Task 1)
+  - title: "NGINX Open Source / NGINX Plus: three unauthenticated heap-corruption flaws rated CVSS 4.0 9.2 (CVE-2026-15176, CVE-2026-93479, CVE-2026-97205) fixed in 1.30.6 / 1.31.7 - configuration-dependent, no exploitation or public PoC found"
+    sources:
+      - { url: "https://nginx.org/en/security_advisories.html", publisher: "nginx.org (project security advisories)", date: "2026-10-14", role: "primary" }
+      - { url: "https://nginx.org/en/CHANGES-1.30", publisher: "nginx.org (CHANGES, stable 1.30.6)", date: "2026-10-14", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-heap-based-buffer-overflows-nginx-plus-and-nginx-open-source-can-be-exploited", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-10-19", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1341/", publisher: "CERT-FR (AVI-1341, F5 / NGINX products)", date: "2026-10-19", role: "corroborating" }
+      - { url: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101112", publisher: "ENISA EUVD (CVE-2026-15176, carries F5 CNA text, KEV and EPSS status)", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101114", publisher: "ENISA EUVD (CVE-2026-93479)", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101115", publisher: "ENISA EUVD (CVE-2026-97205)", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-15176", publisher: "Debian Security Tracker", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/f5-security-advisory-av26-1049", publisher: "Canadian Centre for Cyber Security (AV26-1049)", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://securityonline.info/f5-patches-three-critical-nginx-vulnerabilities/", publisher: "Daily CyberSecurity (relays F5 advisory text; secondary)", date: "2026-10-14", role: "corroborating" }
+      - { url: "https://kimmo.cloud/CVE-2026-97205/", publisher: "kimmo.cloud community patch-status tracker (secondary, low reliability; cites nginx.org and F5)", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://cyberstan.co.uk/nginx-rce/", publisher: "Stan Shaw / cyberstan.co.uk (precedent: CVE-2026-42533)", date: "2026-06-01", role: "background" }
+      - { url: "https://www.helpnetsecurity.com/2026/05/18/ngnix-vulnerability-exploited-cve-2026-42945/", publisher: "Help Net Security (precedent: CVE-2026-42945 exploitation)", date: "2026-05-18", role: "background" }
+      - { url: "https://nginx.org/en/docs/switches.html", publisher: "nginx.org documentation (command-line switches)", date: "2026-10-20", role: "background" }
+    discovery_trace: "first seen at: CERT-FR AVI-1341 (handed in by the main agent), URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1341/ (11 CVEs, F5 K000162416 et al.) -> pivot: ccb-belgium listing, URL https://ccb.belgium.be/advisories -> CCB warning URL https://ccb.belgium.be/advisories/warning-heap-based-buffer-overflows-nginx-plus-and-nginx-open-source-can-be-exploited -> primary (vendor project channel): nginx.org security advisories URL https://nginx.org/en/security_advisories.html and CHANGES URL https://nginx.org/en/CHANGES-1.30 -> EUVD API search + EUVD pages (CNA text, KEV/EPSS) -> Debian tracker URL https://security-tracker.debian.org/tracker/CVE-2026-15176 -> precedent: https://cyberstan.co.uk/nginx-rce/ and https://www.helpnetsecurity.com/2026/05/18/ngnix-vulnerability-exploited-cve-2026-42945/. F5's own K-articles (my.f5.com K000162416 / K000162607 / K000162608) return a JavaScript portal shell on extract, WebFetch and jina, so F5's text is read via its CNA record as republished by EUVD / Debian and as relayed by securityonline."
+    summary: |
+      F5's quarterly notification of 2026-10-14 came with nginx 1.30.6 (stable) and 1.31.7 (mainline), both dated 14 Oct 2026 in nginx's CHANGES files. Three of the nginx core fixes are scored CVSS 4.0 9.2 by F5 as CNA (CVSS 3.1 8.1; vector AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H): CVE-2026-15176, CVE-2026-93479 and CVE-2026-97205. nginx.org lists all five of its core entries from this release, including these three, as "Severity: medium".
+
+      FACTS (vendor / CNA). Common: unauthenticated attacker, crafted HTTP requests, "conditions beyond their control" (AC:H); the F5 CNA text says the overflow "may cause a heap buffer overflow in the NGINX worker process leading to a restart" and that "attackers can execute code on systems with Address Space Layout Randomization (ASLR) disabled or when the attacker can bypass ASLR"; "data plane issue only", no control-plane exposure.
+      - CVE-2026-15176 (nginx.org: "Buffer overflow when using alias with rewrite"; CWE-122; ngx_http_core_module; found internally at F5 per the Daily CyberSecurity relay of F5's advisory). Trigger per CNA/CCB: a location that uses alias together with rewrite and a set or return directive referencing $request_filename, or $request_filename used in an access-log format; nginx.org CHANGES: the request URI was changed by rewrite and then mapped to a file path. Opt-in configuration (alias has no default). nginx.org vulnerable range 0.1.29-1.31.6.
+      - CVE-2026-93479 (nginx.org: "Buffer overflow in script evaluation"; CWE-122; credit Matt Suiche of Tolmo Inc. in CHANGES, plus, at F5, Mateusz Gierblinski per the kimmo.cloud tracker). Trigger per CNA/CCB: a map directive with regex matching where root or an access-log format references the map's regex capture variables before the map output variable, or a non-cacheable variable in a string expression under certain conditions; CHANGES: string-expression evaluation with variables, affecting document-root calculation and request logging in both the http and stream modules. nginx.org vulnerable range 1.31.2-1.31.6 and 1.30.0-1.30.5, so builds that already carry July's CVE-2026-42533 fix (1.30.4/1.30.5, 1.31.3-1.31.6) are still vulnerable; branches older than 1.30 are not in the range. A distro tracker relaying F5 lists a workaround for the named-capture path only and none for the non-cacheable-variable path.
+      - CVE-2026-97205 (nginx.org: "Use-after-free when using asynchronous file I/O (AIO)"; CWE-416; credit cyberlancer). CHANGES: use-after-free "in certain configurations if the SSI page has include virtual commands". Needs aio (on or threads) AND ssi on; nginx documentation gives defaults "aio off" and "ssi off", so both are opt-in. nginx.org vulnerable range 0.8.11-1.31.6. CCB's warning does NOT cover this CVE although it carries the same 9.2 score.
+      - Fixed: nginx Open Source 1.30.6 (stable) / 1.31.7 (mainline); nginx.org's "Not vulnerable" line is "1.31.7+, 1.30.6+" for all three and names no fixed release for older branches. NGINX Plus 37.1.0.1 / 37.0.5.1 (CERT-FR, EUVD); EUVD lists Plus R33-R36 as affected with no fixed R-release ("<*"), so R-release users should read F5's K-articles. Companion fixes in the same notification: F5 WAF for NGINX 5.14.2 / 5.16.0, F5 DoS for NGINX 4.11.0, NGINX Instance Manager 2.24.0, NGINX Gateway Fabric 2.8.0, NGINX Ingress Controller 5.7.0, njs 1.0.2 (CERT-FR AVI-1341, Cyber Centre AV26-1049).
+      - F5 workarounds as relayed by Daily CyberSecurity and the kimmo.cloud tracker (F5's page itself unreadable): aio off or ssi off (97205); avoid alias in affected locations and avoid $request_filename including in log formats (15176); named captures confined to the matching map block (93479).
+
+      EXPLOITATION STATUS (claims and absences). No in-the-wild exploitation, public PoC or scanning report found for any of the three. EUVD page for each of the three (fetched 2026-10-20): "CISA KEV | Not listed", EU KEV not listed, Shadowserver honeypot sensors "No data"; CISA KEV catalogue as fetched through the bridge (release stamp 2026-10-16T17:15Z) holds none of the 11 CVEs. EPSS (FIRST.org API, 2026-10-19): 0.0052 / 0.0055 / 0.0048 for 15176 / 93479 / 97205 (percentile about 0.43 / 0.45 / 0.40; EUVD shows these as 0.52% / 0.55% / 0.44%). CISA SSVC on the CVE records reads exploitation "none" (NVD API, verification only; relayed by the kimmo.cloud tracker). Daily CyberSecurity states F5 "has confirmed no public proof-of-concept exploit code for any of the three flaws". GitHub repository searches for each CVE id return no PoC (the only hit is a distro patch-status tracker). Nothing found is dated after 2026-10-20 03:50 UTC.
+
+      INFERENCE / ASSESSMENT (mine, flagged). F5's code-execution condition (ASLR disabled or bypassed) should not be read as "DoS only" for the script-evaluation class: Stan Shaw's July write-up on the sibling CVE-2026-42533 says that bug "works with ASLR on, since the info leak primitive defeats it in a single GET request", and CVE-2026-42945 (same engine, needed ASLR disabled) was exploited in the wild within days of its public PoC (VulnCheck via Help Net Security, 2026-05-18). No source says the October trio has an equivalent leak primitive. Against inclusion at critical weight: opt-in configuration, AC:H, nginx.org's own "medium", EPSS about 0.5 %, no PoC. For inclusion: pre-auth, network-reachable, CVSS 9.2, a national authority (CCB) tells readers to patch immediately, nginx is ubiquitous as a reverse proxy in public-sector estates, and distro lag is real (Debian below).
+
+      DISTRO LAG. Debian Security Tracker for CVE-2026-15176: bookworm 1.22.1-9+deb12u9 / deb12u10 (security) and trixie 1.26.3-3+deb13u7 / deb13u9 (security) are "vulnerable"; only forky and sid (1.30.4-8, a Debian backport) are "fixed". An upstream version-number comparison therefore misclassifies distro-patched builds in both directions (1.30.4-8 is fixed although upstream 1.30.4 is not); the distro tracker, not the version string, is the authority. The kimmo.cloud tracker (secondary) reports the same for trixie/bookworm and shows nixpkgs/NixOS channels fixed.
+    region_nexus: "global; nginx / NGINX Plus is a common reverse proxy, load balancer and Kubernetes ingress component in EU and Swiss public-sector web estates; Belgian national authority (CCB) issued a warning on 2026-10-19"
+    primary_sector_nexus: "indirect-to-direct: internet-facing reverse proxies and ingress in cantonal / federal web estates; no sector targeting reported"
+    sector: "public-sector"
+    cves: [CVE-2026-15176, CVE-2026-93479, CVE-2026-97205]
+    techniques: [T1190, T1499.004]
+    affected_products: ["F5 NGINX Open Source", "F5 NGINX Plus", "F5 WAF for NGINX", "F5 DoS for NGINX", "NGINX Instance Manager", "NGINX Gateway Fabric", "NGINX Ingress Controller"]
+    entity_keys: ["product:f5-nginx-open-source", "product:f5-nginx-plus", "product:f5-waf-for-nginx", "product:nginx-gateway-fabric", "product:nginx-ingress-controller"]
+    new_entities: []
+    relation_suggestions: []
+    references_candidates: ["2026-07-20/cve-2026-42533-nginx-pcre-capture-clobber-preauth-rce", "2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Clears the S1 gate on its letter (pre-auth, network, CVSS 4.0 9.2, national-authority warning) but is configuration-dependent (AC:H, opt-in directives), nginx.org rates it medium, EPSS about 0.5 %, no PoC or exploitation found; code execution per F5 needs ASLR disabled or bypassed. Recommended weight: notable / high-awareness vulnerability entry, not critical; F5's K-articles could not be read directly (portal shell on every transport), vendor facts are via nginx.org, CHANGES, the F5 CNA text republished by EUVD / Debian, and CCB / CERT-FR."
+    evidence:
+      - quote: "Not vulnerable: 1.31.7+, 1.30.6+"
+        attribution: "nginx.org (project security advisories)"
+        source_url: "https://nginx.org/en/security_advisories.html"
+      - quote: "Buffer overflow in script evaluation"
+        attribution: "nginx.org (project security advisories)"
+        source_url: "https://nginx.org/en/security_advisories.html"
+      - quote: "NGINX Open Source 1.30.0 to 1.30.5 and 1.31.2 to 1.31.6 (CVE-2026-93479)"
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-heap-based-buffer-overflows-nginx-plus-and-nginx-open-source-can-be-exploited"
+      - quote: "CVE-2026-93479: CVSS 9.2 (CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N)"
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-heap-based-buffer-overflows-nginx-plus-and-nginx-open-source-can-be-exploited"
+      - quote: "On systems where Address Space Layout Randomization (ASLR) is disabled or can be bypassed, an attacker could also execute code"
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-heap-based-buffer-overflows-nginx-plus-and-nginx-open-source-can-be-exploited"
+      - quote: "While patching appliances or software to the newest version may protect against future exploitation, it does not remediate historic compromise."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-heap-based-buffer-overflows-nginx-plus-and-nginx-open-source-can-be-exploited"
+      - quote: "Additionally, attackers can execute code on systems with Address Space Layout Randomization (ASLR) disabled or when the attacker can bypass ASLR."
+        attribution: "F5 (CNA text for CVE-2026-15176, republished by Debian Security Tracker)"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-15176"
+      - quote: "when a location is configured that uses the alias directive together with rewrite and a set or return directive referencing"
+        attribution: "F5 (CNA text for CVE-2026-15176, republished by Debian Security Tracker)"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-15176"
+      - quote: "CISA KEV | Not listed"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101112"
+      - quote: "Currently, F5 has confirmed no public proof-of-concept exploit code for any of the three flaws."
+        attribution: "Daily CyberSecurity (relaying F5 advisories)"
+        source_url: "https://securityonline.info/f5-patches-three-critical-nginx-vulnerabilities/"
+      - quote: "The stable suites, trixie and bookworm, have no fix yet."
+        attribution: "kimmo.cloud patch-status tracker (secondary)"
+        source_url: "https://kimmo.cloud/CVE-2026-97205/"
+      - quote: "This bug works with ASLR on, since the info leak primitive defeats it in a single GET request"
+        attribution: "Stan Shaw (cyberstan.co.uk), about CVE-2026-42533, a different CVE"
+        source_url: "https://cyberstan.co.uk/nginx-rce/"
+      - quote: "A critical NGINX vulnerability (CVE-2026-42945) disclosed last week is being exploited by attackers"
+        attribution: "Help Net Security, about CVE-2026-42945, a different CVE"
+        source_url: "https://www.helpnetsecurity.com/2026/05/18/ngnix-vulnerability-exploited-cve-2026-42945/"
+      - quote: "- `-v` — print nginx version."
+        attribution: "nginx.org documentation (command-line parameters)"
+        source_url: "https://nginx.org/en/docs/switches.html"
+    extended_notes: |
+      Exposure (how a defender reads it). Version: `nginx -v` prints the nginx version (nginx.org command-line documentation); the "Server" response header and error pages also emit it unless server_tokens is turned off (documented default: server_tokens on). Vulnerable if upstream-built nginx is 0.1.29-1.31.6 (15176), 1.30.0-1.30.5 or 1.31.2-1.31.6 (93479), or 0.8.11-1.31.6 (97205), and the configuration matches: `nginx -T` dumps the full effective configuration with includes; look for alias + rewrite + $request_filename (set/return or log_format), regex map whose captures are used in root / log_format / other string expressions, aio on|threads together with ssi on. For distro packages read the distro tracker (Debian trixie / bookworm still vulnerable at 2026-10-20 03:50 UTC). NGINX Plus: 37.0.5.1 / 37.1.0.1 fixed; R33-R36 listed affected without a fixed R-release in EUVD.
+      Detection concept (telemetry class first). Process-supervision / error-log telemetry for unexpected nginx worker-process exits and respawn bursts (F5: overflow "leading to a restart"; nginx's own CHANGES describe the analogous crash class as "a segmentation fault might occur in a worker process"), correlated with the preceding unauthenticated requests in the web access log for the affected locations. That the log line reads "exited on signal 11" is general nginx behaviour and is NOT stated by the cited sources. Post-patch compromise check: a worker-memory compromise is not undone by patching (CCB quote above); look for unexpected child processes of nginx workers and for changes to web roots / config written by the nginx user (technique reasoning, not source-stated).
+      Triage lookalike (not source-stated, follows from mechanism): worker exits also follow reloads, binary upgrades and OOM kills; the discriminating features are an abnormal-signal exit (SIGSEGV / SIGABRT) from a worker, a burst of them, and a matching affected-configuration pattern; a clean "gracefully shutting down" worker is the benign case.
+      Open question for the main agent: F5 K000162416 / K000162607 / K000162608 could not be read on any transport this run (portal shell); if a later run gets F5's own text, re-check the workaround statements and the Plus R-release fix column.
+  # ---------------------------------------------------------------- ITEM 2 (Task 2)
+  - title: "Roundcube Webmail 1.6.20 and 1.7.5: 20-item security release (IMAP command injection, session object-injection primitive, SSRF-filter bypass, header injections) - no CVE ids, severity statement, PoC or exploitation yet"
+    sources:
+      - { url: "https://roundcube.net/news/2026/10/19/security-updates-1.6.20-and-1.7.5", publisher: "Roundcube Webmail Dev Team (release announcement)", date: "2026-10-19", role: "primary" }
+      - { url: "https://github.com/roundcube/roundcubemail/releases/tag/1.7.5", publisher: "Roundcube (GitHub release notes 1.7.5)", date: "2026-10-19", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1340/", publisher: "CERT-FR (AVI-1340)", date: "2026-10-19", role: "corroborating" }
+    discovery_trace: "first seen at: main-agent hand-over, URL https://roundcube.net/news/2026/10/19/security-updates-1.6.20-and-1.7.5 -> GitHub release notes URL https://github.com/roundcube/roundcubemail/releases/tag/1.7.5 (no CVE ids) -> CERT-FR AVI-1340 URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1340/ -> NVD API keyword search (0 results 2026-10-10..21), ENISA EUVD API search (no 1.7.5 / 1.6.20 records), GitHub security-advisories page for roundcube/roundcubemail (shows none published), NCSC-NL feed (newest NCSC-2026-0438, nothing on Roundcube), BSI WID RSS (250 items 2026-10-16..20, nothing on Roundcube), GitHub repository searches for a PoC (none)"
+    summary: |
+      FACTS. Roundcube published security updates 1.6.20 (LTS) and 1.7.5 on 2026-10-19; the announcement says both "contain fixes for recently reported security vulnerabilities" and "strongly recommend to update all productive installations of Roundcube 1.6.x and 1.7.x". The 20 security items (identical in the announcement and the 1.7.5 release notes, each credited to a named reporter) include: IMAP command injection via CRLF in the _uid parameter of the mail/headers and mail/viewsource actions; IMAP command injection via CRLF in the _flag parameter of mail/mark; an object-injection primitive in rcube_session::unserialize() via "!"-prefixed session keys; an SSRF filter (is_local_url()) bypass via the NAT64 64:ff9b::/96 range; passing potentially unsafe attachment content into ImageMagick on image resize and an ImageMagick resource-limit bypass through the GD fallback; several mail-header injections (Bounce/resend From display-name, References/In-Reply-To/Message-ID/From, forwarded-as-attachment subject, inline-image data-URI media type); remote-content-blocking bypasses (SVG SMIL "by" attribute, CSS escapes in FuncIRI attributes), a CSS scoping bypass via at-rules, a CSRF validation bypass in mark-as-junk, XSS in password-driver error handling, a Modoboa password-driver flaw that could change another account's password, an alias-login IMAP-host qualification bug, deprecated action aliases bypassing disabled_actions, and unsafe use of a login name in the SquirrelMail import file path. The release notes carry no severity or authentication-state statement per item.
+      CVE IDS / SEVERITY: none found now. NVD API keyword search "roundcube" for 2026-10-10..2026-10-21 returns zero records; EUVD search returns no record for 1.6.20 / 1.7.5; the GitHub security-advisories page of roundcube/roundcubemail lists no published advisory ("There aren't any published security advisories"). CERT-FR AVI-1340 (first and last version 2026-10-19) names no CVE and lists the risk classes remote code execution, SSRF, indirect remote code injection (XSS), CSRF and security-policy bypass, affected "versions 1.7.x antérieures à 1.7.5" and "versions antérieures 1.6.20". NCSC-NL (newest advisory NCSC-2026-0438, 2026-10-19) and the BSI WID feed (2026-10-16 to 2026-10-20) carry nothing on Roundcube.
+      PoC / EXPLOITATION: none found (GitHub repository searches for Roundcube plus the issue classes or "1.7.5" / "1.6.20" return no repositories; no exploitation report located).
+      OBSERVED PATTERN (from EUVD publication dates, not a prediction by any source): CVE ids for the two previous releases appeared on EUVD 8-9 days after release (1.6.17 / 1.7.2 released 2026-07-05, CVEs 2026-07-14; 1.6.18 / 1.7.3 released 2026-08-09, CVEs 2026-08-17), so ids for this release are likely to follow within about a week.
+    region_nexus: "global; Roundcube is widely self-hosted by public-sector and academic mail operators in the EU"
+    primary_sector_nexus: "indirect: webmail front ends of cantonal / communal administrations and schools where self-hosted; no sector targeting reported for this release"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Roundcube Webmail"]
+    entity_keys: ["product:roundcube-webmail"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Facts only as asked: a vendor release with 20 security fixes but no CVE ids, no severity or auth-state statement per fix, no PoC and no exploitation yet. The store already tracks Roundcube as an actively exploited edge product in 2026 (registry product:roundcube-webmail; entries 2026-07-09/unk-masstraction-roundcube-edge-exploitation and 2026-05-28/cve-2026-48842-roundcube-webmail-pre-authentication-sql-inje), which raises relevance, but nothing in this release is shown to be pre-auth or exploited. Suggested handling: hold for a re-check when CVE ids publish (likely about a week), or ship as a short awareness entry."
+    evidence:
+      - quote: "We strongly recommend to update all productive installations of Roundcube 1.6.x and 1.7.x with this new versions."
+        attribution: "Roundcube Webmail Dev Team"
+        source_url: "https://roundcube.net/news/2026/10/19/security-updates-1.6.20-and-1.7.5"
+      - quote: "Fix IMAP command injection via CRLF in `_flag` parameter of mail/mark action"
+        attribution: "Roundcube Webmail Dev Team"
+        source_url: "https://roundcube.net/news/2026/10/19/security-updates-1.6.20-and-1.7.5"
+      - quote: "Fix IMAP command injection via CRLF in `_uid` parameter of mail/headers and mail/viewsource action"
+        attribution: "Roundcube (GitHub release notes 1.7.5)"
+        source_url: "https://github.com/roundcube/roundcubemail/releases/tag/1.7.5"
+      - quote: "Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance, une falsification de requêtes côté serveur (SSRF) et une injection de code indirecte à distance (XSS)."
+        attribution: "CERT-FR (AVI-1340)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1340/"
+    extended_notes: |
+      The first-attempt context said no Roundcube entry exists in the last 14 days; older Roundcube entries exist in the store (2026-05-28 CVE-2026-48842 pre-auth SQL injection; 2026-07-09 UNK_MassTraction Roundcube edge exploitation; TA458 / Operation RoundPress entries). Exposure: Roundcube 1.7.x before 1.7.5 and 1.6.x before 1.6.20 (CERT-FR; the vendor states no narrower range); the running version is shown in the Roundcube UI "About" dialog and the composer / CHANGELOG files (general Roundcube behaviour, not stated by the cited sources). The reporter-credit pattern (several credits to one four-person group for IMAP / header / CSRF / XSS fixes) says nothing about severity; per-item exploitability is unknown until the advisories publish.
+  # ---------------------------------------------------------------- ITEM 3 (Task 3, delta on a covered entry)
+  - title: "ConnectWise Cloud Backup (SkyKick) vendor-credential abuse: Huntress living post now adds the 10/17 scale figures (almost 1,000 tenants touched, over 300 successful sign-ins), a failed targeted wave on 16 policy / national-security tenants, and a second tenant with scripted post-compromise activity (update 10/19 1:30 PM ET)"
+    sources:
+      - { url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access", publisher: "Huntress", date: "2026-10-19", role: "primary" }
+      - { url: "https://www.todyl.com/blog/investigation-unauthorized-access-through-the-connectwise-cloud-backup-microsoft-365-app", publisher: "Todyl", date: "2026-10-15", role: "corroborating" }
+    discovery_trace: "first seen at: main-agent hand-over (Huntress living post), URL https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access, re-read with extract -> pivot: Todyl running post, URL https://www.todyl.com/blog/investigation-unauthorized-access-through-the-connectwise-cloud-backup-microsoft-365-app (update log not captured by the extractor) -> ConnectWise trust advisories page https://www.connectwise.com/company/trust/advisories via WebFetch: HTTP 403 (not read)"
+    summary: |
+      Current Huntress text (extract, 2026-10-20 about 03:48 UTC). LATEST UPDATE STAMP: "Update: 10/19/26 @ 1:30 PM ET" (unchanged since the previous read; nothing newer). TENANT COUNTS the post states: (1) the Background section still says "As of 19:00 UTC on October 16, Huntress has confirmed unauthorized sign-ins in 162 tenants" - this figure was not revised; (2) the 10/17 5:15 PM ET update says Huntress "has identified almost 1,000 Entra tenants with sign-in activity from the IP address associated with the unauthorized activity" and "Over 300 of those succeeded", noting that in tenants without the relevant service principal the attempts failed. The post does not reconcile 162 with "over 300"; the 162 is the confirmed-in-Huntress-fleet figure as of 10/16, the over-300 comes from the later 10/17 review.
+      NEW since the entry's state (the entry carries 162 and the directory-role / secret-planting facts): (a) 10/17 update: a second, targeted wave on 2026-10-15 against 16 Huntress-protected tenants "in the policy, national security, trade, and critical mineral sectors" that failed because most of them do not use ConnectWise products (no service principal present); a first sweep targeted Graph tokens from the SkyKick app 09:25-12:35 UTC, a second manual-looking sweep 13:54-14:20 UTC targeted Exchange Online, SharePoint Online, Teams, Azure Resource Manager, Entra and the Office 365 Management APIs. (b) Huntress states ConnectWise had communicated at 5:15 PM ET on 10/17 that it disabled the relevant apps; at 10:30 AM ET it had observed three ConnectWise Cloud Management apps (Exchange Online, MS Teams, SharePoint Online) abused and not yet disabled. (c) 10/19 1:30 PM ET update: a second tenant with post-compromise activity; in both reviewed tenants the activity occurred within two minutes of each other around 03:45 UTC on 2026-10-15 and followed an identical scripted procedure - "the application granted itself Global Administrator, then planted a new secret on a small number of other applications in the tenant to keep a foothold" - with the choice of applications to backdoor apparently random; no mailbox or file manipulation or user / policy changes seen in those two tenants, but Graph directory reads leave no audit record; last confirmed successful sign-in with the credential at 08:44 UTC on 2026-10-15; across more than 10,000 ConnectWise-app tenants where Huntress sees logs, only the actor's hosting address and Microsoft-internal ranges produced application sign-in activity, and other addresses in circulation produced password spray / failed logins that Huntress does not believe are related. (d) Huntress also reports external tips of similar, apparently hands-on activity in other tenants, explicitly not independently verified.
+      CONNECTWISE PAGE: https://www.connectwise.com/company/trust/advisories returned HTTP 403 through WebFetch again this run, so no ConnectWise text was read. Huntress's own IOC table attributes further ConnectWise indicators to ConnectWise's update of 10/18 18:45 UTC (earlier than the 2026-10-19 01:15 UTC update the store already cites). No ConnectWise update dated after 2026-10-19 01:15 UTC and no restoration time was found in any readable source; Huntress still says "Do not re-enable any ConnectWise applications until ConnectWise confirms all credentials have been reset."
+    region_nexus: "global; MSP-delivered Microsoft 365 backup app consented in customer tenants worldwide, incl. Swiss MSP-served public bodies where deployed"
+    primary_sector_nexus: "indirect: supply-chain via MSP backup tooling; second wave targeted policy / national-security / trade tenants"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1098.003, T1098.001, T1078.004]
+    affected_products: ["ConnectWise Cloud Backup", "ConnectWise Cloud Management", "Microsoft Entra ID"]
+    entity_keys: ["incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10", "product:connectwise-cloud-backup", "product:connectwise-cloud-management", "product:microsoft-entra-id"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-of:2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse
+    evidence:
+      - quote: "As of 19:00 UTC on October 16, Huntress has confirmed unauthorized sign-ins in 162 tenants."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "Huntress has identified almost 1,000 Entra tenants with sign-in activity from the IP address associated with the unauthorized activity"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "Over 300 of those succeeded."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "unsuccessfully targeting a narrow scope of 16 Huntress-protected tenants. These tenants are in the policy, national security, trade, and critical mineral sectors."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "Since our last update, Huntress has identified a second tenant with post-compromise activity."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "the application granted itself Global Administrator, then planted a new secret on a small number of other applications in the tenant to keep a foothold."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "Update: 10/19/26 @ 1:30 PM ET"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+      - quote: "Do not re-enable any ConnectWise applications until ConnectWise confirms all credentials have been reset."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/vendor-credential-enables-unauthorized-access"
+    extended_notes: |
+      Delta only; the entry's mechanics, exposure and detection text stand. Suggested update fields: summary / headline scale wording (162 confirmed as of 10/16; almost 1,000 tenants touched and over 300 successful per Huntress 10/17), the failed targeted wave on policy / national-security tenants (relevant to a Swiss public-sector reader: the actor probed gov-adjacent tenants even where no ConnectWise app was installed), and the second post-compromise tenant (the global-admin self-grant plus secret planting is a scripted, indiscriminate sequence within about two minutes around 03:45 UTC on 2026-10-15, which supports a service-principal-initiated "Add member to role" followed by "Add service principal credentials" audit pair as a hunt hook; already in the entry's Detection line). ConnectWise page unreadable: restoration status unchanged as far as any readable source shows.
+cve_table:
+  - { cve: "CVE-2026-15176", product: "NGINX Open Source / NGINX Plus (ngx_http_core_module, alias + rewrite + $request_filename)", cvss: "9.2 (CVSS 4.0, F5 CNA; CVSS 3.1 8.1; nginx.org severity medium)", epss: 0.0052, kev: false, exploited: "none reported; no public PoC found", affected: "nginx OSS 0.1.29-1.31.6 (nginx.org); NGINX Plus R33-R36, 37.0.0-37.0.5, 37.1.0 (EUVD)", fixed: "nginx OSS 1.30.6 (stable) / 1.31.7 (mainline); NGINX Plus 37.0.5.1 / 37.1.0.1; no fixed release named for branches older than 1.30 or for Plus R33-R36", type: "heap buffer overflow (CWE-122); worker restart / DoS, code execution only where ASLR is disabled or bypassed", vector: "network, crafted HTTP request; AC:H, configuration-dependent (opt-in)", auth: "pre-auth", source: "https://nginx.org/en/security_advisories.html" }
+  - { cve: "CVE-2026-93479", product: "NGINX Open Source / NGINX Plus (string-expression evaluation; regex map captures in root / log_format; non-cacheable variable path)", cvss: "9.2 (CVSS 4.0, F5 CNA; CVSS 3.1 8.1; nginx.org severity medium)", epss: 0.0055, kev: false, exploited: "none reported; no public PoC found", affected: "nginx OSS 1.30.0-1.30.5 and 1.31.2-1.31.6 (nginx.org, CCB); NGINX Plus R33-R36, 37.0.0-37.0.5, 37.1.0", fixed: "nginx OSS 1.30.6 / 1.31.7; NGINX Plus 37.0.5.1 / 37.1.0.1; builds carrying July's CVE-2026-42533 fix (1.30.4/1.30.5, 1.31.3-1.31.6) remain vulnerable", type: "heap buffer overflow (CWE-122); worker restart / DoS, code execution only where ASLR is disabled or bypassed", vector: "network, crafted HTTP request; AC:H, configuration-dependent (opt-in); http and stream modules", auth: "pre-auth", source: "https://nginx.org/en/CHANGES-1.30" }
+  - { cve: "CVE-2026-97205", product: "NGINX Open Source / NGINX Plus (AIO + SSI include virtual)", cvss: "9.2 (CVSS 4.0, F5 CNA; CVSS 3.1 8.1; nginx.org severity medium)", epss: 0.0048, kev: false, exploited: "none reported; no public PoC found (a distro patch-status tracker exists on GitHub, not an exploit)", affected: "nginx OSS 0.8.11-1.31.6 (nginx.org); NGINX Plus R33-R36, 37.0.0-37.0.5, 37.1.0", fixed: "nginx OSS 1.30.6 / 1.31.7; NGINX Plus 37.0.5.1 / 37.1.0.1", type: "use-after-free (CWE-416); memory corruption / worker crash, code execution only where ASLR is disabled or bypassed", vector: "network, crafted HTTP request; AC:H; requires aio on|threads (default off) AND ssi on (default off)", auth: "pre-auth", source: "https://nginx.org/en/CHANGES-1.30" }
+# Disposition lines for every other CVE of F5's 2026-10-14 notification listed in CERT-FR AVI-1341 (8 of 11). Scores: F5 CNA via EUVD / NVD API. None is in CISA KEV or has a PoC or exploitation report found (EPSS per EUVD page percent: 15176 0.52, 93479 0.55, 97205 0.44, 97629 0.18, 95101 0.25, 101019 0.20, 101025 0.32, 104939 0.36, 91184 0.48, 94197 0.39, 96615 0.26).
+cve_dispositions:
+  - { cve: "CVE-2026-97629", product: "NGINX OSS / Plus (TLS session ticket key rotation)", cvss: "8.3 (4.0, AC:L/AT:P) / 6.5 (3.1, AC:H)", disposition: "fails the pre-auth >= 9.0 bar (8.3); co-fixed by the same upgrade. Mechanism: with ssl_session_cache shared:name:size and no explicit ssl_session_ticket_key file, one rotated ticket key was left uninitialised, so an unauthenticated remote client can forge a session non-deterministically and bypass client-certificate verification (nginx.org vulnerable 1.23.2-1.31.6; nginx documentation default is ssl_session_cache none, so shared cache is opt-in). Relevant to mTLS deployments; mention inside the trio entry as a same-release fix rather than a separate item." }
+  - { cve: "CVE-2026-95101", product: "NGINX OSS / Plus (HTTP/3 ngx_http_v3_module)", cvss: "6.9 (4.0) / 5.3 (3.1)", disposition: "fails the bar (6.9); an unknown HTTP/3 frame part treated as request body can bypass client_max_body_size or inject data into a proxied request when proxy_request_buffering on (F5 names it as the condition; kimmo.cloud tracker says it is the default); nginx.org vulnerable 1.25.0-1.31.6, opt-in via listen ... quic." }
+  - { cve: "CVE-2026-94197", product: "NGINX Ingress Controller (ExternalAuth policy / external authentication)", cvss: "8.7 (4.0) / 7.5 (3.1)", disposition: "pre-auth network but below 9.0; unsanitised client-supplied X-Forwarded-Prefix / -URI / X-Original-URI / -Method headers reach the auth_request subrequest, letting an unauthenticated client spoof request attributes the external auth provider evaluates; fixed NIC 5.7.0 (EUVD 5.5.0 <5.7.0). Only matters where ExternalAuth is used; Kubernetes ingress operators should still read it." }
+  - { cve: "CVE-2026-104939", product: "NGINX Ingress Controller (externalAuth policy)", cvss: "8.7 (4.0) / 7.5 (3.1)", disposition: "pre-auth network but below 9.0; NIC may mishandle the HTTP response from an OAuth IdP and let an attacker reach protected paths before external authentication completes; fixed NIC 5.7.0 (EUVD 5.6.0 <5.7.0)." }
+  - { cve: "CVE-2026-91184", product: "NGINX Gateway Fabric (AuthenticationFilter realm injection)", cvss: "8.7 (4.0) / 8.8 (3.1)", disposition: "fails: authenticated (namespaced PR:L), control-plane issue; a crafted spec.basic.realm / spec.jwt.realm closes the quoted auth_basic directive and injects arbitrary NGINX directives into the shared data-plane config; fixed NGF 2.8.0 (EUVD 2.4.0 <2.8.0). Multi-tenant clusters only." }
+  - { cve: "CVE-2026-96615", product: "NGINX Gateway Fabric (NGINX Agent gRPC)", cvss: "7.1 (4.0) / 6.5 (3.1)", disposition: "fails: authenticated namespaced attacker, control plane; impersonating the Agent gRPC connection to read Gateway TLS private keys of other namespaces; fixed NGF 2.8.0." }
+  - { cve: "CVE-2026-101019", product: "NGINX JavaScript (njs XML module)", cvss: "8.3 (4.0) / 6.5 (3.1)", disposition: "fails: needs njs XML canonicalisation consumers (nginx-saml with the built-in njs backend confirmed) and a genuinely signed document; signature-validation skip; fixed njs 1.0.2 (EUVD 0.7.10 <1.0.2). nginx without js_import never runs njs." }
+  - { cve: "CVE-2026-101025", product: "NGINX JavaScript (njs xml.parse leak)", cvss: "6.9 (4.0) / 5.3 (3.1)", disposition: "fails: availability only (unbounded memory growth from malformed XML in long-lived workers); fixed njs 1.0.2." }
+coverage_gaps:
+  - { source_id: "f5-security-advisories (my.f5.com K-articles K000162416 / K000162607 / K000162608 / K000162606 / K000162613)", reason: "Salesforce-community JavaScript portal shell on extract, WebFetch and jina (first attempt and this run); F5 text read via CNA record republished by EUVD / Debian / NVD API, nginx.org advisories and CHANGES, CCB, CERT-FR, Cyber Centre and a secondary relay (Daily CyberSecurity). Open: F5's own fixed-version column for NGINX Plus R33-R36 and F5's own exploit-status statement." }
+  - { source_id: "connectwise-trust-advisories (https://www.connectwise.com/company/trust/advisories)", reason: "WebFetch with the outbound-links template returned HTTP 403 again; no ConnectWise text read this run, so no restoration time and no update newer than 2026-10-19 01:15 UTC could be established first-hand." }
+  - { source_id: "github-nginx-advisories", reason: "api.github.com/repos/nginx/nginx/security-advisories returns an empty list and GHSA-cvv4-j4mx-w8q5 (the alias on EUVD for CVE-2026-15176) returns 404 on github.com/nginx/nginx/security/advisories; the GHSA is not public or not served; not a useful source for this release." }
+  - { source_id: "nginx-announce-mailman", reason: "https://mailman.nginx.org/pipermail/nginx-announce/2026/ returns 404 (no 2026 archive page); nginx.org CHANGES and security_advisories were the working vendor channel." }
+candidate_sources: []
+source_ledger:
+  - { id: "ccb-belgium", tier: standard, attempted: true, transport: "extract (listing via url)", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "NGINX warning 2026-10-19 read in full" }
+  - { id: "cert-fr", tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "AVI-1341 (F5 / NGINX, 11 CVEs) and AVI-1340 (Roundcube) read; both first version 2026-10-19" }
+  - { id: "enisa-euvd", tier: essential, attempted: true, transport: "bridge:url (API search) + extract (pages)", horizon_hours: 26, in_horizon_items: 11, returned: 3, note: "11 CVEs checked via API; pages for the 3 headline CVEs read for KEV / EU KEV / EPSS / honeypot status" }
+  - { id: "cisa-kev", tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "none of the 11 F5 / NGINX CVEs in KEV; catalogue release stamp 2026-10-16T17:15Z" }
+  - { id: "nginx-org", tier: standard, attempted: true, transport: "extract", horizon_hours: 150, in_horizon_items: 1, returned: 1, note: "security_advisories page and CHANGES / CHANGES-1.30 read; vendor channel for Task 1" }
+  - { id: "bsi-rss", tier: essential, attempted: true, transport: "bridge:bsi-rss", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "250 items 2026-10-16..20, no F5 / NGINX / Roundcube / ConnectWise item" }
+  - { id: "ncsc-nl", tier: essential, attempted: true, transport: "bridge:ncsc-nl recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0438 (Drupal); nothing on F5 / NGINX / Roundcube in the newest 40" }
+  - { id: "roundcube-net", tier: standard, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "release 1.6.20 / 1.7.5 + GitHub release notes read" }
+  - { id: "huntress", tier: standard, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "living post re-read; latest update stamp 10/19/26 1:30 PM ET" }
+  - { id: "todyl", tier: standard, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "running post read; update log not captured by the extractor; nothing newer extracted" }
+  - { id: "connectwise-trust-advisories", tier: essential, attempted: true, transport: "WebFetch", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "HTTP 403 (one attempt, as instructed)" }
+bridge_uses:
+  - { id: "nvd-api", method: "bridge:url", outcome: "ok (verification only, never cited)" }
+  - { id: "enisa-euvd", method: "bridge:url + extract", outcome: "ok" }
+  - { id: "first-epss-api", method: "bridge:url (jina fallback)", outcome: "ok" }
+  - { id: "github-api", method: "bridge:url (jina fallback)", outcome: "ok, empty advisory lists; repository searches return no PoC" }

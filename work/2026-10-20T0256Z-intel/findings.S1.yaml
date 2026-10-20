@@ -1,0 +1,365 @@
+# work/2026-10-20T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-20T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-20T02:58:18Z
+ended_at: 2026-10-20T03:28:42Z
+duration_seconds: 1824
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 14
+items:
+  # ------------------------------------------------------------------ 1 (NEW)
+  - title: "CVE-2026-110936, Siemens Software Center: a ClickFix campaign ships its own signed copy of the vulnerable version and side-loads its DLLs; Siemens confirms exploitation (CVSS 4.0 8.4)"
+    sources:
+      - { url: "https://productcert.siemens.com/news/2026/10/19/active-exploitation-of-cve-2026-110936-in-siemens-software-center/", publisher: "Siemens ProductCERT", date: "2026-10-19", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-580366.html", publisher: "Siemens ProductCERT (SSA-580366 V1.2)", date: "2026-10-19", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-102072", publisher: "ENISA EUVD (record EUVD-2026-102072, exploitedSince 2026-10-19; derived from Siemens, not independent)", date: "2026-10-19", role: "corroborating" }
+      - { url: "https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/", publisher: "Forescout Vedere Labs (ROMULUS platform context; does not mention Siemens)", date: "2026-10-15", role: "context" }
+      - { url: "https://www.huntress.com/blog/chatgpt-custom-gpts-clickfix-rat", publisher: "Huntress (same signed-host DLL-sideload pattern; Huntress researcher credited by Siemens for the CVE)", date: "2026-09-28", role: "context" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-10&toDate=2026-10-20&exploited=true&page=0&size=100 (EUVD-2026-102072 carried exploitedSince 2026-10-19, not in prior_coverage.json) -> pivot: Siemens SSA-580366, URL https://cert-portal.siemens.com/productcert/html/ssa-580366.html (V1.2 2026-10-19 'Added reference to blog post about active exploitation') -> primary: Siemens ProductCERT news post, URL https://productcert.siemens.com/news/2026/10/19/active-exploitation-of-cve-2026-110936-in-siemens-software-center/ -> context: Forescout ROMULUS write-up, URL https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/ and Huntress, URL https://www.huntress.com/blog/chatgpt-custom-gpts-clickfix-rat"
+    summary: |
+      FACTS (Siemens ProductCERT, 2026-10-19). Siemens states it validated active exploitation of CVE-2026-110936, an uncontrolled search path (CWE-427)
+      DLL side-loading flaw in Siemens Software Center, all versions before V4.0.9.8. Advisory SSA-580366 appeared on 2026-10-15 and was revised to V1.2 on
+      2026-10-19 to reference the exploitation notice; Siemens scores the flaw CVSS v4.0 8.4 and v3.1 6.7 (local vector, high privileges required) and says
+      existing installations update to V4.0.9.8 on their next start. Siemens says the attackers did not rely on a copy already installed on the victim: they
+      used a genuine, validly signed copy of Software Center and placed their own files next to it, and version 3.5.8.7 (the latest at the time) loaded helper
+      files from its own folder without checking them. The Siemens binary was not modified, and Siemens says no Siemens system, product or update channel was
+      breached. Siemens' warning signs are behavioural: Software Center in the start-up apps or Task Scheduler of a PC that never had it, the signed executable
+      running from a user-profile Programs folder and started by msiexec, a malware-created folder under that Programs directory and unexpected data/DLL files
+      beside the executable; its advice is to detect on folder and behaviour, not on the file fingerprint, because the file itself is genuine.
+      CLAIMS AND CONTEXT. Siemens labels the activity the "Romulus multi-platform ClickFix campaign". Forescout's Vedere Labs published on 2026-10-15 a write-up
+      of ROMULUS, a shared multi-payload ClickFix delivery panel found on six servers whose operator is unknown, and says one of its delivery chains used the same
+      Stardock DeElevation sideloading package that Huntress reported on 2026-09-28 (Huntress documents a signed host executable launched by msiexec from a
+      user-profile Programs folder with unsigned DLLs beside it, and warns to expect "more costumes"). Forescout does not mention Siemens software, so the link
+      between Siemens' label and Forescout's platform rests on the shared name. ENISA's EUVD lists the flaw as exploited since 2026-10-19 (the date of Siemens'
+      notice); it is not in CISA KEV (catalogue 2026.10.16) and Siemens gives no first-use date or victim geography.
+      ANALYST READING (not a source statement). Because the attacker brings the vulnerable signed binary, patching installed copies to V4.0.9.8 does not stop
+      the technique; the levers are the ClickFix paste step at the start of the chain and detection of a signed vendor binary executing from a user-writable
+      path with unsigned DLLs beside it.
+    region_nexus: "global; Siemens names no geography. Siemens Software Center is engineering and installation tooling, so engineering workstations in building-technology and infrastructure units are the plausible Swiss public-sector exposure (analyst context, not sourced)"
+    primary_sector_nexus: "indirect: any Windows user reached by a ClickFix lure; engineering staff who use or are expected to use Siemens software are the lure-relevant population"
+    sector: "technology / industrial engineering software"
+    cves: [CVE-2026-110936]
+    techniques: [T1204.004, T1574.002, T1218.007, T1547.001, T1053.005]
+    affected_products: ["Siemens Software Center"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:romulus-clickfix-delivery-platform", type: campaign, name: "ROMULUS ClickFix delivery platform", aliases: ["ROMULUS", "Romulus multi-platform ClickFix campaign"], summary: "Shared multi-payload ClickFix delivery panel that Forescout Vedere Labs found on six servers (operator unknown; delivery routes include a Stardock DeElevation sideloading package and LegionLoader), published 2026-10-15; Siemens ProductCERT labels the Siemens Software Center abuse of 2026-10-19 the Romulus multi-platform ClickFix campaign." }
+      - { key: "product:siemens-software-center", type: product, name: "Siemens Software Center", aliases: ["SSC"], summary: "Siemens client for downloading, installing, activating and updating Siemens software; CVE-2026-110936 (DLL side-loading, fixed in V4.0.9.8) was exploited by a ClickFix campaign according to Siemens ProductCERT (2026-10-19)." }
+    relation_suggestions:
+      - { subject: "campaign:romulus-clickfix-delivery-platform", object: "product:siemens-software-center", basis: "Siemens ProductCERT: attackers in the 'Romulus multi-platform ClickFix campaign' used a genuine signed copy of Siemens Software Center to side-load their own DLLs (Siemens, 2026-10-19); suggested type exploits" }
+      - { subject: "campaign:romulus-clickfix-delivery-platform", object: "campaign:chatgpt-custom-gpt-clickfix-rat-2026-09", basis: "Forescout: the same Stardock DeElevation sideloading package that Huntress reported was observed on another server running ROMULUS (Forescout, 2026-10-15); suggested type overlaps-with" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The attackers used a genuine copy of Siemens Software Center with a valid signature and placed their own files next to it."
+        attribution: "Siemens ProductCERT"
+        source_url: "https://productcert.siemens.com/news/2026/10/19/active-exploitation-of-cve-2026-110936-in-siemens-software-center/"
+      - quote: "No Siemens system, product or update channel was breached to our knowledge."
+        attribution: "Siemens ProductCERT"
+        source_url: "https://productcert.siemens.com/news/2026/10/19/active-exploitation-of-cve-2026-110936-in-siemens-software-center/"
+      - quote: "Existing installations update automatically the next time they start."
+        attribution: "Siemens ProductCERT"
+        source_url: "https://productcert.siemens.com/news/2026/10/19/active-exploitation-of-cve-2026-110936-in-siemens-software-center/"
+      - quote: "Added reference to blog post about active exploitation of the vulnerability"
+        attribution: "Siemens ProductCERT (SSA-580366 V1.2)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-580366.html"
+      - quote: "The same Stardock DeElevation sideloading package reported by Huntress was observed on another server running ROMULUS."
+        attribution: "Forescout Vedere Labs"
+        source_url: "https://www.forescout.com/blog/romulus-analysis-of-a-new-multi-payload-clickfix-delivery-platform/"
+    extended_notes: |
+      Suggested handling: new `vulnerability` entry, priority notable (vendor-confirmed exploitation, no constituency victim, no KEV; the exploited object is an attacker-shipped
+      copy, so there is no inventory "patch now" action beyond updating Software Center). Credibility: single first-party source for the exploitation of Siemens software specifically;
+      the delivery pattern (ClickFix -> PowerShell -> silent msiexec install of a trojanized MSI -> signed host + unsigned DLL from the user-profile Programs folder -> HKCU Run and
+      scheduled-task persistence) is independently documented by Huntress for Canon and Stardock hosts and by Forescout for ROMULUS. Siemens credits Huntress (Jose Oregon) with
+      reporting the CVE; Huntress' own blog listing carries no Siemens post as of 2026-10-20 (WebFetch of https://www.huntress.com/blog), and web search found no independent
+      coverage yet (index lag). Siemens' own attribution field is only a campaign label, not an actor.
+      Detection concepts (telemetry class first): process-creation events where msiexec.exe (silent install from a user temp path) is followed by a vendor-signed executable running from a
+      user-profile Programs folder on a host that never had the vendor product; image-load events (for example Sysmon EID 7) showing unsigned DLLs loaded by that signed host from a
+      user-writable path; autorun-key or scheduled-task creation naming a vendor product on hosts without it; at the front of the chain, PowerShell or a shell started from the Run dialog
+      or explorer. Hardening: AppLocker or WDAC rules that combine publisher and path (signed vendor binaries may run only from their allow-listed install path), policy removal of the Run
+      dialog where the role does not need it, PowerShell constrained language / logging, and ClickFix user awareness.
+      Triage discriminator (from Siemens' wording): a real Software Center install versus a copy sitting in the user-profile Programs folder, started by msiexec, with unsigned files beside it
+      or start-up entries on a PC that never had the product.
+  # ------------------------------------------------------------------ 2 (NEW)
+  - title: "CVE-2026-107186 / CVE-2026-107187 / CVE-2026-107188, Eptura Archibus: an unauthenticated DWR call chain runs workflow rules as the core user, reads any database table and writes an executable JSPX file (CVSS 3.1 8.6 / 8.5 / 9.6)"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/", publisher: "Rapid7 (discoverer and CNA)", date: "2026-10-19", role: "primary" }
+      - { url: "https://knowledge.eptura.com/Archibus/Whats_New_for_Archibus/Revision_History_Overview/Revision_History_for_Archibus_V.2025.02", publisher: "Eptura (Archibus V.2025.02 revision history)", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-104461", publisher: "ENISA EUVD (record for CVE-2026-107188; mirrors the Rapid7 CNA record)", date: "2026-10-19", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-19&toDate=2026-10-20&fromScore=8.5&toScore=10&page=0&size=100 (EUVD-2026-104458/-104459/-104461, assigner rapid7) -> primary: Rapid7 disclosure, URL https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/ (also seen in Rapid7's blog RSS fetched with url --direct https://www.rapid7.com/blog/rss/) -> corroborating: Eptura revision history, URL https://knowledge.eptura.com/Archibus/Whats_New_for_Archibus/Revision_History_Overview/Revision_History_for_Archibus_V.2025.02; CVE records read via https://cveawg.mitre.org/api/cve/CVE-2026-107186 (state PUBLISHED 2026-10-19, affected < 2025.02)"
+    summary: |
+      FACTS (Rapid7, 2026-10-19). Rapid7 disclosed three flaws in Eptura Archibus Web Central, the building, asset, maintenance and real-estate management platform, after a
+      coordinated-disclosure process that ended with Eptura asking for and receiving a one-week extension. (1) CVE-2026-107186, CVSS 3.1 8.6: the Java DWR API accepts several batched
+      calls on one thread; the pre-authentication-whitelisted SecurityService.isPasswordUppercase call sets the privileged core-user session on the thread-local context, and a second
+      call in the same request to workflow.runWorkflowRule then runs under that session, so any workflow rule executes without credentials. (2) CVE-2026-107187, 8.5: the
+      AbCommonResources-getDataRecords workflow reads any database table, usernames and passwords included. (3) CVE-2026-107188, 9.6: the AbCommonResources-writeHTMLtoFile workflow writes
+      attacker-chosen content to a browsable location with an attacker-chosen extension, so an uploaded JSPX file executes as NT AUTHORITY\Local Service. Chained, they give anyone with
+      HTTP access to the server unauthenticated database read and remote code execution; the post includes the DWR request structure (endpoint under /archibus/dwr/call/plaincall/ with a
+      callCount=2 batch) and Rapid7 states the issues were found and exploited on a Vector Command customer's Archibus server on 2026-05-25 during its continuous red-team service.
+      AFFECTED AND FIXED. The CVE records (assigner Rapid7) list all versions before 2025.02 as affected. Rapid7 recommends upgrading to 2025.02 or later, where the vulnerable DWR method
+      moved to a REST API; Eptura's 2025.02 revision history lists "Replace many DWR endpoints with REST". Per Rapid7's timeline Eptura told it on 2026-10-09 that a fix was in
+      development for version 2025.01, and on 2026-07-30 that the version Rapid7 first referenced is no longer supported; no Eptura security advisory was found. No in-the-wild exploitation
+      is reported and none of the three CVEs is in CISA KEV; EPSS is not yet published.
+    region_nexus: "global; Rapid7 names no geography. Archibus is used by public and private owners of large building and real-estate portfolios, which includes public-sector property, university and hospital estates (Rapid7 cites over 16,000 companies using it in 2023)"
+    primary_sector_nexus: "indirect: facility, asset and real-estate management platform that public-sector property and building-operations units may run on-premises"
+    sector: "facility and real-estate management software"
+    cves: [CVE-2026-107186, CVE-2026-107187, CVE-2026-107188]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Eptura Archibus"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:eptura-archibus", type: product, name: "Eptura Archibus", aliases: ["Archibus", "Archibus Web Central"], summary: "Eptura's building, asset, maintenance and real-estate management platform; Rapid7 disclosed an unauthenticated DWR authentication bypass, database read and JSPX file-upload code execution on 2026-10-19 (CVE-2026-107186/-107187/-107188, fixed by moving to REST in version 2025.02)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A malicious actor with network access to the server via HTTP can read secrets and passwords out of the database."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/"
+      - quote: "Users should update Archibus to version 2025.02 or higher."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/"
+      - quote: "Eptura replies to clarify impacted versions and state a fix is in development for version 2025.01."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/"
+      - quote: "Replace many DWR endpoints with REST"
+        attribution: "Eptura"
+        source_url: "https://knowledge.eptura.com/Archibus/Whats_New_for_Archibus/Revision_History_Overview/Revision_History_for_Archibus_V.2025.02"
+    extended_notes: |
+      Suggested handling: new `vulnerability` entry, priority notable (pre-authentication chain to code execution in an internet-facing web application with request-level detail published,
+      vendor fix = version upgrade; no exploitation reported; modest installed base in the constituency is unverified). Marked confidence MEDIUM because the vendor has published no
+      advisory that was found and the claims rest on the discoverer, which is also the CNA; the CVE records and Eptura's revision history agree on "before 2025.02". One reducing fact for
+      exposure: Archibus Web Central is normally an internal application, so internet reachability is the first check; Rapid7's own exploitation was on a customer server it was authorised to test.
+      Detection concepts: web or reverse-proxy logs for POSTs to the DWR plaincall endpoint carrying batched calls (callCount greater than 1) that name SecurityService.isPasswordUppercase
+      followed by workflow or runWorkflowRule methods (needs request-body logging, i.e. a WAF or proxy that records POST bodies); file-system telemetry for new .jspx/.jsp files in browsable
+      Archibus web directories; process-creation telemetry for the Tomcat/Archibus service account (NT AUTHORITY\Local Service) spawning cmd.exe or powershell.exe. Post-patch check: unknown
+      whether the flaws were used earlier, so review the web root for unexpected JSPX files and rotate database credentials that the read primitive could have returned.
+  # ------------------------------------------------------------------ 3 (UPDATE-OF Citrix)
+  - title: "Rapid7 incident analysis: NetScaler intrusions chain CVE-2026-88771 with the SAML crash CVE-2026-88779, using the call-home crash handler to run the payload as root after reboot"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/", publisher: "Rapid7", date: "2026-10-19", role: "primary" }
+      - { url: "https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html", publisher: "Cloud Software Group / Citrix (bulletin CTX697096)", date: "2026-09-27", role: "corroborating" }
+    discovery_trace: "first seen at: Rapid7 blog RSS (not a slice record; found while sweeping Rapid7 for watch-list vendors), fetched with python3 tools/fetch_source.py url --direct https://www.rapid7.com/blog/rss/ -> primary: Rapid7 analysis, URL https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/ -> corroborating: Citrix bulletin CTX697096, URL https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html (states exploits of CVE-2026-88771 and CVE-2026-88772 on unmitigated deployments have been observed); CISA KEV (python3 tools/fetch_source.py cisa-kev, catalogue 2026.10.16) lists CVE-2026-88779 added 2026-10-04"
+    summary: |
+      FACTS (Rapid7, 2026-10-19). Rapid7 analysts investigated an early-October 2026 compromise of a Citrix NetScaler ADC on an affected 14.1 build (build number not given). Its logs show
+      CVE-2026-88771, the pre-authentication log-poisoning/RCE flaw, chained with CVE-2026-88779, the separate SAML-parsing crash: attacker-controlled text mimicking a Pitboss crash
+      message was inserted into an authentication username, repeated nsaaad crashes and a Pitboss reboot followed, and after the reboot the NetScaler call-home crash handler processed the
+      retained text and executed the payload as root, which lets the attacker avoid waiting for the handler's roughly 24-hour cycle. Rapid7 says the repeated crash-and-reboot cycle was
+      reused over several days to refresh persistence. After first root execution the operator installed cookie-authenticated PHP web shells behind CSS-looking Apache aliases (answering
+      with HTTP 404 bodies), set /bin/sh to mode 6555 so the unprivileged web process gets effective root, and kept access through cron, rc.netscaler, watchdog loops, an outbound
+      reverse agent polling every 15 seconds and an HTTP-fronted TCP proxy; its logic synchronises implant files to the HA peer and forces failover so the implanted node stays active.
+      A Go reconnaissance tool mapped routes, DNS, LDAP/Active Directory, management services and VMware vCenter from the appliance, and the NetScaler configuration (current and historical),
+      HTTP configuration, diagnostics and system backups were staged and exfiltrated, one archive through the web root with an HTTP 200 response of matching size. Rapid7 notes the archive
+      can hold encrypted credentials, LDAP/RADIUS bind information, SSL private keys and key-encryption material, and that the activity overlaps public WHIPSHOT/SLAPSHOT reporting; it
+      names no actor.
+      ANALYST READING. This is the first public incident-response case in the store showing the DoS-class flaw CVE-2026-88779 used as the crash trigger of a root-execution chain, so the
+      "denial of service only" reading of that flaw is not safe on appliances that also carry the unpatched log-poisoning flaw; and a patched appliance that was reached still needs the secrets
+      above rotated, since the exfiltrated configuration outlives the patch (rotation is the logical consequence of Rapid7's list, not a Rapid7 instruction).
+    region_nexus: "global; anonymized victim, no geography given. NetScaler ADC/Gateway is widely deployed in Swiss federal, cantonal and communal remote-access and application delivery"
+    primary_sector_nexus: "direct technology match (remote-access and load-balancing appliance class); victim sector not stated"
+    sector: "cross-sector"
+    cves: [CVE-2026-88771, CVE-2026-88779]
+    techniques: [T1190, T1059.004, T1105, T1053.003, T1037.004, T1505.003, T1548.001, T1090.001, T1552.001, T1016, T1018, T1046, T1572, T1041, T1560.001, T1074.001, T1020]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler", "malware:whipshot", "tool:slapshot"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    evidence:
+      - quote: "A two-vulnerability sequence in which the SAML parsing flaw supplies a crash/reboot condition while the log-poisoning flaw supplies attacker-controlled command text."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/"
+      - quote: "After reboot, the NetScaler call-home crash handler processed the retained attacker-controlled text and executed a payload as root."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/"
+      - quote: "The attacker set /bin/sh to mode 6555, allowing an unprivileged web process to obtain effective root privileges."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/"
+      - quote: "NetScaler configuration, historical configurations, HTTP configuration, diagnostics and system backup material were staged for exfiltration."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/"
+    extended_notes: |
+      Suggested handling: `update` changelog record on 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev (priority already critical); the delta also belongs, in one
+      sentence, on 2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited, whose headline treats CVE-2026-88779 as a memory-overflow crash. Fields likely to move: summary,
+      Detection (post-patch compromise check: rotate NetScaler configuration secrets, LDAP/RADIUS bind accounts, SSL keys and the key-encryption material; check both HA nodes since the
+      implant syncs to the peer), Triage, techniques (add the persistence, proxy, discovery and exfiltration classes above), sources (Rapid7 is not cited by either entry today).
+      Behavioural hunt concepts from the source (no IOCs): authentication-log entries carrying shell metacharacters plus Pitboss crash-message text; nsaaad crash loops and Pitboss reboots
+      followed within seconds by new files on the persistent configuration partition; Apache configuration changes that execute non-PHP extensions as PHP or alias CSS-looking URLs to a
+      handler; the setuid/setgid bit on /bin/sh; outbound connections from the appliance to new HTTPS endpoints at fixed 15-second intervals; HA synchronisation commands run outside change
+      windows. Single-lab case for the chain detail; the components are independently corroborated (Citrix bulletin: exploits of CVE-2026-88771 observed; CISA KEV lists CVE-2026-88779).
+      Rapid7's page also links its earlier ETR on the zero-days and mentions overlap with GTIG's WHIPSHOT/SLAPSHOT campaign already carried by the entry.
+  # ------------------------------------------------------------------ 4 (UPDATE-OF Atlassian)
+  - title: "CVE-2026-21589: Atlassian's CVE record is published again; the 2026-10-16 rejection was reversed on 2026-10-19"
+    sources:
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-21589", publisher: "CVE Program (CVE Services API record, assigner Atlassian)", date: "2026-10-19", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-92807", publisher: "ENISA EUVD (record EUVD-2026-92807; human page https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-92807 is the one the entry cites)", date: "2026-10-19", role: "corroborating" }
+      - { url: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html", publisher: "Atlassian (advisory, re-read 2026-10-20: fixed versions unchanged, no note on the record's status)", date: "2026-10-05", role: "corroborating" }
+    discovery_trace: "first seen at: S1 watch-list check of covered CVEs against the CVE Services API (python3 tools/fetch_source.py url --direct https://cveawg.mitre.org/api/cve/CVE-2026-21589, dateUpdated 2026-10-19T18:26:40Z, state PUBLISHED) -> corroborating: ENISA EUVD, URL https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-92807 (dateUpdated Oct 19, 2026, 6:26:40 PM, full description restored, exploitedSince Oct 15, 2026) -> Atlassian advisory, URL https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html (read 2026-10-20: no mention of rejection)"
+    summary: |
+      FACTS. The CVE Services API record for CVE-2026-21589 (Atlassian as CNA, CVSS 4.0 9.3 arbitrary file access in Bitbucket, Confluence, Jira Service Management, Jira Software, Bamboo,
+      Crowd Data Center, Crucible and Fisheye) shows state PUBLISHED with dateUpdated 2026-10-19T18:26:40Z, after the entry recorded its rejection on 2026-10-16. ENISA's EUVD record
+      EUVD-2026-92807 was updated at the same minute and carries the full vulnerability description and fix-version text again instead of the rejection sentence; it still lists exploitation
+      since 2026-10-15, and its GitHub advisory child record was refreshed later the same evening. Atlassian's advisory, read on 2026-10-20, is unchanged: same fixed versions, no note on
+      the record's status. No source read gives a reason for the three-day rejection or for the reversal, and no replacement ID exists.
+      CONSEQUENCE (analyst reading). The ID is valid again and no re-keying to a new ID is needed; scanner plugins, SIEM enrichment rules and tickets keyed on the ID that dropped it between
+      2026-10-16 and 2026-10-19 (for example through a feed that excludes rejected CVEs) should be re-run so no exploited Data Center instance stays reported as closed.
+    region_nexus: "global; Atlassian Data Center is widely deployed in Swiss public-sector software-development and service-desk environments (analyst context)"
+    primary_sector_nexus: "direct technology match, already covered by the entry"
+    sector: "cross-sector"
+    cves: [CVE-2026-21589]
+    techniques: [T1190]
+    affected_products: ["Atlassian Bitbucket Data Center", "Atlassian Confluence Data Center", "Atlassian Jira Service Management Data Center", "Atlassian Jira Software Data Center", "Atlassian Bamboo Data Center", "Atlassian Crowd Data Center", "Atlassian Crucible", "Atlassian Fisheye"]
+    entity_keys: ["product:atlassian-bitbucket-data-center", "product:atlassian-confluence-data-center"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access"
+    evidence:
+      - quote: "\"state\":\"PUBLISHED\""
+        attribution: "CVE Program (CVE Services API)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-21589"
+      - quote: "\"dateUpdated\":\"2026-10-19T18:26:40.891Z\""
+        attribution: "CVE Program (CVE Services API)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-21589"
+      - quote: "This Arbitrary File Access vulnerability allows an unauthenticated attacker to access specific files within the web application root directory in affected versions."
+        attribution: "ENISA EUVD"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-92807"
+    extended_notes: |
+      Suggested handling: `update` changelog record (reader-facing: the earlier sentence "track the flaw by Atlassian's advisory ... until a replacement ID appears" and the headline that says
+      the record "was rejected" need correcting where they stand; fields: headline, summary, body sections on the rejection, evidence, actions if any action tells readers to track by advisory
+      instead of ID). The exploited status, fixed versions and mitigations are unchanged. Provenance caveat: the per-CVE record pages on cve.org / NVD are on the check_run.py bad-source list,
+      so cite the EUVD human page the entry already uses plus the Atlassian advisory, and keep the CVE Services API fetch as the audit trail in sources/ledger rather than as a rendered link if
+      the gate objects to it. Atlassian's monthly Security Bulletin is due on the third Tuesday, 2026-10-20 (not yet published at 03:00 UTC; index checked).
+  # ------------------------------------------------------------------ 5 (UPDATE-OF Adobe Commerce)
+  - title: "CVE-2026-103849 (Adobe Commerce and Magento BlockStrap): a public reproduction lab appeared on 2026-10-18 and CISA's enrichment rates exploitation 'poc', automatable 'yes'"
+    sources:
+      - { url: "https://github.com/dinosn/cve-2026-103849-blockstrap-lab", publisher: "dinosn (GitHub reproduction lab, created 2026-10-18)", date: "2026-10-18", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-103849", publisher: "CVE Program record with CISA-ADP SSVC container (2026-10-19T13:02Z)", date: "2026-10-19", role: "corroborating" }
+    discovery_trace: "first seen at: S1 watch-list check of covered CVEs against the CVE Services API (python3 tools/fetch_source.py url --direct https://cveawg.mitre.org/api/cve/CVE-2026-103849, dateUpdated 2026-10-19T13:02:43Z, CISA-ADP SSVC Exploitation poc) -> primary: GitHub lab linked in that record with tag exploit, URL https://github.com/dinosn/cve-2026-103849-blockstrap-lab (README fetched with extract; repository metadata via api.github.com created_at 2026-10-18T08:12:41Z)"
+    summary: |
+      FACTS. CISA's ADP enrichment of the CVE record for CVE-2026-103849 (Adobe Commerce and Magento template-engine injection, CVSS 10.0, fixed in Adobe's 2026-oct builds, APSB26-153) was
+      updated on 2026-10-19 13:02 UTC and rates Exploitation "poc", Automatable "yes", Technical Impact "total"; it adds a reference to a public GitHub repository tagged "exploit". The
+      repository, created on 2026-10-18, is a Docker reproduction lab for the unauthenticated {{block}} directive injection reached through a guest GraphQL request on Magento 2.4.9, with an
+      A/B comparison against Adobe's fix. Its author states that it proves the injection primitive, an unauthenticated HTTP carrier and a bounded stock file side effect, that command
+      execution in the lab needs a clearly labelled synthetic gadget, and that it "does not claim a stock Magento full-RCE chain". The covered entry's only reproduction source is Sansec
+      (four code-execution routes reproduced within 24 hours of the fix, no attacks seen on live stores); Sansec's routes are not public, so the lab is the first public artefact.
+      ANALYST READING. The flaw's status moves from "reproduced by a security firm" to "public proof-of-concept code exists"; the public lab does not itself show remote code execution on a
+      stock store, so the gap between the lab and a working exploit is a matter of weeks at most rather than a demonstrated chain; no exploitation is reported by any source read.
+    region_nexus: "global; e-commerce and portal sites on Adobe Commerce or Magento Open Source, which public-sector shops and cantonal portals can use (analyst context)"
+    primary_sector_nexus: "indirect: only where a public body runs a Commerce or Magento storefront"
+    sector: "e-commerce / web platforms"
+    cves: [CVE-2026-103849]
+    techniques: [T1190]
+    affected_products: ["Adobe Commerce", "Magento Open Source"]
+    entity_keys: ["product:adobe-commerce", "product:magento-open-source"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-14/adobe-october-2026-coldfusion-aem-commerce-unauth-critical"
+    borderline: true
+    borderline_reason: "moves one flaw to poc-public but the lab explicitly stops short of a stock RCE chain; no exploitation signal; main agent to weigh against the entry's notable priority"
+    evidence:
+      - quote: "it does not claim a stock Magento full-RCE chain."
+        attribution: "dinosn (GitHub lab README)"
+        source_url: "https://github.com/dinosn/cve-2026-103849-blockstrap-lab"
+      - quote: "The command-execution track requires the clearly labeled synthetic lab gadget"
+        attribution: "dinosn (GitHub lab README)"
+        source_url: "https://github.com/dinosn/cve-2026-103849-blockstrap-lab"
+      - quote: "\"options\":[{\"Exploitation\":\"poc\"},{\"Automatable\":\"yes\"},{\"Technical Impact\":\"total\"}]"
+        attribution: "CISA-ADP (CVE record container)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103849"
+    extended_notes: |
+      Suggested handling: `update` record on 2026-10-14/adobe-october-2026-coldfusion-aem-commerce-unauth-critical if the main agent keeps it (status poc-public for CVE-2026-103849; the
+      entry's Defender takeaway line "Adobe reports no exploitation as of 2026-10-13" still stands). The same CISA-ADP source is the cheapest detector of such status changes: its SSVC
+      container updates are visible through the CVE Services API (see candidate_sources). Not a new CVE for the store; CVE-2026-103849 is already in prior_coverage.json.
+cve_table:
+  - { cve: "CVE-2026-110936", product: "Siemens Software Center", cvss: "8.4 (CVSS v4.0; v3.1 6.7, AV:L/PR:H)", epss: 0.00135, kev: false, exploited: "yes, validated by Siemens ProductCERT 2026-10-19; ENISA exploitedSince 2026-10-19", affected: "all versions < V4.0.9.8", fixed: "V4.0.9.8 (existing installs auto-update on next start); attackers ship their own signed 3.5.8.7 copy, so the fix does not stop the abuse", type: "CWE-427 uncontrolled search path (DLL side-loading)", vector: "local; abused through an attacker-supplied signed copy delivered by a ClickFix lure and a silent msiexec install", auth: "none on the victim beyond the user running the pasted command; Siemens' CVSS has PR:H for the in-product flaw", source: "https://productcert.siemens.com/news/2026/10/19/active-exploitation-of-cve-2026-110936-in-siemens-software-center/" }
+  - { cve: "CVE-2026-107186", product: "Eptura Archibus Web Central", cvss: "8.6 (CVSS 3.1, AV:N/AC:L/PR:N/S:C)", epss: null, kev: false, exploited: "no ITW reports; Rapid7 exploited a customer server in an authorised red-team engagement 2026-05-25", affected: "< 2025.02", fixed: "2025.02 (vulnerable DWR method moved to REST); Eptura told Rapid7 on 2026-10-09 a fix for 2025.01 is in development", type: "authentication bypass (privileged session left on thread by pre-auth isPasswordUppercase, reused by runWorkflowRule)", vector: "network, HTTP POST to the DWR plaincall endpoint, two batched calls", auth: "none", source: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/" }
+  - { cve: "CVE-2026-107187", product: "Eptura Archibus Web Central", cvss: "8.5 (CVSS 3.1, AV:N/AC:L/PR:L/S:C)", epss: null, kev: false, exploited: "no ITW reports", affected: "< 2025.02", fixed: "2025.02", type: "arbitrary database read through the getDataRecords workflow (credentials included)", vector: "network; unauthenticated when chained with CVE-2026-107186", auth: "low privileges, none when chained", source: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/" }
+  - { cve: "CVE-2026-107188", product: "Eptura Archibus Web Central", cvss: "9.6 (CVSS 3.1, AV:N/AC:L/PR:L/S:C)", epss: null, kev: false, exploited: "no ITW reports", affected: "< 2025.02", fixed: "2025.02", type: "unrestricted file upload (writeHTMLtoFile workflow writes attacker content and extension; JSPX executes as NT AUTHORITY\\Local Service)", vector: "network; unauthenticated when chained with CVE-2026-107186", auth: "low privileges, none when chained", source: "https://www.rapid7.com/blog/post/ve-authentication-bypass-remote-code-execution-and-database-read-in-eptura-archibus-fixed/" }
+  - { cve: "CVE-2026-88771", product: "Citrix NetScaler ADC and Gateway", cvss: "per existing entry", epss: 0.01083, kev: true, exploited: "yes (Citrix bulletin; Rapid7 IR chain with CVE-2026-88779)", affected: "per existing entry", fixed: "per existing entry (Citrix bulletin CTX697096)", type: "pre-auth log poisoning to command execution", vector: "network, authentication request username field plus crash-handler trampoline", auth: "none", source: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/" }
+  - { cve: "CVE-2026-88779", product: "Citrix NetScaler ADC and Gateway", cvss: "per existing entry", epss: 0.00592, kev: true, exploited: "yes (CISA KEV 2026-10-04; Rapid7 shows it as the crash trigger in a root-execution chain)", affected: "per existing entry", fixed: "per existing entry; see also CVE-2026-107406 fixed builds in the entry", type: "SAML-parsing crash (nsaaad) that restarts the appliance", vector: "network, SAML request", auth: "none", source: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/" }
+  - { cve: "CVE-2026-21589", product: "Atlassian Bitbucket / Confluence / Jira Service Management / Jira Software / Bamboo / Crowd Data Center, Crucible, Fisheye", cvss: "9.3 (CVSS 4.0)", epss: null, kev: true, exploited: "yes (CISA KEV 2026-10-15; EUVD exploitedSince 2026-10-15)", affected: "all versions before the fixed versions", fixed: "Bitbucket 9.4.26/10.2.8/10.5.1; Confluence 9.2.26/10.2.19; JSM 5.12.40/10.3.26/11.3.12; Jira Software 9.12.40/10.3.26/11.3.12; Bamboo 10.2.24/12.1.12; Crowd 6.3.7/7.0.3/7.1.7/7.2.4; Crucible 4.9.15; Fisheye 4.9.15 (Atlassian advisory)", type: "arbitrary file access (path traversal)", vector: "network", auth: "none", source: "https://confluence.atlassian.com/security/cve-2026-21589-arbitrary-file-access-vulnerability-impacts-multiple-products-1870495748.html" }
+  - { cve: "CVE-2026-103849", product: "Adobe Commerce and Magento Open Source", cvss: "10.0 (CVSS 3.1)", epss: 0.00778, kev: false, exploited: "no exploitation reported; public reproduction lab 2026-10-18; CISA-ADP SSVC Exploitation poc, Automatable yes", affected: "Adobe Commerce 2.4.9-2026-sep and 2.4.8/2.4.7/2.4.6/2.4.5/2.4.4-2026-sep and earlier (CVE record)", fixed: "2026-oct builds: 2.4.10-alpha1, 2.4.9-2026-oct, 2.4.8-2026-oct, 2.4.7-2026-oct, 2.4.6-2026-oct, 2.4.5-2026-oct, 2.4.4-2026-oct (APSB26-153); Composer installs need the 2026-oct release or the isolated patch", type: "template-engine injection (second-pass {{block}} directive injection)", vector: "network, guest GraphQL request", auth: "none", source: "https://github.com/dinosn/cve-2026-103849-blockstrap-lab" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in config/org-profile.yaml; the sweep is a no-op. The standing-watch entries named in the spawn message (Citrix NetScaler, PaperCut, Ivanti Connect Secure, BeyondTrust, Cisco ESA, GitLab, Atlassian, Ahsay, SonicWall, Fortinet, Palo Alto) were checked against vendor pages, the CVE Services API and KEV: developments returned as update-of items for Citrix NetScaler (Rapid7 IR chain), Atlassian (CVE record restored) and Adobe Commerce (public lab); no development found for PaperCut, Ivanti Connect Secure, BeyondTrust (see dispositions), Cisco ESA (advisory still v1.0), GitLab (newest patch release 2026-10-12), Ahsay, SonicWall (newest SNWLID-2026-0017 of 2026-10-06, still 'no evidence' of exploitation), Fortinet (newest FG-IR-26-185 of 2026-10-13) or Palo Alto (newest 2026-10-17, medium)."
+kev_report:
+  catalogue_version: "2026.10.16"
+  dateReleased: "2026-10-16T17:15:48Z"
+  count: 1748
+  additions_since_2026-10-19: 0
+  newest_addition_date: "2026-10-16 (CVE-2026-102764 BeyondTrust, CVE-2025-61624 Fortinet; both covered)"
+  ransomware_flag_flips_on_covered_cves: "none; CVE-2026-35273 and CVE-2026-0257 were already Known, every other covered CVE reads Unknown"
+upcoming_bundles:
+  - { vendor: "Oracle", release: "Critical Patch Update October 2026, Tuesday 2026-10-20 (time not stated)", note: "pre-release read from https://www.oracle.com/security-alerts/cpuoct2026.html: 1283 new patches; E-Business Suite 196 (34 remotely exploitable without authentication), Fusion Middleware 196 (132), Java SE 55 (49), MySQL 98 (29), PeopleSoft 109 (41), JD Edwards 102 (44), Siebel CRM 123 (67), Communications 124 (87), Supply Chain 50 (19), Database 13 (3, highest 8.8); highest CVSS 9.9 for Essbase (14 unauthenticated) and Trusted Answer Search, 9.8 for APEX (both unauthenticated), Secure Backup (4 unauthenticated) and Autonomous Health Framework (2). Lands after this run starts; the 2026-10-21 fire carries it (the 2026-10-19 fire reached the same conclusion)." }
+  - { vendor: "Atlassian", release: "monthly Security Bulletin, third Tuesday = 2026-10-20", note: "not yet listed at 03:00 UTC on the advisories index (latest are September 15 and the out-of-band CVE-2026-21589 page)." }
+  - { vendor: "Cisco", release: "2026-10-21 advisories (advance notice cisco-sa-notice-QGwHnJ6k)", note: "Expressway Series (hardening), IOS XR for ASR 9000, Secure Client, Snort (hardening), Unified Communications (hardening)." }
+dispositions:
+  - "BeyondTrust CVE-2026-102764 (Rapid7 ETR 2026-10-19, https://www.rapid7.com/blog/post/etr-cve-2026-102764-critical-beyondtrust-remote-support-authentication-bypass-exploited-in-the-wild/): restates BeyondTrust's 2026-10-16 blog and Mandiant, which the entry already carries (patch range 24.3.1 to 26.2.3, SaaS patched, ARMORY CASTLE, KEV). Only possible delta: Rapid7 says BeyondTrust recommends patching self-hosted Privileged Remote Access too because it shares the affected code and that no PRA exploit path is known; not verifiable here (beyondtrust.com advisory 403 on url --direct and WebFetch; the blog, read through the reader fallback, says SaaS Remote Support and PRA were auto-patched and was last updated 2026-10-16). No update-of."
+  - "PwnEscape, Linux kernel CVE-2026-99999 (guest-to-host escape via virtio-net checksum metadata): same drop as the 2026-10-16, -17 and -19 fires. In-window facts: pwn.ai part 1 dated 2026-10-20 forecasts weaker-configuration exploits in weeks and default-configuration exploits within a month; the CVE record (Linux CNA, CVSS 3.1 9.3 AV:L) lists fixed stable kernels 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.57, 7.2.11 and mainline 7.3, with CISA-ADP SSVC Exploitation none (2026-10-16); no KEV, no exploitation report. Reopen conditions of the 2026-10-19 fire (public exploit, KEV, reported exploitation) not met."
+  - "Siemens, Fortinet FG-IR-26-176 to -185 (FortiSandbox CVE-2026-107656 9.6 unauthenticated, Known Exploited No), Microsoft October Patch Tuesday (CVRF revision 864 of 2026-10-19 07:00: exploited only CVE-2026-96951, already covered; publicly disclosed CVE-2026-108398 .NET WDAC bypass, local, and CVE-2026-92707 MessagePack-CSharp DoS; per-CVE MSRC records unchanged since 2026-10-13), SAP October Patch Day, Juniper Junos October bundle: all published before the window and dropped by earlier fires on the same facts; no change in exploitation status."
+  - "Apache Camel advisories of 2026-10-19 (CVE-2026-78162 camel-hazelcast deserialization CVSS 4.0 10.0, CVE-2026-88900 JGroups, CVE-2026-78165 Spring Redis, CVE-2026-83531; fixed 4.18.5, 4.22.1, 4.23.0): component-specific routes (Hazelcast aggregation repository, JGroups consumer, Redis), no proof of concept or exploitation, EPSS 0; BSI rates WID-SEC-2026-4010 hoch. Drop; reopen on exploitation."
+  - "Mercury (MLJAR) CVE-2026-111057 (10.0) and CVE-2026-111058 (9.8), unauthenticated Jupyter kernel and terminal access in default tokenless deployments, fixed 3.2.6, GHSA 2026-10-19: niche notebook-sharing framework, no deployment link to the constituency, no exploitation. Craft CMS 5.11.0 batch (CVE-2026-112770 to -112782): mostly authenticated admin or Control Panel prerequisites. GeoVision GV-ASManager CVE-2026-108983 (9.8, 6.3.0): vendor page and record give no mechanism; reopen when details or exploitation appear. All dropped."
+  - "Searchlight Cyber, 'More Critical Bugs in Adobe Experience Manager' (2026-10-15): chain is AEM Cloud only and already patched, on-premises AEM needs individual-component upgrades; its mapping to Adobe's October APSB26 AEM CVEs is not stated. Calif 'iPhone' (2026-10-16): Hexacon demo videos only, 'released in due time', no technical detail. Drop."
+  - "No in-window development for: PaperCut (newest bulletin revision 2026-10-13, already in the entry), Ivanti Connect Secure (October post unchanged, lists no CVEs), Cisco Secure Email Gateway (advisory v1.0 only), GitLab (latest critical patch release 2026-10-12), Ahsay, SonicWall, Fortinet, Palo Alto, Zammad (newest GHSA 2026-10-08), WordPress (7.1.3 of 2026-10-06), Next.js (10-14 update dropped earlier), ZDI, 0patch, Onapsis, Censys (Danfoss StoreView report already cited by the Danfoss entry), watchTowr (newest 2026-10-09)."
+candidate_sources:
+  - id: cve-services-api
+    publisher: "CVE Program, CVE Services API (cveawg.mitre.org)"
+    url: "https://cveawg.mitre.org/api/cve/CVE-2026-21589"
+    category: vulns
+    why: "Machine-readable per-CVE record with state (PUBLISHED or REJECTED), dateUpdated, CNA text and the CISA-ADP SSVC container; read with `url --direct https://cveawg.mitre.org/api/cve/<CVE-ID>` in one call each. Checking the 56 covered CVEs this way found two in-window deltas no listing surfaced (Atlassian's rejection reversed on 2026-10-19; CISA-ADP rating CVE-2026-103849 exploitation 'poc' with a public exploit link). Suggest a recurring S1 duty: sweep covered CVEs for state and SSVC changes. Caveat: check_run.py's bad-source patterns for per-CVE record pages may also match the API URL."
+  - id: forescout-research
+    publisher: "Forescout Research, Vedere Labs"
+    url: "https://www.forescout.com/blog/"
+    category: research
+    why: "First-hand malware, loader and ClickFix-infrastructure research (ROMULUS platform 2026-10-15, Lorem Ipsum and Axolotl loader comparison 2026-10-14) with extractable full bodies via `extract`; not in sources.json. The Siemens Software Center exploitation label ('Romulus') only resolves through Forescout's write-up."
+coverage_gaps:
+  - source_id: ivanti-advisory-hub
+    reason: "Not a record in sources/sources.json: the id exists only in the fetch-gap list of the state summary, and the real record is ivanti-psirt. Recipes tried: `feed https://www.ivanti.com/blog/topics/security-advisory/rss 10` works direct (newest item 2026-10-13 'October 2026 Security Update'; the monthly post lists no CVEs and was re-read with `extract`, unchanged); `extract https://hub.ivanti.com/s/security-advisory` falls through to the reader and returns a 404 'CSS Error' shell; `extract https://forums.ivanti.com/s/security-advisories` hung for more than 200 s with no content and was killed. Working recipe: RSS plus `extract` of the monthly post, affected and fixed tables through Rapid7 or Volexity; the hub is unreadable on every transport. Suggest dropping or aliasing the ivanti-advisory-hub id in the fetch-gap tracker so the gap stops recurring."
+  - source_id: rapid7-research
+    reason: "`feed https://www.rapid7.com/rss.xml` and `feed https://www.rapid7.com/blog/rss/` fail (not well-formed XML at line 54 column 37; the reader fallback returns no items). Working recipe: `python3 tools/fetch_source.py url --direct https://www.rapid7.com/blog/rss/` then regex over the <item> blocks (20 dated items), then `extract <full post URL>`; use the RSS <link> verbatim, since a truncated slug falls through to the reader and returns a 404 shell. This path surfaced two in-window watch-list items (NetScaler incident analysis and the Archibus disclosure)."
+  - source_id: siemens-productcert
+    reason: "Not in my slice. The atom feed https://cert-portal.siemens.com/productcert/rss/advisories.atom reads direct and lists 'SSA-580366 V1.2 (Last Update: 2026-10-19)'; the exploitation notice itself is a /news/ post linked from the advisory page's raw HTML (url --direct of the SSA page), not from the feed. Both pages read with `extract`."
+  - source_id: beyondtrust-trust-center
+    reason: "https://www.beyondtrust.com/trust-center/security-advisories/bt26-05 returns 403 on url --direct and on WebFetch; the advisories index and the blog entry /blog/entry/bt26-05 read (the blog through the reader fallback). Covered anyway through Rapid7 and the existing entry."
+  - source_id: chrome-releases
+    reason: "Not in my slice. `feed https://chromereleases.googleblog.com/feeds/posts/default` is not XML (exit 1); `url https://chromereleases.googleblog.com/` returns the HTML listing (newest stable item 2026-10-15, Chrome 155.0.8059.84 for Android; no in-window stable security update)."
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 25", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "only NCSC-2026-0438 Drupal (2026-10-19), already covered" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss", horizon_hours: 26, in_horizon_items: 17, returned: 0, note: "250-item cap reaches back to 2026-10-16; NEU high/critical in window: Collabora CODE (covered), Apache Camel (dispositions), MariaDB, DBeaver; nothing exploited" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-017 Cisco SEG of 2026-10-15, covered" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest alert 2026-10-16; ICS advisories newest 2026-10-15" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogue 2026.10.16, no addition since 2026-10-16, no ransomware-flag flip on a covered CVE" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct euvdservices search + enisaid", horizon_hours: 26, in_horizon_items: 89, returned: 3, note: "89 records score 8.5 or above since 2026-10-19; exploited list yielded Siemens (new) and Atlassian (update); Archibus found in the score list" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 30", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13068 Drupal of 2026-10-16; no edits since 2026-10-13" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09 PaperCut" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed + url --direct serial", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-185 of 2026-10-13 (FortiSandbox 9.6, Known Exploited No); FG-IR-26-175 updated 2026-10-07 already in the entry" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent/releases/cvrf/cve", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "CVRF 2026-Oct revision 864 of 2026-10-19; per-CVE records unchanged; newest additions 2026-10-17 are Azure Linux third-party CVEs, none exploited" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-0307 GlobalProtect App LPE, medium, 2026-10-17" }
+  - { id: nextjs-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "10-14 security update dropped by earlier fires; 10-16 product post" }
+  - { id: atlassian-security-advisories, tier: standard, attempted: true, transport: "extract + url + CVE API", horizon_hours: 121, in_horizon_items: 1, returned: 1, note: "no new bulletin; the CVE-2026-21589 record state change is the update-of item" }
+  - { id: calif-codex, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "'iPhone' Hexacon demos only" }
+  - { id: censys-blog, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "Danfoss StoreView report already cited by the Danfoss entry" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 124, in_horizon_items: 1, returned: 0, note: "Meraki hardening release 2026-10-15; ESA advisory still v1.0; advance notice for 2026-10-21 read" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge:url api.github.com/advisories", horizon_hours: 124, in_horizon_items: 2, returned: 0, note: "Mercury 10.0 and 9.8 (dispositions); rest older" }
+  - { id: onapsis, tier: standard, attempted: true, transport: "extract + WebFetch", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest SAP Patch Day post 2026-10-13, outside horizon; no Oracle CPU post yet" }
+  - { id: pwn-ai, tier: standard, attempted: true, transport: "WebFetch + extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "PwnEscape part 1 (2026-10-20) dropped as on 10-16/17/19; see dispositions" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "listing returns only the footer and newsletter shell on extract (no post list); no in-window item found; recipe gap logged only as an observation" }
+  - { id: searchlight-cyber, tier: standard, attempted: true, transport: "url + extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "AEM Cloud pre-auth chain (2026-10-15), patched, Cloud only" }
+  - { id: wordpress-org-news, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 7.1.3 of 2026-10-06" }
+  - { id: zammad-github-advisories, tier: standard, attempted: true, transport: "bridge:url api.github.com", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest GHSA 2026-10-08" }
+  - { id: zdi, tier: standard, attempted: true, transport: "extract + listing", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "listing readable with extract today (dated list); newest October Patch Tuesday review of 2026-10-13" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest micropatch posts 2026-10-13 and 2026-10-14, outside horizon" }
