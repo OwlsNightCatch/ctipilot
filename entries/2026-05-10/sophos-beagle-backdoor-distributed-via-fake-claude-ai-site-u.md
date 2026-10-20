@@ -11,11 +11,9 @@ priority: notable
 immediate_action: null
 tags:
   - phishing
-  - infostealer
 regions:
   - global
-sectors:
-  - technology
+sectors: []
 entities:
   - "tool:beagle-fake-claude-stac4713-2026"
 techniques: [T1583.008, T1204.002, T1547.001, T1574, T1574.001, T1573.001]
@@ -58,6 +56,15 @@ updates:
       detection and takeaway lines. A Contradiction line records that Malwarebytes calls the payload
       PlugX while Sophos identifies a new backdoor, Beagle.
     fields: [summary, body, classification, techniques]
+  - at: "2026-10-18T13:56:53Z"
+    run_id: 2026-10-18T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The infostealer tag contradicted the body: Sophos describes Beagle as a simple backdoor with
+      remote-shell and file-management commands. The technology sector was removed because no source names
+      a targeted sector.
+    fields: [tags, sectors]
 ---
 
 Sophos X-Ops published a write-up on 2026-05-07 of a counterfeit Claude AI site distributing a previously undocumented Windows backdoor it named **Beagle**, and assesses that the site is likely part of an active malvertising campaign ([Sophos X-Ops, 2026-05-07](https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor)). The chain delivers a roughly 505 MB ZIP archive containing a malicious MSI that drops a *legitimate, signed G DATA antivirus updater executable*, an encrypted data file and an attacker-controlled DLL into the user's startup folder, so the updater sideloads the malicious DLL (DLL side-loading) ([Sophos X-Ops, 2026-05-07](https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor)). The DLL decrypts the data file and executes the resulting Donut (DonutLoader) shellcode, an open-source in-memory loader, which loads Beagle ([Sophos X-Ops, 2026-05-07](https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor)). Beagle communicates with a subdomain of the same lookalike site over TCP/443 and UDP/8080 with AES-encrypted payloads, and its eight commands are `uninstall`, `cmd`, `upload`, `download`, `mkdir`, `rename`, `ls` and `rm` ([Sophos X-Ops, 2026-05-07](https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor)). Sophos notes that an almost identical G DATA sideloading chain has previously been associated with PlugX, which several threat groups use, and suggests the Beagle payload may reflect an actor retooling or imitating another actor's chain. It does not attribute the campaign ([Sophos X-Ops, 2026-05-07](https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor)). A possible hosting server was set up in March 2026, and Sophos found related samples reusing the same XOR key from February, March and April 2026, while cautioning that further evidence would be needed to link them to the same actor ([Sophos X-Ops, 2026-05-07](https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor)).

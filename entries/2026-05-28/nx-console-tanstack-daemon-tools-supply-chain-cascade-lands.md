@@ -31,7 +31,7 @@ techniques: [T1195.002, T1552.001, T1567]
 affected_products: ["Nx Console", "DAEMON Tools Lite"]
 cves:
   - id: CVE-2026-48027
-    cvss: n/a
+    cvss: "9.3 (CVSS 4.0)"
     epss: null
     type: null
     vector: user-interaction
@@ -40,8 +40,10 @@ cves:
       - exploited
       - cisa-kev
       - patch-available
+    affected: "Nx Console 18.95.0"
+    fixed: "18.100.0"
   - id: CVE-2026-45321
-    cvss: n/a
+    cvss: "9.6 (CVSS 3.1)"
     epss: null
     type: null
     vector: user-interaction
@@ -50,8 +52,10 @@ cves:
       - exploited
       - cisa-kev
       - patch-available
+    affected: "84 versions across 42 @tanstack/* packages"
+    fixed: null
   - id: CVE-2026-8398
-    cvss: n/a
+    cvss: "9.3 (CVSS 4.0); 9.8 (CVSS 3.1)"
     epss: null
     type: null
     vector: user-interaction
@@ -60,6 +64,8 @@ cves:
       - exploited
       - cisa-kev
       - patch-available
+    affected: "DAEMON Tools Lite 12.5.0.2421 to 12.5.0.2434"
+    fixed: "12.6"
 sources:
   - url: "https://nx.dev/blog/nx-console-v18-95-0-postmortem"
     publisher: Nx postmortem
@@ -119,6 +125,15 @@ updates:
       linked. The exposure and detection lines now also cover the upstream TanStack compromise as
       TanStack's advisory describes it.
     fields: [sources, body, evidence, sourcing_note, classification, techniques, tags, summary, entities, affected_products]
+  - at: "2026-10-18T14:01:10Z"
+    run_id: 2026-10-18T1307Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The three CVE records carry the scores their CNAs publish (CVE-2026-48027 9.3 on CVSS 4.0,
+      CVE-2026-45321 9.6 on CVSS 3.1, CVE-2026-8398 9.3 on CVSS 4.0 and 9.8 on CVSS 3.1) and the affected
+      and fixed versions from the CVE records, in place of n/a and empty values.
+    fields: [cves]
 ---
 
 **Background.** The CISA KEV adds on 2026-05-27 close a chain of disclosures across the preceding three weeks that share a single operational pattern: trusted developer-tooling-publishing pipelines (a maintainer's machine, a vendor build server, a popular VS Code marketplace listing) used to push malicious code to downstream consumers at scale ([CISA KEV catalog, 2026-05-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json); [Nx postmortem, 2026-05-21](https://nx.dev/blog/nx-console-v18-95-0-postmortem); [GHSA-c9j4-9m59-847w, 2026-05-18](https://github.com/nrwl/nx-console/security/advisories/GHSA-c9j4-9m59-847w); [GHSA-g7cv-rxg3-hmpx, 2026-05-11](https://github.com/TanStack/router/security/advisories/GHSA-g7cv-rxg3-hmpx); [Disc Soft Limited, 2026-05-06](https://blog.daemon-tools.cc/post/security-incident); [Kaspersky, 2026-05-05](https://www.kaspersky.com/blog/daemon-tools-supply-chain-attack/55691/); [Help Net Security, 2026-05-21](https://www.helpnetsecurity.com/2026/05/21/github-grafana-breach-root-cause-nx-console/)). The TanStack compromise was carried out via Mini Shai-Hulud, TeamPCP's self-replicating worm that steals CI/CD credentials and uses them to publish infected versions of more packages ([Help Net Security, 2026-05-21](https://www.helpnetsecurity.com/2026/05/21/github-grafana-breach-root-cause-nx-console/)). Three of the chain's CVEs were added to CISA KEV on the same day (2026-05-27), confirming in-the-wild exploitation ([CISA KEV catalog, 2026-05-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)), and GitHub's CISO Alexis Wales named the malicious Nx Console extension as the vector for the theft of about 3,800 of GitHub's internal repositories ([Help Net Security, 2026-05-21](https://www.helpnetsecurity.com/2026/05/21/github-grafana-breach-root-cause-nx-console/)).

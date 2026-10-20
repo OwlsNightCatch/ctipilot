@@ -2357,7 +2357,23 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
                 # escaped JSON inside one (Check Point's support pages do).
                 # Decode those escapes first, then strip the tags they reveal.
                 text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
-                text = _html.unescape(re.sub(r"<[^>]+>", "", text))
+                if mode == "extract":
+                    # trafilatura's output is markdown, not HTML: a literal
+                    # "<FIRST 4 digits of UUID>" in the article is text, and
+                    # the tag stripper would delete it (2026-10-18 audit:
+                    # a verbatim AhnLab quote failed on exactly that).
+                    text = _html.unescape(text)
+                else:
+                    # A post whose text the page renders client-side (a
+                    # Mastodon toot) carries it only in its description meta
+                    # tags, which tag stripping discards; keep their content.
+                    metas = re.findall(
+                        r"<meta[^>]+(?:name|property)=[\"'](?:og:)?description[\"'][^>]*"
+                        r"content=[\"']([^\"']*)[\"']", text, flags=re.I)
+                    text = _html.unescape(re.sub(r"<[^>]+>", "", text) + " " + " ".join(metas))
+                # Screen-reader labels inside link text ("Artifactory(opens in
+                # a new window)" on openai.com) are not part of the prose.
+                text = re.sub(r"\((?:opens|open) in a new (?:window|tab)\)", "", text, flags=re.I)
                 if mode == "extract":
                     # A markdown link's target sits inside the sentence it links
                     # from ("…exploited [flaws](https://…) in SMA1000…"), and its

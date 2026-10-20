@@ -2,8 +2,8 @@
 schema: 1
 kind: incident
 title: "Qilin claims a ransomware attack on the German party Die Linke; the party has not confirmed data theft"
-headline: "Die Linke took its infrastructure offline after a suspected Qilin attack; Qilin listed the party on its leak site without samples"
-summary: "Die Linke disclosed on 2026-03-27 that it had taken its infrastructure offline after a suspected ransomware attack it attributes to Qilin. Qilin listed the party on its leak site on 2026-04-01 without publishing samples. The party says its member database was not affected and that it cannot assess whether the attackers' aim of publishing internal data will succeed or has already occurred, and Heise reported that which internal data was compromised had not yet been definitively clarified."
+headline: "Die Linke took parts of its IT offline after a suspected Qilin attack; Qilin listed the party without samples"
+summary: "Die Linke disclosed on 2026-03-27 that it had taken parts of its IT infrastructure offline after a suspected ransomware attack it attributes to Qilin. Qilin listed the party on its leak site on 2026-04-01 without publishing samples. The party says its member database was not affected and that it cannot assess whether the attackers' aim of publishing internal data will succeed or has already occurred, and Heise reported that which internal data was compromised had not yet been definitively clarified."
 discovered_at: "2026-05-08T05:00:04Z"
 event_date: 2026-03-26
 run_id: 2026-05-08-migrated
@@ -70,6 +70,14 @@ updates:
       party's own statement, Heise, BleepingComputer and The Record, and the priority moves from
       notable to routine because the sources give no access vector.
     fields: [title, headline, summary, event_date, priority, techniques, sources, evidence, verification, classification, body, sourcing_note, confidence]
+  - at: "2026-10-18T13:57:16Z"
+    run_id: 2026-10-18T1307Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The headline and summary say the party took parts of its IT infrastructure offline, as its own
+      statement and the main analysis say, instead of its infrastructure as a whole.
+    fields: [headline, summary]
 ---
 
 Die Linke detected a cyberattack on its IT network on Thursday, 26 March 2026, took parts of its IT infrastructure offline as a precaution and filed a criminal complaint. In a statement the next day it said it had indications of a ransomware attack by the Qilin group and that its member database was not affected ([Die Linke, 2026-03-27](https://www.die-linke.de/start/presse/detail/news/cyberangriff-auf-die-partei-die-linke/)). Heise reported that it had not yet been definitively clarified which internal data had been compromised ([Heise Online, 2026-03-27](https://www.heise.de/en/news/Qilin-Left-Party-reports-Russian-ransomware-attack-11227232.html)). Qilin added the party to its leak site on 2026-04-01 without publishing data samples ([BleepingComputer, 2026-04-03](https://www.bleepingcomputer.com/news/security/die-linke-german-political-party-confirms-data-stolen-by-qilin-ransomware/)). **Contradiction:** BleepingComputer's headline says the party confirmed the data theft, while its own text says the party stopped short of confirming a data breach ([BleepingComputer, 2026-04-03](https://www.bleepingcomputer.com/news/security/die-linke-german-political-party-confirms-data-stolen-by-qilin-ransomware/)). The party says the attackers aim to publish sensitive internal data and personal information of headquarters staff, and that it cannot assess whether or to what extent this will succeed or has already happened ([Die Linke, 2026-03-27](https://www.die-linke.de/start/presse/detail/news/cyberangriff-auf-die-partei-die-linke/)).
