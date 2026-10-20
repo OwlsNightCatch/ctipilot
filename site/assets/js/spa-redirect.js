@@ -17,15 +17,14 @@
   var m;
   m = h.match(/^#\/daily\/(\d{4}-\d{2}-\d{2})$/);
   if (m) { window.location.replace('daily/' + m[1] + '/'); return; }
-  m = h.match(/^#\/weekly\/(\d{4}-W\d{2})$/);
-  if (m) { window.location.replace('weekly/' + m[1] + '/'); return; }
   m = h.match(/^#\/cves\/(CVE-[0-9]+-[0-9]+)$/);
   if (m) { window.location.replace('cves/' + m[1] + '/'); return; }
   m = h.match(/^#\/sources\/(.+)$/);
   if (m) { window.location.replace('sources/' + decodeURIComponent(m[1]) + '/'); return; }
   m = h.match(/^#\/topics\/(.+)$/);
   if (m) { window.location.replace('topics/' + decodeURIComponent(m[1]) + '/'); return; }
-  m = h.match(/^#\/(live|daily|weekly|cves|topics|sources|ops|about)$/);
-  // The live brief renders at the site root now.
-  if (m) { window.location.replace(m[1] === 'live' ? './' : m[1] + '/'); return; }
+  m = h.match(/^#\/(live|daily|weekly|cves|topics|sources|ops|about)(?:\/.*)?$/);
+  // The live brief renders at the site root now, and the weekly pages are
+  // retired (2026-08-29): both land on the brief.
+  if (m) { window.location.replace(m[1] === 'live' || m[1] === 'weekly' ? './' : m[1] + '/'); return; }
 })();

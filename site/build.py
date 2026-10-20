@@ -2799,7 +2799,7 @@ def task_changed_on(entry: dict[str, Any], day: str) -> bool:
     change to the entry's `priority`, `immediate_action` or `actions` in its
     `fields` (a `cves[0].status`-style path counts by its top-level key)."""
     for rec in update_records_in(entry, None, None, day=day):
-        top = {re.split(r"[.\[]", str(f), 1)[0] for f in (rec.get("fields") or [])
+        top = {re.split(r"[.\[]", str(f), maxsplit=1)[0] for f in (rec.get("fields") or [])
                if isinstance(f, str)}
         if top & _TASK_FIELDS:
             return True

@@ -78,8 +78,6 @@ site/
     │                      # to the permalink; Summaries / Headlines switch
     └── vendor/
         ├── HASHES         # SHA-256 + SHA-384 known-good hashes; build aborts on mismatch
-        ├── marked.min.js  # vendored, unused at runtime (kept integrity-pinned)
-        ├── purify.min.js  # vendored, unused at runtime (kept integrity-pinned)
         └── filter.min.js  # First-party in-page filter UI for day pages (under 4 KB)
 ```
 
