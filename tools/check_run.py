@@ -2302,6 +2302,62 @@ _JS_RENDERED_HOSTS = {"wid.cert-bund.de", "advisories.ncsc.nl", "msrc.microsoft.
                       "euvd.enisa.europa.eu", "git.kernel.org", "lore.kernel.org"}
 
 
+def _page_text(raw: str, mode: str) -> str | None:
+    """The prose of one fetched page, as the page checks compare it; None when
+    the read carries no prose to compare (an image-only or near-empty PDF).
+
+    `mode` is the transport that produced `raw`: `html` (the raw page),
+    `extract` (trafilatura's markdown) or `pdf` (the bridge's `pdf --json`
+    record). Pure function: the page checks' false positives live here and
+    tools/test_check_run.py pins each one."""
+    import html as _html
+    import json as _json
+    # The quote-bodies cache prefixes each file with "<!-- url -->"; the URL is
+    # not page text (a CVE id in it would vouch for a page that never names it).
+    raw = re.sub(r"\A<!-- [^\n]* -->\n", "", raw)
+    if mode == "pdf":
+        try:
+            rec = _json.loads(raw)
+        except ValueError:
+            rec = {"text": raw, "notes": "", "content_streams": 1}  # plain-text cache of an older run
+        notes = str(rec.get("notes") or "")
+        # No text objects (a scanned report) or a handful of stray characters
+        # is "not extractable", never "the document does not say it": the
+        # 2026-10-18 audit had citation-cve report an image-only ANSSI PDF as
+        # not mentioning the CVE it carries.
+        if not rec.get("content_streams") or "no text objects" in notes \
+                or "suspiciously little text" in notes:
+            return None
+        text = str(rec.get("text") or "")
+    else:
+        text = raw
+    # Script blocks stay: a Next.js-style page ships its article as escaped
+    # JSON inside one (Check Point's support pages do). Decode those escapes.
+    text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
+    if mode == "html":
+        # A JS-shell page (a Mastodon post, for one) carries its whole text
+        # only in the description meta tags, whose content the tag strip
+        # would delete: keep it as text (2026-10-11 audit, two CERT-Bund
+        # quotes falsely flagged on social.bund.de).
+        metas = [m.group(2) for m in re.finditer(
+            r"<meta\b(?=[^>]*\b(?:name|property)=[\"'](?:og:|twitter:)?description[\"'])"
+            r"[^>]*\bcontent=([\"'])(.*?)\1", text, re.I | re.S)]
+        text = _html.unescape(re.sub(r"<[^>]+>", "", text) + "\n" + "\n".join(metas))
+    elif mode == "extract":
+        # trafilatura's output is markdown, not HTML: a literal
+        # "<FIRST 4 digits of UUID>" in the article is text, and the tag
+        # stripper deleted it (2026-10-18 audit, a verbatim AhnLab quote).
+        text = _html.unescape(text)
+        # A markdown link's target sits inside the sentence it links from
+        # ("…exploited [flaws](https://…) in SMA1000…"), and its letters
+        # would break every quote that spans the link.
+        text = re.sub(r"\]\([^)\s]*(?:\s+\"[^\"]*\")?\)", "]", text)
+    # Screen-reader labels inside link text ("Artifactory(opens in a new
+    # window)" on openai.com) are not part of the prose.
+    text = re.sub(r"\(\s*opens? in a new (?:window|tab)\s*\)", "", text, flags=re.I)
+    return text
+
+
 def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
     """{url: [skeleton of raw HTML text, skeleton of trafilatura text]} for the
     cited pages, fetched over the bridge's direct transports only (the jina
@@ -2311,7 +2367,6 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
     checks and the verifier reuse one fetch. An empty list means no direct
     transport read the page."""
     import hashlib
-    import html as _html
     import os
     from concurrent.futures import ThreadPoolExecutor
 
@@ -2331,7 +2386,7 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
         # A PDF (joint advisories, authority reports) is read with the bridge's
         # `pdf` text extraction, never compared as raw bytes.
         is_pdf = urlsplit(url).path.lower().endswith(".pdf")
-        modes = ((("pdf", ["pdf", url]),) if is_pdf else
+        modes = ((("pdf", ["pdf", url, "--json"]),) if is_pdf else
                  (("html", ["url", url, "--direct"]), ("extract", ["extract", url])))
         for mode, args in modes:
             path = cache_dir / f"{key}.{mode}.txt" if cache_dir else None
@@ -2352,24 +2407,8 @@ def _page_skeletons(urls: list[str], run_id: str) -> dict[str, list[str]]:
                         path.write_text(f"<!-- {url} -->\n{text}", encoding="utf-8")
                     except OSError:
                         pass
+            text = _page_text(text, mode) if text else None
             if text:
-                # Script blocks stay: a Next.js-style page ships its article as
-                # escaped JSON inside one (Check Point's support pages do).
-                # Decode those escapes first, then strip the tags they reveal.
-                text = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), text)
-                # A JS-shell page (a Mastodon post, for one) carries its whole
-                # text only in the description meta tags, whose content the tag
-                # strip below would delete: keep it as text (2026-10-11 audit,
-                # two CERT-Bund quotes falsely flagged on social.bund.de).
-                metas = [m.group(2) for m in re.finditer(
-                    r"<meta\b(?=[^>]*\b(?:name|property)=[\"'](?:og:|twitter:)?description[\"'])"
-                    r"[^>]*\bcontent=([\"'])(.*?)\1", text, re.I | re.S)]
-                text = _html.unescape(re.sub(r"<[^>]+>", "", text) + "\n" + "\n".join(metas))
-                if mode == "extract":
-                    # A markdown link's target sits inside the sentence it links
-                    # from ("…exploited [flaws](https://…) in SMA1000…"), and its
-                    # letters would break every quote that spans the link.
-                    text = re.sub(r"\]\([^)\s]*(?:\s+\"[^\"]*\")?\)", "]", text)
                 out.append(_quote_skeleton(text))
         # A JS redirect or consent shell ("Redirecting... click here") reads as
         # a page with no content, which would turn every check into a false
@@ -2616,7 +2655,7 @@ def check_citation_cves(run_entries: list[dict], run_id: str, *, skip: bool,
         ok("citation-cve", f"{matched} CVE mention(s) found on the page their clause cites")
     if unreadable:
         ok("citation-cve", f"{unreadable} CVE mention(s) not machine-checkable (no direct "
-           "transport read the cited page), left to the verifier")
+           "transport read the cited page, or it is an image-only PDF), left to the verifier")
 
 
 def check_evidence_binding(run_entries: list[dict]) -> None:
