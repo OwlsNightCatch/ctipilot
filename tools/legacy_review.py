@@ -2,7 +2,7 @@
 """Legacy re-verification queue: the v2-brief entries no audit has checked (v4.19).
 
 Why this exists. 478 of the store's 966 entries (May to July 2026) were
-migrated from the v2 daily briefs by tools/migrate_briefs.py, before claim
+migrated from the v2 daily briefs by a one-shot migration, before claim
 verification, inline citations and the entry lifecycle existed. The weekly
 quality audit re-verifies only its trailing window, so before 2026-09-30 only 3
 of those entries had ever received a record from an audit. When the 2026-09-30 audit

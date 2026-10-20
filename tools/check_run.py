@@ -39,8 +39,7 @@ Design rules (carried over from check_brief.py):
     - Stdlib-only. No third-party deps.
     - The parsing/validation layer is `site/content_model.py` — the single
       shared loader for entries, registry and run records — so this gate,
-      site/build.py and tools/migrate_briefs.py can never drift on what a
-      valid document is. If content_model is missing the script exits 2.
+      and site/build.py can never drift on what a valid document is. If content_model is missing the script exits 2.
     - Output is line-by-line `PASS / FAIL / WARN  <check>: <detail>` so the
       agent can copy a failure verbatim into the run record's verification
       notes if it commits anyway.
@@ -1293,7 +1292,7 @@ def check_run_counters(run: dict[str, Any], new_entries: list[dict],
     if not _lifecycle_enforced(run):
         # Pre-v4.0 records counted their `update_of` entries as published
         # FILES ("entries_published: N incl. updates · entries_updated: of
-        # which update_of"). tools/migrate_updates.py folded those files into
+        # which update_of"). The v4.0 migration folded those files into
         # their root entries as changelog records carrying `merged_from`, so
         # the historical counters are reproduced from the folded records —
         # the record stays true to what the fire wrote at the time.

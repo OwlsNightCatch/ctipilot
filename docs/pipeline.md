@@ -18,7 +18,8 @@ whole life: developments, corrections and improvements are appended to that
 entry as timestamped `updates[]` changelog records with matching body
 sections, `updated_at` floats the entry back to the top of the live brief,
 and the old `update_of` second-entry mechanism is retired (the historical
-update entries were folded into their roots by `tools/migrate_updates.py`).
+update entries were folded into their roots by the one-shot
+`tools/migrate_updates.py`, since removed and kept in git history).
 See § Entry lifecycle.
 
 ## Why this model exists
@@ -67,7 +68,8 @@ site/content_model.py          # THE shared parser/loader/validator for entries,
 ```
 
 Retired from v2 (no backwards compatibility): `briefs/` (migrated into
-`entries/` by `tools/migrate_briefs.py`, then deleted),
+`entries/` by the one-shot `tools/migrate_briefs.py`, then deleted, as was
+the tool on 2026-10-20),
 `state/covered_items.json` (coverage is now derived by scanning `entries/`),
 `state/deep_dive_history.json` (derived from entries with `deep_dive: true`),
 `state/run_log.json` (replaced by `runs/`).

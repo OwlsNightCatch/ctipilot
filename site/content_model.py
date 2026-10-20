@@ -8,7 +8,7 @@ schema-validating the three v3 content types:
   - registry  (entities/registry.yaml           — global entity registry)
   - runs      (runs/<YYYY-MM-DD>/<run-id>.md    — per-run records)
 
-Consumed by site/build.py, tools/check_run.py and tools/migrate_briefs.py
+Consumed by site/build.py, tools/check_run.py and the other store tools,
 so producer and consumers can never drift. Normative contract:
 docs/pipeline.md. Stdlib-only — no PyYAML.
 

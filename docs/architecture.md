@@ -229,8 +229,8 @@ The single reference implementation for parsing, serialising and
 schema-validating all three content types (entries, registry, runs).
 Stdlib-only — no PyYAML; it accepts the strict YAML subset defined in
 `docs/pipeline.md` § "Frontmatter — strict YAML subset" and refuses
-anything outside it. Consumed by `site/build.py`, `tools/check_run.py`
-and `tools/migrate_briefs.py`, so the producer (the run prompts) and every
+anything outside it. Consumed by `site/build.py` and `tools/check_run.py`
+(and the other tools that read the store), so the producer (the run prompts) and every
 consumer literally share one parser and cannot drift on parsing rules —
 the v3 equivalent of v2's "check_brief imports the footer parser from
 build.py" discipline, promoted to a first-class module.
@@ -349,9 +349,9 @@ normal state — costs nothing.
 v3 retired most of `state/`: coverage is now derived by scanning
 `entries/` (was `covered_items.json`), deep-dive rotation from entries
 with `deep_dive: true` (was `deep_dive_history.json`), and run telemetry
-lives in `runs/**` (was `run_log.json`). `tools/migrate_briefs.py`
-performed the one-shot conversion and is kept for provenance. Two files
-remain:
+lives in `runs/**` (was `run_log.json`). The one-shot conversion tool,
+`tools/migrate_briefs.py`, was removed on 2026-10-20 and lives on in git
+history. Two files remain:
 
 - [`state/cves_seen.json`](../state/cves_seen.json) — flat fast-lookup CVE
   index (`{id, title, primary_source_url, first_seen, last_seen}`) for
@@ -479,19 +479,6 @@ every edit is recorded in the run record's `sources_changed[]`.
   suite: [`tools/test_fetch_source_pdf.py`](../tools/test_fetch_source_pdf.py).
   Read-only by design: https-only, resolved-IP deny list, redirect
   re-validation, body-size cap.
-- [`tools/migrate_briefs.py`](../tools/migrate_briefs.py) — the one-shot
-  v2 → v3 migration: decomposed the monolithic briefs into entries
-  (discovery timestamps from git history), seeded the registry from
-  `covered_items.json`, converted `run_log.json` into run records. Kept in
-  the repo for provenance; never runs again.
-- [`tools/migrate_updates.py`](../tools/migrate_updates.py) — the one-shot
-  v3 → v4 migration (2026-08-27): folded the 180 `update_of` entries into
-  their 114 root entries as changelog records + `## Update — <at>` sections,
-  brought each root's frontmatter to the chain's current state, re-pointed
-  `references[]` and registry `relations[].source`, and removed the folded
-  files (old permalinks redirect via `merged_from`). Report:
-  `work/migration-v4-updates/report.json`. Kept for provenance; a store
-  with no `update_of` entries is a no-op.
 - [`tools/source_candidates.py`](../tools/source_candidates.py) — walks the
   last 30 days of entries, counts outbound-link hosts, subtracts hosts
   already in `sources.json` + the aggregator allowlist, outputs the top-N
@@ -770,7 +757,8 @@ A safe pattern for extending the system without affecting the runs:
    new fields are optional with a documented default — a bulk rewrite of
    the store is never the first choice (the changelog contract requires a
    record per edit; a store-wide migration is an operator-authorized
-   one-shot tool, like `tools/migrate_updates.py`).
+   one-shot tool, like the v3 to v4 `tools/migrate_updates.py`, removed
+   after it ran and kept in git history).
 3. **New source category.** Add the records to `sources/sources.json` and
    extend the category filter in `prompts/cti-run.md` Phase 1 so a
    sub-agent slice picks them up. The site's source catalogue follows on

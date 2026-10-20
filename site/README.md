@@ -47,7 +47,7 @@ site/
 ├── build.py               # Stdlib-only Python SSG. Single entrypoint.
 ├── content_model.py       # THE shared parser/loader/validator for entries,
 │                          # registry and run records (also imported by
-│                          # tools/check_run.py and tools/migrate_briefs.py).
+│                          # tools/check_run.py and the other store tools).
 │                          # Schema-invalid content aborts the build.
 ├── branding_config.py     # Loader for config/branding.yaml — site identity,
 │                          # theme overrides, logos, chart palettes, feeds,

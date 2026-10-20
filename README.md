@@ -84,8 +84,6 @@ The site deploys automatically on every push to `main` that touches the content 
 │   ├── run_summary.py         # Compact state digest + rolling-24 h budget snapshot
 │   ├── compose_prompts.py     # Renders org-profile.yaml into the ORG-PROFILE managed blocks
 │   ├── fetch_source.py        # Bridge fetcher for hosts that 403 the routine UA
-│   ├── migrate_briefs.py      # One-shot v2→v3 migration (kept for provenance)
-│   ├── migrate_updates.py     # One-shot v3→v4 fold of update_of entries into their roots (provenance)
 │   ├── source_candidates.py   # Cited-but-untracked publisher surfacing
 │   └── source_health.py       # Recipe-level source accessibility probe
 ├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
