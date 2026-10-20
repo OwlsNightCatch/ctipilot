@@ -6,6 +6,7 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 
 ## Index
 
+- [Operator directive 2026-10-20: cleanup program](operator-directive-2026-10-20-cleanup-program.md) — one-time store cleanup via prompts/cleanup-coordinator.md; sequential partial-audit waves merged to main; reference branch cleanup/2026-10-18-carry-forward never auto-merged
 - [Operator directive 2026-10-19: audit budget](operator-directive-2026-10-19-audit-budget.md) — one audit at a time (claim on main), trailing week only, ≤20 spawns per fire, verifier checks only the fire's own changes, legacy/store-wide work only in operator-directed partial audits
 - [Operator directive 2026-09-29](operator-directives-2026-09-29.md) — no time limits but every run ends (structural bounds + 60-min inactivity hang detection); every non-termination number is a guide
 - [Operator directives 2026-08-28](operator-directives-2026-08-28.md) — internal records, only `update` floats updated_at, no internals in reader text, quality>quantity, English-only quotes, v4.3 modifiability, xhigh effort, minimal plugins/skills

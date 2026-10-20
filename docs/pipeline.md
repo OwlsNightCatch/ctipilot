@@ -533,7 +533,9 @@ deleted entry file. The quality audit owns consolidation (Phase 3 item 13,
 for pairs touching its window) and the legacy re-verification queue
 (`state/legacy_review.json`, `tools/legacy_review.py`); the queue and the
 store-wide duplicate scan run only in operator-directed partial audits
-(`prompts/quality-audit.md` § Secondary work, v4.21).
+(`prompts/quality-audit.md` § Secondary work, v4.21), and from v4.22 in the
+one-time store cleanup program (`prompts/cleanup-coordinator.md`, tracker
+`docs/cleanup/STATUS.md`), which retires them when it ends.
 - **Run records**: `entries_updated` counts the entries a fire appended a
   record to and `updated_entry_ids[]` names them (§ Run records); the run's
   detail page and the ops dashboard list them beside its new entries.

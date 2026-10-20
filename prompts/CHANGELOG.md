@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.22 — 2026-10-20 (a one-time store cleanup program, and audits of both kinds that no longer cancel each other)
+
+### Why
+
+The operator directed that the cleanup work deferred by the 2026-10-18 audit be preserved and run as a coordinated program: one coordinator session that plans the work, hands it to sub-agents and to later sessions, merges each finished piece into `main`, and leaves a store that needs no further cleanup of old entries. Three things in v4.21 stood in the way. First, a cleanup wave is an operator-directed partial audit, and its claim would have made the scheduled weekly audit stand down as `concurrent-audit`; a weekly audit's later claim would in turn have made a wave revert its work as superseded. Second, every entry a wave touches would land in the next weekly audit's window through its records, so the weekly audit would have re-verified hundreds of legacy entries that the wave's own loop had just verified. Third, the 2026-10-18 audit's record names its re-sweeps `resweep-G1` and so on, which the window-anchor pattern `^  G[0-9]…` does not match, so the 2026-10-25 audit would have anchored on 2026-10-11 and reported the audited week as unaudited.
+
+### What changed
+
+- New `prompts/cleanup-coordinator.md`: the one-time store cleanup program. It defines done (every entry truth-verified under the current standard, every known finding applied, no duplicates, a clean registry, current sources and state, no dead weight) and the coordinator bootstrap with a tracker in `docs/cleanup/STATUS.md`. Waves are sequential, each a partial audit: one per session, at most 20 spawns, repair workers that compose from verified findings, and the Phase 5.7 loop on the changed claims. Every finished wave and every small fix merges at once through `claude/**`. The program ends by retiring § Secondary work and the legacy queue.
+- `prompts/quality-audit.md` Phase 0: the anchor pattern accepts a prefixed re-sweep key (`([a-z]+-)?G…`). A partial audit writes `partial $STARTED` to its claim. The scheduled audit ignores an open partial claim, and a partial yields to an open scheduled claim by pausing instead of reverting. The superseded rule applies only between fires of the same kind. Step 6 leaves out of the weekly inventory an entry whose only in-window activity is records from another audit fire whose own loop verified them.
+- § Secondary work and `docs/pipeline.md` point at the program. The drafts the 2026-10-18 audit made for out-of-week entries are kept, unverified, on the reference branch `cleanup/2026-10-18-carry-forward`, which is outside `claude/**` and never auto-merged.
+- `prompts/cti-run.md` moves to v4.22 in lockstep, with no other change.
+
+### What stays
+
+- Every hard invariant, the § Session budget bounds, and the weekly audit's own scope and phases.
+- The run record of 2026-10-18 stays as published: run records are immutable, so the anchor pattern adapts to it.
+
 ## 4.21 — 2026-10-19 (audits stay inside the session limit: one at a time, the trailing week, a bounded fan-out)
 
 ### Why
