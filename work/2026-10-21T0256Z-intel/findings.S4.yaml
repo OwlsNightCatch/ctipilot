@@ -1,0 +1,464 @@
+# work/2026-10-21T0256Z-intel/findings.S4.yaml  (S4 incidents and disclosures)
+domain: S4
+run_id: 2026-10-21T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-21T02:58:21Z
+ended_at: 2026-10-21T03:18:54Z
+duration_seconds: 1233
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 29
+  bridge_fetches: 90   # approximate count of tools/fetch_source.py invocations (extract/url/feed/api/sec-edgar/ico-uk)
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "TeamUpdraft breach: stolen UpdraftCentral cloud keys used to push backdoor plugins to connected WordPress sites (no UpdraftPlus code flaw, no CVE)"
+    priority_hint: high
+    sources:
+      - { url: "https://teamupdraft.com/blog/security-incident-october-2026/", publisher: "TeamUpdraft", date: "2026-10-20", role: "primary" }
+      - { url: "https://patchstack.com/articles/updraftcentral-key-compromise-wordpress-backdoors/", publisher: "Patchstack", date: "2026-10-19", role: "primary" }
+      - { url: "https://nethemba.com/updraftcentral-backdoor-analysis/", publisher: "Nethemba", date: "2026-10-21", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/stolen-updraftcentral-keys-used-to-backdoor-wordpress-sites/", publisher: "BleepingComputer", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (15-item feed, item dated 2026-10-20 21:01 -0400) -> extract https://www.bleepingcomputer.com/news/security/stolen-updraftcentral-keys-used-to-backdoor-wordpress-sites/ -> primary (victim statement): TeamUpdraft, URL https://teamupdraft.com/blog/security-incident-october-2026/ -> primary (discoverer analysis): Nethemba, URL https://nethemba.com/updraftcentral-backdoor-analysis/ -> primary (telemetry write-up): Patchstack, URL https://patchstack.com/articles/updraftcentral-key-compromise-wordpress-backdoors/"
+    summary: |
+      FACTS (TeamUpdraft, the victim): the vendor of the UpdraftPlus backup plugin (4M+ active installs per Patchstack) found unauthorised access to teamupdraft.com over 17-18 October 2026 and believes its customer database was read: names, emails, billing addresses, order history, password hashes, two-factor settings and the connection keys for UpdraftCentral, UpdraftVault and UpdraftClone. It says UpdraftPlus plugin files and downloads, backups in customers' own remote storage and self-hosted UpdraftCentral were not affected, and that it reported the incident to the ICO. 
+      MECHANISM (Patchstack, Nethemba): this is not a vulnerability in UpdraftPlus. The UpdraftCentral client ships inside every UpdraftPlus copy and, once a site holds a key, executes any command signed with the matching dashboard private key; the attacker, holding keys that leaked from the UpdraftCentral cloud service, sends a signed plugin.upload_plugin command over the plugin's RPC channel (ordinary POST requests to the site root), WordPress installs and activates the supplied plugin, and every site-side check passes. Patchstack saw backdoor installations on a broad set of sites from 2026-10-18 15:32 UTC and counted 99 distinct plugin names; the backdoor wakes on a secret URL parameter carrying a 32-character token, creates an account shown as Editor, then grants it manage_options and install_plugins, and logs the visitor in by setting a cookie directly, so the login form, 2FA and login-protection plugins never run. The account outlives the plugin. Several samples carry a coding error that crashes the site with HTTP 500 on every uncached request; Patchstack warns that repairing such a plugin switches the backdoor on. Nethemba reports a working variant that logs the attacker in as an existing administrator and leaves no database trace, an attacker who re-delivered backdoors after removal (plugin.delete_plugin followed seconds later by a new upload), and probing of removed backdoors on 20 October.
+      EXPOSURE (Patchstack): sites hold a key when UpdraftCentral was connected, or when a teamupdraft.com account was logged in from the plugin, because the 'Add this website to UpdraftCentral' checkbox on that screen is ticked by default; keys do not expire (keys from November 2025 still worked in October 2026). BleepingComputer reports an estimate that about 10 percent of UpdraftPlus sites hold a key, around 400,000 websites. 
+      DISPUTED/OPEN: TeamUpdraft says UpdraftPlus 1.26.13 / 2.26.13 (published just after 22:00 BST on 19 October) revokes UpdraftCentral connection keys and blocks the vector; Nethemba says 1.26.12/2.26.12 deleted no key (bug) and that even 1.26.13 does not delete keys created on 18 October between 12:07 and 21:00 UTC, which must be removed by hand. Which version first actually revokes everything is therefore contested by the discoverer. How the attacker got into teamupdraft.com is not stated ('closed the access route, deployed a fix for the underlying weakness').
+      Prior context (Patchstack): second incident in this channel in five months; June 2026 CVE-2026-10795 (CVSS 8.1) let an attacker forge UpdraftCentral commands without keys on older versions.
+    region_nexus: "global (WordPress); no Swiss victim named in any source; Swiss public sites on WordPress that ever used UpdraftPlus with a teamupdraft.com login hold a key"
+    primary_sector_nexus: "indirect - supplier/vendor cloud management plane with transferable blast radius; relevant to WordPress-based municipal, cantonal and institutional sites"
+    sector: "public-sector (indirect), technology"
+    cves: []
+    techniques: [T1199, T1136, T1098, T1505.003, T1078]
+    affected_products: ["UpdraftPlus", "UpdraftCentral", "UpdraftVault", "UpdraftClone", "WordPress"]
+    entity_keys: ["product:wordpress"]
+    new_entities:
+      - { key: "incident:teamupdraft-updraftcentral-key-theft-2026-10", type: incident, name: "TeamUpdraft UpdraftCentral key theft and WordPress backdoor campaign", aliases: ["UpdraftCentral key compromise", "TeamUpdraft security incident October 2026"], summary: "TeamUpdraft says unauthorised access to teamupdraft.com on 17-18 October 2026 exposed UpdraftCentral, UpdraftVault and UpdraftClone connection keys; Patchstack and Nethemba report the keys being used from 18 October to install backdoor plugins on connected WordPress sites (TeamUpdraft, Patchstack, Nethemba, 2026-10-19/21)." }
+      - { key: "product:updraftplus", type: product, name: "UpdraftPlus", aliases: ["UpdraftCentral", "TeamUpdraft UpdraftPlus"], summary: "WordPress backup plugin by TeamUpdraft, 4M+ active installs (Patchstack), whose bundled UpdraftCentral client executes commands signed by dashboard keys." }
+    relation_suggestions:
+      - { subject: "incident:teamupdraft-updraftcentral-key-theft-2026-10", object: "product:updraftplus", basis: "Patchstack and TeamUpdraft: the stolen connection keys drive the UpdraftCentral client bundled in UpdraftPlus (affects)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Over the weekend of 17-18 October we identified unauthorised access to the teamupdraft.com website."
+        attribution: "TeamUpdraft"
+        source_url: "https://teamupdraft.com/blog/security-incident-october-2026/"
+      - quote: "We believe our customer database was accessed."
+        attribution: "TeamUpdraft"
+        source_url: "https://teamupdraft.com/blog/security-incident-october-2026/"
+      - quote: "An attacker holding valid UpdraftCentral dashboard keys is installing backdoor plugins on connected WordPress sites."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/updraftcentral-key-compromise-wordpress-backdoors/"
+      - quote: "This is not a vulnerability in UpdraftPlus"
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/updraftcentral-key-compromise-wordpress-backdoors/"
+      - quote: "Connecting a TeamUpdraft.com account is the other, and it happens by default."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/updraftcentral-key-compromise-wordpress-backdoors/"
+      - quote: "the unauthorised access was resolved and an update to UpdraftPlus (1.26.13 and 2.26.13) published just after 10pm BST on the 19th revoked UpdraftCentral connection keys thus blocking any access across that vector"
+        attribution: "TeamUpdraft"
+        source_url: "https://teamupdraft.com/blog/security-incident-october-2026/"
+      - quote: "Even 1.26.13 does not delete keys created on 18 October between 12:07 and 21:00 UTC"
+        attribution: "Nethemba"
+        source_url: "https://nethemba.com/updraftcentral-backdoor-analysis/"
+    extended_notes: |
+      Classification hint: victim statement is first-party (A-grade for the breach facts); Patchstack/Nethemba are independent telemetry from their own sites (B). Credibility 1 for the key-theft-to-backdoor chain (three independent observers); the exact fixed-version behaviour is contested (vendor vs Nethemba).
+      Detection (telemetry class first): (1) web-server access logs on the WordPress site: POST requests to the site root carrying an UpdraftCentral RPC body whose User-Agent lacks the library version and URL that genuine dashboard traffic carries (Patchstack: genuine traffic looks like 'WordPress/<ver>; class-udrpc.php/2.0; https://teamupdraft.com'); GET requests with a short underscore-prefixed parameter and a 32-character token (the backdoor trigger) mean the backdoor was used, not merely installed. (2) The UpdraftCentral log on the site: 'Command received: plugin.upload_plugin' (and plugin.delete_plugin) with no matching administrator action. (3) File-system/plugin inventory: plugins or must-use plugins nobody installed; Patchstack gives the description line 'Small maintenance toolkit: keeps option storage tidy.' as the most stable file-level marker and 'Site Health Cache' as the most reused name; the later 'hidden' variant hides from the admin plugin list, so inspect disk, not wp-admin. (4) User table: find the backdoor account by capability, not name - an Editor role that also carries manage_options (Patchstack SQL idea over wp_usermeta capabilities). (5) Symptom: HTTP 500 on every uncached request after a plugin install (broken variant) or WordPress error mails naming an unknown plugin.
+      Triage / benign lookalikes: a plugin install or removal arriving through UpdraftCentral is legitimate only if the owner did it from their own dashboard; the discriminators are the User-Agent form (library version plus URL present vs absent), a matching administrator session/ticket for the same minute, and the plugin's origin (wordpress.org slug vs a two- or three-word generic name with the identical maintenance-toolkit description). A single HTTP 500 after a plugin update is common and benign on its own; the combination with an unknown plugin and a new Editor account is the signal.
+      Post-patch compromise check (the step readers miss): updating UpdraftPlus is not enough. The backdoor plugin, any account it created (it persists after the plugin is removed, with a known password) and, per Nethemba, keys created between 12:07 and 21:00 UTC on 18 October all survive 1.26.13. Delete the UpdraftCentral keys on every site (Patchstack: `wp option get updraft_central_localkeys` shows whether a key exists; UI: Settings > UpdraftPlus Backups > Advanced Tools > UpdraftCentral > Manage existing keys; `wp option delete updraft_central_localkeys` removes them), then hunt plugins, mu-plugins and capability-elevated Editor accounts; restore from a clean backup taken before 17 October if anything is found (TeamUpdraft); rotate administrator passwords and any remote-storage credentials. Do not 'repair' a crashing backdoor plugin. Keep the site on a key-free setup or create the key under an account without install_plugins (Patchstack: that single detail stopped the attack on one analysed site). Nethemba reports that on a site running Wordfence, Patchstack and Cloudflare none of them stopped the validly signed command, and Patchstack notes the cookie login bypasses 2FA, login-attempt limits and login-protection plugins.
+      Defender takeaway: audit every WordPress estate, including 'forgotten' municipal and campaign sites, for an UpdraftCentral key even where nobody remembers using UpdraftCentral; IP blocking is not a control (Patchstack saw the source rotate within a day). Wider lesson: a vendor-held management key for customer sites is a standing supply-chain credential; ask WordPress suppliers whether remote-management keys exist and who holds the private half.
+  # ------------------------------------------------------------------ 2
+  - title: "eMudhra: private keys of eight intermediate CA certificates were recoverable from the certificates themselves; Mozilla, Chrome, Apple and Microsoft distrust them, but clients that ignore revocation keep trusting until their CA bundle is updated"
+    priority_hint: high
+    sources:
+      - { url: "https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/", publisher: "Mozilla Security Blog", date: "2026-10-20", role: "primary" }
+      - { url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449", publisher: "Mozilla CA Program (Bugzilla 2083449)", date: "2026-10-20", role: "primary" }
+      - { url: "https://emudhra.we-have-a-problem.com/", publisher: "eMudhra incident tracker (Mozilla's Dennis Jackson, per BleepingComputer)", date: "2026-10-20", role: "primary" }
+      - { url: "https://groups.google.com/g/golang-announce/c/66pojueaQek", publisher: "Go project (golang-announce)", date: "2026-10-20", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/", publisher: "BleepingComputer", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (item dated 2026-10-20 20:46 -0400) -> extract https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/ -> primary: Mozilla Security Blog, URL https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/ -> primary: Mozilla Bugzilla 2083449, URL https://bugzilla.mozilla.org/show_bug.cgi?id=2083449 -> primary: tracker, URL https://emudhra.we-have-a-problem.com/ -> vendor advisory for the CVE: golang-announce, URL https://groups.google.com/g/golang-announce/c/66pojueaQek"
+    summary: |
+      FACTS (Mozilla, the Mozilla CA bug, the tracker): on 2026-10-17 at 20:06 UTC Mozilla received a report from the researcher 'Wayne' that the private keys of eight eMudhra intermediate certificates were compromised, with proof of key control; Mozilla confirmed it, recovered the keys independently at 21:48 UTC and called the generation flaw trivial to exploit. Six intermediates issue TLS certificates and chain to roots trusted by the Chrome, Mozilla, Microsoft and Apple root programs; two are code-signing intermediates trusted by Microsoft; Sectigo cross-signed some of them. BleepingComputer (which verified one published key) reports all eight used P-384 keys generated in April 2025 with private-key values below 256, so anyone could recover them by trying 256 values; eMudhra blames a certificate-generation script error that created a second, weaker key set which was mistakenly selected for signing, and says most of the intermediates were never used in production and it found no evidence of issuance to end users. eMudhra marked the eight certificates revoked (reason caCompromise) at 09:38 UTC on 2026-10-18.
+      RESPONSE: Firefox blocked them via OneCRL by 22:59 UTC on 17 October with no browser update needed; Chrome blocked the six TLS intermediates the same day, Apple on 19 October and Microsoft on 20 October (tracker); Mozilla shipped Firefox 158.0.1, ESR 115.43.1 and ESR 153.5.1 for configurations that missed OneCRL and NSS 3.131.1 removes the signing root. Go 1.27.3 and 1.26.10 block the intermediates in crypto/x509 (CVE-2026-111943, Go project).
+      RESIDUAL RISK (tracker): the tracker's own assessment is that an attacker holding any of the keys 'could impersonate any website or service' on clients that do not consume revocation data; no CT-log entries exist for these intermediates since April 2025, so CT-enforcing browsers could not have been attacked, but 'we do not know if attackers exploited the flawed key generation to target these clients' (non-browser clients that do not enforce CT). The tracker lists FreeBSD ca_root_nss, Node.js and Bun as still pending an update at the time of fetch and warns that macOS's built-in /usr/bin/curl may keep trusting the intermediates because its bundle does not check revocation.
+    region_nexus: "global (public WebPKI trust); no Swiss victim; Swiss organisations' non-browser tooling (Go, curl/openssl-based agents, language runtimes, container images) inherits the affected trust stores"
+    primary_sector_nexus: "indirect - infrastructure-trust event affecting every network position-dependent TLS client"
+    sector: "technology, all sectors"
+    cves: [CVE-2026-111943]
+    techniques: [T1557, T1553]
+    affected_products: ["emSign Root TLS CA - G3 and emSign Root CS CA - G3 intermediates (EM EV/OV/DV TLS CA G3B and G3C, EM OV CS CA G3B and G3C)", "Mozilla NSS", "Mozilla Firefox", "Go (crypto/x509)", "Python certifi", "curl CA bundle", "Node.js", "Ubuntu ca-certificates", "Debian ca-certificates", "FreeBSD ca_root_nss"]
+    entity_keys: ["product:mozilla-firefox"]
+    new_entities:
+      - { key: "incident:emudhra-intermediate-ca-key-compromise-2026-10", type: incident, name: "eMudhra intermediate CA private-key compromise", aliases: ["eMudhra intermediate certificates compromise", "emSign G3 intermediates", "CVE-2026-111943"], summary: "Eight eMudhra intermediate CA certificates (six TLS, two code-signing) whose P-384 private keys, generated in April 2025, were recoverable from the certificates; reported 2026-10-17, revoked by eMudhra on 2026-10-18 and distrusted by Mozilla, Chrome, Apple and Microsoft; Go tracks it as CVE-2026-111943 (Mozilla, Bugzilla 2083449, 2026-10-20)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On Saturday, October 17, at 20:06 UTC, Mozilla received a report that private keys associated with eight eMudhra intermediate certificates had been compromised."
+        attribution: "Mozilla Security Blog"
+        source_url: "https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/"
+      - quote: "These keys could allow attackers to issue fraudulent HTTPS certificates for websites they do not control."
+        attribution: "Mozilla Security Blog"
+        source_url: "https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/"
+      - quote: "The private keys for the intermediate certificates were incorrectly generated by the CA. This means that anyone can recover them from the certificates."
+        attribution: "eMudhra incident tracker"
+        source_url: "https://emudhra.we-have-a-problem.com/"
+      - quote: "However, many clients outside of the browser ecosystem do not enforce Certificate Transparency. We do not know if attackers exploited the flawed key generation to target these clients."
+        attribution: "eMudhra incident tracker"
+        source_url: "https://emudhra.we-have-a-problem.com/"
+      - quote: "Mozilla was able to recover the private keys for the impacted certificates independently @ 21:48 UTC"
+        attribution: "Mozilla CA Program (Bugzilla 2083449)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+      - quote: "crypto/x509: mitigation for security concerns with a specific Certificate Authority"
+        attribution: "Go project (golang-announce)"
+        source_url: "https://groups.google.com/g/golang-announce/c/66pojueaQek"
+      - quote: "software that uses its own certificate stores or doesn't check certificate revocations may keep trusting the compromised intermediates until it is updated."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/"
+    extended_notes: |
+      Gate: ships on (a) global significance - a publicly trusted CA hierarchy whose keys anyone could recover. Reliability A for Mozilla/Go primaries; credibility 1 (Mozilla independently recovered the keys; BleepingComputer independently verified one published key).
+      Exposure: an attacker needs an on-path position (MITM, DNS or routing control) and a client that (a) trusts the emSign roots or the Sectigo cross-signs and (b) neither consumes revocation (OneCRL/CRLite/CRLSets) nor enforces Certificate Transparency. Browsers on current builds are protected; the exposure sits in server-side agents, CLI tools, language runtimes (Go before 1.27.3 / 1.26.10), container base images and appliances with their own bundle. To check: the tracker's test endpoints (curl against the dv-g3b-emudhra and dv-g3b-aaa-emudhra hosts; a certificate error means the client does not trust the intermediates) and its offline chains.zip with OpenSSL instructions.
+      Detection: certificate-validation telemetry - TLS inspection or egress proxy logs, EDR/network sensors recording server certificate chains: flag any observed chain containing an 'EM ... TLS CA - G3B/G3C' or 'EM OV CS CA' intermediate, and any Microsoft code-signing verification event for the two code-signing intermediates; absence of the corresponding CT entries is itself the tell (the tracker says none exist since April 2025), so a chain presented by an internal host that CT monitoring does not know is suspicious. Inventory: which of your fleet images still ship an old ca-certificates package (Ubuntu 20260816ubuntu0.* fixes, Alpine 20261020-r0, certifi 2026.10.19, curl bundle 2026-10-20 are listed by the tracker).
+      Hardening: update ca-certificates / NSS / certifi / Go toolchains (Go 1.27.3 or 1.26.10) and rebuild container images; for software with its own store that does not check revocation, distrust the intermediates explicitly; FreeBSD ca_root_nss, Node.js and Bun showed 'pending' in the tracker when fetched, re-check before claiming closure.
+      Defender takeaway: the decision that changes is an immediate bundle/toolchain update on non-browser TLS clients, and re-validating that your own TLS-inspection and trust-store pipelines pull from a current Mozilla/OS list - this is a revocation-by-software-update event for everything that does not do online revocation.
+      Note: S1 may also surface CVE-2026-111943 from the Go advisory; dedup by CVE.
+  # ------------------------------------------------------------------ 3
+  - title: "PK Softech / Publica (update): Tamedia reports Akira holds about 100 GB of pension-fund data on more than 100,000 current and former federal employees, with intelligence and special-forces staff identifiable, and demands ransom; neither the Confederation nor Publica confirms"
+    priority_hint: high
+    sources:
+      - { url: "https://www.tagesanzeiger.ch/akira-gruppe-alt-bundesraete-von-hacker-angriff-betroffen-181002064025", publisher: "Tages-Anzeiger (Tamedia, Thomas Knellwolf; paywalled, standfirst and key points read)", date: "2026-10-20", role: "primary" }
+      - { url: "https://www.inside-it.ch/datenleck-bei-publica-gefaehrdet-auch-sicherheitsbehoerden-20261020", publisher: "Inside IT", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten", publisher: "Publica (Pensionskasse des Bundes)", date: "2026-10-20", role: "primary" }
+    discovery_trace: "first seen at: inside-it-ch RSS https://www.inside-it.ch/rss.xml (item 'Datenleck bei Publica gefaehrdet auch Sicherheitsbehoerden', 2026-10-20 12:54 GMT, found while sweeping Swiss incident leads; S2 holds inside-it-ch and also logged it) -> extract https://www.inside-it.ch/datenleck-bei-publica-gefaehrdet-auch-sicherheitsbehoerden-20261020 -> primary (original report): Tages-Anzeiger/Tamedia, URL https://www.tagesanzeiger.ch/akira-gruppe-alt-bundesraete-von-hacker-angriff-betroffen-181002064025 (paywall: only the standfirst and 'In Kuerze' bullets readable) -> primary (victim-side position): Publica, URL https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten (status 2026-10-20)"
+    summary: |
+      UPDATE on the covered entry 2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow, whose current text says the access vector, the actor and any ransom demand are not public. DELTA (claims, attributed): Tamedia's Tages-Anzeiger (2026-10-20, 10:26 CEST) says the Akira group stole about one hundred gigabytes of compressed pension-fund data, that data on well over a hundred thousand current and former federal employees is affected, that it includes employees of the security authorities, and that Akira now demands ransom; its standfirst adds that special agents, elite soldiers and former Federal Councillors are among those whose data was taken (that Federal Councillors of 2014 are among them 'steht nicht fest'). Inside IT, summarising the Tamedia investigation, adds: the data sets contain employer details of people working under cover identity for fedpol or the Federal Intelligence Service (NDB); an internal assessment sees a 'danger to life and limb' for individual persons; the NDB is for now forgoing certain operations without recalling agents from abroad; the State Secretariat for Security Policy has already seen first fraudulent contact attempts linked to Publica; State Secretary Markus Mäder set up a task force under federal information-security officer Anne Rivera; the involved federal bodies assume Akira is responsible and that the group is holding the data and threatening to publish or sell it if unpaid; other large pension funds may be affected too. Inside IT states explicitly that neither the Confederation nor Publica has confirmed the perpetrator or the alleged ransom demand.
+      FACTS (Publica, status 2026-10-20): whether data actually left Publica's holdings, and whose, is still being investigated; it still has no indication that data was published on the darkweb; it updated its FAQ and advises against responding to contact attempts asking for personal or bank data.
+      CONTEXT (Inside IT): Akira was also behind the attack on RUAG's US subsidiary a year ago, where RUAG paid ransom; the Federal Prosecutor's Office, fedpol and BACS warned of stepped-up Akira activity in Switzerland in October 2025.
+      Assessment owner: the Akira attribution and the ransom demand rest on Tamedia's sources among 'involved federal bodies' and are not independently confirmed in any source read; treat as a credible-but-unconfirmed claim.
+    region_nexus: "Switzerland - federal administration, ETH domain, security authorities (fedpol, NDB, Defence Group), cantonal pension funds"
+    primary_sector_nexus: "direct - Swiss federal public sector supplier incident (software supplier of the federal pension fund)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199, T1657]
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09", "actor:akira"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "incident:pk-softech-publica-cyberattack-2026-09", object: "actor:akira", basis: "Tamedia (relayed by Inside IT, 2026-10-20): the involved federal bodies assume Akira is responsible and that it demands ransom; neither the Confederation nor Publica has confirmed (attributed-to, alleged)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    evidence:
+      - quote: "Die Akira-Gruppe hat Informationen aller Bundesangestellten abgesaugt – darunter jene von Geheimagentinnen, Elitesoldaten und Ex-Mitgliedern des Bundesrats. Jetzt verlangt sie Lösegeld."
+        attribution: "Tages-Anzeiger (Tamedia)"
+        source_url: "https://www.tagesanzeiger.ch/akira-gruppe-alt-bundesraete-von-hacker-angriff-betroffen-181002064025"
+      - quote: "Die Hackergruppe Akira stahl rund hundert Gigabyte komprimierte Pensionskassendaten."
+        attribution: "Tages-Anzeiger (Tamedia)"
+        source_url: "https://www.tagesanzeiger.ch/akira-gruppe-alt-bundesraete-von-hacker-angriff-betroffen-181002064025"
+      - quote: "Weder Bund noch Publica haben die Täterschaft oder eine angebliche Lösegeldforderung bisher bestätigt."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/datenleck-bei-publica-gefaehrdet-auch-sicherheitsbehoerden-20261020"
+      - quote: "Nach Einschätzung involvierter Bundesstellen könnten persönliche Daten von weit über 100'000 aktuellen und ehemaligen Bundesangestellten abgeflossen sein."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/datenleck-bei-publica-gefaehrdet-auch-sicherheitsbehoerden-20261020"
+      - quote: "Der NDB verzichte deshalb vorerst auf bestimmte Operationen"
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/datenleck-bei-publica-gefaehrdet-auch-sicherheitsbehoerden-20261020"
+      - quote: "erste betrügerische Kontaktversuche im Zusammenhang mit Publica festgestellt"
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/datenleck-bei-publica-gefaehrdet-auch-sicherheitsbehoerden-20261020"
+      - quote: "Sind beim Cyberangriff tatsächlich Daten von Publica abgeflossen und falls ja, von wem? Dazu dauern die Abklärungen noch an."
+        attribution: "Publica (Pensionskasse des Bundes)"
+        source_url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten"
+    extended_notes: |
+      Overlap note: S2 (inside-it-ch) logged the same Inside IT item; one of the two returns should carry the changelog record. Suggested record type: update, fields [headline, summary, sources, evidence, sourcing_note, body], and the 'actor and ransom demand are not public' sentences in the entry body (three occurrences) need to change to 'Tamedia reports ... unconfirmed'.
+      Defender-relevant delta beyond the covered actions: the exposed population now plausibly includes personnel whose employment is itself protected (cover identities, special forces), so beyond call-back rules for payroll/HR the risk is targeting, pretexting and counter-intelligence exposure of individuals; the State Secretariat for Security Policy already sees fraud contact attempts. Classification hint for the delta: reliability B (established investigative outlet, paywalled), credibility 3 (claim unconfirmed by officials, consistent with the existing entry's reports of 'security organs particularly affected' from Blick, 2026-10-18).
+  # ------------------------------------------------------------------ 4
+  - title: "Zeabur: second platform breach in two months exposes 3.2 million stored environment variables and 321,810 accounts through credentials the August rotation missed; the hosting platform will shut down by 31 December"
+    priority_hint: notable
+    sources:
+      - { url: "https://zeabur.com/blogs/october-2026-security-incident", publisher: "Zeabur (preliminary incident report)", date: "2026-10-19", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/zeabur-shutting-down-after-second-security-breach-in-two-months/", publisher: "BleepingComputer", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (item dated 2026-10-20 15:33 -0400) -> extract https://www.bleepingcomputer.com/news/security/zeabur-shutting-down-after-second-security-breach-in-two-months/ -> primary (victim): Zeabur, URL https://zeabur.com/blogs/october-2026-security-incident"
+    summary: |
+      FACTS (Zeabur, the victim, preliminary report, with its own certainty labels confirmed / assessed / cannot be confirmed): on 2026-10-14/15 an attacker used leaked internal credentials to break into the shared cluster, some dedicated servers and internal systems and read the platform database. Path A: AWS keys and shared-cluster admin tokens that were stored in plaintext in a private configuration repository (how they were obtained 'cannot be confirmed'; Zeabur hypothesises a link to the GitHub App private key leaked in the August incident); the cluster admin interface was open to the public internet in 9 regions and the tokens had no expiry; from 12:39 on 14 October the attacker read the settings and secrets of all services, ran commands inside 865 database containers (736 n8n on PostgreSQL, 211 PostgreSQL read table by table, 10 new-api/one-api) and read about 53 production secrets on 15 October, including internal-network admin credentials, a platform-database account and the GitHub App private key. Path B: root sign-ins to 101 GCP dedicated servers using root passwords stored in plaintext in server initialisation settings that an old GCP key could read; SSH keys added on 50 servers; five VMs created in Zeabur's GCP project with 16 copies of customer disks attached. The paths met when the attacker added a node to Zeabur's internal network with the stolen admin credentials and read the platform database with an internal read-only account (8,903 operation records). Confirmed data in the platform database: 3,218,965 environment-variable records (names and values), 321,810 accounts, 566 plaintext zSend API keys; 11,536 platform access tokens were stored only as hashes. Zeabur says the attacker was mainly hunting API keys usable directly, especially keys for AI services, read n8n credentials at scale (602 of 607 checked n8n instances had their encryption key in an environment variable, so stored third-party credentials were effectively plaintext) and tried, unsuccessfully, to call Amazon Bedrock with Zeabur's AWS keys. 
+      The lesson Zeabur itself draws (root cause stated by the victim): long-lived admin credentials stored in plaintext and usable from the public internet; the August rotation did not cover the credentials used this time (BleepingComputer quotes Zeabur: admin tokens had no expiry, were not rotated since January 2024 and were left out of the post-August rotation). Credentials rotated mid-incident were also captured by the next scheduled cluster backup and used by the attacker five hours later. An unidentified party had also signed in as root to about 98 of the same servers on 1-5 September (same actor 'cannot be confirmed'), and at least two Tokyo PostgreSQL databases carried a planted program that connected back to an external host.
+      BleepingComputer reports Zeabur announced it will wind down: renewals disabled and shared-cluster services paused from 2026-12-01, all dedicated servers and clusters ending by 2026-12-31. 
+    region_nexus: "global; no Swiss victim named; Swiss organisations or suppliers that deploy workloads, n8n or LLM gateways on Zeabur are exposed"
+    primary_sector_nexus: "indirect - hosting/PaaS supply-chain incident; the post-incident rotation lessons transfer to any IR team"
+    sector: "technology, cloud hosting"
+    cves: []
+    techniques: [T1078.004, T1552.001, T1098.004, T1578.002, T1578.001, T1021.004]
+    affected_products: ["Zeabur shared cluster", "Zeabur Dedicated Servers (GCP, Hetzner, DigitalOcean)", "n8n", "new-api / one-api"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:zeabur-platform-breach-2026-10", type: incident, name: "Zeabur platform breach, October 2026", aliases: ["Zeabur October 2026 security incident", "Zeabur second breach"], summary: "Attacker with leaked internal credentials, probably carried over from the August 2026 Zeabur incident (Zeabur: unconfirmed), read the Zeabur platform database on 2026-10-14/15: 3,218,965 environment-variable records and 321,810 accounts; Zeabur announced it will shut down by 2026-12-31 (Zeabur, BleepingComputer, 2026-10-19/20)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "no Swiss nexus and no named Swiss customer; recommended to ship under gate (b) - the victim's own forensic detail shows a materially evolved, transferable failure mode (post-incident rotation that missed credentials, rotated secrets captured by the next backup, in-container database reads that defeat password rotation) plus a hosting vendor that is exiting the market and strands customers"
+    evidence:
+      - quote: "On October 14–15, 2026, an attacker used leaked Zeabur internal credentials to break into the shared cluster, some Dedicated Servers, and Zeabur internal systems, and eventually read the platform database."
+        attribution: "Zeabur"
+        source_url: "https://zeabur.com/blogs/october-2026-security-incident"
+      - quote: "The root cause of this incident lies with Zeabur: long-lived admin credentials were stored in plaintext and could be used from the public internet."
+        attribution: "Zeabur"
+        source_url: "https://zeabur.com/blogs/october-2026-security-incident"
+      - quote: "The new key we put in place at 15:40 was captured by the 16:00 backup, and the attacker used it at 20:30."
+        attribution: "Zeabur"
+        source_url: "https://zeabur.com/blogs/october-2026-security-incident"
+      - quote: "so the third-party credentials in n8n were effectively leaked in plaintext."
+        attribution: "Zeabur"
+        source_url: "https://zeabur.com/blogs/october-2026-security-incident"
+      - quote: "The admin tokens had no expiry, had not been rotated since they were created in January 2024, and were not included in the post-August rotation"
+        attribution: "BleepingComputer (quoting Zeabur)"
+        source_url: "https://www.bleepingcomputer.com/news/security/zeabur-shutting-down-after-second-security-breach-in-two-months/"
+      - quote: "Zeabur announced over the weekend that it will shut down its services starting December 1, 2026, and finish by December 31, 2026."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/zeabur-shutting-down-after-second-security-breach-in-two-months/"
+    extended_notes: |
+      Classification hint: victim's own detailed report, first-party (A); credibility 2 (single victim account, with its own confirmed/assessed labels, plus BleepingComputer's independent read; no outside forensic party). The attacker's goal ('AI service keys they could use directly') is Zeabur's observation of intent, not a finding.
+      Exposure / triage for a customer: any project that kept environment variables on Zeabur and did not migrate them to its own dedicated server after August; any GCP dedicated server (root sign-ins confirmed on 101 servers for 92 users, SSH keys added on 50); Hetzner/DigitalOcean server-management tokens that were in internal code (revoked 2026-10-16 01:09 UTC; whether used 'cannot be confirmed'); n8n/new-api/one-api instances on the shared cluster; the GitHub App private key was read on 2026-10-15 15:05-18:54 UTC with no use found so far (Zeabur asked GitHub for audit logs).
+      Detection (telemetry classes): cloud control-plane audit logs - unusual use of admin tokens or cloud access keys from unfamiliar sources, new nodes joining an internal overlay network, bulk reads of secrets stores or databases, root SSH logins and authorized_keys changes on managed servers, creation of VMs and attaching of disk copies in the provider project (Zeabur says it added exactly these alerts); on the customer side - API calls using LLM or SaaS keys that were stored as Zeabur environment variables from unfamiliar IPs, n8n workflow/credential changes, outbound connections from database hosts to unknown external hosts (the planted program in two Tokyo PostgreSQL databases).
+      Defender takeaway / hardening: after any vendor or platform breach rotate everything that was readable, not only what the vendor lists, and re-check what rotation itself leaks (a scheduled backup that snapshots the freshly rotated secret defeated Zeabur's rotation within hours); keep admin interfaces off the public internet and give admin tokens expiry; encrypt-at-rest keys must not sit beside the data they protect (n8n encryption key in the container environment).
+  # ------------------------------------------------------------------ 5
+  - title: "Bullhorn: staffing and recruitment SaaS platform taken offline system-wide for about three days after a cyber incident; vendor has not determined whether customer data was exfiltrated"
+    priority_hint: notable
+    sources:
+      - { url: "https://status.bullhorn.com/", publisher: "Bullhorn status page", date: "2026-10-20", role: "primary" }
+      - { url: "https://www.cyberdaily.au/security/14323-hacked-ai-recruitment-platform-bullhorn-responding-to-cyber-incident", publisher: "Cyber Daily", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://docs.google.com/document/d/e/2PACX-1vT7GyVY26qMXg-HCCp5v7s-QrnGxfGaRCVUgxRVXohcwW-bQI4dx1zUqL8QmnLEnAyTtLucqkHFewuv/pub", publisher: "Bullhorn Support Incident FAQ (Google Docs, last updated 2026-10-20 08:50 ET)", date: "2026-10-20", role: "primary" }
+    discovery_trace: "first seen at: cyberdaily-au, URL https://www.cyberdaily.au/security (extract listing, item 'Hacked! AI recruitment platform Bullhorn responding to cyber incident', Tue 20 Oct 2026) -> extract https://www.cyberdaily.au/security/14323-hacked-ai-recruitment-platform-bullhorn-responding-to-cyber-incident -> primary (victim): Bullhorn status page, URL https://status.bullhorn.com/ -> primary (victim FAQ linked from the status page): https://docs.google.com/document/d/e/2PACX-1vT7GyVY26qMXg-HCCp5v7s-QrnGxfGaRCVUgxRVXohcwW-bQI4dx1zUqL8QmnLEnAyTtLucqkHFewuv/pub"
+    summary: |
+      FACTS (Bullhorn, status page and statements relayed by Cyber Daily): syncing problems from 2026-10-16, system-wide outage from 2026-10-17 08:04 EDT, and at 15:28 the vendor confirmed 'a cyber incident on the Bullhorn Platform', saying it temporarily disabled access to its systems to contain the activity and was working with CrowdStrike. AUS, EMEA/UK and US were reported online just before 17:00 on 2026-10-19; at 22:32 EDT on 2026-10-20 Bullhorn was still restoring ATS/CRM access in APAC, had fixed SSO access to external applications for the US only, and said all other regions were online, that customers should not change passwords (it delays restoration) and that Bullhorn-owned customisations and integrated apps were still being brought back. It warns that threat actors may pose as Bullhorn staff by email, text or phone to request credentials. Its FAQ (quoted by Cyber Daily) says 'we have not yet determined whether customer data was exfiltrated'. No actor has claimed the incident (Cyber Daily); a customer's Reddit speculation of ransomware is not evidence.
+      FAQ (Bullhorn, updated 2026-10-20 08:50 ET): the incident affected Bullhorn ATS/CRM, with 'no indication' that other Bullhorn solutions (the Salesforce-based products, Bullhorn Automation, Sourcebreaker, VMS Sync) were affected; Bullhorn says it isolated the issue and eradicated the immediate threat; non-SSO users must reset their password with 2FA on login, and API user passwords and Client Secrets are expired and must be rotated, which breaks customer- or third-party-hosted integrations until their credentials are updated and the application redeployed (Bullhorn-hosted customisations are handled by Bullhorn). Bullhorn Back Office standalone passwords were not reset and not impacted.
+      WHAT IS NOT KNOWN: initial access vector, whether data left, and whether the forced API-credential rotation implies the integration secrets were exposed (the FAQ says it is protecting 'the integrity of integrations', not that they leaked).
+    region_nexus: "global platform (AUS, EMEA/UK, US, APAC regions); no Swiss victim or Swiss customer named in any source read"
+    primary_sector_nexus: "indirect - SaaS ATS/CRM supplier to staffing and recruitment firms; relevant only if a Swiss public body or its staffing suppliers use Bullhorn"
+    sector: "technology, HR/recruitment SaaS"
+    cves: []
+    techniques: [T1199]
+    affected_products: ["Bullhorn ATS/CRM", "Bullhorn Automation", "Bullhorn Back Office"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:bullhorn-platform-cyber-incident-2026-10", type: incident, name: "Bullhorn platform cyber incident, October 2026", aliases: ["Bullhorn system-wide outage October 2026"], summary: "Recruitment SaaS vendor Bullhorn took its platform offline from 2026-10-17 after detecting a cyber incident, engaged CrowdStrike and restored most regions by 2026-10-19/20; data exfiltration not yet determined (Bullhorn status page, Cyber Daily, 2026-10-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "no Swiss nexus established and no exfiltration or actor finding yet; vendor-SaaS blast radius (ATS/CRM, SSO and API integrations, credential-phishing pretext) is the only reason to carry it; recommend holding until Bullhorn's post-mortem or an actor claim, and re-checking at the next fire"
+    evidence:
+      - quote: "We have detected a cyber incident on the Bullhorn Platform. We have temporarily disabled access to our systems to contain the activity while we investigate further"
+        attribution: "Bullhorn (via Cyber Daily)"
+        source_url: "https://www.cyberdaily.au/security/14323-hacked-ai-recruitment-platform-bullhorn-responding-to-cyber-incident"
+      - quote: "Our forensic investigation is ongoing, and we have not yet determined whether customer data was exfiltrated."
+        attribution: "Bullhorn FAQ (via Cyber Daily)"
+        source_url: "https://www.cyberdaily.au/security/14323-hacked-ai-recruitment-platform-bullhorn-responding-to-cyber-incident"
+      - quote: "Threat actors may pose as Bullhorn personnel via email, text, or phone calls, using the incident as a pretext to request credentials or sensitive information."
+        attribution: "Bullhorn status page"
+        source_url: "https://status.bullhorn.com/"
+      - quote: "We are requiring rotation of API passwords and Client Secret to protect the integrity of integrations."
+        attribution: "Bullhorn Support Incident FAQ"
+        source_url: "https://docs.google.com/document/d/e/2PACX-1vT7GyVY26qMXg-HCCp5v7s-QrnGxfGaRCVUgxRVXohcwW-bQI4dx1zUqL8QmnLEnAyTtLucqkHFewuv/pub"
+      - quote: "The cyber incident affected Bullhorn ATS/CRM."
+        attribution: "Bullhorn Support Incident FAQ"
+        source_url: "https://docs.google.com/document/d/e/2PACX-1vT7GyVY26qMXg-HCCp5v7s-QrnGxfGaRCVUgxRVXohcwW-bQI4dx1zUqL8QmnLEnAyTtLucqkHFewuv/pub"
+    extended_notes: |
+      Reliability A for the status-page facts (first party), credibility 2 (single victim account, no independent forensic reporting). Exposure check for any customer: API users and Client Secrets for integrations must be rotated now (FAQ), so inventory integrations (job boards, payroll, VMS, SSO) that call the Bullhorn API. Hunt idea for any organisation whose staffing suppliers use Bullhorn: inbound phone/email/SMS claiming to be Bullhorn support asking for credentials or MFA codes; SSO-linked sessions into Bullhorn from new locations; review of API keys issued to third-party integrations of the platform.
+  # ------------------------------------------------------------------ 6
+  - title: "Canva confirms that unauthorised access to its feedback tool Canny exposed enterprise customer records through the Canny-to-Salesforce connection; a new ransomware group claims over two million Salesforce records"
+    priority_hint: low
+    sources:
+      - { url: "https://www.cyberdaily.au/security/14317-exclusive-aussie-software-giant-canva-confirms-third-party-data-incident", publisher: "Cyber Daily", date: "2026-10-19", role: "primary" }
+    discovery_trace: "first seen at: cyberdaily-au, URL https://www.cyberdaily.au/security (extract listing, item 'Exclusive: Aussie software giant Canva confirms third-party data incident', Mon 19 Oct 2026) -> extract https://www.cyberdaily.au/security/14317-exclusive-aussie-software-giant-canva-confirms-third-party-data-incident (Canva's statement to Cyber Daily; Canva's own page not found). A WebSearch for background returned secondary reports that Canny alerted Canva on 29 August and that a Turkish regulator counts 424 affected organisations there; none of those pages was fetched, so they are not relied on."
+    summary: |
+      FACTS (Canva, in a statement to Cyber Daily): the incident affected Canny, 'a third-party tool Canva used to collect product feedback'; unauthorised access to Canny allowed access to some enterprise customer records, business contact details and routine business documentation, through Canny's connection to Canva's Salesforce account; Canva removed Canny's access, informed affected customers where required and says its own platform and systems, accounts, passwords, designs and content were not compromised. CLAIM (Seven Deadly Sins, a ransomware group that claimed its first victim in late September per Cyber Daily): it listed Canva on 2026-10-16, claiming more than 2 million Salesforce records, enterprise licence orders and billing PDFs, and says the data was already sold to a private buyer; Cyber Daily says one published sample looks like a genuine Canva for Enterprise order form; the sale and volume claims are unverified.
+    region_nexus: "global; no Swiss entity named"
+    primary_sector_nexus: "indirect - third-party SaaS connected to a CRM (OAuth/connected-app pattern); relevant to any body whose suppliers or its own CRM link feedback, support or marketing tools to Salesforce"
+    sector: "technology, SaaS"
+    cves: []
+    techniques: [T1199, T1528]
+    affected_products: ["Canny", "Salesforce (connected app)", "Canva for Enterprise"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:seven-deadly-sins", type: actor, name: "Seven Deadly Sins", aliases: [], summary: "Ransomware and extortion group that claimed its first victim in late September 2026 and listed Canva on 2026-10-16 claiming Salesforce data sold to a private buyer (Cyber Daily, 2026-10-19; claim unverified)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "origin is end-August/September, no Swiss or public-sector nexus in the sources, reliability C outlet, and the in-window delta is Canva's statement plus an unverified leak-site claim; drop unless the main agent wants the SaaS-to-Salesforce pattern item"
+    evidence:
+      - quote: "The unauthorised access to Canny allowed access to some enterprise customer records through its connection to Canva"
+        attribution: "Canva (via Cyber Daily)"
+        source_url: "https://www.cyberdaily.au/security/14317-exclusive-aussie-software-giant-canva-confirms-third-party-data-incident"
+      - quote: "The Seven Deadly Sins ransomware group listed Canva in a 16 October post to its darknet leak site."
+        attribution: "Cyber Daily"
+        source_url: "https://www.cyberdaily.au/security/14317-exclusive-aussie-software-giant-canva-confirms-third-party-data-incident"
+  # ------------------------------------------------------------------ 7
+  - title: "Republik (Zurich online magazine): self-hosted Metabase left unpatched for about two months after the 6 August zero-day advisory; user data of all subscribers and newsletter recipients accessed, EDÖB notified"
+    priority_hint: notable
+    sources:
+      - { url: "https://www.swissinfo.ch/eng/various/hackers-steal-user-data-from-the-online-magazine-republik/92225537", publisher: "swissinfo.ch (Keystone-SDA)", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://www.bluewin.ch/en/news/hackers-steal-user-data-from-the-online-magazine-republik-li.3637522", publisher: "bluewin.ch (Keystone-SDA)", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://www.netzwoche.ch/news/2026-10-19/onlinemagazin-republik-meldet-datenabfluss", publisher: "Netzwoche", date: "2026-10-19", role: "corroborating" }
+    discovery_trace: "first seen at: netzwoche, URL https://www.netzwoche.ch/rss.xml (feed item 'Onlinemagazin Republik meldet Datenabfluss', 2026-10-19; the feed fell back to the jina reader) -> extract https://www.netzwoche.ch/news/2026-10-19/onlinemagazin-republik-meldet-datenabfluss -> corroboration: Keystone-SDA via swissinfo, URL https://www.swissinfo.ch/eng/various/hackers-steal-user-data-from-the-online-magazine-republik/92225537 and via bluewin, URL https://www.bluewin.ch/en/news/hackers-steal-user-data-from-the-online-magazine-republik-li.3637522. Republik's own statement page was not located (a guessed article URL returned 404 and is not cited)."
+    summary: |
+      UPDATE candidate on 2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally (which lists fifteen downstream victims and none in Switzerland). FACTS (Republik's own statement, relayed by Keystone-SDA and Netzwoche): an unauthorised access that had been going on since August ended on Wednesday 2026-10-14 when an analytics tool stopped working and Metabase was taken offline; 'the security vulnerability had been known since August 6' but the magazine did not act in time ('we had not subscribed to the manufacturer's security warnings, and there were no automatic checks that report when software we use has a known gap' - Netzwoche quoting Republik). The attackers certainly retrieved the records of all registered users (active and past subscriptions, newsletter entries; at least names and email addresses, plus birth date, gender, phone number or birth year where provided) and demonstrably sampled postal addresses, comments and votes; Republik warns the link between anonymously published comments and their authors may have been exposed (worst case about 2,300 people) and that voting behaviour could be traced in some cases. Republik reported the incident to the Federal Data Protection and Information Commissioner (EDÖB) on 2026-10-15; no sign yet that the data surfaced online; the magazine thinks it was a broad automated wave, with the attackers first looking for what every Metabase install holds, such as login details and keys for resellable AI services (Keystone-SDA).
+    region_nexus: "Switzerland (Zurich) - a Swiss victim of an already-covered, KEV-listed pre-auth zero-day"
+    primary_sector_nexus: "indirect - media organisation, not public sector; the lesson is exposure of BI/analytics tooling and missing vendor-advisory subscriptions"
+    sector: "media, technology"
+    cves: [CVE-2026-72898]
+    techniques: [T1190, T1213]
+    affected_products: ["Metabase"]
+    entity_keys: ["incident:metabase-sqli-zeroday-2026-08", "product:metabase"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally"
+    borderline: true
+    borderline_reason: "first public reports are 2026-10-15/16 (Netzwoche 2026-10-19), outside the 26 h window and the 72 h developing window; kept because it is the first Swiss victim of the Metabase campaign, shows a roughly two-month undetected dwell on an internet-reachable BI tool, and the root cause (no advisory subscription, no known-vuln checks) transfers to Swiss public bodies; main agent decides whether a changelog record is warranted"
+    evidence:
+      - quote: "The security vulnerability had been known since August 6, but we failed to take the necessary countermeasures in good time"
+        attribution: "Republik (via swissinfo/Keystone-SDA)"
+        source_url: "https://www.swissinfo.ch/eng/various/hackers-steal-user-data-from-the-online-magazine-republik/92225537"
+      - quote: "It marked the end of an unauthorised access incident that had been ongoing since August."
+        attribution: "swissinfo (Keystone-SDA)"
+        source_url: "https://www.swissinfo.ch/eng/various/hackers-steal-user-data-from-the-online-magazine-republik/92225537"
+      - quote: "Wir hatten die Sicherheitswarnungen des Herstellers nicht abonniert."
+        attribution: "Republik (via Netzwoche)"
+        source_url: "https://www.netzwoche.ch/news/2026-10-19/onlinemagazin-republik-meldet-datenabfluss"
+      - quote: "Die \"Republik\" informierte den Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) über den Vorfall."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-19/onlinemagazin-republik-meldet-datenabfluss"
+    extended_notes: |
+      CVE note: none of the three Republik reports names a CVE; CVE-2026-72898 is linked from the covered entry through the 2026-08-06 Metabase advisory date that Republik cites.
+      Same-source caveat: the swissinfo and bluewin copies are one Keystone-SDA text; Netzwoche is an independent read of Republik's statement. The Republik page itself was not fetched.
+      Detection idea (already in the covered entry): POST /api/session/reset_password returning 400 followed by GET /api/user/current returning 200 in Metabase or ingress logs; the new angle is an 'unexpected failure of an analytics tool' as the only visible symptom and a six-week-plus gap between vendor advisory (2026-08-06) and discovery (2026-10-14).
+  # ------------------------------------------------------------------ 8
+  - title: "DD-Automation (Aesch BL): SafePay leak of a controls supplier contains an 'Armasuisse' folder; the Swiss Army says it holds no critical data"
+    priority_hint: notable
+    sources:
+      - { url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016", publisher: "Inside IT (paywalled; standfirst and lead read)", date: "2026-10-16", role: "primary" }
+    discovery_trace: "first seen at: inside-it-ch RSS https://www.inside-it.ch/rss.xml (item 'Ransomware-Angriff trifft Sublieferanten der Armee', 2026-10-16 13:28 GMT; listed during the Swiss lead sweep) -> extract https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016 (body partly paywalled). Ransomware.live (claims aggregator, C) separately lists a SafePay post for dd-automation.ch, first discovered 2026-10-05 (https://api.ransomware.live/v2/countryvictims/CH, a lead only, not cited)."
+    summary: |
+      Inside IT reports (2026-10-16) that at the start of October the SafePay ransomware group claimed an attack on DD-Automation of Aesch (BL), a maker of controls used mainly in logistics whose own reference list names ABB, Coop, Die Post Basel, Emmi, Siemens Schweiz and the University Hospital Zurich as customers, and that cybercriminals have now published the company's data, including a folder named 'Armasuisse'; according to the Army the folder contains no critical data. The article's headline calls the company a sub-supplier of the Swiss Armed Forces. Not read (paywall): which files, volume, whether DD-Automation has confirmed the intrusion, and what the Army's statement says exactly.
+    region_nexus: "Switzerland - supplier chain of the Swiss Armed Forces and armasuisse (Army logistics centre), plus a hospital and Post customers"
+    primary_sector_nexus: "direct - Armed Forces sub-supplier; public-sector customers on the vendor's own reference list"
+    sector: "public-sector (supplier), manufacturing"
+    cves: []
+    techniques: [T1486, T1567]
+    affected_products: []
+    entity_keys: ["actor:safepay"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: false
+    borderline: true
+    borderline_reason: "Swiss Armed Forces supplier nexus and not covered by any entry, but first reported 2026-10-16 (about 3.5 days outside the 26 h window), single paywalled source, and the Army says nothing critical; include only if the main agent weighs the armed-forces nexus above recency"
+    evidence:
+      - quote: "Cyberkriminelle veröffentlichen Daten eines Schweizer Logistikspezialisten, darunter ein Ordner \"Armasuisse\". Laut Armee enthält dieser aber keine kritischen Daten."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+      - quote: "Anfang Oktober bekannte sich die Ransomware-Bande Safepay zu einem Angriff auf DD-Automation mit Sitz in Aesch (BL)."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/ransomware-angriff-trifft-sublieferanten-der-armee-20261016"
+    extended_notes: |
+      Same-actor read: SafePay's Swiss claims on the ransomware.live country list since mid-September include the municipality of Manno (2026-09-28), ARA Lyss (2026-09-15) and DD-Automation (2026-10-05), none of the first two corroborated by a victim statement in anything read; SOCRadar's Manno page (WebSearch snippet, not fetched) calls the claim alleged. Not returned as items under the leak-site rule (PD-6).
+  # ------------------------------------------------------------------ 9
+  - title: "IDC Frontier (update): sixth report of 2026-10-18 reopens the IDCF Cloud backup service for unaffected zones; snapshots stay suspended"
+    priority_hint: low
+    sources:
+      - { url: "https://www.idcf.jp/news/topics/20261018001", publisher: "IDC Frontier (IDCF)", date: "2026-10-18", role: "primary" }
+      - { url: "https://rocket-boys.co.jp/?p=44131", publisher: "Rocket Boys", date: "2026-10-18", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"IDCフロンティア ランサムウェア IDCFクラウド 復旧 最新 報告 10月\") -> pivot: rocket-boys, URL https://rocket-boys.co.jp/?p=44131 -> primary: IDC Frontier news list, URL https://www.idcf.jp/news/ (surfaced the sixth-report link) -> primary: https://www.idcf.jp/news/topics/20261018001"
+    summary: |
+      UPDATE on 2026-10-11/idc-frontier-idcf-cloud-ransomware-495-customers-backups (last updated 2026-10-16 for the fifth report of 2026-10-14). DELTA (IDCF's sixth report, 2026-10-18): after a safety check IDCF resumed the 'IDCFクラウド バックアップ' (backup) service, so customers in the unaffected East Japan region 1 (radian and newton zones), East Japan regions 2 and 3 and West Japan region 1 can pull backup data and restore it outside IDCF Cloud or on premises; the snapshot function remains suspended for safety checks; IDCF Cloud TypeS (formerly White Cloud ASPIRE) and IDCF private cloud are outside the incident. Rocket Boys stresses it does not mean the downed zones or the 495 affected companies and local governments have recovered. No new information on intrusion path, actor, or data theft.
+    region_nexus: "Japan - cloud provider to companies and local governments; no Swiss nexus"
+    primary_sector_nexus: "indirect - municipal workloads on a ransomware-hit cloud; recovery-status delta only"
+    sector: "technology, local government"
+    cves: []
+    techniques: [T1486]
+    affected_products: ["IDCF Cloud", "IDCF Cloud Backup"]
+    entity_keys: ["incident:idc-frontier-idcf-cloud-ransomware-2026-10", "product:idc-frontier-idcf-cloud"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-11/idc-frontier-idcf-cloud-ransomware-495-customers-backups"
+    borderline: true
+    borderline_reason: "the sixth report is inside the 72 h developing window but is a recovery-status delta with no intrusion, actor or exposure information; recommend only a one-sentence changelog record or drop"
+    evidence:
+      - quote: "安全性の確認が完了したことからサービスの提供を再開します"
+        translation: "the service is resumed because the safety check is complete"
+        attribution: "IDC Frontier"
+        source_url: "https://www.idcf.jp/news/topics/20261018001"
+      - quote: "は、安全性の確認のために現在も提供を停止しています"
+        translation: "is still suspended for safety verification (the snapshot function)"
+        attribution: "IDC Frontier"
+        source_url: "https://www.idcf.jp/news/topics/20261018001"
+# Candidates reviewed and not returned as items (reasons are for the main agent's audit trail)
+dropped_candidates:
+  - { lead: "ETS data breach, California students (7 million)", why: "stale (Politico/DataBreaches 2026-10-17, CyberInsider 2026-10-19; outside window) and no Swiss nexus; transferable point is a single compromised credential on a contractor SFTP site used for state testing data, access 2026-05-22 to 2026-09-18, found 2026-09-25 (CyberInsider, https://cyberinsider.com/ets-data-breach-exposes-california-students-personal-information/)" }
+  - { lead: "Ahold Delhaize cyberattack across US and Europe (BleepingComputer 2026-10-20)", why: "retail, no Swiss or public-sector nexus, no TTP detail, company says no evidence yet of stolen customer or partner data" }
+  - { lead: "ICO reprimands of Ogi Networks Limited and Data Cymru (Local Government Data Unit Wales), listed 2026-10-20, dated 2026-10-14", why: "regulator notice about a 2024-11-01 ransomware attack that used a 12-year-old 'Test2' account; ICO pages carry only a one-line summary (detail in a PDF not read); UK, no Swiss nexus; DataBreaches.net relays a North Wales Live report" }
+  - { lead: "Qilin and INC ransomware exploiting PAN-OS CVE-2026-0257 to set up VPN connections (DataBreaches.net relay of The Hacker News, 2026-10-20)", why: "vulnerability exploitation by named ransomware affiliates; left to S1 (CVE-2026-0257 is not in prior_coverage)" }
+  - { lead: "Nikkei third data breach in a month (1.83 million records; stolen credentials into a development system 2026-10-07)", why: "no Swiss or public-sector nexus, no new TTP" }
+  - { lead: "Parkview Health patient portal outage (Indiana/Ohio)", why: "US hospital, suspected incident, no transferable TTP yet" }
+  - { lead: "Studio (Japan no-code site builder) unauthorised access 2026-09-30/10-01, disclosed 2026-10-16; Sourcenext; Cairn AI-pentest panel exposure (NorForge, 2026-10-19)", why: "Piyolog summaries 2026-10-20; no Swiss nexus; Cairn is research for S3" }
+  - { lead: "SafePay claims on the municipality of Manno (2026-09-28) and ARA Lyss (2026-09-15); anonymised Swiss claims by N0n ('Company #95', solar energy) and cloak ('********rta.ch', 87 GB) on 2026-10-18/20", why: "leak-site claims without victim statement or Admiralty A/B journalism (PD-6), stale or unattributable" }
+  - { lead: "Everest claim on Brenner Base Tunnel (BBT SE), 2026-10-17; Mimori claims on OpenText and AVEVA, 2026-10-20 (Ransomware.live)", why: "claims only; WebSearch found no victim statement or journalism; AVEVA/OpenText claim has an industrial-software-supplier angle worth a re-check at the next fire" }
+  - { lead: "AOMEI update-channel tampering, Swiss organisations affected (Netzwoche 2026-10-20)", why: "already covered by 2026-10-17/aomei-backupper-update-channel-tampering-unc7017-shinyroad, which already names Switzerland among GTIG's 11 victim countries; no new fact" }
+  - { lead: "ConnectWise Cloud Backup (SkyKick) - 173 tenants figure (Inside IT 2026-10-19, CSA research note)", why: "entry updated 2026-10-20 already tracks Huntress's second tenant; the 173 figure is attributed to Huntress only via the CSA note and I could not find it on the Huntress page, so no delta returned" }
+  - { lead: "Developing stories checked for in-window deltas: Danfoss/Copeland refrigeration, Denmark CPR, Tangerhuette portal vendor, Ixa Systems, ShinyHunters/FBI, OVHcloud CLI, Rank Math", why: "WebSearch and the feeds surfaced no development inside the window beyond what the entries carry (search index lagged for the Danish, German and Swiss items)" }
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier or product watchlist is configured for this deployment, so the sweep is a no-op; supplier-chain incidents were still collected under the standing S4 supply-chain mission (UpdraftCentral, Zeabur, Bullhorn, Canva/Canny, PK Softech)"
+candidate_sources:
+  - id: nethemba
+    publisher: "Nethemba (Slovak security consultancy, nethemba.com)"
+    url: "https://nethemba.com"
+    category: research
+    why: "first-hand discoverer of the UpdraftCentral backdoor campaign on its own sites, published the first analysis with a live-updated changelog (https://nethemba.com/updraftcentral-backdoor-analysis/); strong primary for WordPress and supplier-key compromises, though cadence is low"
+  - id: bluewin-en
+    publisher: "bluewin.ch English news (Keystone-SDA wire copy)"
+    url: "https://www.bluewin.ch/en/news/"
+    category: news
+    why: "carries Keystone-SDA English copy of Swiss incident statements (here the Republik breach, 2026-10-15) that is not behind a paywall and extracts cleanly; complements the swissinfo-ger candidate"
+coverage_gaps:
+  - { source_id: "bitdefender-threat-debrief", reason: "no incident posts in the 50 h lookback (newest listed post 2026-10-15, the AhsayCBS advisory already covered); the October Threat Debrief is dated 2026-10-06; the listing needs WebFetch and the post dates are reliable there" }
+  - { source_id: "ransomware-live", reason: "works as documented (`url --direct https://api.ransomware.live/v2/countryvictims/CH|DE|AT` and `/v2/recentvictims`); note the two endpoints use different field names (countryvictims: group_name/post_title/published/website; recentvictims: group/victim/discovered/attackdate/domain). Only redacted or unattributable Swiss claims in the lookback" }
+  - { source_id: "venarix", reason: "`url https://venarix.com/blog` returns raw HTML with slugs only and two 2024 datetimes; no dated in-window post could be established, low yield" }
+  - { source_id: "zaufana-trzecia-strona", reason: "homepage hrefs are relative (/post/<slug>/); the newest posts (Polish dental-practice data claim and the Fingerprint/Medyc series) are claims with no Swiss or public-sector nexus" }
+  - { source_id: "fuitesinfos", reason: "WebFetch returns only the four 'latest articles' cards (SOLIHA, Buddiz, Frenchy Sushi, BilletsNantes; French claims, no Swiss nexus); the full list still loads dynamically and is not reachable" }
+  - { source_id: "cyberinsider", reason: "`extract https://cyberinsider.com` returns an undated homepage listing whose metadata date is 2026-09-13; per-article extract carries the true date (ETS article 2026-10-19)" }
+  - { source_id: "databreaches-net", reason: "feed works; but `extract` of a databreaches.net post was served through the metered jina reader again (one call spent before I re-read the standing note) - use the feed summary only" }
+  - { source_id: "troyhunt", reason: "only Weekly Update 526 (2026-10-19) in the lookback, no incident disclosure" }
+  - { source_id: "netzwoche (not in slice, used for Swiss leads)", reason: "`feed https://www.netzwoche.ch/rss.xml` fell back to the jina reader (method: jina, empty published fields); `extract <article>` reads cleanly and is the better recipe" }
+  - { source_id: "swisscybersecurity-net", reason: "`feed https://www.swisscybersecurity.net/rss` returns 404 on the direct transport and the reader returned no items; no working feed path found" }
+  - { source_id: "tagesanzeiger.ch (Tamedia)", reason: "`extract` returns the navigation, headline, standfirst and 'In Kuerze' bullets only; the article body is paywalled and was not read" }
+source_ledger:
+  - { id: bitdefender-threat-debrief, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-15 (AhsayCBS, covered)" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "api: url --direct v2/countryvictims/{CH,DE,AT} + v2/recentvictims", horizon_hours: 50, in_horizon_items: 6, returned: 0, note: "2 redacted CH claims, 4 DE claims; none victim-corroborated" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge:sec-edgar 8k 1.05 and 8.01 + efts full-text via url --direct", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "0 Item 1.05 filings 2026-10-18..21; 103 Item 8.01 filings, none cyber-specific on the full-text queries (boilerplate hits only)" }
+  - { id: troyhunt, tier: standard, attempted: true, transport: "feed", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "Weekly Update 526 only" }
+  - { id: venarix, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "no dated in-window posts" }
+  - { id: zaufana-trzecia-strona, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 50, in_horizon_items: 2, returned: 0, note: "Polish claims, no nexus" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed (15 items) + extract", horizon_hours: 26, in_horizon_items: 12, returned: 3, note: "UpdraftCentral, eMudhra, Zeabur returned; OVHcloud CLI, Rank Math, AOMEI already covered; Ahold Delhaize dropped" }
+  - { id: cyberdaily-au, tier: standard, attempted: true, transport: "extract listing + extract articles", horizon_hours: 26, in_horizon_items: 3, returned: 2, note: "Bullhorn and Canva as borderline; Patch-Tuesday and PHP items belong to S1" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "extract homepage + article", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "ETS article dated 2026-10-19, outside horizon; dropped" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed (10 items)", horizon_hours: 26, in_horizon_items: 6, returned: 0, note: "Data Cymru ICO reprimand and PAN-OS/Qilin/INC leads dropped or passed to S1" }
+  - { id: fuitesinfos, tier: standard, attempted: true, transport: "webfetch homepage", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "4 French claims, no nexus" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "bridge:url listing + extract entries", horizon_hours: 26, in_horizon_items: 6, returned: 0, note: "Studio, Sourcenext, Cairn, hotel-PC phishing, remote-software event; none with Swiss or public-sector nexus" }

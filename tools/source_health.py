@@ -180,6 +180,12 @@ TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
     # (8 of 8 tries with 10 live keys) and, after one cached read, the
     # agent-side WebFetch. Discovery runs through WebSearch leads.
     "ssd-disclosure",
+    # connectwise-trust-center (2026-10-21): the advisories page answers 403 to
+    # the direct fetch, trafilatura finds no body, WebFetch is refused, and the
+    # jina reader relays an upstream block (it read the page once, on
+    # 2026-10-19, while a key had credit). Re-probe each fire and drop it from
+    # this set the moment a transport reads it again.
+    "connectwise-trust-center",
 })
 
 

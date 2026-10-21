@@ -86,3 +86,11 @@ The FortiMail entry said Fortinet's second workaround was restricting the manage
 - **Editing with `text.index(a):text.index(b)` slices is unsafe.** The first occurrence of the start phrase can sit in the frontmatter `summary` while the end phrase is in the body, so the replace overwrote the middle of the file. Replace short unique phrases with `assert text.count(old) == 1`, and `git diff` or reread the file after any bulk Python edit.
 - **A single verifier spawn can be lost to a container restart.** The working tree survives; re-spawn the same iteration with a note that earlier partial files are to be ignored.
 - **Pair verifier findings with dispositions in each findings file's own order, never in the order the verifier's summary message lists them.** On 2026-10-11 iteration 3, dispositions built from the message order landed on the wrong findings and the iteration block had to be rewritten.
+
+## Word cap, evidence binding, living pages (2026-10-21 intel fire)
+
+- **The 550-word `entry-shape` cap counts the whole body before the first changelog section, labelled lines included**, with link text only. Count it the same way (strip `[text](url)` to `text`) before writing; trimming only the narrative paragraphs left three entries 40 to 190 words over.
+- **`evidence[].publisher` must equal a `sources[].publisher` string** (the check is a near-exact match): a shortened label ("PHP (php.net news archive)") warns even when the source is cited.
+- **A living page (vendor statement, tracker, research post updated for days) is ONE `sources[]` record**, dated to the date the cited text states and labelled "updated through <date>"; a second record for the same URL is a verifier advisory each time. Cite publication or last-updated date consistently inline.
+- **The verifier re-opens a decline once the fire has edited the same field**: "pre-existing text" does not hold for a `sourcing_note` that the record's `fields` names. Rewrite the whole note to two or three provenance sentences.
+- **Entry slugs are capped at 60 characters**; name the file before the first `Write` (six long names had to be renamed after writing).

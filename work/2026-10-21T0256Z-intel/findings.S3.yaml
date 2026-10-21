@@ -1,0 +1,496 @@
+# work/2026-10-21T0256Z-intel/findings.S3.yaml  (S3 - research & investigative reporting)
+domain: S3
+run_id: 2026-10-21T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-21T02:58:21Z
+ended_at: 2026-10-21T03:22:09Z
+duration_seconds: 1428
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 17
+  bridge_fetches: 150
+items:
+  # ---------------------------------------------------------------------------
+  - title: "eMudhra's eight intermediate CA private keys were trivially recoverable (values below 256); every trust store has blocked them and Chrome and Mozilla are now removing the emSign ECC Root CA - G3"
+    suggested_kind: incident
+    suggested_priority: high
+    priority_reason: "Any actor can forge certificates for any website against clients that neither check revocation nor enforce Certificate Transparency; browsers and OS stores are already protected, but Go, Python, Rust, curl, container base images and appliance trust stores need updates, and Chrome's root removal on 2026-10-27 will break sites still chaining to the root."
+    sources:
+      - { url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/", publisher: "Google Chrome Root Program", date: "2026-10-20", role: "primary" }
+      - { url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449", publisher: "Mozilla Bugzilla (bug 2083449)", date: "2026-10-18", role: "primary" }
+      - { url: "https://emudhra.we-have-a-problem.com/", publisher: "Mozilla CA Program incident tracker (D. Jackson)", date: "2026-10-20", role: "primary" }
+      - { url: "https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/", publisher: "Mozilla Security Blog", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://groups.google.com/g/golang-announce/c/66pojueaQek", publisher: "Go security announcement", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/", publisher: "BleepingComputer", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: google-tag feed, URL https://blog.google/security/rss/ (fetched via tools/fetch_source.py feed) -> item https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/ -> pivot: WebSearch (\"eMudhra emSign ECC Root CA G3 subordinate CA private keys weak entropy compromised\" returned nothing on-point) -> pivot: Mozilla Bugzilla REST search (https://bugzilla.mozilla.org/rest/bug?quicksearch=emudhra) -> primary: https://bugzilla.mozilla.org/show_bug.cgi?id=2083449 -> primary: https://emudhra.we-have-a-problem.com/ and Mozilla dev-security-policy post https://groups.google.com/a/mozilla.org/g/dev-security-policy/c/0R3XLJL6FuE/m/VAgSvefvAAAJ -> corroborating: news feeds (THN/BleepingComputer/The Register 2026-10-20) -> Go announcement https://groups.google.com/g/golang-announce/c/66pojueaQek"
+    summary: |
+      FACTS (Mozilla bug 2083449 and Mozilla's incident tracker): on 2026-10-17 a researcher reported to the Chrome, Apple, Microsoft and Mozilla root programs and to eMudhra that the private keys of eight eMudhra intermediate CA certificates were compromised, with a proof of key control. Mozilla recovered the keys independently within about 100 minutes and found all eight P-384 keys were integers below 256, "effectively all-zeroes apart from the last byte", from a batch of 24 intermediates generated on 2025-04-30; the flaw is in key generation, not in signing. Six are TLS intermediates trusted by the Chrome, Mozilla, Microsoft and Apple root programs, two are code-signing intermediates trusted by Microsoft. Several of the TLS intermediates were also cross-signed by Sectigo, whose cross-sign root is no longer in the Chrome and Mozilla stores but remained trusted in the Microsoft and Apple programs when Sectigo posted; Sectigo reported revoking the cross-signs on 2026-10-19.
+      Mitigation timeline: Mozilla OneCRL and Chrome CRLSet blocked the TLS intermediates on 2026-10-17, Apple on 2026-10-19 and Microsoft platforms on 2026-10-20 (Mozilla tracker); eMudhra revoked all eight with reason caCompromise on 2026-10-18. On 2026-10-20 Mozilla stated that several individuals had independently recovered the keys, some publicly, and removed the signing root emSign ECC Root CA - G3 from NSS 3.131.1 so that clients without revocation checking or an intermediate-block mechanism are protected; Chrome committed to the same path with the root removal expected on 2026-10-27, and says it is reviewing eMudhra's remaining CA certificates. Mozilla is not removing emSign Root CA - G1 at this time. eMudhra stopped issuing from all intermediates under the G3 root and estimates about 30,000 certificates (97 percent issued via ACME) need migrating to chains under its RSA G1 root.
+      CLAIMS: eMudhra says a key-generation script error produced a second set of weak keys that were mistakenly picked for signing, that the G3B and G3C intermediates were not put into production apart from one DV G3C intermediate (a researcher's timeline says that one was live and has been disabled) and that no end-entity certificates were issued from them, and that its other issuers use different HSM vendors and are not affected (eMudhra in the Mozilla bug). Mozilla's tracker states there are no Certificate Transparency entries for these intermediates, so CT-enforcing browsers could not have been attacked, and that it does not know whether attackers exploited the flaw against non-browser clients that do not enforce CT.
+      The open exposure is software with its own trust store or no revocation checking. The tracker lists fixed versions (Go 1.27.3 and 1.26.10 as CVE-2026-111943, Python certifi 2026.10.19, rustls-webpki 0.103.16, webpki-roots 1.0.10, curl CA bundle 2026-10-20, NSS 3.131.1, Electron, Composer ca-bundle, distribution ca-certificates packages) with Node.js, Bun and FreeBSD pending at the time of fetch; the macOS built-in /usr/bin/curl uses /etc/ssl/cert.pem without revocation checking and had not been updated.
+    region_nexus: "global; no Switzerland-specific exposure reported - affects any Swiss public-sector client or service whose trust store lacks the intermediate blocks (Go/Python/Rust/Node services, curl on macOS, container base images, appliances, TLS-inspection proxies)"
+    primary_sector_nexus: "indirect (all organizations trusting the public Web PKI)"
+    sector: "cross-sector"
+    cves: [CVE-2026-111943]
+    techniques: [T1557, T1649]
+    technique_note: "Capability mapping only: no exploitation is reported; T1557 is the abuse the weak keys enable (impersonate a site to intercept TLS), T1649 the forgery of trusted certificates."
+    affected_products: ["emSign ECC Root CA - G3 (eMudhra)", "Go crypto/x509", "Mozilla NSS", "Python certifi", "rustls-webpki", "curl CA bundle", "Debian/Ubuntu/Alpine/Fedora ca-certificates"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:emudhra-intermediate-ca-key-compromise-2026-10", type: incident, name: "eMudhra intermediate CA private-key compromise (October 2026)", aliases: ["eMudhra CA compromise", "emSign ECC Root CA - G3 removal"], summary: "Eight eMudhra P-384 intermediate CA keys generated on 2025-04-30 were trivially recoverable (integers below 256); reported 2026-10-17, revoked 2026-10-18, root emSign ECC Root CA - G3 removed from Mozilla NSS and, from 2026-10-27, the Chrome Root Store (Mozilla bug 2083449; Google Chrome Root Program, 2026-10-20)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 1 }
+    novelty: new
+    evidence:
+      - quote: "The private keys for these certificates were generated with insufficient randomness (i.e., weak cryptographic entropy), enabling anyone to forge trusted HTTPS certificates to impersonate any website against clients that have not yet removed trust in those CAs."
+        attribution: "Google Chrome Root Program"
+        source_url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/"
+      - quote: "website operators with certificates chaining to emSign ECC Root CA - G3 must immediately acquire and install a new TLS certificate from another PKI hierarchy included in the Chrome Root Store."
+        attribution: "Google Chrome Root Program"
+        source_url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/"
+      - quote: "The 8 impacted keys all used integers less than 256."
+        attribution: "Mozilla Bugzilla (bug 2083449)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+      - quote: "The certificates have been blocked in Firefox and Chrome since the 17th of October, in Apple devices since the 19th and on Microsoft platforms since the 20th."
+        attribution: "Mozilla CA Program incident tracker (D. Jackson)"
+        source_url: "https://emudhra.we-have-a-problem.com/"
+      - quote: "However, many clients outside of the browser ecosystem do not enforce Certificate Transparency. We do not know if attackers exploited the flawed key generation to target these clients."
+        attribution: "Mozilla CA Program incident tracker (D. Jackson)"
+        source_url: "https://emudhra.we-have-a-problem.com/"
+      - quote: "However, software that uses its own certificate stores or doesn't check certificate revocations may keep trusting the compromised intermediates until it is updated."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/"
+    extended_notes: |
+      Exposure: not a patch-a-product item. Defenders can test whether a client still trusts the intermediates with Mozilla's test endpoints (curl https://dv-g3b-emudhra.we-have-a-problem.com/ and https://dv-g3b-aaa-emudhra.we-have-a-problem.com/ - a certificate error means the client is protected, per the tracker); inventory services using their own CA bundles (Go binaries built before 1.27.3/1.26.10, Python certifi, Rust webpki-roots, Node, Electron apps, container images with an old ca-certificates package, macOS /usr/bin/curl). Separately inventory any certificates the organization itself obtained from eMudhra/emSign under the ECC G3 root: they stop validating in Chrome from 2026-10-27 (Mozilla tracker says 97 percent of eMudhra's affected certificates were ACME-issued, so check ACME clients pointed at emSign).
+      Detection (derived from the stated mechanism, not a vendor rule): eMudhra says no end-entity certificates were issued from the compromised intermediates, so any TLS server certificate observed on the wire or in proxy/EDR TLS metadata whose chain includes one of the eight intermediates (or their Sectigo cross-signs; serials and hashes are in the tracker's impacted-intermediates.json) is anomalous and should be treated as a forged-certificate/MITM indicator; telemetry class: TLS session metadata (Zeek ssl/x509 logs, TLS-inspection and proxy logs, EDR network events). Because no CT entries exist, CT monitoring will not show forged certificates.
+      Triage: legitimate eMudhra customers' certificates chain to other eMudhra intermediates, not these eight; a validation failure for a site using emSign ECC G3 after 2026-10-27 in Chrome is expected breakage, not an attack.
+      Defender takeaway: update trust stores and rebuild images on every non-browser stack that does not consume revocation data; do not rely on revocation or CT for those clients.
+      DISCREPANCY to surface: Google's post says eight subordinate CAs in its first paragraph and six intermediate CAs later (six are the TLS ones that matter for CT); Mozilla's bug lists the issuer of the intermediates as emSign Root TLS CA - G3 while Google and Mozilla's root-removal decision name emSign ECC Root CA - G3 as the root being removed. The Mozilla tracker says Microsoft platforms blocked the intermediates from 2026-10-20; Microsoft's own advisory was not located.
+  # ---------------------------------------------------------------------------
+  - title: "Symantec: APT28 (Swallowtail) used the HOOKEDGE backdoor against a law-enforcement agency, a naval shipbuilder and an aircraft-engine maker in two NATO states, then stole credentials and tunnelled in over SSH"
+    suggested_kind: threat
+    suggested_priority: high
+    priority_reason: "Government espionage tradecraft with a law-enforcement victim in a NATO state; the post-access steps (SSH key push + remote port forward, self-authentication NTLM capture, in-memory loader) are detectable on any Windows estate, and Recorded Future independently documented the same backdoor family against European government and diplomatic targets."
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/swallowtail-russia-nato-targets", publisher: "Symantec Threat Hunter Team", date: "2026-10-20", role: "primary" }
+      - { url: "https://www.recordedfuture.com/research/bluedelta-targets-with-hookedge", publisher: "Recorded Future Insikt Group", date: "2026-08-27", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/russian-apt28-breaches-nato-naval.html", publisher: "The Hacker News", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed, URL https://feeds.feedburner.com/TheHackersNews (via tools/fetch_source.py feed) -> https://thehackernews.com/2026/10/russian-apt28-breaches-nato-naval.html -> primary: Symantec https://www.security.com/threat-intelligence/swallowtail-russia-nato-targets -> corroborating: Recorded Future Insikt https://www.recordedfuture.com/research/bluedelta-targets-with-hookedge (linked from the Symantec report)"
+    summary: |
+      FACTS (Symantec Threat Hunter Team, 2026-10-20): the group Symantec tracks as Swallowtail, which it equates with APT28 / Fancy Bear / Forest Blizzard and describes as a GRU unit per the US government, targeted organizations in two NATO member states: a law enforcement agency, a naval shipbuilder and a manufacturer of military aircraft engines (none named). Initial access was a macro-enabled Word document opened from the Outlook attachment cache on 2026-07-24; the obfuscated macro (VBA split into fragments joined at runtime) dropped a VBScript launcher, an HTML auto-submit form pair and a batch script. The HOOKEDGE backdoor then uses a hidden, off-screen Microsoft Edge window (one-pixel size, positioned off-screen, started after killing msedge.exe, inline base64 JavaScript data: URL) as its HTTP client against webhook.site endpoints for tasking and for returning command output. At the shipbuilder, a second stage moved from webhook.site to a dedicated IP over HTTPS with curl; the operators were hands-on-keyboard over about a week, pushed an SSH private key renamed id_rsa and immediately opened an outbound SSH session to their own server with a remote port forward (-R, -N, -f, host-key checking disabled, legacy RSA algorithms enabled) for a persistent tunnel into the internal network, and ran a short PowerShell script that starts an HttpListener on loopback and forces the host to authenticate to it (net use to localhost@8080) to capture NTLM challenge-responses. They also dropped a previously undocumented reflective loader, ld.exe, run with an encrypted file and key given as command-line arguments (decrypts in memory, exported function ExecuteLoader; payload not recovered). Symantec saw activity from the shipbuilder host as late as 2026-09-24 and advises treating a HOOKEDGE hit as a potentially ongoing intrusion.
+      CONTEXT (independent): Recorded Future Insikt Group documented HOOKEDGE on 2026-08-27 from campaigns between September 2025 and April 2026 against government and diplomatic organizations in Romania, Spain and Turkiye, assessed with moderate confidence as BlueDelta (overlapping APT28), and recommended blocking macro execution from internet-originated documents plus detection for scheduled-task abuse, headless Microsoft Edge execution and outbound connections to webhook services. Symantec's contribution is the post-access tradecraft and the new victims; the actor naming differs by vendor (Swallowtail vs BlueDelta) and both attribute to APT28 overlap, not to a bare identity.
+    region_nexus: "Europe/NATO; law-enforcement victim country unnamed; Swiss federal and cantonal police and defence suppliers are in the same target class (government, defence, law enforcement) as other European victims of this actor"
+    primary_sector_nexus: "direct (law-enforcement and government targeting)"
+    sector: "government; law-enforcement; defence"
+    cves: []
+    techniques: [T1566.001, T1204.002, T1059.005, T1059.003, T1564.003, T1102.002, T1105, T1572, T1187, T1620, T1053.005, T1070.004, T1027]
+    affected_products: ["Microsoft Word (macros)", "Microsoft Edge", "Windows OpenSSH client"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:apt28", type: actor, name: "APT28", aliases: ["Fancy Bear", "Forest Blizzard", "BlueDelta", "Swallowtail"], summary: "Russian state-sponsored espionage group that the US government and Recorded Future attribute to GRU; Symantec tracks the HOOKEDGE intrusions as Swallowtail and Recorded Future as BlueDelta (moderate-confidence overlap with APT28), targeting government, defence, diplomatic and law-enforcement organizations in Europe (Symantec, 2026-10-20; Recorded Future, 2026-08-27)." }
+      - { key: "malware:hookedge", type: malware, name: "HOOKEDGE", aliases: [], summary: "Lightweight Windows batch-script backdoor delivered through macro-enabled Word documents that uses webhook.site (later a dedicated IP) for tasking and exfiltration and a hidden headless Microsoft Edge window as HTTP client; code and tradecraft overlap with HEADLACE (Recorded Future, 2026-08-27; Symantec, 2026-10-20)." }
+    relation_suggestions:
+      - { subject: "actor:apt28", object: "malware:hookedge", basis: "Recorded Future assesses with moderate confidence that BlueDelta (overlapping APT28) used HOOKEDGE; Symantec attributes the HOOKEDGE intrusions to Swallowtail, which it equates with APT28 (Recorded Future 2026-08-27; Symantec 2026-10-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "The new victims and the post-access tradecraft rest on Symantec alone (first-hand vendor telemetry); HOOKEDGE and the APT28/BlueDelta context are independently documented by Recorded Future from different telemetry, and The Hacker News relays Symantec's report."
+    confidence: HIGH
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Swallowtail (aka APT28, Fancy Bear, Forest Blizzard), a Russian espionage group, targeted organizations in two NATO member states, including a law enforcement agency, a naval shipbuilder, and a manufacturer of military aircraft engines."
+        attribution: "Symantec Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/swallowtail-russia-nato-targets"
+      - quote: "They stole credential material using two separate techniques, opened a persistent SSH tunnel into the organization's internal network and deployed a previously undocumented reflective loader."
+        attribution: "Symantec Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/swallowtail-russia-nato-targets"
+      - quote: "Organizations that identify Hookedge indicators in their environment should treat the intrusion as potentially ongoing rather than concluded"
+        attribution: "Symantec Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/swallowtail-russia-nato-targets"
+      - quote: "Organizations should prioritize blocking macro execution from internet-originated documents and implementing detection coverage for scheduled task abuse, headless Microsoft Edge execution, and outbound connections to webhook services."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/research/bluedelta-targets-with-hookedge"
+    extended_notes: |
+      Exposure: Windows endpoints that open Office documents from mail and permit macros from the internet; any host with outbound access to webhook.site; OpenSSH client present by default on current Windows (the SSH tunnel uses ssh.exe from System32).
+      Detection (telemetry class first): process-creation events with parent lineage - WINWORD.EXE spawning wscript/cscript or cmd, then cmd.exe running taskkill /f /im msedge.exe followed by msedge.exe started with --window-size=1,1 --window-position=10000,10000 and a data:text/html;base64 argument (Sysmon EID 1 / EDR); network/proxy logs for msedge.exe or curl.exe reaching webhook.site or posting to an IP over 443 with -k (certificate checks off); ssh.exe launched from a user or ProgramData context with -i <key> -R <port> -N -f and StrictHostKeyChecking=no, writing to Windows OpenSSH logs / process-creation; a PowerShell HttpListener on localhost followed by net use \\localhost@8080\c$ (process creation plus Windows Security 4776/NTLM authentication events to the local host); creation of id_rsa under C:\ProgramData. Post-compromise check: a HOOKEDGE hit should trigger a credential reset for accounts on that host (NTLM material was captured) and a search for the persistent SSH tunnel and scheduled task, not just removal of the launcher.
+      Triage: legitimate headless Edge automation (Playwright, Selenium, test runners) shows Edge started with --headless or a debug port, not a one-pixel off-screen window with an inline data: URL after killing existing Edge; legitimate webhook.site use is by developers testing webhooks, not by Office-spawned scripts.
+      Hardening: block macro execution from internet-originated documents (Mark-of-the-Web policy), restrict outbound access to webhook-testing services, and constrain use of ssh.exe by non-administrative users with application control.
+      Defender takeaway: for a police or defence environment the decision is to hunt for the post-access chain (key push, SSH remote forward, NTLM self-capture) on any host where a HOOKEDGE launcher appeared, because the intrusion at the shipbuilder outlived the dropper by at least two months.
+      Gaps stated by the sources: the ld.exe payload was not recovered; the victim countries and organizations are unnamed; Symantec does not state initial-access victimology for the law-enforcement agency beyond HOOKEDGE presence.
+  # ---------------------------------------------------------------------------
+  - title: "Unit 42 update on CVE-2026-0257 (PAN-OS GlobalProtect): Qilin and INC operators exploit it, and intrusions pivot from the VPN gateway to vCenter and ESXi to dump domain credentials offline from a domain controller's disk"
+    suggested_kind: vulnerability
+    suggested_priority: high
+    priority_reason: "Fresh exploitation-by-ransomware-affiliates reporting and a new post-exploitation pivot (hypervisor layer) on a flaw already covered; government is among the sectors Unit 42 lists."
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/", publisher: "Unit 42 (Palo Alto Networks)", date: "2026-10-20", role: "primary" }
+    discovery_trace: "first seen at: unit42 feed, URL https://unit42.paloaltonetworks.com/feed/ (via tools/fetch_source.py feed; item updated 2026-10-20T20:30Z) -> primary (no pivot needed): https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/ ; dedup: CVE already covered by entries/2026-05-30/cve-2026-0257-palo-alto-pan-os-globalprotect-pre-auth-authen.md (no vCenter/ESXi, INC or sector facts in it)"
+    summary: |
+      FACTS (Unit 42 threat brief, updated 2026-10-20 with an October 19 update): Unit 42 reports ransomware operators including Spikey Scorpius (aka Qilin) and Tarnished Scorpius (aka Inc) exploiting the PAN-OS GlobalProtect authentication bypass CVE-2026-0257 to get a foothold, bypass MFA and establish a VPN session; its investigations began in early June 2026 and span education, financial services, healthcare, high technology, hospitality, manufacturing, professional and legal services, government, transport, utilities and retail. After access the actors run internal reconnaissance with dual-use RMM tools, move laterally over RDP and SMB, and stage credential-harvesting, exfiltration and ransomware tooling. Unit 42 calls the pivot to the virtualization layer the most significant change in post-exploitation tradecraft: in one case attackers moved from the compromised gateway to the vCenter management appliance, disabled execInstalledOnly on ESXi hosts, and used a custom tool to dump credentials offline from a domain controller's virtual disk (VMDK), which bypasses in-guest EDR; some actors chained the access with Veeam exploit tooling (CVE-2023-27532).
+      CLAIMS: Unit 42 also notes public reporting that attributes exploitation to Settra ransomware users (an X post by ReliaQuest; not independently fetched, not for citation). Source inconsistency: the brief's opening paragraphs still say 'No post-access behavior or lateral movement has been identified as of this time' and that only a small portion of probed devices established VPN sessions, while later sections describe lateral movement and ransomware deployment; the opening text appears to be left over from an earlier version of the brief.
+      Management-interface check from the same brief: GlobalProtect profiles mapped to the management interface's HTTP/HTTPS services can expose the management plane on ports 4443 and 3879; Unit 42 says to verify with an out-of-band HTTPS connection to the management IP on those ports.
+    region_nexus: "global; PAN-OS GlobalProtect is widely used by public administrations; government listed among affected sectors"
+    primary_sector_nexus: "direct (VPN gateway class widely deployed in public administrations; government among Unit 42's victim sectors)"
+    sector: "multi-sector incl. government"
+    cves: [CVE-2026-0257, CVE-2023-27532]
+    techniques: [T1190, T1133, T1219, T1021.001, T1021.002, T1685, T1003.003, T1486]
+    affected_products: ["Palo Alto Networks PAN-OS GlobalProtect", "VMware vCenter", "VMware ESXi", "Veeam Backup & Replication"]
+    entity_keys: ["actor:qilin", "actor:inc-ransom", "product:palo-alto-networks-pan-os"]
+    new_entities: []
+    alias_suggestions:
+      - { key: "actor:qilin", add_alias: "Spikey Scorpius", basis: "Unit 42 names Spikey Scorpius (aka Qilin)" }
+      - { key: "actor:inc-ransom", add_alias: "Tarnished Scorpius", basis: "Unit 42 names Tarnished Scorpius (aka Inc)" }
+    relation_suggestions:
+      - { subject: "actor:inc-ransom", object: "product:palo-alto-networks-pan-os", basis: "Unit 42 lists Tarnished Scorpius (aka Inc) among ransomware operators exploiting CVE-2026-0257 (Unit 42, 2026-10-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-05-30/cve-2026-0257-palo-alto-pan-os-globalprotect-pre-auth-authen"
+    evidence:
+      - quote: "Ransomware operators exploiting CVE-2026-0257 include Spikey Scorpius (aka Qilin) and Tarnished Scorpius (aka Inc)."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/"
+      - quote: "The most significant evolution in tactics, techniques and procedures (TTPs) following successful exploitation of CVE-2026-0257 is the direct pivot to the virtualization layer."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/"
+      - quote: "From there, they disabled security controls on ESXi hypervisors (execInstalledOnly) and used a custom tool to perform offline credential dumping directly against a domain controller's virtual disk (VMDK)."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/"
+      - quote: "This tactic bypasses in-guest endpoint detection and response (EDR) and security controls, representing a highly sophisticated method for obtaining domain-wide credentials."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/"
+    extended_notes: |
+      Delta for the existing entry: INC (Tarnished Scorpius) added to Qilin, the sector list, the vCenter/ESXi/VMDK pivot and the management-interface exposure check. The existing entry's Detection and Defender-takeaway lines only cover the gateway and the Qilin post-exploitation artifacts.
+      Detection (telemetry class first, from the brief): GlobalProtect gateway logs for successful gateway-connected events carrying the public PoC's hard-coded client values (Windows 10 Pro 64-bit OS string, empty user domain) or placeholder host IDs / device names; behind the gateway (derived from the described mechanism, not a Unit 42 rule): hypervisor-layer telemetry - vCenter and ESXi audit logs for a changed execInstalledOnly setting and for domain-controller VMDK files being read or copied outside backup jobs; EDR inside guests will not see the offline dump.
+      Hardening/defender takeaway: treat an exposed, unpatched gateway as a trigger to assess vCenter, ESXi and domain-controller virtual disks, not only the firewall; restricting vCenter/ESXi management reachability from VPN-assigned address pools is a derived hardening step, not stated by Unit 42; confirm management-interface exposure on ports 4443 and 3879 as Unit 42 advises.
+  # ---------------------------------------------------------------------------
+  - title: "JPCERT/CC: attack servers behind Japan's wave of web-system data thefts show attackers reverse-engineering public Android apps to find backend APIs, with AI-assisted scanning"
+    suggested_kind: threat
+    suggested_priority: notable
+    priority_reason: "National-CERT primary on a class (app-to-backend API attacks, BOLA/SSRF, admin and BI tools exposed to the internet) that applies to any public-sector mobile app or portal; Macnica's tally shows comparable cases in France and Poland as well as Japan and South Korea."
+    sources:
+      - { url: "https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html", publisher: "JPCERT/CC Eyes (blog)", date: "2026-10-21", role: "primary" }
+      - { url: "https://www.jpcert.or.jp/at/2026/at260030.html", publisher: "JPCERT/CC alert AT-2026-0030", date: "2026-10-08", role: "primary" }
+      - { url: "https://cynex.nict.go.jp/library/261013-01.html", publisher: "NICT CYNEX (LETTICE)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://security.macnica.co.jp/blog/2026/10/web-incidents2026.html", publisher: "Macnica Security Research Center", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: malware-news aggregator feed (bulk feed sweep), URL https://malware.news/t/recent-ai-assisted-cyber-attacks-in-japan-investigating-attack-infrastructure-and-techniques/126582 -> primary: JPCERT/CC blog https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html (found via https://blogs.jpcert.or.jp/en/ listing) -> JPCERT/CC alert https://www.jpcert.or.jp/at/2026/at260030.html (linked in the blog) -> NICT https://cynex.nict.go.jp/library/261013-01.html (linked in the blog references) -> Macnica https://security.macnica.co.jp/blog/2026/10/web-incidents2026.html (linked in the alert)"
+    summary: |
+      FACTS (JPCERT/CC, translated from Japanese for the alert and NICT/Macnica pages): since about September 2026 many Japanese organizations have disclosed personal-data leaks from web systems; JPCERT/CC's alert AT-2026-0030 (2026-10-08, updated 10-09) lists the observed methods: per-target scanning for many known vulnerabilities and theft of configuration and backup files (case A); abuse of administration APIs reached by analysing public smartphone apps for endpoints and keys, then attacking internal APIs (changing user privileges, creating accounts, probing responses with and without headers or malformed tokens, blind NoSQL injection) or using API keys stolen elsewhere (case B); the Metabase SQL injection CVE-2026-72898 (case C); and WAR/JSP web shells on application servers reachable from public web servers (case D, added 10-09). Systems not meant for public use, such as BI tools and employee admin systems, were also hit. JPCERT/CC's blog of 2026-10-21 reports what its infrastructure team found on attack servers: APK files with scripts testing the apps' APIs for SSRF (a Python HTTPS server answering with 302 redirects), the Flutter reverse-engineering tool Blutter and the Android decompiler jadx, and, on a separate server, tooling against web applications, MySQL, Jenkins and email gateways, EDR-evasion attempts and web shells believed deployed in targeted networks; it says it confirmed the attackers used AI to scan for known vulnerabilities and attack via APIs, and that web services for users outside Japan were also targeted. NICT's CYNEX alert (2026-10-13) names the class A2B (App-to-Backend) attack and states the app itself need not be vulnerable: weak authentication, authorization or input validation on the backend suffices.
+      CLAIMS AND DISAGREEMENT: Macnica's report (2026-10-16, written with Itochu Cyber and Intelligence and SecureSky Technology) counts 119 publicly disclosed Japanese web-system leaks in 2026 up to 6 October, 81 of them since July, and 99 similar cases in 13 countries in July to September including South Korea 30, France 11 and Poland 8 (Macnica's own tally of public disclosures, not independently verified). Macnica says no log or trace proving AI use was found in the incidents it handled and that no AI-found zero-day had been confirmed - the exploited weaknesses were basic access-control and configuration flaws and known vulnerabilities probed at scale - whereas JPCERT/CC's later blog states AI use was confirmed from attack-server evidence. The two statements differ in date and evidence base; neither names the model or the share of AI use.
+    region_nexus: "Japan primarily; South Korea, France and Poland cases per Macnica; no Swiss case reported"
+    primary_sector_nexus: "indirect but transferable (public-facing web apps and mobile-app backends of administrations, BI and admin tools exposed to the internet)"
+    sector: "cross-sector (consumer web services, libraries, education, ticketing, corporate systems)"
+    cves: [CVE-2026-72898]
+    techniques: [T1595.002, T1190, T1552.001, T1505.003]
+    affected_products: ["Metabase", "Android app backends (API)", "Jenkins", "Java application servers (WAR/JSP deployments)"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:japan-web-api-data-theft-wave-2026", type: campaign, name: "Japan web-system and API data-theft wave (2026)", aliases: ["A2B (App-to-Backend) attacks"], summary: "Wave of attacks since about September 2026 against Japanese (and South Korean, French, Polish) web systems and mobile-app backends combining known-vulnerability scanning, APIs found by reverse-engineering public Android apps, stolen API keys, Metabase CVE-2026-72898 and web shells; JPCERT/CC alert AT-2026-0030 and blog of 2026-10-21." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    confidence_note: "technical class HIGH (JPCERT/CC, NICT and Macnica agree); AI-use claim MEDIUM (JPCERT/CC states confirmed, Macnica found no proof earlier)"
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "We confirmed that the attackers had used AI to scan for known vulnerabilities and carry out attacks via APIs."
+        attribution: "JPCERT/CC Eyes (blog)"
+        source_url: "https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html"
+      - quote: "One notable characteristic of these attacks was that the attackers analyzed Android application packages (APK files) to identify APIs and exploit them"
+        attribution: "JPCERT/CC Eyes (blog)"
+        source_url: "https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html"
+      - quote: "（a）一般公開しているスマートフォンアプリを解析しAPIのエンドポイントやキーを特定する"
+        attribution: "JPCERT/CC alert AT-2026-0030"
+        source_url: "https://www.jpcert.or.jp/at/2026/at260030.html"
+      - quote: "アプリ自体に脆弱性がなくても、バックエンドサーバの認証・認可や入力値の検証などに不備があれば、不正アクセスや個人情報の漏洩につながるおそれがあります。"
+        attribution: "NICT CYNEX (LETTICE)"
+        source_url: "https://cynex.nict.go.jp/library/261013-01.html"
+      - quote: "一連の事案でAIが使われたと断定できるログや痕跡は確認されていません。"
+        attribution: "Macnica Security Research Center"
+        source_url: "https://security.macnica.co.jp/blog/2026/10/web-incidents2026.html"
+    extended_notes: |
+      Exposure: any mobile app with a backend API (Android APKs are public and can be decompiled; Flutter apps compile to native libapp.so but are still analysed with Blutter), plus administration, BI and back-office systems that were never meant to face the internet; Metabase instances below the fixed release for CVE-2026-72898 (JPCERT/CC alert AT-2026-0023, 2026-08-14; existing store entry entries/2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally.md).
+      Detection (telemetry class first, from JPCERT/CC and Macnica): web and API access logs for one source address making bulk API calls, bursts of 403/404/503 responses, probes for non-existent files or API functions, and extreme volume even with 200 responses; admin-API or privilege-changing calls from unusual addresses; User-Agent values such as curl and python-requests on endpoints meant for the official app; application-server filesystem monitoring for newly written .war and .jsp files (case D); database load, session exhaustion and rising authentication attempts coinciding with traffic bursts; outbound requests from application servers to attacker-controlled redirectors as an SSRF signal. Macnica recommends reviewing roughly the last month of logs and preserving them.
+      Hardening (JPCERT/CC and Macnica): do not embed private keys or long-lived credentials in apps (obfuscation does not protect them); enforce server-side authentication and authorization on every endpoint including non-public APIs (BOLA/IDOR); rate limit login, reset, SMS and search functions; validate and restrict destinations and redirects for any API that fetches external URLs (SSRF); give API tokens least privilege and expiry; take admin and BI tools off the internet.
+      Defender takeaway: audit the authorization model of every public app backend and every internet-reachable admin/BI tool, and check the last 30 days of API logs for bulk-enumeration patterns; treat embedded API keys in published APKs as already public.
+  # ---------------------------------------------------------------------------
+  - title: "NorForge: criminals left Cairn AI-agent control panels open, exposing over 1,100 automated attack projects against e-commerce and payment sites at roughly $5 per task"
+    suggested_kind: threat
+    suggested_priority: notable
+    priority_reason: "First view of operator-side tasking for autonomous exploitation agents (targets ranked, verified with Playwright, goal = uploader web shell); builds on the Gambit report already in the store; victims named by Reuters are US/Japan/Australia retailers, so the Swiss link is the threat model (cheap agents reaching web-app RCE in under a day) not a Swiss victim."
+    sources:
+      - { url: "https://norforge.com/blog/inside_cairn", publisher: "NorForge", date: "2026-10-19", role: "primary" }
+      - { url: "https://www.securityweek.com/ai-platform-cairn-abused-to-hack-over-100-organizations/", publisher: "SecurityWeek", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/hackers-use-autonomous-ai-agents-to.html", publisher: "The Hacker News", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed, URL https://feeds.feedburner.com/TheHackersNews -> https://thehackernews.com/2026/10/hackers-use-autonomous-ai-agents-to.html (also TechNadu feed https://www.technadu.com/feed/ item 'Exposed Cairn AI Hacking Panels Reveal 1,100+ Attack Projects') -> primary: NorForge https://norforge.com/blog/inside_cairn -> corroborating: SecurityWeek https://www.securityweek.com/ai-platform-cairn-abused-to-hack-over-100-organizations/ ; Reuters (named victims) is cited by both outlets but was not fetched"
+    summary: |
+      FACTS (NorForge, 2026-10-19): scanning for internet-exposed control panels of AI pentesting harnesses (prompted by Gambit Security's September report on Strix, Hermes and Cairn), NorForge found more than 20 Cairn panels that it judges likely malicious and grouped them into three clusters. AIA0001 (Chinese-language, 14 panels, high confidence) holds over 1,100 attack projects aimed mainly at e-commerce and payment infrastructure in the US, Japan and Australia, with the aim of lasting access for later monetisation; tasks tell the agent to find unauthenticated RCE (login SQL injection, unauthenticated endpoints, file upload, deserialization, authentication bypass) and to leave an uploader web shell (an HTML upload form plus move_uploaded_file) rather than a command shell; targets are ranked by traffic and checked with Playwright before being fed to Cairn. AIA0002 (English, 10 panels) steals cards and cryptocurrency from payment services and gray-market sites; AIA0003 (one panel, 59 projects, low confidence) works through large US platforms. The worker name claudecode_deepseek-v4.1-flash in AIA0001 suggests a Claude Code harness driving a DeepSeek model; NorForge estimates about $5 per task. NorForge puts average success near 10 percent, with AIA0001 successes taking a little under 23 hours and about 140 recorded facts per project; one documented chain used unauthorized write access to a memcached session store, unsafe PHP object deserialization and a gadget chain in legacy Zend Framework code, and NorForge confirmed a live uploader shell at one claimed victim and one large US retailer compromise. The panels also expose victims' secrets (hundreds of secrets, 11 percent verified valid by Trufflehog) and appear to expose full administrative control of the harness, which NorForge did not test.
+      CLAIMS (relayed): The Hacker News and SecurityWeek, citing Reuters, say the AIA0001 operator breached over 100 companies, naming Deere, SharkNinja and Cummins; the companies told Reuters the damage was limited or still under investigation, and NorForge itself names no victims. Cairn's author told Reuters the tool was not designed for attacks. NorForge assesses all observed activity as financially motivated and notes no sign of state actors, while stating it cannot exclude them.
+    region_nexus: "global; victims US, Japan, Australia (AIA0001), African commerce sites (AIA0002); no Swiss victim reported"
+    primary_sector_nexus: "indirect (threat-model relevance for public-sector e-commerce, payment and web portals)"
+    sector: "retail; e-commerce; payments"
+    cves: []
+    techniques: [T1595.002, T1190, T1505.003, T1588.007]
+    affected_products: ["Magento / Adobe Commerce (StyleSmuggler CVE-2026-75650 PoC in an agent working directory)", "PHP applications with unsafe unserialize and memcached session stores", "Zend Framework (legacy)"]
+    entity_keys: ["tool:cairn-exploitation-engine"]
+    references_hint: ["2026-09-23/gambit-ai-agent-retail-skimmer-campaign-strix-cairn-hermes"]
+    new_entities:
+      - { key: "actor:aia0001", type: actor, name: "AIA0001", aliases: [], summary: "NorForge's designation for a Chinese-language activity cluster operating 14 exposed Cairn AI-agent panels with over 1,100 attack projects against e-commerce and payment sites in the US, Japan and Australia, aiming at persistent web-shell access (NorForge, 2026-10-19). Financially motivated per NorForge; no tracked-actor attribution." }
+    relation_suggestions:
+      - { subject: "actor:aia0001", object: "tool:cairn-exploitation-engine", basis: "NorForge: AIA0001 runs over 1,100 attack projects through exposed Cairn panels (NorForge, 2026-10-19)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    confidence_note: "primary telemetry is NorForge's own scanning of exposed panels; the victim names and the 100-company count rest on Reuters, which was not fetched"
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "More than 20 exposed Cairn panels were identified as likely associated with malicious activity, providing an unusually detailed view of how threat actors select targets, direct autonomous agents, exploit vulnerabilities, and establish persistent access to compromised systems."
+        attribution: "NorForge"
+        source_url: "https://norforge.com/blog/inside_cairn"
+      - quote: "The operation is massive, with over 1100 attack projects spread over the 14 dashboards likely associated with this group."
+        attribution: "NorForge"
+        source_url: "https://norforge.com/blog/inside_cairn"
+      - quote: "the average time from project start to goal met was a little under 23 hours, generating on average 140 facts per project."
+        attribution: "NorForge"
+        source_url: "https://norforge.com/blog/inside_cairn"
+      - quote: "According to the cybersecurity firm, the threat actors were successful in roughly 10% of their attempts."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/ai-platform-cairn-abused-to-hack-over-100-organizations/"
+    extended_notes: |
+      Exposure: internet-facing PHP web applications with login, upload and unserialize surfaces; session stores (memcached) reachable without authentication; legacy frameworks with known gadget chains. Separately, organizations running AI pentest harnesses (Cairn and similar) should not expose their control panels, because they leak target secrets and administrative control (NorForge found legitimate red-team engagements exposed this way too).
+      Detection (derived from the described task: uploader shell, not command shell): web server file-integrity monitoring for new .php files in upload or hidden directories whose code calls move_uploaded_file, followed by HTTP requests to that file; web logs showing unauthenticated POSTs to upload endpoints followed by requests to a freshly created file name such as confirm.php; unauthenticated access to session-store ports (memcached 11211) from outside the application tier. Behaviourally the agent traffic is high-volume, step-by-step probing across SQL injection, file upload, deserialization and authentication-bypass classes against one site over many hours.
+      Hardening (derived from the chain described, not NorForge advice): restrict memcached to the application tier, avoid PHP unserialize on session or user-controlled data, patch Magento/Adobe Commerce StyleSmuggler (CVE-2026-75650, tracked elsewhere in the store), and deny web-server write access to executable directories so an uploader cannot persist.
+      Defender takeaway: assume web-app flaws of these classes are found and chained within about a day by inexpensive agents; the decision that changes is prioritising authentication, upload and deserialization hardening on public portals over waiting for CVE-level exploit reports.
+  # ---------------------------------------------------------------------------
+  - title: "Sophos X-Ops IR case: vishing plus SMS-code self-service password reset led to a registered Entra device, Primary Refresh Token sessions, Graph reconnaissance, SharePoint mass download and a ServiceNow user-table export"
+    suggested_kind: threat
+    suggested_priority: notable
+    priority_reason: "Directly applicable to Entra-based administrations: the whole chain starts at the account-recovery flow and moves through federation, with concrete log sources named for each step."
+    borderline: true
+    borderline_reason: "Published 2026-10-19 (date only), roughly a day before this run's 26 h window opens, and not in the store; included because it is the freshest first-hand Entra identity-intrusion write-up and no earlier fire covered it. A single customer case with no actor attribution."
+    recency_note: "source date 2026-10-19; window start 2026-10-20T00:56Z"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion", publisher: "Sophos X-Ops", date: "2026-10-19", role: "primary" }
+    discovery_trace: "first seen at: sophos-xops feed, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 (via tools/fetch_source.py feed) -> primary (no pivot needed): https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+    summary: |
+      FACTS (Sophos X-Ops Incident Response, one customer case): after several employees reported suspicious calls and the organization warned staff by email, one user had already been compromised: the caller impersonated the help desk and obtained the SMS verification code needed to complete a self-service password reset (SSPR); an earlier SSPR attempt from a geographically anomalous address had occurred the day before. Within minutes of the reset the actor registered a new Windows device in Entra ID, used a Primary Refresh Token (PRT) and signed in with Edge from that token-backed context; later federated SAML sign-ins to ServiceNow and Salesforce show MFA as previously satisfied. Observed activity: Microsoft Graph reconnaissance (licence details, organization, tenant relationships, directory role assignments, owned service principals, domains, user counts; visible in Defender's GraphApiAuditEvents), about 100 mail items accessed and roughly 100,000 SharePoint files downloaded (Purview Unified Audit Log), SharePoint searches for credentials, PII and the organization's identity-verification vendor, Teams started, a ServiceNow sys_user export of about 2,500 records plus browsing of the CMDB computer table, and Salesforce access that stopped when Salesforce's own anomaly containment froze the user. The actor created no inbox or forwarding rules or applications; the only cleanup seen was deleting the organization's own vishing-warning email and one other message. Sophos notes the pattern matches Mandiant's description of vishing-led SSO and SaaS data theft by ShinyHunters-linked actors but attributes nothing to any group.
+    region_nexus: "unspecified (customer anonymized); technique class applies to any Microsoft 365 / Entra tenant"
+    primary_sector_nexus: "direct (Entra-centric administrations: help-desk impersonation and SSPR abuse)"
+    sector: "cross-sector (customer unnamed)"
+    cves: []
+    techniques: [T1566.004, T1078.004, T1098.005, T1213.002, T1114.002, T1087.004, T1069.003, T1213]
+    affected_products: ["Microsoft Entra ID (self-service password reset, device registration, Primary Refresh Token)", "Microsoft 365 (Exchange Online, SharePoint, Teams)", "ServiceNow", "Salesforce"]
+    entity_keys: ["product:microsoft-entra-id"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "In this case, the entire intrusion was unlocked because the SSPR flow accepted an SMS code the user handed over during a vishing call."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "Telemetry shows that an earlier SSPR initiation occurred from a geographically anomalous IP address the day before the confirmed vishing event."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "Alert on any new device registration within a short window of a password reset, MFA method change, or anomalous sign-in"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "it does not audit the passive viewing of existing messages in chats and channels a user already has access to."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+    extended_notes: |
+      Exposure: tenants where SMS or voice codes remain valid SSPR methods (especially for non-admin users with a single required method), where "Register or join devices" is not protected by Conditional Access requiring MFA, and where federated SaaS (ServiceNow, Salesforce) trusts the Entra session. Check in Entra: the SSPR authentication-methods policy, and the Conditional Access user action for registering or joining devices.
+      Detection (telemetry class first, per Sophos): Entra audit and sign-in logs - SSPR initiation from anonymizing or out-of-region infrastructure, then a password reset, then a device registration within minutes, then PRT-based sign-ins to other apps with MFA shown as previously satisfied; Defender GraphApiAuditEvents for directory, role and service-principal enumeration from a single user session; Purview SearchQueryInitiatedSharePoint with terms such as password, cred, aws, vpn, ssh or the MFA vendor's name; MailItemsAccessed anomalies on security-awareness mail followed by its deletion; bulk exports of identity, CMDB or CRM tables in federated SaaS (ServiceNow sys_user and cmdb_ci_computer). Gap stated by Sophos: Teams passive reading is not audited.
+      Post-compromise check: resetting the password is not containment; revoke sessions and refresh tokens at the identity provider and in every federated SaaS platform, and review devices registered to the identity since the reset.
+      Triage: a legitimate user does reset passwords and register devices, but a new Windows device registration within minutes of an SSPR reset from a different network, followed by access to unfamiliar SaaS apps via a token claim rather than an interactive prompt, is the discriminator Sophos names.
+      Defender takeaway: move account recovery to phishing-resistant methods (FIDO2, passkeys, Windows Hello for Business) and treat device registration as a privileged operation requiring MFA.
+  # ---------------------------------------------------------------------------
+  - title: "Sophos X-Ops telemetry on the ConnectWise Cloud Backup credential: a single-VPS, 96-minute script swept every consenting tenant in ascending GUID order; no persistence changes seen in the tenants Sophos reviewed"
+    suggested_kind: incident
+    suggested_priority: low
+    priority_reason: "Third-party corroboration plus one differing observation for an already-covered high-priority incident; the existing entry already carries Huntress's contrary two-tenant persistence finding."
+    borderline: true
+    borderline_reason: "Low delta for the covered incident (independent confirmation of the sweep pattern; Sophos saw no new secrets, applications, consents or role assignments in the tenants it reviewed, where Huntress saw role grants and planted secrets in two tenants); published 2026-10-19."
+    recency_note: "source date 2026-10-19; window start 2026-10-20T00:56Z"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/connectwise-cloud-backup-application-abused-in-token-sweep", publisher: "Sophos X-Ops", date: "2026-10-19", role: "primary" }
+    discovery_trace: "first seen at: sophos-xops feed, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 -> primary (no pivot needed): https://www.sophos.com/en-us/blog/connectwise-cloud-backup-application-abused-in-token-sweep ; dedup: entries/2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse.md cites Huntress, Todyl, SpecterOps and ConnectWise but not Sophos and has no sweep-order or duration facts"
+    summary: |
+      FACTS (Sophos X-Ops): on 2026-10-15 Sophos identified service-principal sign-ins in which an actor authenticated as the ConnectWise Cloud Backup application (formerly SkyKick) and requested app-only Microsoft Graph tokens from customer tenants, from a single VPS for about 96 minutes (first request 07:11 UTC, last scan 08:47 UTC). Sophos assesses with high confidence that a script enumerated a list of consenting tenants: tenants were accessed in strictly ascending tenant GUID order, requests were one to six minutes apart (User-Agents Python-urllib/3.12 and python-requests/2.31), and the sweep included tenants with no active backup subscription, which suggests the actor held the full consent list. Sophos found no hands-on-keyboard activity and says there is no evidence that the application created new secrets, applications, consents or role assignments in the tenants it reviewed; it says it is unclear how the credential was obtained and what was done with the tokens. Its recommendations: remove consent for the applications ConnectWise disabled, review service-principal sign-ins for 15-17 October, review audit logs for new credentials, secrets, application registrations, consents and role assignments since 13 October, and retrieve Graph activity logs for tenants with active backup.
+    region_nexus: "global (multi-tenant Microsoft 365 supply chain)"
+    primary_sector_nexus: "direct if any administration or its MSP used ConnectWise Cloud Backup / SkyKick"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1199, T1078.004]
+    affected_products: ["ConnectWise Cloud Backup", "Microsoft Entra ID", "Microsoft Graph"]
+    entity_keys: ["incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10", "product:connectwise-cloud-backup", "product:microsoft-entra-id"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse"
+    evidence:
+      - quote: "The malicious scanning activity originated from a single virtual private server (VPS) and continued for about 96 minutes."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/connectwise-cloud-backup-application-abused-in-token-sweep"
+      - quote: "Tenants were accessed in strictly ascending tenant GUID order."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/connectwise-cloud-backup-application-abused-in-token-sweep"
+      - quote: "As of this publication, there is no evidence that the application created new secrets, applications, consents, or role assignments in the reviewed tenants."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/connectwise-cloud-backup-application-abused-in-token-sweep"
+    extended_notes: |
+      Detection (per Sophos): Entra service-principal sign-in logs for the Cloud Backup application's client ID in the 15-17 October window, Python-urllib or python-requests user agents on that application's sign-ins, and Graph activity logs for tenants with active backup. Note the difference in review start date: Sophos says to review audit logs since 13 October.
+      Use: add as a corroborating source and the sweep-order/duration facts; do not weaken the existing entry's persistence warning, which rests on Huntress's two-tenant finding.
+  # ---------------------------------------------------------------------------
+  - title: "Hunt.io: an exposed staging directory documents a solo operator's Log4Shell chain against Graylog servers that held Ukrainian state data-exchange logs"
+    suggested_kind: threat
+    suggested_priority: low
+    priority_reason: "Single-source, Ukraine-specific targeting with a reused public chain; the transferable parts are the Graylog API trigger and the detection point that the payload runs from a static initializer."
+    borderline: true
+    borderline_reason: "No Swiss nexus; single source; included only for the Graylog/Log4Shell detection details and because logging servers hold sensitive transaction data in any administration."
+    sources:
+      - { url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell", publisher: "Hunt.io", date: "2026-10-20", role: "primary" }
+    discovery_trace: "first seen at: hunt-io, URL https://hunt.io/blog (WebFetch listing; displayed date Oct 20, 2026) -> primary (no pivot needed): https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+    summary: |
+      FACTS (Hunt.io): between May and September 2026 one operator working from a rented server swept Ukrainian address space for a single port and filtered 7,576 live hosts to two by the string "UXP Verifier" (the web interface to the message log of the Cybernetica UXP platform, itself built on X-Road, that Ukraine's national data-exchange system runs on). Hunt.io's AttackCapture indexed the operator's working directory, served over HTTP on port 8888 for 17 hours from 2026-09-03, with the staging server's access log. The recovered chain was a Log4Shell attempt through the Graylog sessions API: a POST to /api/system/sessions with a JNDI string in the username field and the header X-Requested-By: cli (required by Graylog's CSRF control), delivering two serialized CommonsBeanutils2 objects (stage 1 fetches a shell script, stage 2 runs it for a reverse shell); the access log shows the target fetching the stager six seconds after the trigger on at least two Ukrainian hosts. On the documented Graylog host the operator ran aggregate queries over about 6.8 million documents of the data-exchange logs (the query shape showed prior knowledge of the schema) but Hunt.io saw no exfiltration, which it labels absence of evidence rather than proof. Seven of eight exploit trees were unmodified public PoCs; the operator's one original piece of research, a RouterOS SCEP exploit, targeted a binary that does not contain the bug. A FortiGate SSL-VPN was probed 170 times without success.
+      ASSESSMENT (Hunt.io): high confidence that two staging servers were run by the same operator; medium confidence the objective was collection; no attribution to a tracked actor. Hunt.io says it shared the findings and recovered victim data with the affected countries' CERTs.
+    region_nexus: "Ukraine (target); Swiss nexus none"
+    primary_sector_nexus: "indirect (logging and SIEM servers in administrations hold transaction and audit data)"
+    sector: "government"
+    cves: []
+    techniques: [T1595.001, T1190, T1105, T1572]
+    affected_products: ["Graylog (Log4Shell-vulnerable builds)", "Cybernetica UXP / X-Road security servers (target identification only)"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "POST requests to /api/system/sessions carrying a ${jndi: substring in the username field, paired with the X-Requested-By: cli header."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+      - quote: "EDR rules written against Runtime.exec call sites in application logic will miss it. A spawned child process is the only reliable signal."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+      - quote: "We do not attribute this activity to a tracked actor."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+    extended_notes: |
+      Detection (telemetry class first, per Hunt.io): Graylog web/API access logs for POSTs to /api/system/sessions whose username contains a JNDI lookup and that carry X-Requested-By: cli; process-creation events with the Graylog Java service as parent (the payload runs from the translet's static initializer, so Runtime.exec hooks miss it); outbound connections from the Graylog host to unfamiliar servers on the port combination Hunt.io says has no common legitimate use (8888 staging with 1389 and 8890 for the JNDI listener); the template string ysoserial/payloads/util/Gadgets$StubTransletPayload in payload content.
+      Exposure: Graylog servers still on builds vulnerable to Log4Shell and reachable by an attacker; Hunt.io notes the logging server sat in the same /24 as another target.
+      Defender takeaway: verify Graylog and any other Java log-processing service is patched for Log4Shell and not internet-reachable; hunt for the child-process signal rather than relying on call-site rules.
+  # ---------------------------------------------------------------------------
+  - title: "GreyNoise: a product demo found residential-proxy IPs in a customer's Entra ID sign-ins, and a proxyjacking actor (skynox7) hijacked 143 edge devices through old D-Link, UniFi Video and SAP flaws"
+    suggested_kind: threat
+    suggested_priority: low
+    priority_reason: "Commodity proxyjacking on old CVEs; the transferable value is the identity-detection point that residential proxy IPs defeat geolocation rules and that several users signing in from one residential IP is a discriminator."
+    borderline: true
+    borderline_reason: "Primary published 2026-10-15 (outside the 26 h window; seen through the TechNadu lookback); the intrusion at the demo organization is deliberately unpublished; value is one detection idea plus an edge-device exposure list."
+    lookback: true
+    sources:
+      - { url: "https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies", publisher: "GreyNoise", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-hijack-d-link-ubiquiti-devices-to-resell-your-stolen-bandwidth/", publisher: "BleepingComputer", date: "2026-10-15", role: "corroborating" }
+    discovery_trace: "first seen at: technadu, URL https://www.technadu.com/feed/ (item 'Skynox7 Proxyjacking Campaign Hijacks 140+ Edge Devices Across Almost 35 Countries', 2026-10-16) -> WebSearch (\"GreyNoise skynox7 proxyjacking edge devices residential proxy D-Link Ubiquiti SAP\") -> primary: https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies -> corroborating (CVE list, which the primary renders as an image): https://www.bleepingcomputer.com/news/security/hackers-hijack-d-link-ubiquiti-devices-to-resell-your-stolen-bandwidth/"
+    summary: |
+      FACTS (GreyNoise, 2026-10-15): during a live demonstration, an organization saw GreyNoise-labeled malicious IP addresses in its Entra ID sign-in logs; the addresses looked residential and sat in the geography that made sense for the users, the property GreyNoise says defeats impossible-travel style rules, and the organization then found several users signing in from the same residential address and confirmed a serious intrusion (GreyNoise publishes no details of it). That led GreyNoise to research commercial residential-proxy abuse, where it found an actor it calls skynox7 that had compromised at least 143 edge devices in 34 countries and installed the legitimate Pawns.app bandwidth-sharing client on them to earn payouts, in some cases also adding an SSH key for return access. BleepingComputer, reading GreyNoise's table, lists the exploited flaws as CVE-2024-3272 and CVE-2024-3273 (D-Link ShareCenter NAS), CVE-2021-44228 (Ubiquiti UniFi Video NVR) and CVE-2025-31324 (SAP NetWeaver Visual Composer), with Hikvision and Dahua recorders also targeted without CVEs given. GreyNoise's guidance: detect residential-proxy addresses in authentication logs, scrutinize several enterprise users authenticating from one residential proxy address, and detect deviations beyond geolocation such as device identifier, session identifier and User-Agent mismatches.
+      ASSESSMENT/CAVEAT: GreyNoise says a legitimate sign-in can come from an address that is simultaneously proxying unrelated malicious traffic, so the residential-IP signal is a lead, not a verdict; the link between the demo-organization intrusion and skynox7 is not claimed.
+    region_nexus: "global (143 devices in 34 countries; no Swiss device count given)"
+    primary_sector_nexus: "indirect (edge devices and Entra sign-in monitoring)"
+    sector: "cross-sector"
+    cves: [CVE-2024-3272, CVE-2024-3273, CVE-2021-44228, CVE-2025-31324]
+    techniques: [T1190, T1496.002, T1098.004, T1090.003, T1078.004]
+    affected_products: ["D-Link ShareCenter NAS", "Ubiquiti UniFi Video NVR", "SAP NetWeaver Visual Composer", "Hikvision DVR/NVR", "Dahua DVR/NVR", "Microsoft Entra ID sign-in logs"]
+    entity_keys: ["product:microsoft-entra-id"]
+    new_entities:
+      - { key: "actor:skynox7", type: actor, name: "skynox7", aliases: [], summary: "GreyNoise designation for a proxyjacking actor that compromised at least 143 edge devices in 34 countries via D-Link ShareCenter, UniFi Video (Log4Shell) and SAP NetWeaver Visual Composer flaws to install Pawns.app (GreyNoise, 2026-10-15)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "The actor successfully compromised at least 143 devices in 34 countries using exploits for the following vulnerabilities:"
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies"
+      - quote: "Detect residential proxy IP addresses in authentication logs, and especially scrutinize scenarios where multiple enterprise users are authenticating from the same residential proxy IP"
+        attribution: "GreyNoise"
+        source_url: "https://www.greynoise.io/blog/proxyjacking-edge-devices-residential-proxies"
+      - quote: "CVE-2024-3272 and CVE-2024-3273 in D-Link ShareCenter NAS"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-hijack-d-link-ubiquiti-devices-to-resell-your-stolen-bandwidth/"
+    extended_notes: |
+      Detection (telemetry class first, per GreyNoise): Entra ID sign-in logs enriched with residential-proxy or gray-IP reputation; several distinct users sharing one source address; mismatches in device ID, session ID and User-Agent against each user's baseline. Edge side (derived from the described payload, not a GreyNoise rule): unexpected Pawns.app processes, added SSH authorized_keys entries, and proxy-network traffic from NAS, camera and recorder devices.
+      Triage: shared residential or CGNAT addresses can legitimately carry several users of one household or small office; the discriminator GreyNoise gives is several enterprise accounts from one residential address, plus device and session mismatches.
+dropped_leads:
+  - { lead: "Check Point Research: AI-powered antidetect browsers (Kameleo, AdsPower, MultiLogin) in fraud and influence operations", url: "https://research.checkpoint.com/2026/the-risk-of-ai-powered-antidetect-browsers-in-online-fraud-and-influence-operations/", date: "2026-10-20", reason: "platform-fraud and influence-operation focus; no public-sector, edge or identity-infrastructure hook for the constituency" }
+  - { lead: "Kaspersky: Operation FlashHole (Lazarus, GitHub-issue C2, CrossWeb EX watering hole)", url: "https://securelist.com/lazarus-operation-flashhole/121541/", date: "2026-10-21", reason: "South Korea-only targeting through mandatory Korean security software; no Swiss or European exposure; GitHub-API C2 detection idea is generic" }
+  - { lead: "Sophos CTU: BRONZE SANDCASTLE (Sandboxie DLL sideloading, modified Meterpreter, ntds.dit theft)", url: "https://www.sophos.com/en-us/blog/bronze-sandcastle-deploys-modified-meterpreter-shells", date: "2026-10-20", reason: "victims in Philippines, Taiwan, Afghanistan, Namibia and likely South Korea; no European victims; sideloading class is commodity" }
+  - { lead: "Zimperium blog: RemControl Android banking trojan", url: "https://zimperium.com/blog/remcontrol-expands-android-banking-fraud-capabilities", date: "2026-10-19", reason: "pointer post to Group-IB's 2026-09-23 report (stale primary); targets Italian, French, Spanish, Polish, Portuguese, Canadian and GCC banking customers, not Switzerland" }
+  - { lead: "Citizen Lab: Pegasus on a Belgrade rector's iPhone (zero-click)", url: "https://thehackernews.com/2026/10/pegasus-spyware-infection-confirmed-on.html", date: "2026-10-19", reason: "civil-society targeting in Serbia, no technical detail beyond zero-click and Apple threat notifications; primary page https://citizenlab.ca/research/pegasus-spyware-serbian-pro-democracy/ not fetched; the Citizen Lab RSS feed showed no item after 2026-10-18 at fetch time" }
+  - { lead: "Forescout Vedere Labs: ROMULUS ClickFix delivery platform (Legion Loader)", url: "https://thehackernews.com/2026/10/romulus-clickfix-platform-tricks-users.html", date: "2026-10-20", reason: "commodity crimeware delivery panel; no sector or region nexus; primary Forescout post not fetched" }
+  - { lead: "Sekoia TDR: Flowise honeypot attack on GenAI infrastructure", url: "https://www.sekoia.com/blog/a-honeypots-tale-deconstructing-an-attack-on-genai-infrastructure", date: "2026-10-19", reason: "single-actor honeypot event from late August (originally a customer report of 2026-09-07); low relevance for the constituency" }
+  - { lead: "Malwarebytes: AOMEI Backupper update servers hijacked", url: "https://www.malwarebytes.com/blog/news/2026/10/aomei-backupper-update-servers-hijacked-to-push-malware-check-your-pc", date: "2026-10-19", reason: "already covered by entries/2026-10-17/aomei-backupper-update-channel-tampering-unc7017-shinyroad" }
+  - { lead: "Rapid7: NetScaler intrusions chaining CVE-2026-88771 and CVE-2026-88779", url: "https://www.rapid7.com/blog/post/ra-netscaler-intrusions-chaining-cve-2026-88771-and-cve-2026-88779/", date: "2026-10-19", reason: "already cited in entries/2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev (update of 2026-10-19/20)" }
+  - { lead: "OX Security: Apache Airflow SSH hook disables host-key verification (CVE-2026-94134/94135)", url: "https://www.ox.security/blog/by-default-insecure-apache-airflow-disables-ssh-host-key-verification/", date: "2026-10-16", reason: "outside the ox-security lookback (published 2026-10-16T14:03Z, horizon started 2026-10-17T00:56Z); S1 may still want a vulnerability look (providers through 6.0.1; fixed in 7.0.0)" }
+  - { lead: "Symantec: Aoki infostealer targets AI coding-assistant credentials", url: "https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting", date: "2026-10-15", reason: "outside window (6 days old); not in store; developer-credential theft angle if a later fire wants it" }
+cross_domain_leads:
+  - { for: S1, lead: "THN 2026-10-20: Critical FortiSIEM flaw gets public exploit PoC (unauthenticated RCE)", url: "https://thehackernews.com/2026/10/critical-fortisiem-flaw-gets-public.html" }
+  - { for: S1, lead: "BleepingComputer 2026-10-20: PHP warns of two critical flaws, emergency patches due 2026-10-21 (Sansec: CVE-2026-109618 and CVE-2026-109619)", url: "https://www.bleepingcomputer.com/news/security/php-warns-admins-of-two-critical-flaws-emergency-patches-coming-tomorrow/" }
+  - { for: S1, lead: "BleepingComputer 2026-10-20: stolen UpdraftCentral keys used to backdoor WordPress sites", url: "https://www.bleepingcomputer.com/news/security/stolen-updraftcentral-keys-used-to-backdoor-wordpress-sites/" }
+  - { for: S1, lead: "Wordfence 2026-10-20: unauthenticated PHP object injection in Duplicator", url: "https://www.wordfence.com/blog/2026/10/wordfence-argus-discovers-high-severity-unauthenticated-php-object-injection-in-duplicator/" }
+  - { for: S2, lead: "The Record 2026-10-20: EU cyber law will not force fixes for fridge controllers hit in the French attack (relates to the covered Danfoss/Copeland entries)", url: "https://therecord.media/eu-cyber-law-wont-force-fixes-for-fridges-in-french-attack" }
+  - { for: S2, lead: "SecurityWeek 2026-10-20: US agencies detail incident-response practices for rogue AI agents", url: "https://www.securityweek.com/us-agencies-detail-incident-response-practices-for-rogue-ai-agents/" }
+  - { for: S4, lead: "BleepingComputer 2026-10-20: Ahold Delhaize cyberattack affects services across US and Europe", url: "https://www.bleepingcomputer.com/news/security/ahold-delhaize-cyberattack-affects-services-across-us-and-europe/" }
+candidate_sources:
+  - id: jpcert-eyes
+    publisher: "JPCERT/CC Eyes (blogs.jpcert.or.jp/en)"
+    url: "https://blogs.jpcert.or.jp/en/"
+    rss_url: "https://blogs.jpcert.or.jp/en/atom.xml"
+    category: research
+    reliability: A
+    why: "National-CERT technical blog (attack-infrastructure investigations, APT tradecraft, TSUBAME sensor reports); distinct from the existing 'jpcert' record (main site advisories); its Atom feed reads directly with dated items and carried the 2026-10-21 AI-assisted/API-attack post found this run."
+  - id: norforge
+    publisher: "NorForge (AI security research, Norway)"
+    url: "https://norforge.com/blog"
+    rss_url: null
+    category: research
+    reliability: B
+    why: "Primary research on exposed attacker AI-agent infrastructure (Inside Cairn, 2026-10-19), building on Gambit Security; no feed found (rss.xml, feed.xml and blog/rss.xml all 404); article pages read with extract."
+  - id: macnica-security-research
+    publisher: "Macnica Security Research Center blog (Japan)"
+    url: "https://security.macnica.co.jp/blog/"
+    rss_url: "https://security.macnica.co.jp/blog/atom.xml"
+    category: research
+    reliability: B
+    why: "Independent Japanese incident tallies and technique write-ups with IR-derived detail (2026-10-16 report on the web-system leak wave); atom.xml currently fails to parse (undefined entity at line 17), so use extract on the listing or on article URLs."
+coverage_gaps:
+  - { source_id: rapid7-research, reason: "recipe drift: the feed https://www.rapid7.com/rss.xml returns not well-formed XML (invalid token line 54 column 37) and the jina fallback returns no items; working alternative this run: `extract https://www.rapid7.com/blog/` lists titles without dates, `url https://www.rapid7.com/blog/` exposes /blog/post/<slug>/ hrefs, and `extract` of a post returns its date" }
+  - { source_id: citizen-lab, reason: "feed https://citizenlab.ca/feed/ showed no item after 2026-10-18 although Citizen Lab published a Serbia/Pegasus report on 2026-10-19 (THN, TechNadu); feed lag - check on the next fire" }
+  - { source_id: lumen-black-lotus-labs, reason: "recipe correction: in https://www.lumen.com/blog/query-index.json the Black Lotus Labs marker is in the `categories` column (blog-and-news:categories/black-lotus-lab), not `tags`, and blogPublishedDate formats vary ('Sept 22, 2026', 'Sep 5, 2023'); filtering `tags` for 'lotus' returns zero rows. Newest Black Lotus Labs post is 2026-10-07 (PoeLLM)" }
+  - { source_id: hunt-io, reason: "recipe confirmation: WebFetch on https://hunt.io/blog returns the ten newest posts with displayed dates and absolute URLs in one call; `extract` of the listing returns the crawl date and mostly older/featured cards; `url` returns a ~12 MB Framer shell" }
+  - { source_id: technadu, reason: "`extract` on technadu.com article URLs is served by the jina reader (credit spend) and returns only navigation boilerplate; use the feed summaries and pivot to the named primary instead" }
+  - { source_id: fox-it-blog, reason: "`extract https://blog.fox-it.com/` was served via jina and lists posts with the date in the URL path (newest 2026-10-13); `feed https://blog.fox-it.com/feed/` did not return a parseable feed this run" }
+  - { source_id: team-cymru, reason: "`extract` of the listing gives titles without dates; `url --direct` exposes /post/<slug> hrefs; `extract` of a post returns its date (newest 2026-10-14)" }
+  - { source_id: manageengine-metal, reason: "`extract` of the landing page returns only the mission text; report hrefs (/threat-analysis-lab/<slug>.html) appear in `url` output; no in-window report (newest dated 2026-06-30 apart from the covered AOMEI report)" }
+  - { source_id: periodic-reports, reason: "not in store and outside the 26 h window, so not returned as items: Microsoft Digital Defense Report 2026 (secondary coverage dated 2026-10-14, e.g. https://cloudwars.com/ai/microsofts-2026-digital-defense-report-ai-identity-and-the-race-to-defend-at-machine-speed/; Microsoft primary URL not located) and ENISA Threat Landscape 2026 (published 2026-09-22 per secondary coverage; names government bodies as the most-targeted sector). The audit may want ANNUAL REPORT entries for both" }
+source_ledger:
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "url --direct", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-14 (outside horizon); 4 posts listed" }
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract listing", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 22.09.2026" }
+  - { id: team-cymru, tier: standard, attempted: true, transport: "extract listing + url --direct + extract posts", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14 (LegionRelay C2 pivot post), outside horizon" }
+  - { id: technadu, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 10, returned: 2, note: "leads chased to primaries: NorForge Cairn (kept), GreyNoise skynox7 (kept, lookback); Pegasus/Serbia dropped; Siemens and ConnectWise already covered" }
+  - { id: acronis-tru, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 (product), monthly threats update 2026-10-13" }
+  - { id: akamai-sirt, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 3, returned: 0, note: "2026-10-19/20 posts are product/segmentation marketing; no research post" }
+  - { id: fox-it-blog, tier: standard, attempted: true, transport: "extract (jina)", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13 (Cobalt Strike Beacon Corpus)" }
+  - { id: hunt-io, tier: standard, attempted: true, transport: "WebFetch listing + extract post", horizon_hours: 100, in_horizon_items: 1, returned: 1, note: "2026-10-20 Ukraine Graylog Log4Shell post kept as borderline; 2026-10-15 PaperCut toolkit post outside horizon" }
+  - { id: lumen-black-lotus-labs, tier: standard, attempted: true, transport: "url --direct query-index.json", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest Black Lotus Labs post 2026-10-07 (PoeLLM), already covered" }
+  - { id: malwarebytes, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 8, returned: 0, note: "AOMEI already covered; rest consumer scams/privacy/news" }
+  - { id: manageengine-metal, tier: standard, attempted: true, transport: "extract + url", horizon_hours: 100, in_horizon_items: 0, returned: 0, note: "three report pages listed; none in horizon" }
+  - { id: ox-security, tier: standard, attempted: true, transport: "feed", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16T14:03Z Airflow SSH host-key post, just outside horizon (listed in dropped_leads for S1)" }
+  - { id: project-discovery, tier: standard, attempted: true, transport: "url (stories/1)", horizon_hours: 98, in_horizon_items: 0, returned: 0, note: "newest 2026-08-16" }
+  - { id: zimperium-zlabs, tier: standard, attempted: true, transport: "WebFetch listing + extract", horizon_hours: 98, in_horizon_items: 3, returned: 0, note: "2026-10-19 RemControl and 2026-10-20 smishing posts are pointers to Group-IB (2026-09-23) and Malwarebytes (September)" }
+discovery_sweep:
+  feeds_checked: "checkpoint-research, citizen-lab, dfirreport, elastic-seclabs, eset, huntress, kaspersky-securelist, mandiant-gtig, proofpoint, sophos-xops, talos, trendmicro, unit42, volexity, zscaler, recordedfuture, socket-dev-blog, tenable-research, google-tag, lab52, cloudsek, msft-secblog, wiz, thehackernews, bleepingcomputer, securityweek, therecord, darkreading, theregister, securityaffairs, krebs, plus a bulk sweep of 42 further research feeds"
+  listings_checked: "crowdstrike, sekoia, forescout, reliaquest, rapid7 blog, trellix, fortinet, bitdefender, sentinelone labs, symantec security.com, withsecure labs API, greynoise blog, jpcert blog"
+  questions_empty: "no in-window GTIG/Mandiant, ESET, Proofpoint, Elastic, Trend Micro, Volexity, Zscaler, Recorded Future or Microsoft Threat Intelligence research post after 2026-10-18; Talos posted only an opinion piece; no new annual/periodic report in window"
