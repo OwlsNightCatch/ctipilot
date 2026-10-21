@@ -31,7 +31,10 @@ With a base ref (`--base REF`, or `work/<run-id>/base.sha`, which only the
 quality audit writes, v4.21) an updated entry contributes only the claims that
 differ from the entry at that ref: an audit that corrects one sentence of a
 long legacy entry answers for that sentence, not for the whole analysis its
-truth pass already checked.
+truth pass already checked. The same base also lists the sentences a fire
+edited inside an EARLIER `## <Type> — <at>` section (a wrong earlier update
+fixed where it stands): without it a post-fix pass never saw them, and the
+2026-10-20 cleanup wave found one only by reading the diff.
 Claim ids are content hashes, so an unchanged claim keeps its id across
 iterations and a remediated one gets a new id: `--iteration` lists exactly the
 claims a post-fix pass must re-check.
@@ -139,12 +142,12 @@ def _field_claims(e: dict, fields: set[str] | None) -> list[dict]:
     return out
 
 
-def _base_keys(e: dict, base: str) -> set[tuple] | None:
+def _base_keys(e: dict, base: str, root: Path = ROOT) -> set[tuple] | None:
     """Claim keys of entry `e` as it stood at git ref `base` — None when the
     file did not exist there. A key is (claim_id, urls): a clause whose text
     stayed but whose citation was re-pointed still counts as changed."""
     try:
-        text = subprocess.run(["git", "show", f"{base}:{e['path']}"], cwd=ROOT, capture_output=True,
+        text = subprocess.run(["git", "show", f"{base}:{e['path']}"], cwd=root, capture_output=True,
                               text=True, check=True).stdout
         fm_text, body = cm.split_frontmatter(text)
         old = {**cm.parse_yaml_subset(fm_text), "id": e["id"]}
@@ -157,9 +160,9 @@ def _base_keys(e: dict, base: str) -> set[tuple] | None:
     return {(c["claim_id"], tuple(c["urls"])) for c in claims}
 
 
-def build(run_id: str, base: str | None = None) -> list[dict]:
+def build(run_id: str, base: str | None = None, root: Path = ROOT) -> list[dict]:
     claims: list[dict] = []
-    for e in cm.collect_entries():
+    for e in cm.collect_entries(root / "entries", root):
         is_new = str(e.get("run_id") or "") == run_id
         recs = [r for r in (e.get("updates") or [])
                 if isinstance(r, dict) and str(r.get("run_id") or "") == run_id]
@@ -176,7 +179,7 @@ def build(run_id: str, base: str | None = None) -> list[dict]:
         mine = _field_claims(e, fields)
         if "body" in fields:
             mine += _prose_claims(e["id"], "body", main)
-        old = _base_keys(e, base) if base else None
+        old = _base_keys(e, base, root) if base else None
         if old is not None:
             # Audit scope (v4.21): only what this fire changed. The text the
             # entry already carried at the fire's base commit was the truth
@@ -185,8 +188,13 @@ def build(run_id: str, base: str | None = None) -> list[dict]:
         claims += mine
         own = {str(r.get("at")) for r in recs}
         for sec in sections:
+            sec_claims = _prose_claims(e["id"], f"section {sec.get('at')}", sec.get("body") or "")
             if str(sec.get("at")) in own:
-                claims += _prose_claims(e["id"], f"section {sec.get('at')}", sec.get("body") or "")
+                claims += sec_claims
+            elif old is not None:
+                # An earlier section edited in place: its changed sentences
+                # are this fire's claims, its untouched ones are not.
+                claims += [c for c in sec_claims if (c["claim_id"], tuple(c["urls"])) not in old]
         for r in recs:
             if r.get("summary"):
                 t = re.sub(r"\s+", " ", str(r["summary"])).strip()
