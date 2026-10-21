@@ -27,7 +27,7 @@ After every wave: `python3 tools/check_run.py --all` ends `0 warn · 0 fail`, `p
 | Known duplicate groups open (W4) | 4 + scan | 4 + scan |
 | Registry orphans (no entry key, no relation) | 179 non-product + 4 product | 183, none a duplicate (W5-04, W5-05) |
 | check_run.py --all | 0 fail, 1 warn, 25 acknowledged | 0 fail, 0 warn, 26 acknowledged |
-| Rows done / declined / in a wave / open | 50 rows | 24 / 2 / 5 / 19 |
+| Rows done / declined / in a wave / open | 50 rows | 24 / 2 / 6 / 18 |
 
 ## Waves
 
@@ -38,7 +38,7 @@ Waves marked `ready` can start now, each in its own session and in parallel; `af
 | 01 | - | W7-01, W7-02, W6-04, W1-A (16 entries); standalone W5/W6/W7 rows shipped during it | - | done 2026-10-20T0835Z-audit: 5 verifier iterations, residual 1, 8 of 20 spawns |
 | 02 | - | W1-B (57), W1-C (5), W1-E (34 items), W1-F (8), W1-H; inputs in work/cleanup/wave-02/ | - | in-flight 2026-10-21T0800Z-audit |
 | 03 | A | W4-01, W4-03, W4-04, W4-05, W1-D (33 entries); inputs in work/cleanup/wave-03/ | - | ready |
-| 04 | B | W2-01 (76 legacy entries) | - | ready |
+| 04 | B | W2-01 (76 legacy entries) | - | in-flight 2026-10-21T1148Z-audit |
 | 05 | C | W2-02 (76 legacy entries) | - | ready |
 | 06 | - | W4-02, W1-D2 (10 entries), W1-I (45 residuals) | 02 | planned |
 | 07 | - | W2-03 (77 legacy entries) | 02 | planned |
@@ -68,7 +68,7 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 | W4-03 | W4 | Ghost CMS 2026-05-25: the ClickFix deep dive and the 'large-scale ClickFix campaign' entry are the same finding per D3; decide fold | 2 | 03 | open |
 | W4-04 | W4 | Pwn2Own Berlin 2026 roundup 2026-05-17 vs the DEVCORE Exchange chain entry: re-verify the roundup, then fold or link | 2 | 03 | open |
 | W4-05 | W4 | Store-wide non-CVE twin scan (same entity and similar title or same primary URL, no references[] link); fold or link each pair found | TBD | 03 | open |
-| W2-01 | W2 | Legacy queue batch 1, oldest first (2026-05-10 to 2026-05-22) | 76 | 04 | open |
+| W2-01 | W2 | Legacy queue batch 1, oldest first (2026-05-10 to 2026-05-22) | 76 | 04 | in-wave 04 (2026-10-21T1148Z-audit) |
 | W2-02 | W2 | Legacy queue batch 2, oldest first (2026-05-22 to 2026-05-31) | 76 | 05 | open |
 | W2-03 | W2 | Legacy queue batch 3, oldest first (2026-05-31 to 2026-06-10) | 77 | 07 | open |
 | W2-04 | W2 | Legacy queue batch 4, oldest first (2026-06-10 to 2026-06-21) | 77 | 08 | open |
@@ -111,3 +111,4 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 - 2026-10-20: wave 01 (2026-10-20T0835Z-audit) applied W1-A (13 records, 3 declined as already fixed), acknowledged the one open warning, and prepared the inputs of waves 02 and 03; report docs/audits/2026-10-20-cleanup-wave-01.md.
 - 2026-10-21: operator directive, waves run in parallel lanes (v4.23): wave 02's rows marked in flight on main, W1-D split (W1-D2 waits for wave 02), the W4 duplicate members moved out of the legacy batches, waves 03 to 05 ready in lanes A, B and C; merge_state.py merges plan.json, legacy_review.json and STATUS.md.
 - 2026-10-21: lane fix: the 2026-06-19 RoguePlanet entry moved from W1-D (wave 03) to W1-D2 (wave 06), with the W4-02 fold that takes it.
+- 2026-10-21: wave 04 (2026-10-21T1148Z-audit) claimed, lane B: W2-01 (76 legacy entries).
