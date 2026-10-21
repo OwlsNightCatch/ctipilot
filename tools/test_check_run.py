@@ -74,6 +74,23 @@ def test_pdf_without_text_is_unreadable():
     assert "plain text" in cr._page_text("plain text of an older cache", "pdf")
 
 
+def test_bot_challenge_page_is_unreadable():
+    # drupal.org answers the container with this wall: its CSS and script text
+    # clear the size floor, and both transports return the raw HTML.
+    wall = ("<!doctype html>\n<html lang=\"en\"><head>\n<title>Client Challenge</title>\n"
+            "<style>#loading-error { font-size: 16px; display: none; }</style></head><body>"
+            "<noscript>JavaScript is disabled in your browser.</noscript>"
+            "<script>function loadScript(src) { return new Promise(() => {}); }</script>"
+            + "<div>A required part of this site couldn't load.</div>" * 20 + "</body></html>")
+    for mode in ("html", "extract"):
+        assert cr._page_text("<!-- https://www.drupal.org/sa-core-2026-014 -->\n" + wall, mode) is None, mode
+    anubis = "<html><head><title>Making sure you&#39;re not a bot!</title></head><body>x</body></html>"
+    assert cr._page_text(anubis, "html") is None
+    article = "<html><head><title>Drupal core - Critical - SA-CORE-2026-014</title></head><body>" \
+              "<p>Field UI allows remote code execution.</p></body></html>"
+    assert "fielduiallowsremotecodeexecution" in sk(cr._page_text(article, "html"))
+
+
 def test_citation_cve_counts_image_only_pdf_as_unreadable():
     tmp = Path(tempfile.mkdtemp(prefix="check-run-test-"))
     saved = (cr.WORK_DIR, subprocess.run, cr.warn, cr.ok)

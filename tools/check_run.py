@@ -2309,6 +2309,15 @@ _JS_RENDERED_HOSTS = {"wid.cert-bund.de", "advisories.ncsc.nl", "msrc.microsoft.
                       "euvd.enisa.europa.eu", "git.kernel.org", "lore.kernel.org"}
 
 
+# Bot-challenge interstitials served in place of the cited page. They clear the
+# size floor on their CSS and script text alone, so a quote compared against
+# one reads as a false mismatch (2026-10-21 cleanup wave: drupal.org's "Client
+# Challenge" wall flagged a verbatim SA-CORE-2026-014 quote and its CVE id).
+_CHALLENGE_TITLE_RE = re.compile(
+    r"<title>\s*(?:Client Challenge|Just a moment\.\.\.|Attention Required! \| Cloudflare"
+    r"|Making sure you(?:'|&#39;|\u2019)re not a bot!?)\s*</title>", re.I)
+
+
 def _page_text(raw: str, mode: str) -> str | None:
     """The prose of one fetched page, as the page checks compare it; None when
     the read carries no prose to compare (an image-only or near-empty PDF).
@@ -2322,6 +2331,8 @@ def _page_text(raw: str, mode: str) -> str | None:
     # The quote-bodies cache prefixes each file with "<!-- url -->"; the URL is
     # not page text (a CVE id in it would vouch for a page that never names it).
     raw = re.sub(r"\A<!-- [^\n]* -->\n", "", raw)
+    if mode != "pdf" and _CHALLENGE_TITLE_RE.search(raw[:4000]):
+        return None
     if mode == "pdf":
         try:
             rec = _json.loads(raw)
