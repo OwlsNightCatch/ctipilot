@@ -1,0 +1,1116 @@
+run_id: 2026-10-21T1149Z-audit
+batch: repair-3
+note: '2026-10-18 verdicts (passes D1-D3 and L) read before the 2026-10-11 audit records landed; every entry here was corrected by 2026-10-11T1307Z-audit
+  afterwards. Re-derive each defect on the current text. Blocks with folded: true were read on a duplicate since folded into this entry: re-check
+  each defect on this entry. groups: carry the duplicate-group notes (current_state, facts_only_in_duplicates) as ground-truth leads; folds and
+  links named there are NOT this batch''s job unless both members are in this batch.'
+entries:
+- entry: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:38:39Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+    current_entry: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: factual-error
+    defects:
+    - where: headline; body 'Kill chain (UAT-8616 post-exploitation TTPs)' steps 6-9
+      claim: Godzilla, Behinder, and XenShell webshells deployed for persistent access
+      defect: Steps 6-9 (Godzilla/Behinder/XenShell webshells, AdaptixC2/Sliver/Nimplant C2, XMRig) are attributed to UAT-8616, but Talos attributes
+        them to other clusters exploiting CVE-2026-20133/20128/20122
+      ground_truth: 'Talos: "a series of threat actors, distinct from UAT-8616, that have been observed to be exploiting a different, previously
+        disclosed set of vulnerabilities ... CVE-2026-20133, CVE-2026-20128 and CVE-2026-20122"; for UAT-8616 on 20182: "attempted to add SSH
+        keys, modify NETCONF configurations, and escalate to root privileges"'
+      ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      fix: Limit the UAT-8616 kill chain to SSH key injection, NETCONF, root escalation and ORB-network overlap; present Clusters 1-10 separately
+      class: factual-error
+    - where: body, Vulnerability mechanics
+      claim: checks whether the device type is `VBOND` (0) or `VEDGE` (1) before requiring certificate validation
+      defect: Device-type values are wrong; Rapid7's table is vEdge=1, vHub=2, vSmart=3, vBond=4, vManage=5, and the cert checks cover types 3/5
+        and 1. The authenticated flag is set but a Hello is still required to reach UP, contrary to 'immediately ... transitions the peering state
+        to UP'
+      ground_truth: 'Rapid7: "| 1 | vEdge ... | 2 | vHub ... | 3 | vSmart ... | 4 | vBond ... | 5 | vManage"; "the attacker must send a Hello
+        message (Message type 5) to transition the peer to the UP state"'
+      ground_truth_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+      fix: 'Use Rapid7''s enumeration: checks for vSmart (3), vManage (5), vEdge (1); none for vHub (2)'
+      class: factual-error
+    - where: body, Kill chain step 6
+      claim: XenShell is a lightweight Python-based variant targeting Linux
+      defect: Talos describes XenShell as a JSP-based webshell
+      ground_truth: 'Talos: "ZeroZenX Labs'' proof-of-concept and accompanying JSP-based webshell which we track as \"XenShell.\""'
+      ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      fix: Say 'JSP-based webshell (XenShell)'; and drop 'dynamic key exchange'/'AES-128-CBC' details unless sourced
+      class: factual-error
+    - where: body, Background
+      claim: CVE-2026-20127 (pre-auth RCE in SD-WAN Manager)
+      defect: CVE-2026-20127 is a peering authentication bypass in the Controller (vSmart); Cisco's advisory is titled 'Controller Authentication
+        Bypass' (affects Controller/Manager/Validator), not an RCE in Manager. 'joint advisory from ACSC, NCSC-UK, and Cisco Talos' is also not
+        what the cited Talos post is
+      ground_truth: 'Talos: "CVE-2026-20127, a vulnerability in Cisco Catalyst SD-WAN Controller, formerly vSmart, that allows an unauthenticated
+        remote attacker to bypass authentication"; CISA KEV: "Cisco Catalyst SD-WAN Controller and Manager Authentication Bypass Vulnerability"'
+      ground_truth_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+      fix: Describe 20127 as an authentication bypass in the Controller (and Manager); cite Talos blog and ACSC hunt guide separately
+      class: factual-error
+    - where: body, Background
+      claim: CVE-2026-20182 is that actor's sixth exploited Cisco SD-WAN vulnerability in the ongoing campaign
+      defect: No source counts six; Talos ties UAT-8616 to CVE-2026-20127, CVE-2026-20182 and the (reported) CVE-2022-20775 chain
+      ground_truth: 'Talos (20182 post): "UAT-8616 previously exploited a similar vulnerability in Cisco Catalyst SD-WAN Controller, CVE-2026-20127"'
+      ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      fix: Delete the count
+      class: factual-error
+    - where: body, Background
+      claim: Cisco and CISA have published five previous SD-WAN vulnerability advisories with confirmed in-the-wild exploitation this year alone
+      defect: Quantifier not in the cited Talos Feb post; KEV shows five earlier 2026 SD-WAN CVEs (20127, 20122, 20128, 20133 plus 2022-20775)
+        across three Cisco advisories, not five advisories
+      ground_truth: 'KEV: CVE-2022-20775 and CVE-2026-20127 added 2026-02-25; CVE-2026-20122/20128/20133 added 2026-04-20'
+      ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      fix: Cite KEV and state 'five earlier SD-WAN CVEs'
+      class: imprecision
+    - where: body, Kill chain closing paragraph
+      claim: The 10+ additional clusters (#1–#10 in Talos's taxonomy)
+      defect: 'Talos lists exactly Clusters #1 to #10; they also run C2 implants and a credential stealer, and ''skip the version-downgrade chain''
+        is not stated'
+      ground_truth: 'Talos: "So far, Talos has observed the following clusters of malicious activity ...: Cluster #1 to Cluster #10."'
+      ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      fix: Say 'ten clusters'
+      class: imprecision
+    - where: body, Hunt and detection concepts
+      claim: SD-WAN Controller-to-Controller peering shows as VHUB-type — flag unexpected vHub entries
+      defect: 'Wrong: vSmart peers are type 3 (vManage 5); vHub is the type claimed by the exploit. Cisco''s own check is ''state:up'' with ''challenge-ack
+        0'' in `show control connections detail`, not `show sdwan control connections`'
+      ground_truth: 'Cisco rpa2: "To check ... the presence of state:up and no challenge-ack ... use the commands show control connections detail
+        or show control connections-history detail"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: Use Cisco's documented command and discriminator
+      class: factual-error
+    - where: body, Kill chain items 4 and 8; ATT&CK ids
+      claim: 'T1562.001 Impair Defenses: Disable or Modify Tools ... T1070.002 Indicator Removal: Clear Linux or Mac System Logs'
+      defect: T1562, T1562.001 and T1070.002 are revoked in ATT&CK v20 (-> T1685 / T1685.006); a software version downgrade is not 'disable or
+        modify tools'
+      ground_truth: 'attack/enterprise-attack.json: T1562.001 revoked_by T1685; T1070.002 revoked_by T1685.006'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: Map to active ids (T1685 / T1685.006) or drop the version-downgrade mapping
+      class: imprecision
+    - where: body, Hardening
+      claim: the authentication-bypass function is in the control-plane peering path that cannot be disabled without breaking SD-WAN functionality
+      defect: Rationale is in no source; Cisco only says there are no workarounds
+      ground_truth: 'Cisco rpa2: "There are no workarounds that address this vulnerability."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: Delete the rationale
+      class: imprecision
+    - where: evidence[0]; summary
+      claim: Background.
+      defect: evidence quote is the single word 'Background.' (publisher 'ctipilot v2 brief (migrated)'), not a passage of any cited page; summary
+        is a stub 'Background. Cisco SD-WAN has been a sustained exploitation target since 2023.'
+      ground_truth: no cited page contains this quote
+      ground_truth_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+      fix: Replace evidence with a verbatim Talos/Cisco quote and write a real summary
+      class: imprecision
+    - where: frontmatter classification / techniques[]
+      claim: (absent)
+      defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+      ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+      ground_truth_url: docs/pipeline.md
+      fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+      class: imprecision
+  - entry_as_read: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+    current_entry: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: factual-error
+    defects:
+    - where: summary; sources[2].publisher
+      claim: CISA Emergency Directive ED-26-03 issued 2026-05-14
+      defect: ED 26-03 was issued 2026-02-25 (updated 2026-03-11) and names CVE-2026-20127 and CVE-2022-20775; CVE-2026-20182 reached it through
+        the 2026-05-14 KEV listing, not a new directive
+      ground_truth: 'CISA ED 26-03 page: "Original Issuance Date: February 25, 2026"; "Updated March 11, 2026"; "involves the following known
+        exploited vulnerabilities identified by Cisco:" CVE-2026-20127, CVE-2022-20775'
+      ground_truth_url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+      fix: Say 'added to KEV 2026-05-14 under the existing ED 26-03 (issued 2026-02-25)'
+      class: factual-error
+    - where: body
+      claim: achieving persistent SSH access to the SD-WAN Manager on NETCONF port TCP/830
+      defect: Rapid7 demonstrates the key injection against the Controller (vSmart) NETCONF service, not the Manager
+      ground_truth: 'Rapid7: "target a Cisco Catalyst SD-WAN Controller ... SSH into the NETCONF service over TCP port 830"'
+      ground_truth_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+      fix: Say 'Controller (vSmart); Cisco lists Controller, Manager and Validator as affected'
+      class: imprecision
+    - where: body
+      claim: network segmentation of the UDP/12346 interface is the only partial mitigation where upgrading is not immediately possible
+      defect: Cisco states no workarounds or mitigations for CVE-2026-20182; the segmentation claim is uncited
+      ground_truth: 'Cisco rpa2: "There are no workarounds that address this vulnerability."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: Delete or attribute to analyst judgement
+      class: imprecision
+    - where: title/headline/body
+      claim: Controller/Manager
+      defect: Cisco advisory v2.0 (2026-06-16) lists Validator (vBond) as affected too
+      ground_truth: 'Cisco rpa2 summary: "peering authentication in Cisco Catalyst SD-WAN Controller ..., Manager ..., and Validator ... could
+        allow an unauthenticated, remote attacker"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: Add Validator to affected products
+      class: imprecision
+    - where: evidence[0]
+      claim: CVE-2026-20182 (CVSS 10.0, CWE-287) is a complete authentication bypass in the vdaemon service's DTLS control-plane peering on UDP/12346
+        (Cisco PSIRT cisco-sa-sdwan-rpa2-v69WY2SW, 2026-05-14 · Rapid7, 2026-05-14).
+      defect: Evidence quote is the entry's own sentence (publisher 'ctipilot v2 brief (migrated)'), not a contiguous passage of any cited page
+      ground_truth: Neither the Cisco page nor Rapid7 contains this sentence
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: Replace with a verbatim Cisco/Rapid7 quote
+      class: imprecision
+    - where: frontmatter classification / techniques[]
+      claim: (absent)
+      defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+      ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+      ground_truth_url: docs/pipeline.md
+      fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+      class: imprecision
+  groups:
+  - &id001
+    pass: D2
+    group: 2
+    members:
+    - 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+    - 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+    - 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+    - 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+    same_finding: false
+    survivor: null
+    current_state: 'TWO DISTINCT FINDINGS sharing CVE mentions. (A) CVE-2026-20182 finding = entries 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      and 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre (same finding, survivor 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre).
+      (B) CVE-2026-20245 finding = entries 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi and 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      (same finding, survivor 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi). 20245 builds on 20182 (Cisco: netadmin
+      obtained via 20182/20127) but is a separate CVE/advisory/KEV listing. States: (A) CVE-2026-20182: peering-authentication bypass in the vdaemon
+      DTLS control plane (UDP/12346); Cisco advisory cisco-sa-sdwan-rpa2-v69WY2SW first published 2026-05-14, v2.0 2026-06-16; affects Cisco Catalyst
+      SD-WAN Controller (vSmart), Manager (vManage) and Validator (vBond) regardless of configuration; CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H),
+      CWE-287; no workarounds; Cisco aware of limited exploitation in May 2026 [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW].
+      Fixed releases (first fixed): 20.9 -> 20.9.9.1; 20.10/20.11 -> 20.12.7.1; 20.12 -> 20.12.5.4 / 20.12.6.2 / 20.12.7.1; 20.13/20.14 -> 20.15.5.2;
+      20.15 -> 20.15.4.4 / 20.15.5.2; 20.16/20.18 -> 20.18.2.2; 26.1 -> 26.1.1.1; earlier than 20.9 migrate [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW].
+      KEV: added 2026-05-14 (CWE-287; ED 26-03 referenced) [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json];
+      CISA ED 26-03 itself was issued 2026-02-25 (updated 2026-03-11) [https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems].
+      Talos (2026-05-14) clusters the exploitation under UAT-8616 with high confidence: SSH key injection, NETCONF changes, root escalation, infrastructure
+      overlapping ORB networks [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/]. Rapid7 (discoverer) shows the vHub (device type
+      2) CHALLENGE_ACK bypass, MSG_VMANAGE_TO_PEER key injection into vmanage-admin authorized_keys and NETCONF on TCP/830 against a Controller
+      [https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/]. Separate actors
+      (''distinct from UAT-8616'') exploit CVE-2026-20133/20128/20122 (KEV 2026-04-20) since March 2026 in Clusters #1-#10 using the ZeroZenX
+      PoC [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/]. (B) CVE-2026-20245: authenticated local privilege escalation / command
+      injection to root in the CLI of Cisco Catalyst SD-WAN Controller, Manager and Validator (needs netadmin: valid credentials or exploitation
+      of CVE-2026-20182 / CVE-2026-20127); CVSS 3.1 7.8 (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H), CWE-116; advisory cisco-sa-sdwan-privesc-4uxFrdzx
+      first published 2026-06-04, last updated 2026-07-21; Cisco observed limited cases of configuration pushes to edge devices; exploitation
+      known from June 2026 per Cisco [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx].
+      Fixed (first fixed, final table 2026-06-12, 1.10 on 2026-07-21): 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2; no workaround,
+      Live Protect shield (2026-07-15) gives temporary partial protection [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx].
+      KEV: added 2026-06-09, CWE-116 [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]. Mandiant (2026-06-24):
+      zero-day at a service provider, exploit via ''request tenant-upload tenant-list ... evil_tenant.csv'' in April 2026 after rogue peering/SSH
+      as vmanage-admin (late 2025-January and March 2026; connection to CVE-2026-20127/20182 only ''possible'', Cisco confirmed March connections
+      did not use 20182), troot UID-0 account, deletion of own files/config restore, no actor named [https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager].
+      NCSC-CH advisory 12579 (edited 2026-06-05 and 2026-06-25) [https://security-hub.ncsc.admin.ch/#/posts/12579].'
+    sub_groups:
+    - members:
+      - 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+      - 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+      same_finding: true
+      survivor: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+      current_state: 'CVE-2026-20182: peering-authentication bypass in the vdaemon DTLS control plane (UDP/12346); Cisco advisory cisco-sa-sdwan-rpa2-v69WY2SW
+        first published 2026-05-14, v2.0 2026-06-16; affects Cisco Catalyst SD-WAN Controller (vSmart), Manager (vManage) and Validator (vBond)
+        regardless of configuration; CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H), CWE-287; no workarounds; Cisco aware of limited exploitation
+        in May 2026 [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW]. Fixed releases
+        (first fixed): 20.9 -> 20.9.9.1; 20.10/20.11 -> 20.12.7.1; 20.12 -> 20.12.5.4 / 20.12.6.2 / 20.12.7.1; 20.13/20.14 -> 20.15.5.2; 20.15
+        -> 20.15.4.4 / 20.15.5.2; 20.16/20.18 -> 20.18.2.2; 26.1 -> 26.1.1.1; earlier than 20.9 migrate [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW].
+        KEV: added 2026-05-14 (CWE-287; ED 26-03 referenced) [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json];
+        CISA ED 26-03 itself was issued 2026-02-25 (updated 2026-03-11) [https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems].
+        Talos (2026-05-14) clusters the exploitation under UAT-8616 with high confidence: SSH key injection, NETCONF changes, root escalation,
+        infrastructure overlapping ORB networks [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/]. Rapid7 (discoverer) shows the
+        vHub (device type 2) CHALLENGE_ACK bypass, MSG_VMANAGE_TO_PEER key injection into vmanage-admin authorized_keys and NETCONF on TCP/830
+        against a Controller [https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/].
+        Separate actors (''distinct from UAT-8616'') exploit CVE-2026-20133/20128/20122 (KEV 2026-04-20) since March 2026 in Clusters #1-#10 using
+        the ZeroZenX PoC [https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/].'
+      facts_only_in_duplicates:
+      - fact: Talos attributes exploitation of CVE-2026-20182 to UAT-8616 with high confidence (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+        passage: Talos clusters this activity under UAT-8616 with high confidence.
+      - fact: UAT-8616 attempted to add SSH keys, modify NETCONF configurations, and escalate to root; infrastructure overlaps ORB networks (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+        passage: UAT-8616 attempted to add SSH keys, modify NETCONF configurations, and escalate to root privileges.
+      - fact: UAT-8616 earlier exploited CVE-2026-20127 and reportedly used a version downgrade to reach CVE-2022-20775 root (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+        passage: the actor likely escalated to root user via a software version downgrade. The actor then reportedly exploited CVE-2022-20775
+          before restoring back to the original software version
+      - fact: Companion CVE-2026-20133/20128/20122 exploited by separate clusters since March 2026 with ZeroZenX PoC and XenShell (2a, 2b summary)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+        passage: a series of threat actors, distinct from UAT-8616 ... beginning March 2026 - specifically CVE-2026-20133, CVE-2026-20128 and
+          CVE-2026-20122
+      - fact: Snort SIDs 66482-66483 (20182), 66468-66469 (20133/20128), 66461-66462 (20122) (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+        passage: 'Snorts SIDs for CVE-2026-20182 are: 66482 - 66483 ... Snort SIDs for CVE-2026-20133: 66468 - 66469 ... CVE-2026-20122: 66461
+          - 66462'
+      - fact: 'Rapid7 Metasploit module chain: vHub bypass, MSG_VMANAGE_TO_PEER (type 14) key injection, NETCONF on TCP/830 (2a)'
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+        passage: inject an attacker controlled public key into the vmanage-admin user account's authorized SSH keys file ... login to the NETCONF
+          service (SSH over TCP port 830)
+      - fact: 'Kill-chain steps 6-9: Godzilla/Behinder/XenShell webshells, AdaptixC2/Sliver/Nimplant C2, syslog/wtmp wipe, XMRig attributed to
+          UAT-8616 (2a)'
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: false
+        source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+        passage: webshells/implants/miners belong to Clusters 1-10 'distinct from UAT-8616'; log clearing appears only as a UAT-8616 hunt indicator
+          in the Feb Talos post
+      - fact: Device types VBOND(0)/VEDGE(1) checked; Controller-to-Controller peering shows as VHUB-type (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: false
+        source_url: https://www.rapid7.com/blog/post/ve-cve-2026-20182-critical-authentication-bypass-cisco-catalyst-sd-wan-controller-fixed/
+        passage: vEdge 1, vHub 2, vSmart 3, vBond 4, vManage 5; checks cover types 3/5 and 1
+      - fact: CVE-2026-20182 is UAT-8616's 'sixth' exploited SD-WAN CVE (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: false
+        source_url: https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/
+        passage: no source states a count
+      - fact: Cisco hardening guide URL sec.cloudapps.cisco.com/.../Cisco-Catalyst-SD-WAN-HardeningGuide (2a)
+        entry: 2026-05-15/cisco-catalyst-sd-wan-cve-2026-20182-authentication-bypass-a
+        verified: true
+        source_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+        passage: hardening guide for Cisco Catalyst SD-WAN deployments located at https://sec.cloudapps.cisco.com/security/center/resources/Cisco-Catalyst-SD-WAN-HardeningGuide
+      - fact: ED 26-03 'issued 2026-05-14' (2b)
+        entry: 2026-05-15/cve-2026-20182-cisco-catalyst-sd-wan-controller-manager-pre
+        verified: false
+        source_url: https://www.cisa.gov/news-events/directives/ed-26-03-mitigate-vulnerabilities-cisco-sd-wan-systems
+        passage: 'Original Issuance Date: February 25, 2026'
+    - members:
+      - 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+      - 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+      same_finding: true
+      survivor: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+      current_state: 'CVE-2026-20245: authenticated local privilege escalation / command injection to root in the CLI of Cisco Catalyst SD-WAN
+        Controller, Manager and Validator (needs netadmin: valid credentials or exploitation of CVE-2026-20182 / CVE-2026-20127); CVSS 3.1 7.8
+        (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H), CWE-116; advisory cisco-sa-sdwan-privesc-4uxFrdzx first published 2026-06-04, last updated 2026-07-21;
+        Cisco observed limited cases of configuration pushes to edge devices; exploitation known from June 2026 per Cisco [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx].
+        Fixed (first fixed, final table 2026-06-12, 1.10 on 2026-07-21): 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2; no workaround,
+        Live Protect shield (2026-07-15) gives temporary partial protection [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx].
+        KEV: added 2026-06-09, CWE-116 [https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json]. Mandiant (2026-06-24):
+        zero-day at a service provider, exploit via ''request tenant-upload tenant-list ... evil_tenant.csv'' in April 2026 after rogue peering/SSH
+        as vmanage-admin (late 2025-January and March 2026; connection to CVE-2026-20127/20182 only ''possible'', Cisco confirmed March connections
+        did not use 20182), troot UID-0 account, deletion of own files/config restore, no actor named [https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager].
+        NCSC-CH advisory 12579 (edited 2026-06-05 and 2026-06-25) [https://security-hub.ncsc.admin.ch/#/posts/12579].'
+      facts_only_in_duplicates:
+      - fact: CVSS 7.8, post-auth, local vector, command injection in CLI via crafted file (2d)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: true
+        source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+        passage: Base 7.8 CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H; authenticated, local attacker
+      - fact: Fixed trains 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2 (2d)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: true
+        source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+        passage: Cisco Catalyst SD-WAN Release First Fixed Release ... 20.9.9.2 ... 20.12.7.2 ... 20.15.4.5 ... 20.15.5.3 ... 20.18.3.1 ... 26.1.1.2
+      - fact: evil_tenant.csv via request tenant-upload; troot UID-0 account appended to /etc/passwd and /etc/shadow; su from admin (2d, also
+          2c section)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: true
+        source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+        passage: Created a user account named troot with full root privileges ... accessing this new troot account from the admin account via
+          the su
+      - fact: Admin password changed then reverted (2d)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: true
+        source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+        passage: used their active vmanage-admin session to change the password of the admin account back to its original state
+      - fact: Actor deleted command history and syslog entries (2d, 2c section)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: false
+        source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+        passage: the threat actor deleted all files they created, including evil_tenant.csv, and restored any system configurations they modified
+      - fact: Foothold via CVE-2026-20127/20182 stated as the intrusion's initial access (2d, 2c section)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: false
+        source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+        passage: It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182 ... Cisco confirmed
+          that these connections did not leverage CVE-2026-20182
+      - fact: Exploited from late 2025 through March 2026 at a communications service provider (2d, 2c section)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: false
+        source_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+        passage: in April 2026 ... the threat actor exploited CVE-2026-20245
+      - fact: '''No patch'' / ''No fixed release is available'' (2c)'
+        entry: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+        verified: false
+        source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+        passage: fixed table 20.9.9.2 ... 26.1.1.2; v1.8 2026-JUN-12 'Changed advisory status from interim to final'
+      - fact: KEV listing 2026-06-09 (missing from both)
+        entry: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+        verified: true
+        source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+        passage: CVE-2026-20245 ... dateAdded 2026-06-09 ... CWE-116
+    note: Group mixes two findings. 20245's Cisco advisory names 20182/20127 as ways to obtain netadmin, so 2c correctly references them; 2c already
+      folded 2026-06-26/mandiant-publishes-... and 2026-06-27/mandiant-documents-... (merged_from). 2d duplicates the 2c update content.
+- entry: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:39:43Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+    current_entry: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: factual-error
+    defects:
+    - where: title; headline; summary; actions[0]; main analysis
+      claim: actively-exploited command-injection to root (no patch)
+      defect: '''No patch'' is false today: Cisco published fixed releases (final table 2026-06-12) and a Live Protect shield; the 2026-06-26/27
+        sections add Mandiant detail but never correct the headline, summary, action or ''No fixed release is available''. Cisco''s advisory guidance
+        was also to upgrade, not ''restrict management-plane access'''
+      ground_truth: 'Cisco privesc advisory Fixed Releases: 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2 (v1.8 2026-JUN-12 "Changed
+        advisory status from interim to final"); v1.9 2026-JUL-15 "Live Protect shield availability"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      fix: Correct title/headline/summary/action/analysis to 'fixed in 20.9.9.2 / 20.12.7.2 / 20.15.4.5 / 20.15.5.3 / 20.18.3.1 / 26.1.1.2; Live
+        Protect shield is temporary partial protection'
+      class: factual-error
+    - where: cves[CVE-2026-20245]
+      claim: 'type: auth-bypass; vector: zero-click; auth: pre-auth; cvss: n/a'
+      defect: CVE-2026-20245 is an authenticated local command injection requiring netadmin (CVSS 7.8, AV:L/PR:L); the entry's own body says netadmin
+        is required. It was added to KEV 2026-06-09 (CWE-116) but status omits cisa-kev
+      ground_truth: 'Cisco: "authenticated, local attacker to execute arbitrary commands as root ... the attacker must have netadmin privileges";
+        Base 7.8 CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H; KEV dateAdded 2026-06-09'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      fix: type priv-esc, vector local, auth post-auth, cvss 7.8, add cisa-kev
+      class: factual-error
+    - where: cves[CVE-2026-20127], cves[CVE-2026-20182]
+      claim: 'cvss: n/a'
+      defect: Both are scored by Cisco at 10.0 and both are in KEV (2026-02-25 and 2026-05-14) but statuses omit cisa-kev
+      ground_truth: 'Cisco rpa / rpa2: "Base 10.0"; KEV dateAdded 2026-02-25 (20127), 2026-05-14 (20182)'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW
+      fix: cvss 10.0, add cisa-kev
+      class: imprecision
+    - where: body; summary
+      claim: a second actively-exploited zero-day in Catalyst SD-WAN Manager
+      defect: '''Second'' is unsupported: Cisco''s own advisory names CVE-2026-20182 and CVE-2026-20127 as earlier exploited flaws and NCSC-CH
+        says ''a new actively exploited zero-day'''
+      ground_truth: 'NCSC-CH update 05.06.2026: "A new actively exploited zero-day (CVE-2026-20245, HIGH)"'
+      ground_truth_url: https://security-hub.ncsc.admin.ch/#/posts/12579
+      fix: Drop 'second'
+      class: imprecision
+    - where: Update 2026-06-26 and record summary
+      claim: zero-day at a communications service provider from late 2025 through March 2026 — months before the patch
+      defect: Mandiant dates the CVE-2026-20245 exploit to April 2026; late 2025-January and March 2026 are rogue peering events; the victim is
+        'a service provider', not 'communications'; Cisco's advisory is 2026-06-04
+      ground_truth: 'Mandiant: "in April 2026, after establishing an SSH session with the admin account, the threat actor exploited CVE-2026-20245";
+        "multiple unauthorized peering connections ... From late 2025 to January 2026"; "a threat actor targeting SD-WAN infrastructure at a service
+        provider"'
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Say 'exploited as a zero-day in April 2026 after rogue peering access from late 2025'; delete 'communications'
+      class: factual-error
+    - where: Update 2026-06-26 / 2026-06-27 (chain)
+      claim: a peering-authentication-bypass foothold (CVE-2026-20127 / CVE-2026-20182) into SSH as `vmanage-admin`
+      defect: Mandiant says the peering connections only 'possibly' used 20127/20182 and that March connections hit a device unaffected by 20127
+        that Cisco confirmed did not use 20182 (stolen certificate material possible); the entry states the link as fact. NCSC-CH asserts it but
+        Mandiant does not
+      ground_truth: 'Mandiant: "It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182"; "Cisco
+        confirmed that these connections did not leverage CVE-2026-20182 either, and could instead be using stolen certificate material"'
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: 'Hedge: ''possibly 20127/20182 for late-2025 activity; March access not via 20182 per Cisco'''
+      class: factual-error
+    - where: Update 2026-06-26
+      claim: with anti-forensic clean-up (admin-password change-then-revert, history/syslog deletion)
+      defect: Mandiant does not report history or syslog deletion; it reports deletion of the actor's own files, config restoration and a validation
+        script
+      ground_truth: 'Mandiant: "the threat actor deleted all files they created, including evil_tenant.csv, and restored any system configurations
+        they modified"'
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Replace with 'file deletion, config restoration, password revert'
+      class: factual-error
+    - where: Update 2026-06-27 and record summary
+      claim: the first complete TTP chain
+      defect: '''First complete'' is not claimed by Mandiant'
+      ground_truth: Mandiant post makes no such claim
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Delete 'first complete'
+      class: imprecision
+    - where: frontmatter evidence[]; techniques; classification
+      claim: 'techniques: []'
+      defect: Vulnerability entry with empty techniques[], classification null and affected_products []; evidence[] quotes are entry sentences
+        ('ctipilot v2 brief (migrated)'), not page passages; attacker-chosen artefact names (`evil_tenant.csv`, `troot`) are file/account indicators
+      ground_truth: 'org profile: every entry carries classification; vulnerability entries need non-empty techniques[]'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      fix: Populate techniques (T1190, T1068, T1136.001), affected_products (Cisco Catalyst SD-WAN Controller/Manager/Validator), classification
+      class: imprecision
+  - entry_as_read: 2026-06-26/cisco-catalyst-sd-wan-manager-cve-2026-20245
+    current_entry: 2026-06-06/cve-2026-20245-cisco-catalyst-sd-wan-manager-actively-exploi
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: factual-error
+    defects:
+    - where: summary; body para 1
+      claim: exploited at a communications service provider from late 2025 through March 2026, months before Cisco's advisory
+      defect: 'Mandiant: the CVE-2026-20245 exploit was observed in April 2026 (rogue peering from late 2025/March); the victim is ''a service
+        provider''; Cisco published 2026-06-04'
+      ground_truth: 'Mandiant: "in April 2026 ... the threat actor exploited CVE-2026-20245 by executing the following command to upload a file
+        named evil_tenant.csv"'
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Say 'exploited as a zero-day in April 2026 at a service provider, about two months before Cisco's 2026-06-04 advisory'
+      class: factual-error
+    - where: body, Kill chain, Initial access
+      claim: the actor reached an authenticated position by abusing peering-authentication-bypass flaws CVE-2026-20127 / CVE-2026-20182 to enrol
+        unauthorised peering and obtain SSH as the `vmanage-admin` account
+      defect: Presented as established; Mandiant says 'possible' and records Cisco's confirmation that March connections did not use 20182 on
+        a device unaffected by 20127
+      ground_truth: 'Mandiant: "It is possible that these connections occurred due to the exploitation of CVE-2026-20127 or CVE-2026-20182"'
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Hedge as Mandiant does
+      class: factual-error
+    - where: body, Kill chain, Defense evasion
+      claim: and deleted command history, syslog entries, and the uploaded files after use
+      defect: Mandiant reports deleted files and restored configurations, not history or syslog deletion; T1070.003 (Clear Command History) is
+        therefore unsupported
+      ground_truth: 'Mandiant: "deleted all files they created, including evil_tenant.csv, and restored any system configurations they modified"'
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Replace with file deletion/config restoration (T1070.004)
+      class: factual-error
+    - where: body, The vulnerability
+      claim: the feature that ingests a tenant-list CSV fails to sanitise file content before it reaches a shell context
+      defect: Cisco's page (cited) says 'a crafted file' via the CLI of Controller, Manager and Validator; the tenant-list CSV detail is Mandiant's,
+        and Cisco's IOC examples show other upload handlers (vsmart serial numbers, chassis numbers)
+      ground_truth: 'Cisco: "A vulnerability in the CLI of Cisco Catalyst SD-WAN Controller ..., Manager ..., and Validator ... could allow an
+        authenticated, local attacker to execute arbitrary commands as root by supplying a crafted file"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      fix: Cite Mandiant for the tenant CSV; state all three components affected
+      class: imprecision
+    - where: cves[CVE-2026-20245].status; body Hardening
+      claim: as there is no workaround
+      defect: KEV listing (dateAdded 2026-06-09) missing from status; Cisco added a Live Protect shield (2026-07-15) offering temporary partial
+        protection
+      ground_truth: 'Cisco: "Cisco has released a Live Protect shield for CVE-2026-20245 ... This shield offers only temporary partial protection."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx
+      fix: Add cisa-kev; mention the shield
+      class: imprecision
+    - where: body, Hunt and detection concepts
+      claim: vManage's own health dashboards do not surface OS-level account creation
+      defect: Uncited claim about vManage dashboards
+      ground_truth: Mandiant and Cisco do not discuss dashboards
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Cite or delete
+      class: imprecision
+    - where: ATT&CK ids in prose
+      claim: T1078.004
+      defect: T1078.004 is 'Cloud Accounts'; the account is the on-box vmanage-admin default account
+      ground_truth: 'attack/enterprise-attack.json: T1078.004 Cloud Accounts'
+      ground_truth_url: docs/pipeline.md
+      fix: Use T1078 / T1078.001
+      class: imprecision
+    - where: evidence[0]
+      claim: Mandiant's Google Threat Intelligence Group published a forensic reconstruction of an intrusion in which Cisco Catalyst SD-WAN Manager
+        (formerly vManage) was compromised through CVE-2026-20245 as a zero-day
+      defect: evidence is the entry's own sentence (publisher 'ctipilot v2 brief (migrated)'), not a page passage; no classification/techniques
+      ground_truth: Mandiant page does not contain this sentence
+      ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager
+      fix: Replace with a verbatim Mandiant quote
+      class: imprecision
+    - where: frontmatter classification / techniques[]
+      claim: (absent)
+      defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+      ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+      ground_truth_url: docs/pipeline.md
+      fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+      class: imprecision
+  groups:
+  - *id001
+- entry: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:52:29Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+    current_entry: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: body (exploitation / detection / hardening) and actions[0]
+      claim: write a `.jsp`/`.war` artefact into the Tomcat deployment directory ; newly written files in the Tomcat webapps/deploy directories
+        ; validate the integrity of the Tomcat deploy directory ; the Tomcat deploy directory for planted `.jsp`/`.war` web shells ; Writing a
+        JSP/WAR into the Tomcat deploy path
+      defect: 'Cisco''s own indicators show a WildFly application server: the malicious WAR is written to /var/lib/wildfly/standalone/deployments/
+        and deployed by the WildFly DeploymentScanner (WFLYSRV0010). "Tomcat" appears in no source.'
+      ground_truth: 'Cisco PSIRT: vmanage-server.log "SdraAnyConnectFileUploadHandler ... uploaded Remote Access Anyconnect profile file: ../../../../var/lib/wildfly/standalone/deployments/suspicious.war";
+        vmanage-appserver.log "WFLYSRV0010: Deployed \"suspicious.war\""; serviceproxy-access.log "POST /suspicious/index.jsp".'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Replace Tomcat with the WildFly deployments directory and cite Cisco's three log indicators (vmanage-server.log AnyConnect profile-upload
+        handler with ../ path, appserver deployment, service-proxy POST to index.jsp).
+      class: factual-error
+    - where: body (KEV citation)
+      claim: CISA added CVE-2026-20262 to the Known Exploited Vulnerabilities catalog on 2026-06-15 ([BleepingComputer, 2026-06-15]) ; Cisco confirms
+        active exploitation and CISA added it to the KEV catalog on 2026-06-15 (BleepingComputer)
+      defect: The fact is true (KEV dateAdded 2026-06-15) but the cited BleepingComputer article does not mention a KEV listing for this CVE;
+        The Register and the KEV record carry it. Cisco says "limited exploitation".
+      ground_truth: 'The Register 2026-06-15: CISA "added CVE-2026-20262 to its Known Exploited Vulnerabilities catalog, citing ''evidence of
+        active exploitation''"; Cisco: "In June 2026, the Cisco PSIRT became aware of limited exploitation of this vulnerability."'
+      ground_truth_url: https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916
+      fix: Cite The Register or the KEV record for the listing; say Cisco reports limited exploitation.
+      class: imprecision
+    - where: body (vulnerability description)
+      claim: does not validate the user-supplied filename, so an authenticated request can traverse out of the intended directory ; the file-upload
+        handler fails to validate the supplied filename
+      defect: The Cisco advisory says "user-supplied input during a file upload process"; filename and directory traversal appear only in Cisco's
+        log sample; the entry cites the NVD per-CVE page as a source.
+      ground_truth: 'Cisco: "the affected software does not properly validate user-supplied input during a file upload process"; Cisco CNA CWE-22
+        Path Traversal.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Use Cisco's wording, cite the CNA record for CWE-22, drop the NVD link.
+      class: imprecision
+    - where: cves[CVE-2026-20262]
+      claim: 'affected: null; fixed: null'
+      defect: Cisco's table gives the first fixed release per train and the affected status is "regardless of device configuration"; neither is
+        recorded.
+      ground_truth: 'Cisco: 20.9.9.1 and earlier -> 20.9.9.2; 20.12.7.1 and earlier -> 20.12.7.2; 20.15.4.4 and earlier -> 20.15.4.5; 20.15.5.2
+        and earlier -> 20.15.5.3; 20.18.3 -> 20.18.3.1; 26.1.1.1 and earlier -> 26.1.1.2.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Fill affected/fixed from the Cisco table. (CVSS 6.5, KEV 2026-06-15 and exploited status are correct.)
+      class: imprecision
+    - where: evidence[0]
+      claim: 'quote of entry prose (A: "Vulnerable component."; B: "A path-traversal weakness in the web UI ... (NVD CVSS 6.5; Cisco PSIRT, 2026-06-15).")'
+      defect: The evidence quote is the entry's own migrated prose (publisher "ctipilot v2 brief (migrated)"), not a passage of a cited page.
+      ground_truth: 'Cisco PSIRT: "A vulnerability in the web UI of Cisco Catalyst SD-WAN Manager, formerly SD-WAN vManage, could allow an authenticated,
+        remote attacker to create a file or overwrite any file on the filesystem of an affected system."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Replace with a verbatim Cisco passage.
+      class: factual-error
+    - where: body (exploitation chain)
+      claim: 'Reporting describes the practical path as: (1) Initial access with valid low-privilege SD-WAN Manager credentials — obtained through
+        prior phishing, credential reuse, or chaining an earlier auth-affecting SD-WAN bug ... (3) ... because the SD-WAN Manager application
+        services run with high privilege, the web shell yields root-equivalent control'
+      defect: 'No cited source describes this chain: Cisco says only that the written file "could later be used to elevate to root"; the credential-acquisition
+        routes and the "application services run with high privilege" rationale are the entry''s conjecture attributed to "Reporting"; T1078.004
+        (Cloud Accounts) does not fit appliance credentials.'
+      ground_truth: 'Cisco: "A successful exploit could allow the attacker to create or overwrite any file on the underlying operating system.
+        This file could later be used to elevate to root."; BleepingComputer: "execute arbitrary commands as root".'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Attribute only what Cisco/BC state; label the rest analyst inference; use T1078 not .004.
+      class: factual-error
+    - where: body (privilege requirement)
+      claim: a low-privilege/single-task account ; prune low-privilege/single-task accounts
+      defect: Cisco's advisory (v1.1) says valid credentials with at least write access; "single-task" is The Register's wording; the entry picks
+        one silently.
+      ground_truth: 'Cisco v1.1: "Specified write access privilege in Summary"; "the attacker must have valid credentials with at least write
+        access"; The Register: "at least a lower-privileged, single-task user account".'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Use Cisco's wording and add a Contradiction line.
+      class: imprecision
+    - where: entities / body (Talos paragraph)
+      claim: 'entities: actor:uat-8616 ; Cisco Talos tracks a highly capable cluster it designates UAT-8616 behind a 2026 wave of Cisco Catalyst
+        SD-WAN exploitation'
+      defect: No source ties UAT-8616 to CVE-2026-20262 (Talos covers CVE-2026-20127 on the SD-WAN Controller, published 2026-02-25); the body
+        hedges but the actor entity link on the entry asserts an association.
+      ground_truth: 'Talos: "Talos is tracking the active exploitation of CVE-2026-20127, a vulnerability in Cisco Catalyst SD-WAN Controller,
+        formerly vSmart".'
+      ground_truth_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+      fix: Drop the actor entity link or reference the Talos item instead.
+      class: imprecision
+    - where: summary / body
+      claim: Vulnerable component. (summary field is the first body sentence)
+      defect: Summary field carries the label "Vulnerable component." sentence rather than a finding summary; no mention of exploitation/KEV.
+      ground_truth: n/a
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Write a real summary.
+      class: imprecision
+  - entry_as_read: 2026-06-16/cve-2026-20262-cisco-catalyst-sd-wan-manager-authenticated-a
+    current_entry: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: body (exploitation / detection / hardening) and actions[0]
+      claim: write a `.jsp`/`.war` artefact into the Tomcat deployment directory ; newly written files in the Tomcat webapps/deploy directories
+        ; validate the integrity of the Tomcat deploy directory ; the Tomcat deploy directory for planted `.jsp`/`.war` web shells ; Writing a
+        JSP/WAR into the Tomcat deploy path
+      defect: 'Cisco''s own indicators show a WildFly application server: the malicious WAR is written to /var/lib/wildfly/standalone/deployments/
+        and deployed by the WildFly DeploymentScanner (WFLYSRV0010). "Tomcat" appears in no source.'
+      ground_truth: 'Cisco PSIRT: vmanage-server.log "SdraAnyConnectFileUploadHandler ... uploaded Remote Access Anyconnect profile file: ../../../../var/lib/wildfly/standalone/deployments/suspicious.war";
+        vmanage-appserver.log "WFLYSRV0010: Deployed \"suspicious.war\""; serviceproxy-access.log "POST /suspicious/index.jsp".'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Replace Tomcat with the WildFly deployments directory and cite Cisco's three log indicators (vmanage-server.log AnyConnect profile-upload
+        handler with ../ path, appserver deployment, service-proxy POST to index.jsp).
+      class: factual-error
+    - where: body (KEV citation)
+      claim: CISA added CVE-2026-20262 to the Known Exploited Vulnerabilities catalog on 2026-06-15 ([BleepingComputer, 2026-06-15]) ; Cisco confirms
+        active exploitation and CISA added it to the KEV catalog on 2026-06-15 (BleepingComputer)
+      defect: The fact is true (KEV dateAdded 2026-06-15) but the cited BleepingComputer article does not mention a KEV listing for this CVE;
+        The Register and the KEV record carry it. Cisco says "limited exploitation".
+      ground_truth: 'The Register 2026-06-15: CISA "added CVE-2026-20262 to its Known Exploited Vulnerabilities catalog, citing ''evidence of
+        active exploitation''"; Cisco: "In June 2026, the Cisco PSIRT became aware of limited exploitation of this vulnerability."'
+      ground_truth_url: https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916
+      fix: Cite The Register or the KEV record for the listing; say Cisco reports limited exploitation.
+      class: imprecision
+    - where: body (vulnerability description)
+      claim: does not validate the user-supplied filename, so an authenticated request can traverse out of the intended directory ; the file-upload
+        handler fails to validate the supplied filename
+      defect: The Cisco advisory says "user-supplied input during a file upload process"; filename and directory traversal appear only in Cisco's
+        log sample; the entry cites the NVD per-CVE page as a source.
+      ground_truth: 'Cisco: "the affected software does not properly validate user-supplied input during a file upload process"; Cisco CNA CWE-22
+        Path Traversal.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Use Cisco's wording, cite the CNA record for CWE-22, drop the NVD link.
+      class: imprecision
+    - where: cves[CVE-2026-20262]
+      claim: 'affected: null; fixed: null'
+      defect: Cisco's table gives the first fixed release per train and the affected status is "regardless of device configuration"; neither is
+        recorded.
+      ground_truth: 'Cisco: 20.9.9.1 and earlier -> 20.9.9.2; 20.12.7.1 and earlier -> 20.12.7.2; 20.15.4.4 and earlier -> 20.15.4.5; 20.15.5.2
+        and earlier -> 20.15.5.3; 20.18.3 -> 20.18.3.1; 26.1.1.1 and earlier -> 26.1.1.2.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Fill affected/fixed from the Cisco table. (CVSS 6.5, KEV 2026-06-15 and exploited status are correct.)
+      class: imprecision
+    - where: evidence[0]
+      claim: 'quote of entry prose (A: "Vulnerable component."; B: "A path-traversal weakness in the web UI ... (NVD CVSS 6.5; Cisco PSIRT, 2026-06-15).")'
+      defect: The evidence quote is the entry's own migrated prose (publisher "ctipilot v2 brief (migrated)"), not a passage of a cited page.
+      ground_truth: 'Cisco PSIRT: "A vulnerability in the web UI of Cisco Catalyst SD-WAN Manager, formerly SD-WAN vManage, could allow an authenticated,
+        remote attacker to create a file or overwrite any file on the filesystem of an affected system."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Replace with a verbatim Cisco passage.
+      class: factual-error
+    - where: summary / body
+      claim: Full deep dive in § 5 ; Full kill-chain, hunt and hardening detail in § 5
+      defect: Dangling references to a section that does not exist in the entry (the deep dive is a separate entry).
+      ground_truth: n/a
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Remove.
+      class: imprecision
+    - where: actions[0]
+      claim: take the management UI off the internet, enforce MFA
+      defect: Cisco's advisory says internet-exposed Managers are at risk; MFA is not a sourced control for this flaw (exploit needs valid credentials;
+        MFA does not stop an authenticated upload).
+      ground_truth: 'Cisco: "Cisco Catalyst SD-WAN Manager systems that are exposed to the internet and that have ports exposed to the internet
+        are at risk"; "There are no workarounds".'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      fix: Keep the exposure advice; drop or justify MFA.
+      class: imprecision
+  groups:
+  - pass: D1
+    members:
+    - 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+    - 2026-06-16/cve-2026-20262-cisco-catalyst-sd-wan-manager-authenticated-a
+    same_finding: true
+    survivor: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+    current_state: 'CVE-2026-20262, Cisco Catalyst SD-WAN Manager (formerly SD-WAN vManage) ''Arbitrary File Write Vulnerability'' (advisory cisco-sa-sdwan-arbfw-c2rZvQ,
+      published 2026-06-15, revision 1.1 same day): web UI file-upload handling does not properly validate user-supplied input, an authenticated
+      remote attacker with credentials of at least write access can create or overwrite any file on the underlying OS, which ''could later be
+      used to elevate to root''; CVSS 3.1 6.5 CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:H/A:N; CWE-22 Path Traversal per the Cisco CNA record (https://cveawg.mitre.org/api/cve/CVE-2026-20262);
+      affects all deployment types (On-Prem, Cloud-Pro, Cloud Cisco Managed, FedRAMP) regardless of configuration; no workarounds; first fixed
+      releases 20.9.9.2 (from 20.9.9.1 and earlier), 20.12.7.2 (20.12.7.1 and earlier), 20.15.4.5 (20.15.4.4 and earlier), 20.15.5.3 (20.15.5.2
+      and earlier), 20.18.3.1 (20.18.3), 26.1.1.2 (26.1.1.1 and earlier); found during internal security testing; ''In June 2026, the Cisco PSIRT
+      became aware of limited exploitation'' (https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ).
+      CISA KEV: added 2026-06-15, due 2026-06-29 (catalogue 2026.10.16); The Register 2026-06-15 and BleepingComputer 2026-06-15 report root escalation
+      and that it is the second Catalyst SD-WAN Manager zero-day of the month after CVE-2026-20245 (advisory 2026-06-04, patched 2026-06-12) (https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916,
+      https://www.bleepingcomputer.com/news/security/cisco-fixes-sd-wan-vmanage-flaw-exploited-in-zero-day-attacks/). Cisco''s indicators (patterns,
+      not IOCs): vmanage-server.log (/var/log/nms) SdraAnyConnectFileUploadHandler entry ''uploaded Remote Access Anyconnect profile file'' with
+      a ../ path into /var/lib/wildfly/standalone/deployments/ ending .war; vmanage-appserver.log WFLYSRV0010 ''Deployed'' for that WAR; serviceproxy-access.log
+      POST to <name>/index.jsp; Cisco advises request admin-tech and a TAC case. No source ties UAT-8616 (Talos, CVE-2026-20127 on the Controller,
+      2026-02-25) to this CVE.'
+    facts_only_in_duplicates:
+    - fact: Fix table with six first-fixed releases (both entries)
+      entry: both
+      verified: true
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ
+      passage: 20.9.9.1 and earlier 20.9.9.2 20.12.7.1 and earlier 20.12.7.2 20.15.4.4 and earlier 20.15.4.5 20.15.5.2 and earlier 20.15.5.3 20.18.3
+        20.18.3.1 26.1.1.1 and earlier 26.1.1.2
+    - fact: UAT-8616 / Talos context and detailed hunt/hardening paragraphs (entry A only)
+      entry: 2026-06-16/cisco-catalyst-sd-wan-manager-cve-2026-20262-authenticated-a
+      verified: false
+      source_url: https://blog.talosintelligence.com/uat-8616-sd-wan/
+      passage: Talos covers CVE-2026-20127 on the SD-WAN Controller; no link to CVE-2026-20262; hunt text names Tomcat instead of WildFly
+    - fact: CISA KEV listing 2026-06-15 (both entries, cited to BleepingComputer which lacks it)
+      entry: both
+      verified: true
+      source_url: https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916
+      passage: CISA added CVE-2026-20262 to its Known Exploited Vulnerabilities catalog, citing "evidence of active exploitation"
+    note: Same finding (identical CVE, sources and run). Both share the 'Tomcat' error (Cisco's own indicators show WildFly), a self-authored
+      evidence quote, and the KEV claim cited to a page that does not carry it. A is the more complete carrier (exposure, detection, hardening)
+      but also asserts an unsourced exploitation chain and an actor entity link; B is short but has a dangling section pointer and priority high;
+      rewrite the survivor from the Cisco advisory and KEV facts above.
+- entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:53:14Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    current_entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: factual-error
+    defects:
+    - where: title; headline; 'Why the chain matters more than either CVE'; 'The two primitives'
+      claim: 'CVE-2026-20190 removes that barrier: it hands an unauthenticated attacker the hashed admin credentials, which can then be cracked
+        offline ... or ... replayed'
+      defect: 'The chain is the entry''s own construction: Cisco states the two vulnerabilities are independent, says only ''hashed credentials'',
+        and CVE-2026-20190 does not affect ISE 3.3 and earlier where CVE-2026-20181 does'
+      ground_truth: 'Cisco: "The vulnerabilities are not dependent on one another. Exploitation of one of the vulnerabilities is not required
+        to exploit the other vulnerability."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: Describe two independent flaws; if a chain is discussed, label it analyst speculation
+      class: factual-error
+    - where: body, The two primitives
+      claim: explicitly including hashed administrator credentials
+      defect: Cisco says 'hashed credentials that could be used in future attacks' via 'crafted traffic'; 'administrator', 'HTTP' and 'specific
+        ISE/ISE-PIC APIs' are not stated, and the administrator link is what the chain relies on
+      ground_truth: 'Cisco: "gain access to sensitive information, including hashed credentials that could be used in future attacks"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: Use Cisco's wording
+      class: factual-error
+    - where: cves[CVE-2026-20181], cves[CVE-2026-20190]
+      claim: 'auth: pre-auth; type: rce'
+      defect: CVE-2026-20181 needs valid administrative credentials (PR:H); CVE-2026-20190 is an information-disclosure flaw (CWE-285)
+      ground_truth: 'Cisco: "To exploit this vulnerability, the attacker must have valid administrative credentials."; "CVE-2026-20190: Cisco
+        ISE and ISE-PIC Information Disclosure Vulnerability"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: 20181 auth admin-required; 20190 type info-disclosure
+      class: factual-error
+    - where: body, Exposure and prerequisites
+      claim: 'ISE 3.5 is the gap: Patch 3 closes only the unauthenticated read (CVE-2026-20190), and the full fix (Patch 4) is not scheduled until
+        August 2026 — so 3.5 operators carry the authenticated-RCE half for roughly two months'
+      defect: Cisco's table gives '3.5 Patch 4 (Aug 2026) or hot patch' for CVE-2026-20181 (hot patch for 3.5 Patch 3 on request via TAC); SecurityWeek
+        (cited) says a 3.5 hotfix is available. The entry also omits ISE 3.1 and 3.2, which are affected by 20181 (Patch 12 / Patch 11, Sep 2026
+        per advisory v1.2); 20190 affects only 3.4/3.5
+      ground_truth: 'SecurityWeek: "A hotfix for ISE version 3.5 is also available and will be included in version 3.5 Patch 4 in August."; Cisco:
+        "A hot patch for Cisco ISE Release 3.5 Patch 3 is available upon request."'
+      ground_truth_url: https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+      fix: State the 3.5 hot patch, add 3.1/3.2 fixes, and that 20190 is 3.4/3.5 only
+      class: factual-error
+    - where: body, The two primitives
+      claim: CVE-2026-20181 (CVSS 9.1, path traversal / CWE-22) ... escapes the intended directory and executes arbitrary operating-system commands
+      defect: SecurityWeek (cited) says improper input validation; Cisco shows CWE-22 as the weakness label but describes command execution via
+        insufficient validation; 'escapes the intended directory' is the entry's inference
+      ground_truth: 'SecurityWeek: "the issue exists because user-supplied input is improperly validated, allowing an attacker to send a crafted
+        HTTP request and obtain user-level access to the underlying operating system"'
+      ground_truth_url: https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+      fix: Drop the directory-escape mechanism
+      class: imprecision
+    - where: summary; body paragraph 1
+      claim: the policy brain of network access control in most large Swiss and European public-sector estates
+      defect: '''Most'' is an unsourced quantifier about Swiss/European public-sector deployments'
+      ground_truth: no cited page discusses deployment prevalence
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: Remove or cite
+      class: imprecision
+    - where: sources[2]
+      claim: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+      defect: (low confidence) The cited CERT-Bund WID-SEC-2026-1989 page is a JavaScript shell no transport could render; nothing in the entry
+        rests on it, but it is not verifiable
+      ground_truth: fetch returned only the WID portal Angular shell
+      ground_truth_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+      fix: Drop or replace with a readable BSI/CERT-Bund record
+      class: imprecision
+    - where: frontmatter classification / techniques[]
+      claim: (absent)
+      defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+      ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+      ground_truth_url: docs/pipeline.md
+      fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+      class: imprecision
+  - entry_as_read: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+    current_entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: factual-error
+    defects:
+    - where: title; headline; summary
+      claim: unauthenticated credential read chaining to authenticated root command execution
+      defect: 'Chain asserted as fact: Cisco says the two vulnerabilities are not dependent on one another; the summary also says the attacker
+        ''reuse[s] them to reach'' 20181'
+      ground_truth: 'Cisco: "Exploitation of one of the vulnerabilities is not required to exploit the other vulnerability."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: Describe as two independent flaws
+      class: factual-error
+    - where: body paragraph 1
+      claim: including hashed administrator credentials — via crafted HTTP requests to specific APIs
+      defect: Cisco says 'hashed credentials' via 'crafted traffic'; 'administrator', 'HTTP requests' and 'specific APIs' are not in the advisory
+      ground_truth: 'Cisco: "view sensitive information on an affected device ... including hashed credentials that could be used in future attacks"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: Use Cisco's wording
+      class: factual-error
+    - where: cves[CVE-2026-20181], cves[CVE-2026-20190]
+      claim: 'auth: pre-auth; type: rce'
+      defect: 20181 requires valid administrative credentials; 20190 is information disclosure
+      ground_truth: 'Cisco: "the attacker must have valid administrative credentials"; "Information Disclosure Vulnerability"'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: auth admin-required; type info-disclosure
+      class: factual-error
+    - where: summary; body; actions[0]
+      claim: ISE 3.5's full fix slips to August; with 3.5 Patch 3 closing only CVE-2026-20190 in the interim
+      defect: A hot patch for 3.5 Patch 3 fixing 20181 is available on request; the action tells 3.5 users to wait for Patch 4; 3.1/3.2 (affected
+        by 20181, fixes Sep 2026) are omitted
+      ground_truth: 'Cisco table: "3.5 ... 3.5 Patch 4 (Aug 2026) or hot patch"; footnote "A hot patch for Cisco ISE Release 3.5 Patch 3 is available
+        upon request."'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: State the hot patch and the 3.1/3.2 fixes
+      class: factual-error
+    - where: summary
+      claim: 'A dense critical-patch cycle landed in widely-deployed CH/EU public-sector infrastructure within 36 h: Cisco ISE, pgAdmin 4, NGINX,
+        and Drupal core ... No in-the-wild exploitation is reported for any of these four advisories.'
+      defect: pgAdmin 4, NGINX and Drupal are not discussed or cited anywhere in the entry or its sources; the 36 h window and the no-exploitation
+        statement for them are unsupported
+      ground_truth: Cited sources (Cisco, SecurityWeek, CERT-Bund WID-SEC-2026-1989) cover only Cisco ISE
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      fix: Drop the other three products and the claim
+      class: imprecision
+    - where: sources[2]
+      claim: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+      defect: (low confidence) The cited CERT-Bund WID-SEC-2026-1989 page is a JavaScript shell no transport could render; nothing in the entry
+        rests on it, but it is not verifiable
+      ground_truth: fetch returned only the WID portal Angular shell
+      ground_truth_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1989
+      fix: Drop or replace with a readable BSI/CERT-Bund record
+      class: imprecision
+    - where: frontmatter classification / techniques[]
+      claim: (absent)
+      defect: Entry carries no `classification` block and no `techniques[]` (migrated schema-1 record); a vulnerability entry needs both
+      ground_truth: 'org profile: every entry carries classification {reliability, credibility}; vulnerability entries need a non-empty techniques[]'
+      ground_truth_url: docs/pipeline.md
+      fix: Add classification (e.g. primary vendor/CNA source, corroborated) and techniques[] (T1190) in the survivor via a changelog record
+      class: imprecision
+  groups:
+  - pass: D2
+    group: 6
+    members:
+    - 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+    - 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+    same_finding: true
+    survivor: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+    current_state: 'Cisco ISE / ISE-PIC advisory cisco-sa-ise-multi-G5WP8vv, first published 2026-06-17 (v1.2 2026-07-06), two independent flaws
+      (''not dependent on one another''), no workarounds, PSIRT not aware of malicious use [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv].
+      CVE-2026-20181: authenticated (valid administrative credentials) remote command execution to root via crafted HTTP request, insufficient
+      input validation, CWE-22, CVSS 3.1 9.1 (AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H); single-node DoS; affects ISE 3.1-3.5; first fixed: 3.1 Patch
+      12 (Sep 2026), 3.2 Patch 11 (Sep 2026), 3.3 Patch 11, 3.4 Patch 6, 3.5 Patch 4 (Aug 2026) or hot patch for 3.5 Patch 3 (via TAC) [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv,
+      https://cveawg.mitre.org/api/cve/CVE-2026-20181]. CVE-2026-20190: unauthenticated remote information disclosure incl. hashed credentials,
+      improper authorization, CWE-285, CVSS 3.1 7.5 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N); affects only 3.4 and 3.5; first fixed 3.4 Patch 6,
+      3.5 Patch 3; 3.3 and earlier not vulnerable [https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv,
+      https://cveawg.mitre.org/api/cve/CVE-2026-20190]. Exploitation: none in CISA KEV (2026.10.16); no in-the-wild report found. SecurityWeek
+      2026-06-18 confirms the 3.5 hotfix [https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/].'
+    facts_only_in_duplicates:
+    - fact: 'CVE-2026-20181: improper-input-validation command execution to root, single-node DoS (6a, 6b)'
+      entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+      verified: true
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      passage: In single-node deployments, successful exploitation of this vulnerability could cause the affected ISE node to become unavailable,
+        resulting in a denial of service (DoS) condition.
+    - fact: Fixed in 3.3 Patch 11 and 3.4 Patch 6 (6a, 6b)
+      entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+      verified: true
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      passage: 3.3 | 3.3 Patch 11 | Not vulnerable. 3.4 | 3.4 Patch 6 | 3.4 Patch 6
+    - fact: 'Chain: 20190 hands over hashed admin credentials enabling 20181 (6a title/body, 6b headline/summary)'
+      entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+      verified: false
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      passage: The vulnerabilities are not dependent on one another. Exploitation of one of the vulnerabilities is not required to exploit the
+        other vulnerability.
+    - fact: 3.5 operators carry 20181 until August (6a, 6b, action)
+      entry: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+      verified: false
+      source_url: https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+      passage: A hotfix for ISE version 3.5 is also available and will be included in version 3.5 Patch 4 in August.
+    - fact: 'Dense patch cycle: pgAdmin 4, NGINX, Drupal core within 36 h; no ITW for any of the four (6b)'
+      entry: 2026-06-19/cve-2026-20181-cve-2026-20190-cisco-identity-services-engine
+      verified: false
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      passage: not covered by any cited source; unverified (secondary reports date pgAdmin 9.16 to June 19-22, Drupal AV26-615 to June 17)
+    - fact: ATT&CK chain T1190 -> T1212 -> T1110.002 -> T1078 -> T1059/T1068 -> T1556 (6a)
+      entry: 2026-06-19/cisco-ise-cve-2026-20181-cve-2026-20190-an-unauthenticated-c
+      verified: false
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-multi-G5WP8vv
+      passage: mapping rests on the unsupported chain
+    note: Same finding. Both build on a chain the vendor expressly denies, record 20181 as pre-auth and 20190 as rce, omit the 3.5 hot patch and
+      ISE 3.1/3.2, and say 'hashed administrator credentials'. Survivor 6b; fold in 6a's detection concepts only after removing chain-dependent
+      content.
+- entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:48:28Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-06-04/cve-2026-20230-cisco-unified-communications-manager-unauthen
+    current_entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: factual-error
+    defects:
+    - where: summary
+      claim: 'Two critical advisories hit public-sector infrastructure defenders run themselves: an unauthenticated SSRF-to-root in Cisco Unified
+        CM (CVE-2026-20230) and an OTP-bypass in MISP (CVE-2026-10611) — the threat-intel platform deployed across EU/CH national CERTs.'
+      defect: 'The MISP half of the summary is carried by no source, body paragraph or cves[] record of this entry (frontmatter overstates the
+        body); ''deployed across EU/CH national CERTs'' is unsourced. NVD: the MISP bypass needs LDAP mixed authentication plus enforced OTP and
+        a valid primary credential.'
+      ground_truth: 'NVD CVE-2026-10611 (published 2026-06-02): ''In deployments configured with LdapAuth.mixedAuth=true and Security.require_otp=true
+        ... an attacker with valid primary authentication credentials could bypass the required OTP step''; CVSS 3.1 10.0 (nvd@nist.gov), CVSS
+        4.0 8.2.'
+      ground_truth_url: https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-10611
+      fix: Drop the MISP clause from this entry's summary (it is a different finding) or give it its own entry with a primary source.
+      class: factual-error
+    - where: body para 1
+      claim: coerce the device into fetching an attacker URL and writing the response to arbitrary OS locations — a write primitive Cisco states
+        'could be used later to elevate to root' via a drop into cron/service directories
+      defect: Cisco says only that the attacker can 'write files to the underlying operating system'; fetching an attacker URL and the cron/service-directory
+        drop are not in the advisory. The discoverer's write-up shows a different chain (unauthenticated cmplatform endpoint /installClusterStatusExecute
+        used to deploy an Axis service and then a JSP web shell after learning the true hostname from /webdialer/Version.jws).
+      ground_truth: 'Cisco: ''A successful exploit could allow the attacker to write files to the underlying operating system that could be used
+        later to elevate to root.'' SSD: ''Once the attacker has this information he can send a request to the /cmplatform/installClusterStatusExecute
+        and ask it to install an additional node, instead of using a valid hostname, the attacker can send a full path ...'''
+      ground_truth_url: https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/
+      fix: Quote Cisco's wording; if mechanism is wanted, cite SSD (which was published 2026-06-23, after this entry).
+      class: factual-error
+    - where: body para 1
+      claim: Cisco reports no confirmed in-the-wild exploitation at disclosure but states that proof-of-concept exploit code is publicly available
+      defect: 'Cisco''s wording is ''aware that proof-of-concept exploit code is available'' (not ''publicly''); BleepingComputer says the discoverer
+        shared no technical details at the time and published its write-up and PoC on 2026-06-23. The statement is also stale: Cisco''s advisory
+        v1.1 (2026-07-01) records active exploitation since June 2026 and CISA added the CVE to KEV on 2026-06-25, neither of which the entry
+        carries (cves[].status poc-public, patch-available only).'
+      ground_truth: 'Cisco: ''The Cisco PSIRT is aware that proof-of-concept exploit code is available ... In June 2026, the Cisco PSIRT became
+        aware of active exploitation of this vulnerability.'' (v1.1, 2026-JUL-01). KEV: dateAdded 2026-06-25, dueDate 2026-06-28.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      fix: Fold into the survivor entry carrying the exploitation and KEV state; say 'PoC available per Cisco'.
+      class: imprecision
+    - where: frontmatter
+      claim: 'classification absent; techniques: []; affected_products: []; cves[].affected/fixed null; sources: Cisco only'
+      defect: No Admiralty rating or ATT&CK mapping (T1190, T1068); no structured affected (Release 14 and 15 with WebDialer enabled) or fixed
+        (14SU6; 15SU5 or COP).
+      ground_truth: 'Cisco: ''Cisco Unified CM and Unified CM SME Release First Fixed Release 14 14SU6 15 15SU5 (Sep 2026) or COP''.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      fix: Populate on the survivor.
+      class: imprecision
+  - entry_as_read: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+    current_entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: imprecision
+    defects:
+    - where: body para 1 (disable instruction)
+      claim: disable WebDialer if unused (Service Parameters → Cisco WebDialer Web Service)
+      defect: 'Wrong console path: Cisco''s mitigation is Cisco Unified Serviceability > Tools > Service Activation > uncheck Cisco WebDialer
+        Web Service (Service Parameters is a different page).'
+      ground_truth: '''From the Navigation menu, choose Cisco Unified Serviceability and click Go. From the Tools menu, choose Service Activation.
+        In the CTI Services section of the page, uncheck the Cisco WebDialer Web Service check box and click Save.'''
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      fix: Use Cisco's Service Activation path.
+      class: imprecision
+    - where: body para 1
+      claim: Defused observed exploitation over the weekend of ~2026-06-21/22 from a single source IP ... a vulnerability-fingerprinting pattern
+        that historically precedes a targeted exploitation wave.
+      defect: BleepingComputer (Tuesday 2026-06-23) says 'over the weekend', i.e. 2026-06-20/21; 'historically precedes a targeted exploitation
+        wave' is not in the source (BC only says more actors will likely follow now that details are public).
+      ground_truth: 'BleepingComputer: ''Defused says the attacks are originating from a single IP address and use properly constructed file://
+        payloads ... While the current exploitation appears to be reconnaissance in nature, now that the flaw has been fully disclosed, we will
+        likely see more threat actors target these servers.'''
+      ground_truth_url: https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+      fix: Say 'over the weekend of 2026-06-20/21' and delete 'historically'.
+      class: imprecision
+    - where: body (state today)
+      claim: 'Not KEV-listed as of this run. / actions: hunt WebDialer logs for file:// URIs'
+      defect: KEV added the CVE on 2026-06-25 (one day later) and Cisco confirmed active exploitation in advisory v1.1 (2026-07-01); the hunt
+        omits the SSD-documented precursor (unauthenticated GET /webdialer/Version.jws?wsdl to learn the true hostname, then /cmplatform/installClusterStatusExecute)
+        that SSD says is required before the write.
+      ground_truth: 'KEV: dateAdded 2026-06-25. Cisco v1.1: ''In June 2026, the Cisco PSIRT became aware of active exploitation''. SSD: ''The
+        flow of the attack requires the attacker to first gain ... the hostname ... via https://<host>/webdialer/Version.jws?wsdl''.'
+      ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      fix: Add cisa-kev status and the two request anchors on the survivor.
+      class: imprecision
+    - where: frontmatter
+      claim: 'classification absent; techniques: []; sectors: [technology]'
+      defect: No Admiralty rating; no techniques[] even though the body names T1190 and T1068; no structured affected/fixed.
+      ground_truth: 'Cisco fixed releases: 14SU6; 15SU5 (Sep 2026) or COP.'
+      ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      fix: Populate on the survivor.
+      class: imprecision
+  groups:
+  - pass: D3
+    group: '5'
+    members:
+    - 2026-06-04/cve-2026-20230-cisco-unified-communications-manager-unauthen
+    - 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+    same_finding: true
+    survivor: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+    current_state: 'Cisco Unified CM / Unified CM SME CVE-2026-20230 (Cisco advisory cisco-sa-cucm-ssrf-cXPnHcW https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW;
+      v1.0 2026-06-03, v1.1 2026-07-01 ''Added information about active exploitation''): unauthenticated remote SSRF through crafted HTTP requests
+      (CWE-918 per KEV) that lets the attacker write files to the underlying OS ''that could be used later to elevate to root''; CVSS 3.1 8.6
+      (AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:N) with Security Impact Rating raised to Critical. The WebDialer service must be enabled to exploit (disabled
+      by default; check Cisco Unified Serviceability > Tools > Control Center - Feature Services > Cisco WebDialer Web Service). No workarounds;
+      mitigation: disable WebDialer via Tools > Service Activation. Fixed: Release 14 first fixed 14SU6; Release 15 first fixed 15SU5 (Sep 2026)
+      or a version-specific COP. Cisco: ''aware that proof-of-concept exploit code is available. In June 2026, the Cisco PSIRT became aware of
+      active exploitation.'' Credit: independent researcher via SSD Secure Disclosure. Details/exploitation: SSD write-up and PoC published 2026-06-23
+      (https://ssd-disclosure.com/cisco-unified-communications-manager-arbitrary-file-write-to-rce/; affected tested 15.0.1.13901-2): unauthenticated
+      /cmplatform/installClusterStatusExecute used as the SSRF, true hostname learned from /webdialer/Version.jws?wsdl, an Axis service deployed
+      through the written file and then a JSP web shell. Defused (BleepingComputer 2026-06-23 https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/):
+      exploitation over the weekend (2026-06-20/21) from a single IP using file:// payloads to write /tmp/cve-2026-20230-test.txt, reconnaissance-style.
+      CISA KEV: added 2026-06-25, due 2026-06-28 (BOD 26-04), knownRansomwareCampaignUse Unknown. A separate store entry covers MISP CVE-2026-10611
+      (not part of this finding).'
+    facts_only_in_duplicates:
+    - fact: Defused honeypot exploitation (file:// payloads, marker file /tmp/cve-2026-20230-test.txt), SSD PoC, KEV not listed at the time, 15SU5
+        not before September 2026, disable WebDialer
+      entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+      verified: true
+      source_url: https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+      passage: '"Defused says the attacks are originating from a single IP address and use properly constructed file:// payloads to create files
+        on the device."; Cisco: "15SU5 (Sep 2026) or COP"'
+    - fact: Security Impact Rating Critical despite CVSS 8.6 because of the root path; WebDialer disabled by default; affected Release 14 (pre-14SU6)
+        and 15 (pre-15SU5)
+      entry: 2026-06-04/cve-2026-20230-cisco-unified-communications-manager-unauthen
+      verified: true
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      passage: '"Cisco has assigned this security advisory a Security Impact Rating (SIR) of Critical rather than High as the score indicates.
+        The reason is that exploitation of this vulnerability could result in an attacker elevating privileges to root."'
+    - fact: '06-04: "fetching an attacker URL and writing the response ... drop into cron/service directories"; "PoC publicly available"; "no
+        confirmed ITW at disclosure"; MISP CVE-2026-10611 clause in the summary'
+      entry: 2026-06-04/cve-2026-20230-cisco-unified-communications-manager-unauthen
+      verified: false
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      passage: Cisco says only "write files to the underlying operating system"; PoC "available" (SSD published 2026-06-23); active exploitation
+        recorded in v1.1 (2026-07-01); MISP is a different CVE with its own store entry (do not carry over)
+    - fact: '06-24: Service Parameters path to disable WebDialer; exploitation weekend ~2026-06-21/22; "historically precedes a targeted exploitation
+        wave"'
+      entry: 2026-06-24/cve-2026-20230-cisco-unified-cm-webdialer-ssrf-to-arbitrary
+      verified: false
+      source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+      passage: 'Cisco: Cisco Unified Serviceability > Tools > Service Activation > uncheck Cisco WebDialer Web Service; BC dated Tue 2026-06-23:
+        "Over the weekend" (2026-06-20/21)'
+    note: 'Same finding. Survivor 06-24: it already carries exploited, poc-public, patch-available, two sources and a concrete action; it needs
+      the corrections above, plus cisa-kev (added 2026-06-25), Cisco''s v1.1 exploitation statement and the SSD precursor requests. The 06-04
+      entry adds nothing verified that the 06-24 entry lacks except Cisco''s SIR-Critical remark, and carries unsupported mechanism details and
+      an unrelated MISP clause (a separate MISP entry exists). Neither carries classification, techniques (T1190, T1068) or structured affected/fixed.'

@@ -1,0 +1,1371 @@
+run_id: 2026-10-21T1149Z-audit
+batch: repair-2
+note: '2026-10-18 verdicts (passes D1-D3 and L) read before the 2026-10-11 audit records landed; every entry here was corrected by 2026-10-11T1307Z-audit
+  afterwards. Re-derive each defect on the current text. Blocks with folded: true were read on a duplicate since folded into this entry: re-check
+  each defect on this entry. groups: carry the duplicate-group notes (current_state, facts_only_in_duplicates) as ground-truth leads; folds and
+  links named there are NOT this batch''s job unless both members are in this batch.'
+entries:
+- entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:44:02Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-05-10/cve-2026-26030-cve-2026-25592-microsoft-semantic-kernel-prom
+    current_entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: summary
+      claim: prompt-injection-to-RCE in the AI agent orchestration framework that backs Azure AI Foundry, Copilot Studio and many self-hosted
+        agents
+      defect: No cited source says Semantic Kernel backs Azure AI Foundry or Copilot Studio.
+      ground_truth: 'Microsoft blog: "Semantic Kernel is Microsoft''s open-source framework for building AI agents and integrating AI models into
+        applications." (no Foundry / Copilot Studio statement anywhere in the post or the GHSAs)'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Drop "that backs Azure AI Foundry, Copilot Studio and many self-hosted agents"; say "Microsoft's open-source AI agent framework".
+      class: factual-error
+    - where: summary / body paragraph 1
+      claim: '`SessionsPythonPlugin.DownloadFileAsync` and `SessionsPythonPlugin.UploadFileAsync` carry a `[KernelFunction]` attribute that should
+        not have been applied'
+      defect: Only DownloadFileAsync was wrongly exposed as a kernel function; UploadFileAsync is intentionally a kernel function (it received
+        path validation, not attribute removal).
+      ground_truth: 'Blog: "DownloadFileAsync was accidentally marked with a [KernelFunction] attribute". Fix PR #13478 diff removes `[KernelFunction,
+        Description("Downloads a file ...")]` from DownloadFileAsync only; the UploadFileAsync `[KernelFunction, Description("Uploads a file ...")]`
+        line is retained; its unit test asserts "Only ExecuteCode, UploadFile, and ListFiles should be exposed".'
+      ground_truth_url: https://api.github.com/repos/microsoft/semantic-kernel/pulls/13478/files
+      fix: State that the unintended [KernelFunction] was on DownloadFileAsync (host-side file write via localFilePath); upload_file lacked path
+        validation (host-file read into the sandbox).
+      class: factual-error
+    - where: body paragraph 1
+      claim: An f-string composes the LINQ-like filter expression directly from an LLM-controlled parameter ... bypasses with the well-known `__class__.__bases__[0].__subclasses__()`
+        class-hierarchy traversal pattern ... `os.system`-equivalent execution
+      defect: 'Mechanism misdescribed: the filter is a Python lambda string executed via eval(); bypass traversed the type system from tuple()
+        to BuiltinImporter and used load_module/system; no f-string, LINQ, or __bases__[0] chain in the source.'
+      ground_truth: 'Blog: "The default filter function ... is implemented as a Python lambda expression executed using eval()"; "kwargs[param.name]
+        is AI model-controlled and not sanitized"; payload "traversed Python''s class hierarchy to locate BuiltinImporter, and used it to dynamically
+        load os and call system()"; blocklist missed __name__, load_module, system, BuiltinImporter.'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: 'Rewrite: unsanitised model-controlled parameter interpolated into a lambda filter evaluated with eval(); AST blocklist bypassed via
+        class-hierarchy traversal to BuiltinImporter.'
+      class: factual-error
+    - where: body paragraph 2
+      claim: Microsoft characterises both flaws as systemic of agentic-AI patterns that "trust LLM-controlled parameters without explicit validation"
+      defect: The quoted phrase is not on the cited page (invented quote); AutoGen is also not named by Microsoft as likely affected.
+      ground_truth: 'Blog: "The vulnerability lies in how the framework and tools trust the parsed data."; "frameworks like Semantic Kernel, LangChain,
+        and CrewAI ... a single vulnerability in how they map AI model outputs to system tools carries systemic risk." No "without explicit validation"
+        string; AutoGen not mentioned.'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Remove the quotation marks or quote the blog sentence verbatim; name only LangChain and CrewAI as the blog does, and label wider spread
+        as analyst inference.
+      class: factual-error
+    - where: cves[] CVE-2026-26030 / CVE-2026-25592 auth
+      claim: 'auth: pre-auth; affected: null; fixed: null'
+      defect: CVSS vectors of both GHSAs carry PR:L (low privileges required), so "pre-auth" contradicts the authority; affected/fixed left null
+        although the GHSAs give them.
+      ground_truth: 'GHSA-xjw9-4gw8-4rqx: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H (9.9), vulnerable "< 1.39.4", first patched 1.39.4; GHSA-2ww3-72rp-wpp4:
+        same vector, nuget "< 1.71.0" first patched 1.71.0, pip "< 1.39.3" first patched 1.39.3.'
+      ground_truth_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+      fix: 'Set affected/fixed per GHSA; drop or qualify auth: pre-auth (attack needs a prompt-injection channel into the agent, not an unauthenticated
+        network exploit of the SDK).'
+      class: imprecision
+    - where: sources[] publisher labels / body citation labels
+      claim: GitHub Security Advisory GHSA-xjw9-4gw8-4rqx, 2026-05-07 ; GitHub Security Advisory GHSA-2ww3-72rp-wpp4, 2026-05-07
+      defect: The GHSAs were published 2026-02-19 and 2026-02-06; 2026-05-07 is the Microsoft blog date.
+      ground_truth: 'API: GHSA-xjw9-4gw8-4rqx published_at 2026-02-19T19:34:14Z (NVD 2026-02-19); GHSA-2ww3-72rp-wpp4 published_at 2026-02-06T18:37:24Z
+        (NVD 2026-02-06).'
+      ground_truth_url: https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4
+      fix: Correct the dates in the sources[] publisher strings and the body link labels; note the CVEs predate the May blog by 2-3 months.
+      class: imprecision
+    - where: summary / body last sentence
+      claim: Full breakdown in § 5. / Full deep dive in § 5.
+      defect: Dangling pointer to a section of the migrated brief that does not exist in this entry.
+      ground_truth: Entry body has no section 5; the deep dive is a separate entry.
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Remove the "§ 5" references.
+      class: imprecision
+    - where: priority
+      claim: 'priority: high'
+      defect: No in-the-wild exploitation, not in CISA KEV (catalog 2026.10.16), exploitation needs a prompt-injection vector plus a specific
+        default-config component; research disclosure, a high-bar disqualifier.
+      ground_truth: Blog frames both as researcher-found, "have since been fixed"; no exploitation statement; neither CVE in KEV.
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: 'Context only: priority should be notable/routine unless a constituency product exposure is shown.'
+      class: imprecision
+  - entry_as_read: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    current_entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: body "Why this matters"
+      claim: Semantic Kernel is the open-source orchestration SDK behind Azure AI Foundry, Copilot Studio, and a growing fraction of self-hosted
+        enterprise AI agents in EU government modernisation pilots.
+      defect: 'Unsupported: no cited source links Semantic Kernel to Foundry/Copilot Studio or to EU government pilots.'
+      ground_truth: 'Blog: "Semantic Kernel is Microsoft''s open-source framework for building AI agents ... With over 27,000 stars on GitHub".'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Delete the Foundry/Copilot Studio/EU-pilot claims.
+      class: factual-error
+    - where: body CVE-2026-26030 section
+      claim: composes its LINQ-like filter expression by f-string interpolation ... The SDK applies a string-blocklist validator ... the validator
+        is a denylist on the *literal text*
+      defect: Validator is AST-based (parses filter string into an AST, rejects dangerous Name/Attribute nodes, runs eval with empty __builtins__);
+        not a literal-text scan; no f-string/LINQ.
+      ground_truth: 'Blog: "implemented a validator that parses the filter string into an Abstract Syntax Tree (AST) before execution"; "scans
+        every element in the code for dangerous identifiers and attributes (for example, strings like eval, exec, open, __import__ ...)"; "If
+        the code passes both checks, it is executed in a restricted environment where Python''s built-in functions ... are deliberately removed."'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Describe it as an AST identifier/attribute blocklist; bypass worked because __name__, load_module, system, BuiltinImporter were not
+        blocked and ast.Subscript was unchecked.
+      class: factual-error
+    - where: body CVE-2026-26030 section
+      claim: '"".__class__.__bases__[0].__subclasses__()[<index>]("...") — walking `object`''s subclass list to reach an arbitrary class ... (typically
+        `subprocess.Popen` or a `os` reference reached via reflection)'
+      defect: 'Not the cited payload: it started from tuple(), located BuiltinImporter and called load_module/system; subprocess.Popen is not
+        mentioned.'
+      ground_truth: 'Blog: "it started with tuple() ... and crawled through Python''s type system"; "traversed Python''s class hierarchy to locate
+        BuiltinImporter, and used it to dynamically load os and call system()".'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Replace the generic idiom and the subprocess.Popen aside with the blog's BuiltinImporter/load_module/system chain, or drop the snippet.
+      class: factual-error
+    - where: body CVE-2026-26030 prerequisites
+      claim: default for self-hosted Semantic Kernel agents until a customer wires in a different vector backend ; indirect prompt injection via
+        retrieved documents or tool output is sufficient; a direct user-input vector is not required
+      defect: Source states the condition as "Search Plugin backed by In-Memory Vector Store functionality using the default configuration"; the
+        "default for self-hosted agents" and indirect-vs-direct statements are uncited.
+      ground_truth: 'Blog: "The targeted agent must have the Search Plugin backed by In-Memory Vector Store functionality using the default configuration";
+        "The attacker must have a prompt injection vector, allowing influence over the agent''s inputs".'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Use the blog wording; drop the unsupported default-for-self-hosted aside.
+      class: factual-error
+    - where: body CVE-2026-25592 section
+      claim: Two of its methods — `DownloadFileAsync` and `UploadFileAsync` — were mistakenly annotated with `[KernelFunction]`
+      defect: Only DownloadFileAsync was mistakenly annotated.
+      ground_truth: 'Blog: "DownloadFileAsync was accidentally marked with a [KernelFunction] attribute"; PR #13478 removes [KernelFunction] from
+        DownloadFileAsync only (UploadFileAsync keeps it, gains path validation).'
+      ground_truth_url: https://api.github.com/repos/microsoft/semantic-kernel/pulls/13478/files
+      fix: Say only DownloadFileAsync was mis-annotated.
+      class: factual-error
+    - where: body CVE-2026-25592 section
+      claim: (a) call `UploadFileAsync` to write attacker-chosen bytes to an attacker-chosen path *on the host* ... and (b) call `DownloadFileAsync`
+        symmetrically to read host-side files back into the agent context.
+      defect: 'Directions are reversed: DownloadFileAsync is the host-side file-write primitive; upload_file is the host-file-read/exfiltration
+        primitive into the sandbox.'
+      ground_truth: 'Blog: DownloadFileAsync''s "localFilePath parameter, which dictates exactly where File.WriteAllBytes() saves data on the
+        host device, was now entirely AI controlled"; "upload_file() ... accepted any local file path without validation, allowing prompt injections
+        to exfiltrate sensitive host files ... directly into the sandbox"; chain writes the script to the host Windows Startup folder.'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: 'Swap: DownloadFileAsync = arbitrary host file write (Startup-folder code execution on next sign-in); upload_file = arbitrary host
+        file read into the sandbox (Python and .NET).'
+      class: factual-error
+    - where: body hardening
+      claim: implement a Function Invocation Filter (the SDK-supported hook documented in the Microsoft research post) ... reduces the Python-side
+        blast radius even if the validator is bypassed
+      defect: The Function Invocation Filter workaround is documented in GHSA-2ww3-72rp-wpp4 for the .NET flaw, not in the Microsoft post; no
+        source offers it as a Python-side mitigation. Python GHSA workaround is "Avoid using InMemoryVectorStore for production scenarios". "patched
+        releases also include the upstream test additions" is uncited.
+      ground_truth: 'GHSA-xjw9: "Workarounds: Avoid using InMemoryVectorStore for production scenarios."; GHSA-2ww3: "Users can create a Function
+        Invocation Filter which checks the arguments being passed to any calls to DownloadFileAsync or UploadFileAsync and ensures the provided
+        localFilePath is allow listed."'
+      ground_truth_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+      fix: Attribute the filter workaround to the .NET GHSA only and add the Python GHSA workaround (avoid InMemoryVectorStore in production);
+        drop the Python-blast-radius and test-additions sentences.
+      class: factual-error
+    - where: cves[] / ATT&CK mapping
+      claim: T1565.001 Stored Data Manipulation (write primitive)
+      defect: 'The documented write primitive drops a script in the Windows Startup folder for code execution at next sign-in; stored-data manipulation
+        for integrity impact is not what the source describes. Also auth: pre-auth contradicts PR:L; affected/fixed null.'
+      ground_truth: 'Blog: "writes it directly to the host''s Windows\Start Menu\Programs\Startup folder"; "On the next user sign-in, the script
+        runs, granting full host compromise." GHSA vectors PR:L.'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Map to Startup-folder autostart persistence/execution instead of T1565.001; qualify auth; fill affected/fixed.
+      class: imprecision
+    - where: body (analysis paragraphs)
+      claim: EDR vendors classify this under hunt-pack categories ...; Many self-hosted agent deployments do not log plugin-method calls ...;
+        The same class of bug is highly likely to exist in LangChain, CrewAI, AutoGen, Haystack, LlamaIndex; Both bypass any of the existing prompt-side
+        mitigations ...; The deployment surface inside an EU public-sector tenant ...
+      defect: Uncited generalisations stated as fact; the Microsoft post names only LangChain and CrewAI and says prompt-layer guardrail bypass
+        needs host-level detection, not that all prompt-side mitigations are bypassed.
+      ground_truth: 'Blog: "frameworks like Semantic Kernel, LangChain, and CrewAI"; "If an attacker bypasses the AI model guardrails, traditional
+        endpoint defense must be in place".'
+      ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      fix: Mark as analyst inference or remove.
+      class: imprecision
+    - where: sources[] publisher labels / header links
+      claim: GitHub GHSA ... 2026-05-07
+      defect: GHSA publication dates are 2026-02-19 and 2026-02-06 (not 2026-05-07).
+      ground_truth: GHSA-xjw9 published_at 2026-02-19T19:34:14Z; GHSA-2ww3 published_at 2026-02-06T18:37:24Z.
+      ground_truth_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+      fix: Correct dates.
+      class: imprecision
+  groups:
+  - pass: D1
+    members:
+    - 2026-05-10/cve-2026-26030-cve-2026-25592-microsoft-semantic-kernel-prom
+    - 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    same_finding: true
+    survivor: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+    current_state: 'Microsoft Semantic Kernel (open-source AI agent framework), two flaws disclosed by the Microsoft Defender Security Research
+      Team blog 2026-05-07 (MS blog: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      ; discoverers Uri Oren, Amit Eliahu, Dor Edry). (1) CVE-2026-26030 = Python SDK (PyPI semantic-kernel) InMemoryVectorStore filter RCE, CWE-94,
+      CVSS 3.1 9.9 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H), vulnerable < 1.39.4, fixed 1.39.4, GHSA-xjw9-4gw8-4rqx published 2026-02-19 (https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx);
+      fix PR #13505; workaround ''Avoid using InMemoryVectorStore for production scenarios''; exploitation needs a prompt-injection vector plus
+      a Search Plugin backed by the In-Memory Vector Store in default configuration; mechanism per blog: default filter is a Python lambda executed
+      with eval() with an unsanitised model-controlled parameter, AST blocklist bypassed (names __name__, load_module, system, BuiltinImporter
+      not blocked) -> BuiltinImporter -> os.system. (2) CVE-2026-25592 = .NET SDK SessionsPythonPlugin arbitrary file write, CWE-22, CVSS 9.9
+      same vector, nuget Microsoft.SemanticKernel.Core/Plugins.Core vulnerable < 1.71.0 fixed 1.71.0 (GHSA structured data also lists pip semantic-kernel
+      < 1.39.3 first patched 1.39.3), GHSA-2ww3-72rp-wpp4 published 2026-02-06 (https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4); DownloadFileAsync
+      was accidentally marked [KernelFunction] so the localFilePath passed to File.WriteAllBytes() on the host became model-controlled; chain:
+      ExecuteCode creates a script in the Container Apps sandbox, DownloadFileAsync writes it to the Windows Startup folder, runs at next sign-in;
+      separately upload_file() (Python and .NET) accepted any local path (host-file read into the sandbox); fix PR #13478 removed [KernelFunction]
+      from DownloadFileAsync and added path validation (UploadFileAsync keeps the attribute with validation); workaround: Function Invocation
+      Filter allow-listing localFilePath for DownloadFileAsync/UploadFileAsync. Exploitation/KEV: neither CVE is in CISA KEV (catalog 2026.10.16,
+      https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json); no source reports in-the-wild exploitation. Public
+      CTF challenge reproducing CVE-2026-26030: https://github.com/amiteliahu/AIAgentCTF/tree/main/CVE-2026-26030.'
+    facts_only_in_duplicates:
+    - fact: '.NET flaw workaround: Function Invocation Filter allow-listing localFilePath for DownloadFileAsync/UploadFileAsync (present in B
+        only, wrongly attributed to the Microsoft post)'
+      entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+      verified: true
+      source_url: https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4
+      passage: Users can create a Function Invocation Filter which checks the arguments being passed to any calls to DownloadFileAsync or UploadFileAsync
+        and ensures the provided localFilePath is allow listed.
+    - fact: 'Python flaw workaround: avoid InMemoryVectorStore for production (in neither entry)'
+      entry: (neither)
+      verified: true
+      source_url: https://api.github.com/advisories/GHSA-xjw9-4gw8-4rqx
+      passage: Avoid using InMemoryVectorStore for production scenarios.
+    - fact: CVE-2026-25592 GHSA also lists Python semantic-kernel first patched 1.39.3 (both entries)
+      entry: both
+      verified: true
+      source_url: https://api.github.com/advisories/GHSA-2ww3-72rp-wpp4
+      passage: 'API vulnerabilities[0]: ecosystem pip, name semantic-kernel, vulnerable_version_range "< 1.39.3", first_patched_version "1.39.3"'
+    - fact: B detection/hunting concepts (process ancestry, file creation outside sandbox, dispatcher logging) are analyst suggestions; Microsoft
+        supplies Defender hunting queries for child processes of Semantic Kernel hosts (dotnet.exe/semantic-kernel command line spawning shells)
+        and mentions scripts dropped in Startup folders
+      entry: 2026-05-10/microsoft-semantic-kernel-cve-2026-26030-cve-2026-25592-prom
+      verified: true
+      source_url: https://www.microsoft.com/en-us/security/blog/2026/05/07/prompts-become-shells-rce-vulnerabilities-ai-agent-frameworks/
+      passage: detect anomalous behavior, such as an AI agent process suddenly spawning command lines or dropping scripts into Startup folders.
+    note: Same finding (identical CVEs, sources, run 2026-05-10-001); B (deep dive) is the better carrier but both carry the same uncited/incorrect
+      statements (Foundry/Copilot Studio backing, [KernelFunction] on both methods, reversed upload/download roles, fabricated quote). GHSA publication
+      dates are 2026-02-19/2026-02-06, so the finding is a May write-up of Feb-disclosed CVEs. No KEV listing, no ITW exploitation reported; priority
+      high (A) vs notable (B) disagree; high fails the bar (research, no ITW).
+- entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:34:30Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    current_entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: factual-error
+    defects:
+    - where: actions[0]
+      claim: '**PAN-OS CVE-2026-0300: deploy patched builds released 2026-05-13.** Apply PAN-OS 12.1.4-h5 / 12.1.7 / 11.2 / 11.1 / 10.2 hot-fix
+        branches'
+      defect: 'Lists 12.1.7 among builds released 2026-05-13, but the entry''s own 2026-05-13 section says 12.1.7 is ''planned 2026-05-28'' and
+        the PSIRT page still labels it ''(ETA: 05/28)'' today; only 12.1.4-h5 of the 12.1 line was on the 05/13 wave.'
+      ground_truth: 'PSIRT Product Status: ''PAN-OS 12.1 | < 12.1.4-h5 < 12.1.7 | >= 12.1.4-h5 >= 12.1.7 (ETA: 05/28)''. Rapid7 ETR Fix ETA column
+        for 12.1: ''05/13 05/28''.'
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Name the 05/13-wave builds per branch (12.1.4-h5, 11.2.7-h13, 11.2.10-h6, 11.1.4-h33, 11.1.6-h32, 11.1.10-h25, 11.1.13-h5, 10.2.10-h36,
+        10.2.18-h6) and drop 12.1.7, or say '12.1.7 follows with the 05/28 wave'.
+      class: factual-error
+    - where: '## Update — 2026-05-13T05:00:13Z (and its record summary)'
+      claim: (Palo Alto Networks PSIRT, last updated 2026-05-07; patch table confirmed 2026-05-13)
+      defect: 'Citation parenthetical contradicts the vendor page: the PSIRT timeline records updates on 2026-05-13 (16:00Z), 05-14, 05-16 and
+        05-28; the section is stamped 05:00:13Z on 05-13, i.e. before the vendor''s 05-13 ''Updated the release timeline and Solution table'',
+        so ''patch table confirmed 2026-05-13'' was not yet checkable at that time (the day-level fact, first wave published 2026-05-13, is true
+        per Rapid7 and the KEV note).'
+      ground_truth: 'PSIRT timeline: ''2026-05-13 Updated the release timeline and Solution table.'' (data-date 2026-05-13T16:00:00Z); Rapid7:
+        ''As of May 13, 2026, the first round of patches has been published.'''
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Cite the 2026-05-13 vendor revision and the KEV 5/13 note instead of 'last updated 2026-05-07'.
+      class: imprecision
+    - where: body para 2 and 2026-05-13 section
+      claim: the interim Threat Prevention signature **510019** ... remain the only defender controls for branches that do not yet have a fixed
+        build / Threat Prevention signature ID 510019 remains the interim control for any unpatched instance
+      defect: Omits the vendor's qualifier that Threat ID 510019 needs PAN-OS 11.1 or later, so it is not a control for unpatched 10.2 instances
+        (10.2.7-h34, 10.2.13-h21, 10.2.16-h7 were wave-2 builds).
+      ground_truth: '''Customers with a Threat Prevention subscription can block attacks for this vulnerability by enabling Threat ID 510019 from
+        Applications and Threats content version 9097-10022. Decoder capabilities necessitate PAN-OS 11.1 or a later version for Threat ID support.'''
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Add 'PAN-OS 11.1+ only; content 9097-10022 or later'.
+      class: imprecision
+    - where: body para 1
+      claim: the ~2026-04-09 first-observed-exploitation date come from Unit 42's separate [Captive Portal Zero-Day threat bulletin]
+      defect: Unit 42 says April 9 was the start of UNSUCCESSFUL exploitation attempts against one device; successful RCE came about a week later.
+      ground_truth: '''Starting April 9, 2026, there were unsuccessful exploitation attempts against a PAN-OS device. A week later, the attackers
+        successfully achieved RCE against the device and injected shellcode.'''
+      ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      fix: Say 'first exploitation attempts ~2026-04-09, first successful RCE ~a week later'.
+      class: imprecision
+    - where: summary / headline
+      claim: first-wave fixed builds now scheduled for 2026-05-13 ... exploitation clusters have been actively abusing
+      defect: '''now scheduled'' frames as new a schedule that was in the advisory from initial publication on 2026-05-05/06 (per-build Fix ETA
+        05/13 and 05/28); ''clusters'' plural while Unit 42 names one cluster, CL-STA-1132.'
+      ground_truth: 'Rapid7 (pub 2026-05-06): ''fixed versions are expected to begin rolling out on May 13, 2026, with additional releases through
+        May 28, 2026'' with a per-build Fix ETA table; Unit 42: ''tracking CL-STA-1132, a cluster of likely state-sponsored threat activity''.'
+      ground_truth_url: https://rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300
+      fix: Drop 'now'/'clusters'; this is the same finding as the 05-08 entry, an unchanged ETA.
+      class: imprecision
+    - where: frontmatter
+      claim: 'classification: null; techniques: []; affected_products: []; cves[].affected/fixed: null'
+      defect: Migrated entry carries no Admiralty classification, no ATT&CK mapping (exploit of public-facing application is described) and no
+        structured affected/fixed versions although the PSIRT table states them per branch.
+      ground_truth: 'PSIRT CVE JSON: PAN-OS affected 12.1.0 <12.1.7, 11.2.0 <11.2.12, 11.1.0 <11.1.15, 10.2.0 <10.2.18-h6 (per-hotfix-train fixes
+        in the Solution table); CNA names PA-Series and VM-Series firewalls.'
+      ground_truth_url: https://security.paloaltonetworks.com/json/CVE-2026-0300
+      fix: Populate classification (reliability A/B vendor + corroborating Unit 42), techniques[] (T1190 etc.), affected_products and cves[].affected/fixed
+        on the survivor entry.
+      class: imprecision
+  - entry_as_read: 2026-05-14/cve-2026-0300-pan-os-captive-portal-patch-wave-2-delayed-to
+    current_entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: factual-error
+    defects:
+    - where: title / headline / summary
+      claim: patch wave 2 delayed to 2026-05-28 for eight high-traffic build streams
+      defect: 'No source shows a delay: the 05/28 ETA for exactly these eight builds was in the advisory from initial publication (and the 2026-05-12
+        entry already reported the second wave around 2026-05-28). ''high-traffic'' is also unsourced.'
+      ground_truth: 'Rapid7 ETR (pub 2026-05-06, updated 2026-05-13) Fix ETA: 12.1.7 05/28; 11.2.4-h17 05/28, 11.2.12 05/28; 11.1.7-h6 05/28,
+        11.1.15 05/28; 10.2.7-h34 05/28, 10.2.13-h21 05/28, 10.2.16-h7 05/28; PSIRT timeline has no ''delayed'' entry on 2026-05-13 (''Updated
+        the release timeline and Solution table'').'
+      ground_truth_url: https://rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300
+      fix: 'Retitle as an unchanged second-wave ETA (or fold into the survivor as a changelog line): ''first wave published 2026-05-13; eight
+        fix builds still ETA 05/28''.'
+      class: factual-error
+    - where: body para 1
+      claim: PSIRT updated its CVE-2026-0300 advisory on 2026-05-13 to reflect first-wave patch availability but to also disclose a **second patch
+        wave with an ETA of 2026-05-28** for eight commonly-deployed build streams
+      defect: The second-wave ETAs were not disclosed on 2026-05-13; they were published with the advisory on 2026-05-05/06. 'commonly-deployed'
+        unsourced.
+      ground_truth: 'Rapid7 (pub 2026-05-06): ''No patches are currently available; fixed versions are expected to begin rolling out on May 13,
+        2026, with additional releases through May 28, 2026.'''
+      ground_truth_url: https://rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300
+      fix: Say the 2026-05-13 revision confirmed first-wave availability while the eight 05/28 ETAs stood unchanged.
+      class: factual-error
+    - where: body para 1
+      claim: Operators running any of those builds cannot patch yet; the interim mitigation ... is the only option until 28 May.
+      defect: The eight listed versions are the FIXED target builds awaiting release (operators cannot run them yet); the sentence should speak
+        of operators whose branch fix is one of those builds. On other maintenance trains fixes were already out (e.g. 10.2.10-h36, 11.2.7-h13,
+        11.1.13-h5).
+      ground_truth: 'PSIRT 10.2 row: ''>= 10.2.13-h21'' listed under Unaffected; Solution: ''10.2.11 through 10.2.13-h* Upgrade to 10.2.13-h21
+        or 10.2.18-h6 or later.'''
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: 'Reword: ''Operators on trains whose only listed fix is one of these builds (and who cannot jump to a later available fix) remain mitigation-only
+        until 05/28.'''
+      class: imprecision
+    - where: body para 2
+      claim: were not independently corroborated by HIGH-reliability third-party reporting in window
+      defect: Third-party reporting did reproduce the vendor's per-build ETA table (Rapid7, Censys), so the non-corroboration statement is inaccurate.
+      ground_truth: 'Censys: ''Roughly half of the fixed builds are scheduled for May 13, 2026 and the remaining builds for May 28, 2026.'' Rapid7
+        table with per-build ETAs.'
+      ground_truth_url: https://censys.com/advisory/cve-2026-0300/
+      fix: Drop the sentence or cite Rapid7 as corroboration.
+      class: imprecision
+    - where: summary / body
+      claim: CL-STA-1132 in-the-wild exploitation continues
+      defect: No cited source post-dates 2026-05-08 reporting; 'continues' is an inference, and Unit 42's 'continues' is not stated.
+      ground_truth: 'Unit 42 (published 2026-05-06/07, modified 2026-05-08): ''We are aware of only limited exploitation of CVE-2026-0300 at this
+        time.'''
+      ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      fix: Say 'limited exploitation (CL-STA-1132) was reported at disclosure' without asserting continuation.
+      class: imprecision
+    - where: frontmatter
+      claim: 'verification: single-source; no classification; no techniques[]; affected/fixed null'
+      defect: Two vendor sources are cited yet verification says single-source; classification missing; techniques missing.
+      ground_truth: Entry cites PSIRT (primary) and Unit 42 (corroborating).
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Resolve on the survivor entry.
+      class: imprecision
+  - entry_as_read: 2026-05-18/cve-2026-0300-pan-os-captive-portal-revised-fix-release-time
+    current_entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: factual-error
+    defects:
+    - where: actions[0] and body para 2 'Defender action'
+      claim: if any device runs `10.2.13-h21` or `10.2.16-h7`, confirm Captive Portal / User-ID Authentication Portal mitigation remains active
+        and track the wave-2 patch target (2026-05-28)
+      defect: 'Inverted: 10.2.13-h21 and 10.2.16-h7 are the FIXED builds (affected is ''< 10.2.13-h21'' / ''< 10.2.16-h7''), so a device on them
+        is not affected and has no wave-2 wait. ''Apply the published Threat Prevention rule'' is also unavailable on any PAN-OS 10.2 build (needs
+        11.1+).'
+      ground_truth: 'PSIRT Product Status 10.2: ''Affected < 10.2.7-h34 < 10.2.10-h36 < 10.2.13-h21 < 10.2.16-h7 < 10.2.18-h6 | Unaffected >=
+        10.2.7-h34 >= 10.2.10-h36 >= 10.2.13-h21 >= 10.2.16-h7 >= 10.2.18-h6''; ''Decoder capabilities necessitate PAN-OS 11.1 or a later version
+        for Threat ID support.'''
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: 'Rewrite: 10.2 devices below 10.2.13-h21 / 10.2.16-h7 (on those trains) stay mitigation-only until those fixes ship; devices on or
+        above them are fixed.'
+      class: factual-error
+    - where: body para 1
+      claim: PA-Series and VM-Series devices on those two specific builds remain mitigation-only. / wave-2 target remains 2026-05-28
+      defect: The PSIRT only records that the fix release timeline for 10.2.16-h7 (05-14) and 10.2.13-h21 (05-16) was updated; the entry never
+        states the new date, yet asserts the wave-2 target 'remains' 05-28 for them. Today both are listed as fixed builds with no ETA, while
+        the 05-28 update names only 11.1.15, 11.1.7-h6, 11.2.4-h17 and 11.2.12. 'commonly deployed LTS branches in large enterprise and government
+        estates' is unsourced.
+      ground_truth: 'Timeline: ''2026-05-16 Updated the Fix release timeline for 10.2.13-h21.'' ''2026-05-14 Updated the Fix release timeline
+        for 10.2.16-h7.'' ''2026-05-28 Updated the Fix release timeline for 11.1.15, 11.1.7-h6, 11.2.4-h17 and 11.2.12.'''
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: State only what the timeline supports (fix timeline for those two builds revised 05-14/05-16, new dates not disclosed in the page text)
+        and drop the LTS/government-estate sentence and the 'remain mitigation-only' assertion.
+      class: factual-error
+    - where: frontmatter cves[0].status
+      claim: 'status: [exploited, cisa-kev, mitigation-only]'
+      defect: By 2026-05-18 fixed builds were available for most trains (first wave published 2026-05-13); the status omits patch-available and
+        presents the CVE as mitigation-only.
+      ground_truth: 'KEV requiredAction: ''5/13/2026: Palo Alto has released a variety of patches.''; Rapid7: ''As of May 13, 2026, the first
+        round of patches has been published.'''
+      ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      fix: Add patch-available; keep mitigation-only only if tied to the still-unreleased builds.
+      class: factual-error
+    - where: body para 2
+      claim: the actively-exploited posture (unauthenticated heap overflow in the User-ID Authentication Portal / Captive Portal service, CVSS
+        9.3, pre-auth root RCE)
+      defect: No source calls it a heap overflow; the vendor says buffer overflow (CWE-787 out-of-bounds write).
+      ground_truth: 'PSIRT: ''A buffer overflow vulnerability in the User-ID Authentication Portal (aka Captive Portal) service ... allows an
+        unauthenticated attacker to execute arbitrary code with root privileges''; KEV name ''Out-of-bounds Write Vulnerability''.'
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Replace 'heap overflow' with 'buffer overflow (CWE-787)'.
+      class: factual-error
+    - where: frontmatter
+      claim: 'entities: []; no classification; no techniques[]; summary begins ''UPDATE (originally covered 2026-05-07 deep dive)''; verification:
+        single-source'
+      defect: 'Migration artefacts: no classification, no techniques, no entity link to campaign:cl-sta-1132 (not mentioned in the body either),
+        update narrative with no target entry; a revised ETA with no new date is a non-event.'
+      ground_truth: Same finding as the other CVE-2026-0300 entries; PSIRT timeline lines above.
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Fold into the survivor as an improvement/internal record rather than keep as a standalone entry.
+      class: imprecision
+  - entry_as_read: 2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce
+    current_entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-L
+    verdict: factual-error
+    defects:
+    - where: body sentence 3 (mitigation)
+      claim: disable the Captive Portal / Authentication Portal feature on internet-facing GlobalProtect gateway interfaces, or restrict access
+        exclusively to trusted internal management IP ranges
+      defect: The vendor advisory never ties the flaw or the mitigation to GlobalProtect gateway interfaces. Exposure is the User-ID Authentication
+        Portal enabled plus an interface management profile with Response Pages attached to an L3 interface that untrusted traffic can reach;
+        mitigation is trusted-zone restriction plus disabling Response Pages on untrusted-ingress L3 interfaces, or disabling the portal.
+      ground_truth: 'Customers are impacted if both of the following conditions are true: User-ID Authentication Portal configured ... and An
+        interface management profile with response page enabled and attached to any L3 interface in any zone where untrusted/internet traffic
+        can ingress.'
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Replace with the advisory's two exposure conditions and two mitigations (restrict portal to trusted zones AND disable Response Pages
+        on untrusted-ingress L3 interfaces; or disable User-ID Authentication Portal if not required); delete 'GlobalProtect gateway interfaces'.
+      class: factual-error
+    - where: headline, summary, body sentence 1 and 5
+      claim: CISA KEV deadline is today (2026-05-09) ... treat this as a P0 action today before business opens
+      defect: The entry was written on 2026-05-08 (discovered_at 2026-05-08T05:00Z), when the 2026-05-09 deadline was the next day, so 'today'
+        is wrong at publication; the deadline itself is correct (KEV dueDate 2026-05-09). A KEV due date used as the reason to act is also the
+        entry's lead.
+      ground_truth: 'CISA KEV record: dateAdded 2026-05-06, dueDate 2026-05-09; BleepingComputer 2026-05-07: ordered FCEB agencies to secure vulnerable
+        firewalls ''by Saturday midnight, May 9''.'
+      ground_truth_url: https://www.bleepingcomputer.com/news/security/pan-os-firewall-rce-zero-day-exploited-in-attacks-since-april-9/
+      fix: Drop the 'today' framing and the KEV-deadline lead; state the exploitation basis (CISA KEV 2026-05-06, vendor-observed limited exploitation).
+      class: imprecision
+    - where: headline / summary / body sentence 2
+      claim: no patch until 2026-05-13 ... has not released a permanent patch for any PAN-OS branch; the earliest patch ETA is 2026-05-13
+      defect: 'Correct as of 2026-05-08 (BleepingComputer: first patches expected Wednesday May 13), but superseded: the vendor released fixes
+        in waves (advisory timeline 2026-05-13, 05-14, 05-16, 05-28) and CISA''s KEV note records ''5/13/2026: Palo Alto has released a variety
+        of patches''. Entry carries no cves[] record and no fixed-version table.'
+      ground_truth: 'Advisory timeline: ''2026-05-13 Updated the release timeline and Solution table ... 2026-05-28 Updated the Fix release timeline
+        for 11.1.15, 11.1.7-h6, 11.2.4-h17 and 11.2.12.'''
+      ground_truth_url: https://security.paloaltonetworks.com/json/CVE-2026-0300
+      fix: Record the first-wave date as 2026-05-13 with later builds, and add cves[] CVE-2026-0300 (CVSS 4.0 base 9.3, KEV 2026-05-06) with the
+        per-branch fixed builds.
+      class: imprecision
+    - where: body sentence 4
+      claim: PAN-OS 11.1+ deployments should confirm Threat Prevention profile with Threat ID 510019 is active
+      defect: 'True but omits the vendor''s qualifiers: requires a Threat Prevention subscription and Applications and Threats content version
+        9097-10022 or later.'
+      ground_truth: Customers with a Threat Prevention subscription can block attacks for this vulnerability by enabling Threat ID 510019 from
+        Applications and Threats content version 9097-10022.
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Add 'content version 9097-10022 or later, Threat Prevention subscription'.
+      class: imprecision
+  - entry_as_read: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+    current_entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-L
+    verdict: factual-error
+    defects:
+    - where: body paragraph 1 (patch versions)
+      claim: the earliest expected maintenance release containing a code fix is PAN-OS 10.1.14 / 10.2.12 / 11.0.5 / 11.1.4, expected 2026-05-13
+      defect: Those release numbers appear nowhere in the vendor advisory. PAN-OS 10.1 and 11.0 are not in the advisory's affected/fixed tables
+        at all (older unsupported versions are told to move to a supported fixed version); fixes are hotfix builds such as 10.2.7-h34 and 11.1.4-h33
+        or 10.2.18-h6 / 11.1.15.
+      ground_truth: 'Fixed/unaffected: 12.1.4-h5, 12.1.7 (ETA 05/28); 11.2.4-h17, 11.2.7-h13, 11.2.10-h6, 11.2.12; 11.1.4-h33, 11.1.6-h32, 11.1.7-h6,
+        11.1.10-h25, 11.1.13-h5, 11.1.15; 10.2.7-h34, 10.2.10-h36, 10.2.13-h21, 10.2.16-h7, 10.2.18-h6.'
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Delete the version list; say first fixes were expected 2026-05-13 and give the advisory's per-branch fixed builds.
+      class: factual-error
+    - where: body paragraph 2 (mitigation)
+      claim: disable Captive Portal (`Device > User Identification > Captive Portal Settings > uncheck Enable Captive Portal`) or disable GlobalProtect
+        and Captive Portal if not operationally needed
+      defect: The advisory path is Authentication Portal Settings > Enable Authentication Portal, the mitigation set is trusted-zone restriction
+        plus disabling Response Pages on untrusted-ingress L3 interfaces, or disabling User-ID Authentication Portal; there is no instruction
+        to disable GlobalProtect.
+      ground_truth: Disable User-ID Authentication Portal if not required. / Device > User Identification > Authentication Portal Settings ->
+        Enable Authentication Portal
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Use the advisory's wording and menu path; remove GlobalProtect.
+      class: factual-error
+    - where: body paragraph 2 (signatures)
+      claim: Threat Prevention signatures 95817/95818/95820 block the known exploitation chain. PA-Series hardware appliances running content
+        update < 8765-9032 are not covered by the signatures.
+      defect: Invented identifiers. The only Threat ID in the advisory and in Unit 42's brief is 510019 (content version 9097-10022 or later;
+        PAN-OS 11.1+ decoder); no PA-Series hardware carve-out exists.
+      ground_truth: Customers with a Threat Prevention subscription can block attacks for this vulnerability by enabling Threat ID 510019 from
+        Applications and Threats content version 9097-10022. Decoder capabilities necessitate PAN-OS 11.1 or a later version for Threat ID support.
+      ground_truth_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      fix: Replace with Threat ID 510019, content 9097-10022 or later, PAN-OS 11.1+; delete the hardware sentence.
+      class: factual-error
+    - where: body paragraph 3 (CL-STA-1132 attribution)
+      claim: Palo Alto Unit 42 published a threat bulletin on 2026-05-08 confirming CL-STA-1132 (a China-nexus cluster it tracks separately from
+        previous PAN-OS attackers) as the primary exploitation actor.
+      defect: Unit 42's brief is dated 2026-05-07, calls CL-STA-1132 'a cluster of likely state-sponsored threat activity' (no nationality, no
+        statement about earlier PAN-OS actors) and says exploitation is limited; the 'China-nexus' and 'primary exploitation actor' wording is
+        the entry's own. (EarthWorm's past use by Chinese-speaking groups is mentioned, not an attribution.)
+      ground_truth: We are aware of only limited exploitation of CVE-2026-0300 at this time. Unit 42 is tracking CL-STA-1132, a cluster of likely
+        state-sponsored threat activity exploiting CVE-2026-0300.
+      ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      fix: Write 'Unit 42 (brief of 2026-05-07) tracks CL-STA-1132, a cluster of likely state-sponsored activity exploiting CVE-2026-0300; limited
+        exploitation'; drop 'China-nexus' and 'primary'.
+      class: factual-error
+    - where: body paragraph 3 (observed behaviour)
+      claim: creating rogue admin accounts via the GlobalProtect daemon (bypassing normal `admin-role` RBAC), exporting full running configurations
+        including pre-shared keys, installing Python-based tunnelling implants under `/tmp/.update-service`, and performing internal reconnaissance
+        via OSPF route table queries
+      defect: 'None of these four behaviours is in the Unit 42 brief. What it reports: shellcode injected into an nginx worker process, deployment
+        of open-source EarthWorm and ReverseSocks5 tunnelling tools with root privileges, Active Directory enumeration (domain root, DomainDnsZones)
+        with the firewall''s service-account credentials, systematic log and artifact deletion (crash kernel messages, nginx crash records, core
+        dumps, ptrace injection evidence in the audit log, a SUID binary), and a SAML flood on 2026-04-29 that promoted a second device to active
+        before RCE there.'
+      ground_truth: Post-exploitation activity includes deployment of publicly available tunneling tools (EarthWorm, ReverseSocks5), Active Directory
+        enumeration using credentials likely obtained from the firewall, and the systematic destruction of logs and other evidence of compromise.
+      ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      fix: Replace the sentence with the behaviours Unit 42 reports; drop the file path (artifact indicator) and the invented behaviours.
+      class: factual-error
+    - where: body paragraph 3 (dwell time and account pattern)
+      claim: The cluster's dwell time before detection was 4–17 days across confirmed victims. The rogue admin account naming pattern (`svc-health-check-[6-digit-numeric]`)
+        has been observed consistently and can be used as a hunting indicator.
+      defect: 'Unit 42 describes one device (and a second via failover), not victims in the plural; timeline: failed attempts from 2026-04-09,
+        RCE about a week later, tools deployed four days after that, second device 2026-04-29. No account naming pattern exists in any source.'
+      ground_truth: Starting April 9, 2026, there were unsuccessful exploitation attempts against a PAN-OS device. A week later, the attackers
+        successfully achieved RCE against the device and injected shellcode.
+      ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      fix: Delete both sentences; give the sourced timeline if wanted.
+      class: factual-error
+    - where: body paragraph 1 (compliance sentence)
+      claim: Organisations in US federal scope that cannot meet the KEV deadline through mitigating action face a compliance gap until that release.
+      defect: CISA's required action accepts vendor mitigations until a fix exists, so mitigation satisfies the KEV requirement; the 'compliance
+        gap' is speculation and the KEV deadline is used as the reason to act.
+      ground_truth: 'Apply mitigations per vendor instructions ... Until the vendor releases an official fix, the following workaround should
+        be implemented: Restrict User-ID Authentication Portal access to only trusted zones. Disable User-ID Authentication Portal if not required.'
+      ground_truth_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+      fix: Delete the sentence.
+      class: factual-error
+    - where: frontmatter sources / sectors
+      claim: 'sources[1].url https://www.cisa.gov/known-exploited-vulnerabilities-catalog; sectors: public-sector, defense; summary: ''UPDATE
+        (originally covered 2026-05-07):'''
+      defect: The KEV catalogue index is a generic URL (a per-CVE KEV entry or CISA alert is the specific source); Unit 42's brief, the only source
+        for the CL-STA-1132 paragraph, is not in sources[]; no source names public-sector or defense victims; the summary is a stub carrying no
+        fact.
+      ground_truth: Unit 42 brief https://unit42.paloaltonetworks.com/captive-portal-zero-day/ (2026-05-07) names no victim sector.
+      ground_truth_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      fix: Add the Unit 42 URL as a source; drop the sectors; replace the summary with a one-sentence statement of the delta.
+      class: imprecision
+  groups:
+  - pass: D3
+    group: '1'
+    members:
+    - 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    - 2026-05-14/cve-2026-0300-pan-os-captive-portal-patch-wave-2-delayed-to
+    - 2026-05-18/cve-2026-0300-pan-os-captive-portal-revised-fix-release-time
+    - 2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce
+    - 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+    same_finding: true
+    survivor: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+    current_state: 'PAN-OS CVE-2026-0300 (Palo Alto Networks PSIRT https://security.paloaltonetworks.com/CVE-2026-0300 and CVE JSON https://security.paloaltonetworks.com/json/CVE-2026-0300;
+      published 2026-05-05T23:00Z; revisions 05-06 Threat Prevention ID, 05-07 acknowledgments, 05-13 release timeline and Solution table, 05-14
+      10.2.16-h7, 05-16 10.2.13-h21, 05-28 11.1.15 / 11.1.7-h6 / 11.2.4-h17 / 11.2.12): buffer overflow (CWE-787; KEV name ''Out-of-bounds Write'')
+      in the User-ID Authentication Portal (Captive Portal) service of PAN-OS; unauthenticated attacker executes arbitrary code as root on PA-Series
+      and VM-Series firewalls with crafted packets. ''Prisma Access, Cloud NGFW and Panorama appliances are not impacted.'' CVSS 4.0 9.3 (CVSS-BT,
+      network, internet-exposed portal; ''Severity: CRITICAL, Suggested Urgency: HIGHEST'') and 8.7 when the portal is reachable only from an
+      adjacent network. Exposure needs BOTH the Authentication Portal configured AND an interface management profile with response pages attached
+      to an L3 interface in a zone where untrusted traffic can ingress. Exploitation: PSIRT ''Limited exploitation has been observed targeting
+      ... User-ID Authentication Portals that are exposed to untrusted IP addresses and/or the public internet''; Unit 42 (https://unit42.paloaltonetworks.com/captive-portal-zero-day/,
+      JSON-LD datePublished 2026-05-06, updated 2026-05-08) tracks CL-STA-1132, ''a cluster of likely state-sponsored threat activity'': unsuccessful
+      attempts from 2026-04-09, successful RCE a week later (shellcode injected into an nginx worker), log cleanup, EarthWorm and ReverseSocks5
+      tunnels, AD enumeration with the firewall''s service-account credentials, SAML flood on 2026-04-29 that promoted a second device. CISA KEV
+      (https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json): added 2026-05-06, due 2026-05-09, requiredAction
+      updated ''5/13/2026: Palo Alto has released a variety of patches'', knownRansomwareCampaignUse Unknown. Fixes (PSIRT Solution table): 12.1
+      below 12.1.4-h5 / 12.1.7; 11.2 below 11.2.4-h17 / 11.2.7-h13 / 11.2.10-h6 / 11.2.12; 11.1 below 11.1.4-h33 / 11.1.6-h32 / 11.1.7-h6 / 11.1.10-h25
+      / 11.1.13-h5 / 11.1.15; 10.2 below 10.2.7-h34 / 10.2.10-h36 / 10.2.13-h21 / 10.2.16-h7 / 10.2.18-h6; older unsupported PAN-OS: upgrade to
+      a supported fixed version. Original ETA table (Rapid7 ETR https://rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300,
+      published 2026-05-06): first wave 2026-05-13 = 12.1.4-h5, 11.2.7-h13, 11.2.10-h6, 11.1.4-h33, 11.1.6-h32, 11.1.10-h25, 11.1.13-h5, 10.2.10-h36,
+      10.2.18-h6; second wave ETA 05/28 = 12.1.7, 11.2.4-h17, 11.2.12, 11.1.7-h6, 11.1.15, 10.2.7-h34, 10.2.13-h21, 10.2.16-h7 (these ETAs were
+      in the advisory from its first publication, not a later delay); Rapid7: ''As of May 13, 2026, the first round of patches has been published.''
+      As of the 2026-10-18 fetch the PSIRT table still labels only 12.1.7 ''(ETA: 05/28)''; all other listed builds carry no ETA. Mitigations:
+      restrict Authentication Portal access to trusted zones AND disable Response Pages in the Interface Management Profile on every L3 interface
+      in untrusted-facing zones, or disable the Authentication Portal if not needed; customers with a Threat Prevention subscription can block
+      with Threat ID 510019 (Applications and Threats content 9097-10022; decoder requires PAN-OS 11.1 or later, so not a control on 10.2).'
+    facts_only_in_duplicates:
+    - fact: 'KEV requiredAction updated on 2026-05-13: "Palo Alto has released a variety of patches"'
+      entry: 2026-05-14/cve-2026-0300-pan-os-captive-portal-patch-wave-2-delayed-to
+      verified: true
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      passage: 'requiredAction: "... 5/13/2026: Palo Alto has released a variety of patches. If these are relevant to your environment, please
+        apply the designated patch."'
+    - fact: 'Eight builds still carried ETA 05/28 after the first wave: 12.1.7, 11.2.4-h17, 11.2.12, 11.1.7-h6, 11.1.15, 10.2.7-h34, 10.2.13-h21,
+        10.2.16-h7'
+      entry: 2026-05-14/cve-2026-0300-pan-os-captive-portal-patch-wave-2-delayed-to
+      verified: true
+      source_url: https://rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300
+      passage: 'Rapid7 Fix ETA column: 12.1 "05/13 05/28"; 11.2 "05/28 05/13 05/13 05/28"; 11.1 "05/13 05/13 05/28 05/13 05/13 05/28"; 10.2 "05/28
+        05/13 05/28 05/28 05/13" (but the entry''s claim of a delay or of a first disclosure on 05-13 is false: the ETAs were in the 05-05/06
+        advisory)'
+    - fact: PSIRT fix-release timeline for 10.2.16-h7 was updated on 2026-05-14 and for 10.2.13-h21 on 2026-05-16
+      entry: 2026-05-18/cve-2026-0300-pan-os-captive-portal-revised-fix-release-time
+      verified: true
+      source_url: https://security.paloaltonetworks.com/json/CVE-2026-0300
+      passage: 'timeline: "2026-05-14T19:15Z Updated the Fix release timeline for 10.2.16-h7." "2026-05-16T01:15Z Updated the Fix release timeline
+        for 10.2.13-h21." (new dates not stated; both are listed as fixed builds today)'
+    - fact: Wave-2 builds 11.1.15, 11.1.7-h6, 11.2.4-h17, 11.2.12 had their release timeline updated on 2026-05-28 (not recorded in any entry;
+        carry to the survivor)
+      entry: (none)
+      verified: true
+      source_url: https://security.paloaltonetworks.com/json/CVE-2026-0300
+      passage: '"2026-05-28T00:00Z Updated the Fix release timeline for 11.1.15, 11.1.7-h6, 11.2.4-h17 and 11.2.12."'
+    - fact: CL-STA-1132 first-observed exploitation about 2026-04-09; EarthWorm / ReverseSocks5, AD enumeration, log destruction
+      entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+      verified: true
+      source_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      passage: '"Starting April 9, 2026, there were unsuccessful exploitation attempts against a PAN-OS device. A week later, the attackers successfully
+        achieved RCE" (the entry omits that April 9 attempts failed)'
+    - fact: Threat ID 510019 as interim control
+      entry: 2026-05-12/palo-alto-pan-os-cve-2026-0300-first-wave-fixed-builds-now-s
+      verified: true
+      source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      passage: '"Customers with a Threat Prevention subscription can block attacks ... by enabling Threat ID 510019 from Applications and Threats
+        content version 9097-10022. Decoder capabilities necessitate PAN-OS 11.1 or a later version" (11.1+ qualifier missing in the entries)'
+    - fact: '05-09 entry: earliest fixed releases "PAN-OS 10.1.14 / 10.2.12 / 11.0.5 / 11.1.4", Threat Prevention signatures 95817/95818/95820,
+        "content update < 8765-9032", Unit 42 bulletin of 2026-05-08 describing rogue admin accounts via the GlobalProtect daemon, /tmp/.update-service
+        implants, OSPF route queries and 4-17 day dwell time'
+      entry: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+      verified: false
+      source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      passage: PSIRT names fixes per hotfix train (e.g. 12.1.4-h5, 11.1.4-h33, 10.2.7-h34), one Threat ID (510019, content 9097-10022) and no
+        10.1/11.0 fix; Unit 42 bulletin names CL-STA-1132, EarthWorm, ReverseSocks5 and no GlobalProtect-daemon admin accounts, svc-health-check
+        naming, OSPF queries or dwell-time figures (context entry, checked by another batch; none of these facts should be carried over)
+    - fact: '05-08 entry: confirm Threat ID 510019 on PAN-OS 11.1+; mitigation to disable Captive Portal / restrict to trusted internal ranges'
+      entry: 2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce
+      verified: true
+      source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      passage: '"Decoder capabilities necessitate PAN-OS 11.1 or a later version for Threat ID support." (context entry; its "GlobalProtect gateway
+        interfaces" wording is not the vendor''s)'
+    note: 'Same finding in all five entries (one vulnerability, one PSIRT page). The 05-12 entry is the structural best fit (cves[] with CVSS
+      and status, campaign:cl-sta-1132 link, two vendor sources, actions, an existing changelog that already merged a sibling) but its own text
+      carries two errors the fold must not propagate: actions[0] lists 12.1.7 among builds ''released 2026-05-13'' (it was ETA 05/28), and the
+      update section cites ''last updated 2026-05-07'' for a 05-13 revision. The 05-14 entry''s ''delayed'' framing and the 05-18 entry''s inverted
+      guidance (devices running 10.2.13-h21 / 10.2.16-h7 are on the FIXED builds) are false and must be dropped, not folded. Titles/headlines
+      still say ''first wave scheduled for 2026-05-13'' / ''no patch until 05-13'' and need rewriting to the current state. If the audit prefers
+      the earliest id as survivor, 2026-05-08 is the alternative but carries no cves[], evidence or sources beyond the PSIRT.'
+  - pass: L
+    members:
+    - 2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce
+    - 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+    same_finding: true
+    survivor: 2026-05-08/cve-2026-0300-pan-os-captive-portal-unauthenticated-root-rce
+    facts_only_in_duplicate:
+    - fact: Unit 42 (brief dated 2026-05-07) tracks CL-STA-1132, a cluster of likely state-sponsored activity exploiting CVE-2026-0300; limited
+        exploitation
+      entry: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+      verified: true
+      source_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      passage: Unit 42 is tracking CL-STA-1132, a cluster of likely state-sponsored threat activity exploiting CVE-2026-0300.
+    - fact: Observed post-exploitation behaviour as Unit 42 states it (nginx-worker shellcode injection; EarthWorm and ReverseSocks5; AD enumeration
+        with firewall service-account credentials; log/artifact deletion; SAML flood to force failover to a second device on 2026-04-29) - NOT
+        the entry's rogue-admin / config-export / Python-implant / OSPF / dwell-time / account-naming claims, which are unsupported
+      entry: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+      verified: true
+      source_url: https://unit42.paloaltonetworks.com/captive-portal-zero-day/
+      passage: Post-exploitation activity includes deployment of publicly available tunneling tools (EarthWorm, ReverseSocks5), Active Directory
+        enumeration using credentials likely obtained from the firewall, and the systematic destruction of logs and other evidence of compromise.
+    - fact: CVSS 9.3 (CVSS 4.0 base) for CVE-2026-0300
+      entry: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+      verified: true
+      source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      passage: 'CVSS-BT: 9.3 /CVSS-B: 9.3'
+    - fact: Fixed versions 10.1.14 / 10.2.12 / 11.0.5 / 11.1.4 expected 2026-05-13
+      entry: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+      verified: false
+      source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      passage: no such releases in the fix table; actual builds are 10.2.7-h34 ... 10.2.18-h6, 11.1.4-h33 ... 11.1.15 etc.
+    - fact: Threat signatures 95817/95818/95820 and content < 8765-9032 gap
+      entry: 2026-05-09/cve-2026-0300-palo-alto-pan-os-captive-portal-kev-deadline-t
+      verified: false
+      source_url: https://security.paloaltonetworks.com/CVE-2026-0300
+      passage: Only Threat ID 510019 from content version 9097-10022 is named.
+    note: Both are the same finding (CVE-2026-0300 PAN-OS Captive Portal RCE, KEV deadline 2026-05-09). The 05-09 entry adds only the Unit 42
+      CL-STA-1132 paragraph, of which only the cluster name and the open-source tooling / AD enumeration / log cleanup / failover timeline are
+      supported; everything else it adds is unsupported. Three later CVE-2026-0300 entries (05-12, 05-14, 05-18) are verified by another batch.
+- entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:41:26Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text:
+  - title
+  - headline
+  - body main analysis (2)
+  verdict_blocks:
+  - entry_as_read: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+    current_entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: factual-error
+    defects:
+    - where: body (discovery and disclosure sentence)
+      claim: responsibly disclosed to F5/NGINX on 2026-04-18, with RCE PoC shared to F5/NGINX under NDA on 2026-04-28, and patches released on
+        2026-05-13
+      defect: 'Wrong dates and an invented NDA: depthfirst''s own timeline has internal discovery on 04-18, report to NGINX on 04-21, NGINX confirmation
+        04-24, notice on 04-28 that a working RCE PoC existed and the PoC itself shared with NGINX on 05-05; no source mentions an NDA.'
+      ground_truth: 'depthfirst timeline: ''4/18/2026: We used depthfirst''s internal system ... it reported 5 memory corruption issues. 4/21/2026:
+        We reported all 5 issues to NGINX via a GitHub security advisory. ... 4/28/2026: We informed NGINX that we had developed a working PoC
+        demonstrating RCE. 5/5/2026: We shared our RCE PoC with NGINX''; BleepingComputer: ''discovered on April 18, 2026, and reported to the
+        vendor on April 21''.'
+      ground_truth_url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+      fix: 'Write: found 2026-04-18, reported to NGINX 2026-04-21, RCE PoC shared with NGINX 2026-05-05, fixes and advisory released 2026-05-13;
+        drop ''under NDA''.'
+      class: factual-error
+    - where: body para 1 (cited to depthfirst and NCSC-CH)
+      claim: 'CVE-2026-42945 (CVSS 4.0: 9.2 / CVSS 3.1: 8.1, CWE-122, codename "NGINX Rift")'
+      defect: The 3.1 score 8.1 and CWE-122 are on neither cited page (they are in F5's CNA CVE record, where they are correct); adjacency gap.
+      ground_truth: 'F5 CNA record CVE-2026-42945: cvssV3_1 baseScore 8.1 (AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H), cvssV4_0 baseScore 9.2, CWE-122
+        ''Heap-based Buffer Overflow''.'
+      ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-42945
+      fix: Cite the F5 advisory / CVE record for 8.1 and CWE-122.
+      class: imprecision
+    - where: body ('Exploitation status' and ASLR sentences)
+      claim: 'Exploitation status: no in-the-wild confirmed; ... RCE requires ASLR to be disabled on the host.'
+      defect: 'Stale today: VulnCheck reported exploitation attempts against honeypots (The Hacker News, 2026-05-17); F5''s CVE description was
+        later widened to ''ASLR disabled or when the attacker can bypass ASLR''. The entry was never updated; the exploited state lives only in
+        the 2026-05-18 sibling entry.'
+      ground_truth: 'F5 CNA description (dateUpdated 2026-09-10): ''attackers can execute code on systems with Address Space Layout Randomization
+        (ASLR) disabled or when the attacker can bypass ASLR.'' THN: ''exploitation attempts detected against its honeypot networks.'''
+      ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-42945
+      fix: Fold into the survivor; state exploitation attempts since ~2026-05-16/17 and the CNA's ASLR wording.
+      class: imprecision
+    - where: frontmatter
+      claim: 'classification absent; techniques: []; cves[].affected/fixed null; evidence: []'
+      defect: No Admiralty rating, no ATT&CK mapping (T1190 exploit of public-facing application), no structured affected/fixed although both
+        are stated by sources; no evidence quotes.
+      ground_truth: 'F5 CNA: Plus R36 <R36 P4, R32 <R32 P6; Open Source 0.6.27 <1.30.1; nginx.org: ''Not vulnerable: 1.31.0+, 1.30.1+. Vulnerable:
+        0.6.27-1.30.0''.'
+      ground_truth_url: https://nginx.org/en/security_advisories.html
+      fix: Populate on the survivor.
+      class: imprecision
+  - entry_as_read: 2026-05-18/cve-2026-42945-nginx-rift-in-the-wild-exploitation-confirmed
+    current_entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D3
+    verdict: imprecision
+    defects:
+    - where: body para 1
+      claim: The flaw is reachable by an unauthenticated remote attacker via a single crafted HTTP request to any NGINX instance running a rewrite-rule
+        configuration that uses unnamed PCRE captures (`$1`, `$2`)
+      defect: 'Overbroad trigger: exposure needs a rewrite whose replacement contains ''?'' and that is followed by another rewrite, if or set
+        directive in the same scope, with an unnamed capture; unnamed captures alone are not enough (the 05-15 sibling states the full condition).'
+      ground_truth: 'F5/GHSA: ''This vulnerability exists when the rewrite directive is followed by a rewrite, if, or set directive and an unnamed
+        PCRE capture (for example, $1, $2) with a replacement string that includes a question mark (?).'''
+      ground_truth_url: https://github.com/advisories/GHSA-gcgv-v5gf-c543
+      fix: State the three-part condition.
+      class: imprecision
+    - where: body para 2 (detection anchors)
+      claim: correlated with inbound HTTP requests carrying unusually long or deeply-nested rewrite-rule input strings from the same source
+      defect: No source describes 'deeply-nested rewrite-rule input strings'; the public analysis shows the overflow is driven by a request URI
+        padded with escapable characters (plus signs, %, &) against a vulnerable rewrite; the sentence is an uncited invention (self-hedged but
+        still wrong in kind).
+      ground_truth: 'depthfirst: ''By padding the request URI with plus signs, we can force the escaping function to expand each byte into three
+        bytes, overflowing the allocated chunk.'''
+      ground_truth_url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+      fix: Replace with 'requests to affected rewrite locations whose URI carries many escapable characters, followed by worker exits on signal
+        (nginx error log) and respawn'.
+      class: imprecision
+    - where: headline / summary / actions[0]
+      claim: VulnCheck honeypot telemetry confirms in-the-wild exploitation as of 2026-05-17
+      defect: The cited THN piece (dated 2026-05-17) reports exploitation ATTEMPTS against VulnCheck honeypots with unknown objectives; 2026-05-17
+        is the article date, not a stated observation date (secondary reports put first detection on 05-16, unverified).
+      ground_truth: 'THN: ''threat actors have begun to weaponize the flaw, with exploitation attempts detected against its honeypot networks.
+        The nature of the attack activity and the end goals are presently unknown.'''
+      ground_truth_url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+      fix: Say 'VulnCheck reported exploitation attempts against its honeypots (reported 2026-05-17)'.
+      class: imprecision
+    - where: evidence[0] and frontmatter
+      claim: 'evidence quote publisher: ctipilot v2 brief (migrated); classification absent; techniques []'
+      defect: The only evidence quote is the entry's own migrated v2 text, not a source passage; no classification or ATT&CK mapping; verification
+        multi-source with two vendor-adjacent secondary sources and no exploitation primary (VulnCheck's own report is not cited).
+      ground_truth: THN names VulnCheck's LinkedIn post as the origin; no VulnCheck page is cited.
+      ground_truth_url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+      fix: Replace with a verbatim THN passage; add classification (B/2-ish) and techniques; resolve on the survivor.
+      class: imprecision
+    - where: body para 2
+      claim: Affected per [F5 PSIRT advisory K000161019]
+      defect: 'The cited F5 article is a JS shell none of extract, raw or WebFetch can render, so its content could not be checked directly; the
+        product and version list matches NCSC-CH #12575, depthfirst and nginx.org (which names K000161019 as the CVE-2026-42945 advisory).'
+      ground_truth: 'nginx.org: ''Buffer overflow in the ngx_http_rewrite_module ... Advisory K000161019 ... CVE-2026-42945 ... Not vulnerable:
+        1.31.0+, 1.30.1+ Vulnerable: 0.6.27-1.30.0''.'
+      ground_truth_url: https://nginx.org/en/security_advisories.html
+      fix: None required beyond noting the F5 page is unverifiable; optionally cite nginx.org.
+      class: imprecision
+  groups:
+  - pass: D3
+    group: 2a
+    members:
+    - 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+    - 2026-05-18/cve-2026-42945-nginx-rift-in-the-wild-exploitation-confirmed
+    same_finding: true
+    survivor: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+    current_state: 'CVE-2026-42945 (''NGINX Rift''): heap buffer overflow (CWE-122) in ngx_http_rewrite_module / src/http/ngx_http_script.c, F5
+      CNA record https://cveawg.mitre.org/api/cve/CVE-2026-42945 (published 2026-05-13T14:12Z, updated 2026-09-10) and F5 advisory K000161019
+      (myF5, JS shell, not machine-readable); nginx.org https://nginx.org/en/security_advisories.html lists it as ''Buffer overflow in the ngx_http_rewrite_module,
+      Severity: medium, Not vulnerable: 1.31.0+, 1.30.1+, Vulnerable: 0.6.27-1.30.0'' (nginx.org''s own ''medium'' vs F5''s CVSS 4.0 9.2 critical
+      is an unsurfaced difference). CVSS 4.0 9.2 (AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H) and CVSS 3.1 8.1 (AV:N/AC:H/...). Trigger (CNA text):
+      ''the rewrite directive is followed by a rewrite, if, or set directive and an unnamed PCRE capture (for example, $1, $2) with a replacement
+      string that includes a question mark (?)''; root cause per depthfirst: is_args set by ngx_http_script_start_args_code is never reset, the
+      length pass uses a zeroed sub-engine, the copy pass escapes (+, %, & grow to three bytes) and overflows. Impact: worker crash and restart;
+      code execution ''on systems with ASLR disabled or when the attacker can bypass ASLR'' (CNA wording as updated 2026-09-10; the original and
+      NCSC-CH said ASLR disabled only). Affected/fixed: NGINX Open Source 0.6.27 to 1.30.0, fixed 1.30.1 / 1.31.0; NGINX Plus R32 (fixed R32 P6)
+      and R36 (fixed R36 P4), R37 unaffected (CNA); per depthfirst also Instance Manager 2.16.0-2.21.1, F5 WAF for NGINX 5.9.0-5.12.1, App Protect
+      WAF 4.9.0-4.16.0 / 5.1.0-5.8.0, F5 DoS for NGINX 4.8.0, App Protect DoS 4.3.0-4.7.0, Gateway Fabric 1.3.0-1.6.2 / 2.0.0-2.5.1, Ingress Controller
+      3.5.0-3.7.2 / 4.0.0-4.0.1 / 5.0.0-5.4.1 (Security Affairs: BIG-IP, F5OS, Distributed Cloud not affected). Workaround: replace unnamed captures
+      with named captures. Disclosure (depthfirst timeline https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability):
+      found 2026-04-18, reported 2026-04-21, NGINX confirmed 04-24, RCE PoC existence notified 04-28, PoC shared 05-05, F5 advisory and blog 2026-05-13;
+      credit Zhenpeng (Leo) Lin of depthfirst. PoC public (github depthfirstdisclosures/nginx-rift per depthfirst and NCSC-CH). NCSC-CH advisory
+      12575 (2026-05-15): ''Current exploitation status: UNKNOWN, Proof of Concept Available''. Exploitation: VulnCheck honeypots recorded exploitation
+      attempts, reported by The Hacker News on 2026-05-17 (https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html: ''exploitation
+      attempts detected against its honeypot networks. The nature of the attack activity and the end goals are presently unknown''); CISA ADP
+      SSVC at 2026-05-13: Exploitation none; NOT in CISA KEV (catalogue 2026-10-16). Related but distinct: CVE-2026-42533 (nginx PCRE capture
+      clobber, entry 2026-07-20) and SAP Note 3773203 (group 2b).'
+    facts_only_in_duplicates:
+    - fact: 'VulnCheck honeypot telemetry: exploitation attempts reported 2026-05-17'
+      entry: 2026-05-18/cve-2026-42945-nginx-rift-in-the-wild-exploitation-confirmed
+      verified: true
+      source_url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+      passage: '"The latest findings from VulnCheck show that threat actors have begun to weaponize the flaw, with exploitation attempts detected
+        against its honeypot networks." (article dated 2026-05-17; attempts, not confirmed compromise)'
+    - fact: Affected product list incl. Instance Manager, Ingress Controller, Gateway Fabric, App Protect WAF/DoS, F5 WAF for NGINX
+      entry: 2026-05-18/cve-2026-42945-nginx-rift-in-the-wild-exploitation-confirmed
+      verified: true
+      source_url: https://security-hub.ncsc.admin.ch/#/posts/12575
+      passage: 'NCSC-CH AFFECTED PRODUCTS: NGINX Open Source, NGINX Plus, NGINX Instance Manager, NGINX Ingress Controller, NGINX Gateway Fabric,
+        F5 WAF for NGINX, NGINX App Protect WAF, F5 DoS for NGINX, NGINX App Protect DoS (F5 K000161019 itself unreadable)'
+    - fact: CVSS 3.1 8.1 and CWE-122
+      entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+      verified: true
+      source_url: https://cveawg.mitre.org/api/cve/CVE-2026-42945
+      passage: cvssV3_1 baseScore 8.1; cweId CWE-122 "Heap-based Buffer Overflow"
+    - fact: 'Disclosure timeline: responsibly disclosed 2026-04-18; RCE PoC under NDA 2026-04-28'
+      entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+      verified: false
+      source_url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+      passage: '"4/21/2026: We reported all 5 issues to NGINX"; "4/28/2026: We informed NGINX that we had developed a working PoC"; "5/5/2026:
+        We shared our RCE PoC with NGINX"; no NDA on any page (use the depthfirst dates)'
+    - fact: 'Detection anchor: "unusually long or deeply-nested rewrite-rule input strings" correlated with worker crashes'
+      entry: 2026-05-18/cve-2026-42945-nginx-rift-in-the-wild-exploitation-confirmed
+      verified: false
+      source_url: https://depthfirst.com/research/nginx-rift-achieving-nginx-rce-via-an-18-year-old-vulnerability
+      passage: '"By padding the request URI with plus signs, we can force the escaping function to expand each byte into three bytes" (no source
+        mentions nested rewrite-rule strings)'
+    - fact: Named-capture workaround and NCSC-CH advisory 12575 published 2026-05-15
+      entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+      verified: true
+      source_url: https://security-hub.ncsc.admin.ch/#/posts/12575
+      passage: '"Temporary: Replace unnamed PCRE captures (e.g., $1, $2) with named captures in all affected rewrite configurations."; created
+        2026-05-15T07:30:17Z'
+    note: 'Same finding. The 05-15 entry has the better primary-sourced analysis (root cause, trigger, workaround, affected/fixed, NCSC-CH) but
+      wrong disclosure dates and an NDA claim that must be fixed, and its ''no ITW'' sentence is superseded by the 05-18 exploitation reports;
+      the 05-18 entry adds only the VulnCheck report (attempts, honeypots) and has an over-broad trigger statement and an invented detection anchor.
+      Fold 05-18 into 05-15 as an update record and carry: exploited-attempts status, CNA ASLR wording (bypass), not-in-KEV, nginx.org ''medium''
+      rating contrast. Neither entry carries classification, techniques (T1190) or structured affected/fixed. F5''s K000161019 page is unreadable
+      by every transport; the F5 CNA CVE record and nginx.org were used as the vendor-side authority.'
+  - pass: D3
+    group: 2b
+    members:
+    - 2026-08-12/sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce
+    - 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+    same_finding: false
+    survivor: 2026-08-12/sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce
+    current_state: 'The SAP entry is a distinct finding: SAP''s August 2026 Security Patch Day (https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html,
+      28 new notes + 1 GitHub advisory + 2 updates; page date 2026-09-03). Its headline item is CVE-2026-58231, Note 3771065, ''Improper Authorization
+      in SAP Commerce Cloud (Data Hub Adapter)'', Critical, CVSS 10.0 (COM_CLOUD 2211, 2211-JDK21), fix = patch to the fixed release levels then
+      rebuild and redeploy, interim IP Filter Set (Onapsis https://onapsis.com/blog/sap-security-patch-day-august-2026/, datePublished 2026-08-11);
+      Defused reported first exploitation attempts on its honeypots on 2026-08-14 with no public PoC (BleepingComputer 2026-08-14), NCSC-NL NCSC-2026-0302
+      (2026-08-15 09:41) relays active scanning; SAP spokesperson: aware and investigating; not in CISA KEV (2026-10-16). Other items: CVE-2026-44772
+      (Note 3765948, 9.9, post-patch Secure Transformer allowed-hosts property per Onapsis), CVE-2026-44758 (Note 3758900, 9.1, patch removes
+      servlet), CVE-2026-34265 (Note 3714806, 9.8, DIAG memory corruption), CVE-2026-58243 (Note 3772411, 8.8). CVE-2026-42945 appears only as
+      SAP Note 3773203, ''Potential buffer overflow vulnerability affects SAP Commerce Cloud in public-cloud deployments with NGINX'', High, CVSS
+      8.1 (COM_CLOUD 2211, 2211-JDK21, DHUB_CLOUD 2211, 2211-JDK21); Onapsis: ''The patch is present on all SAP Commerce Cloud in the Public Cloud
+      systems and customers can consume the patch by building and deploying their SAP Commerce Cloud applications''.'
+    facts_only_in_duplicates:
+    - fact: SAP Note 3773203 maps the upstream NGINX CVE-2026-42945 to SAP Commerce Cloud public-cloud deployments (CVSS 3.1 8.1, High; build-and-deploy
+        to consume the patch)
+      entry: 2026-08-12/sap-august-2026-cve-2026-58231-commerce-cloud-data-hub-rce
+      verified: true
+      source_url: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/august-2026.html
+      passage: '"[CVE-2026-42945] Potential buffer overflow vulnerability affects SAP Commerce Cloud in public-cloud deployments with NGINX ...
+        COM_CLOUD 2211, 2211-JDK21, DHUB_CLOUD 2211, 2211-JDK21 | High | 8.1"; Onapsis: "customers can consume the patch by building and deploying"'
+    - fact: Upstream CVE-2026-42945 is the NGINX Rift bug with exploitation attempts reported (not stated in the SAP entry)
+      entry: 2026-05-15/cve-2026-42945-nginx-open-source-plus-f5-waf-products-18-yea
+      verified: true
+      source_url: https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html
+      passage: '"exploitation attempts detected against its honeypot networks"'
+    note: 'Distinct findings sharing an id: the SAP entry is the Commerce Cloud Data Hub Adapter flaw (CVE-2026-58231) and its patch-day companions;
+      CVE-2026-42945 there is SAP''s downstream note for the upstream NGINX Rift bug. Keep separate. The SAP entry should add references[] to
+      the nginx survivor and say the CVE is the upstream NGINX Rift bug (its cves[] row currently reads like an independent SAP flaw); its clause
+      attributing the rebuild-and-deploy requirement to the SAP page is an Onapsis statement. Separate problems in the SAP entry (summary says
+      ''no exploitation reported by any party'' against its own 08-16 update; unsourced ''import endpoint'' mechanism) are in the per-entry findings.'
+- entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-10-11T14:36:06Z'
+    - 2026-10-11T1307Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: reviewed
+  em_dashes_in_reader_text: []
+  verdict_blocks:
+  - entry_as_read: 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+    current_entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: title / headline / summary / immediate_action / actions[] / cves[].status / body
+      claim: no permanent patch ; Active Exploitation Without a Patch ; Permanent fixes are forthcoming ; mitigation-only
+      defect: 'Superseded: Microsoft released the CVE-2026-42897 fix in the June 2026 Exchange Security Updates on 2026-06-09 (SE RTM publicly;
+        2019 CU14/CU15 and 2016 CU23 only for Period 2 ESU customers); the July 2026 SUs (2026-07-14) are also recommended by MSRC.'
+      ground_truth: 'Exchange Team 2026-06-09: "The June 2026 SUs address ... CVE-2026-42897"; FAQ: "When CVE-2026-42897 mitigations were released
+        ... Are those solved in the CVE-2026-42897 fix (June 2026 SU)? Yes". MSRC rev 2 2026-06-09 "Added links to June 2026 Exchange Server security
+        updates"; Learn M2 "Highest version applicable ... June 2026 SU".'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: 'Rewrite headline, summary, labelled lines and actions for the current state: fix available since 2026-06-09, mitigation removable
+        after the July SU, exploitation by TA488 documented 2026-07-28.'
+      class: factual-error
+    - where: title / headline / immediate_action / body
+      claim: stored XSS in OWA ; a stored / reflected cross-site scripting flaw
+      defect: No source characterises the flaw as stored (or reflected); Microsoft says "cross-site scripting" with spoofing impact.
+      ground_truth: 'MSRC: "Microsoft Exchange Server Spoofing Vulnerability ... Improper neutralization of input during web page generation (''cross-site
+        scripting'')"; Proofpoint: "the server does not adequately sanitize HTML in the message body".'
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Say "cross-site scripting (spoofing) in OWA".
+      class: factual-error
+    - where: body (mitigation / EEMS)
+      claim: enabled by default on Exchange 2016 SP1 and later and auto-applies without requiring a service restart ; EEMS Mitigation M2
+      defect: The EM service applies from the September 2021 CU (2016 CU22 / 2019 CU11) and can only fetch new mitigations on builds from March
+        2023 or later; "2016 SP1" does not exist as a threshold; the no-restart statement and the "M2" (rule M2.1.x) naming are not as sourced.
+      ground_truth: 'Exchange Team: "EM Service will not be able to check for new mitigations if your server is running Exchange Server version
+        older than March 2023"; Learn: M2 lowest version "Exchange 2016: RTM" but EM service from "September 2021 CU"; mitigation ID "M2.1.x".'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+      fix: State the real prerequisites (September 2021 CU or later; build from March 2023 or later for new mitigations; officeclient.microsoft.com:443)
+        and drop the restart claim.
+      class: factual-error
+    - where: actions[0]; body (verification)
+      claim: Run `Get-ExchangeDiagnosticInfo -Server <name> -Process MSExchangeHMWorker -Component EemsMitigation -SettingName MitigationsApplied`
+        ; look back to 2026-05-09
+      defect: The command appears in no cited source (Microsoft documents Get-ExchangeServer | fl Name,MitigationsApplied, Get-Mitigations.ps1
+        and the Health Checker); the 2026-05-09 lookback has no basis (Proofpoint dates the actor infrastructure to March 2026).
+      ground_truth: 'Learn: "Get-ExchangeServer -Identity <ServerName> | Format-List Name,MitigationsApplied"; Exchange Team: run Exchange Health
+        Checker.'
+      ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      fix: Use the Microsoft-documented checks; drop or justify the lookback date.
+      class: factual-error
+    - where: body (Detection)
+      claim: IIS access logs ... `/owa/` URLs containing `<script>` fragments ... in query strings; Exchange Application Event Log EID 4 ...;
+        EDR alerts on browser processes spawning unexpected children from OWA sessions
+      defect: 'Does not fit the documented mechanism: the payload is JavaScript in the email body run in the browser with no host footprint; no
+        source supports these log fields.'
+      ground_truth: 'Proofpoint: "OWAReaper runs inside the OWA browser context, operating as a stealthy implant with no host footprint"; detections:
+        Default-user folder grants, EWS add-in tokens, IndexedDB/localStorage.'
+      ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      fix: Replace with source-supported detections (mailbox folder-permission grants to Default, add-in token abuse, GetClientAccessToken, OWA
+        localStorage/IndexedDB artefacts).
+      class: imprecision
+    - where: body ("three tiers")
+      claim: Exploitation Detected (the highest of its three exploitation-status tiers)
+      defect: Microsoft's exploitability assessments are Exploitation Detected / More Likely / Less Likely / Unlikely (four).
+      ground_truth: MSRC records show "Exploitation Detected", "Exploitation More Likely", "Exploitation Less Likely", "Exploitation Unlikely".
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Drop the tier count.
+      class: imprecision
+    - where: body (first paragraph)
+      claim: disclosed by Microsoft on 2026-05-14 alongside the May 2026 Patch Tuesday cycle
+      defect: 'Patch Tuesday was 2026-05-12; the CVE was an out-of-band disclosure on Thursday 2026-05-14 (NCSC-NL: "out-of-band update").'
+      ground_truth: 'MSRC release 2026-05-14T07:00-07:00; NCSC-NL NCSC-2026-0159: mitigations "middels een out-of-band update".'
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Say out-of-band disclosure on 2026-05-14, two days after Patch Tuesday.
+      class: imprecision
+    - where: evidence[1]
+      claim: Microsoft is supplying a temporary mitigation for this vulnerability through the Exchange Emergency Mitigation Service. We are working
+        on developing and testing a more permanent fix.
+      defect: (low confidence) The sentence is on neither the current MSRC page nor the Exchange blog (both revised since); cannot be verified
+        verbatim today.
+      ground_truth: MSRC record revised 2026-05-18, 2026-06-09, 2026-07-14; current FAQ has no such sentence.
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Replace with a quote verifiable on the current page, or drop.
+      class: imprecision
+    - where: body / actions[1]
+      claim: See § 5 (Deep Dive, "Permanent-patch availability" paragraph)
+      defect: Dangling pointer to a section of the migrated brief that does not exist in this entry.
+      ground_truth: n/a
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Remove.
+      class: imprecision
+  - entry_as_read: 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+    current_entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    folded: true
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: title / headline / summary / immediate_action / actions[] / cves[].status / body
+      claim: no permanent patch ; Active Exploitation Without a Patch ; Permanent fixes are forthcoming ; mitigation-only
+      defect: 'Superseded: Microsoft released the CVE-2026-42897 fix in the June 2026 Exchange Security Updates on 2026-06-09 (SE RTM publicly;
+        2019 CU14/CU15 and 2016 CU23 only for Period 2 ESU customers); the July 2026 SUs (2026-07-14) are also recommended by MSRC.'
+      ground_truth: 'Exchange Team 2026-06-09: "The June 2026 SUs address ... CVE-2026-42897"; FAQ: "When CVE-2026-42897 mitigations were released
+        ... Are those solved in the CVE-2026-42897 fix (June 2026 SU)? Yes". MSRC rev 2 2026-06-09 "Added links to June 2026 Exchange Server security
+        updates"; Learn M2 "Highest version applicable ... June 2026 SU".'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: 'Rewrite headline, summary, labelled lines and actions for the current state: fix available since 2026-06-09, mitigation removable
+        after the July SU, exploitation by TA488 documented 2026-07-28.'
+      class: factual-error
+    - where: body, Mitigation M2 mechanism
+      claim: Mitigation M2, which rewrites the specific request format the in-the-wild exploit uses to deliver the XSS payload — the mitigation
+        does not require an Exchange restart
+      defect: M2 is a URL Rewrite outbound rule adding a Content-Security-Policy (CSP) to OWA responses (which is why IE / IE-mode clients are
+        not protected); the blog says nothing about request-format rewriting or restart.
+      ground_truth: 'Learn: rollback removes the "EEMS M2.1 OWA CSP - outbound" outbound rule and "EEMS M2.1 OWA SPA HTML shell - precondition";
+        MSRC FAQ: "No, because Content Security Policy (CSP) is not supported by Internet Explorer nor Microsoft Edge using Internet Explorer
+        Mode".'
+      ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      fix: Describe M2 as a CSP-injecting URL Rewrite rule; drop the restart claim.
+      class: factual-error
+    - where: body, EEMS paragraph
+      claim: '`Set-Server -MitigationsEnabled $false` ; `Get-Server <server> | Select-Object MitigationsEnabled` ; via Group Policy ; hardened
+        with custom IIS rewrite rules that conflict ; For all four cases ... EOMT'
+      defect: Non-existent cmdlets (Set-Server / Get-Server); Group Policy and the custom-rewrite-rule case are in no source; Exchange 2013 is
+        not an affected version, so (a) does not describe an exposed state.
+      ground_truth: 'Learn: "Set-OrganizationConfig -MitigationsEnabled $false" and "Set-ExchangeServer -Identity <ServerName> -MitigationsEnabled
+        $false"; Exchange blog: affected 2016, 2019, SE.'
+      ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      fix: Use Set-ExchangeServer / Get-ExchangeServer and drop unsupported cases.
+      class: factual-error
+    - where: body, EEMS verification and hunt
+      claim: Get-ExchangeDiagnosticInfo ... EemsMitigation ... ; w3wp.exe spawning unexpected children ... post-exploitation tell of XSS-to-execution
+        chains ; Exchange Application Event Log EID 4 ; query strings
+      defect: Unsupported command; detections do not fit a browser-side JavaScript implant with no host footprint.
+      ground_truth: 'Proofpoint: "no host footprint"; Learn: Get-ExchangeServer | Format-List Name,MitigationsApplied.'
+      ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      fix: Use Microsoft-documented verification and Proofpoint-sourced detections.
+      class: imprecision
+    - where: body, exploitation and attribution
+      claim: Microsoft notes the scale and identity of the exploitation activity are not yet detailed publicly (The Hacker News) ; No named threat-actor
+        attribution has been published
+      defect: 'The statement is The Hacker News''s, not Microsoft''s; and attribution is now published (Proofpoint 2026-07-28: TA488 / Void Blizzard
+        / LAUNDRY BEAR).'
+      ground_truth: 'THN: "There are currently no details on how the vulnerability is being exploited, the identity of the threat actor behind
+        the activity, or the scale of such efforts." Proofpoint: "Proofpoint attributes this activity to TA488".'
+      ground_truth_url: https://thehackernews.com/2026/05/on-prem-microsoft-exchange-server-cve.html
+      fix: Attribute to THN with date, and add the TA488 attribution.
+      class: factual-error
+    - where: body, attack chain
+      claim: 'T1566.001 Phishing: Spearphishing Attachment ... T1078 ... T1534 Internal Spearphishing ... payload reads OWA session cookies /
+        auth tokens'
+      defect: 'The delivery is an email body with no attachment or URL; the chain steps (cookie theft, valid-account reuse, internal spearphishing)
+        are analyst conjecture that later primary reporting does not confirm (observed: autofill credential harvest, add-in OAuth token theft
+        via GetClientAccessToken, Default-user folder grants).'
+      ground_truth: 'Proofpoint: "no suspicious URLs or attachments present"; "creates two invisible input elements ... waits for the browser''s
+        autofill"; "uses those add-ins to call GetClientAccessToken to steal OAuth tokens".'
+      ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      fix: Replace with the Proofpoint-observed behaviour; drop T1566.001.
+      class: imprecision
+    - where: body, quantifiers
+      claim: CVE-2026-42897 is the first 2026 case where EEMS ... is the line of defence ; repeated EEMS-only mitigations across the 2021-2026
+        Exchange CVE history ; Hafnium and dozens of follow-on clusters
+      defect: 'Unsupported quantifiers: Learn lists only two CVE mitigations (M1 in 2022, M2 in 2026); "dozens of clusters" is not in the cited
+        Microsoft post.'
+      ground_truth: 'Learn mitigation list: PING1, M1 (CVE-2022-41040), M2 (CVE-2026-42897).'
+      ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      fix: Remove the superlative and counts or cite them.
+      class: imprecision
+    - where: body, patch details
+      claim: a security update for Exchange 2016 CU23 and Exchange 2019 CU14 / CU15 (cited to the May Exchange blog)
+      defect: The May blog gives no CU numbers (they appear in the June 2026 SU blog); the September 2021 blog cited for the EEMS introduction
+        could not be read by any transport in this audit, so that adjacency is unverified (the Learn doc confirms the September 2021 CU).
+      ground_truth: 'June SU blog: "Exchange Server 2019 CU14 and CU15 ... Exchange Server 2016 CU23 (... Period 2 ESU program)".'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: Cite the June SU blog.
+      class: imprecision
+    - where: body ("PD-13"), sourcing_note, evidence[0]
+      claim: 'per PD-13 in this brief series ; migration: evidence backfilled ; quote "Background."'
+      defect: Workflow-internal text in reader-facing fields; evidence[0] quote is just the word "Background." with publisher "ctipilot v2 brief
+        (migrated)", not a source passage.
+      ground_truth: n/a
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Replace the evidence quote with a verbatim source passage; strip workflow text.
+      class: imprecision
+  - entry_as_read: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    current_entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D1
+    verdict: factual-error
+    defects:
+    - where: title / headline / summary / immediate_action / body paragraph 1
+      claim: Exchange Team Blog update confirms the EM Service auto-mitigation requires outbound HTTPS connectivity ... to officemitigations.microsoft.com
+        ; The Microsoft Exchange Team Blog post ... was last modified 2026-05-17 to clarify an operational dependency
+      defect: The cited blog carries no connectivity-dependency statement (its 2026-05-17 update added only an OWACalendar.Proxy known issue)
+        and the host name appears in no source; Microsoft documents the Office Config Service endpoint as officeclient.microsoft.com on port 443
+        in the EM-service doc. The dependency itself is real but the title, summary, immediate action and body bind it to the wrong host and the
+        wrong source.
+      ground_truth: 'Learn: "Office Config Service | officeclient.microsoft.com/* | 443 | Required endpoint for the Exchange EM service"; Exchange
+        blog update log: "5/17/2026: Added a known issue with OWACalendar.Proxy healthset showing unhelathy".'
+      ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      fix: Use officeclient.microsoft.com and cite the Learn doc; drop "last modified 2026-05-17 to clarify".
+      class: factual-error
+    - where: actions[0]; body paragraph 2
+      claim: 'Run `Get-ExchangeDiagnosticInfo -Server <server> -Process EdgeTransport -Component EmergencyMitigation` ... confirm `Status: Active`'
+      defect: The command and output field appear in no source; Microsoft documents Get-ExchangeServer | Format-List Name,MitigationsApplied and
+        the Health Checker.
+      ground_truth: 'Learn: "Get-ExchangeServer -Identity <ServerName> | Format-List Name,MitigationsApplied".'
+      ground_truth_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      fix: Use the documented commands.
+      class: factual-error
+    - where: summary / immediate_action / actions[0] / body paragraphs 1-2
+      claim: no permanent patch is available yet ; No permanent patch yet ; no permanent cumulative-update fix as of 2026-05-18
+      defect: The entry was updated on 2026-07-31 with a section stating the July SU is the fix, yet summary, immediate_action and actions[0]
+        still say no permanent patch exists (self-contradiction), and the fix actually shipped 2026-06-09.
+      ground_truth: 'Exchange Team 2026-06-09: "The June 2026 SUs address ... CVE-2026-42897".'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: Rewrite summary / immediate_action / actions[0] to the current state; keep the May text only as dated history.
+      class: factual-error
+    - where: 'cves[CVE-2026-42897].affected / fixed; ## Update 2026-07-31 Patching'
+      claim: all update levels prior to the July 2026 Security Update ; The permanent fix is the July 2026 Security Update ; May shipped a mitigation,
+        July shipped the fix
+      defect: The first fix shipped in the June 2026 SUs (2026-06-09); the July SUs are cumulative and also fix sibling CVE-2026-55008. "Prior
+        to the July 2026 SU" misstates the affected range.
+      ground_truth: 'Learn M2: "Highest version applicable: Exchange SE: June 2026 SU - Exchange 2019: June 2026 SU - Exchange 2016: June 2026
+        SU"; June blog FAQ: "the CVE-2026-42897 fix (June 2026 SU)"; MSRC FAQ 7/14: install July SUs "to be protected from this vulnerability
+        and related CVE-2026-55008".'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: Set fixed to the June 2026 SU (SE RTM public; 2019 CU14/15 and 2016 CU23 via Period 2 ESU) and note the July SU and CVE-2026-55008;
+        affected = versions before the June 2026 SU.
+      class: factual-error
+    - where: body paragraph 2 / evidence[1]
+      claim: Microsoft states verbatim "We are working on developing and testing a more permanent fix which we will provide when it meets our
+        quality standards."
+      defect: (low confidence) The quoted sentence is not on the current Exchange blog or MSRC page (both revised); it cannot be verified verbatim
+        today.
+      ground_truth: 'Exchange blog current text: "Microsoft is working on and will release and announce a security update for impacted versions
+        of Exchange Server in the future."'
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+      fix: Quote a sentence verifiable on the current page or drop.
+      class: imprecision
+    - where: tags
+      claim: no-patch together with patch-available
+      defect: Contradictory tags on one entry.
+      ground_truth: n/a (June 2026 SU exists)
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: Drop no-patch.
+      class: imprecision
+    - where: evidence[0] attribution; sources[] dates
+      claim: publisher Microsoft Exchange Team Blog for "The Exchange Emergency Mitigation Service will provide mitigation automatically ... "
+        ; Proofpoint 2026-07-29
+      defect: The sentence is the MSRC FAQ, not the Exchange blog; Proofpoint's post is dated 2026-07-28 on the page.
+      ground_truth: 'MSRC FAQ: "The Exchange Emergency Mitigation Service will provide mitigation automatically, and is on by default."; Proofpoint
+        page date 2026-07-28.'
+      ground_truth_url: https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897
+      fix: Attribute to MSRC; use 2026-07-28 (or note timezone).
+      class: imprecision
+    - where: techniques[]
+      claim: T1552 Unsecured Credentials
+      defect: Autofill harvesting is Credentials from Web Browsers and the GetClientAccessToken abuse is Application Access Token theft; T1552
+        fits neither; T1528 and T1555.003 are not mapped.
+      ground_truth: 'Proofpoint: "waits for the browser''s autofill to enter the username and password"; "call GetClientAccessToken to steal OAuth
+        tokens".'
+      ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      fix: Map T1555.003 and T1528 (both active in the pinned dataset) instead of T1552.
+      class: imprecision
+    - where: '## Update 2026-07-31 / ## Improvement 2026-08-30 (reader-facing wording)'
+      claim: The May entry tracked ... ; which this pipeline registers as LAUNDRY BEAR ; **A1** on the NATO Admiralty scale
+      defect: Workflow-internal wording and Admiralty letters in reader-facing sections; the Improvement section is metadata-only and should have
+        been internal.
+      ground_truth: n/a
+      ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      fix: Strip internal wording; make the metadata-only record internal.
+      class: imprecision
+    - where: priority
+      claim: 'priority: critical'
+      defect: On 2026-07-31 a vendor fix had existed for seven weeks; the new element is an actor campaign (TA488) against government targets
+        in the US and Europe.
+      ground_truth: Exchange Team 2026-06-09 SUs; Proofpoint 2026-07-28.
+      ground_truth_url: https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491
+      fix: 'Context only: critical is hard to defend for a patched flaw; high may fit given on-prem Exchange exposure.'
+      class: imprecision
+  groups:
+  - pass: D1
+    members:
+    - 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+    - 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+    - 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    same_finding: true
+    survivor: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    current_state: 'CVE-2026-42897, Microsoft Exchange Server OWA cross-site scripting with spoofing impact (CWE-79); MSRC ''Microsoft Exchange
+      Server Spoofing Vulnerability'', released 2026-05-14 (out-of-band, Patch Tuesday was 2026-05-12), Critical, CVSS 3.1 8.1 (temporal 7.5)
+      CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N/E:F/RL:O/RC:C, Exploited: Yes, ''Exploitation Detected'' since release; revisions 1.1 2026-05-18
+      (FAQ: IE/IE-mode not protected because CSP unsupported), 2 2026-06-09 (links to June 2026 Exchange SUs), 2.1 2026-07-14 (install July 2026
+      SUs to be protected from this CVE and CVE-2026-55008; mitigations can be removed after the July SU) (https://api.msrc.microsoft.com/sug/v2.0/sugodata/v2.0/en-US/vulnerability/CVE-2026-42897).
+      Affected: Exchange Server 2016, 2019 and Subscription Edition at any update level at disclosure; Exchange Online not impacted (Exchange
+      Team post 2026-05-14, https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498).
+      CISA KEV: added 2026-05-15, due 2026-05-29 (catalogue 2026.10.16). Mitigation: Exchange Emergency Mitigation Service applies M2 (rule IDs
+      M2.1.x, URL Rewrite outbound rule ''EEMS M2.1 OWA CSP - outbound'') automatically, needs outbound HTTPS 443 to officeclient.microsoft.com
+      and an Exchange build from March 2023 or later to fetch new mitigations; disconnected servers run EOMT (aka.ms/UnifiedEOMT, .\EOMT.ps1 -CVE
+      "CVE-2026-42897"); known issues: OWA Print Calendar, inline images, OWA light, OWACalendar.Proxy healthset unhealthy, published calendars
+      error 500 (https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service).
+      Fix: June 2026 Exchange Security Updates released 2026-06-09 (Exchange SE RTM public; Exchange 2019 CU14/CU15 and 2016 CU23 only for Period
+      2 ESU customers; Period 1 ESU ended April 2026) (https://techcommunity.microsoft.com/blog/exchange/released-june-2026-exchange-server-security-updates/4524491),
+      Microsoft then recommended keeping the mitigation; July 2026 SUs (2026-07-14) are recommended by MSRC and, once installed, the M2.1.0 IIS
+      rules (EM service) or the EOMT rollback should be removed manually (https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146);
+      sibling OWA XSS CVE-2026-55008 (MSRC ''Exchange Server Spoofing Vulnerability'', CVSS 9.6, released 2026-07-14, Exploitation More Likely,
+      exploited No) is fixed by the July SU and also mitigated by the M2 mitigation. In-the-wild: Proofpoint 2026-07-28 attributes a campaign
+      that began 2026-07-22 to TA488 (Void Blizzard / LAUNDRY BEAR; US and European government, telecommunications, finance, hospitality, aerospace),
+      loader JavaScript in the message body triggers the ''OWAReaper'' implant (rewrites the message server-side, harvests browser autofill credentials,
+      steals OAuth tokens via add-ins with ReadWriteMailbox calling GetClientAccessToken, persists in OWA localStorage under PageDataPayload.OwaUserDefaultSettings
+      and in the IndexedDB message cache, grants the ''Default'' user Owner permission on every mail folder via UpdateFolder, C2 via GitHub commit
+      search every 24 h and inbound emails every 5 min, exfil over HTTPS via image CDNs with DNS-label fallback; no mass mail exfiltration); earliest
+      infrastructure March 2026 so zero-day use is ''feasible'' (inference); Proofpoint recommends revoking/auditing EWS tokens, removing Default-user
+      folder grants, clearing owa_offline_db and the localStorage key (https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit);
+      NCSC-CH advisory #12577 (published 2026-05-15, edited 2026-07-30 with the Proofpoint link) (https://security-hub.ncsc.admin.ch/#/posts/12577);
+      joint CSA on the same actor''s Zimbra campaign (16 countries, 2026-07-23) (https://media.defense.gov/2026/Jul/22/2003965244/-1/-1/0/CSA_RUSSIA_PHISHING_TARGET_ZIMBRA.PDF).'
+    facts_only_in_duplicates:
+    - fact: EM service endpoint is officeclient.microsoft.com:443 and it checks hourly (entries 1 and 2 only; entry 4 uses a non-existent host)
+      entry: 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+      verified: true
+      source_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      passage: Office Config Service | officeclient.microsoft.com/* | 443 | Required endpoint for the Exchange EM service
+    - fact: EM service cannot fetch new mitigations on Exchange builds older than March 2023 (in no entry)
+      entry: (none)
+      verified: true
+      source_url: https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498
+      passage: EM Service will not be able to check for new mitigations if your server is running Exchange Server version older than March 2023
+    - fact: CISA KEV addition 2026-05-15 with due date 2026-05-29 (entries 1 and 2)
+      entry: 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+      verified: true
+      source_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+      passage: 'KEV catalogue 2026.10.16: CVE-2026-42897 dateAdded 2026-05-15, dueDate 2026-05-29'
+    - fact: NCSC-NL NCSC-2026-0159 (2026-05-15) and BSI WID-SEC-2026-1536 (2026-05-14/15) advisories on the CVE (entries 1 and 2)
+      entry: 2026-05-16/cve-2026-42897-microsoft-exchange-server-2016-2019-se-stored
+      verified: true
+      source_url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0159
+      passage: Publicatie 15-05-2026 ... Microsoft heeft ... mitigerende maatregelen geimplementeerd in de Exchange Emergency Mitigation Service
+        middels een out-of-band update
+    - fact: M2 is a CSP-injecting URL Rewrite outbound rule (not a request-format rewrite) and IE/IE-mode clients are not protected (entry 2 wrong;
+        MSRC FAQ)
+      entry: 2026-05-16/microsoft-exchange-cve-2026-42897-active-exploitation-withou
+      verified: false
+      source_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      passage: Remove the M2 URL Rewrite outbound rule ... "EEMS M2.1 OWA CSP - outbound"
+    - fact: '"Exchange 2016 SP1 and later", Get-ExchangeDiagnosticInfo verification command, 2026-05-09 lookback, officemitigations.microsoft.com
+        (entries 1, 2, 4)'
+      entry: 1,2,4
+      verified: false
+      source_url: https://learn.microsoft.com/en-us/exchange/plan-and-deploy/post-installation-tasks/security-best-practices/exchange-emergency-mitigation-service
+      passage: no such statement in Learn, the Exchange Team posts or MSRC
+    - fact: TA488 / OWAReaper campaign details and actions (entry 4 only)
+      entry: 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+      verified: true
+      source_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+      passage: Proofpoint attributes this activity to TA488 based on the use of half-click XSS exploits against webmail viewers
+    note: Entries 1, 2 and 4 are the same finding (CVE-2026-42897, same MSRC/Exchange Team primaries) written on 2026-05-16 (x2) and 2026-05-18;
+      entry 4 is the survivor (already has a changelog, newest, Proofpoint/NCSC-CH sources). All three carry the stale 'no permanent patch' state
+      (fix shipped 2026-06-09) and unsupported commands/hostnames. Entry 3 (Pwn2Own chain) is a distinct finding - see the second group record.
+  - pass: D1
+    members:
+    - 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+    - 2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen
+    same_finding: false
+    survivor: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+    current_state: 'Pwn2Own Berlin 2026 (14-16 May) Day 2 (ZDI 2026-05-15, https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results):
+      ''Orange Tsai (@orange_8361) of DEVCORE Research Team chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange, earning
+      $200,000 and 20 Master of Pwn points''; BleepingComputer 2026-05-15 (https://www.bleepingcomputer.com/news/security/pwn2own-day-two-hackers-demo-microsoft-exchange-windows-11-red-had-enterprise-linux-zero-days/):
+      vendors have 90 days to patch after zero-days are disclosed at Pwn2Own. Neither source gives a CVE id, authentication level, or ties the
+      chain to CVE-2026-42897. A later Exchange CVE (CVE-2026-62911, MSRC 2026-08-11, Exchange EoP / authentication bypass by capture-replay,
+      CVSS 8.0) has been linked to Orange Tsai''s demo only by a low-reliability aggregator and is unverified.'
+    facts_only_in_duplicates:
+    - fact: DEVCORE Orange Tsai $200,000 three-bug SYSTEM RCE chain on Exchange (entry 3 only)
+      entry: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+      verified: true
+      source_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+      passage: chained 3 bugs to achieve Remote Code Execution as SYSTEM on Microsoft Exchange, earning $200,000 and 20 Master of Pwn points
+    - fact: '"unauthenticated" SYSTEM RCE (entry 3)'
+      entry: 2026-05-17/exchange-cve-2026-42897-pwn2own-devcore-three-bug-system-rce
+      verified: false
+      source_url: https://www.zerodayinitiative.com/blog/2026/5/15/pwn2own-berlin-2026-day-two-results
+      passage: no "unauthenticated" in ZDI or BleepingComputer
+    note: 'Distinct finding: the Pwn2Own Exchange chain has no CVE in the cited sources and no stated relation to the exploited OWA XSS CVE-2026-42897;
+      entry 3 only references the CVE and wrongly carries it in cves[] as ''rce''. Keep it separate (drop the cves[] record) and carry the cross-reference
+      in references[].'
+- entry: 2026-09-12/japan-digital-agency-gss-vpn-breach-maintenance-account
+  rows:
+  - W1-D
+  last_record:
+  - - '2026-09-20T13:33:40Z'
+    - 2026-09-20T1308Z-audit
+    - correction
+  legacy_duty: false
+  legacy_queue_now: not in queue
+  em_dashes_in_reader_text:
+  - headline
+  - summary
+  - sourcing_note
+  - body main analysis (5)
+  - section 2026-09-13T14:40:00Z (1)
+  verdict_blocks:
+  - entry_as_read: 2026-09-12/japan-digital-agency-gss-vpn-breach-maintenance-account
+    current_entry: 2026-09-12/japan-digital-agency-gss-vpn-breach-maintenance-account
+    folded: false
+    truth_pass: 2026-10-18T1307Z-audit/truth-D2
+    verdict: imprecision
+    defects:
+    - where: sources[] Jiji Press (via Nippon.com) URL
+      claim: https://www.nippon.com/en/news/yjj2026091100453/
+      defect: Both Jiji quotes are verbatim, but the cited nippon.com article now returns HTTP 404 (the pre-pass cached only the site navigation
+        shell), so the evidence can no longer be re-verified from the cited URL
+      ground_truth: 'Direct GET and WebFetch: HTTP 404; the quotes are verbatim in the Wayback snapshot of the same URL (title ''Personal Info
+        Possibly Compromised at Japan''s Digital Agency'', published 2026-09-11T19:06+0900)'
+      ground_truth_url: https://web.archive.org/web/2026/https://www.nippon.com/en/news/yjj2026091100453/
+      fix: Add the archive URL or a Digital Agency/other readable primary as a second source
+      class: imprecision
+  groups: []

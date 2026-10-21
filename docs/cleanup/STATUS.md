@@ -27,7 +27,7 @@ After every wave: `python3 tools/check_run.py --all` ends `0 warn · 0 fail`, `p
 | Known duplicate groups open (W4) | 4 + scan | 4 + scan |
 | Registry orphans (no entry key, no relation) | 179 non-product + 4 product | 183, none a duplicate (W5-04, W5-05) |
 | check_run.py --all | 0 fail, 1 warn, 25 acknowledged | 0 fail, 0 warn, 26 acknowledged |
-| Rows done / declined / in a wave / open | 50 rows | 24 / 2 / 12 / 12 |
+| Rows done / declined / in a wave / open | 56 rows | 24 / 2 / 12 / 18 |
 
 ## Waves
 
@@ -42,10 +42,11 @@ Waves marked `ready` can start now, each in its own session and in parallel; `af
 | 05 | C | W2-02 (76 legacy entries) | - | in-flight 2026-10-21T1147Z-audit |
 | 06 | - | W4-02, W1-D2 (10 entries), W1-I (45 residuals) | 02 | planned |
 | 07 | - | W2-03 (77 legacy entries) | 02 | planned |
-| 08 | - | W2-04 (77 legacy entries) | 02 | planned |
-| 09 | - | W2-05 (77 legacy entries) | - | planned |
+| 08 | - | W2-04 (76 legacy entries), W4-06 (2) | 02 | planned |
+| 09 | - | W2-05 (76 legacy entries) | - | planned |
 | 10 | - | W3-01 (71), W6-05 (4 entry-scoped acknowledgments) | - | planned |
-| 11 | - | W7-08, C9 retirement | 03, 04, 05, 06, 07, 08, 09, 10 | planned |
+| 11 | - | W7-08, W7-17, C9 retirement | 03, 04, 05, 06, 07, 08, 09, 10, 12 | planned |
+| 12 | - | W4-07, W4-08, W4-09 (twins the W4-05 scan found across waves 04 and 05) | 04, 05 | planned |
 
 W5, W6 and W7 rows marked `standalone` ship as small merges of their own between waves, the moment they are green. Inputs prepared for a wave live under `work/cleanup/wave-<NN>/`.
 
@@ -68,11 +69,15 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 | W4-03 | W4 | Ghost CMS 2026-05-25: the ClickFix deep dive and the 'large-scale ClickFix campaign' entry are the same finding per D3; decide fold | 2 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
 | W4-04 | W4 | Pwn2Own Berlin 2026 roundup 2026-05-17 vs the DEVCORE Exchange chain entry: re-verify the roundup, then fold or link | 2 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
 | W4-05 | W4 | Store-wide non-CVE twin scan (same entity and similar title or same primary URL, no references[] link); fold or link each pair found | TBD | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
+| W4-06 | W4 | The Gentlemen ransomware 2026-06-12 vs 2026-06-27: same finding (one group profile, the later entry adds Check Point's Swiss victim share via inside-it.ch); fold 2026-06-27 into 2026-06-12, carrying its verified facts (found by the W4-05 scan) | 2 | 08 | open |
+| W4-07 | W4 | Calypso / Red Lamassu (Bronze Medley) Showboat and JFMBackdoor, two 2026-05-22 entries from the same four sources: same finding, fold one into the other (found by the W4-05 scan; the members sit in W2-01 and W2-02, in flight in waves 04 and 05) | 2 | 12 | open |
+| W4-08 | W4 | 7-Eleven ShinyHunters breach 2026-05-19 vs the 2026-05-27 Charter and 7-Eleven entry: the later entry carries a 7-Eleven development (about 185,000 individuals) beside a separate victim; link 2026-05-27 to 2026-05-19 through references[] or move the 7-Eleven delta onto 2026-05-19 (found by the W4-05 scan; members in W2-01 and W2-02) | 2 | 12 | open |
+| W4-09 | W4 | Drupal PSA-2026-05-18 twins, both 2026-05-20: 'Prepare emergency Drupal patch window' duplicates 'Drupal core highly critical pre-patch warning' (the survivor, with CVE-2026-9082 and two update records); fold unless wave 04 already folded them inside W2-01 | 2 | 12 | open |
 | W2-01 | W2 | Legacy queue batch 1, oldest first (2026-05-10 to 2026-05-22) | 76 | 04 | in-wave 04 (2026-10-21T1148Z-audit) |
 | W2-02 | W2 | Legacy queue batch 2, oldest first (2026-05-22 to 2026-05-31) | 76 | 05 | in-wave 05 (2026-10-21T1147Z-audit) |
 | W2-03 | W2 | Legacy queue batch 3, oldest first (2026-05-31 to 2026-06-10) | 77 | 07 | open |
-| W2-04 | W2 | Legacy queue batch 4, oldest first (2026-06-10 to 2026-06-21) | 77 | 08 | open |
-| W2-05 | W2 | Legacy queue batch 5, oldest first (2026-06-21 to 2026-07-03) | 77 | 09 | open |
+| W2-04 | W2 | Legacy queue batch 4, oldest first (2026-06-10 to 2026-06-21) | 76 | 08 | open |
+| W2-05 | W2 | Legacy queue batch 5, oldest first (2026-06-21 to 2026-07-03) | 76 | 09 | open |
 | W3-01 | W3 | Entries no audit truth pass ever covered (not legacy, filed before the 2026-10-18 audit, not audit-published) | 71 | 10 | open |
 | W5-01 | W5 | Eurail incident summary: drop the retracted 'Dutch DPA and EDPS are reviewing' claim (reference-branch registry hunk) | 1 | standalone | done 2026-10-20T0835Z-audit (commit 8678b51) |
 | W5-02 | W5 | incident:daemon-tools-supply-chain-2026 'EU governments targeted' | 1 | done-before | done 2026-10-11T1307Z-audit |
@@ -103,6 +108,8 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 | W1-I | W1 | Residuals the wave 02 repair workers noticed outside their findings and left unfixed (headlines over 120 characters, non-canonical Detection labels, stale cves_seen titles, priority calibration on Check Point IKEv1, PeopleSoft and JFrog, retired update_of keys, sync_products.py --report writing the registry, and more); check each against its source, then fix or decline. Input: work/cleanup/wave-06/findings-W1-I.md | 45 | 06 | open |
 | W7-14 | W7 | tools/claim_ledger.py: claims for sentences a fire edits inside earlier ## <Type> — <at> sections are not listed (the ledger takes this fire's own sections plus declared fields), so a post-fix verifier pass can miss them; list changed sentences of earlier sections against base.sha and add a test | 1 | standalone | done 2026-10-21T0800Z-audit (commit 731706f) |
 | W7-15 | W7 | tools/check_run.py page checks: a bot-challenge interstitial (drupal.org 'Client Challenge', Cloudflare, Anubis) cleared the size floor and was compared as page text; treat it as unread, with a test | 1 | standalone | done 2026-10-21T0800Z-audit (commit 1f8d69e) |
+| W7-16 | W7 | tools/entry_record.py add stops with 'frontmatter has no updates: key' on the 581 entries without one; make add insert the key itself, with a test | 1 | standalone | open |
+| W7-17 | W7 | § C1 run-id collision: waves 03 and 05 both computed 2026-10-21T1147Z-audit in the same minute; add a uniqueness check (take the next free minute when work/<RUN_ID>/ exists on origin/main) to prompts/cleanup-coordinator.md | 1 | 11 | open |
 
 ## Log
 
