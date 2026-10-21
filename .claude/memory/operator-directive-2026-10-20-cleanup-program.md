@@ -12,7 +12,7 @@ The operator asked that the cleanup work deferred by the 2026-10-18 audit be pre
 
 **How to apply:**
 - Start or continue the program with "Read `prompts/cleanup-coordinator.md` on `main` and continue the store cleanup program."
-- One cleanup session at a time, one wave per session, at most 20 spawns per wave. Each wave writes a `partial` claim, which the scheduled weekly audit ignores, and yields to the weekly audit's claim.
+- One wave per session, at most 20 spawns per wave. Each wave writes a `partial` claim, which the scheduled weekly audit ignores, and yields to the weekly audit's claim. From v4.23 (2026-10-21) waves run in parallel on disjoint lanes: see operator-directive-2026-10-21-parallel-waves.md.
 - Each wave ships on its own `claude/cleanup-wave-*` branch, so the auto-merge lands it.
 - The reference branch `cleanup/2026-10-18-carry-forward` holds unverified drafts. It is never merged; ports are re-verified and re-recorded under the porting wave's run id.
 - The program ends by retiring `quality-audit.md` § Secondary work and `tools/legacy_review.py`.

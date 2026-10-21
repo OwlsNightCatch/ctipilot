@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.23 — 2026-10-21 (cleanup waves run in parallel on disjoint lanes)
+
+### Why
+
+The operator directed that the store cleanup program's waves run in parallel, three new waves at once beside the wave already in flight. Under v4.22 only one cleanup session could be open: a second wave's claim check stood it down as `concurrent-audit`, and the superseded rule would have made an earlier wave revert its work when a later wave claimed. Parallel sessions also share three files that git cannot merge line by line: the tracker plan, its rendered `STATUS.md` and the legacy queue.
+
+### What changed
+
+- `prompts/cleanup-coordinator.md`: waves run in parallel, one session per wave, on lanes the tracker keeps disjoint. A wave starts only when `work/cleanup/plan.json` marks it `ready`, its `after` waves are done and `python3 work/cleanup/render_status.py --check-lanes` passes. Its claim reads `partial <STARTED> wave=<NN>`, and the claim commit marks the wave `in-flight` and its rows `in-wave` on `main`. A legacy batch is its row's entry list, never `legacy_review.py --next`. A wave touches only its own rows' entries. The handover queues one session per newly ready wave. Retirement (§ C9) waits until no other wave is in flight.
+- `prompts/quality-audit.md` Phase 0 step 2: partial claims that name different waves never stand each other down or supersede each other. Same-wave claims and claims without a wave tag keep the v4.22 rules.
+- `tools/merge_state.py` merges `state/legacy_review.json` (a review survives a merge) and `work/cleanup/plan.json` (rows and waves three-way by id, the status further along wins, both sides' log lines kept), and re-renders `docs/cleanup/STATUS.md` from the merged plan, with self-test cases. The auto-merge workflow already runs `resolve` on every conflict.
+- `work/cleanup/render_status.py`: `--check-lanes`, and the entry and legacy-queue totals are read from disk at render time.
+- The plan: wave 02's rows are marked in flight on `main`. W1-D is split so its nine entries that wave 02 also changes wait for it (W1-D2, wave 06). The two duplicate-group members the legacy batches held move to their W4 rows. Waves 03, 04 and 05 are ready in lanes A, B and C. Waves 06 to 08 wait for wave 02.
+- `prompts/cti-run.md` and `prompts/quality-audit.md` move to v4.23 in lockstep. `cti-run.md` has no other change.
+
+### What stays
+
+- Every hard invariant, the 20-spawn cap per wave, the Saturday/Sunday rule, and a partial claim never blocking the scheduled audit.
+- Each wave is still one session, one claim, one run record and one report, merged on its own `claude/cleanup-wave-*` branch.
+
 ## 4.22 — 2026-10-20 (a one-time store cleanup program, and audits of both kinds that no longer cancel each other)
 
 ### Why

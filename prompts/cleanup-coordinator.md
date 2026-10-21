@@ -1,8 +1,8 @@
 # Store Cleanup Coordinator — One-Time Program
 
-> **Prompt version:** v4.22 (tracked in `prompts/CHANGELOG.md` with the master prompts). **Status:** open. The program ends by retiring itself (§ C9), after which no cleanup of old entries is needed again.
+> **Prompt version:** v4.23 (tracked in `prompts/CHANGELOG.md` with the master prompts). **Status:** open. The program ends by retiring itself (§ C9), after which no cleanup of old entries is needed again.
 >
-> **How it runs:** an interactive Claude Code session started with "Read `prompts/cleanup-coordinator.md` on `main` and continue the store cleanup program." The first such session is the **coordinator**: it plans the program, runs the first wave and hands each later wave to a fresh session. Every later session reads the same file, takes the next wave from the tracker and hands over in turn. The repository is the shared memory: `docs/cleanup/STATUS.md` (tracker) and `work/cleanup/plan.json` (machine-readable plan) on `main`.
+> **How it runs:** an interactive Claude Code session started with "Read `prompts/cleanup-coordinator.md` on `main` and continue the store cleanup program." The first such session is the **coordinator**: it plans the program, runs the first wave and hands each later wave to a fresh session. Every later session reads the same file and runs the wave its kickoff names ("… and run cleanup wave <NN>."), or, with none named, the lowest-numbered wave the tracker marks `ready`. **From v4.23 waves run in parallel, one session per wave, on lanes the tracker keeps disjoint** (§ Binding rules). The repository is the shared memory: `docs/cleanup/STATUS.md` (tracker) and `work/cleanup/plan.json` (machine-readable plan) on `main`.
 
 ## Mandate and definition of done
 
@@ -35,10 +35,12 @@ Throughout: `python3 tools/check_run.py --all` ends `0 warn · 0 fail` after eve
   - no IOCs, feature branches only, `check_run.py` exits 0 before every commit;
   - the verifier loop always runs at least once;
   - push notifications only for pipeline breakage.
-- **One cleanup session at a time.** In October 2026 three audits ran at once in separate sessions and exhausted the account-wide session limit.
-  - Never start a second cleanup session while one is open: an open `partial` claim on `main` (`work/*-audit/audit.claim` with no run record yet) means one is open.
-  - The intel fires (daily, about 02:56Z) and the scheduled weekly audit (Sundays, about 13:07Z) draw on the same limit. Do not start a wave between Saturday 18:00Z and the Sunday audit's record landing on `main`.
-  - Under v4.22 a wave's `partial` claim never blocks the scheduled audit. A wave that sees the scheduled audit's open claim spawns nothing until that record lands, then merges `origin/main` and continues (`prompts/quality-audit.md` Phase 0 step 2).
+- **Parallel waves on disjoint lanes (v4.23, operator directive 2026-10-21).** Several waves run at the same time, each in its own session, as the tracker plans them:
+  - A wave starts only when `work/cleanup/plan.json` marks it `ready`, every wave its `after` list names is `done`, and `python3 work/cleanup/render_status.py --check-lanes` passes on `main` (the waves ready or in flight share no entry). Never two sessions on one wave.
+  - A wave changes only the entries its own rows list. A fold partner, duplicate or defect it finds on an entry another wave holds, or on an entry no row lists, goes back to the tracker as a new row and is never edited in passing.
+  - Shared files merge structurally: `tools/merge_state.py resolve` merges `state/cves_seen.json`, `entities/registry.yaml`, `sources/sources.json`, `state/legacy_review.json` and `work/cleanup/plan.json`, and re-renders `docs/cleanup/STATUS.md`. The auto-merge workflow runs it on every conflict, and a wave runs it when its own sync conflicts.
+  - All sessions draw on one account-wide session limit, which the intel fires (daily, about 02:56Z) and the Sunday audit share. In October 2026 three audits at once exhausted it, so parallel waves are the operator's accepted trade-off: every wave keeps its own spawn cap, a wave that hits a rate limit is cut under § C8 instead of retrying in a loop, and no wave starts between Saturday 18:00Z and the Sunday audit's record landing on `main`.
+  - A wave's `partial` claim never blocks the scheduled audit (v4.22). A wave that sees the scheduled audit's open claim spawns nothing until that record lands, then merges `origin/main` and continues (`prompts/quality-audit.md` Phase 0 step 2). Claims of different waves never stand each other down.
 - **One wave per session, at most 20 sub-agent spawns per wave**, retries and continuations included (the v4.21 bound). Log every spawn in `work/<run-id>/budget.tsv` with the `subagent_tokens` its completion notification reports.
   - A spent budget is a forced cut: no further spawns, `verification.budget_cut` set, and the remaining rows go back to the tracker.
   - The run record and the report always ship.
@@ -90,13 +92,13 @@ Throughout: `python3 tools/check_run.py --all` ends `0 warn · 0 fail` after eve
 
 1. Run `prompts/cti-run.md` Phase 0 step 0 verbatim (verified clock, stale-clone check) with the run-id suffix `-audit`, so `RUN_ID` looks like `2026-10-21T0912Z-audit`.
 2. Sync `main`, then write `work/${RUN_ID}/base.sha` and `work/${RUN_ID}/main.started_at`.
-3. Run the claim check from `prompts/quality-audit.md` Phase 0 step 2 and the Saturday/Sunday rule above. An open cleanup claim from another session (any age under 48 h) → stop and report; never two cleanup sessions at once.
-4. Write `partial $STARTED` to `work/${RUN_ID}/audit.claim`, commit that file alone on `claude/cleanup-wave-<NN>-<suffix>` and push. Re-run the check before every spawn batch.
-5. Mark the wave's rows `in-wave <NN>` in the tracker (this ships with the wave).
+3. Run the claim check from `prompts/quality-audit.md` Phase 0 step 2 and the Saturday/Sunday rule above. An open claim under 48 h old that names this wave (`wave=<NN>`) → stop and report. Open claims of other waves are expected. Then confirm on the synced `main` that the tracker marks this wave `ready`, every wave in its `after` list is `done`, and `python3 work/cleanup/render_status.py --check-lanes` passes. If any of these fails, stop and report.
+4. Write `partial $STARTED wave=<NN>` to `work/${RUN_ID}/audit.claim`. In `work/cleanup/plan.json`, set the wave to `in-flight ${RUN_ID}` and each of its rows to `in-wave <NN> (${RUN_ID})`, then re-render `docs/cleanup/STATUS.md`. Commit these three files alone on `claude/cleanup-wave-<NN>-<suffix>` and push. Once the claim is on `main`, re-run the check: if another session's claim for the same wave landed first, stand down and report. Re-run the check before every spawn batch.
+5. Work only this wave's rows from here on. The rows other sessions hold are marked `in-wave` on `main` and are not this wave's to touch.
 
 ## C2 — Choose the wave's rows
 
-Take the next open rows that fit the budget. Spend about 10 of the 20 spawns on producing and applying fixes and keep about 10 for the verifier loop. Rows with fresh findings (W1) need no truth pass. Rows without them (W2, W3, W4) get one `cti-verification` truth pass per batch of about 20 entries, using the envelope of `prompts/quality-audit.md` Phase 1: the findings YAML, claim rows and the progress file.
+The wave's rows are the ones `plan.json` assigns to it (`wave: "<NN>"`). A legacy batch is its row's `entries` list, never `python3 tools/legacy_review.py --next`, which would hand every parallel session the same oldest entries. Rows that do not fit the budget go back to the tracker as `open` with a reason. Spend about 10 of the 20 spawns on producing and applying fixes and keep about 10 for the verifier loop. Rows with fresh findings (W1) need no truth pass. Rows without them (W2, W3, W4) get one `cti-verification` truth pass per batch of about 20 entries, using the envelope of `prompts/quality-audit.md` Phase 1: the findings YAML, claim rows and the progress file.
 
 ## C3 — Truth passes (only for rows without fresh findings)
 
@@ -135,17 +137,17 @@ The worker's duties:
    - `sub_agents` keys `truth-<n>` / `repair-<n>` / `explore-<n>`, never `G…` (a `G` key would move the weekly audit's window anchor);
    - `entries_updated` and `updated_entry_ids` naming every entry with a record from this wave;
    - the spawn total and token sum in the notes.
-5. Update the tracker rows to `done <RUN_ID>` or back to `open`, with reasons.
+5. Update the tracker rows to `done <RUN_ID>` or back to `open`, with reasons, and set the wave to `done <RUN_ID>: <one-line outcome>`. Mark `ready` each planned wave whose `after` waves are now all done, provided `--check-lanes` still passes. Re-render `docs/cleanup/STATUS.md`.
 6. Run `check_run.py "$RUN_ID"` and `--all`: 0 FAIL, and no warning but the run's own telemetry. Run `site/build.py` and `site/test_build.py`.
-7. Stage specific paths, then commit, sync `main` and push with the Phase 6 retry shape.
+7. Stage specific paths, then commit, sync `main` and push with the Phase 6 retry shape. A sync conflict on the tracker or the shared state files is resolved with `python3 tools/merge_state.py resolve` (other waves land on `main` while this one runs); re-run `check_run.py "$RUN_ID"` after it.
 8. Phase 7: poll until the record is on `main` and the run is in `https://ctipilot.ch/data/briefbook.json`, then ship the publish-status amendment.
 
 ## C6 — Hand over
 
 When the wave is published (or cut and published), hand over before the session ends:
-- If rows remain, queue the next session with the kickoff line from the banner. Use the session tool that suggests a new task (`spawn_task`) when it is available; otherwise print the line for the operator.
-- Name the next wave's rows and the earliest start time (the Saturday/Sunday rule) in the tracker's header.
-- Never start the next wave in the same session.
+- For each wave the tracker now marks `ready` that no session holds (no open claim names it), queue one session with the kickoff line "Read `prompts/cleanup-coordinator.md` on `main` and run cleanup wave <NN>." Use the session tool that suggests a new task (`spawn_task`), one task per wave, when it is available; otherwise print the lines for the operator. The operator decides how many run at once.
+- The tracker's header names the ready waves, the waves still waiting and what they wait for, and the earliest start time (the Saturday/Sunday rule).
+- Never start another wave in the same session.
 
 ## C7 — Non-entry cleanup (W5–W7)
 
@@ -176,7 +178,7 @@ When the wave is published (or cut and published), hand over before the session 
 
 ## C9 — Retirement (last wave)
 
-When every tracker row is `done` or `declined`, ship one versioned change (banner bump and `prompts/CHANGELOG.md` entry; `cti-run.md` and `quality-audit.md` in lockstep):
+When every tracker row is `done` or `declined` and no other wave is in flight, ship one versioned change (banner bump and `prompts/CHANGELOG.md` entry; `cti-run.md` and `quality-audit.md` in lockstep):
 - `prompts/quality-audit.md` § Secondary work is removed. The weekly audit, which verifies every new or changed entry each week and carries `(pre-existing)` advisories to the next truth pass, is the only steady-state quality loop.
 - `tools/legacy_review.py` and `state/legacy_review.json` are removed (their final stats go in the report), and so are their `CLAUDE.md` and `docs/` mentions.
 - This file's banner reads `Status: completed <date>, <run-id>`. It stays as history.

@@ -31,7 +31,7 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 | Fold duplicate entries of one finding into the survivor (after writing the fire's record on it) | `python3 tools/fold_entries.py --run <run-id> --into <survivor> <dup-id>… [--dry-run]` |
 | Legacy re-verification queue (v2-migrated entries no audit has checked) | `python3 tools/legacy_review.py {--next 20 \| --done <run-id> <ids> \| --stats}` |
 | The claim ledger a verifier pass walks / its coverage | `python3 tools/claim_ledger.py <run-id> --iteration N` / `--coverage N` |
-| Resolve a conflicted merge of the shared state files (cves_seen, sources, source_health, registry, backlog) | `python3 tools/merge_state.py resolve` (`--selftest`) |
+| Resolve a conflicted merge of the shared state files (cves_seen, sources, source_health, registry, backlog, legacy queue, the cleanup tracker's plan; STATUS.md is re-rendered) | `python3 tools/merge_state.py resolve` (`--selftest`) |
 | ATT&CK pin: freshness / update / invariants | `python3 tools/attack_data.py {--check \| --update [--version X.Y] \| --selftest \| --info}` (contract: [attack/README.md](attack/README.md)) |
 
 `tools/check_run.py` MUST exit 0 before any commit that adds entries or a run record. The script is read-only; drift is what *you* fix.

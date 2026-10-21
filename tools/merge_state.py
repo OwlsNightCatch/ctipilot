@@ -42,6 +42,18 @@ Record semantics (keys are permanent, lists are append-mostly):
 - state/coverage_backlog.md  row-level merge; a row struck on either side is
                          struck; an open row edited on both sides keeps the
                          longer (notes are appended, never rewritten).
+- state/legacy_review.json  union by entry id; `reviewed` beats `pending`
+                         (a review is never undone by a merge), so parallel
+                         cleanup waves that marked different batches both
+                         keep their marks.
+- work/cleanup/plan.json    the cleanup tracker's plan (v4.23, parallel waves):
+                         rows by `id` and waves by `wave`, each field
+                         three-way; a `status` changed on both sides keeps
+                         the one further along (done/declined > in-flight /
+                         in-wave > ready > planned / open); the log keeps
+                         both sides' new lines; totals by `measure`.
+- docs/cleanup/STATUS.md    rendered from plan.json, never line-merged:
+                         `resolve` re-renders it after plan.json is merged.
 
 Stdlib only: this runs inside the routine container and on a bare GitHub
 runner (`.github/workflows/auto-merge-claude.yml`).
@@ -66,6 +78,9 @@ KNOWN_PATHS = (
     "state/source_health.json",
     "entities/registry.yaml",
     "state/coverage_backlog.md",
+    "state/legacy_review.json",
+    "work/cleanup/plan.json",
+    "docs/cleanup/STATUS.md",
 )
 
 _MISSING = object()
@@ -559,12 +574,113 @@ def merge_backlog(base_text, ours_text, theirs_text) -> str:
     return out
 
 
+def merge_legacy_review(base_text, ours_text, theirs_text) -> str:
+    """Legacy re-verification queue: a dict of entry id -> {status, run_id}.
+    Parallel cleanup waves mark disjoint batches; a review recorded on
+    either side survives, and an entry both sides reviewed keeps ours."""
+    base = _load_json(base_text, "legacy_review base") or {}
+    ours = _load_json(ours_text, "legacy_review ours")
+    theirs = _load_json(theirs_text, "legacy_review theirs")
+    if not isinstance(ours, dict) or not isinstance(theirs, dict):
+        raise MergeError("legacy_review: a side is not a JSON object")
+    style = _json_style(ours_text)
+    out = {}
+    for k in list(ours.keys()) + [k for k in theirs.keys() if k not in ours]:
+        if k == "entries":
+            continue
+        out[k] = _pick3(base.get(k), ours.get(k), theirs.get(k))
+    b_e = base.get("entries") or {}
+    o_e = ours.get("entries") or {}
+    t_e = theirs.get("entries") or {}
+    merged = {}
+    for eid in list(o_e.keys()) + [k for k in t_e.keys() if k not in o_e]:
+        o, t, b = o_e.get(eid), t_e.get(eid), b_e.get(eid)
+        if o is None or t is None:
+            if (o is None and b is not None and t == b) or (t is None and b is not None and o == b):
+                continue  # one side removed an unchanged record
+            merged[eid] = o if o is not None else t
+            continue
+        if o == t:
+            merged[eid] = o
+        elif (o.get("status") == "reviewed") != (t.get("status") == "reviewed"):
+            merged[eid] = o if o.get("status") == "reviewed" else t
+        else:
+            merged[eid] = _pick3(b, o, t)
+    out["entries"] = merged
+    order = list(ours.keys()) + [k for k in theirs.keys() if k not in ours]
+    return _json_dump({k: out[k] for k in order if k in out}, style)
+
+
+_STATUS_RANK = (("done", 4), ("declined", 4), ("in-flight", 3), ("in-wave", 3),
+                ("ready", 2), ("planned", 1), ("open", 1))
+
+
+def _status_rank(value) -> int:
+    word = str(value or "").split(" ")[0].rstrip(":").lower()
+    return next((r for w, r in _STATUS_RANK if word == w), 0)
+
+
+def _merge_plan_record(base: dict, ours: dict, theirs: dict) -> dict:
+    out = {}
+    for k in list(ours.keys()) + [k for k in theirs.keys() if k not in ours]:
+        b = base.get(k)
+        o = ours.get(k, b)
+        t = theirs.get(k, b)
+        if k == "status" and o != t and o != b and t != b:
+            out[k] = o if _status_rank(o) >= _status_rank(t) else t
+        else:
+            out[k] = _pick3(b, o, t, prefer="theirs")
+    return out
+
+
+def merge_cleanup_plan(base_text, ours_text, theirs_text) -> str:
+    """The cleanup tracker's plan. Parallel waves each change their own rows
+    and wave; the merge keeps every side's row and wave changes, the status
+    further along where both moved one, and both sides' log lines."""
+    base = _load_json(base_text, "plan base") or {}
+    ours = _load_json(ours_text, "plan ours")
+    theirs = _load_json(theirs_text, "plan theirs")
+    if not isinstance(ours, dict) or not isinstance(theirs, dict):
+        raise MergeError("plan.json: a side is not a JSON object")
+    style = _json_style(ours_text)
+    out = {}
+    for k in list(ours.keys()) + [k for k in theirs.keys() if k not in ours]:
+        b, o, t = base.get(k), ours.get(k), theirs.get(k)
+        if k == "rows":
+            out[k] = _merge_records_by_id(b, o, t, _merge_plan_record, id_key="id")
+        elif k == "waves":
+            out[k] = _merge_records_by_id(b, o, t, _merge_plan_record, id_key="wave")
+        elif k == "totals":
+            out[k] = _merge_records_by_id(b, o, t, _merge_plan_record, id_key="measure")
+        elif k == "log":
+            seen, lines = set(), []
+            for line in (b or []) + (o or []) + (t or []):
+                if line not in seen and (line in (o or []) or line in (t or [])):
+                    seen.add(line)
+                    lines.append(line)
+            out[k] = lines
+        else:
+            out[k] = _pick3(b, o, t, prefer="theirs")
+    ids = [r.get("id") for r in out.get("rows") or []]
+    if len(ids) != len(set(ids)):
+        raise MergeError("plan.json: duplicate row ids after merge")
+    return _json_dump(out, style)
+
+
 MERGERS = {
     "state/cves_seen.json": merge_cves_seen,
     "sources/sources.json": merge_sources,
     "state/source_health.json": merge_source_health,
     "entities/registry.yaml": merge_registry,
     "state/coverage_backlog.md": merge_backlog,
+    "state/legacy_review.json": merge_legacy_review,
+    "work/cleanup/plan.json": merge_cleanup_plan,
+}
+
+# Rendered from a merged file, never merged line by line: `resolve`
+# regenerates each after every structured path is merged.
+RENDERED = {
+    "docs/cleanup/STATUS.md": ["python3", "work/cleanup/render_status.py"],
 }
 
 
@@ -597,6 +713,8 @@ def cmd_resolve() -> int:
         return 0
     unresolved = []
     for path in conflicted:
+        if path in RENDERED:
+            continue  # regenerated below, once its source is merged
         if path not in MERGERS:
             unresolved.append(path)
             continue
@@ -617,6 +735,19 @@ def cmd_resolve() -> int:
         for line in report:
             print(f"merge_state: NOTE {line}")
         print(f"merge_state: {path}: merged structurally")
+    for path in conflicted:
+        if path not in RENDERED:
+            continue
+        if unresolved:
+            unresolved.append(path)  # its source may still be conflicted
+            continue
+        proc = subprocess.run(RENDERED[path], capture_output=True, text=True, cwd=ROOT)
+        if proc.returncode != 0:
+            unresolved.append(path)
+            print(f"merge_state: {path}: re-render failed ({proc.stderr.strip()[:200]}); left unresolved")
+            continue
+        _git("add", "--", path)
+        print(f"merge_state: {path}: re-rendered from its merged source")
     if unresolved:
         print("merge_state: unresolved paths:")
         for p in unresolved:
@@ -709,6 +840,38 @@ def _selftest() -> int:
     check("Item one** | why | src" not in mb.split("## Struck")[0], "backlog struck row leaves Open")
     check("why **note**" in mb and "Item three" in mb, "backlog note + new row kept")
     check(mb.count("Item one") == 1, "backlog struck row once")
+
+    # legacy_review: two waves mark different entries; one entry reviewed on one side only.
+    lb = {"schema": 1, "entries": {"a": {"status": "pending", "run_id": None},
+                                   "b": {"status": "pending", "run_id": None},
+                                   "c": {"status": "pending", "run_id": None}}}
+    lo = json.loads(json.dumps(lb)); lo["entries"]["a"] = {"status": "reviewed", "run_id": "w03"}
+    lt = json.loads(json.dumps(lb)); lt["entries"]["b"] = {"status": "reviewed", "run_id": "w04"}
+    lt["entries"]["d"] = {"status": "pending", "run_id": None}
+    ml = json.loads(merge_legacy_review(d(lb), d(lo), d(lt)))["entries"]
+    check(ml["a"]["status"] == "reviewed" and ml["b"]["status"] == "reviewed", "legacy both reviews kept")
+    check(ml["c"]["status"] == "pending" and "d" in ml, "legacy untouched and added rows kept")
+    lt2 = json.loads(json.dumps(lo)); lt2["entries"]["a"] = {"status": "pending", "run_id": None}
+    ml2 = json.loads(merge_legacy_review(d(lb), d(lo), d(lt2)))["entries"]
+    check(ml2["a"]["status"] == "reviewed", "legacy reviewed beats pending")
+
+    # cleanup plan: main marks wave 02 in flight and wave 03 ready; the wave-02
+    # branch marks its row done, adds a row and a log line; another wave adds its own.
+    pb = {"rows": [{"id": "W1-B", "status": "open", "wave": "02"}, {"id": "W2-01", "status": "open", "wave": "04"}],
+          "waves": [{"wave": "02", "status": "planned"}, {"wave": "04", "status": "planned"}],
+          "totals": [{"measure": "m", "now": 1}], "log": ["l0"], "next_wave": "02"}
+    po = json.loads(json.dumps(pb))
+    po["rows"][0]["status"] = "in-wave 02"; po["waves"][0]["status"] = "in-flight r2"
+    po["rows"][1]["status"] = "in-wave 04"; po["waves"][1]["status"] = "in-flight r4"; po["log"].append("l4")
+    pt = json.loads(json.dumps(pb))
+    pt["rows"][0]["status"] = "done r2"; pt["waves"][0]["status"] = "done r2"
+    pt["rows"].append({"id": "W1-I", "status": "open", "wave": "06"}); pt["log"].append("l2"); pt["totals"][0]["now"] = 2
+    mp = json.loads(merge_cleanup_plan(d(pb), d(po), d(pt)))
+    st = {r["id"]: r["status"] for r in mp["rows"]}
+    check(st == {"W1-B": "done r2", "W2-01": "in-wave 04", "W1-I": "open"}, f"plan rows: {st}")
+    check([w["status"] for w in mp["waves"]] == ["done r2", "in-flight r4"], f"plan waves: {mp['waves']}")
+    check(mp["log"] == ["l0", "l4", "l2"], f"plan log: {mp['log']}")
+    check(mp["totals"][0]["now"] == 2, "plan totals one-sided change")
 
     if failures:
         for f in failures:
