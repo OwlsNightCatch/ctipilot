@@ -27,7 +27,7 @@ After every wave: `python3 tools/check_run.py --all` ends `0 warn · 0 fail`, `p
 | Known duplicate groups open (W4) | 4 + scan | 4 + scan |
 | Registry orphans (no entry key, no relation) | 179 non-product + 4 product | 183, none a duplicate (W5-04, W5-05) |
 | check_run.py --all | 0 fail, 1 warn, 25 acknowledged | 0 fail, 0 warn, 26 acknowledged |
-| Rows done / declined / in a wave / open | 50 rows | 24 / 2 / 10 / 14 |
+| Rows done / declined / in a wave / open | 50 rows | 24 / 2 / 12 / 12 |
 
 ## Waves
 
@@ -37,9 +37,9 @@ Waves marked `ready` can start now, each in its own session and in parallel; `af
 |---|---|---|---|---|
 | 01 | - | W7-01, W7-02, W6-04, W1-A (16 entries); standalone W5/W6/W7 rows shipped during it | - | done 2026-10-20T0835Z-audit: 5 verifier iterations, residual 1, 8 of 20 spawns |
 | 02 | - | W1-B (57), W1-C (5), W1-E (34 items), W1-F (8), W1-H; inputs in work/cleanup/wave-02/ | - | in-flight 2026-10-21T0800Z-audit |
-| 03 | A | W4-01, W4-03, W4-04, W4-05, W1-D (33 entries); inputs in work/cleanup/wave-03/ | - | in-flight 2026-10-21T1147Z-audit |
-| 04 | B | W2-01 (76 legacy entries) | - | ready |
-| 05 | C | W2-02 (76 legacy entries) | - | ready |
+| 03 | A | W4-01, W4-03, W4-04, W4-05, W1-D (33 entries); inputs in work/cleanup/wave-03/ | - | in-flight 2026-10-21T1149Z-audit |
+| 04 | B | W2-01 (76 legacy entries) | - | in-flight 2026-10-21T1148Z-audit |
+| 05 | C | W2-02 (76 legacy entries) | - | in-flight 2026-10-21T1147Z-audit |
 | 06 | - | W4-02, W1-D2 (10 entries), W1-I (45 residuals) | 02 | planned |
 | 07 | - | W2-03 (77 legacy entries) | 02 | planned |
 | 08 | - | W2-04 (77 legacy entries) | 02 | planned |
@@ -61,15 +61,15 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 | W1-C | W1 | Clean verdicts on legacy-pending entries, passes T4/T5: mark reviewed after the rating and mapping their kind requires | 5 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
 | W1-E | W1 | Carried residuals and (pre-existing) advisories, audits 2026-09-27 to 10-18 (labelled lines on RoguePlanet 07-09 and SAP 08-12, LiteLLM affected_products, OpenAI agents marker strings, WinRAR/Splunk event_date, PHP SOAP CVE-2026-7262 score, ShinyHunters PeopleSoft action scope and 'external', Instructure uncited source, Acronis JSON primary, Exchange 10-14 10-16 section citation, Ivanti 10-14 25.1.3.0 framing; em dashes fixed wherever a wave writes a record, else declined: stripped at render); plus the VWBP untranslated German evidence quotes, the TeamCity Triage line and the UNCTAD Triage examples (wave 01 residuals). Wave 01 applied the UNCTAD marker-string item and declined the Acronis JSON-primary item (the readable advisory page is an empty script shell). Input: work/cleanup/wave-02/findings-W1-E.yaml (34 items) | 26 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
 | W1-F | W1 | Portable reference-branch entry hunks (re-derive on main, re-verify, re-record) | 8 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
-| W1-D | W1 | Duplicate and legacy batch verdicts (D1-D3, L) on entries the 2026-10-11 audit corrected after the pass read them: re-derive each defect on the current text (25 rows were folded, their defects re-checked on the survivor) | 33 | 03 | in-wave 03 (2026-10-21T1147Z-audit) |
+| W1-D | W1 | Duplicate and legacy batch verdicts (D1-D3, L) on entries the 2026-10-11 audit corrected after the pass read them: re-derive each defect on the current text (25 rows were folded, their defects re-checked on the survivor) | 33 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
 | W1-D2 | W1 | W1-D verdicts on the entries wave 02 also changed, and on the 2026-06-19 RoguePlanet entry that the W4-02 fold takes: re-derive each defect on the current text (input: work/cleanup/wave-03/findings-W1-D-and-groups.yaml, these entries only) | 10 | 06 | open |
-| W4-01 | W4 | YellowKey 2026-05-15 vs Nightmare Eclipse 2026-05-30: distinct findings sharing CVE-2026-45585, link through references[]; Nightmare Eclipse re-verified and rewritten (watch item) | 2 | 03 | in-wave 03 (2026-10-21T1147Z-audit) |
+| W4-01 | W4 | YellowKey 2026-05-15 vs Nightmare Eclipse 2026-05-30: distinct findings sharing CVE-2026-45585, link through references[]; Nightmare Eclipse re-verified and rewritten (watch item) | 2 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
 | W4-02 | W4 | RoguePlanet 2026-06-19 vs 2026-07-09: same finding, fold into 2026-07-09 (ShieldBreak 2026-08-12 stays distinct) | 2 | 06 | open |
-| W4-03 | W4 | Ghost CMS 2026-05-25: the ClickFix deep dive and the 'large-scale ClickFix campaign' entry are the same finding per D3; decide fold | 2 | 03 | in-wave 03 (2026-10-21T1147Z-audit) |
-| W4-04 | W4 | Pwn2Own Berlin 2026 roundup 2026-05-17 vs the DEVCORE Exchange chain entry: re-verify the roundup, then fold or link | 2 | 03 | in-wave 03 (2026-10-21T1147Z-audit) |
-| W4-05 | W4 | Store-wide non-CVE twin scan (same entity and similar title or same primary URL, no references[] link); fold or link each pair found | TBD | 03 | in-wave 03 (2026-10-21T1147Z-audit) |
-| W2-01 | W2 | Legacy queue batch 1, oldest first (2026-05-10 to 2026-05-22) | 76 | 04 | open |
-| W2-02 | W2 | Legacy queue batch 2, oldest first (2026-05-22 to 2026-05-31) | 76 | 05 | open |
+| W4-03 | W4 | Ghost CMS 2026-05-25: the ClickFix deep dive and the 'large-scale ClickFix campaign' entry are the same finding per D3; decide fold | 2 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
+| W4-04 | W4 | Pwn2Own Berlin 2026 roundup 2026-05-17 vs the DEVCORE Exchange chain entry: re-verify the roundup, then fold or link | 2 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
+| W4-05 | W4 | Store-wide non-CVE twin scan (same entity and similar title or same primary URL, no references[] link); fold or link each pair found | TBD | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
+| W2-01 | W2 | Legacy queue batch 1, oldest first (2026-05-10 to 2026-05-22) | 76 | 04 | in-wave 04 (2026-10-21T1148Z-audit) |
+| W2-02 | W2 | Legacy queue batch 2, oldest first (2026-05-22 to 2026-05-31) | 76 | 05 | in-wave 05 (2026-10-21T1147Z-audit) |
 | W2-03 | W2 | Legacy queue batch 3, oldest first (2026-05-31 to 2026-06-10) | 77 | 07 | open |
 | W2-04 | W2 | Legacy queue batch 4, oldest first (2026-06-10 to 2026-06-21) | 77 | 08 | open |
 | W2-05 | W2 | Legacy queue batch 5, oldest first (2026-06-21 to 2026-07-03) | 77 | 09 | open |
@@ -111,4 +111,6 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 - 2026-10-20: wave 01 (2026-10-20T0835Z-audit) applied W1-A (13 records, 3 declined as already fixed), acknowledged the one open warning, and prepared the inputs of waves 02 and 03; report docs/audits/2026-10-20-cleanup-wave-01.md.
 - 2026-10-21: operator directive, waves run in parallel lanes (v4.23): wave 02's rows marked in flight on main, W1-D split (W1-D2 waits for wave 02), the W4 duplicate members moved out of the legacy batches, waves 03 to 05 ready in lanes A, B and C; merge_state.py merges plan.json, legacy_review.json and STATUS.md.
 - 2026-10-21: lane fix: the 2026-06-19 RoguePlanet entry moved from W1-D (wave 03) to W1-D2 (wave 06), with the W4-02 fold that takes it.
-- 2026-10-21: wave 03 (2026-10-21T1147Z-audit) claim, lane A: rows W4-01, W4-03, W4-04, W4-05 and W1-D in flight.
+- 2026-10-21: wave 05 (lane C) claimed by 2026-10-21T1147Z-audit.
+- 2026-10-21: wave 04 (2026-10-21T1148Z-audit) claimed, lane B: W2-01 (76 legacy entries).
+- 2026-10-21: wave 03 (2026-10-21T1149Z-audit) claim, lane A: rows W4-01, W4-03, W4-04, W4-05 and W1-D in flight (first claim attempt as 2026-10-21T1147Z-audit collided with wave 05's run id and was withdrawn).
