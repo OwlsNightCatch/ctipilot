@@ -110,12 +110,12 @@ sourcing_note: >
   inferred by position. Two other parties characterise CVE-2026-48331 differently from Adobe: NVD's description
   and NCSC-NL's advisory both describe the SSRF as enabling privilege escalation, where Adobe's own table
   records arbitrary code execution at CVSS 10.0. The vendor bulletin is the authority for its own product and is
-  what this entry follows, but the disagreement is two-to-one against it on wording and is recorded here and in
-  the run record rather than smoothed over. NCSC-NL surfaced the bulletin into this window and states explicitly
+  what the analysis follows, but the disagreement is two-to-one against it on wording and is recorded here
+  rather than smoothed over. NCSC-NL relayed the bulletin and states explicitly
   that it is not an update of its earlier advisory for APSB26-114.
 confidence: high
 update_of: null
-references: []
+references: ["2026-08-02/adobe-campaign-classic-apsb26-114-cvss10-unauth-rce"]
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -126,6 +126,15 @@ watchlist_hit: false
 actions:
   - "Upgrade on-premise Adobe Campaign Classic to ACC v7 7.4.3 build 9399 — build 9398, applied as the fix for APSB26-114 on 2026-07-29, is inside the affected range for all seven of these flaws."
 migrated_from: null
+updates:
+  - at: "2026-10-21T11:57:56Z"
+    run_id: 2026-10-21T1149Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Links the earlier Adobe Campaign Classic APSB26-114 entry, whose fixed build 9398 is the release
+      APSB26-120 lists as affected.
+    fields: [references, sourcing_note]
 ---
 
 Five days after Adobe fixed two critical unauthenticated flaws in Campaign Classic with build 9398 — APSB26-114, dated 2026-07-29, also a Priority 1 update ([Adobe PSIRT, 2026-07-29](https://helpx.adobe.com/security/products/campaign/apsb26-114.html)) — it published a second bulletin whose affected range includes build 9398. APSB26-120, dated 2026-08-03, covers seven vulnerabilities in the on-premise campaign-management platform and records the affected versions as "ACC v7: 7.4.3 build 9398 and earlier", fixed in ACC v7 7.4.3 build 9399, at Adobe's highest priority rating of 1 ([Adobe PSIRT, 2026-08-03](https://helpx.adobe.com/security/products/campaign/apsb26-120.html)). Any operator who treated last week's build as the end state — which is what the previous advisory called for — is still carrying every flaw below.
