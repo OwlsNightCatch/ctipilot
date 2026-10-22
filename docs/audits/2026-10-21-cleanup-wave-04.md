@@ -149,6 +149,7 @@ Two iterations of the pinned `cti-verification` definition (Sonnet 5.5), four of
 
 ## Tracker delta
 
+- **Waves:** 04 is done, and 10 is marked ready on lane B, which this wave frees (kickoff in `work/cleanup/wave-10/HANDOVER.md`). Wave 12 still waits for 05.
 - **Closed:** W2-01 (this wave) and W4-09 (closed by this wave's Drupal fold).
 - **New rows:**
   - W4-12: Tycoon 2FA, 2026-05-18 vs 2026-05-27 (wave 12).

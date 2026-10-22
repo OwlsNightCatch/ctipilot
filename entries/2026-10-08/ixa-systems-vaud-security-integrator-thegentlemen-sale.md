@@ -5,10 +5,12 @@ title: "Ixa Systems, a Vaud security integrator serving police, prisons and bank
 headline: "Site plans, camera locations and some credentials of Vaud prisons and banks, and of police premises, reported for sale"
 summary: >
   Le Temps reports, and the AWP news agency names the firm as Ixa Systems of Crissier (Vaud), that data stolen from
-  a video-surveillance, alarm and access-control integrator is on sale on the darknet; the group TheGentlemen
-  claimed the theft at the end of August. The loot reportedly includes camera locations, security-installation
-  plans and, in some cases, usernames or passwords, for clients including police authorities, gendarmerie
-  premises, prisons, hospitals, schools and banks; the reports do not state the access vector or list every affected site.
+  a video-surveillance, alarm and access-control integrator whose customers include police authorities, banks,
+  hospitals, schools and prisons is on sale on the darknet; the group TheGentlemen claimed the theft at the end of
+  August. The loot reportedly includes camera locations, security-installation plans and, in some cases, usernames
+  or passwords concerning the Établissements de la plaine de l'Orbe and other judicial entities, gendarmerie
+  premises, several banks and several dozen companies; the reports do not state the access vector or list every
+  affected site.
 discovered_at: "2026-10-08T04:52:00Z"
 updated_at: null
 event_date: "2026-10-06"
@@ -58,7 +60,16 @@ classification:
 watchlist_hit: false
 actions:
   - "If your organisation bought video-surveillance, alarm or access-control installation or maintenance from Ixa Systems, ask the firm in writing which of your sites and credentials are in the stolen data and rotate every camera, alarm, intercom and remote-maintenance credential it held."
-updates: []
+updates:
+  - at: "2026-10-21T08:18:36Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: correction
+    summary: >
+      Police authorities, banks, hospitals, schools and prisons are the firm's customers as AWP describes
+      them, not organisations reported in the stolen data; the organisations reported as concerned are
+      judicial entities including the Établissements de la plaine de l'Orbe, gendarmerie premises, several
+      banks and several dozen companies.
+    fields: [summary]
 migrated_from: null
 ---
 
@@ -71,3 +82,7 @@ Le Temps says the group TheGentlemen announced and claimed the theft on the dark
 **Detection:** because the data reportedly holds usernames, passwords and camera locations, the telemetry is the authentication log of video-management, alarm and access-control systems (logins from unfamiliar source networks or from the supplier's accounts) and the log of any remote-maintenance path the supplier used ([Le Temps, 2026-10-06](https://www.letemps.ch/suisse/vaud/une-cyberattaque-fait-fuiter-des-informations-de-securite-de-prisons-vaudoises-de-banques-et-de-dizaines-de-societes); [ICTjournal, 2026-10-07](https://www.ictjournal.ch/news/2026-10-07/une-cyberattaque-expose-des-donnees-de-securite-de-sites-vaudois)).
 
 **Defender takeaway:** ask the supplier in writing whether your sites are in the data, treat every camera, alarm, intercom and remote-maintenance credential it held as exposed and rotate it, and confirm that the devices are not reachable from outside a segmented network, the point the canton's delegate makes ([ICTjournal, 2026-10-07](https://www.ictjournal.ch/news/2026-10-07/une-cyberattaque-expose-des-donnees-de-securite-de-sites-vaudois)).
+
+## Correction — 2026-10-21T08:18:36Z
+
+The organisations ICTjournal names as concerned by the stolen data are the Établissements de la plaine de l'Orbe and other judicial entities, gendarmerie premises, several banks including the Banque cantonale vaudoise, and several dozen companies ([ICTjournal, 2026-10-07](https://www.ictjournal.ch/news/2026-10-07/une-cyberattaque-expose-des-donnees-de-securite-de-sites-vaudois)). Police authorities, banks, hospitals, schools and prisons are the firm's customers as AWP describes them ([AWP via cash.ch, 2026-10-07](https://www.cash.ch/news/top-news/hacker-erbeuten-schweizer-sicherheitsdaten-von-gefangnissen-und-banken-974664)); neither report names a hospital or a school among the organisations concerned.

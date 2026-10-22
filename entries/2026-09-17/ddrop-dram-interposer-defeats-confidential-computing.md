@@ -36,7 +36,7 @@ sources:
     role: corroborating
   - url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html"
     publisher: "AMD Product Security (AMD-SB-3048)"
-    date: "2026-09-15"
+    date: "2026-09-14"
     role: corroborating
   - url: "https://www.heise.de/news/DDROP-Adapterstecker-hebelt-Confidential-Computing-aus-11454579.html"
     publisher: "heise Security"
@@ -75,15 +75,23 @@ updates:
       or release mitigations, and Intel is evaluating further hardening. The title no longer says
       neither vendor assigns a CVE, since only AMD says so.
     fields: [priority, body, summary, title]
+  - at: "2026-10-21T08:22:25Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      AMD's bulletin AMD-SB-3048 is dated 2026-09-14, the initial version in its own revision table,
+      instead of 2026-09-15, its page-update date, in the sources and inline citations.
+    fields: [body, sources]
 migrated_from: null
 ---
 
 Researchers from KU Leuven, ETH Zurich, Durham University and Google disclosed DDRop, an open-source DDR5 hardware interposer that costs about $159 in parts and, unlike earlier passive interposers, runs at native bus speed ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). It forges a parity error on a targeted write and suppresses the alert, so the memory module silently drops the write and stale, attacker-chosen ciphertext stays in place. Against Intel TDX this corrupts the TDX module's initialization of Secure Extended Page Tables, so an attacker-controlled Trust Domain can remap its memory onto other physical memory. Under TDX's default logical integrity mode that lets the attacker flip a victim Trust Domain's debug attribute and read its memory through the hypervisor's debug API, and even under cryptographic integrity mode the attacker can forge the launch measurement of a rogue VM of their own so that it passes remote attestation ([DDRop research team, 2026-09-14](https://ddropattack.eu/)).
 
-The attack needs a brief, one-time visit to install the interposer, which takes minutes, on top of the standard confidential-computing threat model in which the adversary controls the hypervisor and BIOS. The researchers name data-center insiders, supply-chain tampering and hardware access compelled by law enforcement or governments as ways to get that access ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Intel and AMD both place physical attacks on the memory bus outside their threat models; AMD does not plan to assign a CVE, and Intel is evaluating further hardening and detection options ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html); [AMD Product Security, 2026-09-15](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Schematics, board files, firmware and proof-of-concept code are public ([DDRop research team, 2026-09-14](https://ddropattack.eu/)), and no in-the-wild use is claimed.
+The attack needs a brief, one-time visit to install the interposer, which takes minutes, on top of the standard confidential-computing threat model in which the adversary controls the hypervisor and BIOS. The researchers name data-center insiders, supply-chain tampering and hardware access compelled by law enforcement or governments as ways to get that access ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Intel and AMD both place physical attacks on the memory bus outside their threat models; AMD does not plan to assign a CVE, and Intel is evaluating further hardening and detection options ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html); [AMD Product Security, 2026-09-14](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Schematics, board files, firmware and proof-of-concept code are public ([DDRop research team, 2026-09-14](https://ddropattack.eu/)), and no in-the-wild use is claimed.
 
 **Defender takeaway:** Confidential computing on Intel TDX, Intel Scalable SGX or AMD SEV-SNP is no longer a hard trust boundary against whoever physically holds the hardware, including the cloud provider it is meant to exclude, and on Intel TDX even remote attestation can be forged ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). A risk decision that relies on it for that case must account for a cheap, public physical bypass with no vendor fix. Restricting and monitoring physical access to servers, as Intel advises, is the remaining lever ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html)).
 
 ## Correction — 2026-09-30T06:56:08Z
 
-Intel and AMD acknowledged the findings and place physical attacks on the memory bus outside their threat models ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Only AMD says it does not plan to assign a CVE or release mitigations ([AMD Product Security, 2026-09-15](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Intel's announcement does not mention a CVE and says Intel is evaluating additional architectural hardening options and detection mechanisms ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html)). The earlier statement that both vendors confirmed the findings and that neither is assigning a CVE went beyond what they published.
+Intel and AMD acknowledged the findings and place physical attacks on the memory bus outside their threat models ([DDRop research team, 2026-09-14](https://ddropattack.eu/)). Only AMD says it does not plan to assign a CVE or release mitigations ([AMD Product Security, 2026-09-14](https://www.amd.com/en/resources/product-security/bulletin/amd-sb-3048.html)). Intel's announcement does not mention a CVE and says Intel is evaluating additional architectural hardening options and detection mechanisms ([Intel PSIRT, 2026-09-14](https://www.intel.com/content/www/us/en/security-center/announcement/intel-security-announcement-2026-08-11-001.html)). The earlier statement that both vendors confirmed the findings and that neither is assigning a CVE went beyond what they published.

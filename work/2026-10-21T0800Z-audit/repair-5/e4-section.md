@@ -1,0 +1,1 @@
+Ranking the TLS-intercepting proxy as the chain's standout payload is a Huntress researcher's judgement: Huntress's recap says he "deemed the second payload the most interesting" ([Huntress Labs, 2026-09-15](https://www.huntress.com/blog/google-doc-sidebar-malware-mac-windows)).

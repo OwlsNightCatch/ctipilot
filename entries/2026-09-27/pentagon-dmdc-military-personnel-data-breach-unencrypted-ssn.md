@@ -4,9 +4,10 @@ kind: incident
 title: "Unauthorized users read unencrypted Social Security numbers on a Pentagon DMDC personnel file server for nine months; a defense official counts about 3 million people affected"
 headline: "Unauthorized users accessed unencrypted personal data on a Pentagon HR file-sharing server for nine months before discovery"
 summary: >
-  Unauthorized users accessed an unencrypted file-sharing server of the Defense Manpower Data Center
-  (DMDC), the Pentagon's central personnel-data repository, between October 2025 and 16 July 2026,
-  exposing Social Security numbers and other identifying data. A U.S. defense official told ABC News
+  Through a vulnerability in a file-sharing system, unauthorized users accessed files holding unencrypted
+  personal data on a server of the Defense Manpower Data Center (DMDC), the Pentagon's central
+  personnel-data repository, between October 2025 and 16 July 2026, exposing Social Security numbers and
+  other identifying data. A U.S. defense official told ABC News
   the breach affected 2.76 million living people and another 294,000 who are deceased.
 discovered_at: "2026-09-27T04:33:00Z"
 updated_at: "2026-09-30T04:52:00Z"
@@ -100,12 +101,21 @@ updates:
     summary: >
       The headline said the server was unencrypted and reachable; the reporting says unauthorized users accessed files holding unencrypted personal data through a vulnerability in a file-sharing system, and no report says whether the server was reachable from outside DMDC's network.
     fields: [headline]
+  - at: "2026-10-21T08:08:53Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      The nine months is the period of unauthorized access, from October 2025 until the Pentagon
+      discovered and remediated the issue in July 2026, not a stated period for which the data sat
+      unencrypted. The takeaway follows CNN: encrypt sensitive personnel data, which the stolen data
+      lacked.
+    fields: [body, summary]
 migrated_from: null
 ---
 
-Unauthorized users accessed files holding unencrypted personal data on a vulnerable file-sharing server of the Defense Manpower Data Center (DMDC), the Pentagon's central personnel-data repository, from October 2025 until DMDC discovered the vulnerability on 16 July 2026 and patched it, and the notification letter says they reached its recipient's Social Security number and at least one further identifying field ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/) · [CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)). A U.S. defense official put the count at 2.76 million living and 294,000 deceased people, and no report names a vulnerability class, access vector or actor ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)). The lesson for public administrations: a government's central personnel-data store kept identity numbers unencrypted and readable for nine months before discovery ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
+Unauthorized users accessed files holding unencrypted personal data on a vulnerable file-sharing server of the Defense Manpower Data Center (DMDC), the Pentagon's central personnel-data repository, from October 2025 until DMDC discovered the vulnerability on 16 July 2026 and patched it, and the notification letter says they reached its recipient's Social Security number and at least one further identifying field ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/) · [CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)). A U.S. defense official put the count at 2.76 million living and 294,000 deceased people, and no report names a vulnerability class, access vector or actor ([ABC News, 2026-09-29](https://abcnews.com/Politics/pentagon-breach-exposed-sensitive-data-3-million-people/story?id=136832909)). The lesson for public administrations: unauthorized users accessed unencrypted identity data in a government's central personnel-data store for nine months before the Pentagon discovered and remediated the issue ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
 
-**Defender takeaway:** check that central personnel and HR data stores encrypt identifying fields at rest, which CNN notes is standard security practice and which DMDC's server lacked ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
+**Defender takeaway:** check that central personnel and HR data stores encrypt sensitive personnel data, which CNN notes is a standard security practice and which the stolen DMDC data lacked ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).
 
 ## Update — 2026-09-30T04:52:00Z
 
@@ -118,3 +128,7 @@ Military Times quotes the notification letter as exposing its recipient's Social
 ## Correction — 2026-10-11T14:11:38Z
 
 Military Times reports that unauthorized users reached files "on a server containing unencrypted personally identifiable information" through a vulnerability in a file-sharing system ([Military Times, 2026-09-24](https://www.militarytimes.com/news/pentagon-congress/2026/09/24/military-personnel-data-exposed-in-breach-agency-warns/)). The data was unencrypted; no report says whether the server was reachable from outside DMDC's network.
+
+## Improvement — 2026-10-21T08:08:53Z
+
+The nine months CNN reports run from the start of unauthorized access in October 2025 to July 2026, when the Pentagon discovered and remediated the issue; CNN reports that the stolen data was not encrypted and that encrypting sensitive data is a standard security practice ([CNN, 2026-09-25](https://www.cnn.com/2026/09/25/politics/pentagon-data-personnel-breach)).

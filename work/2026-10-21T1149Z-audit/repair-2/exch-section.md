@@ -1,0 +1,1 @@
+The Exchange Emergency Mitigation Service cannot check for new mitigations on a server running an Exchange Server build older than March 2023 ([Microsoft Exchange Team Blog, 2026-05-14](https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498)), so such a server did not receive mitigation M2 automatically.

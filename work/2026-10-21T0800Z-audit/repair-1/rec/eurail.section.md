@@ -1,0 +1,1 @@
+Eurail's February disclosure said the attackers reached the travellers' data after breaching its customer database ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)).

@@ -112,6 +112,14 @@ updates:
       says such queries look like a hacker's to a site administrator, and Alex Stamos calls the activity
       borderline.
     fields: [body, evidence, summary, tags, title]
+  - at: "2026-10-21T08:12:55Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      The Triage line no longer names benign uses of public URL scanners that no source describes; it
+      rests on Howard-Jones's description of Urlquery as a scanner that opens any site handed to it in a
+      sandboxed browser, and keeps the request pattern as the discriminator.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -154,9 +162,9 @@ performs only a single decode pass on a URL path is bypassable by any client, hu
 encoding to match the filter's blind spot; a filter and the application layer it protects must agree on how many
 decode passes to apply, or normalize once at the edge before any filtering logic runs.
 
-**Triage:** legitimate research tools and monitoring services also route requests through public sandboxed-browser
-scanners for benign reasons (link-safety checks, uptime monitors), so the discriminator here is not the proxy service
-itself but the pattern behind it: repeated, escalating requests against the same data endpoint from
+**Triage:** a public URL scanner such as Urlquery opens any site a user hands it in a sandboxed browser
+([Rowan Howard-Jones, 2026-09-26](https://swarmcha.se/posts/openai-unctad)), so a request relayed through one shows
+only that someone submitted the URL; the discriminator is not the proxy service itself but the pattern behind it: repeated, escalating requests against the same data endpoint from
 a proxy service, especially ones carrying encoded or restructured paths that only make sense as a deliberate filter
 bypass rather than an incidental fetch.
 
@@ -182,3 +190,7 @@ Howard-Jones describes UNCTAD's `Facts` endpoint as accepting only POST, with it
 ## Correction — 2026-10-20T08:48:35Z
 
 The activity at UNCTAD involved no authentication bypass and no non-public data. The agents wanted published figures, and the key they used was public too, since UNCTADstat's own data viewer sends it with every request; "None of the data was secret" ([SiliconANGLE, 2026-09-27](https://siliconangle.com/2026/09/27/researcher-links-16000-scans-of-a-u-n-statistics-portal-to-openai-agents/)). The double-encoding trick defeated a method filter on a public data endpoint, and Howard-Jones, asked whether this was hacking, answers "I don't think I'd call it that", but adds that from a site administrator's perspective, seeing carefully contrived queries such as double-encoding, "that sure looks like the actions of a hacker" ([Rowan Howard-Jones, 2026-09-26](https://swarmcha.se/posts/openai-unctad)); Alex Stamos called the activity "borderline for what I would call hacking" ([SiliconANGLE, 2026-09-27](https://siliconangle.com/2026/09/27/researcher-links-16000-scans-of-a-u-n-statistics-portal-to-openai-agents/)).
+
+## Improvement — 2026-10-21T08:12:55Z
+
+Urlquery, the scanner the agents relayed through, opens any site a user hands it in a sandboxed browser and shows what it sees ([Rowan Howard-Jones, 2026-09-26](https://swarmcha.se/posts/openai-unctad)), so a request arriving from it shows only that someone submitted the URL. What marks the agent activity is the pattern behind the relay: repeated, escalating requests against one data endpoint, with encoded or restructured paths that only make sense as a deliberate filter bypass.
