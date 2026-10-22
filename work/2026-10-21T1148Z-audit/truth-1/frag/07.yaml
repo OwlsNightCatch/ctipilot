@@ -1,0 +1,104 @@
+  - entry: 2026-05-11/bsi-flags-netgate-pfsense-community-edition-as-critical-unpa
+    verdict: factual-error
+    defects:
+      - where: "cves[CVE-2025-69690].cvss; body paragraph 1"
+        claim: "CVE-2025-69690 (CVSS 8.8)"
+        defect: "The 8.8 figure is the researcher's claim; the vector the researcher gives (AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H) computes to 9.1, and ENISA EUVD carries 9.1 (CISA-ADP in the CVE record). CVE-2025-69691 at 9.9 is correct."
+        ground_truth: "EUVD-2025-209738 (CVE-2025-69690): baseScore 9.1, CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H; EUVD-2025-209739 (CVE-2025-69691): baseScore 9.9, CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H."
+        ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2025-69690"
+        fix: "cves[CVE-2025-69690].cvss = 9.1 (EUVD); keep 9.9 for CVE-2025-69691."
+        class: factual-error
+      - where: "headline; summary; body paragraph 1 (BSI claims)"
+        claim: "BSI flags Netgate pfSense Community Edition as critical-unpatched ... rating two authenticated remote code execution vulnerabilities ... as `kritisch` and explicitly `UNGEPATCHT` in the BSI advisory feed ... explicitly rates the unpatched state \"kritisch\""
+        defect: "The BSI WID advisory rates the vulnerabilities 'kritisch' (aggregate severity) but contains no 'UNGEPATCHT' label, no statement that the products are unpatched, and no vendor-refusal statement. It is a standard WID roundup listing the Full Disclosure post and two EUVD records as references. BSI says attackers can execute code 'mit Administratorrechten'; 'authenticated' is the researcher's wording."
+        ground_truth: "BSI CSAF WID-SEC-W-2026-1435 (initial release 2026-05-07T22:00Z): aggregate_severity 'kritisch'; summary 'Ein Angreifer kann mehrere Schwachstellen in Netgate pfSense ausnutzen, um beliebigen Programmcode mit Administratorrechten auszuführen.'; references: OSS Security Mailing List (seclists.org/fulldisclosure/2026/Feb/16), EUVD-2025-209738, EUVD-2025-209739, PoC on GitHub."
+        ground_truth_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1435"
+        fix: "'BSI (WID-SEC-2026-1435, 2026-05-08) lists two pfSense CE vulnerabilities (CVE-2025-69690 in CE 2.7.2, CVE-2025-69691 in CE 2.8.0) as kritisch'; drop 'UNGEPATCHT' and 'critical-unpatched'."
+        class: factual-error
+      - where: "body paragraph 2 (BSI position)"
+        claim: "BSI taking a national-CERT position on the unpatched state three months after researcher disclosure is the in-window signal: this elevates pfSense CE from \"vendor accepts behaviour\" to \"EU national authority recommends mitigation.\""
+        defect: "The BSI advisory contains no mitigation recommendation and no position on patch status; it aggregates the researcher's post and the EUVD records. The 'elevation' claim is the entry's own inference and the basis of its priority."
+        ground_truth: "BSI CSAF carries only a product description, a one-sentence attack summary, the affected-product tree (CE 2.7.2 for CVE-2025-69690, CE 2.8.0 for CVE-2025-69691) and external references; no remediation, no patch status."
+        ground_truth_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1435"
+        fix: "Delete the claim, or state only that BSI added the two CVEs to its advisory feed on 2026-05-08."
+        class: factual-error
+      - where: "body paragraph 2 (Netgate's position)"
+        claim: "Netgate's position, restated in the Full Disclosure thread, is that both behaviours are expected for authenticated administrators and that no patch will be issued."
+        defect: "The Full Disclosure post is the researcher's own account of Netgate's reply; no Netgate statement was read. The CVE records carry the supplier's dispute: the behaviours are admin-only and 'intentionally allowed'. 'Vendor refuses to fix' in the headline presents the researcher's report as fact."
+        ground_truth: "Full Disclosure (researcher): 'The vendor was notified on December 2, 2025, acknowledged the reports, and indicated no patches would be issued.' EUVD-2025-209739: 'NOTE: the Supplier disputes this because the API call is only available to admins and they are intentionally allowed to execute PHP code.'"
+        ground_truth_url: "https://seclists.org/fulldisclosure/2026/Feb/16"
+        fix: "'According to the researcher, Netgate acknowledged the reports and indicated no patches would be issued; the CVE records note the supplier disputes the vulnerabilities because the functions are admin-only'; add status 'disputed' on both cves[]."
+        class: imprecision
+      - where: "body paragraph 1 (CVE-2025-69691 precondition)"
+        claim: "executes arbitrary PHP as root when invoked with any Basic Auth credentials — including default admin passwords on Internet-exposed deployments"
+        defect: "The post says the endpoint is reachable over HTTPS with Basic Authentication and that default credentials (admin:pfsense) are widely deployed; it does not say any credentials work. The cited cve.news page does not resolve, so the second citation carries nothing."
+        ground_truth: "Full Disclosure: 'The endpoint is enabled by default, accessible over HTTPS via Basic Authentication, and executes supplied code immediately with full system privileges. Default credentials (admin:pfsense) are widely deployed'; attack vector step '1. Attacker authenticates as administrator'. https://www.cve.news/cve-2025-69691/ : DNS name does not resolve (container and WebFetch)."
+        ground_truth_url: "https://seclists.org/fulldisclosure/2026/Feb/16"
+        fix: "'executes arbitrary PHP as root for an authenticated administrator; the researcher notes the endpoint is enabled by default and default credentials are widely deployed'; remove the cve.news source (F1: unreachable)."
+        class: imprecision
+      - where: "cves[].vector"
+        claim: "vector: user-interaction (both CVEs)"
+        defect: "Both CVSS vectors are UI:N (no user interaction)."
+        ground_truth: "EUVD vectors: CVE-2025-69690 AV:N/AC:L/PR:H/UI:N; CVE-2025-69691 AV:N/AC:L/PR:L/UI:N."
+        ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2025-69691"
+        fix: "Set vector to network and auth to admin-required (PR:H / PR:L per the vectors)."
+        class: imprecision
+      - where: "body paragraph 2 (pfSense+)"
+        claim: "The pfSense+ commercial product is reportedly not affected by the same code paths."
+        defect: "No page read says this; BSI, the researcher and the EUVD records name only pfSense CE 2.7.2 and 2.8.0 and say nothing on pfSense+."
+        ground_truth: "BSI product tree: 'Netgate pfSense CE 2.7.2' and 'Netgate pfSense CE 2.8.0' only."
+        ground_truth_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1435"
+        fix: "Drop the sentence or cite a Netgate statement."
+        class: factual-error
+      - where: "body paragraph 3 (Why it matters: detection and mitigation advice)"
+        claim: "audit `system.xml` for unexplained `post_reboot_commands` entries (CVE-2025-69690 persistence indicator) ... Block the XMLRPC interface at the network level for any CE 2.8.0 deployment that cannot disable it administratively"
+        defect: "No source mentions system.xml, a persistence indicator, or administrative disabling of XMLRPC; the researcher names only the restore path (config.php, pfsense_module_installer, post_reboot_commands in a crafted backup) and xmlrpc.php / pfsense.exec_php."
+        ground_truth: "Full Disclosure: 'A crafted backup file containing a malicious serialized PHP object can inject arbitrary commands via the post_reboot_commands property, executed through mwexec() with full root privileges.'"
+        ground_truth_url: "https://seclists.org/fulldisclosure/2026/Feb/16"
+        fix: "Replace with sourced exposure (management interface and XMLRPC reachable from untrusted networks, default credentials) and drop the system.xml indicator; verify any file path against Netgate documentation before restating."
+        class: imprecision
+      - where: "ATT&CK sentence"
+        claim: "T1190 Exploit Public-Facing Application remains the framing for the initial brute-force / credential-stuffing pivot"
+        defect: "No source describes brute force or credential stuffing; those would be T1110 (T1110.004). The sourced access path is use of valid or default credentials (T1078 / T1078.001) against an exposed management interface."
+        ground_truth: "Full Disclosure: 'Attacker authenticates as administrator'; 'Default credentials (admin:pfsense) are widely deployed'."
+        ground_truth_url: "https://seclists.org/fulldisclosure/2026/Feb/16"
+        fix: "techniques[]: T1078.001, T1059.004 (mwexec commands), T1059 (PHP execution); drop the brute-force framing."
+        class: imprecision
+      - where: "summary (regional claim); priority"
+        claim: "Relevant for DACH cantonal / municipal / SME deployments using the free CE build. ; priority: high"
+        defect: "(low confidence) No cited page links pfSense CE to Swiss cantonal or municipal deployments. The flaws need administrator credentials, the supplier disputes them as intended admin functions, no exploitation is reported and BSI's 'kritisch' reflects CVSS; 'high' is arguable on the facts then."
+        ground_truth: "EUVD: 'the Supplier disputes this because ... only available to admins'; CISA KEV: no pfSense entry for CVE-2025-69690/69691 (catalog 2026.10.20)."
+        ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2025-69691"
+        fix: "Cite deployment evidence or drop the DACH sentence; consider notable."
+        class: imprecision
+      - where: "sources[2]"
+        claim: "https://www.cve.news/cve-2025-69691/"
+        defect: "The host does not resolve (DNS failure from the container, WebFetch ENOTFOUND, jina refused); the page cannot be read by any transport. It is also an aggregator, not a primary."
+        ground_truth: "fetch_source extract: 'cannot resolve www.cve.news'; WebFetch: 'getaddrinfo ENOTFOUND www.cve.news'."
+        ground_truth_url: "https://www.cve.news/cve-2025-69691/"
+        fix: "Remove; use the EUVD page and the Full Disclosure post."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1078.001, behavior: "Researcher: 'Default credentials (admin:pfsense) are widely deployed, significantly lowering the exploitation barrier'; attacker authenticates as administrator", url: "https://seclists.org/fulldisclosure/2026/Feb/16"}
+        - {id: T1059, behavior: "CVE-2025-69691: pfsense.exec_php executes arbitrary PHP code as root via the XMLRPC endpoint", url: "https://seclists.org/fulldisclosure/2026/Feb/16"}
+        - {id: T1059.004, behavior: "CVE-2025-69690: crafted backup restore runs commands as root via mwexec() (post_reboot_commands)", url: "https://seclists.org/fulldisclosure/2026/Feb/16"}
+      rating:
+        reliability: B
+        credibility: 2
+        basis: "One independent researcher's technical disclosure with PoC (Full Disclosure), restated by BSI WID and ENISA EUVD (aggregators of that disclosure: one assessor); the supplier disputes severity (admin-only, intentional) in the CVE records; no vendor page read."
+      exposure:
+        - {quote: "The endpoint is enabled by default, accessible over HTTPS via Basic Authentication, and executes supplied code immediately with full system privileges. Default credentials (admin:pfsense) are widely deployed, significantly lowering the exploitation barrier.", url: "https://seclists.org/fulldisclosure/2026/Feb/16"}
+        - {quote: "Netgate pfSense CE 2.7.2 allows code execution by using the module installer with a backup file with a serialized PHP object containing the post_reboot_commands property.", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2025-69690"}
+      detection: []
+      triage:
+        - {quote: "NOTE: the Supplier disputes this because the API call is only available to admins and they are intentionally allowed to execute PHP code.", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2025-69691"}
+      takeaway: []
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/pf-bsi-csaf.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/pf-fd.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/pf-euvd-CVE-2025-69690.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/pf-euvd-CVE-2025-69691.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/pf-cveorg-CVE-2025-69690.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/pf-cveorg-CVE-2025-69691.json
+    possible_twin_outside_batch: null

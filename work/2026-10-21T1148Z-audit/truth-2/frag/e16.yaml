@@ -1,0 +1,47 @@
+- entry: 2026-05-16/amd-sb-7052-cve-2025-54518-amd-zen-2-op-cache-corruption-soc
+  verdict: factual-error
+  defects:
+    - where: "headline; body paragraph 1 (mitigation sentence); actions[0]; CVE table AMD row"
+      claim: "Mitigation is delivered as microcode integrated into the **May 2026 Microsoft Windows cumulative update** ... Apply the May 2026 Microsoft Windows cumulative update — confirms AMD microcode mitigation for AMD-SB-7052 / CVE-2025-54518 is installed on Zen 2 hosts"
+      defect: "AMD's bulletin gives OS-level mitigation only for EPYC 7002 parts; Ryzen, Threadripper PRO and embedded Zen 2 parts need Platform Initialization firmware via OEM BIOS updates (released October to December 2025). Microsoft says Windows builds 'enable the mitigation', not that they ship microcode, so a Windows CU does not confirm a Ryzen host is mitigated."
+      ground_truth: "AMD: 'AMD EPYC 7002 Series Processors | OS Update | Contact your OS Vendor'; for Ryzen: 'AMD recommends updating to the Platform Initialization (PI) version indicated below ... Please contact your OEM for the BIOS update specific to your product(s)' (e.g. ComboAM4v2 PI version 1.2.0.10, 10/31/2025). MSRC: 'The mitigation for this vulnerability requires a Windows update ... the latest builds of Windows enable the mitigation'."
+      ground_truth_url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html"
+      fix: "Write: EPYC 7002 / Embedded 7002 - OS update (Windows May 2026 builds enable the mitigation; Linux distro updates); Ryzen 3000/4000/5000/7020/7030, Threadripper PRO 3000WX, Ryzen Embedded V2000 - OEM BIOS with the listed PI version; Xen - XSA-490 patch. Rewrite the action accordingly."
+      class: factual-error
+    - where: "body ('CVE Summary Table')"
+      claim: "| CVE-2026-42897 | Microsoft Exchange ... | No permanent patch; EEMS Mitigation M2 ... | CVE-2026-44112 | OpenClaw ... | OpenClaw 2026-04-23 release (GHSA-5h3g-6xhh-rg6p) | CVE-2026-44115 ... (GHSA-wppj-c6mr-83jj) | CVE-2026-44113 ... (GHSA-x3h8-jrgh-p8jx)"
+      defect: "The table is a v2-brief artefact carrying five CVEs that belong to other findings; three OpenClaw rows pair CVEs with the wrong GHSA (positional pairing), and the Exchange row's 'No permanent patch' is now stale."
+      ground_truth: "GitHub Advisory Database: GHSA-5h3g-6xhh-rg6p = CVE-2026-44113 (FS bridge reads); GHSA-wppj-c6mr-83jj = CVE-2026-44112 (FS bridge writes); GHSA-r6xh-pqhr-v4xh = CVE-2026-44118; GHSA-x3h8-jrgh-p8jx = exec-allowlist heredoc advisory (the 44115 class). MSRC CVE-2026-42897 revision 2 (2026-06-09): 'Added links to June 2026 Exchange Server security updates'; FAQ update 7/14/2026 recommends the July 2026 Security Updates."
+      ground_truth_url: "https://github.com/advisories/GHSA-5h3g-6xhh-rg6p"
+      fix: "Delete the table except the AMD row (or the whole table); the Exchange and OpenClaw CVEs belong on their own entries."
+      class: factual-error
+    - where: "body (Detection / verification)"
+      claim: "confirm the May 2026 Windows CU includes the AMD microcode revision via the relevant KB and `wmic cpu get name, dataWidth, processorId`"
+      defect: "(low confidence) That command reports the CPUID-based processor ID, not the loaded microcode revision, and no source gives this check; on Ryzen the mitigation is the BIOS PI version."
+      ground_truth: "AMD lists the mitigating PI firmware version per product line; MSRC states the latest Windows builds enable the mitigation. No source describes a wmic-based check."
+      ground_truth_url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html"
+      fix: "Verify by Windows build level (May 2026 or later) on EPYC hosts and by BIOS PI version against AMD's table on Ryzen hosts; drop the wmic command."
+      class: imprecision
+    - where: "body paragraph 1 (Fedora, Lenovo; pipeline reference)"
+      claim: "(the same window as the previously-covered CVE-2026-41089 / 41096 Patch Tuesday set); Fedora has issued separate kernel + microcode updates ... Lenovo has published a product-security advisory covering affected ThinkPad / ThinkStation / Workstation models"
+      defect: "Pipeline self-reference; the Fedora package content and the Lenovo model scope could not be confirmed (bodhi behind a bot wall, Lenovo page body not rendered); NCSC-NL only links them."
+      ground_truth: "NCSC-NL NCSC-2026-0158 (Uitgiftedatum 20260515) lists Debian xen, Dell PowerEdge, Fedora, Google Cloud Platform, Lenovo and Windows as affected/applicable and links FEDORA-2026-7b2b7837b6, FEDORA-2026-8b2957222f and LEN-216977 ('Multi-Vendor BIOS Security Vulnerabilities (May 2026)')."
+      ground_truth_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0158"
+      fix: "Delete the Patch Tuesday cross-reference; say 'Fedora and Lenovo published updates (per NCSC-NL)' without the unverified detail."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1068, behavior: "Local code at any privilege corrupts the Zen 2 op cache to run instructions at a higher privilege (vulnerability disclosure, no exploitation)", url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html"}
+      - {id: T1611, behavior: "Xen notes the flaw permits guest-to-host privilege escalation on Zen 2 hosts", url: "https://xenbits.xen.org/xsa/advisory-490.html"}
+    rating: {reliability: A, credibility: 2, basis: "AMD PSIRT for its own CPUs (A); Xen, Microsoft and NCSC-NL respond to AMD's disclosure rather than assessing independently (2)."}
+    exposure:
+      - {quote: "Only AMD Fam17h CPUs (Zen2 microarchitecture) are believed to be vulnerable. Other AMD CPUs and CPUs from other manufacturers are not known to be affected.", url: "https://xenbits.xen.org/xsa/advisory-490.html"}
+      - {quote: "Code of any privilege could escalate to a higher privilege, including userspace to kernel, and guest to host.", url: "https://xenbits.xen.org/xsa/advisory-490.html"}
+    detection: []
+    triage: []
+    takeaway:
+      - {quote: "AMD recommends updating to the Platform Initialization (PI) version indicated below.", url: "https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html"}
+      - {quote: "We are documenting it in the Security Update Guide to encourage customers to install the May 2026 version of Windows as soon as possible.", url: "work/2026-10-21T1148Z-audit/truth-2/bodies/e16-msrc.txt"}
+      - {quote: "There are no mitigations.", url: "https://xenbits.xen.org/xsa/advisory-490.html"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e16-amd.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-ncscnl.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-ncscnl-txt.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-xsa.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-msrc.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-msrc-42897.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-cyera.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-lenovo.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-5h3g-6xhh-rg6p.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-wppj-c6mr-83jj.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-r6xh-pqhr-v4xh.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-x3h8-jrgh-p8jx.txt]
+  possible_twin_outside_batch: null

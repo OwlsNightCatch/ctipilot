@@ -1,0 +1,75 @@
+  - entry: 2026-05-11/sms-blaster-smishing-establishing-itself-in-switzerland-port
+    verdict: factual-error
+    defects:
+      - where: "body paragraph 2, last sentence"
+        claim: "ebas.ch is the only source for the Swiss-localised signal"
+        defect: "False: the national authority had already published on SMS blasters in Switzerland on 2025-09-09, and Swiss police arrested a suspect with an SMS blaster in his car (SRF, 2025-11-13). The ebas.ch post of 2026-05-07 is a later awareness note, so the entry's single-source framing and 'establishing itself' as new news are overtaken; the sentence is also truncated."
+        ground_truth: "BACS (2025-09-09): 'we have received numerous reports of phishing attempts involving fake parking fines sent by text message to people in western Switzerland ... All of this points to the scammers using what is called an SMS blaster.' SRF 2025-11-13: 'Der Verdächtige hatte in seinem Auto einen SMS-Blaster.'"
+        ground_truth_url: "https://www.bacs.admin.ch/en/25w36-en"
+        fix: "Cite BACS (primary, national CERT) and SRF for Swiss cases since summer 2025; present the ebas.ch post as a later public-awareness note; set verification to multi-source with BACS as primary."
+        class: factual-error
+      - where: "body paragraph 3 (Android advice)"
+        claim: "Suggest disabling 2G on managed Android estates where MDM supports the setting (Android 12+ via `setAllowedNetworkTypesForReason` / Enterprise restrictions)"
+        defect: "setAllowedNetworkTypesForReason is a TelephonyManager API requiring MODIFY_PHONE_STATE or carrier privileges, not an MDM control, and not tied to Android 12. The documented administrator control is the user restriction DISALLOW_CELLULAR_2G, added in API level 34 (Android 14), settable by a device owner or an organisation-owned work-profile owner."
+        ground_truth: "UserManager.DISALLOW_CELLULAR_2G: 'Added in API level 34 ... This restriction can only be set by a device owner or a profile owner of an organization-owned managed profile on the parent profile.' TelephonyManager.setAllowedNetworkTypesForReason: 'Requires permission: Manifest.permission.MODIFY_PHONE_STATE or that the calling app has carrier privileges'."
+        ground_truth_url: "https://developer.android.com/reference/android/os/UserManager"
+        fix: "'On Android 14 and later a device owner can set the DISALLOW_CELLULAR_2G user restriction through the MDM'; drop the TelephonyManager reference; cite the Android documentation."
+        class: factual-error
+      - where: "body paragraph 3 (detection claim)"
+        claim: "the device-side signal is a sudden 4G/5G → 2G → 4G/5G transition that some EDR-MDM stacks (Intune mobile telemetry, Jamf Protect) can surface"
+        defect: "No source says any MDM/MTD product exposes RAT transitions; the sourced telemetry is a reporter's observation that the phone switched 4G to 2G and back around the scam text. 'SMS-blaster activity is invisible to enterprise MTD products' is likewise uncited, and 'the technical fingerprint of a rogue base station' is the entry's own inference."
+        ground_truth: "BACS: 'shortly before receiving the text message, their smartphone switched from the 4G network to the older 2G standard. Immediately afterwards, they received the scam text message, after which the phone switched back to 4G.'"
+        ground_truth_url: "https://www.bacs.admin.ch/en/25w36-en"
+        fix: "Quote the BACS observation as the user-visible indicator; drop the product claims or cite vendor documentation."
+        class: imprecision
+      - where: "headline; summary; body paragraph 1 (technical description cited to ebas.ch)"
+        claim: "portable IMSI-catchers force 2G downgrade ... rogue base station ... The 2G network lacks mutual authentication between handset and base station ... entirely bypassing the mobile carrier's SMSC"
+        defect: "The cited ebas.ch page says only that a transmission antenna induces phones within several hundred metres to connect, switches them to 2G and sends texts without operator filtering; IMSI-catcher lineage, 'fake base station', concealment in a vehicle or backpack, 'mutual authentication' and 'SMSC' are not on it (BACS carries the IMSI-catcher and fake-base-station description and the 500-1,000 m range; Android documentation carries the mutual-authentication wording). 'ebas.ch (Swiss banking + HSLU)' is also uncited."
+        ground_truth: "BACS: 'SMS blasters build on the technology of IMSI catchers ... exploit a weakness in the outdated 2G mobile standard ... Technically, these are fake mobile base stations'; 'radius of 500 to 1,000 metres'; ebas.ch: 'strong signals inducing smartphones within a range of several hundred meters to automatically connect'."
+        ground_truth_url: "https://www.bacs.admin.ch/en/25w36-en"
+        fix: "Cite BACS for the device description and ebas.ch for the lure and 2G downgrade; drop 'mutual authentication' and 'SMSC' or cite a page that carries them."
+        class: imprecision
+      - where: "body paragraph 3 (Why it matters to us)"
+        claim: "Federal employees and contractors using government-issued or BYOD mobile devices are exposed to the same proximity-targeted lure"
+        defect: "Both pages describe consumer fraud (fake parking fines, banking and courier lures) in western Switzerland; no page ties it to federal staff, contractors or BYOD. 'Why it matters to us' is organisation-internal wording."
+        ground_truth: "ebas.ch: lures 'pretending to originate from the authorities, from banks or courier services' aimed at 'credit card data or e-banking access credentials'; BACS: fake parking fines to people in western Switzerland."
+        ground_truth_url: "https://www.ebas.ch/en/2026/05/sms-blaster-new-scam-reaches-switzerland/"
+        fix: "Reword as exposure of any 2G-capable handset in range, cite the pages; remove 'to us'."
+        class: imprecision
+      - where: "priority; sources; verification"
+        claim: "priority: high ; verification: single-source ; sourcing_note: null"
+        defect: "(low confidence) A consumer-awareness post on smishing with no stated public-sector exposure, no exploited product and no decision inside seven days does not plainly clear the high bar; also single-source with no sourcing_note while the national CERT primary exists."
+        ground_truth: "BACS 2025-09-09 already published the finding; ebas.ch post is awareness guidance ('Protective measures')."
+        ground_truth_url: "https://www.ebas.ch/en/2026/05/sms-blaster-new-scam-reaches-switzerland/"
+        fix: "Consider notable (or routine two sentences); add BACS as primary and correct verification/sourcing_note."
+        class: imprecision
+      - where: "ATT&CK mapping"
+        claim: "Mapped to T1566 Phishing at the technique level"
+        defect: "T1566 is active, but the sourced behavior is an SMS lure with a link to a fake credential page (T1566.002 in the pinned enterprise matrix; the SMS-specific mobile technique is outside the enterprise dataset)."
+        ground_truth: "ebas.ch: texts 'usually contain a link to a fake website. Their aim is to induce recipients to enter sensitive information'."
+        ground_truth_url: "https://www.ebas.ch/en/2026/05/sms-blaster-new-scam-reaches-switzerland/"
+        fix: "techniques[]: T1566.002."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1566.002, behavior: "SMS lures impersonating authorities, banks or couriers with a link to a fake website to harvest card and e-banking credentials (enterprise matrix has no SMS-specific phishing id; the mobile matrix technique is outside the pinned dataset)", url: "https://www.ebas.ch/en/2026/05/sms-blaster-new-scam-reaches-switzerland/"}
+      rating:
+        reliability: A
+        credibility: 1
+        basis: "BACS (national authority for its own jurisdiction, 2025-09-09) reports the SMS-blaster activity from public reports; Baselland police arrest with a device in a car (SRF, 2025-11-13) is an independent confirmation; ebas.ch (HSLU/bank-sector awareness portal) restates it in 2026-05."
+      exposure:
+        - {quote: "As many smartphones keep on supporting 2G, even modern devices might potentially be affected.", url: "https://www.ebas.ch/en/2026/05/sms-blaster-new-scam-reaches-switzerland/"}
+        - {quote: "The SMS blaster emits a strong signal that prompts all smartphones within a radius of 500 to 1,000 metres to connect to it.", url: "https://www.bacs.admin.ch/en/25w36-en"}
+      detection:
+        - {quote: "shortly before receiving the text message, their smartphone switched from the 4G network to the older 2G standard. Immediately afterwards, they received the scam text message, after which the phone switched back to 4G.", url: "https://www.bacs.admin.ch/en/25w36-en"}
+      triage: []
+      takeaway:
+        - {quote: "If possible, deactivate your smartphone's 2G function.", url: "https://www.ebas.ch/en/2026/05/sms-blaster-new-scam-reaches-switzerland/"}
+        - {quote: "This restriction can only be set by a device owner or a profile owner of an organization-owned managed profile on the parent profile.", url: "https://developer.android.com/reference/android/os/UserManager"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sms-ebas.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sms-bacs-w36.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sms-srf-baselland.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sms-android-usermanager.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sms-android-telephonymanager.txt
+    possible_twin_outside_batch: null

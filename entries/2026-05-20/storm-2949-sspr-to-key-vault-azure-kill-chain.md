@@ -1,11 +1,17 @@
 ---
 schema: 1
 kind: threat
-title: Storm-2949 SSPR-to-Key-Vault Azure kill chain
-headline: Storm-2949 SSPR-to-Key-Vault Azure kill chain
-summary: "Storm-2949 turns one SSPR-abused identity into a cloud-wide breach across Entra ID → M365 → App Service → Key Vault → SQL → Storage → Azure VMs — no malware required. Microsoft Threat Intelligence published the full incident analysis on 2026-05-18;."
+title: "Storm-2949: SSPR abuse of four privileged users turned into a data-theft sweep across Microsoft 365, Key Vault, SQL, Storage and Azure VMs"
+headline: "Storm-2949 hijacked privileged Entra ID accounts through SSPR abuse, then mined Azure management features for data"
+summary: >
+  Microsoft Threat Intelligence reported on 2026-05-18 that Storm-2949 abused Microsoft's Self-Service
+  Password Reset to take over four privileged Entra ID accounts at one organization, re-enrolled MFA on
+  its own devices, and used their Azure RBAC roles to pull App Service publishing profiles, Key Vault
+  secrets, SQL and Storage data and VM access through Run Command and VMAccess. The actor relied mostly on
+  legitimate cloud management features, installed ScreenConnect on VMs, aimed at mass data exfiltration
+  and, per Microsoft, did not extort and shows no link to ShinyHunters.
 discovered_at: "2026-05-20T05:00:14Z"
-event_date: 2026-05-19
+event_date: 2026-05-18
 run_id: 2026-05-20-a0f7b07f
 priority: high
 immediate_action: null
@@ -13,68 +19,89 @@ tags:
   - identity
   - cloud
   - phishing
-  - organized-crime
+  - data-breach
 regions:
   - global
-  - europe
-sectors:
-  - public-sector
-  - healthcare
-  - finance
-  - telco
+sectors: []
 entities:
   - "campaign:storm-2949-sspr-to-key-vault-azure-cloud-wide-kill-chain"
   - "actor:storm-2949"
+techniques: [T1621, T1078.004, T1556.006, T1098.005, T1087.004, T1098.001, T1530, T1213.002, T1555.006, T1686.001, T1651, T1136.001, T1552.005, T1685, T1219, T1036.004, T1685.005, T1070.003, T1070.004, T1082, T1087.002, T1069.002, T1552.001, T1552.004]
 cves: []
 sources:
   - url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
-    publisher: "Microsoft Threat Intelligence — Storm-2949, 2026-05-18"
+    publisher: "Microsoft Threat Intelligence"
+    date: "2026-05-18"
     role: primary
   - url: "https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/"
-    publisher: "BleepingComputer, 2026-05-19"
+    publisher: "BleepingComputer"
+    date: "2026-05-19"
+    role: corroborating
+  - url: "https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-reporting"
+    publisher: "Microsoft Learn"
+    date: "2025-03-04"
     role: corroborating
 closed_sources: []
-evidence: []
-verification: multi-source
-sourcing_note: null
+evidence:
+  - quote: "We assess with high confidence that Storm-2949 leveraged a social engineering technique consistent with known abuses of Microsoft’s Self-Service Password Reset (SSPR) process."
+    publisher: "Microsoft Threat Intelligence"
+    source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
+  - quote: "Over the span of four minutes, the threat actor successfully manipulated Key Vault access configurations and accessed dozens of secrets within the said Key Vault."
+    publisher: "Microsoft Threat Intelligence"
+    source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
+  - quote: "The script then installed the ScreenConnect remote monitoring and management (RMM) tool obtained from threat actor-controlled infrastructure."
+    publisher: "Microsoft Threat Intelligence"
+    source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
+  - quote: "Tanmay Ganacharya, VP of Microsoft Security Research, told BleepingComputer that current Storm-2949 activity does not indicate a connection to ShinyHunters or an affiliate of the group."
+    publisher: "BleepingComputer"
+    source_url: "https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/"
+verification: single-source
+sourcing_note: >
+  Microsoft Threat Intelligence is the only assessor, describing its own incident response to an unnamed
+  victim; BleepingComputer restates it and adds Microsoft's statements on extortion and ShinyHunters.
 confidence: high
 update_of: null
 references: []
 deep_dive: true
 deep_dive_category: other
 org_triage: null
+classification:
+  reliability: B
+  credibility: 2
 watchlist_hit: false
 actions: []
 migrated_from: briefs/2026-05-20.md
+updates:
+  - at: "2026-10-21T20:22:14Z"
+    run_id: 2026-10-21T1148Z-audit
+    type: correction
+    summary: >
+      Microsoft does not call Storm-2949 financially motivated: its objective was mass data exfiltration,
+      Storm is a temporary designation, no extortion was seen and there is no ShinyHunters link, and the
+      intrusion was not binary-free, since ScreenConnect was installed on VMs, where a script tried to
+      weaken Defender and to clear event logs. Self-service password reset abuse took over four privileged
+      accounts on a hedged phishing assessment.
+    fields: [body, classification, event_date, evidence, headline, regions, sectors, sources, sourcing_note, summary, tags, techniques, title, verification]
 ---
 
-Microsoft Threat Intelligence published the full Storm-2949 incident analysis on [2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/), with [BleepingComputer corroboration on 2026-05-19](https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/). The actor is financially motivated, currently unattributed to a nation-state nexus, and the engagement notable for what it does **not** contain: no traditional malware, no exploits, no zero-days — only end-to-end abuse of legitimate Azure / M365 management features. The incident is operationally relevant to every Swiss / EU organisation running production workloads on commercial Azure or Azure Government, which now spans much of federal admin, cantonal IT, healthcare, finance, telco, and education.
+Microsoft Threat Intelligence published its account of an intrusion by Storm-2949 on 2026-05-18: a campaign whose singular focus was to exfiltrate as much sensitive data as possible from one target organization's high-value assets, across Microsoft 365, file hosting and the Azure production environment ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). The actor did not rely on traditional malware but on legitimate cloud and Azure management features that blend into administrative behavior ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). Storm is Microsoft's temporary designation for activity not yet classified, and Microsoft saw no follow-on extortion and no link to ShinyHunters ([BleepingComputer, 2026-05-19](https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/)).
 
-**Background.** SSPR (Self-Service Password Reset) social-engineering as an initial-access vector has been documented in passing by several vendors since 2024 — the technique typically pairs a legitimate SSPR initiation by the attacker with a phone call posing as IT support, getting the victim to approve an MFA prompt the attacker triggered. What Microsoft's 2026-05-18 write-up adds is the **post-identity cloud kill chain**: the same engagement walks from SSPR abuse through Entra ID, Microsoft Graph reconnaissance, OneDrive / SharePoint exfiltration, App Service Kudu console pivoting, Key Vault secret theft, SQL firewall mutation, Storage SAS-token theft, and finally on to Azure VM credential harvesting and on-prem reconnaissance — a single chain crossing five Azure resource providers without dropping a binary.
+**Identity takeover.** Microsoft assesses with high confidence that Storm-2949 abused Self-Service Password Reset (SSPR): the actor starts a reset on a targeted user's behalf and persuades the user to approve the resulting MFA prompts, likely through an organized and convincing phishing scheme, for example by posing as IT support ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). It then reset the password, removed the user's phone, e-mail and Authenticator methods and enrolled Microsoft Authenticator on its own device, locking the user out; the victims included IT personnel and senior leadership, and the actor repeated the process until it held four accounts ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-**Phase 1 — Identity (SSPR + voice phishing).** Storm-2949 initiated the Microsoft SSPR flow for selected target users (IT personnel and senior leadership), then contacted those users posing as internal IT support to walk them through approving the resulting MFA prompts. With four accounts compromised, the actor: reset passwords, removed existing MFA methods (phone, email, Authenticator registrations), enrolled Microsoft Authenticator on attacker-controlled devices, and locked the legitimate users out. Maps to [T1078.004 (Valid Accounts: Cloud Accounts)](https://attack.mitre.org/techniques/T1078/004/), [T1556.006 (Modify Authentication Process: Multi-Factor Authentication)](https://attack.mitre.org/techniques/T1556/006/), and [T1098.005 (Account Manipulation: Device Registration)](https://attack.mitre.org/techniques/T1098/005/). Microsoft notes: ["Storm-2949 leveraged a social engineering technique consistent with known abuses of Microsoft's Self-Service Password Reset (SSPR) process. In such attacks, a threat actor initiates the SSPR process on behalf of a targeted user and subsequently employs social engineering tactics to persuade the user to complete multifactor authentication (MFA) prompts that appear to be legitimate."](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)
+**Directory discovery and Microsoft 365 theft.** A custom Python script enumerated users and applications through Microsoft Graph to find privileged identities, and an attempt to add credentials to a service principal failed for lack of permissions ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). The actor searched OneDrive and SharePoint for VPN configuration and remote-access documents and in one instance downloaded thousands of files from the OneDrive web interface in a single action ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-**Phase 2 — M365 discovery and exfiltration.** With four hijacked identities, the actor authenticated to Microsoft Graph from custom Python tooling, enumerated users, roles, applications, and service principals across the tenant, and exfiltrated thousands of files from OneDrive and SharePoint — selecting VPN configuration documents and remote-access procedures as a lateral-movement springboard. Maps to [T1530 (Data from Cloud Storage)](https://attack.mitre.org/techniques/T1530/) and [T1083 (File and Directory Discovery)](https://attack.mitre.org/techniques/T1083/) via Graph.
+**Azure control plane.** With privileged custom RBAC roles on several subscriptions, the actor called `microsoft.Web/sites/publishxml/action` to retrieve the publishing profiles of secondary App Service apps, which often hold FTP, Web Deploy and Kudu credentials; with an Owner role over one Key Vault it changed the vault's access configuration and read dozens of secrets within four minutes; Microsoft believes they held the credentials the actor then used to take over the primary production web app and change its password ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). It opened SQL server firewall rules with `microsoft.sql/servers/firewallrules/write` and deleted them after taking data, opened storage account network access to its own addresses with `microsoft.storage/storageaccounts/write`, and retrieved account keys and SAS tokens with `microsoft.Storage/storageAccounts/listkeys/action` to download blobs over several days with an Azure SDK script ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-**Phase 3 — Azure App Service to Key Vault pivot.** Using a privileged custom Azure RBAC role accessible to one of the compromised principals, Storm-2949 invoked `microsoft.Web/sites/publishxml/action` on secondary App Service instances — auxiliary apps hosting internal authentication and API surfaces — extracting basic-auth FTP / Web Deploy credentials. From there the actor accessed the Kudu management console of those App Services (which expose a shell and file-system inside the App Service container). They then pivoted to **Azure Key Vault** using the **Owner** role (which one of the compromised user's Azure RBAC permissions granted over a specific Key Vault), modified access policies to grant themselves vault data-plane permissions, and exfiltrated dozens of secrets — database credentials, connection strings, third-party API keys. Microsoft: ["The threat actor pivoted to the organization's Azure Key Vault estate — an environment more likely to centralize sensitive secrets and offer indirect access to production systems."](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/) Maps to [T1552.001 (Unsecured Credentials: Credentials In Files)](https://attack.mitre.org/techniques/T1552/001/) and [T1021.007 (Remote Services: Cloud Services)](https://attack.mitre.org/techniques/T1021/007/).
+**Virtual machines and endpoints.** Through the VMAccess extension the actor created a local administrator on a VM, and through Run Command it tried to use the VM's managed-identity token from the Instance Metadata Service against Key Vault, which failed on permissions ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). A Run Command PowerShell script then attempted to weaken Defender Antivirus by disabling several protections, installed ScreenConnect from actor infrastructure under names resembling Windows components, and attempted to clear event logs, command history and temporary files; over ScreenConnect the actor ran host and domain discovery, exfiltrated .pfx certificate files and scanned file shares for password strings ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-**Phase 4 — Azure SQL and Storage.** The actor mutated **SQL firewall rules** via `microsoft.sql/servers/firewallrules/write` to open access from attacker IPs, queried databases over those rules, then deleted the rules to remove the artefact — defence evasion via the cloud control plane. In parallel, **Storage account network ACLs** were mutated via `microsoft.storage/storageaccounts/write` to allow attacker IPs, **SAS tokens and account keys** were retrieved via `microsoft.Storage/storageAccounts/listkeys/action`, and large-blob downloads were executed over multiple days using a custom Python script against the Azure Storage SDK. Maps to [T1562.007 (Impair Defenses: Disable or Modify Cloud Firewall)](https://attack.mitre.org/techniques/T1562/007/), [T1530 (Data from Cloud Storage)](https://attack.mitre.org/techniques/T1530/), and [T1041 (Exfiltration Over C2 Channel)](https://attack.mitre.org/techniques/T1041/).
+**Exposure:** Entra ID tenants where users with privileged Azure RBAC roles over Key Vault, App Service, SQL, Storage or VMs can reset their password through SSPR; Microsoft names no sector, country or victim ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-**Phase 5 — Azure VM compromise.** Storm-2949 deployed the **VMAccess** Azure VM extension to create new local admin accounts on selected VMs and used **Azure Run Command** to execute payloads for in-VM credential harvesting and on-prem Active Directory reconnaissance via the VM's network presence. Maps to [T1078.004](https://attack.mitre.org/techniques/T1078/004/) (cloud-managed admin via VMAccess) and [T1021.007](https://attack.mitre.org/techniques/T1021/007/) (Run Command as cloud remote-services execution).
+**Detection:** identity audit logs first: Entra ID records reset and registration activity in the Self-Service Password Management audit category, and combined security-information registration events, such as a new Authenticator registration, under Security > Authentication Methods ([Microsoft Learn](https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-reporting)); the pattern here is a reset followed by removal of every existing method and a new Authenticator registration ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). Then the Azure activity log for the operations above from one principal (publishing-profile retrieval, Key Vault access changes, SQL firewall and storage network rule writes, key listing, VMAccess and Run Command), and on VMs the disabling of Defender protections, a new remote-access service and cleared event logs ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). Evicting the accounts is not enough: the actor's Authenticator registrations, the web app password it changed, the Key Vault secrets it read and the storage keys it listed all stay usable until they are removed or rotated.
 
-**Detection concepts.** The kill chain crosses identity, App Service, Key Vault, SQL, Storage, and VM extensions; endpoint-only coverage will miss the entire chain. The detection layers that matter are cloud-side:
+**Defender takeaway:** require phishing-resistant MFA for administrators and privileged users and make sure every privileged user already has a registered MFA method, which blocks the malicious registration step; limit publishing-profile access, Run Command and VMAccess through RBAC, and prefer Azure RBAC over Key Vault access policies ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-- **Entra ID Sign-In + Audit Logs.** Hunt for SSPR flow initiations (`category: SelfServicePasswordReset`) followed within the same session by MFA-method removal, new Authenticator-device enrollment, and sign-in from a new IP / device. Alert on rapid Graph-API user / role / app enumeration (hundreds of `users`, `applications`, `servicePrincipals` reads in a short window).
-- **Microsoft Defender for Cloud.** Alerts on Key Vault access-policy modifications, SQL firewall-rule mutations, Storage account network-access-rule changes, App Service `publishxml` extraction, and VM extension deployments. Each is individually noisy; the time-correlation is the signal.
-- **Azure Audit Log (Activity Log).** Hunt for the sequence `Add-AzKeyVaultCertificate` / `microsoft.keyvault/vaults/accessPolicies/write` → `microsoft.sql/servers/firewallrules/write` → `microsoft.storage/storageaccounts/write` → `microsoft.Storage/storageAccounts/listkeys/action` from the same principal within a short window.
-- **App Service / Kudu access logs.** Unusual SCM (Source Control Manager) authentication events from non-developer IPs and unexpected Kudu shell-command issuance.
+## Correction — 2026-10-21T20:22:14Z
 
-**Hardening / mitigation.**
+Storm-2949 is not described as financially motivated: Microsoft's stated objective for the campaign is mass data exfiltration ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)), Storm is its temporary designation for unclassified activity, and it observed no extortion and sees no link to ShinyHunters ([BleepingComputer, 2026-05-19](https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/)). The intrusion did not stay free of binaries: on VMs the actor installed ScreenConnect, tried to weaken Defender Antivirus and cleared event logs ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)). SSPR abuse took over four privileged accounts, not one, and Microsoft hedges the social engineering as consistent with SSPR abuse and likely a phishing scheme, giving an IT-support call only as an example ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)).
 
-- **Require phishing-resistant MFA (FIDO2 / certificate-based) for all privileged roles** — admin roles, Key Vault Contributor, Storage Account Contributor, SQL Server Contributor, App Service Contributor. SSPR-via-Authenticator-prompt is a number-matching MFA path; phishing-resistant binds eliminate it.
-- **Restrict SSPR to pre-registered recovery methods only.** Conditional Access policies that block SSPR registration of new methods without an interactive sign-in from a compliant device close the device-enrollment hijack pattern.
-- **Constrain Owner and Key Vault Contributor role assignments** — both grant management-plane modification of access policies. Microsoft notes Storm-2949 exercised the Owner role over a specific Key Vault to mutate access policies and grant itself data-plane access; Key Vault Contributor confers the same management-plane mutation capability. Where Key Vault data access is needed, use the data-plane RBAC model (Key Vault Secrets User / Reader) rather than management-plane Owner / Contributor.
-- **Enable Defender for Cloud across Key Vault, App Service, Storage, and SQL** — Storm-2949's chain triggers built-in alerts at every step; absent the per-service Defender plans, those events sink into the Activity Log without alerting.
-- **Audit custom Azure RBAC roles** specifically for `microsoft.Web/sites/publishxml/action`, `microsoft.sql/servers/firewallrules/write`, `microsoft.storage/storageaccounts/write`, `microsoft.Compute/virtualMachines/extensions/write`, and `microsoft.Compute/virtualMachines/runCommand/action` — these are the cloud-control-plane verbs the kill chain depends on.
-
-**Why this matters for Swiss / EU public-sector defenders.** Storm-2949 specifically targeted IT personnel and senior leadership — the audience-of-one pattern most likely to clear MFA prompts under social-engineering pressure. The kill chain is generic Azure / M365 abuse; nothing in it is tenant-specific. Any Swiss federal, cantonal, healthcare, or finance organisation running Azure has the resource types Storm-2949 walked through. The mitigations are also generic: phishing-resistant MFA on privileged roles, SSPR Conditional Access, Defender-for-Cloud enablement on the four affected services. None of those require breaking changes — they're configuration work, primarily.
+At Key Vault the actor changed the vault's access configuration and read dozens of secrets, connection strings and identity credentials among them ([Microsoft, 2026-05-18](https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/)); the Key Vault operation names given earlier for hunting are not in Microsoft's write-up, and Entra ID records SSPR activity in the Self-Service Password Management audit category ([Microsoft Learn](https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-reporting)). Microsoft names no victim sector or country.

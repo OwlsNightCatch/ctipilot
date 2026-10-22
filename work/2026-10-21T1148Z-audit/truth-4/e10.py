@@ -1,0 +1,86 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+BSI='https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1583'
+THN='https://thehackernews.com/2026/05/vm2-nodejs-library-vulnerabilities.html'
+K='https://www.kodemsecurity.com/resources/vm2-sandbox-escape-vulnerabilities-the-2026-cve-wave-turning-ai-agents-into-host-rce-vectors'
+GH='https://github.com/patriksimek/vm2/security/advisories/'
+d={
+'entry':'2026-05-20/vm2-node-js-sandbox-12-critical-cves-cve-2026-43997-43999-44',
+'verdict':'factual-error',
+'defects':[
+ {'where':'summary; body paragraph 1; body paragraph 3 (BSI citations); CVE table rows citing BSI',
+  'claim':'On 2026-05-19 BSI WID-SEC-2026-1583 was published flagging 12 critical sandbox-escape vulnerabilities in the vm2 Node.js library',
+  'defect':'Two vm2 disclosure waves are conflated. The 12 CVEs the entry lists (CVE-2026-24118 ... 44009) were published by the maintainer on 2026-05-01/03, reported by The Hacker News on 2026-05-07 and fixed by 3.11.2. BSI WID-SEC-2026-1583 (2026-05-19) covers a second wave with different ids (CVE-2026-47131, 47135, 47137, 47139, 47140, 47141, 47208, 47209, 47210, later 92956 and 92962), affecting <= 3.11.3 and fixed in 3.11.4, with severities from Low to Critical.',
+  'ground_truth':'BSI CSAF WID-SEC-2026-1583 "vm2: Mehrere Schwachstellen", initial release 2026-05-18T22:00Z, products "Open Source vm2 <3.11.4" / "3.11.4", CVEs 47131-47210, references ten GHSA advisories dated 2026-05-18. THN (dated 2026-05-07): "A dozen critical security vulnerabilities have been disclosed in the vm2 Node.js library"; "Users of vm2 are advised to update to the latest version (3.11.2)".',
+  'ground_truth_url':BSI,
+  'fix':'Describe the first wave (12 CVEs, THN 2026-05-07, fixed 3.11.2) and the second wave (BSI WID-SEC-2026-1583 / GHSA 2026-05-18, CVE-2026-47131 and others, fixed 3.11.4) separately; keep "upgrade to >= 3.11.4" as the action that covers both; event_date and the first-sentence citation should not tie the 12 CVEs to 2026-05-19.',
+  'class':'factual-error'},
+ {'where':'cves[] (all seven records); cves[] coverage',
+  'claim':'every record: vector: user-interaction, auth: pre-auth, affected: null, fixed: null',
+  'defect':'All seven GHSA scores carry UI:N (no user interaction); CVE-2026-43999 requires low privileges (PR:L). affected/fixed are null though each GHSA gives them. Five of the twelve first-wave CVEs (24118, 24120, 24781, 26332, 44007) and all second-wave CVEs the cited BSI advisory lists are absent, while CVE-2026-26956 is in cves[] but never mentioned in the body.',
+  'ground_truth':'GHSA: 26956 9.8 <= 3.10.4 -> 3.10.5; 43997 10.0 <= 3.10.5 -> 3.11.0; 43999 9.9 CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C v3.10.5 -> 3.11.0; 44005 10.0 3.9.6-3.10.5 -> 3.11.0; 44006 10.0 <= 3.10.5 -> 3.11.0; 44008 9.8 <= 3.11.1 -> 3.11.2; 44009 9.8 <= 3.11.1 -> 3.11.2; all UI:N.',
+  'ground_truth_url':GH+'GHSA-947f-4v7f-x2v8',
+  'fix':'vector: network (code supplied by an attacker to an application that runs it in vm2); 43999 auth low-privilege; fill affected/fixed per GHSA; add the missing first-wave ids or name them in the body; add the second-wave ids that the BSI citation covers.',
+  'class':'factual-error'},
+ {'where':'body bullets CVE-2026-43997, CVE-2026-43999, CVE-2026-44008 / 44009',
+  'claim':'CVE-2026-43997 (CVSS 10.0) — host-object access via code injection in the `BaseHandler.getPrototypeOf` trap ... CVE-2026-43999 (CVSS 9.9) — `NodeVM` allow-list bypass: when the host explicitly permits `child_process` ... CVE-2026-44008 / CVE-2026-44009 (CVSS 9.8 each) — null-proto exception exploitation bypassing `neutralizeArraySpeciesBatch()`',
+  'defect':'The getPrototypeOf trap is CVE-2026-44006, not 43997 (43997 obtains the host Object by other means). CVE-2026-43999 triggers when the `module` builtin (or the * wildcard) is allowed, which then loads excluded builtins such as child_process, not when child_process is permitted. 44008 is the neutralizeArraySpeciesBatch breakout and 44009 the null-proto exception breakout; the bullet merges them into one mechanism.',
+  'ground_truth':'GHSA-47x8-96vw-5wg6 (43997): "It is possible to obtain the host Object, ebcfe94 added some protections, but they\'re not enough." GHSA-qcp4-v2jj-fjx8 (44006): "It is possible to reach BaseHandler.getPrototypeOf". GHSA-947f-4v7f-x2v8 (43999): "NodeVM\'s builtin allowlist can be bypassed when the module builtin is allowed (including via the \'*\' wildcard)." GHSA-9qj6-qjgg-37qq "Sandbox breakout via neutralizeArraySpeciesBatch"; GHSA-9vg3-4rfj-wgcm "Sandbox Breakout Through Null Proto Exception".',
+  'ground_truth_url':GH+'GHSA-47x8-96vw-5wg6',
+  'fix':'Rewrite the three bullets per the GHSA titles; give 44008 and 44009 one line each.',
+  'class':'factual-error'},
+ {'where':'body paragraph 3, Kodem sentence',
+  'claim':'[Kodem Security frames the AI-agent escalation path](...) as "prompt → agent evaluates attacker-controlled JS via vm2 → sandbox escape → host OS RCE"',
+  'defect':'The quoted string does not appear on the Kodem page, and Kodem attributes the "prompts become shells" framing to Microsoft Security Research. Kodem is dated 2026-05-14, not 2026-05-19 as the source record says.',
+  'ground_truth':'Kodem: "Microsoft Security Research, names the structural problem the 2026 vm2 CVEs expose: in AI agent frameworks where prompts can influence executable logic, a sandbox escape vulnerability converts a prompt injection into host-level remote code execution." Page date 2026-05-14.',
+  'ground_truth_url':K,
+  'fix':'Paraphrase without quotation marks and attribute to Microsoft via Kodem, or quote the Kodem sentence above; set the Kodem source date to 2026-05-14.',
+  'class':'factual-error'},
+ {'where':'body "CVE Summary Table"',
+  'claim':'| CVE-2026-41091 | Microsoft Defender Engine | 7.8 | n/a | No | Yes | ... | CVE-2026-45585 | Windows BitLocker / WinRE (YellowKey) ... | CVE-2026-31635 | Linux kernel RxGK ... [Moselwal]',
+  'defect':'The table is the 2026-05-20 v2 brief\'s cross-item CVE table pasted into this entry: six of its eight rows concern other findings (Defender, YellowKey, Sparx, Linux RxGK), CVE-2026-45585 and CVE-2026-31635 are in no cves[], the Defender row says KEV "No" although CISA added CVE-2026-41091 on 2026-05-20, the Moselwal link no longer resolves, and the vm2 rows cite BSI for CVEs BSI does not list.',
+  'ground_truth':'CISA KEV: CVE-2026-41091 dateAdded 2026-05-20. moselwal.com: DNS resolution fails on every transport (2026-10-21). BSI WID-SEC-2026-1583 lists none of CVE-2026-43997 or 43999.',
+  'ground_truth_url':BSI,
+  'fix':'Delete the table from this entry; the non-vm2 rows belong to their own entries.',
+  'class':'factual-error'},
+ {'where':'body paragraph 3 ("Public PoC code ...", workaround, prevalence)',
+  'claim':'Public PoC code is circulating for several CVEs on GitHub. [cited Kodem] ... No configuration workaround exists. ... vm2 is widely embedded in code editors, CI/CD pipelines, serverless function runners, workflow automation platforms (n8n and similar), and AI-agent frameworks',
+  'defect':'Kodem does not mention public PoC code (the GHSA advisories themselves contain PoC snippets). No source says no configuration workaround exists, and CVE-2026-43999 is avoided by not allowing the module builtin. n8n is named in no source.',
+  'ground_truth':'GHSA-47x8-96vw-5wg6 includes a "PoC" section. Kodem: "Inventory every service with vm2 in its direct or transitive dependency tree, focusing on AI agent frameworks, plugin systems, CI/CD runners, online IDEs, and any code execution service."',
+  'ground_truth_url':K,
+  'fix':'Cite the GHSA advisories for PoC availability; drop "No configuration workaround exists" and the n8n example, or source them; use Kodem\'s list of exposed service types.',
+  'class':'imprecision'},
+ {'where':'body paragraph 1 first citation; body paragraph 3 last sentence',
+  'claim':'On [2026-05-19](https://thehackernews.com/2026/05/vm2-nodejs-library-vulnerabilities.html) BSI WID-SEC-2026-1583 was published ... BSI flags the comprehensive cut-over at 3.11.4 (.',
+  'defect':'The Hacker News article is dated 2026-05-07 and is not about the BSI advisory; the paragraph ends in a broken parenthesis.',
+  'ground_truth':'THN page date "2026-05-07".',
+  'ground_truth_url':THN,
+  'fix':'Cite BSI for its own 2026-05-19 publication and THN (2026-05-07) for the 12-CVE wave; remove "(.".',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1190','behavior':'Attacker-supplied JavaScript reaches a service (plugin/SaaS code runner, AI agent) that executes it in vm2, and a sandbox escape gives code execution in the host process','url':K},
+  {'id':'T1059.007','behavior':'Escaped sandbox code runs JavaScript in the host Node.js process and reaches child_process to run OS commands','url':GH+'GHSA-947f-4v7f-x2v8'},
+ ],
+ 'rating':{'reliability':'A','credibility':2,'basis':'GitHub security advisories by the vm2 maintainer are the per-CVE authority for its own library; BSI, The Hacker News and Kodem restate them (one assessor). No in-the-wild exploitation reported; none of the CVEs is in CISA KEV.'},
+ 'exposure':[
+  {'quote':'Untrusted JavaScript reaches vm2. In AI agent environments, the source is often LLM output produced in response to a manipulated prompt. In plugin or SaaS environments, the source is user-submitted code.','url':K},
+ ],
+ 'detection':[
+  {'quote':'Outbound DNS or HTTPS from an agent runtime to a domain not on the application allowlist. Unexpected egress from CI/CD runners and AI agent execution environments.','url':K},
+ ],
+ 'triage':[],
+ 'takeaway':[
+  {'quote':'The question is no longer whether vm2 is installed. The question is whether untrusted prompts can reach a dynamic execution path that uses it.','url':K},
+ ],
+ 'bodies':[B+'bsi-wid-sec-2026-1583-csaf.txt',B+'thn-vm2.txt',B+'kodem-vm2.txt']+[B+'ghsa-vm2-%s.txt'%n for n in ['43997','43999','44005','44006','44008','44009','26956']]+[B+'ghsa-vm2-%s-raw.txt'%n for n in ['43997','43999','44005','44006','44008','44009','26956']]+[B+'ghsa-vm2-GHSA-%s-raw.txt'%g for g in ['6j2x-vhqr-qr7q','76w7-j9cq-rx2j','9g8x-92q2-p28f','c4cf-2hgv-2qv6','m4wx-m65x-ghrr','m5q2-4fm3-vfqp','q3fm-4wcw-g57x','r9pm-gxmw-wv6p','rp36-8xq3-r6c4','v6mx-mf47-r5wg']]+[B+'msrc-cve-2026-45585.txt',B+'cveawg-cve-2026-31635.txt'],
+ 'extra':{'wave1':'CVE-2026-24118 9.8 (<=3.10.4, 3.11.0), 24120 9.8 (<=3.10.3, 3.10.5), 24781 9.8 (<=3.10.3, 3.11.0), 26332 9.8 (<=3.10.4, 3.11.0), 26956 9.8 (3.10.4, 3.10.5), 43997 10.0, 43999 9.9, 44005 10.0, 44006 10.0 (all 3.11.0), 44007 9.1 (<=3.11.0, 3.11.1), 44008 9.8, 44009 9.8 (<=3.11.1, 3.11.2) per THN/GHSA',
+          'wave2':'BSI WID-SEC-2026-1583 / GHSA 2026-05-18, affected <= 3.11.3, fixed 3.11.4: CVE-2026-47131 10.0, 47137 10.0, 47140 10.0, 47208 10.0, 47210 9.8, 47135 8.7, 47139 8.6, 47209 8.6, 47141 Moderate, GHSA-q3fm-4wcw-g57x Low 2.1 (no CVE in page); BSI later added CVE-2026-92956 and 92962',
+          'kev':'none of the vm2 CVEs is in CISA KEV (2026.10.20)',
+          'table_rows':'CVE Summary Table rows for Defender/YellowKey/Sparx/RxGK belong to other entries; YellowKey CVE-2026-45585 MSRC 6.8, exploited No, publicly disclosed Yes, June 2026 updates added 2026-06-09'},
+},
+'possible_twin_outside_batch':None,
+}
+save(d)

@@ -1,0 +1,59 @@
+  - entry: 2026-05-13/cve-2026-45185-exim-dead-letter-use-after-free-in-bdat-chunk
+    verdict: factual-error
+    defects:
+      - where: "body (XBOW exploitation chains)"
+        claim: "XBOW's AI-driven exploitation (within the seven-day disclosure window) produced two working chains under ASLR: a largebin-corruption → `FILE` struct hijack chain on No-PIE builds, and a `storeblock` length-inflation → bump-pointer corruption → `${run}` ACL execution chain on PIE builds."
+        defect: "Misstated: the AI's first chain ran with ASLR off on a non-PIE binary, its second with ASLR on but still non-PIE; the exploit against the realistic default (PIE) build was the human researcher's ('Team Human Wins'), and the LLM 'never even got as far as a leak' there."
+        ground_truth: "XBOW: 'XBOW Native had produced a working solution for the first stage: no ASLR, no PIE, against Exim 4.97'; 'XBOW Native had cracked the second challenge, ASLR on, still no-PIE'; '### Final Round: Team Human Wins with a Stack Leak'; 'The LLM kept working for a while longer and never even got as far as a leak.'"
+        ground_truth_url: "https://xbow.com/blog/dead-letter-cve-2026-45185-xbow-found-rce-exim"
+        fix: "'XBOW's AI agent produced two exploit chains against non-PIE builds (ASLR off, then ASLR on); the exploit against the default PIE build was written by the human researcher.'"
+        class: factual-error
+      - where: "body (workaround)"
+        claim: "Workaround pending patch: set `CHUNKING_ADVERTISE_HOSTS =` (empty) in `exim4.conf` to suppress the BDAT advertisement."
+        defect: "The vendor states there is no mitigation other than upgrading; no cited page offers this workaround (oss-security only says affected configurations advertise STARTTLS and CHUNKING). The macro name/file is also uncited."
+        ground_truth: "Exim advisory: 'There is no known mitigation other than upgrading.' The Hacker News: 'There are no mitigations that resolve the vulnerability.' oss-security: affected versions that 'Have STARTTLS and CHUNKING advertised'."
+        ground_truth_url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"
+        fix: "Drop the workaround or label it as untested configuration reduction against the vendor's 'no known mitigation other than upgrading'; add a Contradiction line if kept."
+        class: factual-error
+      - where: "body (CVSS attribution; Exim prevalence; relevance)"
+        claim: "CVSS 9.8 per the XBOW disclosure. No public exploitation reported at disclosure, but exim.org is the dominant MTA on the public internet and the GnuTLS default on Debian / Ubuntu maps directly to the typical EU university, academic-research and small-government mail-relay estate."
+        defect: "The 9.8 is in the Exim advisory and EUVD, not the XBOW post; 'exim.org' is the project website; the 'dominant MTA' and EU-estate mapping are on no cited page."
+        ground_truth: "Exim advisory: 'Severity: Critical (CVSS 9.8)'; EUVD-2026-29824: 9.8 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H."
+        ground_truth_url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"
+        fix: "Cite the Exim advisory for CVSS and versions (add it as the primary source); drop or cite the prevalence claim."
+        class: imprecision
+      - where: "Detection / hunt concepts"
+        claim: "mapped to `T1190` and `T1499.004 Endpoint Denial of Service: Application or System Exploitation`: monitor `exim` `panic.log` for `tls_ungetc` traces and segfaults under non-zero load; egress-monitor any outbound TCP from the MTA host ...; audit `exim -bV | grep GnuTLS` per host"
+        defect: "Uncited composition; the advisory gives no detection guidance. The version/TLS-library check is a sound exposure test but should be presented as such; T1499.004 is not described by any source (the sources describe code execution)."
+        ground_truth: "Exim advisory: 'This vulnerability only impacts builds that use USE_GNUTLS=yes.' XBOW: the AI chain's payload exfiltrated via bash /dev/tcp from ${run}."
+        ground_truth_url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"
+        fix: "Exposure: Exim 4.97-4.99.2 built with GnuTLS and advertising STARTTLS + CHUNKING; detection concepts only as clearly labelled analysis; drop T1499.004."
+        class: imprecision
+      - where: "cves[CVE-2026-45185].affected/fixed; sources"
+        claim: "affected: null, fixed: null; primary source XBOW blog"
+        defect: "The vendor advisory (affected 4.97 up to and including 4.99.2, corrected 4.99.3) is not among the sources; affected/fixed fields are empty."
+        ground_truth: "Exim advisory: 'Affects: Exim 4.97 up to and including 4.99.2 / Corrected: Exim 4.99.3'."
+        ground_truth_url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"
+        fix: "Add the Exim advisory as primary; set affected '4.97-4.99.2 (GnuTLS builds)' and fixed '4.99.3'."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1190, behavior: "Unauthenticated remote attacker who can establish a TLS session and use CHUNKING (BDAT) triggers a use-after-free in the internet-facing Exim SMTP service, leading to code execution", url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"}
+      rating:
+        reliability: A
+        credibility: 1
+        basis: "Exim maintainers' advisory for their own product and the discoverer's (XBOW) detailed technical write-up with working exploit chains: vendor confirmation of an independent researcher's finding; oss-security, The Hacker News and EUVD restate."
+      exposure:
+        - {quote: "All Exim versions from 4.97 up to and including 4.99.2 are affected. This vulnerability only impacts builds that use USE_GNUTLS=yes. Builds using OpenSSL or other TLS libraries are not affected.", url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"}
+        - {quote: "This vulnerability affects Exim versions 4.97 through 4.99.x that: - Are built with GnuTLS support - Have STARTTLS and CHUNKING advertised", url: "https://www.openwall.com/lists/oss-security/2026/05/12/4"}
+      detection: []
+      triage: []
+      takeaway:
+        - {quote: "There is no known mitigation other than upgrading.", url: "https://exim.org/static/doc/security/EXIM-Security-2026-05-01.1/EXIM-Security-2026-05-01.1.txt"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/exim-advisory.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/exim-xbow.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/exim-oss.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/exim-thn.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/exim-euvd.json
+    possible_twin_outside_batch: null

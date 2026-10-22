@@ -1,0 +1,53 @@
+- entry: 2026-05-15/cve-2026-45793-php-composer-github-actions-ci-token-disclosu
+  verdict: factual-error
+  defects:
+    - where: "body paragraph (mechanism)"
+      claim: "When Composer encounters certain error conditions during package resolution in a GitHub Actions CI/CD workflow, it emits the configured GitHub authentication token — `GITHUB_TOKEN` or a personal access token — into its error output and debug log stream."
+      defect: "The trigger is specific and on the default path: GitHub's new hyphenated token format fails Composer's token validation when its configuration loads, and the exception prints the full token to stderr. It concerns GITHUB_TOKEN and GitHub App installation tokens, not personal access tokens, and it is not tied to package resolution."
+      ground_truth: "'GitHub introduced a new format for these tokens including a - (hyphen) ... The new format fails Composer's validation, leading to an error message that exposes the full token contents to stderr.'; 'Composer validates configured GitHub tokens against an allowed character set in Composer\\IO\\BaseIO::loadConfiguration()'; 'Any workflow that configures a GitHub App installation token (including the workflow's auto-injected GITHUB_TOKEN) into Composer's auth and then runs any Composer command will hit it.'"
+      ground_truth_url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"
+      fix: "Restate the mechanism as Packagist does, including that setup-php auto-registers GITHUB_TOKEN so no opt-in is needed."
+      class: factual-error
+    - where: "body (impact paragraph); Action line"
+      claim: "an attacker who gains access to build logs ... can extract and abuse the token before it expires"
+      defect: "Omits the lifetime facts that bound the exposure and GitHub's same-day rollback, which changed the urgency: hosted-runner GITHUB_TOKENs die with the job (usually failed by the same error), self-hosted up to 24 h, App tokens up to 1 h; GitHub rolled back the format on 13 May and planned to re-roll from 18 May."
+      ground_truth: "'Usually the error leaking the token will also fail the job and immediately expire the token.'; 'A token leaked from a self-hosted runner job is therefore potentially valid for up to 24 hours after issuance.'; 'UPDATE May 13, 2026 2:30 PM UTC: GitHub has rolled back their change to GitHub Actions tokens.'; 'UPDATE May 14, 2026 11:00 AM UTC: GitHub intends to begin the roll-out of the new token format again on Monday, May 18, 2026'."
+      ground_truth_url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"
+      fix: "Add the lifetimes, the rollback and the 18 May re-rollout; make the action 'upgrade to 2.9.8 / 2.2.28 before the re-rollout; review logs of self-hosted and App-token jobs and delete exposed tokens'."
+      class: imprecision
+    - where: "body (broader risk context); entities campaign:mini-shai-hulud"
+      claim: "this bug class (credential leakage via error path logging) echoes the credential-leakage pattern seen in supply-chain attacks such as Mini Shai-Hulud; Composer-based repositories using GitHub Actions are now an independently confirmed leakage path for CI tokens."
+      defect: "No source links this bug to Mini Shai-Hulud (a worm stealing secrets via malicious packages and runner-memory reads), and nothing 'independently confirmed' exploitation; the campaign entity link is unsupported."
+      ground_truth: "The Packagist post and GHSA-f9f8-rm49-7jv2 describe an accidental disclosure triggered by GitHub's token-format change; neither mentions Mini Shai-Hulud, TeamPCP or exploitation."
+      ground_truth_url: "https://github.com/composer/composer/security/advisories/GHSA-f9f8-rm49-7jv2"
+      fix: "Delete the sentence and remove campaign:mini-shai-hulud from entities."
+      class: factual-error
+    - where: "cves[] (empty); kind; 'No in-the-wild exploitation reported'"
+      claim: "cves: []; kind: threat; No in-the-wild exploitation reported."
+      defect: "The body's CVE is missing from cves[], a vendor-fixed flaw is a vulnerability entry, and the no-exploitation statement is uncited."
+      ground_truth: "GHSA-f9f8-rm49-7jv2: 'CVE ID CVE-2026-45793', 'Severity High 7.5', CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N, CWE-200; affected '>= 2.3.0, < 2.9.8', '>= 2.0.0, < 2.2.28', '>= 1.0, < 1.10.28'. Not in CISA KEV (2026-10-20)."
+      ground_truth_url: "https://github.com/composer/composer/security/advisories/GHSA-f9f8-rm49-7jv2"
+      fix: "Add cves[] {CVE-2026-45793, cvss 7.5, fixed 2.9.8 / 2.2.28 / 1.10.28, status patch-available}; set kind vulnerability; write 'no exploitation reported as of <date>' with a source or drop it."
+      class: imprecision
+    - where: "body (impact paragraph)"
+      claim: "A `GITHUB_TOKEN` scoped to the repository's default permissions allows write access to repository code, workflow files, and packages"
+      defect: "(low confidence) Not stated by the source; Packagist notes App tokens can carry permissions broader than the workflow's own 'permissions:' declaration, which is the relevant point; GITHUB_TOKEN write access to workflow files is not established by any page read."
+      ground_truth: "'The leaked token grants whatever installation permissions were requested, which can be considerably broader than the workflow's own declaration of permissions:.'"
+      ground_truth_url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"
+      fix: "Replace with the Packagist sentence on App-token permissions."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1552.001, behavior: "Token written in clear to CI job logs (stderr) where anyone with log access can read it; disclosure flaw, no exploitation reported", url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"}
+      - {id: T1528, behavior: "A party reading the job log could take the GITHUB_TOKEN or App installation token for reuse while still valid", url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"}
+    rating: {reliability: A, credibility: 2, basis: "Composer maintainers' own advisory and blog for their own product (A); single assessor (2)."}
+    exposure:
+      - {quote: "Any workflow that configures a GitHub App installation token (including the workflow's auto-injected GITHUB_TOKEN) into Composer's auth and then runs any Composer command will hit it.", url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"}
+      - {quote: "Several widely used GitHub Actions register the workflow GITHUB_TOKEN into Composer's global auth.json automatically: shivammathur/setup-php being a notable example", url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"}
+    detection:
+      - {quote: "Your github oauth token for github.com contains invalid characters: \"<full token here>\"", url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"}
+    triage: []
+    takeaway:
+      - {quote: "delete any token whose plaintext may have been written to a job log, treat the GITHUB_TOKEN on self-hosted runners as valid for up to 24 hours, and on GitHub-hosted runners as valid for up to 6 hours, confirm no unexpected activity occurred under that token.", url: "https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e12-packagist.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e12-ghsa.txt]
+  possible_twin_outside_batch: null

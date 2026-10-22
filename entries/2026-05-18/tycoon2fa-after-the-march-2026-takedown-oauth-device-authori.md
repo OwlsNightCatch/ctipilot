@@ -1,11 +1,11 @@
 ---
 schema: 1
 kind: threat
-title: Tycoon2FA after the March 2026 takedown — OAuth Device Authorization Grant abuse on Microsoft 365
-headline: Tycoon2FA after the March 2026 takedown — OAuth Device Authorization Grant abuse on Microsoft 365
-summary: "Tycoon2FA PhaaS pivots from credential-relay AiTM to OAuth 2.0 Device Authorization Grant abuse against Microsoft 365. Victims paste an attacker-supplied device code into the legitimate microsoft.com/devicelogin endpoint; MFA succeeds on the real Microsoft endpoint and tokens are issued to the attacker's registered device. eSentire documented the campaign with a four-layer browser chain ending in a fake Microsoft CAPTCHA (BleepingComputer, 2026-05-17; eSentire TRU, 2026-05-12)."
+title: "Tycoon 2FA after the March 2026 takedown: operators add OAuth device-code phishing against Microsoft 365 alongside the credential-relay kit"
+headline: "Tycoon 2FA adds device-code phishing: victims approve token issuance to an attacker device on genuine Microsoft pages"
+summary: "eSentire reported on 2026-05-12 a late-April 2026 campaign in which Tycoon 2FA operators, still active after the March 2026 takedown, added an OAuth device-code variant alongside their credential-relay kit: an invoice lure with a Trustifi click-tracking link leads through Cloudflare Workers and encrypted JavaScript layers to a fake Microsoft CAPTCHA and a voicemail page showing a device code the operator's backend obtained. The victim pastes it at microsoft.com/devicelogin, signs in and approves MFA on genuine Microsoft infrastructure, and Microsoft issues Microsoft Authentication Broker tokens to the operator's polling client; eSentire's hunts look for device-code sign-ins and Node.js user agents in Entra ID logs."
 discovered_at: "2026-05-18T05:00:04Z"
-event_date: 2026-05-17
+event_date: 2026-05-12
 run_id: 2026-05-18-2eabc1cf
 priority: high
 immediate_action: null
@@ -14,50 +14,86 @@ tags:
   - identity
   - cloud
   - organized-crime
-  - ai-abuse
 regions:
   - global
-  - europe
-sectors:
-  - public-sector
-  - healthcare
-  - education
-  - finance
-  - technology
-entities: []
+sectors: []
+entities:
+  - "campaign:tycoon2fa-oauth-device-authorization-grant-microsoft-365-post-takedown"
+techniques: [T1566.002, T1204.001, T1583.007, T1027, T1622, T1497, T1528, T1550.001, T1078.004]
+affected_products: ["Microsoft Entra ID", "Microsoft 365"]
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/tycoon2fa-hijacks-microsoft-365-accounts-via-device-code-phishing/"
-    publisher: "BleepingComputer, 2026-05-17"
+    publisher: "BleepingComputer"
+    date: "2026-05-17"
     role: primary
   - url: "https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
-    publisher: "eSentire Threat Response Unit, 2026-05-12"
+    publisher: "eSentire Threat Response Unit"
+    date: "2026-05-12"
+    role: primary
+  - url: "https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows"
+    publisher: "Microsoft Learn"
     role: corroborating
 closed_sources: []
 evidence:
-  - quote: "Doing so authorizes the attacker to register a rogue device with the victim's Microsoft 365 account, giving them unrestricted access to the victim's data and services, including email, calendar, and cloud file storage."
+  - quote: "Doing so authorizes the attacker to register a rogue device with the victim’s Microsoft 365 account, giving them unrestricted access to the victim's data and services, including email, calendar, and cloud file storage."
     publisher: BleepingComputer
-  - quote: "The user's MFA worked exactly as designed. There is no proxy, no credential capture, no fake Microsoft page."
+    source_url: "https://www.bleepingcomputer.com/news/security/tycoon2fa-hijacks-microsoft-365-accounts-via-device-code-phishing/"
+  - quote: "The user's MFA worked exactly as designed. There is no proxy, no credential capture, no fake Microsoft page; everything from login.microsoftonline.com onward is authentic Microsoft infrastructure responding to authentic Microsoft authentication events."
     publisher: eSentire Threat Response Unit
-verification: multi-source
-sourcing_note: null
+    source_url: "https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
+  - quote: "Successful device-code authentication (AuthenticationProtocol = deviceCode, ResultType = 0) from sources with no prior device-code activity."
+    publisher: eSentire Threat Response Unit
+    source_url: "https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
+  - quote: "We recommend organizations get as close as possible to a unilateral block on device code flow."
+    publisher: Microsoft Learn
+    source_url: "https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows"
+verification: single-source
+sourcing_note: >
+  eSentire TRU analyzed the campaign from a customer incident and BleepingComputer reports from its write-up, so the campaign rests on one assessor;
+  Microsoft's Conditional Access guidance supports the hardening advice.
 confidence: high
 update_of: null
 references: []
 deep_dive: true
 deep_dive_category: other
 org_triage: null
+classification:
+  reliability: B
+  credibility: 2
 watchlist_hit: false
 actions: []
 migrated_from: briefs/2026-05-18.md
+updates:
+  - at: "2026-10-21T20:30:49Z"
+    run_id: 2026-10-21T1148Z-audit
+    type: correction
+    summary: >
+      Tycoon 2FA operators added an OAuth device-code variant alongside the credential-relay kit rather
+      than abandoning it, and the Alibaba (US) hosting eSentire saw since about 2026-04-10 joins the
+      previously documented providers instead of replacing them. The lure shows a device code fetched by
+      the operator's backend and has the victim paste it at microsoft.com/devicelogin; the detection
+      signals are eSentire's own (successful deviceCode sign-ins from sources with no prior device-code
+      use, the Microsoft Authentication Broker AppId, node or undici user agents, ResultType 50173 after
+      revocation). eSentire's hardening leads with a Conditional Access block on the device-code flow, and
+      no source says that FIDO2 sign-in defeats device-code phishing.
+    fields: [affected_products, body, classification, entities, event_date, evidence, headline, regions, sectors, sources, sourcing_note, summary, tags, techniques, title, verification]
 ---
 
-**Background.** Tycoon2FA is one of the established Microsoft 365 Phishing-as-a-Service (PhaaS) kits, previously documented as a classic adversary-in-the-middle (AiTM) credential-relay kit ([Sekoia's reference analysis](https://blog.sekoia.io/tycoon-2fa-an-in-depth-analysis-of-the-latest-version-of-the-aitm-phishing-kit/) catalogued earlier versions of the kit). eSentire's Threat Response Unit documented a late-April 2026 campaign in which the kit's operators have moved away from credential-relay AiTM and are now abusing the legitimate OAuth 2.0 Device Authorization Grant flow as their post-MFA token-theft primitive ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing); [BleepingComputer, 2026-05-17](https://www.bleepingcomputer.com/news/security/tycoon2fa-hijacks-microsoft-365-accounts-via-device-code-phishing/)). The substantive defender consequence is that the new chain runs against Microsoft's own authentication endpoints rather than against a credential-relay proxy the defender could block at the infrastructure layer; the abuse is structurally indistinguishable from a legitimate device-code sign-in until the resulting token is used.
+eSentire's Threat Response Unit analyzed in late April 2026 a campaign by operators of the Tycoon 2FA phishing-as-a-service kit, which kept running after the March 2026 takedown led by Microsoft and Europol, that keeps the kit's in-browser tradecraft but ends in Microsoft's legitimate device-login flow instead of a credential-relay proxy ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). The device-code variant runs beside the relay kit: eSentire still names the OfficeHome AppId as the primary marker of the credential-relay variant and treats the two AppIds as one detection set ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)), and BleepingComputer reports that the kit now supports device-code phishing ([BleepingComputer, 2026-05-17](https://www.bleepingcomputer.com/news/security/tycoon2fa-hijacks-microsoft-365-accounts-via-device-code-phishing/)).
 
-**Attack chain.** A phishing email directs the victim through a four-layer browser chain documented by eSentire: a Trustifi click-tracking redirect (legitimate-email-marketing infrastructure, abused for reputation laundering) hands off to a Cloudflare Workers throwaway subdomain whose stage performs anti-analysis fingerprinting, AES-GCM-encrypted JavaScript decrypts the next stage only when the browser fingerprint clears, and finally the victim lands on a fake Microsoft CAPTCHA / "Check Domain" page that bridges into the OAuth device-code lure. eSentire records the underlying hosting ASN rotated to AS45102 (Alibaba Cloud) from 2026-04-10 onward, replacing previously documented ASNs. The terminal step is the technique pivot: instead of relaying credentials through an AiTM proxy, the phishing site displays a Microsoft-branded prompt instructing the victim to *"complete sign-in by visiting `microsoft.com/devicelogin` and entering this code: AB12-CDEF"*. The code is a real device code that the attacker pre-generated by calling the OAuth Device Authorization Grant endpoint (`/oauth2/v2.0/devicecode`) on the victim's tenant, presenting itself as the [Microsoft Authentication Broker client](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code) (AppId `29d9ed98-a469-4536-ade2-f981bc1d605e`) — a first-party Microsoft client whose presence does not trip standard "unknown OAuth app" alerts in Entra ID. When the victim completes the device-code login in their browser they are authenticating to genuine Microsoft endpoints, MFA fires and succeeds against the victim's own MFA method (push, OTP, SMS) — and the resulting access and refresh tokens are issued to the attacker's polling device, not the victim. Entra ID sign-in logs record this as `AuthenticationProtocol = deviceCode` originating from an unfamiliar IP, but the actual authentication is logged as successful with valid MFA, masking the abuse.
+The lure, a forwarded vendor-invoice reminder, carries a Trustifi click-tracking URL whose clean-reputation domain launders the link, and Trustifi redirects to a throwaway Cloudflare Workers subdomain that returns an AES-GCM-encrypted page decrypted in the browser ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). The decrypted controller blanks the page for headless browsers and Burp, suppresses developer-tool shortcuts, redirects to microsoft.com when a debugger timing trap fires, checks the visitor's network owner against 230 cloud, sandbox, security-vendor, VPN and AI-crawler names, and stops rendering after a hardcoded expiry date ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). A Microsoft-branded fake CAPTCHA then queries a Tycoon 2FA Check Domain, which serves suspected analysts a benign decoy website and real victims a Microsoft 365 voicemail lure ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)).
 
-**ATT&CK mapping.** [`T1566.002`](https://attack.mitre.org/techniques/T1566/002/) Phishing: Spearphishing Link → [`T1528`](https://attack.mitre.org/techniques/T1528/) Steal Application Access Token (the device-code flow itself) → [`T1550.001`](https://attack.mitre.org/techniques/T1550/001/) Use Alternate Authentication Material: Application Access Token → [`T1078.004`](https://attack.mitre.org/techniques/T1078/004/) Valid Accounts: Cloud Accounts (sustained post-MFA access using the issued tokens against Exchange Online, SharePoint, OneDrive, Teams, and Graph API). MFA bypass is structural here — Tycoon2FA does not break MFA; it sidesteps it by binding the MFA-validated session to an attacker-owned device through the legitimate OAuth flow. Every MFA method except FIDO2 / WebAuthn with phishing-resistant attestation is vulnerable to this attack class because the victim approves an MFA prompt on a flow the kit chose, not the flow the victim believes they are completing.
+The voicemail page displays a user code that the operator's backend obtained from Microsoft's device-code endpoint, copies it and opens microsoft.com/devicelogin; the victim signs in at login.microsoftonline.com, approves the MFA push and consents to Microsoft Authentication Broker, and Microsoft issues access and refresh tokens to the operator's polling client, after which the kit sends the victim to their real Outlook inbox ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). A victim already signed in sees no authentication step at all, only the consent prompt ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). Because the Broker is a Microsoft first-party application it does not trigger unverified-publisher OAuth detections, and its token can be exchanged for Exchange, Graph and OneDrive tokens without further interaction ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). The backend traffic still uses the CryptoJS AES-CBC layer with a hardcoded key and IV unchanged since eSentire's April 2025 analysis, which works as a kit fingerprint rather than protection, and the operators' token traffic came from Alibaba (US) hosting, which eSentire has seen across both kit variants since about 2026-04-10 in addition to the hosting providers documented before ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)).
 
-**Hunt / detection concepts.** Per eSentire's TRU analysis: query Entra ID sign-in logs for `AuthenticationProtocol = "deviceCode"` paired with `ClientAppUsed = "Microsoft Authentication Broker"` from IPs the user has never authenticated from previously; alert on any device-code authentication from foreign ASNs against high-privilege users (Global Admins, Privileged Role Admins, Compliance Admins) regardless of MFA outcome; correlate device-code sign-ins with Entra audit-log entries showing immediate token-refresh activity against Exchange Online or SharePoint endpoints (`Add OAuth2PermissionGrant`); on the email layer hunt for inbound mail containing the literal string `microsoft.com/devicelogin` paired with a device-code-shaped substring (eight alphanumerics with a hyphen at the midpoint) in the body — legitimate Microsoft messaging almost never instructs an end user to enter such a code in response to an email. Kit-fingerprint detection (useful when investigating a confirmed campaign): the Tycoon2FA browser stage retains the hardcoded CryptoJS AES-CBC key `1234567890123456` first documented in the kit's 2024 build, and the fake CAPTCHA layer still embeds the same Cloudflare-anti-bot bypass JavaScript across the rebuilt infrastructure.
+**Exposure:** Microsoft Entra ID tenants that allow the OAuth device-code flow for end users; the protocol does not bind the device that requested a code to the user, so anyone who starts a device-code grant for a Microsoft first-party AppId can collect tokens from any user who consents ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)).
 
-**Hardening.** [Entra Conditional Access policy](https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows) to block OAuth Device Code flow as an authentication transport for users who do not need it — the policy is `Conditional Access > New policy > Conditions > Authentication flows > Device code flow > Block`; Microsoft recommends this as a tenant-wide default in modern deployments because the device-code flow is only legitimately needed for input-constrained devices (smart TVs, IoT, CLI tools) and almost never for desktop or browser users. Where a wholesale block is operationally infeasible, scope the block to all licensed user accounts and exempt only the named service principals that require it. Enable Continuous Access Evaluation (CAE) so that anomaly-driven sign-in revocation can cut an attacker's session within minutes rather than hours. Migrate high-privilege users to FIDO2 / WebAuthn with phishing-resistant attestation as their only permitted MFA method — the device-code flow can still be initiated, but the attacker cannot complete it because the FIDO2 origin-binding fails on a non-matching browser session. Awareness messaging should make explicit that Microsoft never sends device codes via email and that any incoming message asking the recipient to enter a code at `microsoft.com/devicelogin` is fraudulent regardless of the apparent sender.
+**Detection:** in Entra ID sign-in logs, successful device-code authentications (AuthenticationProtocol deviceCode, ResultType 0) from sources with no prior device-code activity, tokens issued to Microsoft Authentication Broker (AppId 29d9ed98-a469-4536-ade2-f981bc1d605e), and the user agents node or undici against that AppId in non-interactive sign-ins, with axios/1.x marking the credential-relay variant ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). After revocation, repeated ResultType 50173 events with those user agents against one account show the operator still trying ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). Revoking the session does not undo what the operator already set up: after a confirmed device-code phish eSentire revokes the refresh-token chain and reviews mailbox rules, OAuth consents and forwarding ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)).
+
+**Triage:** a device-code sign-in alone can be a legitimate command-line tool or input-constrained device; eSentire's discriminators are a source with no prior device-code activity and Node.js user agents against the Broker AppId in non-interactive sign-ins, which it calls highly anomalous in production environments ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)).
+
+**Defender takeaway:** block the device-code flow with Conditional Access for all users except documented exceptions: Microsoft recommends getting as close as possible to a unilateral block ([Microsoft Learn](https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows)), and eSentire calls it the single control that removes this attack class for affected users ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). eSentire adds admin consent for third-party applications, Continuous Access Evaluation and device-compliance requirements ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)).
+
+## Correction — 2026-10-21T20:30:49Z
+
+Tycoon 2FA operators did not move away from the credential-relay kit: eSentire still names the OfficeHome AppId as the primary marker of the relay variant and treats it and the Broker AppId as one detection set, and BleepingComputer reports that the kit now supports device-code phishing ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing); [BleepingComputer, 2026-05-17](https://www.bleepingcomputer.com/news/security/tycoon2fa-hijacks-microsoft-365-accounts-via-device-code-phishing/)). The Alibaba (US) hosting seen since about 2026-04-10 is an addition to the hosting providers documented before, not a replacement ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). The lure page shows a user code obtained by the operator's backend and tells the victim to paste it at microsoft.com/devicelogin ([BleepingComputer, 2026-05-17](https://www.bleepingcomputer.com/news/security/tycoon2fa-hijacks-microsoft-365-accounts-via-device-code-phishing/)), after which the victim sees a consent prompt reading "Are you trying to sign in to Microsoft Authentication Broker?" ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). The detection signals eSentire publishes are successful deviceCode sign-ins from sources with no prior device-code activity, tokens issued to the Microsoft Authentication Broker AppId, node or undici user agents in non-interactive sign-ins, and ResultType 50173 after revocation ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)). eSentire says the phish does not bypass MFA but changes what MFA authorizes, and recommends blocking the device-code flow with Conditional Access as the control that removes the attack class ([eSentire TRU, 2026-05-12](https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing)), in line with Microsoft's advice to get as close as possible to a unilateral block ([Microsoft Learn](https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows)); no source says that FIDO2 sign-in defeats device-code phishing.

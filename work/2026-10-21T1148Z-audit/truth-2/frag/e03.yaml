@@ -1,0 +1,153 @@
+- entry: 2026-05-13/mini-shai-hulud-s-github-actions-pwn-request-oidc-token-thef
+  verdict: factual-error
+  defects:
+    - where: "summary; body 'Background' paragraph"
+      claim: "Mini Shai-Hulud (the TeamPCP self-propagating npm worm) first surfaced in coverage on 2026-05-10 as a SAP CAP-package compromise."
+      defect: "The SAP wave was published on 2026-04-29 and reported on 2026-04-30/05-01; 2026-05-10 is the pipeline's own first-coverage date, not when the worm surfaced. The summary field also holds only this background sentence, not the finding, and the body links to an internal brief ('/briefs/2026-05-10/')."
+      ground_truth: "The Register: 'On April 29, TeamPCP compromised four official npm packages from the SAP JavaScript and cloud application development ecosystem and published the poisoned releases between 09:55 and 12:14 UTC.'"
+      ground_truth_url: "https://www.theregister.com/2026/04/30/supply_chain_attacks_sap_npm_packages/"
+      fix: "Write 'Mini Shai-Hulud first hit SAP npm packages (mbt, @cap-js/*) on 2026-04-29'; make the summary state the TanStack pwn-request/cache-poisoning/OIDC-extraction chain of 2026-05-11; remove the internal brief link."
+      class: factual-error
+    - where: "body 'Background' paragraph (original campaign description)"
+      claim: "The original campaign relied on attacker-published versions of dependency-chain packages catching legitimate downstream consumers; its blast-radius was bounded by which packages opted into the affected dependency graph."
+      defect: "The SAP wave was a worm-style compromise of official packages that stole developer and CI secrets, self-propagated and exfiltrated to GitHub repositories; it was not 'dependency-chain' packages bounded by an opt-in graph, and it already used runner-memory extraction."
+      ground_truth: "The Register: 'The compromised packages contain malicious preinstall scripts ... This new campaign deploys a multi-stage payload that steals developer secrets, self-propagates, encrypts all the stolen goods, and then exfiltrates the now-locked secrets into a new GitHub repository'; Wiz: 'leveraging advanced techniques such as extracting secrets from runner memory'."
+      ground_truth_url: "https://www.theregister.com/2026/04/30/supply_chain_attacks_sap_npm_packages/"
+      fix: "Delete the characterisation or restate it as in The Register (compromised official SAP packages with preinstall payloads, worm-style propagation)."
+      class: factual-error
+    - where: "body paragraph 1 (cited sentence on the 2026-05-11 wave)"
+      claim: "it uses no infostealer of a maintainer's machine, no credential theft from the package owner; instead it abuses a class problem in GitHub Actions"
+      defect: "True only for the initial TanStack publish (no npm tokens stolen). The wave's payload is itself a credential stealer that spread to other maintainers' packages with stolen credentials, so 'no infostealer' misdescribes the wave and contradicts the entry's own step 10."
+      ground_truth: "TanStack: 'No npm tokens were stolen and the npm publish workflow itself was not compromised.' StepSecurity: 'Mini Shai-Hulud is a true worm: after stealing credentials from one CI/CD pipeline, it enumerates every package that maintainer controls and publishes infected versions of each.'"
+      ground_truth_url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+      fix: "Scope it: the TanStack publish needed no stolen npm token (OIDC token taken from runner memory); the payload then steals credentials from install hosts and spreads with them."
+      class: imprecision
+    - where: "chain step 1 (Reconnaissance) and its T1593 mapping"
+      claim: "The operator (`voicproducoes`, GitHub account ID 269549300, created 2026-03-19) identifies a target repository whose CI/CD configuration triggers on `pull_request_target`. ... Mapped to `T1593 Search Open Websites/Domains` (the operator surveys public Actions configurations)."
+      defect: "The account id and creation date are right, but no source describes a reconnaissance step; the timeline starts with fork creation. The behavior and its ATT&CK mapping are inference presented as fact."
+      ground_truth: "StepSecurity: 'The attacker created a fork of TanStack/router on May 10, 2026, using the GitHub account voicproducoes (ID: 269549300, created 2026-03-19).' TanStack timeline begins '2026-05-10 17:16 Attacker creates fork'."
+      ground_truth_url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
+      fix: "Drop step 1 and T1593, or label it as an assumption; start the chain at fork creation."
+      class: imprecision
+    - where: "chain step 3 (Pwn-Request lure content)"
+      claim: "attacker-controlled code paths reached via subtle changes the human reviewer is unlikely to read (e.g. a modified `pnpm-lock.yaml`, a new dev-dependency, or a CI helper script under `.github/`)"
+      defect: "Invented detail. The PR added a ~30,000-line payload file under packages/history and was titled 'WIP: simplify history build'; the pull_request_target workflow checked out the PR merge ref and ran the benchmark build, which executed it. No lockfile, dev-dependency or .github change is reported."
+      ground_truth: "TanStack: 'Adds packages/history/vite_setup.mjs (a ~30,000-line bundled JS payload)'; 'bundle-size.yml's benchmark-pr job checks out refs/pull/7378/merge, runs pnpm install + pnpm nx run @benchmarks/bundle-size:build — this executes vite_setup.mjs'; the attacker then 'force-pushes the PR back to current main HEAD ... making the visible PR a 0-file no-op'."
+      ground_truth_url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
+      fix: "Replace with: the workflow checked out and built the fork's merge ref, executing a payload file added in the PR; the PR was afterwards force-pushed to a no-op and closed."
+      class: factual-error
+    - where: "chain step 5 (Wait for release)"
+      claim: "The release workflow on `main` restores the poisoned cache, builds the package using the trojanised pnpm store, and reaches the publish step."
+      defect: "The publish step was not reached; tests failed, the Publish Packages step was skipped, and the malware published directly during the test/cleanup phase. The entry contradicts itself in step 8 ('The \"Publish Packages\" step ... was bypassed entirely')."
+      ground_truth: "TanStack: 'it does not come from the workflow's defined Publish Packages step, which was skipped because tests failed. It comes from the malware running during the test/cleanup phase, which mints an OIDC token via the workflow's id-token: write permission and POSTs directly to registry.npmjs.org'."
+      ground_truth_url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
+      fix: "Write: the poisoned store ran during the release job; the attacker's code minted an OIDC token and published directly while the real publish step was skipped."
+      class: factual-error
+    - where: "chain steps 6 and 7 (OIDC token handling)"
+      claim: "The token sits in the workflow process's memory but is not surfaced as an environment variable to step scripts. ... no audit signal at the npm side distinguishes it from a normal publish."
+      defect: "(low confidence) StepSecurity shows the payload reading ACTIONS_ID_TOKEN_REQUEST_TOKEN / ACTIONS_ID_TOKEN_REQUEST_URL environment variables to obtain tokens, and TanStack names a detectable difference (publishes from unexpected workflow steps), so both absolutes overreach."
+      ground_truth: "StepSecurity: 'It uses the stolen GitHub OIDC token (ACTIONS_ID_TOKEN_REQUEST_TOKEN / ACTIONS_ID_TOKEN_REQUEST_URL) to obtain a Fulcio signing certificate'. TanStack: 'add provenance-source-verification to detect publishes from unexpected workflow steps'."
+      ground_truth_url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+      fix: "Say the OIDC token is minted in the runner for id-token: write jobs and was read from Runner.Worker memory; say TanStack found the publish came from outside the defined publish step."
+      class: imprecision
+    - where: "chain step 8 (Provenance fraud) and Hardening SLSA bullet"
+      claim: "SLSA L3 was the assurance many EU procurement frameworks were starting to demand; this campaign demonstrates it is forgeable ... The 2026-05-11 campaign shows L3 alone is forgeable."
+      defect: "No page mentions EU procurement frameworks, and the attestation was not forged: it is a genuine attestation of a compromised pipeline."
+      ground_truth: "StepSecurity: 'SLSA provenance confirms which pipeline produced the artifact, not whether the pipeline was behaving as intended. A compromised build step can produce a validly-attested but malicious package.'"
+      ground_truth_url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+      fix: "Delete the procurement clause; write 'valid SLSA provenance proves which pipeline built the package, not that the pipeline behaved'."
+      class: factual-error
+    - where: "chain step 9 (payload)"
+      claim: "a 2.3 MB triple-obfuscated `router_init.js` that on `postinstall` harvests ... browser cookie jars and 100+ further credential paths"
+      defect: "The payload ran from the `prepare` script of an optional git dependency (Wiz notes a `preinstall` variant for UiPath/Mistral packages), not `postinstall`; the 100+ path list names Slack's Cookies file, crypto wallets, VPN, AI-tool and shell-history files, not browser cookie jars."
+      ground_truth: "StepSecurity: '\"prepare\": \"bun run tanstack_runner.js && exit 1\"' ... 'The `prepare` lifecycle hook runs automatically when the dependency is installed via a `github:` URL'; path table lists '~/.config/Slack/Cookies'."
+      ground_truth_url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+      fix: "Write 'a git-URL optional dependency whose prepare script launches the Bun-run payload' and list the path categories as StepSecurity does."
+      class: imprecision
+    - where: "What detection looks like, runner-process introspection bullet"
+      claim: "any step that reads from `/proc/*/mem` from a non-`root` process on the runner."
+      defect: "The memory scraper is run under sudo, so a non-root filter would miss it."
+      ground_truth: "StepSecurity: 'The orchestrator feeds this Python script to `sudo python3` via stdin' and the captured process tree shows 'sudo python3 | tr | grep | sort' with 'python3 reads /proc/2138/mem'."
+      ground_truth_url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+      fix: "Alert on any read of Runner.Worker's /proc/<pid>/mem regardless of user (including sudo-launched interpreters)."
+      class: factual-error
+    - where: "What detection looks like (uncited generalisations)"
+      claim: "npm's audit log surfaces this if the org has it enabled. ... GitHub-hosted runners do not need to read `/proc/<pid>/mem` for any legitimate workflow purpose."
+      defect: "Neither clause is stated by any page read."
+      ground_truth: "TanStack: 'No internal alerting. We learned about the compromise from a third party.' Detection came from StepSecurity."
+      ground_truth_url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
+      fix: "Remove the audit-log assurance or cite an npm doc; qualify the /proc statement as an assessment."
+      class: imprecision
+    - where: "Hardening bullets 1, 3 and 5 (invented option and command)"
+      claim: "`actions/cache` with `save: false` from `pull_request_target` ... pair it with a maintainer-verified `npm provenance verify`"
+      defect: "Neither exists: actions/cache has no `save` input (restore-only is actions/cache/restore) and npm verifies provenance with `npm audit signatures`."
+      ground_truth: "actions/cache README inputs: path, key, restore-keys, enableCrossOsArchive, fail-on-cache-miss, lookup-only; 'New actions are available for granular control over caches - restore and save'. npm docs: 'You can verify the provenance attestations of downloaded packages with the following `audit` command: `npm audit signatures`'."
+      ground_truth_url: "https://github.com/actions/cache"
+      fix: "Use actions/cache/restore for fork-reachable jobs (no save), and `npm audit signatures` for attestation checks."
+      class: factual-error
+    - where: "Hardening bullet 1"
+      claim: "Pin every `pull_request_target` workflow to a SHA-locked version of every action it uses; never `@main` or `@v1`. Forks cannot influence what runs."
+      defect: "Overclaim: pinning does not stop a workflow that checks out and builds the fork's merge ref from running fork code, which was the root cause."
+      ground_truth: "TanStack root cause: 'bundle-size.yml ran pull_request_target for fork PRs and, inside that trigger context, checked out the fork's PR-merge ref and ran a build'. GitHub Security Lab: the danger is 'Combining pull_request_target workflow trigger with an explicit checkout of an untrusted PR'."
+      ground_truth_url: "https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/"
+      fix: "Lead with 'never check out or build fork code under pull_request_target'; keep SHA pinning as a separate item without the 'forks cannot influence' sentence."
+      class: imprecision
+    - where: "ATT&CK mappings in prose (steps 2, 3, 7)"
+      claim: "T1583.001 Acquire Infrastructure: Domains-equivalent; T1199 Trusted Relationship and T1505.003 Web Shell-equivalent; T1606.002 Forge Web Credentials: SAML Tokens-equivalent for OIDC"
+      defect: "These ids name behaviors the sources do not describe (domains, third-party access, web shells, SAML forgery); 'equivalent' hedges do not make them mapping-valid."
+      ground_truth: "Sources describe: fork/account creation, a pull_request_target build running fork code, Actions cache poisoning, /proc/<pid>/mem token extraction, OIDC token use to publish to npm, credential-file and IMDS theft, GitHub/Session exfiltration, systemd/LaunchAgent persistence, rm -rf wiper."
+      ground_truth_url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
+      fix: "Remove these inline ids and carry the mapping in techniques[] (see upgrade block)."
+      class: imprecision
+    - where: "cves[] (empty)"
+      claim: "cves: []"
+      defect: "The TanStack compromise has a CVE (reserved 2026-05-11, published 2026-05-12, CVSS 3.1 9.6 by the GitHub CNA) and was added to CISA KEV on 2026-05-27, after this entry was filed."
+      ground_truth: "CISA KEV: CVE-2026-45321 'TanStack Unspecified Vulnerability', dateAdded 2026-05-27, notes cite 'https://github.com/TanStack/router/security/advisories/GHSA-g7cv-rxg3-hmpx'. CVE record: 'Malware in 42 @tanstack/* packages exfiltrates cloud credentials, GitHub tokens, and SSH keys', CWE-506, baseScore 9.6."
+      ground_truth_url: "https://github.com/TanStack/router/security/advisories/GHSA-g7cv-rxg3-hmpx"
+      fix: "Add CVE-2026-45321 (cvss 9.6 per the GitHub CNA record; KEV 2026-05-27) via a changelog record citing the GHSA; the CVE record itself is not citable."
+      class: imprecision
+    - where: "sources[] dates; chain step 2 (accounts)"
+      claim: "TanStack post-mortem, 2026-05-12; fork `zblgg/configuration` created by operator `voicproducoes`"
+      defect: "The post-mortem's datePublished is 2026-05-11 (updated 2026-05-15); the sources split the fork across two attacker accounts (TanStack: zblgg, StepSecurity and NCSC-CH: voicproducoes)."
+      ground_truth: "TanStack page: datePublished 2026-05-11, dateModified 2026-05-15; 'Real attacker accounts: zblgg (id 127806521), voicproducoes (id 269549300)'; NCSC-CH: 'Fork: voicproducoes/router (fork of TanStack/router, created 2026-05-10)'."
+      ground_truth_url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"
+      fix: "Date the citation 2026-05-11 and write 'two attacker accounts (zblgg, voicproducoes)'."
+      class: imprecision
+    - where: "body chain steps 1-10, payload and detection paragraphs (inline citation)"
+      claim: "(no inline citation on steps 1-10, 'What detection looks like' or 'Hardening')"
+      defect: "Only the opening paragraph carries citations; every technical clause that follows is uncited, which is how the unsupported details above went unchecked. Also 'No IOCs in this brief' is pipeline self-reference."
+      ground_truth: "Pages that carry the chain: TanStack post-mortem (steps 2-8), StepSecurity (steps 7-10, payload, persistence), NCSC-CH hub post 12558 (dead-man's switch, persistence)."
+      ground_truth_url: "https://security-hub.ncsc.admin.ch/#/posts/12558"
+      fix: "Bind each step to the page above that carries it; replace 'in this brief' with neutral wording."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1190, behavior: "pull_request_target 'Pwn Request': fork PR triggers a base-repo workflow that checks out and builds fork code (closest ATT&CK fit; no CI-specific technique exists)", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {id: T1195.001, behavior: "Poisoned pnpm store written to the Actions cache under the key the release workflow restores", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {id: T1195.002, behavior: "84 malicious versions of 42 @tanstack/* packages published through the project's own release pipeline with valid provenance", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {id: T1003.007, behavior: "Runner.Worker located via /proc/*/cmdline; /proc/<pid>/maps and /proc/<pid>/mem read to dump secrets and the OIDC token", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {id: T1528, behavior: "GitHub Actions OIDC token taken from runner memory", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {id: T1550.001, behavior: "OIDC token exchanged at the npm registry for a per-package publish token; direct POSTs to registry.npmjs.org", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {id: T1552.001, behavior: "Payload reads 100+ credential file paths (cloud, SSH/Git, developer tools, AI tools, wallets, VPN, messaging, shell history)", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {id: T1552.005, behavior: "AWS IMDSv2 and ECS credential queries from the payload", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {id: T1567, behavior: "Encrypted exfiltration to the Session file-upload network", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {id: T1567.001, behavior: "GitHub GraphQL createCommitOnBranch dead-drop commits authored as a spoofed claude identity on Dune-named branches", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {id: T1543.002, behavior: "gh-token-monitor systemd user service on Linux", url: "https://security-hub.ncsc.admin.ch/#/posts/12558"}
+      - {id: T1543.001, behavior: "gh-token-monitor LaunchAgent on macOS", url: "https://security-hub.ncsc.admin.ch/#/posts/12558"}
+      - {id: T1546, behavior: "Persistence via Claude Code SessionStart hook and VS Code folderOpen task (generic event-triggered fit)", url: "https://security-hub.ncsc.admin.ch/#/posts/12558"}
+      - {id: T1485, behavior: "Dead-man's switch: gh-token-monitor runs rm -rf ~/ when tokens are revoked", url: "https://security-hub.ncsc.admin.ch/#/posts/12558"}
+      - {id: T1027, behavior: "Three obfuscation layers (string table, per-byte cipher, AES-256-GCM payloads)", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {id: T1105, behavior: "Bun runtime installed and second-stage scripts fetched/decrypted on the victim host", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+    rating: {reliability: A, credibility: 1, basis: "TanStack's own post-mortem and GHSA for its incident (A), corroborated independently by StepSecurity's payload analysis, Wiz and the NCSC-CH hub post, which agree on the pwn-request, cache-poisoning and OIDC-extraction chain."}
+    exposure:
+      - {quote: "anyone who installed an affected version on 2026-05-11 must treat the install host as potentially compromised.", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {quote: "Only the Router/Start repo was affected — 42 monorepo packages, 2 versions each.", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+    detection:
+      - {quote: "The `files` field in `package.json` only lists `[\"dist\", \"src\"]`, so `router_init.js` should *not* be included in the published tarball. Its presence confirms the tarball was tampered with outside the normal build process.", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+      - {quote: "GitHub commit author: claude@users.noreply.github.com - dead-drop commit author; unexpected commits = active exfiltration", url: "https://security-hub.ncsc.admin.ch/#/posts/12558"}
+    triage: []
+    takeaway:
+      - {quote: "we strongly recommend that anyone who installed an affected version on 2026-05-11 rotate AWS, GCP, Kubernetes, Vault, GitHub, npm, and SSH credentials reachable from the install host.", url: "https://tanstack.com/blog/npm-supply-chain-compromise-postmortem"}
+      - {quote: "Do not revoke these tokens before isolating and imaging the machine - the payload includes a destructive wipe routine triggered by revocation.", url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e3-stepsec.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-stepsec-raw.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-tanstack.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-tanstack-raw.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-wiz.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-wiz-raw.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-ncsc-12558.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-reg-sap.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-gh-prt.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-npm-prov.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-actions-cache.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-ghsa-tanstack.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e3-cve45321.txt]
+  possible_twin_outside_batch: null

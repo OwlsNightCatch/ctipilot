@@ -1,0 +1,78 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+RQ='https://reliaquest.com/blog/threat-spotlight-vpn-exploitation-when-patched-doesnt-mean-protected/'
+SW='https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2025-0001'
+CD='https://www.cybersecuritydive.com/news/patch-bypass-hackers-exploit-flaw-sonicwall/820600/'
+BC='https://www.bleepingcomputer.com/news/security/hackers-bypass-sonicwall-vpn-mfa-due-to-incomplete-patching/'
+d={
+'entry':'2026-05-21/sonicwall-gen6-ssl-vpn-incomplete-patching-cve-2024-12802-ak',
+'verdict':'factual-error',
+'defects':[
+ {'where':'cves[CVE-2024-12802]; body sentence 1 (CVSS and vector)',
+  'claim':'cvss: "9.1" ... auth: pre-auth, vector: zero-click / CVE-2024-12802 (CVSS 9.1, `AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N`)',
+  'defect':'SonicWall, the CNA, scores the flaw 6.5 with PR:L: the attacker needs valid credentials, and the bypass is of the second factor. 9.1 and the PR:N/I:H vector are CISA-ADP\'s assessment.',
+  'ground_truth':'SonicWall SNWLID-2025-0001: "CVSS v3 6.5", "CVSS Vector CVSS:3.0/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N", CWE-305. BleepingComputer: "allowing an attacker with valid credentials to authenticate directly and bypass the MFA requirement." ReliaQuest: "SonicWall assigned CVE-2024-12802 a CVSS score of 6.5 (Medium); CISA\'s Authorized Data Publisher assessment rates it 9.1 (Critical)."',
+  'ground_truth_url':SW,
+  'fix':'cvss "6.5" (vendor; CISA-ADP 9.1 noted), auth post-auth (valid credentials, MFA bypassed), vector network; affected "Gen6 6.5.4.15-117n and older (NSv 6.5.4.4-44v-21-2457 and older)" plus remediation steps; fixed Gen7 7.2.0-7015 / Gen8 8.0.1-8017.',
+  'class':'factual-error'},
+ {'where':'title; headline; entities',
+  'claim':'Akira-linked actors brute-force MFA via UPN/SAM account-name split / entities: ["actor:akira"]',
+  'defect':'The primary research makes no Akira attribution: ReliaQuest assesses an initial access broker using tools common in the ransomware ecosystem and cites Akira only as a group that used similar tooling before. Even Cybersecurity Dive says only "consistent with".',
+  'ground_truth':'ReliaQuest: "The voluntary logouts, combined with re-entry attempts days later using different accounts in some environments, are consistent with initial access broker (IAB) activity." "The tools observed were consistent with actors operating in the ransomware ecosystem." Cybersecurity Dive: "Researchers could not provide direct attribution for the attacks".',
+  'ground_truth_url':RQ,
+  'fix':'Headline "... unattributed actor (assessed initial access broker) brute-forces SSL-VPN accounts and bypasses MFA"; drop actor:akira from entities or keep only as a hedged comparison in the body.',
+  'class':'factual-error'},
+ {'where':'body sentence 1; Hardening',
+  'claim':'six additional manual LDAP-reconfiguration steps from SonicWall KB `kA1VN0000000RBd0AM` are required',
+  'defect':'(low confidence) The KB identifier appears in no source read; the six steps are in the advisory\'s Comments section as reproduced by BleepingComputer.',
+  'ground_truth':'SonicWall: "we have incorporated the remediation steps described in the advisory (Comments section) into versions 7.2.0-7015 and 8.0.1-8017." BleepingComputer lists the six steps (delete the LDAP configuration using userPrincipalName, remove cached LDAP users, remove the SSL VPN User Domain, reboot, recreate LDAP without userPrincipalName, take a fresh backup).',
+  'ground_truth_url':SW,
+  'fix':'Cite SNWLID-2025-0001 (Comments section) for the six steps and drop the KB id unless sourced.',
+  'class':'imprecision'},
+ {'where':'body Detection concept',
+  'claim':'SonicWall Gen6 SSL-VPN syslog filter for successful SSL-VPN authentications where the `login` field is UPN-format rather than SAM-format',
+  'defect':'Unsourced, and it misses the indicator the researchers give: the sess="CLI" session type of scripted logins, its change to "GMS" after success, event IDs 238 and 1080, and VPS/VPN source ASNs.',
+  'ground_truth':'ReliaQuest: "Every brute-force attempt ReliaQuest observed shared a common session type in SonicWall authentication logs: sess=\\"CLI.\\""; "Following a successful authentication, we observed the session type change from “CLI” to “GMS”". BleepingComputer: "Other strong signals are event IDs 238 and 1080, and VPN logins from suspicious VPS/VPN infrastructure."',
+  'ground_truth_url':RQ,
+  'fix':'Replace the UPN filter with the sourced signals: sess="CLI" bursts, a CLI-to-GMS transition, event IDs 238/1080, logins from VPS ASNs; keep the 30-60 minute recon pattern.',
+  'class':'imprecision'},
+ {'where':'evidence[0]; sourcing_note; sources; event_date',
+  'claim':'publisher: ctipilot v2 brief (migrated) / sourcing_note: "migration: evidence backfilled ..." / Cybersecurity Dive role primary / [Cybersecurity Dive, 2026-05-20] / event_date 2026-05-20',
+  'defect':'The evidence quote is the pipeline quoting itself; the sourcing note is pipeline self-reference; the primaries (ReliaQuest report, SonicWall advisory) are not cited; Cybersecurity Dive and ReliaQuest are dated 2026-05-19. The summary is truncated ("(CVSS …").',
+  'ground_truth':'ReliaQuest report dated 2026-05-19; Cybersecurity Dive dated 2026-05-19 ("released Tuesday").',
+  'ground_truth_url':CD,
+  'fix':'Use ReliaQuest and SNWLID-2025-0001 as primaries with verbatim evidence; event_date 2026-05-19; two-sentence provenance note; finish the summary.',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1110','behavior':'Fast scripted brute-forcing of SSL-VPN accounts (sess="CLI"), as few as 13 attempts before success','url':RQ},
+  {'id':'T1133','behavior':'Access through the SonicWall Gen6 SSL-VPN','url':RQ},
+  {'id':'T1556.006','behavior':'MFA bypassed via the UPN login path whose separate MFA enforcement the firmware update did not remove','url':SW},
+  {'id':'T1078','behavior':'Brute-forced VPN credentials reused against internal systems; re-entry days later with different accounts','url':RQ},
+  {'id':'T1021.001','behavior':'RDP session to a domain-joined file server with a shared local administrator password within 30 minutes','url':RQ},
+  {'id':'T1685','behavior':'Attempted vulnerable-driver load (BYOVD) to disable endpoint protection, blocked by EDR','url':BC},
+ ],
+ 'rating':{'reliability':'B','credibility':2,'basis':'ReliaQuest incident response is original research (medium confidence it is the first in-the-wild exploitation); SonicWall\'s advisory confirms the mechanism but not the exploitation; Cybersecurity Dive and BleepingComputer restate ReliaQuest. Not in CISA KEV.'},
+ 'exposure':[
+  {'quote':'SonicWall warned in a security advisory for CVE-2024-12802 that installing the firmware update alone on Gen6 devices does not fully mitigate the vulnerability, and a manual reconfiguration of the LDAP server is required.','url':BC},
+  {'quote':'On Gen7 and Gen8 devices, simply updating to a newer firmware version is enough to fully remove the risk from exploiting CVE-2024-12802.','url':BC},
+ ],
+ 'detection':[
+  {'quote':'The sess="CLI" session type indicates scripted or automated VPN authentication.','url':RQ},
+  {'quote':'Other strong signals are event IDs 238 and 1080, and VPN logins from suspicious VPS/VPN infrastructure.','url':BC},
+ ],
+ 'triage':[
+  {'quote':'Organizations should baseline legitimate CLI-based VPN authentication use before treating all sess="CLI" events as malicious.','url':RQ},
+ ],
+ 'takeaway':[
+  {'quote':'Standard patch-management workflows typically lack the ability to distinguish between "patched" and "fully remediated."','url':RQ},
+ ],
+ 'bodies':[B+'reliaquest-vpn.txt',B+'sonicwall-snwlid-2025-0001.txt',B+'bc-sonicwall-mfa.txt',B+'cybersecuritydive-sonicwall.txt'],
+ 'extra':{'ioc_scan_note':'If the fixed/affected builds are added, write them as "firmware version 6.5.4.15-117n" etc. (four-part versions read as IPv4 to the IOC scan).',
+          'kev':'CVE-2024-12802 not in CISA KEV (2026.10.20)','advisory':'SNWLID-2025-0001 first published 2025-01-07, last updated 2026-05-21; Gen6 EoL 2026-04-16'},
+},
+'possible_twin_outside_batch':None,
+}
+save(d)

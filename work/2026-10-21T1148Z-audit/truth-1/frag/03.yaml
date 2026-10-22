@@ -1,0 +1,79 @@
+  - entry: 2026-05-10/clickfix-campaign-expands-to-macos-macsync-shub-stealer-and
+    verdict: factual-error
+    defects:
+      - where: "body paragraph 1 (wallet apps)"
+        claim: "Some variants substitute backdoored DMG copies of legitimate wallet applications (Ledger Live, Trezor Suite)."
+        defect: "Microsoft describes wallet apps replaced by trojanized app archives fetched from the C2 (app.zip), not DMG copies; .dmg is named only as the delivery of the earlier iterations. The replaced apps are Ledger Wallet, Trezor Suite and Exodus (Ledger Live is only in the probed-wallet list)."
+        ground_truth: "Microsoft: 'The stealer was also observed replacing legitimate cryptocurrency wallets apps with attacker-controlled or trojanized ones: Ledger Wallet.app is replaced by app.zip ... Trezor suite.app is replaced by apptwo.zip ... Exodus.app is replaced by appex.zip'."
+        ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"
+        fix: "'In some campaigns the stealer replaces installed wallet applications (Ledger Wallet, Trezor Suite, Exodus) with trojanized versions'."
+        class: factual-error
+      - where: "Detection concepts (Endpoint Security hook)"
+        claim: "anomalous Keychain API calls from processes without UI entitlements (Endpoint Security framework `ES_EVENT_TYPE_NOTIFY_OPENSSH`-style hooks expose this on EDR-instrumented Macs)"
+        defect: "(low confidence) Not from any cited source and technically doubtful: `ES_EVENT_TYPE_NOTIFY_OPENSSH` is not a constant in Apple's es_event_type_t list I read (the snapshot predates macOS 13 login events), and OpenSSH login events do not expose Keychain access. Microsoft's own detection guidance is different."
+        ground_truth: "Microsoft: 'Detect native tool abuse. Flag unusual sequences of macOS utilities (curl, Base64, Gunzip, osascript, and dscl).' 'Protect credential stores. Detect unauthorized access to keychain items, browser data, SSH keys, and cloud credentials.' Apple's es_event_type_t list (read) carries no OPENSSH constant."
+        ground_truth_url: "https://developer.apple.com/tutorials/data/documentation/endpointsecurity/es_event_type_t.md"
+        fix: "Replace the hook sentence with Microsoft's stated telemetry: Terminal/shell sessions spawned by installers or user apps, curl/Base64/Gunzip/osascript/dscl sequences, archive creation followed by HTTP POST, keychain and browser-store access."
+        class: factual-error
+      - where: "headline, summary"
+        claim: "ClickFix campaign expands to macOS ... now targeting macOS users"
+        defect: "The campaign already targeted macOS (disk-image delivery in earlier iterations); what is new is the shift to ClickFix-style Terminal instructions. 'Expands to macOS' misstates the development."
+        ground_truth: "Microsoft: 'Prior iterations of this campaign delivered the infostealers through disk image (.dmg) files that required users to manually install an application. This recent activity reflects a shift in tradecraft, where threat actors instruct users to run Terminal commands'."
+        ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"
+        fix: "'macOS infostealer campaign shifts to ClickFix Terminal-paste delivery'."
+        class: imprecision
+      - where: "body paragraph 1 (lure mechanics)"
+        claim: "the decoded one-liner pipes a remote shell payload directly to `bash`, bypassing Gatekeeper because no signed application bundle is ever launched"
+        defect: "Only Microsoft's script campaign is a one-line pipeline; the loader campaign fetches a zsh loader with curl and runs it via eval, the helper campaign downloads a Mach-O executable. 'bash' is not named for the pipeline. Gatekeeper wording is looser than the source ('might be subjected to Gatekeeper verification checks ... don't undergo the same evaluation'). No inline citation sits on the sentence."
+        ground_truth: "Microsoft: 'Unlike application bundles opened through Finder—which might be subjected to Gatekeeper verification checks such as code signing and notarization—scripts downloaded and launched directly through Terminal ... don't undergo the same evaluation.' Script campaign: 'resolves a one‑line shell pipeline that retrieves a remote script, which is then handed off immediately for execution.'"
+        ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"
+        fix: "Describe the three execution paths (loader, script, helper) as Microsoft does and cite Microsoft on each clause."
+        class: imprecision
+      - where: "ATT&CK mapping line (body paragraph 2)"
+        claim: "T1204.002 User Execution: Malicious File"
+        defect: "Microsoft describes users pasting Base64 instructions into Terminal, not opening a malicious file; the matching sub-technique is T1204.004 Malicious Copy and Paste. T1204.002 is active but does not fit the sourced behavior."
+        ground_truth: "Microsoft: 'threat actors instruct users to run Terminal commands that leverage native utilities to retrieve remotely hosted content'."
+        ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"
+        fix: "techniques[]: replace T1204.002 with T1204.004; add the further sourced ids from the upgrade block."
+        class: imprecision
+      - where: "frontmatter entities; sourcing"
+        claim: "AMOS (Atomic macOS Stealer)"
+        defect: "The expansion 'Atomic macOS Stealer' is on neither cited page (Microsoft uses 'AMOS' and 'Possible AMOS stealer'); wallet names listed in the clause (Trezor, Ledger, Exodus, Electrum, Atomic, Coinomi, MetaMask, Phantom) are on the Microsoft page. Cosmetic."
+        ground_truth: "Microsoft: 'load an infostealing malware like Macsync, Shub Stealer, and AMOS'."
+        ground_truth_url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"
+        fix: "Keep 'AMOS' as Microsoft writes it, or cite a page for the expansion."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1204.004, behavior: "Users are instructed to paste Base64-encoded ClickFix instructions into Terminal from fake macOS troubleshooting pages", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1059.004, behavior: "Decoded one-line shell pipelines, curl-fetched zsh loader executed via eval, bash wrapper for the persistence agent", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1059.002, behavior: "Remote AppleScript executed in memory via osascript; obfuscated persisted AppleScript C2 orchestrator", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1056.002, behavior: "Stealer prompts the victim for their macOS password 'pretending to install a helper utility' and validates it with dscl", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1555.001, behavior: "Copies macOS Keychain databases", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1555.003, behavior: "Collects Chromium-based browser saved usernames and passwords, cookies, autofill data", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1543.001, behavior: "LaunchAgent plist (masquerading as a Google updater, or randomly named) persists the bot component", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1543.004, behavior: "Helper campaign writes a LaunchDaemon plist that runs a wrapper with root privileges at boot (KeepAlive)", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1036.005, behavior: "Persistence masqueraded as a Google software-update agent", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1497.001, behavior: "Virtualization detection via system_profiler; Russian keyboard kill switch; sandbox detection", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1102.001, behavior: "Script campaign falls back to Telegram bot page to extract a hidden server identifier for C2 discovery", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1560.001, behavior: "Collected data compressed into a ZIP archive before exfiltration", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {id: T1041, behavior: "Staged archive exfiltrated with curl HTTP POST to the C2", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+      rating:
+        reliability: A
+        credibility: 2
+        basis: "Microsoft Defender Security Research, original vendor research on activity it observed in its own telemetry (A for its own research); Malwarebytes covers an earlier SHub wave only (2026-03-06), so the May activity is one assessor; Malwarebytes corroborates the SHub behavior, not the three-campaign finding."
+      exposure:
+        - {quote: "Standalone websites were seen hosting pages that included a Base64-encrypted instruction for end users to run.", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {quote: "Apple Xprotect has updated signatures to protect users against this threat. Additionally, in macOS 26.4 and later, Apple has introduced a mitigation that directly addresses the ClickFix delivery mechanism.", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+      detection:
+        - {quote: "Monitor Terminal usage. Alert on suspicious Terminal or shell sessions spawned by installers or user apps.", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {quote: "Detect native tool abuse. Flag unusual sequences of macOS utilities (curl, Base64, Gunzip, osascript, and dscl).", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+        - {quote: "Monitor data staging. Alert on archive creation of sensitive artifacts followed by HTTP POST exfiltration.", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+      triage: []
+      takeaway:
+        - {quote: "Educate users. Warn them against running instructions from untrusted sources.", url: "https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/clickfix-msft.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/clickfix-malwarebytes.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/clickfix-apple-es-event-types.txt
+    possible_twin_outside_batch: null
