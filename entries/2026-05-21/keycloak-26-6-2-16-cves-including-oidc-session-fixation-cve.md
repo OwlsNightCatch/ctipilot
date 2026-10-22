@@ -8,8 +8,8 @@ summary: >
   (CVSS 7.5, which Red Hat calls critical) lets an unauthenticated attacker pre-create an authentication
   session and take over a victim's account through a crafted /login-actions/restart link, up to the
   master-realm admin account in default deployments; CVE-2026-37982 lets an intercepted execute-actions
-  e-mail link register the attacker's WebAuthn authenticator. Red Hat build of Keycloak fixes them in
-  26.2.16 and 26.4.12, and BSI rates its nine-CVE advisory high.
+  e-mail link register the attacker's WebAuthn authenticator. Red Hat build of Keycloak fixes CVE-2026-7507
+  in 26.2.16 and 26.4.12 and CVE-2026-37982 in 26.4.12, and BSI rates its nine-CVE advisory high.
 discovered_at: "2026-05-21T05:00:05Z"
 event_date: 2026-05-19
 run_id: 2026-05-21-77cdc4cd
@@ -165,9 +165,8 @@ updates:
       Keycloak's CVE-2026-4630 is a same-realm cross-resource-server IDOR, not a cross-realm one,
       CVE-2026-7507 runs through the /login-actions/restart endpoint with a crafted link, and the
       highlighted CVEs carry Red Hat scores from 4.9 to 7.5 with authenticated preconditions for three of
-      them. The release fixes 16 issues with 18 CVE ids, Red Hat build of Keycloak 26.2.16 and 26.4.12
-      carry the fixes, no source links Akira, and a table of unrelated Drupal, Azure, ChromaDB and
-      SonicWall CVEs is dropped, with exposure, detection and takeaway guidance added.
+      them. The release fixes 16 issues with 18 CVE ids, Red Hat build of Keycloak 26.2.16 fixes
+      CVE-2026-7507 and 26.4.12 fixes both, and no source links Akira.
     fields: [actions, affected_products, body, classification, cves, entities, event_date, evidence, headline, regions, sectors, sources, sourcing_note, summary, tags, techniques, title, verification]
 ---
 

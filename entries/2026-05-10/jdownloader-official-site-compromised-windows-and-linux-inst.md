@@ -87,10 +87,10 @@ updates:
     summary: >
       The malicious links on jdownloader.org were live from about 00:01 UTC on 2026-05-06 until the server
       was shut down on 2026-05-07, not for about 48 hours, and only the Windows "Download Alternative
-      Installer" links and the Linux shell installer link were affected. The vendor published hashes of
-      the malicious substitutes, not a manifest of genuine files, and the check it gives is the AppWork
-      GmbH signature; an independent analyst identified the Windows payload as a loader for a Python-based
-      RAT, while the Linux installer plants a SUID-root binary and a login-script persistence.
+      Installer" links and the Linux shell installer link were affected. The vendor's notice lists
+      checksums of the malicious substitutes, and the check it gives is the AppWork GmbH signature; an
+      independent analyst identified the Windows payload as a loader for a Python-based RAT, while the
+      Linux installer plants a SUID-root binary and a login-script persistence.
     fields: [affected_products, body, classification, event_date, evidence, headline, sources, sourcing_note, summary, techniques, title]
 ---
 
@@ -108,4 +108,4 @@ Researcher Thomas Klemenc found the Windows files to be a loader for a heavily o
 
 ## Correction — 2026-10-21T20:33:12Z
 
-The malicious links were live from about 00:01 UTC on 2026-05-06 until the server was shut down on 2026-05-07, and the risk window JDownloader names is 6 to 7 May, not about 48 hours to 8 May ([JDownloader](https://jdownloader.org/incident_8.5.2026.html)). JDownloader published hashes of the malicious substitute files rather than a manifest of its own, and the check for a downloaded Windows installer is its signature: genuine installers are signed by AppWork GmbH, the substitutes are unsigned or carry another publisher's name ([BleepingComputer, 2026-05-09](https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/)). The Python RAT is researcher Thomas Klemenc's analysis of the Windows files; on Linux the tampered shell installer installs a SUID-root binary under /usr/bin and a persistence script under /etc/profile.d ([BleepingComputer, 2026-05-09](https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/)), which are the artefacts to look for on Linux hosts rather than Python child processes of a JDownloader parent. Anyone who ran a substitute installer is advised to reinstall the operating system and change important passwords from another device ([JDownloader](https://jdownloader.org/incident_8.5.2026.html)).
+The malicious links were live from about 00:01 UTC on 2026-05-06 until the server was shut down on 2026-05-07, and the risk window JDownloader names is 6 to 7 May, not about 48 hours to 8 May ([JDownloader](https://jdownloader.org/incident_8.5.2026.html)). JDownloader's notice lists SHA256 checksums of the malicious substitute installer files ([JDownloader](https://jdownloader.org/incident_8.5.2026.html)), and the check for a downloaded Windows installer is its signature: genuine installers are signed by AppWork GmbH, the substitutes are unsigned or carry another publisher's name ([BleepingComputer, 2026-05-09](https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/)). The Python RAT is researcher Thomas Klemenc's analysis of the Windows files; on Linux the tampered shell installer installs a SUID-root binary under /usr/bin and a persistence script under /etc/profile.d ([BleepingComputer, 2026-05-09](https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/)), which are the artefacts to look for on Linux hosts rather than Python child processes of a JDownloader parent. Anyone who ran a substitute installer is advised to reinstall the operating system and change important passwords from another device ([JDownloader](https://jdownloader.org/incident_8.5.2026.html)).

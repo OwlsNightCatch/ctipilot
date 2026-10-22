@@ -64,11 +64,11 @@ updates:
     run_id: 2026-10-21T1148Z-audit
     type: correction
     summary: >
-      BWH Hotels owns three brands, WorldHotels, Best Western Hotels & Resorts and Sure Hotels, and the
+      BWH Hotels owns the WorldHotels, Best Western Hotels & Resorts and Sure Hotels brands, and the
       exposed fields are contact and reservation data, not passport data. The access ran from 2025-10-14
       until discovery on 2026-04-22 according to the guest emails SecurityWeek quotes, while The Register
-      says the affected data goes back to that date; no source discloses the access vector, the number or
-      location of affected guests, or an infostealer or contractor-account route.
+      says the affected data goes back to that date; no source discloses the access vector or the number
+      or location of affected guests.
     fields: [body, classification, confidence, entities, evidence, headline, priority, sources, sourcing_note, summary, title, verification, techniques]
 ---
 
@@ -78,4 +78,4 @@ BWH Hotels, which operates more than 4,000 hotels including WorldHotels, Best We
 
 ## Correction — 2026-10-21T20:46:47Z
 
-BWH Hotels owns three brands, WorldHotels, Best Western Hotels & Resorts and Sure Hotels, and the exposed fields are names, email addresses, telephone numbers, home addresses and reservation details, with no payment, bank or passport data involved ([The Register, 2026-05-11](https://www.theregister.com/security/2026/05/11/best-western-hotels-confirms-web-app-data-breach/5238020)). SecurityWeek, quoting the guest emails, says the attackers had access from 2025-10-14 until the intrusion was discovered on 2026-04-22, while The Register says the affected data goes back to 2025-10-14; neither source discloses how the attackers got in or how many guests are affected ([SecurityWeek, 2026-05-12](https://www.securityweek.com/bwh-hotels-says-hackers-had-access-to-reservation-data-for-6-months/)), and BWH says only that it notified the appropriate regulatory agencies ([The Register, 2026-05-11](https://www.theregister.com/security/2026/05/11/best-western-hotels-confirms-web-app-data-breach/5238020)).
+BWH Hotels owns the WorldHotels, Best Western Hotels & Resorts and Sure Hotels brands, and the exposed fields are names, email addresses, telephone numbers, home addresses and reservation details, with no payment, bank or passport data involved ([The Register, 2026-05-11](https://www.theregister.com/security/2026/05/11/best-western-hotels-confirms-web-app-data-breach/5238020)). SecurityWeek, quoting the guest emails, says the attackers had access from 2025-10-14 until the intrusion was discovered on 2026-04-22, while The Register says the affected data goes back to 2025-10-14; neither source discloses how the attackers got in or how many guests are affected ([SecurityWeek, 2026-05-12](https://www.securityweek.com/bwh-hotels-says-hackers-had-access-to-reservation-data-for-6-months/)), and BWH says only that it notified the appropriate regulatory agencies ([The Register, 2026-05-11](https://www.theregister.com/security/2026/05/11/best-western-hotels-confirms-web-app-data-breach/5238020)).

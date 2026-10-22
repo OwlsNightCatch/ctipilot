@@ -7,7 +7,7 @@ summary: "The Hannover police directorate confirmed that data left the systems o
 discovered_at: "2026-05-19T05:00:00Z"
 event_date: 2026-05-18
 run_id: 2026-05-19-2505c918
-priority: notable
+priority: routine
 immediate_action: null
 tags:
   - ransomware

@@ -2,12 +2,12 @@
 schema: 1
 kind: threat
 title: "Suspected Dream Market main administrator \"Speedstepper\" arrested in Germany; US indictment traces reactivated marketplace wallets and gold purchases"
-headline: "Suspected Dream Market administrator \"Speedstepper\" arrested in Germany after reactivating dormant marketplace wallets"
+headline: "Suspected Dream Market administrator \"Speedstepper\" arrested in Germany; US prosecutors allege he reactivated dormant wallets"
 summary: "Owe Martin Andresen, 49, whom a US indictment accuses of being the main administrator of the Dream Market darknet marketplace that shut down in 2019, was arrested on German money-laundering charges on 2026-05-07 in a coordinated German and US operation announced on 2026-05-13. US prosecutors allege he moved the marketplace's dormant commission wallets into new consolidated wallets in late 2022 and laundered over $2 million between August 2023 and April 2025, partly by buying gold bars shipped to his home in Germany."
 discovered_at: "2026-05-16T05:00:03Z"
 event_date: 2026-05-13
 run_id: 2026-05-16-5bc123a0
-priority: notable
+priority: routine
 immediate_action: null
 tags:
   - law-enforcement
@@ -69,7 +69,7 @@ updates:
       force. Only the US indictment ties him to the administrator role, the 2022 transfers went into new
       consolidated wallets, and the searches located about $1.2 million in identified accounts and wallets
       rather than seizing that sum in cryptocurrency.
-    fields: [body, classification, entities, event_date, evidence, headline, sources, sourcing_note, summary, title, sectors, techniques]
+    fields: [body, classification, entities, event_date, evidence, headline, sources, sourcing_note, summary, title, sectors, techniques, priority]
 ---
 
 On 2026-05-07, in a coordinated effort by German and US law enforcement, Owe Martin Andresen, 49, was arrested in Germany on German charges, and his residence and two other locations were searched ([US DEA, 2026-05-13](https://www.dea.gov/press-releases/2026/05/13/german-citizen-charged-laundering-funds-linked-prominent-darknet)). A US federal grand jury had indicted him on 2026-01-13 on six counts of international concealment money laundering and six counts of concealment money laundering, each carrying up to 20 years, and Germany has charged him with several counts of concealment money laundering, each punishable by up to five years ([US DEA, 2026-05-13](https://www.dea.gov/press-releases/2026/05/13/german-citizen-charged-laundering-funds-linked-prominent-darknet)). The DOJ indictment, unsealed in the week The Record reported it, accuses him of being the main administrator of Dream Market, a darknet marketplace launched in 2013 that announced its shutdown in 2019 ([The Record, 2026-05-13](https://therecord.media/dream-market-admin-arrested-in-germany)); the release calls him the suspected main administrator, the role whose holder used the moniker "Speedstepper" and was not identified in the earlier prosecutions ([US DEA, 2026-05-13](https://www.dea.gov/press-releases/2026/05/13/german-citizen-charged-laundering-funds-linked-prominent-darknet)). The case is investigated by the IRS-CI Cyber Crimes Unit and the DEA Miami Counternarcotic Cyber Investigations Task Force with substantial assistance from the Bundeskriminalamt Cybercrime Unit and the Zentrale Kriminalinspektion Oldenburg; the FBI, USPIS and HSI were part of the task force that investigated the marketplace between 2016 and 2022, whose prosecutions convicted the administrators "Oxymonster" and "KITT3N" in the US and the mid-level administrator "GOWRON" in the UK ([US DEA, 2026-05-13](https://www.dea.gov/press-releases/2026/05/13/german-citizen-charged-laundering-funds-linked-prominent-darknet)).

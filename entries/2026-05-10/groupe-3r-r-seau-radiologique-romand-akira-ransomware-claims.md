@@ -129,8 +129,7 @@ updates:
       medical data was taken cannot be established. Its 20 centres span seven cantons including Zurich,
       the 2025 attack stole data without disrupting operations, and Groupe 3R attributes the 2026 attack
       to Akira on the basis of methods its partners observed rather than a forensic finding. No source
-      states the access vector, so the edge-device playbook and the generic actions give way to the
-      operator's fraud warning.
+      states the access vector.
     fields: [actions, body, classification, event_date, evidence, headline, sources, sourcing_note, summary, techniques, title]
 migrated_from: briefs/2026-05-10.md
 ---

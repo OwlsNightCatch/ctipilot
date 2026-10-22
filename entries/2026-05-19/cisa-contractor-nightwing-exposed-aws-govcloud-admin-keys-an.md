@@ -7,7 +7,7 @@ summary: "A Nightwing employee working for CISA kept a public GitHub repository 
 discovered_at: "2026-05-19T05:00:02Z"
 event_date: 2026-05-18
 run_id: 2026-05-19-2505c918
-priority: high
+priority: notable
 immediate_action: null
 tags:
   - data-breach
@@ -20,7 +20,7 @@ sectors:
   - public-sector
 entities:
   - "incident:cisa-nightwing-contractor-aws-govcloud-keys-exposed-github"
-techniques: [T1593.003, T1552.001, T1078.004]
+techniques: [T1552.001, T1078.004]
 affected_products: []
 cves: []
 sources:
@@ -71,7 +71,7 @@ updates:
       context, not a CISA statement about contractor oversight. The work-to-home synchronization is
       Caturegli's suspicion, and his backdoor scenario for the Artifactory credentials is a risk
       assessment, not a finding of write access.
-    fields: [affected_products, body, classification, entities, event_date, evidence, headline, regions, sectors, sources, sourcing_note, summary, techniques, title]
+    fields: [affected_products, body, classification, entities, event_date, evidence, headline, regions, sectors, sources, sourcing_note, summary, techniques, title, priority]
 ---
 
 GitGuardian researcher Guillaume Valadon alerted KrebsOnSecurity on 2026-05-15 to a public GitHub repository named Private-CISA, kept by an employee of the government contractor Nightwing, that held cloud keys, tokens, plaintext passwords, logs and files describing how CISA builds, tests and deploys software ([Krebs on Security, 2026-05-18](https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/)). One file held administrative credentials to three AWS GovCloud servers, which Philippe Caturegli of Seralys validated as authenticating to three GovCloud accounts at a high privilege level; a CSV of browser-saved passwords listed plaintext credentials for dozens of internal CISA systems, among them LZ-DSO (Landing Zone DevSecOps), the agency's secure code development environment; and the archive also held plaintext credentials to CISA's internal Artifactory package repository ([Krebs on Security, 2026-05-18](https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/)). The commit logs show the administrator had disabled GitHub's default setting that blocks publishing SSH keys or other secrets, and many passwords were each platform's name followed by the current year ([Krebs on Security, 2026-05-18](https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/)).

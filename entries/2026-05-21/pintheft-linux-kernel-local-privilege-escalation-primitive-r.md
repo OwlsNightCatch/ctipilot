@@ -1,7 +1,7 @@
 ---
 schema: 1
 kind: vulnerability
-title: "PinTheft: Linux kernel RDS zerocopy double-free (CVE-2026-43494) turned into a root exploit through io_uring fixed buffers, public PoC; RDS loads by default only on Arch Linux"
+title: "PinTheft: Linux kernel RDS zerocopy double-free (CVE-2026-43494) turned into a root exploit through io_uring fixed buffers, public PoC; V12 found RDS loaded by default only on Arch Linux among the distributions it tested"
 headline: "PinTheft gives a local user root through an RDS zerocopy double-free, wherever the RDS kernel module is loaded"
 summary: >
   V12 Security released PinTheft and a working exploit on 2026-05-19, relayed to oss-security by Gentoo's
@@ -90,9 +90,8 @@ updates:
       V12 found the RDS module enabled by default only on Arch Linux among the common distributions it
       tested, a narrower finding than a statement about every distribution; Aaron Esau of V12 found
       PinTheft and Gentoo's Sam James relayed it to oss-security. The kernel fix was published as
-      CVE-2026-43494 (CVSS 7.8) on 2026-05-21, the finding is recast as a vulnerability with that CVE
-      record, and unsourced auditd and Sysmon hunts give way to the exploit's own syscall sequence and the
-      module-blocking mitigation.
+      CVE-2026-43494 (CVSS 7.8) on 2026-05-21, and the observable behavior is the exploit's own syscall
+      sequence, with blocking the module as the mitigation.
     fields: [affected_products, body, classification, cves, event_date, evidence, headline, kind, sources, sourcing_note, summary, techniques, title, verification]
 ---
 

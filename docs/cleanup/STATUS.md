@@ -20,8 +20,8 @@ After every wave: `python3 tools/check_run.py --all` ends `0 warn · 0 fail`, `p
 
 | Measure | Baseline | Now |
 |---|---|---|
-| Entries in the store | 996 | 1002 |
-| Legacy queue pending | 408 | 406 |
+| Entries in the store | 996 | 1001 |
+| Legacy queue pending | 408 | 330 |
 | 2026-10-18 out-of-week verdicts not yet applied (factual error / imprecision / clean) | 77 / 63 / 42 (182 rows, 25 on entries since folded) | 61 / 63 / 42 (W1-A's 16 factual-error rows closed) |
 | Never-verified non-legacy entries (W3) | 71 | 71 |
 | Known duplicate groups open (W4) | 4 + scan | 4 + scan |

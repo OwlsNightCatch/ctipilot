@@ -3,7 +3,7 @@ schema: 1
 kind: threat
 title: "FrostyNeighbor (Ghostwriter, UNC1151): since March 2026, geofenced PDF lures deliver a JavaScript PicassoLoader and Cobalt Strike to Ukrainian government organisations"
 headline: "Belarus-aligned FrostyNeighbor hits Ukrainian government bodies with geofenced PDF lures and Cobalt Strike"
-summary: "ESET reported on 2026-05-14 new activity since March 2026 by FrostyNeighbor (Ghostwriter, UNC1151), a cyberespionage group apparently aligned with Belarus, against governmental organisations in Ukraine: spearphishing PDFs impersonating Ukrtelecom link to a server that returns a benign PDF outside Ukraine and a RAR archive with a JavaScript dropper to Ukrainian IP addresses. The JavaScript PicassoLoader it installs reports a host fingerprint every 10 minutes, and operators decide manually whether to send a dropper that runs a Cobalt Strike beacon through a renamed copy of rundll32 with Run-key persistence."
+summary: "ESET reported on 2026-05-14 new activity since March 2026 by FrostyNeighbor (Ghostwriter, UNC1151), a cyberespionage group apparently aligned with Belarus, against governmental organisations in Ukraine: spearphishing PDFs impersonating Ukrtelecom link to a server that returns a benign PDF outside Ukraine and a RAR archive with a JavaScript dropper to Ukrainian IP addresses. The JavaScript PicassoLoader it installs reports a host fingerprint every 10 minutes, and the operators very likely decide manually whether to send a dropper that runs a Cobalt Strike beacon through a renamed copy of rundll32 with Run-key persistence."
 discovered_at: "2026-05-15T05:00:02Z"
 event_date: 2026-05-14
 run_id: 2026-05-15-58b94fbd
@@ -67,8 +67,7 @@ updates:
       the industrial, healthcare, pharmaceutical and logistics victims in Poland and Lithuania are ESET's
       description of the group's broader historical victimology, not targets of this campaign wave. The
       chain also includes scheduled-task persistence for the JavaScript PicassoLoader and a Cobalt Strike
-      beacon run by a renamed copy of rundll32 from an HKCU Run-key LNK, which the detection guidance now
-      covers.
+      beacon run by a renamed copy of rundll32 from an HKCU Run-key LNK.
     fields: [affected_products, body, classification, evidence, headline, sectors, sources, sourcing_note, summary, tags, techniques, title, entities]
 ---
 

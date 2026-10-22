@@ -88,9 +88,8 @@ updates:
       ESET links Webworm to SixLittleMonkeys and FishMonger as related groups and calls a Space Pirates
       link tenuous, so none of them are names for Webworm; EchoCreep reports to Discord channels the
       operators created in advance rather than creating them. The S3 bucket was a compromised third-party
-      bucket, since taken down, SharpSecretsdump was only uploaded to it, the bucket name is no longer
-      given and CVE-2017-7692 gains its record, with the ATT&CK mapping taken from ESET's own table and
-      exposure, detection and takeaway guidance added.
+      bucket, since taken down, SharpSecretsdump was only uploaded to it, and the ATT&CK mapping follows
+      ESET's own table.
     fields: [body, classification, cves, evidence, headline, sources, sourcing_note, summary, techniques, title, verification]
 ---
 
@@ -108,4 +107,4 @@ ESET Research published its analysis of Webworm, a China-aligned group active si
 
 ## Correction — 2026-10-21T20:41:34Z
 
-FishMonger (also called Aquatic Panda), SixLittleMonkeys and Space Pirates are not other names for Webworm: ESET links Webworm to SixLittleMonkeys and FishMonger as related China-aligned groups ([ESET, 2026-05-20](https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/)) and calls the Space Pirates link tenuous at best ([The Hacker News, 2026-05-20](https://thehackernews.com/2026/05/webworm-deploys-echocreep-and-graphworm.html)). EchoCreep does not create its Discord channels: it reports to channels the operators made before it first ran, which suggests they knew their targets or had gathered the details after initial access ([ESET, 2026-05-20](https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/)). The S3 bucket was a compromised third-party bucket that has since been taken down, and SharpSecretsdump, which mimics Impacket's secretsdump rather than dumping LSASS memory, was only seen uploaded to it ([ESET, 2026-05-20](https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/)).
+FishMonger (which The Hacker News also calls Aquatic Panda ([The Hacker News, 2026-05-20](https://thehackernews.com/2026/05/webworm-deploys-echocreep-and-graphworm.html))), SixLittleMonkeys and Space Pirates are not other names for Webworm: ESET links Webworm to SixLittleMonkeys and FishMonger as related China-aligned groups ([ESET, 2026-05-20](https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/)) and calls the Space Pirates link tenuous at best ([The Hacker News, 2026-05-20](https://thehackernews.com/2026/05/webworm-deploys-echocreep-and-graphworm.html)). EchoCreep does not create its Discord channels: it reports to channels the operators made before it first ran, which suggests they knew their targets or had gathered the details after initial access ([ESET, 2026-05-20](https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/)). The S3 bucket was a compromised third-party bucket that has since been taken down, and SharpSecretsdump, which mimics Impacket's secretsdump rather than dumping LSASS memory, was only seen uploaded to it ([ESET, 2026-05-20](https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/)).

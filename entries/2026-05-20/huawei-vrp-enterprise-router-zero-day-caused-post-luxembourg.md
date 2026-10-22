@@ -78,7 +78,7 @@ updates:
       enterprise router software; no source names the VRP operating system, which The Record mentions only
       for unrelated earlier flaws. The no-target finding came from the High Commission for National
       Protection, not prosecutors, the zero-day label rests on anonymous sources, and no source attributes
-      the attack to a state, with exposure, detection and takeaway guidance added.
+      the attack to a state.
     fields: [body, classification, entities, evidence, headline, sources, sourcing_note, summary, tags, techniques, title]
 ---
 

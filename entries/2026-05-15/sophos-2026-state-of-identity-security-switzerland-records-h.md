@@ -20,7 +20,7 @@ sectors:
   - energy
 entities:
   - "report:sophos-identity-security-2026"
-techniques: []
+techniques: [T1078]
 affected_products: []
 cves: []
 sources:
@@ -43,7 +43,7 @@ evidence:
   - quote: "oil and gas, utilities, and federal government sectors recorded the highest breach rates."
     publisher: Help Net Security
     source_url: "https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/"
-verification: multi-source
+verification: single-source
 sourcing_note: "Sophos's own survey of 5,000 respondents is the only data source; the figures are self-reported, and Help Net Security reports the same survey."
 confidence: medium
 update_of: null
@@ -64,11 +64,10 @@ updates:
     type: correction
     summary: >
       Sophos published its State of Identity Security 2026 on 2026-05-12, two days before Help Net
-      Security's report, and its finding is that two-thirds of ransomware victims tied the incident to
-      their most significant identity attack, not that they attributed initial access to stolen
-      credentials, session hijacking or MFA bypass. Neither source mentions NCSC-CH, the Lumma takedown,
-      FamousSparrow or TeamPCP, so those links and the guidance built on them are removed.
-    fields: [affected_products, body, classification, confidence, entities, event_date, evidence, headline, regions, sources, sourcing_note, summary, tags, techniques, title, verification]
+      Security's report. Its ransomware finding is that two-thirds of ransomware victims tied the incident
+      to their most significant identity attack, and it says attackers increasingly use stolen credentials
+      as their primary delivery mechanism.
+    fields: [affected_products, body, classification, confidence, entities, event_date, evidence, headline, regions, sources, sourcing_note, summary, tags, techniques, title]
 ---
 
 Sophos's State of Identity Security 2026, published on 2026-05-12, surveyed 5,000 IT and cybersecurity leaders across 17 countries and 14 industries: 71% reported at least one identity-related breach in the past 12 months, Switzerland reported the highest rate at 89%, followed by Mexico at 83%, and two-thirds of ransomware victims (67%) said their ransomware incident was directly tied to their most significant identity attack ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)). Weak management of non-human identities such as API keys and service accounts was a root cause in 41% of successful identity breaches ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)). Help Net Security reports that the energy, oil and gas, utilities and federal government sectors recorded the highest breach rates ([Help Net Security, 2026-05-14](https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/)).
@@ -77,4 +76,4 @@ Sophos's State of Identity Security 2026, published on 2026-05-12, surveyed 5,00
 
 ## Correction — 2026-10-21T20:37:00Z
 
-Sophos published the survey on 2026-05-12 ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)); 2026-05-14 is the date of Help Net Security's report ([Help Net Security, 2026-05-14](https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/)). Its ransomware finding is that two-thirds of ransomware victims (67%) said their ransomware incident was directly tied to their most significant identity attack ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)); neither source says they attributed initial access to an identity compromise or breaks it down into stolen credentials, session hijacking and MFA bypass. Neither source mentions NCSC-CH, the Lumma Stealer takedown, FamousSparrow or TeamPCP, so the cross-links and the NCSC-CH guidance built on them are removed.
+Sophos published the survey on 2026-05-12 ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)); 2026-05-14 is the date of Help Net Security's report ([Help Net Security, 2026-05-14](https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/)). Its ransomware finding is that two-thirds of ransomware victims (67%) said their ransomware incident was directly tied to their most significant identity attack ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)), and Sophos says attackers increasingly use stolen credentials as their primary mechanism for delivery ([Sophos, 2026-05-12](https://www.sophos.com/blog/sophos-state-of-identity-security-2026)).

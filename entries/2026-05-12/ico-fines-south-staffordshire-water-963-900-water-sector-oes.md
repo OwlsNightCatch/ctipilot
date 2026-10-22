@@ -26,7 +26,7 @@ techniques: [T1566.001, T1204.002, T1068, T1078.002]
 affected_products: ["Microsoft Windows Server"]
 cves:
   - id: CVE-2020-1472
-    cvss: "5.5"
+    cvss: "5.5 (CVSS 3.1, MSRC's current record; its vector AV:L/PR:L disagrees with MSRC's own description of an unauthenticated network attack)"
     epss: null
     type: priv-esc
     vector: zero-click
@@ -104,8 +104,7 @@ updates:
       and exploited during the incident though not the way in; only the Cl0p attribution comes from the
       press. The phishing foothold of September 2020 stayed dormant for 20 months before lateral movement
       and domain-admin compromise from May 2022, detection came on 15 July 2022, only 5% of the IT
-      environment was monitored, and the fine is a UK GDPR penalty rather than an action under the Cyber
-      Security and Resilience Bill.
+      environment was monitored, and the fine is a UK GDPR penalty.
     fields: [affected_products, body, classification, cves, entities, evidence, headline, priority, sources, sourcing_note, summary, techniques, title]
 ---
 
@@ -119,4 +118,4 @@ The UK Information Commissioner's Office fined South Staffordshire Plc and South
 
 ## Correction — 2026-10-21T20:43:46Z
 
-The ICO itself names the vulnerability: two domain controllers were unpatched against ZeroLogon (CVE-2020-1472) in May 2022, and the attacker exploited it during the incident, although the incident did not start through it ([ICO penalty notice](https://ico.org.uk/media2/xdrfahsw/south-staffordshire-plc-and-south-staffordshire-water-plc-monetary-penalty-notice.pdf)); it is the Cl0p attribution that comes from The Record and The Register ([The Record, 2026-05-11](https://therecord.media/uk-water-company-had-hackers-lurking-for-years)). The sequence was a phishing attachment opened in September 2020, malicious software undetected for 20 months, then movement through the network and domain-admin compromise from May 2022, with the breach found on 15 July 2022, rather than ZeroLogon leading to 20 months of lateral movement ([ICO, 2026-05-11](https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/05/fine-of-nearly-1m-issued-against-south-staffordshire-plc-and-south-staffordshire-water-plc/)). The monitoring gap was concrete: a third-party security operations centre covered 5% of the IT environment and endpoint telemetry was not in the SIEM ([ICO penalty notice](https://ico.org.uk/media2/xdrfahsw/south-staffordshire-plc-and-south-staffordshire-water-plc-monetary-penalty-notice.pdf)). The fine is a UK GDPR penalty under Articles 5(1)(f) and 32(1) ([ICO enforcement action](https://ico.org.uk/action-weve-taken/enforcement/2026/05/south-staffordshire-plc-and-south-staffordshire-water-plc/)); the Cyber Security and Resilience Bill was still expected to be introduced to Parliament ([The Record, 2026-05-11](https://therecord.media/uk-water-company-had-hackers-lurking-for-years)).
+The ICO itself names the vulnerability: two domain controllers were unpatched against ZeroLogon (CVE-2020-1472) in May 2022, and the attacker exploited it during the incident, although the incident did not start through it ([ICO penalty notice](https://ico.org.uk/media2/xdrfahsw/south-staffordshire-plc-and-south-staffordshire-water-plc-monetary-penalty-notice.pdf)); it is the Cl0p attribution that comes from The Record and The Register ([The Record, 2026-05-11](https://therecord.media/uk-water-company-had-hackers-lurking-for-years)). The sequence was a phishing attachment opened in September 2020, malicious software undetected for 20 months, then movement through the network and domain-admin compromise from May 2022, with the breach found on 15 July 2022 ([ICO, 2026-05-11](https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/05/fine-of-nearly-1m-issued-against-south-staffordshire-plc-and-south-staffordshire-water-plc/)). The monitoring gap was concrete: a third-party security operations centre covered 5% of the IT environment and endpoint telemetry was not in the SIEM ([ICO penalty notice](https://ico.org.uk/media2/xdrfahsw/south-staffordshire-plc-and-south-staffordshire-water-plc-monetary-penalty-notice.pdf)). The fine is a UK GDPR penalty under Articles 5(1)(f) and 32(1) ([ICO enforcement action](https://ico.org.uk/action-weve-taken/enforcement/2026/05/south-staffordshire-plc-and-south-staffordshire-water-plc/)); the Cyber Security and Resilience Bill was still expected to be introduced to Parliament ([The Record, 2026-05-11](https://therecord.media/uk-water-company-had-hackers-lurking-for-years)).

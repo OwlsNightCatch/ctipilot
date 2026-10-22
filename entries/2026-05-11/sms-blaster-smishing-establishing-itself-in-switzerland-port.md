@@ -84,9 +84,8 @@ updates:
       BACS had already reported SMS-blaster smishing in western Switzerland in September 2025, and
       Basel-Landschaft police arrested a suspect with a device in November 2025, so ebas.ch's May 2026
       post is a later awareness note rather than the only Swiss source. On managed Android devices 2G is
-      blocked with the DISALLOW_CELLULAR_2G restriction from API level 34, set by a device owner, not
-      through the TelephonyManager call; the user-visible sign is the brief switch from 4G to 2G that BACS
-      describes.
+      blocked with the DISALLOW_CELLULAR_2G restriction from API level 34, set by a device owner; the
+      user-visible sign is the brief switch from 4G to 2G that BACS describes.
     fields: [affected_products, body, classification, evidence, headline, priority, sources, sourcing_note, summary, techniques, title, verification]
 ---
 
@@ -100,4 +99,4 @@ BACS reported on 2025-09-09 that numerous fake parking-fine texts were reaching 
 
 ## Correction — 2026-10-21T20:36:37Z
 
-The Swiss signal predates the ebas.ch post: BACS reported in September 2025 that fake parking-fine texts in western Switzerland were being sent with SMS blasters ([BACS, 2025-09-09](https://www.bacs.admin.ch/en/25w36-en)), and Basel-Landschaft police arrested a suspect with such a device in his car in November 2025 ([SRF, 2025-11-13](https://www.srf.ch/news/schweiz/seltener-fahndungserfolg-baselbieter-polizei-schnappt-mutmasslichen-sms-betrueger)). Blocking 2G on managed Android devices uses the DISALLOW_CELLULAR_2G user restriction, available from API level 34 and settable only by a device owner or the owner of an organisation-owned managed profile ([Android Developers](https://developer.android.com/reference/android/os/UserManager)), not an Android 12 network-type call. The observable BACS describes is the handset itself switching from 4G to 2G just before the scam text and back to 4G afterwards ([BACS, 2025-09-09](https://www.bacs.admin.ch/en/25w36-en)); no cited source documents mobile-management products surfacing that switch.
+The Swiss signal predates the ebas.ch post: BACS reported in September 2025 that fake parking-fine texts in western Switzerland were being sent with SMS blasters ([BACS, 2025-09-09](https://www.bacs.admin.ch/en/25w36-en)), and Basel-Landschaft police arrested a suspect with such a device in his car in November 2025 ([SRF, 2025-11-13](https://www.srf.ch/news/schweiz/seltener-fahndungserfolg-baselbieter-polizei-schnappt-mutmasslichen-sms-betrueger)). Blocking 2G on managed Android devices uses the DISALLOW_CELLULAR_2G user restriction, available from API level 34 and settable only by a device owner or the owner of an organisation-owned managed profile ([Android Developers](https://developer.android.com/reference/android/os/UserManager)). The observable BACS describes is the handset itself switching from 4G to 2G just before the scam text and back to 4G afterwards ([BACS, 2025-09-09](https://www.bacs.admin.ch/en/25w36-en)); no cited source documents mobile-management products surfacing that switch.

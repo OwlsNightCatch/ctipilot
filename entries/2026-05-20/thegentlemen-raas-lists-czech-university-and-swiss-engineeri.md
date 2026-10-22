@@ -81,8 +81,7 @@ updates:
       The Gentlemen listed both VSFS and DEVO-Tech AG on 2026-05-18, and the listings carry no technical
       detail. The group profile comes from Check Point Research's analysis of 2026-05-13, which names
       exposed VPN appliances and firewalls, chiefly FortiGate and Cisco, as its usual entry rather than
-      SD-WAN gateways; as an unconfirmed leak-site claim the finding moves from notable to routine
-      priority.
+      SD-WAN gateways; both listings remain unconfirmed leak-site claims.
     fields: [body, classification, confidence, entities, event_date, evidence, headline, priority, references, sources, sourcing_note, summary, tags, techniques, title, verification]
 ---
 

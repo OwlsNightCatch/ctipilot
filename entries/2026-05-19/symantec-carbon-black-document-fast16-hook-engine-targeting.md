@@ -22,7 +22,7 @@ sectors:
   - energy
 entities:
   - "campaign:fast16-symantec-carbon-black-contemporaneous-stuxnet-nuclea"
-techniques: [T1059, T1014, T1565.003, T1543.003, T1546.012, T1070.006, T1518.001, T1135, T1021.002, T1570, T1569.002]
+techniques: [T1059, T1565.003, T1543.003, T1546.012, T1070.006, T1518.001, T1135, T1021.002, T1570, T1569.002]
 affected_products: []
 cves: []
 sources:

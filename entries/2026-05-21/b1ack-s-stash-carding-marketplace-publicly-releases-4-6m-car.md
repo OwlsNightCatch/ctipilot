@@ -12,7 +12,7 @@ summary: >
 discovered_at: "2026-05-21T05:00:02Z"
 event_date: 2026-05-18
 run_id: 2026-05-21-77cdc4cd
-priority: notable
+priority: routine
 immediate_action: null
 tags:
   - data-breach
@@ -72,10 +72,8 @@ updates:
     summary: >
       B1ack's Stash's release was reported on 2026-05-18 and is part of about 8 million suspended CVV2
       records, and the roughly 4.3 million fresh records come from Security Affairs' account of SOCRadar's
-      filtering. SOCRadar only assesses the source as likely e-commerce skimming or phishing, so the
-      unsourced storefront and cross-release root-cause claims are dropped, with exposure, detection and
-      takeaway guidance added.
-    fields: [body, classification, entities, event_date, evidence, headline, sources, sourcing_note, summary, tags, techniques, title, verification]
+      filtering. SOCRadar only assesses the source as likely e-commerce skimming or phishing.
+    fields: [body, classification, entities, event_date, evidence, headline, sources, sourcing_note, summary, tags, techniques, title, verification, priority]
 ---
 
 SOCRadar reported on 2026-05-18 that B1ack's Stash, a dark-web carding marketplace operating since at least 2023, suspended about 8 million stolen CVV2 records from its inventory because sellers had resold its cards in competing shops, and released about 4.6 million of them as a free download ([SOCRadar, 2026-05-18](https://socradar.io/blog/b1acks-stash-4-6-million-stolen-credit-cards-free/)). Each record holds the full card number, expiry date, CVV2, cardholder name, billing address, e-mail, phone number and IP address; SOCRadar assesses that the data likely comes from e-commerce skimming or phishing operations, and about 70% of the records belong to US cardholders, followed by Canada, the United Kingdom, France and Malaysia ([SOCRadar, 2026-05-18](https://socradar.io/blog/b1acks-stash-4-6-million-stolen-credit-cards-free/)). After SOCRadar filtered out expired and duplicate records, roughly 4.3 million appear fresh and usable, and the marketplace has used free releases as marketing before, one million cards in April 2024 and over four million records in February 2025 ([Security Affairs, 2026-05-20](https://securityaffairs.com/192415/cyber-crime/carding-site-b1acks-stash-dumps-4-6-million-stolen-cards-for-free.html)).
