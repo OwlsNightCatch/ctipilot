@@ -65,6 +65,15 @@ updates:
     summary: >
       CloudSEK's key finding says every confirmed victim was reached through stolen CI/CD secrets, but its own account of the AI-platform intrusion starts with a server-side request forgery in an image API, and elsewhere it says every victim outside that engagement was reached through CI/CD secrets. The summary now carries the qualified form and the sourcing note states the inconsistency.
     fields: [summary, sourcing_note]
+  - at: "2026-10-21T08:16:35Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      The exposure is stated as CloudSEK reports it: GitLab instances whose CI/CD variables or git history
+      hold credentials, and instances shared by several organisations. CloudSEK does not say the victims'
+      instances were self-hosted or their variables unmasked; masking and protecting every variable is its
+      recommended mitigation.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -72,7 +81,7 @@ CloudSEK reports that an exposed open directory and a misconfigured storage serv
 
 Every victim outside one deeper intrusion was reached the same way: GitLab CI/CD variable stores and git history were mined for tokens, database credentials, API keys and SSH private keys with enumeration and secret-scanning tools, and one GitLab instance that served two unrelated organisations gave footholds at both ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)). From one CI/CD token the actor reached more than 150 databases, payment gateways and hundreds of source repositories across a SaaS platform and its clients, and at a platform hosting a government-linked financial registry it exfiltrated more than 120,000 records and then killed the PostgreSQL process and deleted the production data directory ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)). The deeper intrusion, into an AI platform, ran for weeks: an API that fetches user-supplied URLs server-side gave an unauthenticated route into the internal network, a recovered master key decrypted every secret in the cluster configuration, a hardcoded authentication-bypass token that had been removed from the code but stayed in git history gave lasting access, offline cracking was run against administrator hashes from the monitoring stack, and an object-storage bucket was mirrored continuously ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)). Ransom notes were pushed to eight surfaces, among them the login message, the SSH banner, a database configuration parameter, a database-admin login template, a repository README and an issue opened against the victim's project, and CloudSEK reports that the verification script drove these checks through an MCP server bound to a local port, an operational use of MCP as an attack execution channel of which CloudSEK has not identified earlier public reporting ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).
 
-**Exposure:** self-hosted GitLab where CI/CD variables are unmasked or unprotected or where removed secrets remain in git history, GitLab instances that run pipelines for more than one organisation, APIs that fetch user-supplied URLs without validation, and MCP servers reachable beyond strict loopback ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).
+**Exposure:** GitLab instances whose CI/CD variables or git history hold tokens, keys and database credentials, including secrets removed from the current branch but still in history, GitLab instances that run pipelines for more than one organisation, APIs that fetch user-supplied URLs without validation, and MCP servers reachable beyond strict loopback ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).
 
 **Detection:** CI/CD and repository audit logs for variable reads from unexpected addresses, service-account token use outside the normal runner infrastructure, and README or issue changes made with a pipeline token from an unusual source; object-storage and database logs for bulk mirroring or dumps to hosts outside the backup estate; MCP initialisation requests from clients outside an allowlist; and a PostgreSQL process killed and its data directory deleted after a large read ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).
 
@@ -83,3 +92,7 @@ Every victim outside one deeper intrusion was reached the same way: GitLab CI/CD
 ## Correction — 2026-10-11T13:53:27Z
 
 CloudSEK's key findings state that "Every confirmed victim was reached through stolen CI/CD secrets", but its account of the AI-platform intrusion says entry was through an AI medical imaging API that fetches user-supplied URLs server-side without validation, and its own wording elsewhere is that "Every victim outside the AI sector engagement was reached the same way" ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)). CI/CD secret theft is the entry path for every victim except that one.
+
+## Improvement — 2026-10-21T08:16:35Z
+
+CloudSEK reports what the stolen CI/CD secrets gave the actor, not how the victims ran GitLab: "A single GitLab instance hosted CI/CD pipelines for two unrelated organisations", and one CI/CD token from it yielded database credentials, shipping API credentials and SSH private keys ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)). It does not say whether the instances were self-managed or their variables unmasked; masking and protecting every variable is one of its recommended mitigations ([CloudSEK, 2026-10-05](https://www.cloudsek.com/blog/caught-in-4k-the-gentlemen-files)).

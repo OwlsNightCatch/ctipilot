@@ -1,0 +1,1 @@
+The government classifies the attack on the VwbP as "a personal data breach under Art. 33 of the General Data Protection Regulation (GDPR)" (translated from German) ([Regierung des Fürstentums Liechtenstein, 2026-08-02](https://www.presseportal.ch/de/pm/100000148/100941487)).

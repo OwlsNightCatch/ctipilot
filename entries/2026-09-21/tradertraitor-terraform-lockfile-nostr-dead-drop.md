@@ -11,9 +11,11 @@ summary: >
   attacker-controlled provider registries, though SentinelLabs cannot prove how this victim's
   backdoors were delivered. Zscaler ThreatLabz independently reports a July 2026 trojanized Terraform
   provider binary that runs malicious code as soon as Terraform loads it and delivers FLATROOF on macOS, Linux
-  and Windows, which drops ROOFDECK (Windows and macOS variants identified), in a campaign it suspects is TraderTraitor. The second-stage
-  backdoor resolves its command-and-control address by reading an operator profile's public "website"
-  field from the Nostr decentralized relay network.
+  and Windows, which drops ROOFDECK (Windows and macOS variants identified), in a campaign it suspects is TraderTraitor. In the sample SentinelLabs
+  analysed, the second-stage backdoor reads an operator profile's public "website" field on the Nostr
+  decentralized relay network as its command-and-control URL; Zscaler's variants first try a local
+  configuration and an RSA-signed Pastebin dead drop, and use Nostr profile metadata only as a fallback
+  that locates the current Pastebin URL.
 discovered_at: "2026-09-21T04:43:00Z"
 updated_at: "2026-10-09T03:54:00Z"
 event_date: "2026-09-18"
@@ -133,6 +135,15 @@ updates:
     summary: >
       Zscaler describes FLATROOF payloads for macOS, Linux and Windows that drop the ROOFDECK backdoor, and identifies ROOFDECK variants only for Windows and macOS; the summary had said both families were delivered on all three platforms. The macOS detection sentence gains its SentinelLabs citation.
     fields: [summary, body]
+  - at: "2026-10-21T08:13:06Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      The summary no longer presents Nostr-based command-and-control resolution as universal: reading a
+      Nostr profile's "website" field as the C2 URL is SentinelLabs' sample, while Zscaler's ROOFDECK
+      variants try a local configuration and a signed Pastebin dead drop first and use Nostr metadata only
+      to locate the current Pastebin URL.
+    fields: [summary]
 migrated_from: null
 ---
 
@@ -157,3 +168,7 @@ The telemetry that follows from the provider path is the Terraform provider plug
 ## Correction — 2026-10-11T13:56:53Z
 
 Zscaler's loader selects FLATROOF payloads for macOS, Linux and Windows, and FLATROOF ultimately drops the ROOFDECK backdoor; Zscaler identifies Windows and macOS variants of ROOFDECK ([Zscaler ThreatLabz, 2026-10-08](https://www.zscaler.com/blogs/security-research/suspected-tradertraitor-group-uses-trojanized-terraform-provider-deliver)). The 2026-10-09 note said both families were delivered on all three platforms.
+
+## Improvement — 2026-10-21T08:13:06Z
+
+Reading an operator's Nostr profile "website" field as the command-and-control URL is the behavior of the sample SentinelLabs analysed ([SentinelOne SentinelLabs, 2026-09-18](https://www.sentinelone.com/labs/dont-call-us-well-call-your-apis-tradertraitor-backdoors-resurface-on-victim-with-no-crypto-ties/)). In the ROOFDECK variants Zscaler describes, Nostr is the last of three resolvers, after the locally stored address and a signed, encrypted Pastebin address, and its profile metadata is used "to locate the current dead-drop Pastebin URL" rather than the server itself ([Zscaler ThreatLabz, 2026-10-08](https://www.zscaler.com/blogs/security-research/suspected-tradertraitor-group-uses-trojanized-terraform-provider-deliver)).

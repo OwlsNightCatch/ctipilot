@@ -21,7 +21,7 @@ regions:
 sectors: []
 entities:
   - "incident:eurail-breach-2026"
-techniques: [T1005]
+techniques: [T1213.006]
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/"
@@ -61,12 +61,25 @@ updates:
       sentence saying Swiss applicants may be affected had no source and is removed. The priority
       moves from high to routine.
     fields: [title, headline, summary, event_date, priority, sources, verification, classification, body, techniques]
+  - at: "2026-10-21T08:16:23Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      Eurail's February disclosure, as BleepingComputer reports it, said the attackers reached the
+      travellers' data after breaching its customer database; the analysis now says so, and the ATT&CK
+      mapping follows it (data mined from a database) instead of a host file-collection technique no
+      source describes.
+    fields: [techniques, body]
 ---
 
-Eurail, the Netherlands-based seller of Interrail and Eurail passes and supplier of the EU's DiscoverEU programme, says an unauthorized actor transferred files from its network on 2025-12-26 and sent letters on 2026-03-27 to 308,777 people whose names and passport numbers were exposed ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)), and the European Commission told DiscoverEU participants that passport or ID copies, IBANs and health data may also be involved ([European Commission, 2026-01-13](https://youth.europa.eu/news/updated-data-security-incident-affecting-discovereu-travellers_en)).
+Eurail, the Netherlands-based seller of Interrail and Eurail passes and supplier of the EU's DiscoverEU programme, says an unauthorized actor transferred files from its network on 2025-12-26 and sent letters on 2026-03-27 to 308,777 people whose names and passport numbers were exposed ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)), and the European Commission told DiscoverEU participants that passport or ID copies, IBANs and health data may also be involved ([European Commission, 2026-01-13](https://youth.europa.eu/news/updated-data-security-incident-affecting-discovereu-travellers_en)). Eurail's February disclosure said the attackers reached the travellers' data after breaching its customer database ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)).
 
 **Defender takeaway:** there is no access vector or actor to hunt, and Eurail, which warned in February that a sample of the stolen data had been published on Telegram, advises affected customers to watch for phishing and scams and to change their Rail Planner app password wherever it is reused ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)).
 
 ## Correction — 2026-09-30T07:13:14Z
 
 The earlier text said Eurail began sending notifications in late April 2026 and that the Dutch data protection authority and the EDPS had opened reviews of the delay. Eurail sent its letters on 2026-03-27 ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)), and the Commission states only that the EDPS was notified of the breach ([European Commission, 2026-01-13](https://youth.europa.eu/news/updated-data-security-incident-affecting-discovereu-travellers_en)). The earlier text also said the breach exposed passport numbers, IBANs and DiscoverEU pass details, and advised affected people to consider replacing their IBAN. Eurail's letters list names and passport numbers, and Eurail says it stored no financial information on the compromised systems, although its February disclosure listed IBANs and health information ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)). The Commission says DiscoverEU participants' IBANs and health data may be involved ([European Commission, 2026-01-13](https://youth.europa.eu/news/updated-data-security-incident-affecting-discovereu-travellers_en)). The earlier text also said Swiss nationals who applied through a bilateral arrangement may be affected, which no source supports.
+
+## Improvement — 2026-10-21T08:16:23Z
+
+Eurail's February disclosure said the attackers reached the travellers' data after breaching its customer database ([BleepingComputer, 2026-04-09](https://www.bleepingcomputer.com/news/security/eurail-says-december-data-breach-impacts-300-000-individuals/)).

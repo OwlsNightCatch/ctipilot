@@ -1,0 +1,1 @@
+On TeamCity 2024.03 and newer, the server downloads available security patch plugins automatically and notifies administrators if notifications are configured; the pending patch for CVE-2026-63077 is applied from Administration | Updates, under Available security updates ([JetBrains, 2026-07-27](https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/)).

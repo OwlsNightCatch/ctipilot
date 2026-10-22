@@ -1,0 +1,1 @@
+As of 2026-10-21 the npm registry no longer lists 9.1.6, 9.2.3 or 12.0.1, and its `latest` tag points to 14.0.0 ([npm registry, 2026-10-21](https://registry.npmjs.org/node-ipc)), so a fresh unpinned install no longer resolves to a malicious version; the exposure now lies with hosts, build caches and local npm caches that already hold one of the three.

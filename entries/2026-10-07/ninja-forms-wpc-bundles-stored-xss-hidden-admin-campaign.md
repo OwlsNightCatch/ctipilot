@@ -42,6 +42,15 @@ cves:
     status: [exploited, patch-available]
     affected: "WPC Product Bundles for WooCommerce up to and including 8.6.6"
     fixed: "8.6.7"
+  - id: CVE-2026-92438
+    cvss: null
+    epss: null
+    type: xss
+    vector: user-interaction
+    auth: pre-auth
+    status: [exploited, patch-available]
+    affected: "Ninja Forms up to and including 3.15.3 (the same flaw as CVE-2026-94504, published by another CVE Numbering Authority)"
+    fixed: "3.15.4"
 sources:
   - url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/"
     publisher: "Patchstack"
@@ -51,8 +60,15 @@ sources:
     publisher: "BleepingComputer"
     date: "2026-10-06"
     role: corroborating
+  - url: "https://patchstack.com/database/WordPress/Plugin/ninja-forms/vulnerability/wordpress-ninja-forms-contact-form-builder-with-calculators-quizzes-signatures-ai-form-builder-plugin-3-15-3-stored-cross-site-scripting-vulnerability"
+    publisher: "Patchstack (vulnerability database)"
+    date: "2026-09-22"
+    role: corroborating
 closed_sources: []
 evidence:
+  - quote: "This issue has also been published by another CVE Numbering Authority under CVE-2026-92438, which describes the same as this vulnerability (CVE-2026-94504). Patching the affected version resolves all of them."
+    publisher: "Patchstack (vulnerability database)"
+    source_url: "https://patchstack.com/database/WordPress/Plugin/ninja-forms/vulnerability/wordpress-ninja-forms-contact-form-builder-with-calculators-quizzes-signatures-ai-form-builder-plugin-3-15-3-stored-cross-site-scripting-vulnerability"
   - quote: "exploitation volume remains limited in our telemetry"
     publisher: "Patchstack"
     source_url: "https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/"
@@ -84,7 +100,15 @@ watchlist_hit: false
 actions:
   - "Update Ninja Forms to 3.15.4 or later and WPC Product Bundles for WooCommerce to 8.6.7 or later on every WordPress site, then check each site for an implant the update does not remove, starting with a comparison of the database's administrator list against the Users screen and an inspection of the must-use plugins directory by content."
   - "On any site where an administrator opened a Ninja Forms submission or a WooCommerce order since 2026-10-04 and an implant turns up, rotate all privileged credentials and the WordPress authentication salts and treat the oldest administrator account as compromised, because a login URL planted by the implant authenticates as that account."
-updates: []
+updates:
+  - at: "2026-10-21T08:17:54Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      Adds CVE-2026-92438, the id under which another CVE Numbering Authority published the same Ninja
+      Forms flaw as CVE-2026-94504, so that advisories and scanners keyed on either id match; updating to
+      3.15.4 resolves both.
+    fields: [body, cves, evidence, sources]
 migrated_from: null
 ---
 
@@ -92,7 +116,7 @@ Patchstack reports two unrelated stored cross-site scripting flaws that deliver 
 
 With that session it uploads a plugin through WordPress' own installer, creates an administrator and calls a persistence installer ([Patchstack, 2026-10-06](https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/)). Patchstack counts four ways back in: the visible administrator; a second administrator that a dropped must-use plugin hides from the Users list, its filters and its role counts; a login URL, backed by another must-use plugin, that authenticates as the site's oldest administrator; and an unauthenticated file manager in the uploaded plugin that runs only on a direct request and can write files anywhere writable ([Patchstack, 2026-10-06](https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/)). The must-use plugins are backdated to the oldest file time in the WordPress root, so a search for recently changed files misses them ([Patchstack, 2026-10-06](https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/)).
 
-Both flaws were disclosed on 2026-09-22; Patchstack says exploitation volume is limited and that the second stage works with any stored XSS that reaches an administrator ([Patchstack, 2026-10-06](https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/)). The fixed versions are Ninja Forms 3.15.4 and WPC Product Bundles 8.6.7, and updating does not clean an existing infection ([BleepingComputer, 2026-10-06](https://www.bleepingcomputer.com/news/security/ninja-forms-plugin-flaw-exploited-to-hack-wordpress-sites/)).
+Both flaws were disclosed on 2026-09-22; Patchstack says exploitation volume is limited and that the second stage works with any stored XSS that reaches an administrator ([Patchstack, 2026-10-06](https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/)). Patchstack notes that another CVE Numbering Authority published the same Ninja Forms flaw as CVE-2026-92438, and that patching resolves both ([Patchstack, 2026-09-22](https://patchstack.com/database/WordPress/Plugin/ninja-forms/vulnerability/wordpress-ninja-forms-contact-form-builder-with-calculators-quizzes-signatures-ai-form-builder-plugin-3-15-3-stored-cross-site-scripting-vulnerability)). The fixed versions are Ninja Forms 3.15.4 and WPC Product Bundles 8.6.7, and updating does not clean an existing infection ([BleepingComputer, 2026-10-06](https://www.bleepingcomputer.com/news/security/ninja-forms-plugin-flaw-exploited-to-hack-wordpress-sites/)).
 
 **Exposure:** WordPress sites running Ninja Forms 3.15.3 or older, or WPC Product Bundles for WooCommerce 8.6.6 or older, where an administrator opens form submissions or orders in wp-admin ([Patchstack, 2026-10-06](https://patchstack.com/articles/four-ways-back-in-the-wordpress-xss-campaign-that-hides-its-own-admin-account/)).
 
@@ -101,3 +125,7 @@ Both flaws were disclosed on 2026-09-22; Patchstack says exploitation volume is 
 **Triage:** a legitimate administrator installing a plugin from a ZIP produces the same plugin-install and user-creation events; the discriminators are that they follow an administrator opening a stored submission or order, that the installed plugin poses as a thumbnail cache and does nothing when WordPress loads it, and that the new administrator is missing from the Users list.
 
 **Defender takeaway:** update both plugins now, then treat any site where an administrator opened a stored order or submission since 2026-10-04 as possibly compromised until the database administrator list, the must-use plugins and the oldest administrator's credentials have been checked, because the patch closes the injection and none of the persistence routes.
+
+## Improvement — 2026-10-21T08:17:54Z
+
+Patchstack's vulnerability database notes that another CVE Numbering Authority published the same Ninja Forms flaw under CVE-2026-92438 and that patching the affected version resolves both ids, so Ninja Forms 3.15.4 closes it under either id ([Patchstack, 2026-09-22](https://patchstack.com/database/WordPress/Plugin/ninja-forms/vulnerability/wordpress-ninja-forms-contact-form-builder-with-calculators-quizzes-signatures-ai-form-builder-plugin-3-15-3-stored-cross-site-scripting-vulnerability)).

@@ -20,7 +20,7 @@ regions:
 sectors: []
 entities:
   - "actor:unc6671"
-techniques: [T1566, T1566.004, T1557, T1111, T1556, T1098.005, T1539, T1550.004, T1213.002, T1530]
+techniques: [T1566, T1566.004, T1684.001, T1583.001, T1557, T1111, T1098.005, T1539, T1550.004, T1078.004, T1213.002, T1530, T1059.006, T1059.001, T1657]
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation/"
@@ -56,6 +56,17 @@ updates:
       recommendation, the context-only ShinyHunters link and three victim sectors GTIG does not name
       are removed. Priority is lowered to notable because the targeting GTIG reports is in North America, Australia and the UK, and the entry gains an ATT&CK mapping.
     fields: [body, classification, techniques, title, headline, summary, priority, entities, sectors]
+  - at: "2026-10-21T08:18:50Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      T1556 (Modify Authentication Process) is removed: GTIG describes relaying MFA codes and registering
+      an attacker-controlled MFA device, which T1111 and T1098.005 carry, and nothing that modifies an
+      authentication mechanism. The mapping gains the behaviors GTIG states and the analysis describes:
+      helpdesk impersonation, Tucows-registered phishing domains, use of the compromised cloud accounts,
+      the Python and PowerShell exfiltration scripts, and extortion.
+    fields: [techniques]
 ---
 
 Google Threat Intelligence Group published on 2026-05-15 an analysis of UNC6671, a financially motivated extortion cluster that adopted the "BlackFile" brand by February 2026 and has targeted dozens of organizations across North America, Australia and the UK ([Google Threat Intelligence Group, 2026-05-15](https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation/)). Callers hired by the actor phone employees' personal mobile numbers, pose as internal IT or helpdesk staff citing a passkey migration or MFA update, and send the victim to a lookalike single sign-on portal on Tucows-registered domains, lately as organization-named subdomains with "passkey" or "enrollment" themes ([Google Threat Intelligence Group, 2026-05-15](https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation/)). The operator relays the credentials and the MFA code or push approval to the real SSO provider in real time, then immediately registers a new attacker-controlled MFA device for persistence ([Google Threat Intelligence Group, 2026-05-15](https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation/)). GTIG stresses that these compromises come from social engineering, not a vendor vulnerability ([Google Threat Intelligence Group, 2026-05-15](https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation/)).
