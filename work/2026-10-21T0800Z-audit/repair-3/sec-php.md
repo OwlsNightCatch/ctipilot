@@ -1,0 +1,1 @@
+The CVE record for CVE-2026-7262 scores it 2.9 under CVSS 4.0, against 6.3 in PHP's advisory: the base vector is the same, and the record adds the threat metric for a public proof of concept ([ENISA EUVD, EUVD-2026-28971](https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-28971)).

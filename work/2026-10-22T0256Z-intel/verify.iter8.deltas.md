@@ -1,0 +1,9 @@
+# Prior-iteration deltas (iteration 7 NEEDS_FIXES → iteration 8 post-fix pass, the cap)
+
+| finding | entry | remediation applied | verify in this iteration |
+|---|---|---|---|
+| F3 + F8 PHP: VulnCheck page revised after the run read it ("Hundreds of proof-of-concept repos"; weaponized exploit, successful on x86-64 with ASLR enabled and display_errors off) | php-critical-release-pre-announced-cve-2026-109618-109619 | body sentence, frontmatter summary, the record summary, the Update section and the Defender takeaway now carry the current VulnCheck statements (hundreds of repos, only a very small number legitimate, none independently bypass ASLR on x86-64; VulnCheck holds a weaponized exploit for CVE-2026-109618 as of 05:30 UTC on 2026-10-22, available to its customers, memory leak chained into RCE); a verbatim evidence quote added; current page saved at bodies/vulncheck-now.txt; record `fields` still equal the diff | claims against the live VulnCheck page; wording stays attributed to VulnCheck and does not claim public exploitation |
+| F3 GitLab "no public proof of concept" | cve-2026-110264-gitlab-org-mode-renderer-unauth-rce | now "its patch notes and detection pages mention no public proof of concept" | wording |
+| F4 run record "three product records" | run record | now "two product records" (matches entities_added) | count |
+| F11 ConnectWise sourcing_note length | connectwise-cloud-backup-skykick-m365-app-credential-abuse | tightened; the attribution is now "Microsoft's assessment relayed by Expel and acknowledged by ConnectWise" | wording |
+| F11 Publica sources[] label | publica-pk-softech-supplier-malware-intrusion-data-outflow | "page updated through 2026-10-21" (the live page's 21.10.2026 status concerns the precautionary website outage already covered in the PHP entry) | label |

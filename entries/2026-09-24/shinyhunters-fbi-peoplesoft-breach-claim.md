@@ -34,7 +34,7 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [exploited, cisa-kev, patch-available]
-    affected: Oracle PeopleSoft PeopleTools (PSEMHUB component)
+    affected: "Oracle PeopleSoft Enterprise PeopleTools 8.61 and 8.62 (Updates Environment Management component, PSEMHUB)"
     fixed: Oracle security alert CVE-2026-35273 (2026-06-10)
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/shinyhunters-claims-fbi-hack-data-theft-in-peoplesoft-zero-day-breach/"
@@ -105,6 +105,10 @@ sources:
     publisher: "The Register"
     date: "2026-10-05"
     role: corroborating
+  - url: "https://www.oracle.com/security-alerts/alert-cve-2026-35273.html"
+    publisher: "Oracle (Security Alert CVE-2026-35273)"
+    date: "2026-06-10"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The threat actors told BleepingComputer the vulnerability allows remote code execution and that they used it Monday night to access FBI systems before moving laterally into FBI-managed AWS GovCloud infrastructure."
@@ -150,6 +154,9 @@ evidence:
   - quote: "the system in question is Oracle’s PeopleSoft human resources platform, and the outside organization is Accenture"
     publisher: "SecurityWeek, relaying Reuters' sources"
     source_url: "https://www.securityweek.com/fbi-blames-contractors-missed-patch-for-shinyhunters-breach/"
+  - quote: "PeopleSoft Enterprise PeopleTools, versions 8.61, 8.62"
+    publisher: "Oracle"
+    source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-35273.html"
 verification: multi-source
 sourcing_note: "Multi-source on the defacement and takedown, the FBI's statements and the Dutch arrest. The CVE-2026-35273 link rests on ShinyHunters' own statement to BleepingComputer, the psychiatric, medical and blood-test findings are Reuters' and the BBC's as relayed by Nextgov/FCW, the analyst-role detail is Nextgov/FCW's reporting from two people familiar with the matter, and the ScatteredLapsussHunters leadership account rests on Krebs's sources. Sources differ on whether the FBI's 2026-09-23 statement confirms the compromise. The FBI cyber chief's statement of 2026-10-06 reaches the reader through Nextgov/FCW and SecurityWeek; the product and the contractor are named only by anonymous sources (Reuters' sources via SecurityWeek, a person with knowledge of the matter via Nextgov/FCW), and Reuters is cited only as relayed."
 confidence: medium
@@ -225,6 +232,15 @@ updates:
     summary: >
       Adds CyberScoop's citation to two sentences it carries (the DiMaggio and Kaiser warnings and DiMaggio's brand assessment) and attributes the FBI's non-confirmation to BleepingComputer's recap of the bureau's first response, which its later statements overtook. A reference to the earlier entry on the shared CVE is added; the two are distinct findings.
     fields: [body, references]
+  - at: "2026-10-21T08:20:43Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The affected-version record for CVE-2026-35273 now carries Oracle's own scope, PeopleSoft Enterprise
+      PeopleTools 8.61 and 8.62 in the Updates Environment Management component, with Oracle's Security
+      Alert added as its source and bound by an evidence quote.
+    fields: [cves, evidence, sources]
 migrated_from: null
 ---
 
