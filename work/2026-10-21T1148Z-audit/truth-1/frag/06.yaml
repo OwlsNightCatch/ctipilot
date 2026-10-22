@@ -1,0 +1,86 @@
+  - entry: 2026-05-10/jdownloader-official-site-compromised-windows-and-linux-inst
+    verdict: factual-error
+    defects:
+      - where: "summary; body paragraph 1; Defender takeaway (compromise window)"
+        claim: "compromised between approximately 2026-05-06 and 2026-05-08 ... installers downloaded between 2026-05-06 and 2026-05-08 from the official site ... for ~48 hours"
+        defect: "The vendor's risk window is 6th-7th May 2026 (UTC); links were changed at about 00:01 UTC on 6 May and the server was shut down on 7 May. 2026-05-08 is the PiunikaWeb article date and the site stayed offline until the night of 8th-9th May. '~48 hours' is stated by no source. Only the 'Download Alternative Installer' links and the Linux shell installer link were affected, not 'the official site' downloads in general."
+        ground_truth: "Vendor incident page: 'Only people who downloaded and installed from jdownloader.org during 6th–7th May 2026 (UTC) using one or more website download links for \"Download Alternative Installer\" and/or the affected Linux shell installer link'; 'shortly after midnight (~00:01 UTC) — ... a few download links were changed'; 'In the night of 8th–9th May 2026 (UTC) ... it was brought back online'."
+        ground_truth_url: "https://jdownloader.org/incident_8.5.2026.html"
+        fix: "'Between about 00:01 UTC on 6 May and the server shutdown on 7 May 2026, the Windows \"Download Alternative Installer\" links and the Linux shell installer link on jdownloader.org pointed to malicious files'; drop '~48 hours'."
+        class: factual-error
+      - where: "headline; body paragraph 1 (Python RAT)"
+        claim: "Windows and Linux installers swapped for a Python RAT for ~48 hours"
+        defect: "Neither cited page (PiunikaWeb, CyberKendra) mentions a Python RAT; the body itself says the capability 'has not been corroborated by a named research lab' while the headline asserts it. BleepingComputer (2026-05-09) reports the Windows payload deploys a Python-based RAT; the Linux installer instead installs ELF binaries (one SUID-root) with a profile.d persistence script. The sentence ends in a stray '(' and refers to 'this run's window'."
+        ground_truth: "BleepingComputer: 'the Windows payload found deploying a Python-based remote access trojan'; researcher Thomas Klemenc: 'the malware acts as a loader that deploys a heavily obfuscated Python-based RAT'; Linux: the script 'extracts two ELF binaries' and installs one 'as a SUID-root binary' (file names omitted here as indicators)."
+        ground_truth_url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"
+        fix: "Cite BleepingComputer (and the vendor notice) and state: Windows installers deployed a Python-based RAT (per an independent analyst), the Linux shell installer installed a SUID-root binary and persistence; fix the truncated sentence."
+        class: factual-error
+      - where: "body paragraph 1 (JDownloader response)"
+        claim: "The JDownloader team confirmed the breach and have asked users to verify file hashes against the project's published SHA-256 manifest."
+        defect: "Inverted: the vendor published the SHA-256 digests and sizes of the known malicious substitute files and told users to check the Digital Signatures tab for 'AppWork GmbH'; no 'published SHA-256 manifest' of genuine installers is cited."
+        ground_truth: "Vendor: 'the following SHA256 digests and exact sizes in bytes describe unrelated malicious files ... compare hash and size together. A match is a strong indicator of the bad file'. BleepingComputer: 'If Digital Signatures shows it was signed by \"AppWork GmbH,\" then it is legitimate. However, if the file is not signed or is by a different name, it should be avoided.'"
+        ground_truth_url: "https://jdownloader.org/incident_8.5.2026.html"
+        fix: "'The vendor published hashes of the malicious substitute files and advises checking that the installer is signed by \"AppWork GmbH\"'."
+        class: factual-error
+      - where: "body paragraph 1 (publisher names); ATT&CK mapping"
+        claim: "Trojanised Windows executables bore forged publisher names — \"Zipline LLC\", \"The Water Team\", \"Peace Team\" — instead of the legitimate AppWork GmbH signature ... T1036.005 (forged AppWork-adjacent publisher names)"
+        defect: "Sources say the malicious Windows files lacked proper digital signatures; the publisher names are what users reported seeing. Nothing says the names were forged or 'AppWork-adjacent', so the T1036.005 rationale is not sourced (the vendor's table shows the substitute files named like genuine installers, which would support the mapping instead)."
+        ground_truth: "PiunikaWeb: 'The compromised Windows files lack proper digital signatures.' 'Users on the r/jdownloader subreddit reported seeing strange publisher names attached to the infected downloads.' Vendor (via Security Affairs, Reddit): 'The bad ones are missing digital singnature'."
+        ground_truth_url: "https://piunikaweb.com/2026/05/08/jdownloader-website-hacked-malware/"
+        fix: "'The malicious Windows installers were unsigned or showed unfamiliar publisher names reported by users (Zipline LLC, The Water Team, Peace Team)'; map T1036.005 on the genuine-looking installer file names."
+        class: imprecision
+      - where: "summary; body paragraph 1 (framing)"
+        claim: "German-developed (AppWork GmbH) Java-based download manager popular across European user bases"
+        defect: "Neither cited page says German-developed or popular across European user bases (CyberKendra: 'millions of users across Windows, macOS, and Linux'); the Europe/DACH regional tags rest on this. No page links the incident to Switzerland or DACH."
+        ground_truth: "CyberKendra: 'one of the most widely used free download managers with millions of users across Windows, macOS, and Linux'."
+        ground_truth_url: "https://www.cyberkendra.com/2026/05/jdownloader-website-hacked-malicious.html"
+        fix: "Describe the product from the sources ('free download manager with millions of users across Windows, macOS and Linux'); drop the unsupported European framing or cite it."
+        class: imprecision
+      - where: "sources[1] (CyberKendra date)"
+        claim: "CyberKendra, 2026-05-07"
+        defect: "The page's own date is 2026-05-08; the entry's source label says 05-07 (the date the compromise was first reported on Reddit)."
+        ground_truth: "CyberKendra page date 2026-05-08; 'The breach was first flagged on May 7, 2026, by a Reddit user'."
+        ground_truth_url: "https://www.cyberkendra.com/2026/05/jdownloader-website-hacked-malicious.html"
+        fix: "Label the source 2026-05-08."
+        class: imprecision
+      - where: "Defender takeaway (detection)"
+        claim: "alert on Python child processes spawned from `JDownloader*` parent images (Sysmon EID 1 + parent-image filter)"
+        defect: "Uncited composed detection; no source describes the process lineage of the Windows payload (an analyst notes an 8-minute delay before the payload activates, per ANY.RUN via Security Affairs). The Linux indicators sources do describe (profile.d persistence script, SUID-root binary) are absent."
+        ground_truth: "BleepingComputer: the Linux installer created a persistence script under /etc/profile.d and installed a SUID-root binary under /usr/bin (file names omitted as indicators); Security Affairs: 'an 8-minute delay before the malicious payload activates'."
+        ground_truth_url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"
+        fix: "Replace with sourced telemetry: unsigned or non-AppWork-signed installer executions on 6-7 May, new /etc/profile.d script and SUID-root binary on Linux hosts that ran the shell installer."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1190, behavior: "Attackers exploited an unpatched website CMS vulnerability that let them change access control lists and content without authentication", url: "https://jdownloader.org/incident_8.5.2026.html"}
+        - {id: T1195.002, behavior: "Official download links repointed to malicious third-party installers (reported as a supply chain attack)", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+        - {id: T1204.002, behavior: "Victims ran the downloaded malicious Windows or Linux installer", url: "https://jdownloader.org/incident_8.5.2026.html"}
+        - {id: T1036.005, behavior: "Substitute files carried the names of the genuine JDownloader installers", url: "https://jdownloader.org/incident_8.5.2026.html"}
+        - {id: T1059.006, behavior: "Windows loader deploys a heavily obfuscated Python-based RAT executing Python code from C2", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+        - {id: T1105, behavior: "Linux installer downloads an archive from a remote host (disguised as an SVG file) and extracts two ELF binaries", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+        - {id: T1036.008, behavior: "Linux payload archive disguised as an SVG file", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+        - {id: T1548.001, behavior: "Linux installer installs a SUID-root binary under /usr/bin", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+        - {id: T1546.004, behavior: "Persistence script created under /etc/profile.d (runs at shell login)", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+        - {id: T1027.002, behavior: "Linux main payload heavily obfuscated with Pyarmor", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+      rating:
+        reliability: A
+        credibility: 1
+        basis: "Vendor incident notice (primary custodian, timeline and scope) agrees with an independent analyst's malware analysis (Klemenc, via BleepingComputer; ANY.RUN run via Security Affairs) and with user reports; PiunikaWeb and CyberKendra relay the developer's Reddit statements."
+      exposure:
+        - {quote: "Only people who downloaded and installed from jdownloader.org during 6th–7th May 2026 (UTC) using one or more website download links for \"Download Alternative Installer\" and/or the affected Linux shell installer link", url: "https://jdownloader.org/incident_8.5.2026.html"}
+        - {quote: "Updates installed through JDownloader's built-in updater (RSA-signed; see In-app updates), which is independent of the manipulated website links.", url: "https://jdownloader.org/incident_8.5.2026.html"}
+      detection:
+        - {quote: "The 'pkg' payload is also heavily obfuscated using Pyarmor, so it is unclear what functionality it performs.", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/", note: "BleepingComputer also gives the payload, profile.d persistence-script and masquerade paths; they are file indicators, so carry only the behavior (login-script persistence under /etc/profile.d, SUID-root binary under /usr/bin, process masquerading as a system daemon)"}
+        - {quote: "the malware acts as a loader that deploys a heavily obfuscated Python-based RAT.", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+      triage:
+        - {quote: "If Digital Signatures shows it was signed by \"AppWork GmbH,\" then it is legitimate. However, if the file is not signed or is by a different name, it should be avoided.", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+      takeaway:
+        - {quote: "As arbitrary code could have been executed by the malware on infected devices, those who installed the malicious installers are advised to reinstall their operating systems.", url: "https://www.bleepingcomputer.com/news/security/jdownloader-site-hacked-to-replace-installers-with-python-rat-malware/"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/jd-incident.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/jd-bleeping.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/jd-piunika.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/jd-cyberkendra.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/jd-secaffairs.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/jd-malwarebytes.txt
+    possible_twin_outside_batch: null

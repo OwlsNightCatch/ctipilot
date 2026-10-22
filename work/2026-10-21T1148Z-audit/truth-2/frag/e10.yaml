@@ -1,0 +1,69 @@
+- entry: 2026-05-14/the-gentlemen-raas-backend-rocket-database-leaked-16-22-gb-c
+  verdict: factual-error
+  defects:
+    - where: "summary; body paragraph 3 (decryptor); 'workflow changes today' sentence"
+      claim: "The decryptor is public on GitHub per BankInfoSecurity, making decryption the first action for any in-flight Gentlemen incident ... enabling existing victims to recover without payment ... attempt decryption before any negotiation."
+      defect: "The Bedrock Safeguard tool only recovers per-file keys from a memory image of the ransomware process captured while it was running, is best-effort, has no master key, and predates the leak (April); the group shipped a same-day patch. Most victims without such a capture cannot decrypt, so the advice misdirects responders."
+      ground_truth: "README: 'you may be able to recover files if a memory image of the ransomware process was captured while it was running ... it is best-effort and may be partial'; 'There is no master or skeleton key ... without such an image, this tool cannot recover those files.' BIS: 'in April after researchers at Canadian cybersecurity firm Bedrock Safeguard released a free decryptor ... \"the group issued a same-day patch\"'."
+      ground_truth_url: "https://github.com/Bedrock-Safeguard/gentlemen-decryptor"
+      fix: "Replace with: during an active Gentlemen incident, capture memory of the running locker process (EDR memory capture, procdump, full RAM image) before killing or rebooting; recovery via the April 2026 Bedrock Safeguard tool depends on that capture and may not work on post-patch builds."
+      class: factual-error
+    - where: "headline; summary; body paragraph 3 (1,570 vs 332)"
+      claim: "Check Point Research attributes a count of **1,570+ victim entries** to a separately-exposed SystemBC C&C server, against **332 victims publicly listed ...** — significant under-reporting of true scope"
+      defect: "The 1,570 figure comes from Check Point's earlier DFIR report on one affiliate's SystemBC C&C (proxy-malware victims), not from the leak, and Check Point draws no under-reporting conclusion; treating SystemBC bots as Gentlemen ransomware victims is the entry's inference."
+      ground_truth: "CPR: 'During our previous publication, Check Point Research analyzed a specific infection carried out by an affiliate of this RaaS. In that case, the affiliate used SystemBC, and the associated command-and-control (C&C) server revealed more than 1,570 victims.' and 'approximately 332 published victims in just the first five months of 2026'; 'the current 412 public victims'."
+      ground_truth_url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+      fix: "Write: one affiliate's SystemBC C&C (Check Point's earlier DFIR report) held 1,570+ infected hosts; the DLS lists 332 victims in Jan-May 2026 (412 total). Drop 'under-reporting of true scope' and the '1,570+ victims' headline claim."
+      class: factual-error
+    - where: "body paragraph 2 (attack chain)"
+      claim: "initial access almost exclusively via unpatched edge devices — FortiGate CVE-2024-55591 (the group's documented mainstay), Cisco appliances, CWMP/TR-069 interfaces — or purchased infostealer credentials; ... EDR-suppression utilities `EDRStartupHinder`, `gfreeze` and `glinker` manipulate ETW callbacks and NTDLL syscall tables"
+      defect: "Check Point says CVE-2024-55591 is one the group tracks with no exploitation shown, names no CWMP/TR-069 vector, says access is 'usually' (not almost exclusively) via edge devices with brute-forcing, known vulnerabilities and bought access, and attributes ETW patching and NTDLL unhooking to locker upgrades, not to the three EDR tools."
+      ground_truth: "CPR: 'While the chats do not show detailed exploitation steps, the presence of this CVE alongside their FortiGate targeting suggests it is part of the set of vulnerabilities they track for potential use'; 'including credential brute-forcing against web or VPN panels, exploiting known vulnerabilities, and buying access'; 'technical upgrades to the locker, such as removing hardware breakpoints, performing NTDLL unhooking, and patching ETW'; EDRStartupHinder 'Blocks or delays EDR processes at startup'."
+      ground_truth_url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+      fix: "Restate initial access as Check Point does (Fortinet/Cisco edge, brute force, known CVEs tracked: CVE-2024-55591, CVE-2025-32433, CVE-2025-33073; NTLM relay; OWA/M365 credential logs); drop CWMP/TR-069; move ETW/NTDLL to the locker."
+      class: factual-error
+    - where: "body paragraph 3 (detection pivots)"
+      claim: "alert on `EDRStartupHinder`, `gfreeze`, `glinker` process names (custom binaries, not commodity); monitor for AD Certificate Services reconnaissance (`certutil` enumeration of CA servers and templates) consistent with CertiHound; correlate with FortiGate CVE-2024-55591 initial-access exploitation patterns that the group continues to weaponise."
+      defect: "Tool process names are file-name indicators (no-IOC rule) and two are derived from public EDR-blocking code; CertiHound runs through NetExec, not certutil; no source shows the group weaponising CVE-2024-55591."
+      ground_truth: "CPR: 'CertiHound — Enumerates and detects ADCS misconfigurations (ESC1–ESC17). Used via NetExec integration.'; 'EDRStartupHinder ... Based on the EDR-Startup-Process-Blocker concept'; 'gfreeze ... Derived from EDR-blocking research/code'."
+      ground_truth_url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+      fix: "Detect the behaviors instead: processes blocking EDR service start-up, ETW patching in user processes, LDAP enumeration of ADCS templates from non-admin hosts, NTLM relay scanning; remove the 'continues to weaponise' clause."
+      class: factual-error
+    - where: "body paragraph 1 (dataset contents); headline ('ZeroPulse C2 internals')"
+      claim: "The dataset contains 8,200 lines of internal chat-tool traffic ... and configuration artefacts for the ZeroPulse C2 framework."
+      defect: "The 8,200-line figure is DynaRisk's via BankInfoSecurity, not Check Point; neither source describes ZeroPulse configuration artefacts or 'internals' (Check Point lists ZeroPulse as an open-source C2 the group uses)."
+      ground_truth: "BIS: 'The compromised communications included 8,200 lines of text from an internal chat tool'. CPR: 'For remote access and C2, they rely on frameworks like ZeroPulse and Velociraptor'."
+      ground_truth_url: "https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654"
+      fix: "Attribute the 8,200 lines to DynaRisk/BIS; write 'ZeroPulse and Velociraptor used for C2' and drop 'internals'."
+      class: imprecision
+    - where: "body opening; sourcing_note"
+      claim: "**UPDATE (originally covered 2026-05-10 in the Q1 2026 ransomware quarterly synthesis):**"
+      defect: "Pipeline self-reference in reader text."
+      ground_truth: "n/a (migration artefact)"
+      ground_truth_url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+      fix: "Delete the preamble."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1190, behavior: "Exploiting known vulnerabilities on exposed Fortinet/Cisco edge devices (CVE-2024-55591 among tracked CVEs)", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1110, behavior: "Credential brute-forcing against web and VPN panels", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1078, behavior: "Bought access and OWA/M365 credential logs from access brokers", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1557.001, behavior: "RelayKing scans for NTLM relay paths (incl. CVE-2025-33073) feeding ntlmrelayx", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1649, behavior: "CertiHound enumerates ADCS misconfigurations (ESC1-ESC17) for certificate abuse", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1572, behavior: "Cloudflare tunnels / Zero Trust for persistent access into victim networks", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1219, behavior: "ZeroPulse and Velociraptor used for remote access and C2", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1685, behavior: "EDR-kill toolkit (EDRStartupHinder, gfreeze, glinker) and locker ETW patching / NTDLL unhooking", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+      - {id: T1484.001, behavior: "Modifying Group Policy Objects after obtaining domain admin", url: "https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654"}
+      - {id: T1490, behavior: "Targeting NAS, storage arrays and backup infrastructure to prevent recovery", url: "https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654"}
+      - {id: T1486, behavior: "Go locker encrypting Windows, Linux, NAS, BSD and ESXi (XChaCha20 with X25519 per-file keys)", url: "https://github.com/Bedrock-Safeguard/gentlemen-decryptor"}
+    rating: {reliability: B, credibility: 2, basis: "Check Point Research analysed a partial leak (B); BankInfoSecurity's DynaRisk analyst read the same leak independently and agrees on the broad workflow (edge access, EDR killers, ZeroPulse), but the specific counts and tool roles rest on Check Point alone (2)."}
+    exposure:
+      - {quote: "The group claims to usually gain initial access through exposed edge devices such as VPN appliances, firewalls, and other internet-facing systems, with a particular focus on platforms like Fortinet FortiGate and Cisco.", url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"}
+    detection:
+      - {quote: "Rather than immediately deploying ransomware, the group carefully mapped the environment, searched for virtualization infrastructure, backup systems, NAS devices and critical servers to maximize impact", url: "https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654"}
+    triage: []
+    takeaway:
+      - {quote: "The keys are lost soon after the process exits. Once the ransomware process terminates, the operating system reclaims its memory and the keys are quickly gone.", url: "https://github.com/Bedrock-Safeguard/gentlemen-decryptor"}
+      - {quote: "EDR/XDR solutions — CrowdStrike, SentinelOne, Carbon Black, Microsoft Defender for Endpoint, and others may capture process memory when they detect the threat. Check your EDR console for memory captures or forensic snapshots from the incident.", url: "https://github.com/Bedrock-Safeguard/gentlemen-decryptor"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e10-cpr.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e10-bis.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e10-bis-raw.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e10-decryptor.txt]
+  possible_twin_outside_batch: null

@@ -1,0 +1,55 @@
+  - entry: 2026-05-13/cve-2026-44277-cve-2026-26083-fortinet-fortiauthenticator-an
+    verdict: imprecision
+    defects:
+      - where: "body paragraph 1 (CVSS narrative)"
+        claim: "vendor PSIRT lists CVSS 9.1 (NCSC-CH and some early reports surfaced 9.8 — § 7 documents the convergence) ... executing code at CVSS 9.1 per the Fortinet PSIRT advisory"
+        defect: "The PSIRT pages list CVSSv3 base 9.8 and temporal 9.1; the CVE records (Fortinet as CNA) carry 9.1 with temporal metrics in the vector. NCSC-CH's 9.8 is the base score, not an early figure that converged; '§ 7' is pipeline self-reference. cves[].cvss 9.1 matches the CVE record."
+        ground_truth: "FortiGuard FG-IR-26-128: 'CVSSv3 Score 9.8 CVSSv3 Temporal Score 9.1'; FG-IR-26-136: same; EUVD-2026-29729: 9.1 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C."
+        ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"
+        fix: "'Fortinet scores both CVSSv3 9.8 base (9.1 temporal; the CVE records carry 9.1)'; drop the convergence sentence."
+        class: imprecision
+      - where: "body paragraph 1 (affected versions)"
+        claim: "Affected: 6.5.0–6.5.6, 6.6.0–6.6.8 and 8.0.0–8.0.2 ... Affected FortiSandbox: 4.4.0–4.4.8 (fixed 4.4.9), 5.0.0–5.0.1 (fixed 5.0.2), plus multiple PaaS / Cloud variants; on-prem Cloud 23 and 24 require migration"
+        defect: "The CVE records (updated after disclosure) also list FortiAuthenticator 6.4.0-6.4.10 and FortiSandbox 4.2.1-4.2.8 as affected, absent from the PSIRT table and the entry; FortiAuthenticator 8.0 affected builds are 8.0.0 and 8.0.2 as listed; 'on-prem Cloud 23 and 24' is a contradiction (FortiSandbox Cloud 23/24, all versions, migrate)."
+        ground_truth: "CVE-2026-44277 record (dateUpdated 2026-05-28): FortiAuthenticator 8.0.2, 8.0.0, 6.6.0-6.6.8, 6.5.0-6.5.6, 6.4.0-6.4.10 affected. CVE-2026-26083 record (2026-07-08): FortiSandbox 5.0.0-5.0.1, 4.4.0-4.4.8, 4.2.1-4.2.8. PSIRT: 'FortiSandbox Cloud 24 | All versions | Migrate to a fixed release'."
+        ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-136"
+        fix: "Add the 6.4 and 4.2 branches (as per the CVE records; no fixed release named, migrate) and write 'FortiSandbox Cloud 23 and 24: migrate'; fill cves[].affected/fixed."
+        class: imprecision
+      - where: "summary (Swiss relevance)"
+        claim: "FortiAuthenticator commonly anchors Swiss federal/cantonal SAML federations and RADIUS, FortiSandbox underpins SOC malware-analysis pipelines"
+        defect: "On no cited page."
+        ground_truth: "NCSC-CH 12569 and BleepingComputer describe the flaws only."
+        ground_truth_url: "https://security-hub.ncsc.admin.ch/#/posts/12569"
+        fix: "Drop or cite."
+        class: imprecision
+      - where: "Detection / Hardening sentences"
+        claim: "treat any anomalous outbound HTTP from these appliances (Sysmon-equivalent on FortiOS via `diagnose debug application httpsd` for FortiAuthenticator) as potential post-exploit egress ... Fortinet's PSIRT pages explicitly call this out as the residual hardening even after patching"
+        defect: "(low confidence on the command) No source gives detection guidance and FortiAuthenticator does not run FortiOS; the PSIRT pages do not call source-IP restriction residual hardening after patching. FG-IR-26-128 gives a workaround (disable API access on exposed interfaces), which the entry omits; FG-IR-26-136 gives none."
+        ground_truth: "FG-IR-26-128: 'Workarounds: Disable API access for exposed interfaces via Network -> Interfaces -> Access Rights.'"
+        ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"
+        fix: "Replace with the vendor workaround for FortiAuthenticator; drop the FortiOS command and the 'residual hardening' attribution."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1190, behavior: "Unauthenticated crafted (HTTP) requests to the FortiAuthenticator API (CWE-284) or FortiSandbox Web UI (CWE-862) execute unauthorized code or commands", url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"}
+      rating:
+        reliability: A
+        credibility: 2
+        basis: "Fortinet PSIRT advisories for its own products (internal discovery), restated by NCSC-CH 12569 and BleepingComputer: one assessor."
+      exposure:
+        - {quote: "FortiAuthenticator Cloud is not impacted by the issue and hence customers do not need to perform any action.", url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"}
+        - {quote: "Prerequisites: Network access to the application's Web UI or API endpoints.", url: "https://security-hub.ncsc.admin.ch/#/posts/12569"}
+      detection: []
+      triage: []
+      takeaway:
+        - {quote: "Workarounds: Disable API access for exposed interfaces via Network -> Interfaces -> Access Rights.", url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-FG-IR-26-128.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-FG-IR-26-136.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-ncsc12569.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-bleeping.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-euvd-CVE-2026-44277.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-euvd-CVE-2026-26083.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-cveorg-CVE-2026-44277.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-cveorg-CVE-2026-26083.json
+    possible_twin_outside_batch: null

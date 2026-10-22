@@ -1,0 +1,113 @@
+- entry: 2026-05-14/famoussparrow-three-wave-intrusion-of-an-azerbaijani-energy
+  verdict: factual-error
+  defects:
+    - where: "summary; Background paragraph; 'Operationally critical context' paragraph"
+      claim: "making Azerbaijani energy infrastructure a high-value collection target for Chinese state actors monitoring European energy supply dependencies"
+      defect: "Bitdefender gives the European-gas context but explicitly says it does not establish motive, and calls the actor 'likely affiliated with the Chinese APT ecosystem' at moderate-to-high confidence; the entry turns the context into a stated motive of 'Chinese state actors'."
+      ground_truth: "'This context does not establish motive. We have N=1 victim and moderate-to-high attribution confidence.' and 'FamousSparrow is likely affiliated with the Chinese APT ecosystem.'"
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Keep the 13-countries context as Bitdefender's, add its 'does not establish motive' caveat, and write 'China-nexus actor (moderate-to-high confidence)'; drop 'structurally collection against the upstream end of European energy supply'."
+      class: factual-error
+    - where: "summary; headline-level claim; body 'Named clusters' paragraph"
+      claim: "deployed Deed RAT via a novel DLL-sideloading technique ... the LogMeIn Hamachi sideloading host is freshly observed for this cluster and indicates active tooling rotation rather than reuse of a known signed-binary host"
+      defect: "Bitdefender calls the technique 'evolved' and shows the loader closely matches a Deed RAT loader Trend Micro already documented for Earth Estries (same exports, same StartServiceCtrlDispatcherW hook-and-restore); no page says the Hamachi host is new for the cluster or that the binary is signed."
+      ground_truth: "'These characteristics closely match a Deed RAT loader described by Trend Micro in its reporting on the Earth Estries threat actor. In particular, the sample identified by MD5 ... exhibits the same unusual exports, similar mbedTLS-derived code, and an almost identical execution model.'"
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Write 'an evolved two-stage DLL side-loading loader (Init/ComMain exports, StartServiceCtrlDispatcherW hook) closely matching an Earth Estries loader Trend Micro documented'; say 'legitimate' not 'signed'; delete 'freshly observed'."
+      class: factual-error
+    - where: "Exploitation chain, Wave 2 bullet; 'Implants observed' sentence"
+      claim: "Wave 2: TernDoor deployed via DLL sideloading against a renamed-but-legitimate `deskband_injector64.exe` ... Implants observed include Deed RAT (Snappybee), TernDoor, Mofu Loader"
+      defect: "The second-wave installation was blocked by the security product; TernDoor was identified only by assessment from recovered memory pages, so it was attempted, not deployed or observed running."
+      ground_truth: "'The attempt was unsuccessful, as the security solution blocked execution before the malware could complete its installation.' and 'the partially recovered payload in this case is assessed to be Terndoor'. THN: 'attempting to unsuccessfully employ DLL side-loading to drop TernDoor by means of Mofu Loader'."
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Write 'Wave 2: attempted TernDoor (assessed) via a Mofu-loader chain sideloaded through a renamed deskband_injector64.exe; blocked before installation completed'."
+      class: factual-error
+    - where: "Detection: Exchange patch-verification, Web-shell survival sweep; T1505.003 bullet; Vulnerability-mechanics paragraph"
+      claim: "Persistence outliving clean-up was the structural enabler of re-exploitation in this case. ... surviving persistence from an earlier wave is the most plausible explanation for re-exploitation across remediation attempts"
+      defect: "Bitdefender's account is that the attackers came back to the same still-vulnerable Exchange server; its lesson is patching plus credential rotation. No surviving web shell or scheduled task is reported, so the 'structural enabler' sentence states an inference as fact."
+      ground_truth: "'the attackers returned to the same vulnerable Exchange server nearly a month after the initial compromise attempt' and 'actors will exploit and re-exploit the same access path until the original vulnerability is patched, compromised credentials are rotated, and the attacker's ability to return is fully disrupted.'"
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Replace with Bitdefender's explanation (unpatched entry point, credentials not rotated, domain admin credentials in use); keep the web-shell sweep as a check, not as the established cause."
+      class: factual-error
+    - where: "Detection: DLL load-order hunt and Hamachi sideload bullet"
+      claim: "Hunt Sysmon event ID 7 (Image Load) records for the Hamachi process loading DLLs from `%LOCALAPPDATA%\\Temp\\` or other writable user-context paths rather than from the legitimate `Program Files\\LogMeIn Hamachi\\` install directory."
+      defect: "The loader was persisted inside a directory chosen to mimic the legitimate Hamachi install path (and staged first from C:\\TEMP), so a hunt that treats the Program Files Hamachi path as clean misses the observed persistence; the payload injects into system processes rather than spawning encoded PowerShell children."
+      ground_truth: 'Bitdefender: "the malware was installed in C:\Program Files (x86)\LogMeIn Hamachi\, a location deliberately chosen to mimic the legitimate installation path of LogMeIn Hamachi"; first stage "C:\TEMP\LMIGuardianSvc.exe ... sideloaded C:\TEMP\lmiguardiandll.dll"; config lists SearchIndexer.exe, taskeng.exe, iexplore.exe, taskhost.exe as "Process to inject into"; service "LogMeIn Hamachi" (later "HamachiNet").'
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Hunt for a LogMeIn Hamachi service or LMIGuardianSvc.exe on hosts without a sanctioned Hamachi install, for the loader in C:\\TEMP or C:\\Recovery, and for Bitdefender's own signals (w3wp.exe writing .aspx under MSExchangePowerShellAppPool, unsigned code patching StartServiceCtrlDispatcherW, kernel-driver services with ImagePath under ProgramData); drop the -EncodedCommand child-process claim."
+      class: factual-error
+    - where: "Detection: Exchange patch-verification bullet; Operationally critical context"
+      claim: "CU-level patch status alone is insufficient — the cumulative-update installer occasionally rolls back fixes if an OWA front-end customisation conflicts. ... any organisation in CH / EU with an on-premise Exchange server that received CU patches but lacks `HealthChecker.ps1`-level verification carries the same exposure."
+      defect: "No page read supports the rollback claim or the claim that a patched server carries the same exposure; Bitdefender's condition is an unpatched entry point and unrotated credentials."
+      ground_truth: "Bitdefender: 'Patch internet-facing services immediately. ProxyShell and ProxyNotShell exploits against Exchange have been publicly documented since 2021 and 2022 respectively.' HealthChecker documents a '-VulnerabilityReport' mode."
+      ground_truth_url: "https://microsoft.github.io/CSS-Exchange/Diagnostics/HealthChecker/"
+      fix: "Delete the rollback sentence; write 'verify the ProxyNotShell fixes are present (HealthChecker -VulnerabilityReport) and rotate credentials used during any intrusion'."
+      class: factual-error
+    - where: "Background paragraph (first-in-some-time claim)"
+      claim: "Recent primary technical detail has been sparse — the Bitdefender Labs publication on 2026-05-13 is the first multi-wave intrusion case study against an energy-sector victim published in some time"
+      defect: "Unsupported quantifier; Bitdefender's own claim is narrower (first public link of this cluster to South Caucasus energy targets), and it builds on Cisco Talos' 2026 UAT-9244 report."
+      ground_truth: "'This research documents energy-sector targeting in the South Caucasus, a region not previously linked to this activity cluster in public reporting.'"
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Use Bitdefender's sentence."
+      class: factual-error
+    - where: "Background paragraph (victimology and overlap)"
+      claim: "tracked publicly since 2021 as a China-nexus espionage cluster targeting hotels, government and engineering firms; Bitdefender's 2026-05-13 write-up cites tooling and infrastructure overlap with the Earth Estries cluster"
+      defect: "The victimology is not in either cited page (Bitdefender lists telecoms, government and technology) and Bitdefender cites toolset and tradecraft overlap, not infrastructure."
+      ground_truth: "'Prior public reporting documents activity against telecoms, government, and technology sectors across the United States, Asia-Pacific, Middle East, and South Africa.' and 'substantial overlap with the Earth Estries toolset and tradecraft'."
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Use Bitdefender's victimology and 'toolset and tradecraft overlap'."
+      class: imprecision
+    - where: "cves[] (empty); Vulnerability mechanics paragraph"
+      claim: "cves: [] ... CVE-2022-41040 (SSRF in the Exchange front-end Auto-discover handler) chained with CVE-2022-41082 (deserialisation in the back-end PowerShell remoting endpoint) ... yields code execution under the Exchange application-pool identity (typically `LocalSystem`)"
+      defect: "The body names two CVEs that cves[] lacks; the Autodiscover/LocalSystem mechanics are uncited; and the authentication prerequisite is missing (Microsoft scores both PR:L and CISA calls 41082 authenticated RCE, while Bitdefender says 'unauthenticated', a contradiction the entry should surface)."
+      ground_truth: "MSRC: CVE-2022-41040 'Microsoft Exchange Server Elevation of Privilege Vulnerability', 8.8, CVSS:3.1/AV:N/AC:L/PR:L, exploited Yes; CVE-2022-41082 'Remote Code Execution Vulnerability', 8.0, CVSS:3.1/AV:A/AC:L/PR:L, exploited Yes. CISA KEV (added 2022-09-30, ransomware use Known): 41082 'allows for authenticated remote code execution'. Bitdefender: 'Both allow unauthenticated attackers to execute code on unpatched Exchange servers'."
+      ground_truth_url: "work/2026-10-21T1148Z-audit/truth-2/bodies/e8-msrc-CVE-2022-41082.txt"
+      fix: "Add both CVEs to cves[] (exploited, KEV, MSRC scores 8.8 and 8.0, auth post-auth); add a Contradiction line on the authentication requirement; drop the uncited Autodiscover.svc/LocalSystem detail or cite Microsoft's guidance."
+      class: imprecision
+    - where: "Detection and Hardening bullets (uncited generic content)"
+      claim: "Cross-reference IIS log analysis for repeated POST requests to `/autodiscover/autodiscover.json` ... Impacket execution patterns (`smbexec.py` / `wmiexec.py`) ... on-premises Exchange remains a top initial-access vector across China-nexus campaigns ... ASR rules ... legacy authentication on hybrid setups continues to expose ProxyNotShell-adjacent paths"
+      defect: "None of these specifics is in the cited pages (Bitdefender reports atexec and smbexec-style tooling, not wmiexec), and the entry omits Bitdefender's own observed detection signals in favour of generic guidance."
+      ground_truth: "Bitdefender defender actions: 'Monitor for w3wp.exe writing .aspx files to publicly accessible directories, especially under the MSExchangePowerShellAppPool context'; 'Monitor for service creation events where Type = 1 (kernel driver) and the ImagePath points to a non-standard location'; 'they used atexec and smbexec-style utilities (consistent with the Impacket toolkit)'."
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Replace generic bullets with Bitdefender's defender actions; cut the ASR and legacy-auth bullets."
+      class: imprecision
+    - where: "body ATT&CK ids; headline"
+      claim: "T1574.002 Hijack Execution Flow: DLL Side-Loading is the ATT&CK umbrella"
+      defect: "T1574.002 is revoked in the pinned ATT&CK v20 dataset (revoked_by T1574.001 'DLL'); the headline is also cut mid-phrase ('Overrides Two Hamachi')."
+      ground_truth: "attack/enterprise-attack.json: T1574.002 'DLL Side-Loading' revoked: true, revoked_by: T1574.001."
+      ground_truth_url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      fix: "Use T1574.001 in techniques[]; complete the headline."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1190, behavior: "ProxyNotShell exploitation of on-prem Exchange (w3wp.exe under MSExchangePowerShellAppPool), same entry point revisited in three waves", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1505.003, behavior: "w3wp.exe attempts to write .aspx web shells into a publicly accessible directory (Dec 25, 26, 29)", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1574.001, behavior: "Legitimate LMIGuardianSvc.exe (LogMeIn Hamachi) loads malicious LMIGuardianDll.dll; renamed deskband_injector64.exe loads malicious winmm.dll", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1543.003, behavior: "Service 'LogMeIn Hamachi' (wave 3: 'HamachiNet') auto-starts LMIGuardianSvc.exe", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1036.005, behavior: "Loader installed under a path mimicking the legitimate Hamachi install directory; second-wave host renamed USOShared.exe in ProgramData\\USOShared", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1685, behavior: "Loader changes memory protection and patches StartServiceCtrlDispatcherW, restoring the bytes after use (Bitdefender maps this to T1562 Impair Defenses, revoked in v20 in favour of T1685)", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1027, behavior: "Payload in .hamachi.lng AES-128-CBC encrypted, orchestrator RC4-encrypted and LZNT1-compressed; ELF-hash API resolution", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1055, behavior: "Deed RAT configuration names SearchIndexer.exe, taskeng.exe, iexplore.exe, taskhost.exe (wave 3: wininit.exe, dwm.exe) as injection targets", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1112, behavior: "Registry key SOFTWARE\\Microsoft\\LogMeIn Hamachi used for configuration and plugin storage", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1071.001, behavior: "Deed RAT HTTPS C2 to domains masquerading as security vendors", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1078.002, behavior: "RDP pivot authenticated with a domain administrator account", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1021.001, behavior: "RDP lateral movement to a second server, interactive session", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1059.001, behavior: "PowerShell console launched in the RDP session, Deed RAT files staged within minutes", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1105, behavior: "Deed RAT payload manually downloaded and staged on the second host", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1021.002, behavior: "atexec and smbexec-style (Impacket) remote execution to a third machine", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {id: T1014, behavior: "Second wave tried to create kernel-driver service vmflt (Type 1) with ImagePath under ProgramData\\USOShared", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+    rating: {reliability: B, credibility: 2, basis: "Bitdefender Labs original IR and malware research (B); THN restates it, so one assessor (2); attribution itself is moderate-to-high confidence per Bitdefender."}
+    exposure:
+      - {quote: "ProxyShell and ProxyNotShell exploits against Exchange have been publicly documented since 2021 and 2022 respectively. Attackers will continue to exploit unpatched servers until they are either patched or taken offline.", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+    detection:
+      - {quote: "Monitor for w3wp.exe writing .aspx files to publicly accessible directories, especially under the MSExchangePowerShellAppPool context.", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {quote: "Monitor for changes to the first few bytes of commonly-hooked Windows APIs (NtCreateFile, CreateProcessW, StartServiceCtrlDispatcherW, LdrLoadDll).", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {quote: "Monitor for service creation events where Type = 1 (kernel driver) and the ImagePath points to a non-standard location (C:\\ProgramData, C:\\Temp, user-writable directories).", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+    triage:
+      - {quote: "Legitimate Exchange maintenance workflows rarely write web-accessible script files through the IIS worker process.", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {quote: "Legitimate workflows rarely involve deskband_injector64.exe launching diagnostic tools.", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+    takeaway:
+      - {quote: "If domain administrator credentials are used during an intrusion, they must be rotated immediately after remediation. Attackers will reuse compromised credentials to regain access even after malware is removed.", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+      - {quote: "The intrusion illustrates that actors will exploit and re-exploit the same access path until the original vulnerability is patched, compromised credentials are rotated, and the attacker's ability to return is fully disrupted.", url: "https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e8-bitdefender.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e8-thn.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e8-msrc-CVE-2022-41040.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e8-msrc-CVE-2022-41082.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e8-css-healthchecker.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e8-css-exchange.txt]
+  possible_twin_outside_batch: null

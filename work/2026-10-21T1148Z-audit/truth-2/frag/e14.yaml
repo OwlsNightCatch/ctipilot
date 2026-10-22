@@ -1,0 +1,42 @@
+- entry: 2026-05-15/frostyneighbor-ghostwriter-unc1151-belarus-state-aligned-ese
+  verdict: factual-error
+  defects:
+    - where: "title; headline; summary; body paragraph 1 (scope and Poland/Lithuania sentence); sectors"
+      claim: "ESET documents March–May 2026 campaign targeting Polish, Lithuanian, and Ukrainian government and industrial sectors ... Polish and Lithuanian targeting covers industrial/manufacturing, healthcare and pharmaceuticals, logistics, and government organisations — ESET documents victimology spanning both NATO member states in the same campaign wave."
+      defect: "ESET's new activity (since March 2026) targets governmental organisations in Ukraine; the Poland/Lithuania sector list is ESET's description of the group's historical victimology in its introduction, not part of this campaign. The entry's sectors (healthcare, manufacturing) inherit the error."
+      ground_truth: "ESET: 'This blogpost covers newly discovered activities attributed to FrostyNeighbor, targeting governmental organizations in Ukraine.' and 'Since March 2026, we have detected new activities that we attributed to FrostyNeighbor, using links in malicious PDFs sent via spearphishing attachments to target governmental organizations in Ukraine.' Introduction: 'While Ukrainian targeting seems to be focused on military, defense sector, and governmental entities, the victimology in Poland and Lithuania is broader and includes ... industrial and manufacturing, healthcare and pharmaceuticals, logistics, and many governmental organizations.'"
+      ground_truth_url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"
+      fix: "Scope title, headline and summary to Ukrainian government targets since March 2026; present Poland/Lithuania as the group's broader historical victimology; set sectors to public-sector (and defence) only. Note The Hacker News' paraphrase blurs this, ESET's primary is clear."
+      class: factual-error
+    - where: "body (techniques coverage)"
+      claim: "MITRE ATT&CK: T1566.001, T1027, T1059.007, T1082, T1105"
+      defect: "Mapping is correct as far as it goes but omits behaviours ESET documents in detail: scheduled-task persistence for PicassoLoader, HKCU Run-key persistence via a LNK, rundll32 copied and renamed ViberPC.exe to launch the beacon DLL export."
+      ground_truth: "ESET: 'downloads a scheduled task template'; 'registers in the HKCU Run key a LNK file ... that executes the copied version of rundll32.exe with the command line argument %ProgramData%\\ViberPC.dll'; 'copying the legitimate rundll32.exe to %ProgramData%\\ViberPC.exe'."
+      ground_truth_url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"
+      fix: "Carry the full mapping in techniques[] (upgrade block) and describe the persistence and renamed-rundll32 behaviour in the Detection line."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1566.001, behavior: "Spearphishing PDF attachment impersonating Ukrtelecom with a download link", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1204.002, behavior: "Victim opens the RAR-delivered JavaScript first stage", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1059.007, behavior: "JavaScript dropper and JavaScript PicassoLoader; C2 response executed with eval", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1027, behavior: "Obfuscated scripts; PicassoLoader and beacon embedded base64-encoded", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1053.005, behavior: "Scheduled task built from a downloaded XML template runs PicassoLoader", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1082, behavior: "Fingerprint: username, computer name, OS version, boot time, current time", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1057, behavior: "List of running processes with PIDs sent to C2", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1071.001, behavior: "Fingerprint POSTed over HTTPS every 10 minutes; Cobalt Strike HTTPS C2", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1105, behavior: "Operator-approved third-stage JavaScript dropper for Cobalt Strike delivered from C2", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1036.003, behavior: "rundll32.exe copied to %ProgramData% as ViberPC.exe", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1218.011, behavior: "Renamed rundll32 loads the Cobalt Strike DLL export SettingTimeAPI", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {id: T1547.001, behavior: "HKCU Run key registers a LNK that launches the beacon", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+    rating: {reliability: B, credibility: 2, basis: "ESET original research from its telemetry (B); The Hacker News restates it, so one assessor (2)."}
+    exposure:
+      - {quote: "If the victim is using an IP address from Ukraine, the server instead delivers a RAR archive named 53_7.03.2026_R.rar, containing the first stage of the attack", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+    detection:
+      - {quote: "This additional script starts by copying the legitimate rundll32.exe to %ProgramData%\\ViberPC.exe, very likely to bypass some security mechanisms or detection rules.", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+      - {quote: "Every 10 minutes, the compromised computer's fingerprint is sent to the C&C server via an HTTP POST request", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+    triage: []
+    takeaway:
+      - {quote: "The payload is only delivered after server-side victim validation, combining automated checks of the requesting user agent and IP address with the manual validation by the operators.", url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e14-eset.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e14-thn.txt]
+  possible_twin_outside_batch: null

@@ -1,0 +1,93 @@
+- entry: 2026-05-21/keycloak-26-6-2-16-cves-including-oidc-session-fixation-cve
+  verdict: factual-error
+  defects:
+  - where: title; actions[0]; body (CVE-2026-4630 description); Detection concept
+    claim: cross-realm IDOR in Authorization Services (CVE-2026-4630) ... allowing an authenticated attacker with a token from realm A to read or modify resource permissions in realm B on the same Keycloak instance
+    defect: The flaw is a cross-resource-server IDOR inside one realm, not cross-realm.
+    ground_truth: 'CVE record (Red Hat CNA): "By knowing or obtaining a resource''s unique identifier (UUID) belonging to another Resource Server within the same realm, the client could bypass authorization checks." Release notes: "Keycloak Authorization Services Protection API IDOR (Cross-Resource Server Access)".'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-4630
+    fix: '"cross-resource-server IDOR within a realm: an authenticated client that knows another resource server''s resource UUID can GET/PUT/DELETE it"; drop "cross-realm" everywhere.'
+    class: factual-error
+  - where: body (CVE-2026-7507 description)
+    claim: session fixation in the OIDC login flow where a crafted `state` parameter before user authentication completes enables account takeover
+    defect: The mechanism is a pre-created authentication session pushed on the victim through a crafted link to the login-actions/restart endpoint, which lacks CSRF protection and cookie-ownership checks; no source mentions the state parameter.
+    ground_truth: 'CVE record: "An unauthenticated attacker could exploit this flaw by pre-creating an authentication session and tricking a victim into visiting a maliciously crafted link. By leveraging the /login-actions/restart endpoint—which processes session handles without adequate CSRF protection or cookie ownership validation—an attacker can reset the authenti..."'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-7507
+    fix: Use the CVE-record mechanism (pre-created auth session, crafted link, /login-actions/restart, victim interaction).
+    class: factual-error
+  - where: cves[] (all six records)
+    claim: 'cvss: not yet assigned (BSI HIGH classification); vector: zero-click; auth: pre-auth'
+    defect: Red Hat (CNA) published CVSS scores on 2026-05-19; none is zero-click and four need privileges or victim interaction.
+    ground_truth: 'CVE records: 7507 7.5 AV:N/AC:H/PR:N/UI:R; 37982 6.8 AV:N/AC:H/PR:N/UI:R; 37979 6.5 PR:L; 4630 6.8 AV:N/AC:H/PR:L; 37978 4.9 PR:H; 6856 Red Hat preliminary CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:N/I:L/A:N (no published CVE record yet).'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-7507
+    fix: Set each cvss to the Red Hat score; vector network with UI:R where stated; auth post-auth for 37979/4630/37978; fixed "26.6.2".
+    class: factual-error
+  - where: entities
+    claim: 'entities: ["actor:akira"]'
+    defect: Akira has nothing to do with Keycloak; the link comes from the SonicWall row of the pasted CVE table.
+    ground_truth: Keycloak 26.6.2 release notes and BSI WID-SEC-2026-1612 name no threat actor.
+    ground_truth_url: https://www.keycloak.org/2026/05/keycloak-2662-released
+    fix: 'entities: [] (or a product entity for Keycloak if the registry has one).'
+    class: factual-error
+  - where: body "CVE Summary Table"
+    claim: '| CVE-2026-9082 | Drupal core ... | CVE-2026-42822 | ... ALDO | CVE-2026-45829 | ChromaDB ... | CVE-2024-12802 | SonicWall Gen6 SSL-VPN | 9.1 (CVSS 3.1) | ... | Yes — Akira-linked'
+    defect: 'The v2 brief''s cross-item CVE table is pasted into this entry: four of five rows are other findings, the Drupal row is superseded (exploited, KEV-listed, 23/25 since 2026-05-22), the Keycloak row says CVSS not yet assigned, and the SonicWall row gives CISA-ADP''s 9.1 instead of SonicWall''s 6.5 and calls the activity Akira-linked where the source says only "consistent with".'
+    ground_truth: 'Cybersecurity Dive: "the flaw was given a severity score of only 6.5 by SonicWall"; "Researchers could not provide direct attribution for the attacks, but the threat activity was consistent with ransomware activity from the Akira group."'
+    ground_truth_url: https://www.cybersecuritydive.com/news/patch-bypass-hackers-exploit-flaw-sonicwall/820600/
+    fix: Delete the table from this entry.
+    class: factual-error
+  - where: summary; body sentence 1
+    claim: fixing 16 CVEs ...; BSI's CERT-Bund issued advisory WID-SEC-2026-1612 on 2026-05-20 classifying the batch as HIGH risk
+    defect: The release notes list 16 CVE-tagged issues carrying 18 CVE ids (one issue bundles three Bouncy Castle CVEs). BSI's advisory covers 9 of them (it omits 6856, 4628, 37980 and the third-party CVEs), so it does not classify "the batch".
+    ground_truth: 'BSI CSAF WID-SEC-2026-1612 "Keycloak: Mehrere Schwachstellen", initial release 2026-05-19T22:00Z, aggregate severity "hoch", CVEs 37978, 37979, 37981, 37982, 4630, 7307, 7504, 7507, 7571.'
+    ground_truth_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1612
+    fix: '"16 security issues (18 CVE ids, several in bundled Netty/Bouncy Castle components); BSI rates its nine-CVE advisory high".'
+    class: imprecision
+  - where: body (37979, 37978 endpoint paths; 37982 precondition; Red Hat build; Defender takeaway)
+    claim: '`/auth/realms/{realm}/protocol/openid-connect/token/introspect` ... after one user interaction ... Red Hat build of Keycloak (RH-SSO / RHBK) 26.2.x is similarly affected via separate RHSA advisories ... Keycloak is the de-facto standard IAM for EU public-sector and Swiss cantonal / federal identity federation projects'
+    defect: The /auth path prefix and the RHSA/26.2.x statement appear in no source read; 37982 needs the attacker to intercept the victim's execute-actions e-mail link, which "one user interaction" understates; the "de-facto standard" and eHealth/digital-identity prevalence claims are unsourced.
+    ground_truth: 'CVE-2026-37982 record: "By intercepting an execute-actions email link, an attacker can register their own authenticator to a victim''s account." Release notes give only issue titles.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-37982
+    fix: Drop the /auth prefix (or cite), state the e-mail-link interception precondition, drop or source the RHBK and prevalence claims.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1185
+      behavior: 'CVE-2026-7507: attacker pre-creates an authentication session and lures the victim through a crafted login-actions/restart link, taking over the session (session fixation)'
+      url: https://cveawg.mitre.org/api/cve/CVE-2026-7507
+    - id: T1098.005
+      behavior: 'CVE-2026-37982: replayed execute-actions token lets the attacker register their own WebAuthn authenticator on the victim account'
+      url: https://cveawg.mitre.org/api/cve/CVE-2026-37982
+    - id: T1212
+      behavior: 'CVE-2026-37979 / 37978 / 4630: authenticated clients or low-privilege admins exploit access-control flaws to read token claims, PII or other resource servers'' resources'
+      url: https://cveawg.mitre.org/api/cve/CVE-2026-4630
+    rating:
+      reliability: A
+      credibility: 2
+      basis: Keycloak project release notes and the Red Hat CNA records (same vendor family) are one assessor; BSI WID-SEC-2026-1612 restates. No exploitation reported; none in CISA KEV.
+    exposure:
+    - quote: By knowing or obtaining a resource's unique identifier (UUID) belonging to another Resource Server within the same realm, the client could bypass authorization checks.
+      url: https://cveawg.mitre.org/api/cve/CVE-2026-4630
+    - quote: By intercepting an execute-actions email link, an attacker can register their own authenticator to a victim's account.
+      url: https://cveawg.mitre.org/api/cve/CVE-2026-37982
+    detection: []
+    triage: []
+    takeaway:
+    - quote: This is a Critical session fixation vulnerability in Keycloak's login-actions endpoints.
+      url: https://access.redhat.com/security/cve/CVE-2026-7507
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/keycloak-2662.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/bsi-wid-sec-2026-1612-csaf.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/cveawg-cve-2026-7507.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/cveawg-cve-2026-37982.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/cveawg-cve-2026-37979.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/cveawg-cve-2026-4630.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/cveawg-cve-2026-37978.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/redhat-cve-2026-6856.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/redhat-cve-2026-7507.txt
+    - work/2026-10-21T1148Z-audit/truth-4/bodies/cybersecuritydive-sonicwall.txt
+    extra:
+      all_cves_in_release: CVE-2026-33871, 33870, 4628, 37980, 5588, 6856, 0636, 3505, 5598, 7307, 7504, 7571, 7507, 37982, 37979, 37978, 4630, 37981
+      kev: none in CISA KEV
+      redhat_critical: Red Hat calls CVE-2026-7507 "a Critical session fixation vulnerability" in its statement while scoring CVSS 7.5
+  possible_twin_outside_batch: null

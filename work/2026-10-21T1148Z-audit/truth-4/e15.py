@@ -1,0 +1,61 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+O='https://www.openwall.com/lists/oss-security/2026/05/19/6'
+BC='https://www.bleepingcomputer.com/news/linux/exploit-released-for-new-pintheft-arch-linux-root-escalation-flaw/'
+CV='https://cveawg.mitre.org/api/cve/CVE-2026-43494'
+d={
+'entry':'2026-05-21/pintheft-linux-kernel-local-privilege-escalation-primitive-r',
+'verdict':'imprecision',
+'defects':[
+ {'where':'body, exposure sentence',
+  'claim':'**The RDS module is default-loaded only on Arch Linux** — not on Ubuntu, Fedora, Debian, RHEL or SUSE',
+  'defect':'V12 says only that, among the common distributions it tested, the RDS module is default only on Arch; it names no other distribution and does not say "loaded".',
+  'ground_truth':'oss-security (quoting V12): "Sadly, the RDS kernel module this requires is only default on Arch Linux among the common distributions we tested." Sam James: "The referenced kernel module is CONFIG_RDS + CONFIG_RDS_TCP."',
+  'ground_truth_url':O,
+  'fix':'"V12 found the RDS module (CONFIG_RDS + CONFIG_RDS_TCP) enabled by default only on Arch Linux among the common distributions it tested."',
+  'class':'imprecision'},
+ {'where':'cves[]; body ("no CVE assigned at disclosure")',
+  'claim':'cves: [] / Upstream kernel patch landed before disclosure; **no CVE assigned at disclosure**.',
+  'defect':'(low confidence) True at disclosure, but the kernel CNA published CVE-2026-43494 on 2026-05-21 for the same rds_message_zcopy_from_user() double-free; the record does not use the PinTheft name, so the mapping rests on the identical function and mechanism (and on third-party write-ups).',
+  'ground_truth':'CVE-2026-43494 (Linux CNA, 2026-05-21): "When iov_iter_get_pages2() fails in rds_message_zcopy_from_user(), the pinned pages are released with put_page() ... But we fail to properly clear rm->data.op_nents. Later when rds_message_purge() is called from rds_sendmsg() the cleanup loop ... frees them again." CVSS 3.1 7.8 AV:L/AC:L/PR:L.',
+  'ground_truth_url':CV,
+  'fix':'Add CVE-2026-43494 (cvss 7.8, lpe, local, post-auth, patch-available, poc-public) and say "CVE-2026-43494 was assigned on 2026-05-21".',
+  'class':'imprecision'},
+ {'where':'body, Defender detection',
+  'claim':'auditd syscall events for `rds_sendmsg` / `io_uring_*` from unexpected binaries',
+  'defect':'(low confidence) rds_sendmsg is a kernel function, not a syscall auditd can match (the syscalls are socket(AF_RDS)/sendmsg and io_uring_setup/io_uring_register); no source gives this detection.',
+  'ground_truth':'CVE-2026-43494: "Later when rds_message_purge() is called from rds_sendmsg() the cleanup loop iterates over the incorrectly non zero number of op_nents".',
+  'ground_truth_url':CV,
+  'fix':'"auditd on socket() with the RDS address family and io_uring_register from unexpected processes, followed by a SUID binary spawning a root shell" and mark it as analyst guidance.',
+  'class':'imprecision'},
+ {'where':'summary; body sentence 1',
+  'claim':'Aaron Esau (V12 Security) disclosed PinTheft on 2026-05-19 via the oss-security mailing list',
+  'defect':'V12 published the PoC on GitHub; the oss-security post is Sam James (Gentoo) relaying it. The summary is truncated mid-sentence and event_date (2026-05-20) is the BleepingComputer date, not the 2026-05-19 primary.',
+  'ground_truth':'oss-security: "From: Sam James ... v12-security have shared a new Linux LPE today, PinTheft"; "PinTheft was discovered with V12 by Aaron Esau of the V12 security team."',
+  'ground_truth_url':O,
+  'fix':'"V12 Security (Aaron Esau) released PinTheft and a PoC on 2026-05-19; Gentoo\'s Sam James relayed it to oss-security"; event_date 2026-05-19; finish the summary.',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1068','behavior':'Local unprivileged user turns an RDS zerocopy double-free into a page-cache overwrite of a SUID-root binary via io_uring fixed buffers and executes it for a root shell','url':O},
+ ],
+ 'rating':{'reliability':'B','credibility':2,'basis':'V12 Security (discoverer) is original research with a public PoC; the Linux kernel CNA record confirms the bug (same mechanism); BleepingComputer restates. No in-the-wild exploitation (CISA-ADP SSVC Exploitation none, 2026-10-16); not in KEV.'},
+ 'exposure':[
+  {'quote':'Sadly, the RDS kernel module this requires is only default on Arch Linux among the common distributions we tested','url':BC},
+  {'quote':'This drastically limits the attack surface, with V12 stating that the RDS module is enabled by default only on Arch Linux out of the most common Linux distros.','url':BC},
+ ],
+ 'detection':[],
+ 'triage':[],
+ 'takeaway':[
+  {'quote':'Linux users on affected distros are advised to install the latest kernel updates as soon as possible.','url':BC},
+ ],
+ 'bodies':[B+'oss-security-pintheft.txt',B+'bc-pintheft.txt',B+'cveawg-cve-2026-43494.txt'],
+ 'extra':{'mitigation':'BleepingComputer: rmmod rds_tcp rds; modprobe.d entries "install rds /bin/false" and "install rds_tcp /bin/false"',
+          'cve':'CVE-2026-43494 (kernel CNA 7.8; Red Hat ADP 7.0 AC:H, Important); not in CISA KEV; mapping to PinTheft by identical function/mechanism',
+          'kind':'kind research for a patched kernel LPE with PoC; vulnerability fits better'},
+},
+'possible_twin_outside_batch':None,
+}
+save(d)

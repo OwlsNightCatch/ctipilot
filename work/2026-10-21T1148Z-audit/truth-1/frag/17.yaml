@@ -1,0 +1,62 @@
+  - entry: 2026-05-13/cve-2026-34263-cve-2026-34260-sap-commerce-cloud-pre-auth-rc
+    verdict: factual-error
+    defects:
+      - where: "cves[CVE-2026-34260].auth/type/vector; summary"
+        claim: "cves[CVE-2026-34260]: type: rce, vector: zero-click, auth: pre-auth ; summary: 'post-auth SQL injection in the Enterprise Search ABAP component — enabled by default'"
+        defect: "Frontmatter contradicts the body and the vendor: CVE-2026-34260 is an authenticated SQL injection (PR:L, CWE-89), not a pre-auth RCE; 'enabled by default' is on no page."
+        ground_truth: "EUVD-2026-29371: 9.6 CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:N/A:H; 'SAP S/4HANA (SAP Enterprise Search for ABAP) contains a SQL injection vulnerability that allows an authenticated attacker to inject malicious SQL statements'."
+        ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-34260"
+        fix: "cves[CVE-2026-34260]: type sqli, auth post-auth (low privileges), vector network; drop 'enabled by default'."
+        class: factual-error
+      - where: "body paragraph 1 (CVE-2026-34260 impact)"
+        claim: "Authentication required but the blast radius is full database read / write."
+        defect: "Onapsis and the CVSS vector say the flaw allows read access only (integrity not impacted)."
+        ground_truth: "Onapsis: 'Fortunately, the affected source code only allows read access to data so that integrity is not impacted.' Vector: C:H/I:N/A:H."
+        ground_truth_url: "https://onapsis.com/blog/sap-security-patch-day-may-2026/"
+        fix: "'An authenticated attacker can read data and affect availability; integrity is not impacted.'"
+        class: factual-error
+      - where: "cves[CVE-2026-34263].vector; actions[0]"
+        claim: "vector: zero-click ; 'CVE-2026-34263 (Commerce Cloud, pre-auth RCE, CVSS 9.6) is emergency-priority because the cloud-config endpoint is internet-facing in many deployments ... See § 2'"
+        defect: "SAP's vector requires user interaction (UI:R), so 'zero-click' is wrong; no page says the endpoint is internet-facing in many deployments; 'See § 2' is pipeline self-reference."
+        ground_truth: "SAP May 2026 page: CVE-2026-34263 'Critical' 9.6 'CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H'."
+        ground_truth_url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/may-2026.html"
+        fix: "vector: network with user interaction required; rewrite the action without the exposure claim and the section reference."
+        class: factual-error
+      - where: "body paragraph 1 (Swiss federal relevance)"
+        claim: "SAP S/4HANA is the backbone ERP for Swiss federal administration (NOVE / SUPERB programmes) and many EU institutions; SAP Commerce Cloud commonly powers e-government procurement portals"
+        defect: "No cited page carries any of this; the 'e-government procurement portals' claim is unsupported."
+        ground_truth: "Onapsis, SecurityWeek and NCSC-CH post 12565 describe the vulnerabilities only."
+        ground_truth_url: "https://onapsis.com/blog/sap-security-patch-day-may-2026/"
+        fix: "Cite a federal source for the SUPERB/S/4HANA programme or drop the sentence."
+        class: imprecision
+      - where: "body paragraph 1 (CVE-2026-34263 mechanism; detection; HotNews)"
+        claim: "missing authentication on SAP Commerce Cloud's cloud-config endpoint caused by overly permissive Spring Security ordering ... instrument the SAP HTTP front-end logs for Spring Security rule-bypass patterns ... T1190 + T1213 ... A third HotNews note (SAP #3747787) acknowledges the impact of the Mini Shai-Hulud npm worm ("
+        defect: "'Spring Security' is in the CVE record (and EUVD) text, not in the cited Onapsis/SecurityWeek pages; the detection pattern is the entry's own; T1213 does not fit a SQL injection read; #3747787 is a HotNews note SAP released on 2026-04-30 for the CAP npm supply-chain attack and re-listed in May; the sentence has a stray '('."
+        ground_truth: "EUVD-2026-29372: 'Due to improper Spring Security configuration, SAP Commerce Cloud allows an unauthenticated user to perform malicious input injection, resulting in arbitrary server-side code execution'. Onapsis: 'On April 30, 2026, SAP released HotNews Note #3747787 addressing a supply chain attack targeting SAP developers and organizations using the SAP Cloud Application Programming (CAP) model.'"
+        ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-34263"
+        fix: "Cite the EUVD/SAP page for the Spring Security root cause; map T1190 only; say #3747787 dates from 2026-04-30; fix the fragment."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1190, behavior: "CVE-2026-34263: unauthenticated malicious configuration upload / input injection in SAP Commerce Cloud leading to server-side code execution (user interaction required per SAP vector); CVE-2026-34260: authenticated SQL injection in S/4HANA Enterprise Search for ABAP", url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/may-2026.html"}
+      rating:
+        reliability: A
+        credibility: 2
+        basis: "SAP's own Security Patch Day page and CVE records (SAP is the CNA) for its products; Onapsis (contributing research lab), SecurityWeek and NCSC-CH restate SAP: one assessor."
+      exposure:
+        - {quote: "SAP Commerce cloud Version(s) - HY_COM 2205, COM_CLOUD 2211, 2211-JDK21", url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/may-2026.html"}
+        - {quote: "Prerequisites: CVE-2026-34260 requires basic authenticated access, while CVE-2026-34263 only requires network access to the vulnerable services.", url: "https://security-hub.ncsc.admin.ch/#/posts/12565"}
+      detection: []
+      triage: []
+      takeaway:
+        - {quote: "SAP makes no mention of any of these vulnerabilities being exploited in the wild, but users are advised to apply the patches as soon as possible.", url: "https://www.securityweek.com/sap-patches-critical-s-4hana-commerce-vulnerabilities/"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-patchday-may2026.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-onapsis-may2026.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-securityweek.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-ncsc12565.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-euvd-CVE-2026-34263.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-euvd-CVE-2026-34260.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-cveorg-CVE-2026-34263.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-cveorg-CVE-2026-34260.json
+    possible_twin_outside_batch: null

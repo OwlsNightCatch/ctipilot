@@ -1,0 +1,57 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+H='https://hadrian.io/blog/cve-2026-45829----chromadb-python-server-hands-you-rce-before-it-asks-who-you-are'
+BC='https://www.bleepingcomputer.com/news/security/max-severity-flaw-in-chromadb-for-ai-apps-allows-server-hijacking/'
+d={
+'entry':'2026-05-21/cve-2026-45829-chromadb-python-fastapi-server-pre-auth-rce-v',
+'verdict':'factual-error',
+'defects':[
+ {'where':'body, Mitigations sentence',
+  'claim':'if internal, set `trust_remote_code: false` server-wide via config.',
+  'defect':'No source documents such a server-wide setting; trust_remote_code is a kwarg the attacker supplies inside the request body, so this mitigation is unsupported and probably ineffective.',
+  'ground_truth':'Hadrian: "POST to /api/v2/tenants/default_tenant/databases/default_database/collections with a sentence_transformer embedding function whose kwargs.trust_remote_code is true and model_name is attacker/pwn." BleepingComputer mitigations: use the Rust frontend, do not expose the Python server, "restrict network access to the ChromaDB API port".',
+  'ground_truth_url':H,
+  'fix':'Remove the server-wide trust_remote_code claim; keep the sourced mitigations (Rust frontend, no public exposure, network restriction on the API port).',
+  'class':'factual-error'},
+ {'where':'body sentence 2',
+  'claim':'then politely returns `403 Forbidden` after the code has run',
+  'defect':'Sources disagree: Hadrian\'s TL;DR says 403, while HiddenLayer (via BleepingComputer) and Hadrian\'s own PoC output show a 500. The entry picks one silently, which matters because Hadrian\'s detection keys on the 500.',
+  'ground_truth':'BleepingComputer quoting HiddenLayer: "The server rejects the request, returns a 500, and the attacker\'s payload has already run." Hadrian detection: "POST /api/v2/tenants/.../collections returning 500 while the response body contains trust_remote_code ..."',
+  'ground_truth_url':BC,
+  'fix':'"returns an error (500 in the researchers\' PoC; Hadrian\'s summary says 403) after the payload has run".',
+  'class':'imprecision'},
+ {'where':'headline; summary; actions[0]; tags',
+  'claim':'...(CVSS 4.0 = 10.0; still unpatched in / HiddenLayer / Hadrian researchers disclosed CVE-2026-45829 / ensure no ChromaDB deployment is internet-exposed (. / tags: education',
+  'defect':'Headline is cut off; HiddenLayer discovered and reported the flaw (CNA) and Hadrian published an analysis, so "HiddenLayer / Hadrian researchers disclosed" blurs who found it; actions[0] ends with "(."; no source names the education sector.',
+  'ground_truth':'Hadrian: "The bug was reported on 2025-11-28 by HiddenLayer (\'ChromaToast\'), publicly disclosed in issue #6717 after maintainer silence, and assigned CVE-2026-45829." CVE record assigner: HiddenLayer. BleepingComputer: reported to ChromaDB "on February 17".',
+  'ground_truth_url':H,
+  'fix':'Finish the headline ("still unpatched in v1.5.9"); "HiddenLayer reported the flaw (CNA), Hadrian published a technical analysis"; remove "(."; drop education unless sourced.',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1190','behavior':'Unauthenticated POST to the Python FastAPI server\'s create-collection endpoint makes it load an attacker-chosen HuggingFace model before the auth check','url':H},
+  {'id':'T1059.006','behavior':'Attacker Python module code (auto_map modeling file) executes inside the uvicorn server process','url':H},
+ ],
+ 'rating':{'reliability':'B','credibility':2,'basis':'HiddenLayer (discoverer and CNA) and Hadrian\'s analysis describe one finding with a working PoC; BleepingComputer restates. No vendor statement; not exploited in the wild per any source; not in CISA KEV (CISA-ADP SSVC: Exploitation poc).'},
+ 'exposure':[
+  {'quote':'Only the Python server is affected. The Rust server doesn\'t go through this code path.','url':H},
+  {'quote':'Users who deploy it locally without exposing the API server online along with those using the Rust front-end, are not affected by CVE-2026-45829.','url':BC},
+ ],
+ 'detection':[
+  {'quote':'Any outbound network to huggingface.co / cdn-lfs.huggingface.co originating from the Chroma server process that wasn\'t initiated by your own ingestion code.','url':H},
+ ],
+ 'triage':[],
+ 'takeaway':[
+  {'quote':'Until it becomes clear that CVE-2026-45829 has been patched, the recommendation for impacted users is to pick the Rust frontend for their deployments or avoid exposing the Python server publicly.','url':BC},
+ ],
+ 'bodies':[B+'hadrian-chromadb.txt',B+'bc-chromadb.txt',B+'cveawg-cve-2026-45829.txt',B+'pypi-chromadb.txt',B+'gh-chroma-issue-6717.txt'],
+ 'extra':{'patch_status_2026-10-21':'PyPI latest chromadb is still 1.5.9 (uploaded 2026-05-05); issue #6717 has referencing commits on 2026-06-06, 06-10 and 07-30 but no release after 1.5.9 on PyPI; treat as unpatched unless a release note says otherwise',
+          'timeline_conflict':'Hadrian: reported 2025-11-28, acknowledgement 2025-12-16; BleepingComputer: reported February 17 (2026)',
+          'exposure_figure':'BleepingComputer: roughly 73% of internet-exposed instances run a vulnerable version (researchers\' Shodan queries)',
+          'kev':'not in CISA KEV'},
+},
+'possible_twin_outside_batch':None,
+}
+save(d)

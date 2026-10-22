@@ -1,0 +1,61 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+M='https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45584'
+T='https://thehackernews.com/2026/05/microsoft-warns-of-two-actively.html'
+d={
+'entry':'2026-05-20/cve-2026-45584-microsoft-defender-engine-heap-buffer-overflo',
+'verdict':'factual-error',
+'defects':[
+ {'where':'cves[CVE-2026-45584].vector',
+  'claim':'vector: zero-click',
+  'defect':'MSRC states exploitation requires a user-assisted step and high attack complexity; the record types the flaw zero-click.',
+  'ground_truth':'MSRC FAQ: "Successful exploitation of this vulnerability would require a remote, unauthenticated attacker to entice a local user to take multiple actions that results in Defender scanning a malicious file that has been quarantined." and "the attack complexity is high (AC:H) ... requires an attacker to take additional actions prior to exploitation to prepare the target environment."',
+  'ground_truth_url':M,
+  'fix':'Set vector to network with the quarantined-file/user-action prerequisite (not zero-click); auth stays pre-auth (unauthenticated attacker).',
+  'class':'factual-error'},
+ {'where':'summary; body paragraph 1',
+  'claim':'a heap-based buffer overflow in the Defender Engine reachable over the network (AV:N), allowing unauthenticated code execution in the Defender process context.',
+  'defect':'The advisory does not say "in the Defender process context", and "reachable over the network" omits the stated prerequisite: Defender must scan a malicious quarantined file after the user took multiple actions (AC:H). Body: "Network-reachable code execution inside an endpoint security product ... lands attacker code in the same privileged context as Defender" repeats the unstated context.',
+  'ground_truth':'MSRC: "Heap-based buffer overflow in Microsoft Defender allows an unauthorized attacker to execute code over a network." plus the FAQ quoted in the vector defect.',
+  'ground_truth_url':M,
+  'fix':'"... allows an unauthorized attacker to execute code over a network; MSRC says exploitation needs a local user to take multiple actions that lead Defender to scan a malicious file that was quarantined (attack complexity high)." Drop "in the Defender process context" or mark it as analyst inference.',
+  'class':'imprecision'},
+ {'where':'summary; body paragraph 1',
+  'claim':'CVSS 8.1; no exploitation observed at disclosure, no public PoC.',
+  'defect':'MSRC records exploited: No and publiclyDisclosed: No; "no public PoC" is a looser statement than either field. The Hacker News adds only "no evidence" of exploitation. Uncited as written (the single link carries the date only).',
+  'ground_truth':'MSRC record: publiclyDisclosed: No, exploited: No, baseScore 8.1 (CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H), severity Critical. THN: "There is no evidence the vulnerability has been exploited in the wild."',
+  'ground_truth_url':M,
+  'fix':'"MSRC lists it as not exploited and not publicly disclosed at disclosure" and cite the MSRC page on that clause.',
+  'class':'imprecision'},
+ {'where':'cves[CVE-2026-45584].affected / fixed',
+  'claim':'affected: null, fixed: null',
+  'defect':'MSRC gives the boundary; the body states the fix only as the Engine update that closes CVE-2026-41091.',
+  'ground_truth':'MSRC FAQ table: "Last version of the Microsoft Malware Protection Engine affected by this vulnerability 1.1.26030.3008; First version of the Microsoft Malware Protection Engine with this vulnerability addressed Version 1.1.26040.8".',
+  'ground_truth_url':M,
+  'fix':'affected "Microsoft Malware Protection Engine <= 1.1.26030.3008", fixed "1.1.26040.8".',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1203','behavior':'Memory-corruption (heap overflow) in the Defender engine reached when it scans a malicious quarantined file, giving code execution; MSRC describes a user-assisted step but not how the lure arrives, so no delivery technique is mapped','url':M},
+ ],
+ 'rating':{'reliability':'A','credibility':2,'basis':'MSRC is the vendor PSIRT for its own product; one assessor, no exploitation or public disclosure at disclosure. The Hacker News restates it.'},
+ 'exposure':[
+  {'quote':'Successful exploitation of this vulnerability would require a remote, unauthenticated attacker to entice a local user to take multiple actions that results in Defender scanning a malicious file that has been quarantined.','url':M},
+  {'quote':'Systems that have disabled Microsoft Defender are not in an exploitable state.','url':M},
+ ],
+ 'detection':[],
+ 'triage':[],
+ 'takeaway':[
+  {'quote':'the default configuration in Microsoft antimalware software helps ensure that malware definitions and the Microsoft Malware Protection Engine are kept up to date automatically.','url':M},
+ ],
+ 'bodies':[B+'msrc-cve-2026-45584.txt',B+'thn-defender-two-actively.txt'],
+ 'extra':{'ioc_scan_note':'Four-part version strings (1.1.26030.3008, 1.1.26040.8) appear bare; write them as "Engine version 1.1.26040.8".',
+          'cisa_kev':'CVE-2026-45584 is NOT in the CISA KEV catalog (2026.10.20 catalog, 1754 entries)',
+          'affected_products':'Microsoft Defender (Malware Protection Engine <= 1.1.26030.3008); same engine family also serves System Center Endpoint Protection and Microsoft Security Essentials per MSRC FAQ',
+          'detection_note':'Neither MSRC nor THN gives a detection or hunting signal for this flaw; leave detection empty or write only "no public detection guidance".'},
+},
+'possible_twin_outside_batch':None,
+}
+save(d)

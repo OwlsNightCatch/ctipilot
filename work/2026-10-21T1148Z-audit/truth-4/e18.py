@@ -1,0 +1,70 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+E='https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/'
+T='https://thehackernews.com/2026/05/webworm-deploys-echocreep-and-graphworm.html'
+d={
+'entry':'2026-05-21/webworm-china-aligned-shifts-to-eu-government-targets-echocr',
+'verdict':'factual-error',
+'defects':[
+ {'where':'body sentence 1; entities key',
+  'claim':'Webworm — also tracked as FishMonger / Aquatic Panda / SixLittleMonkeys / Space Pirates / entities: actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu',
+  'defect':'The sources describe links or overlaps, not aliases: ESET says Webworm is linked to SixLittleMonkeys and FishMonger, The Hacker News reports overlaps, and ESET told The Hacker News the Space Pirates link is "tenuous at best". The entity key bakes the alias conflation in.',
+  'ground_truth':'ESET: "Webworm is linked to other China-aligned APT groups such as SixLittleMonkeys and FishMonger." THN: "The threat actor is said to overlap with China-nexus clusters tracked as FishMonger (aka Aquatic Panda), SixLittleMonkeys, and Space Pirates"; "ESET told The Hacker News that Webworm\'s links to Space Pirates is tenuous at best".',
+  'ground_truth_url':E,
+  'fix':'"Webworm (ESET links it to SixLittleMonkeys and FishMonger, aka Aquatic Panda; a Space Pirates overlap is weak per ESET)"; register the links as overlaps-with relations, not aliases.',
+  'class':'factual-error'},
+ {'where':'body, EchoCreep sentence',
+  'claim':'it creates per-victim Discord channels named after the victim IP (or IP+hostname)',
+  'defect':'ESET says the opposite: EchoCreep does not create channels; they already existed before execution, which suggests operators knew the targets in advance.',
+  'ground_truth':'ESET: "Upon EchoCreep’s first execution, it does not attempt to create a new channel, but sends a message saying Up Success to a channel that already exists ... This indicates that the channels were created prior to the execution of the backdoor".',
+  'ground_truth_url':E,
+  'fix':'"uses pre-created per-victim Discord channels named after the victim IP (or IP plus hostname)".',
+  'class':'factual-error'},
+ {'where':'body, proxy toolkit sentence',
+  'claim':'a compromised AWS S3 bucket `wamanharipethe.s3.ap-south-1.amazonaws.com`',
+  'defect':'The entry prints the actor-used bucket hostname, an indicator of compromise, which entries must not carry (ESET gives it defanged; the bucket was taken down).',
+  'ground_truth':'ESET: "retrieve configurations from a compromised Amazon S3 bucket"; "services we have identified, such as a GitHub repository and an S3 bucket, have been taken down."',
+  'ground_truth_url':E,
+  'fix':'"a compromised third-party Amazon S3 bucket (since taken down)" with no hostname.',
+  'class':'factual-error'},
+ {'where':'body (SharpSecretsdump mapping); cves[]',
+  'claim':'SharpSecretsdump Impacket-look-alike credential dumper ... (`T1003.001` OS Credential Dumping: LSASS Memory) / cves: [] while the body names CVE-2017-7692',
+  'defect':'SharpSecretsdump mimics secretsdump.py (SAM/LSA secrets), not LSASS memory dumping, and ESET maps no credential-dumping technique; CVE-2017-7692 appears in the body but not in cves[].',
+  'ground_truth':'ESET: "This tool, as mentioned in its documentation, mimics the activity of the infamous secretsdump.py from Impacket to dump credentials"; CVE-2017-7692 "allowing post-authentication remote code execution within the webmail client SquirrelMail".',
+  'ground_truth_url':E,
+  'fix':'Drop T1003.001 (use T1003.002/T1003.004 only if the worker accepts the secretsdump capability as the mapping; ESET says the tool was uploaded, not that it ran); add CVE-2017-7692 (post-auth RCE, exploited by Webworm per ESET) to cves[].',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1102.002','behavior':'EchoCreep and GraphWorm use Discord and Microsoft Graph (OneDrive) for bidirectional C2','url':E},
+  {'id':'T1059.003','behavior':'Both backdoors run commands through cmd.exe','url':E},
+  {'id':'T1053.005','behavior':'EchoCreep runs under a custom-created scheduled task','url':E},
+  {'id':'T1547.001','behavior':'GraphWorm persists through registry Run keys and runs at user logon','url':E},
+  {'id':'T1567.002','behavior':'GraphWorm exfiltrates to OneDrive via Graph /createUploadSession','url':E},
+  {'id':'T1090.003','behavior':'WormSocket and ChainWorm chain multiple proxy hops','url':E},
+  {'id':'T1584.006','behavior':'Compromised third-party S3 bucket used for WormFrp configuration and data staging','url':E},
+  {'id':'T1608.002','behavior':'Tools staged in a GitHub repository forked from WordPress','url':E},
+  {'id':'T1595.002','behavior':'nuclei and dirsearch run against 56 targets in several countries','url':E},
+  {'id':'T1078','behavior':'ESET assumes the operators held the Serbian victim\'s webmail credentials before running the CVE-2017-7692 post-auth exploit (initial access otherwise unknown)','url':E},
+ ],
+ 'rating':{'reliability':'B','credibility':2,'basis':'ESET Research is an original research source with its own telemetry and decrypted C2 data; The Hacker News restates it with ESET comments. Single assessor; attribution to Webworm is ESET\'s.'},
+ 'exposure':[
+  {'quote':'This trend continued in 2025, with the attacks we observed targeting governmental organizations in Belgium, Italy, Serbia, and Poland.','url':E},
+ ],
+ 'detection':[
+  {'quote':'All of EchoCreep’s network communication is passed through Discord API endpoints using crafted HTTP requests.','url':E},
+  {'quote':'In the case of GraphWorm, which uses Microsoft Graph API for C&C communication, we discovered that it uses OneDrive endpoints exclusively, specifically to get new jobs and to upload victim information.','url':E},
+ ],
+ 'triage':[],
+ 'takeaway':[
+  {'quote':'Even though we were unable to find the entry point that Webworm uses to compromise its victims, we have discovered that the group employs open-source utilities to scrape victim web server files and directories, and search for vulnerabilities within.','url':E},
+ ],
+ 'bodies':[B+'eset-webworm.txt',B+'thn-webworm.txt'],
+ 'extra':{'iocs_in_source':'ESET lists IPs, a GitHub repo and S3 bucket names; none may be copied into the entry',
+          'victims':'governmental organizations in Belgium, Italy, Serbia, Poland; a South African university; files from Italian and Spanish governmental entities in the S3 bucket; dirsearch run against 56 targets incl. Spain, Hungary, Belgium, Nigeria, Czechia, Serbia'},
+},
+'possible_twin_outside_batch':None,
+}
+save(d)

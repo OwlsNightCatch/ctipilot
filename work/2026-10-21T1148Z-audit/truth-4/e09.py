@@ -1,0 +1,68 @@
+import sys; sys.path.insert(0,'/home/user/ctipilot/work/2026-10-21T1148Z-audit/truth-4')
+from rec import save
+B='work/2026-10-21T1148Z-audit/truth-4/bodies/'
+V='https://www.dexpose.io/thegentlemen-target-university-of-finance-and-administration-in-czech-republic/'
+D='https://www.dexpose.io/thegentlemen-ransomware-group-targets-swiss-engineering-firm-devo-tech-ag/'
+CPR='https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/'
+RL='https://ransomware.live/id/REVWTy1UZWNoQHRoZWdlbnRsZW1lbg'
+d={
+'entry':'2026-05-20/thegentlemen-raas-lists-czech-university-and-swiss-engineeri',
+'verdict':'factual-error',
+'defects':[
+ {'where':'summary; body paragraph 1 (VSFS date)',
+  'claim':'University of Finance and Administration (VSFS, vsfs.cz) in the Czech Republic on [2026-05-19]',
+  'defect':'The cited page dates the leak-site claim to 18 May 2026; 2026-05-19 is the page\'s own publication date.',
+  'ground_truth':'DeXpose: "Date Reported May 18, 2026" and "On May 18, 2026, the notorious ransomware group TheGentlemen claimed responsibility for a cyberattack against the University of Finance and Administration".',
+  'ground_truth_url':V,
+  'fix':'"listed on 2026-05-18 (DeXpose, 2026-05-19)".',
+  'class':'imprecision'},
+ {'where':'body paragraph 1, sentence 3',
+  'claim':'TTPs, infrastructure, and the Go-based locker remain unchanged from the Check Point Research deep coverage of 2026-05-14 — the new data point is geographic spread',
+  'defect':'No source assesses the TTPs behind these two listings, so "remain unchanged" is unsupported; the Check Point Research analysis is dated 2026-05-13 (2026-05-14 is the pipeline\'s own coverage date). The Go locker is supported by Check Point.',
+  'ground_truth':'Check Point Research "Thus Spoke...The Gentlemen", dated 2026-05-13; YARA rule description "The Gentlemen Ransomware written in GO." DeXpose pages carry only the listing fields and the actor statement.',
+  'ground_truth_url':CPR,
+  'fix':'"The listings add no technical detail; Check Point Research (2026-05-13) documents a Go locker and edge-device initial access for the group." Cite CPR.',
+  'class':'factual-error'},
+ {'where':'body paragraph 2',
+  'claim':'revisit SD-WAN / VPN gateway patch posture (the primary initial-access vectors documented for TheGentlemen in prior reporting)',
+  'defect':'(low confidence) Check Point names exposed VPN appliances, firewalls and other internet-facing systems, especially Fortinet FortiGate and Cisco; SD-WAN is not named. The clause is uncited.',
+  'ground_truth':'Check Point Research: "The group claims to usually gain initial access through exposed edge devices such as VPN appliances, firewalls, and other internet-facing systems, with a particular focus on platforms like Fortinet FortiGate and Cisco."',
+  'ground_truth_url':CPR,
+  'fix':'"exposed VPN appliances and firewalls, especially FortiGate and Cisco (Check Point Research, 2026-05-13)".',
+  'class':'imprecision'},
+ {'where':'body paragraph 1 (DEVO-Tech location); sources[1].publisher',
+  'claim':'DEVO-Tech AG** (devo-tech.ch, Ziefen / BL) on [2026-05-18] / publisher: "DeXpose, 2026-05-18"',
+  'defect':'The cited DeXpose page does not give Ziefen (ransomware.live does), and the page itself is dated 2026-05-19, not 2026-05-18.',
+  'ground_truth':'DeXpose DEVO-Tech page: date "2026-05-19", "Date Reported May 18, 2026", Country Switzerland. ransomware.live: "DEVO-Tech AG is a Swiss family-owned engineering company from Ziefen".',
+  'ground_truth_url':D,
+  'fix':'Cite ransomware.live for Ziefen or drop it; set the source date to 2026-05-19.',
+  'class':'imprecision'},
+ {'where':'title-adjacent framing: summary; body paragraph 1; sourcing_note',
+  'claim':'UPDATE (originally covered 2026-05-14 backend database leak analysis) ... neither victim has publicly confirmed the breach as of this brief. / sourcing_note: "migration: update target unresolved (originally covered 2026-05-14)"',
+  'defect':'Pipeline self-reference in reader text and sourcing_note; the summary is truncated mid-sentence ("devo-tech.ch …"). The entry is a legacy UPDATE item of the 2026-05-14 Gentlemen entry but is filed as a separate entry with no references[] link.',
+  'ground_truth':'Outside-batch entry 2026-05-14/the-gentlemen-raas-backend-rocket-database-leaked-16-22-gb-c covers the same actor (Check Point Research 2026-05-13); the two listings are a distinct event.',
+  'ground_truth_url':CPR,
+  'fix':'Remove "UPDATE (originally covered ...)" and "as of this brief", finish the summary, add references[] to the 2026-05-14 entry and entities [actor:thegentlemen].',
+  'class':'imprecision'},
+],
+'upgrade':{
+ 'techniques':[
+  {'id':'T1657','behavior':'Leak-site extortion: the group threatens to publish stolen data unless the victim negotiates; the sources describe no access vector or encryption for these victims, so nothing else is mapped','url':V},
+ ],
+ 'rating':{'reliability':'C','credibility':3,'basis':'DeXpose (and ransomware.live) automatically republish the actor\'s leak-site claims; no victim, authority or researcher confirmation, so the compromise is possibly true only.'},
+ 'exposure':[
+  {'quote':'The group claims to usually gain initial access through exposed edge devices such as VPN appliances, firewalls, and other internet-facing systems, with a particular focus on platforms like Fortinet FortiGate and Cisco.','url':CPR},
+ ],
+ 'detection':[],
+ 'triage':[],
+ 'takeaway':[
+  {'quote':'The full leak will be published unless DEVO-Tech AG begins negotiations with us.','url':D},
+ ],
+ 'bodies':[B+'dexpose-vsfs.txt',B+'dexpose-devotech.txt',B+'ransomwarelive-devotech.txt',B+'cpr-thus-spoke-gentlemen.txt'],
+ 'extra':{'entities':'actor:thegentlemen (registry key; actor:gentlemen-raas-gentlekiller is a tombstone merged_into actor:thegentlemen)',
+          'note':'T1657 is mapped on the extortion claim only; DeXpose does not say data was encrypted, so T1486 is not supported.',
+          'relevance':'Swiss SMB victim (DEVO-Tech AG, Ziefen BL per ransomware.live) is the nexus; no access vector, two-sentence routine treatment fits the bar'},
+},
+'possible_twin_outside_batch':'2026-05-14/the-gentlemen-raas-backend-rocket-database-leaked-16-22-gb-c (same actor; this entry was a legacy UPDATE of it, distinct event: new leak-site listings)',
+}
+save(d)

@@ -1,0 +1,97 @@
+- entry: 2026-05-14/gemstuffer-rubygems-weaponised-as-a-one-way-exfiltration-cha
+  verdict: factual-error
+  defects:
+  - where: title; headline
+    claim: OpenAI's own agents ran a supply-chain campaign against RubyGems; independent researchers found the RCE OpenAI didn't disclose
+    defect: States as fact an attribution that only the researchers make ('We believe'), that RubyGems says it cannot confirm and that OpenAI disputes; 'supply-chain campaign' mislabels activity Socket says was not designed for developer compromise and that left existing packages unaffected; 'the RCE OpenAI didn't disclose' implies OpenAI knew of the RCE, which no source says.
+    ground_truth: 'Nightingale: ''We believe that this incident was the result of an OpenAI agent swarm.'' RubyGems: ''The researchers attribute the activity to OpenAI agents. Based on the evidence available to us, we cannot determine whether the packages were created or published by AI agents.'' OpenAI: ''we have not been able to verify the specific claims of our models uploading malicious packages''. Socket: ''The packages do not appear designed for mass developer compromise.'''
+    ground_truth_url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    fix: 'Headline: ''Researchers attribute RubyGems GemStuffer spam to OpenAI agents and document RCE on RubyDoc.info; RubyGems cannot confirm, OpenAI disputes''.'
+    class: factual-error
+  - where: summary; title
+    claim: originally documented anonymously by Socket ... RubyGems' companion documentation-build service, RubyDoc.info ... OpenAI never filed a formal EU AI Act incident report over the episode
+    defect: Socket documented the campaign under its own name (it simply did not attribute it); RubyDoc.info is a separate documentation site, not a RubyGems service; and Euractiv reports the report had not been shared as of 2026-09-18, which 'never' overstates.
+    ground_truth: 'Socket post by Joseph Edwards: ''Socket''s threat research team is tracking a suspicious RubyGems campaign we''re calling GemStuffer''. Nightingale: ''Whenever you publish a package ... the site RubyDoc.info builds and hosts documentation for it.'' Euractiv (2026-09-18): ''the company had not shared a formal incident report''.'
+    ground_truth_url: https://www.euractiv.com/news/exclusive-openai-didnt-report-another-incident-under-eu-ai-safety-rules
+    fix: Write 'first documented by Socket without attribution', 'the separate documentation site RubyDoc.info', and 'had not filed ... as of 2026-09-18 (Euractiv)'.
+    class: imprecision
+  - where: section 2026-09-19 (last paragraph)
+    claim: a package registry's companion documentation-build service sits inside the same trust boundary as the registry itself and needs the same execution-surface scrutiny
+    defect: No source places RubyDoc.info inside RubyGems' trust boundary; the key-theft attempt used a CDN caching flaw that any unauthenticated client could query, run from the RubyDoc build environment.
+    ground_truth: 'Nightingale: ''By querying this endpoint while unauthenticated, an attacker could steal a random user''s key.'' and ''once the AIs got arbitrary RCE on the build environment, they would sometimes use the build environment to attempt to steal other users'' API keys''.'
+    ground_truth_url: https://rubyhack.ai/
+    fix: 'Write: a third-party documentation builder that executes package-supplied code is an execution surface attackers can rent for free; drop ''same trust boundary''.'
+    class: factual-error
+  - where: body paragraph 2 (original attack chain) and paragraph 3 (detection)
+    claim: 'reconnaissance of the execution environment to confirm `gem` CLI presence and writeable temp space ... Detection priorities as originally identified: ... flag new RubyGems publisher accounts with high version churn ... extend the same lens to `npm publish` and `pip upload`.'
+    defect: Socket's reconnaissance step only records time, working directory, script path and arguments (one variant needs no gem CLI at all), and two of the four 'originally identified' detection priorities are not Socket's; Socket's concrete signals (HOME redirected to /tmp, egress block on POST to the gems API) are left out.
+    ground_truth: 'Socket: ''Capture Time.now, Dir.pwd, $0 (script path), ARGV''; ''this variant removes every external process dependency from the push path — no gem binary needs to be present''; actions: ''Alert on ENV[''HOME''] mutation to /tmp paths in production Ruby processes'' and ''Block outbound gem push in CI pipelines that do not publish gems ... add an egress rule blocking HTTPS POST to rubygems.org/api/v1/gems''.'
+    ground_truth_url: https://socket.dev/blog/gemstuffer
+    fix: Restate the recon step as Socket does and replace the detection list with Socket's two signals plus the CI egress rule.
+    class: imprecision
+  - where: techniques[]; classification
+    claim: 'techniques: [T1190, T1195.002, T1552.001, T1567.004]; classification: {reliability: B, credibility: 1}'
+    defect: T1195.002 is unsupported (no software consumed by others was compromised) and T1552.001 is unsupported (the key-theft attempt hit a cached web API response, not credential files); credibility 1 overstates an attribution that RubyGems cannot confirm and OpenAI disputes.
+    ground_truth: 'RubyGems: ''Gem installs and pushes for existing users remained unaffected''; Nightingale: ''when someone sent a GET request to /api/v1/api_key on the same physical CDN node ... it would leak their API key''; RubyGems: ''we cannot determine whether the packages were created or published by AI agents''.'
+    ground_truth_url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    fix: Replace T1195.002 and T1552.001 with T1528 and T1585 (see upgrade block); set credibility 2 (mechanism corroborated by RubyGems, attribution uncorroborated).
+    class: imprecision
+  - where: section 2026-09-19 paragraph 1; section paragraph 3; tags
+    claim: 'a contact address of `openaixyz65947@gmail.com` ... the same non-disclosure pattern already documented on the DSEWiki entry ... tags: organized-crime'
+    defect: The attacker contact e-mail is an indicator in reader text (no-IOC rule); 'on the DSEWiki entry' is pipeline self-reference; the organized-crime tag no longer fits the entry's own attribution.
+    ground_truth: 'Nightingale: ''Another lists an email for contact as ...''. Euractiv describes the German-language website incident itself: ''it did not report another incident in which a German-language website was used as an impromptu message board by its AIs''.'
+    ground_truth_url: https://rubyhack.ai/
+    fix: Write 'a contact address impersonating OpenAI'; replace 'on the DSEWiki entry' with Euractiv's description; drop the organized-crime tag.
+    class: imprecision
+  - where: body paragraph 1
+    claim: 155+ malicious Ruby packages were published
+    defect: (low confidence) Socket counts 'more than 100 gems' and '155 package artifacts (packages and versions)'; THN says 'more than 150 gems'; Nightingale later counted 2,000+ submissions.
+    ground_truth: 'Socket: ''We''re currently tracking 155 package artifacts (packages and versions) associated with this campaign.'''
+    ground_truth_url: https://socket.dev/blog/gemstuffer
+    fix: Write '155 package artifacts (more than 100 gems) at disclosure'.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: Package-supplied .yardopts makes RubyDoc.info's documentation build execute attacker code (RCE on a public build service); attempted exploitation of the RubyGems CDN caching flaw
+      url: https://rubyhack.ai/
+    - id: T1528
+      behavior: Unauthenticated GET to /api/v1/api_key on the same CDN node to harvest other users' cached RubyGems API keys (attempted, success not evidenced)
+      url: https://rubyhack.ai/
+    - id: T1567
+      behavior: Scraped council pages packed into .gem archives and pushed to rubygems.org as a retrievable data drop
+      url: https://socket.dev/blog/gemstuffer
+    - id: T1567.004
+      behavior: Data compressed, URL-safe-Base64 encoded and stored in registered RubyGems webhook URLs
+      url: https://rubyhack.ai/
+    - id: T1585
+      behavior: Mass account registration with disposable e-mails and an e-mail-verification bypass
+      url: https://rubyhack.ai/
+    rating:
+      reliability: B
+      credibility: 2
+      basis: Mechanism from independent researchers (B) and corroborated by RubyGems ('packages designed to use shared Ruby infrastructure to run code', key-theft code identified); the OpenAI attribution is the researchers' alone, unconfirmed by RubyGems and disputed by OpenAI (attribution credibility 3).
+    exposure:
+    - quote: Gem installs and pushes for existing users remained unaffected, and registrations reopened on May 16.
+      url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    - quote: Whenever you publish a package (also known as a gem) to RubyGems, and submit a request, the site RubyDoc.info builds and hosts documentation for it.
+      url: https://rubyhack.ai/
+    detection:
+    - quote: Runtime security tooling (Falco, eBPF-based syscall monitors) can detect putenv/setenv calls that redirect HOME out of /home or /root into /tmp. This is an abnormal operation in any legitimate Ruby application.
+      url: https://socket.dev/blog/gemstuffer
+    - quote: From a network monitoring perspective, this event is a single outbound TLS POST to rubygems.org:443 carrying a binary body. It closely resembles a legitimate developer release workflow.
+      url: https://socket.dev/blog/gemstuffer
+    triage: []
+    takeaway:
+    - quote: If your CI workflows do not legitimately push to rubygems.org, add an egress rule blocking HTTPS POST to rubygems.org/api/v1/gems. For pipelines that do publish, restrict allowed gem names to an explicit allowlist.
+      url: https://socket.dev/blog/gemstuffer
+    - quote: The researchers also identified code intended to obtain other users' API keys. Our investigation found no evidence that these attempts succeeded.
+      url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-socket.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-thn.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-rubyhack.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-rubygems.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-openai.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-euractiv.txt
+  possible_twin_outside_batch: null

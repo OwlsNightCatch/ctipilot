@@ -1,0 +1,54 @@
+- entry: 2026-05-13/trickmo-trickmo-c-android-banking-trojan-migrates-c2-to-the
+  verdict: imprecision
+  defects:
+    - where: "Defender takeaway (first sentence)"
+      claim: "blocking TON traffic at the corporate gateway is non-trivial because TON shares the standard internet routes; behaviour-side, detect Android devices that initiate the TON loopback proxy and that issue outbound to non-corporate SOCKS5 / SSH ports under unusual entitlements."
+      defect: "The source's point is that the traffic is encrypted and indistinguishable from other TON applications, so it cannot be told apart from legitimate TON use; it does not say TON shares standard routes or that blocking it is hard. 'Under unusual entitlements' has no basis in any page."
+      ground_truth: "ThreatFabric: 'Traffic-pattern detection at the network edge sees only TON traffic, which is encrypted and indistinguishable from any other TON-enabled application's outbound flow.' and 'Traditional domain takedowns are largely ineffective because the operator's endpoints do not rely on the public DNS hierarchy'."
+      ground_truth_url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"
+      fix: "Write: network-edge signatures cannot separate TrickMo from other TON traffic, so rely on device-side controls and on the SSH-tunnel and SOCKS5 behavior; drop 'shares the standard internet routes' and 'unusual entitlements'."
+      class: imprecision
+    - where: "body paragraph 1 (dormant code sentence)"
+      claim: "Dormant code includes the Pine hooking framework and NFC permissions, suggesting contactless-payment interception is in development."
+      defect: "ThreatFabric says NFC and Pine are declared but not exercised and read them as reserved for future runtime-delivered features; it does not say contactless-payment interception is in development."
+      ground_truth: "'NFC is declared and reported but not exercised, which fits the same reserved-capability pattern as the dormant Pine framework.' and 'these dormant components suggest the operators are preparing the platform for future runtime-delivered features'."
+      ground_truth_url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"
+      fix: "Write: Pine and NFC permissions are bundled but unused, suggesting future runtime-delivered capabilities (possibly NFC-targeted)."
+      class: imprecision
+    - where: "body paragraph 1 (dropper sentence)"
+      claim: "Droppers masquerade as TikTok variants distributed via Facebook ads"
+      defect: "(low confidence) The sources say the droppers are TikTok look-alikes (adult-friendly versions per The Hacker News) delivered 'through Facebook' / 'over Facebook'; none says ads."
+      ground_truth: "THN: 'Dropper apps containing the malware masquerade as adult-friendly versions of TikTok through Facebook'. ThreatFabric campaign tags: 'Tic_Italy_FB: TikTok campaign over Facebook'; also 'distributed via phishing websites and dropper apps' (THN)."
+      ground_truth_url: "https://thehackernews.com/2026/05/new-trickmo-variant-uses-ton-c2-and.html"
+      fix: "Write 'TikTok look-alike droppers delivered through Facebook campaigns and phishing websites'."
+      class: imprecision
+    - where: "body (ATT&CK ids in prose)"
+      claim: "T1517 Access Notifications; T1090.001 Proxy: Internal Proxy; T1422 System Network Configuration Discovery and T1437.001 Application Layer Protocol: Web Protocols"
+      defect: "T1517, T1422 and T1437.001 are real ATT&CK Mobile ids but are not in the pinned Enterprise dataset, so they cannot be carried in techniques[]; T1090.001 (internal proxy) is a weak fit for an external traffic-exit node (T1090)."
+      ground_truth: "attack.mitre.org lists T1517 'Access Notifications', T1422 'System Network Configuration Discovery', T1437.001 'Application Layer Protocol: Web Protocols' as Mobile techniques; the pinned attack/enterprise-attack.json returns UNKNOWN for all three."
+      ground_truth_url: "https://attack.mitre.org/techniques/T1422/"
+      fix: "Use Enterprise ids in techniques[] (see upgrade block) and drop the inline Mobile ids."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1071.001, behavior: "All C2 HTTP requests go through an embedded local TON proxy to .adnl hostnames", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1090, behavior: "Embedded local TON proxy for C2 and on-device authenticated SOCKS5 proxy turning the phone into a traffic-exit node", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1572, behavior: "SSH local-forward and remote-forward tunnels reaching the device's LAN", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1016, behavior: "curl, dnslookup, ping, telnet and traceroute commands run from the device to map the victim network", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1046, behavior: "telnet command performs multi-port TCP connect probes", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1056.001, behavior: "Keylogging capturing typed text and field metadata correlated with the foreground package", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1113, behavior: "Screen recording and live screen streaming", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {id: T1036.005, behavior: "Droppers named as TikTok apps; the host APK impersonates Google Play Services", url: "https://thehackernews.com/2026/05/new-trickmo-variant-uses-ton-c2-and.html"}
+    rating: {reliability: B, credibility: 2, basis: "ThreatFabric is the original research lab (B); The Hacker News and Security Affairs restate its report, so one assessor uncorroborated (2). The sources do not say how victims are first reached beyond Facebook and phishing-site delivery, so no access technique is mapped beyond masquerading."}
+    exposure:
+      - {quote: "Across the period covered by this report we have observed multiple parallel campaigns operating against banking and wallet customers in France, Italy, and Austria", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {quote: "Telemetry and infrastructure observations indicate that this new variant is progressively replacing its predecessor across active operator campaigns.", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+    detection:
+      - {quote: "Traffic-pattern detection at the network edge sees only TON traffic, which is encrypted and indistinguishable from any other TON-enabled application's outbound flow.", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+      - {quote: "TrickMo carries an embedded native TON proxy that the host APK starts on a loopback port at process start.", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+    triage: []
+    takeaway:
+      - {quote: "reducing the effectiveness of traditional takedown and network-blocking efforts while making the traffic blend with legitimate TON activity", url: "https://thehackernews.com/2026/05/new-trickmo-variant-uses-ton-c2-and.html"}
+      - {quote: "Once the user grants the bot accessibility-service permission, which the bot's on-device automation actively coerces, the operator obtains a real-time interactive view of the device.", url: "https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e5-tf.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e5-thn.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e5-sa.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e5-attack-T1422.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e5-attack-T1517.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e5-attack-T1437-001.txt]
+  possible_twin_outside_batch: null

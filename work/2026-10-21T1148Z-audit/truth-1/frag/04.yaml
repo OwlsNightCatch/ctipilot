@@ -1,0 +1,106 @@
+  - entry: 2026-05-10/cpanel-whm-second-emergency-tsr-in-10-days-embargo-lifted-on
+    verdict: factual-error
+    defects:
+      - where: "cves[CVE-2026-29202].cvss, cves[CVE-2026-29203].cvss, cves[CVE-2026-29201].cvss; headline; summary"
+        claim: "CVE-2026-29202 (post-auth Perl RCE, CVSS 8.8), CVE-2026-29203 (CVSS 8.8), CVE-2026-29201 (CVSS 4.3)"
+        defect: "The 8.8 / 8.8 / 4.3 scores are CISA-ADP CVSS 3.1 scores relayed by The Hacker News. The numbering authority (HackerOne for WebPros) scored 29202 and 29203 at 5.3 (CVSS 4.0) and 29201 at 8.6 (CVSS 3.1, PR:N), so 29201 is the highest-scored, not the lowest. The vendor advisories carry no CVSS. The entry names no scoring source."
+        ground_truth: "ENISA EUVD-2026-28811 (CVE-2026-29202) baseScore 5.3 CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:L/VI:L/VA:N; EUVD-2026-28812 (CVE-2026-29203) baseScore 5.3 CVSS:4.0; EUVD-2026-28810 (CVE-2026-29201) baseScore 8.6 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:L; cve.org ADP block (CISA-ADP) 8.8 / 8.8 / 4.3 CVSS 3.1."
+        ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-29202"
+        fix: "Set cvss to the numbering-authority scores (29202: 5.3 v4.0, 29203: 5.3 v4.0, 29201: 8.6 v3.1) and say 'CISA-ADP CVSS 3.1: 8.8 / 8.8 / 4.3' where the 8.8 figures are quoted; do not lead the headline with an unattributed 8.8."
+        class: factual-error
+      - where: "cves[CVE-2026-29203].type/vector, cves[CVE-2026-29201].type/vector, all three .vector"
+        claim: "type: rce / vector: zero-click / auth: post-auth (all three CVEs)"
+        defect: "Only CVE-2026-29202 is code execution. CVE-2026-29203 is a symlink-following chmod (denial of service / local privilege escalation by an authenticated user) and CVE-2026-29201 is an arbitrary file read; 'zero-click' contradicts post-authentication for all three."
+        ground_truth: "Vendor CVE-2026-29203: 'An unsafe symlink handling error was found that allows a user to chmod an arbitrary file, allowing for denial of service and possible privilege escalation.' Vendor CVE-2026-29201: 'A relative path may be passed as the argument to this call, causing an arbitrary file to be made world-readable.' Vendor CVE-2026-29202: 'A Perl code injection method was found in the create_user API call, relating to the plugin parameter.'"
+        ground_truth_url: "https://support.cpanel.net/hc/en-us/articles/40311543760407-Security-CVE-2026-29203-cPanel-WHM-WP2-Security-Update-May-08-2026"
+        fix: "29203: type privilege-escalation (or dos), 29201: type info-disclosure (arbitrary file read); drop 'zero-click'; keep post-auth."
+        class: factual-error
+      - where: "summary; body paragraph 3"
+        claim: "the prior CVE-2026-41940 wave compromised ~44 000 hosts across two months ... (~44 000 hosting servers exploited over February–May 2026)"
+        defect: "The 44,000 figure is Shadowserver's count of IP addresses scanning and brute-forcing its honeypots on one day (2026-04-30), 'likely compromised' devices, dropping to 3,540 by May 3; it is not 44,000 hosting servers exploited across February to May. The sentence has no citation; none of the entry's cited pages state the figure (Panelica, a competitor's marketing post, says 'Compromise estimates exceeded 44,000 servers'). The two-month (summary) and February-May (body) spans also disagree; the earliest reported exploitation is 2026-02-23, from a single hosting provider (KnownHost)."
+        ground_truth: "The Hacker News 2026-05-04: 'Per data from the Shadowserver Foundation, at least 44,000 IP addresses likely compromised via CVE-2026-41940 are said to have engaged in scanning and brute-force attacks against its honeypots on April 30, 2026. As of May 3, the figure has dropped to 3,540.' SecurityWeek: 'the vulnerability has been exploited in the wild since February 23, 2026' (per a KnownHost Reddit post)."
+        ground_truth_url: "https://thehackernews.com/2026/05/critical-cpanel-vulnerability.html"
+        fix: "'Shadowserver counted at least 44,000 IP addresses likely compromised via CVE-2026-41940 scanning its honeypots on 2026-04-30; KnownHost reported exploitation since 2026-02-23'; cite THN 2026-05-04 and SecurityWeek."
+        class: factual-error
+      - where: "body paragraph 2 (CVE-2026-29202 scope)"
+        claim: "allows an authenticated cPanel user to inject and execute arbitrary Perl code in the context of their system account — *post-authentication RCE for any cPanel user with API access*"
+        defect: "Sources say code execution 'on behalf of the already authenticated account's system user'; 'any cPanel user with API access' is on no page (the create_user plugin's caller privilege is not stated by the vendor)."
+        ground_truth: "The Hacker News: 'arbitrary Perl code execution on behalf of the already authenticated account's system user.' Vendor: 'A Perl code injection method was found in the create_user API call, relating to the plugin parameter.'"
+        ground_truth_url: "https://thehackernews.com/2026/05/cpanel-whm-patch-3-new-vulnerabilities.html"
+        fix: "'an authenticated session can execute arbitrary Perl code as the authenticated account's system user'; drop 'any cPanel user with API access'."
+        class: imprecision
+      - where: "body paragraph 3 (pivot claim); summary last sentence"
+        claim: "An attacker who already used the auth bypass can pivot to CVE-2026-29202 to escalate privilege or persist."
+        defect: "Analytical link no source states; CVE-2026-29202 executes as the already authenticated account's system user, and the CVE-2026-41940 bypass yields authenticated control already. The entry's 'compounding risk' framing is the entry's own, and the priority rests on it."
+        ground_truth: "Vendor CVE-2026-29202 text says only that Perl code injection exists in the create_user API's plugin parameter; THN: 'no evidence that the vulnerabilities have been exploited in the wild'."
+        ground_truth_url: "https://thehackernews.com/2026/05/cpanel-whm-patch-3-new-vulnerabilities.html"
+        fix: "Drop or mark as the entry's inference; restate exposure from the vendor text only."
+        class: imprecision
+      - where: "body paragraph 1 (UPDATE lead)"
+        claim: "**UPDATE (originally noted as embargoed-and-dropped 2026-05-09):** Technical details for the three CVEs cPanel patched on 2026-05-08 emerged on 2026-05-09"
+        defect: "Vendor advisories and the CVE records were published on 2026-05-08, together with the patch; 2026-05-09 is only the Hacker News article date. The lead is also pipeline self-reference ('originally noted as embargoed-and-dropped')."
+        ground_truth: "Vendor advisories are titled 'cPanel & WHM / WP2 Security Update - May 08, 2026'; cve.org datePublished 2026-05-08T18:51Z; NCSC post 12550 (2026-05-08) updated 2026-05-11 'Official vendor advisories were published as planned'."
+        ground_truth_url: "https://support.cpanel.net/hc/en-us/articles/40311426610327-Security-CVE-2026-29202-cPanel-WHM-WP2-Security-Update-May-08-2026"
+        fix: "'cPanel published the patch and per-CVE advisories on 2026-05-08'; remove the UPDATE lead and the sourcing_note migration text; event_date 2026-05-08."
+        class: imprecision
+      - where: "body paragraph 2 (CVE-2026-29201)"
+        claim: "**CVE-2026-29201** (CVSS 4.3) is arbitrary feature-file disclosure."
+        defect: "The flaw is an arbitrary file read (an arbitrary file made world-readable) through a relative path passed as the feature file name, not disclosure of a feature file."
+        ground_truth: "Vendor: 'An arbitrary file read found was found in the feature::LOADFEATUREFILE adminbin call where it does not adequately validate the feature file name. A relative path may be passed as the argument to this call, causing an arbitrary file to be made world-readable.'"
+        ground_truth_url: "https://support.cpanel.net/hc/en-us/articles/40311033698327-Security-CVE-2026-29201-cPanel-WHM-WP2-Security-Update-May-08-2026"
+        fix: "'arbitrary file read via a relative path in the feature file name of the feature::LOADFEATUREFILE adminbin call'."
+        class: imprecision
+      - where: "body paragraph 3 (Fixed versions)"
+        claim: "Fixed: cPanel/WHM **11.136.0.9+**, **11.134.0.25+**, **11.132.0.31+**."
+        defect: "Partial list presented as the fix table; the vendor patched eleven branches plus WP Squared and a CloudLinux 6 direct update, and the entry has no citation on the sentence."
+        ground_truth: "Vendor: '11.136.0.9, 11.134.0.25, 11.132.0.31, 11.130.0.22, 11.126.0.58, 11.124.0.37, 11.118.0.66, 11.110.0.117, 11.102.0.41, 11.94.0.30, 11.86.0.43 and higher'; WP Squared 11.136.1.11 and higher; 'v11.110.0.116 as a direct update' for CentOS 6/CloudLinux 6."
+        ground_truth_url: "https://support.cpanel.net/hc/en-us/articles/40311426610327-Security-CVE-2026-29202-cPanel-WHM-WP2-Security-Update-May-08-2026"
+        fix: "Give the full vendor table (or 'every supported branch is patched; see the vendor advisory') and put the per-CVE vendor advisory links on the three CVEs; also fill cves[].affected/fixed. Write four-part versions as 'version 11.136.0.9' (bare four-part numbers read as IPv4 addresses to the IOC scan)."
+        class: imprecision
+      - where: "body (CVE-2026-41940 mentioned, absent from cves[])"
+        claim: "CVE-2026-41940 authentication-bypass wave"
+        defect: "The body names CVE-2026-41940 (KEV-listed 2026-04-30, ransomware use 'Known') but cves[] lacks it and it has no vendor-advisory citation; it is the entry's stated reason for priority."
+        ground_truth: "CISA KEV (catalog 2026.10.20): CVE-2026-41940 WebPros cPanel & WHM and WP2, dateAdded 2026-04-30, knownRansomwareCampaignUse Known."
+        ground_truth_url: "https://support.cpanel.net/hc/en-us/articles/40073787579671-Security-CVE-2026-41940-cPanel-WHM-WP2-Security-Update-04-28-2026"
+        fix: "Cite the vendor advisory for CVE-2026-41940 inline and reference it by id as context, or reduce it to one cited sentence."
+        class: imprecision
+      - where: "priority"
+        claim: "priority: high"
+        defect: "(low confidence) On the facts known then, all three flaws need an authenticated session and had no exploitation ('Exploitation: none' per CISA-ADP SSVC; not in KEV), no stated Swiss or public-sector exposure; the entry's high rests on an uncited pivot theory with CVE-2026-41940."
+        ground_truth: "CISA-ADP SSVC (cve.org): Exploitation none, Automatable no, Technical Impact total (29202, 29203); partial (29201). CISA KEV catalog 2026.10.20 does not list CVE-2026-29201/29202/29203."
+        ground_truth_url: "https://thehackernews.com/2026/05/cpanel-whm-patch-3-new-vulnerabilities.html"
+        fix: "Consider notable; keep high only with a cited exposure argument."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1059, behavior: "CVE-2026-29202: Perl code injection in the create_user API plugin parameter yields arbitrary Perl code execution as the authenticated account's system user (no sub-technique for Perl)", url: "https://support.cpanel.net/hc/en-us/articles/40311426610327-Security-CVE-2026-29202-cPanel-WHM-WP2-Security-Update-May-08-2026"}
+        - {id: T1068, behavior: "CVE-2026-29203: unsafe symlink handling lets a user chmod an arbitrary file, 'denial of service and possible privilege escalation'", url: "https://support.cpanel.net/hc/en-us/articles/40311543760407-Security-CVE-2026-29203-cPanel-WHM-WP2-Security-Update-May-08-2026"}
+        - {id: T1005, behavior: "CVE-2026-29201: relative path in the feature file name makes an arbitrary file world-readable (arbitrary file read)", url: "https://support.cpanel.net/hc/en-us/articles/40311033698327-Security-CVE-2026-29201-cPanel-WHM-WP2-Security-Update-May-08-2026"}
+      rating:
+        reliability: A
+        credibility: 2
+        basis: "Vendor PSIRT advisories (WebPros/cPanel) for its own product, restated by NCSC-CH (post 12550, which links the vendor advisories) and The Hacker News: one assessor (the vendor/CNA); no independent exploitation assessment beyond CISA-ADP SSVC 'Exploitation: none'."
+      exposure:
+        - {quote: "We have pushed out a patch in the following cPanel & WHM versions: 11.136.0.9 and higher 11.134.0.25 and higher 11.132.0.31 and higher 11.130.0.22 and higher 11.126.0.58 and higher", url: "https://support.cpanel.net/hc/en-us/articles/40311426610327-Security-CVE-2026-29202-cPanel-WHM-WP2-Security-Update-May-08-2026"}
+        - {quote: "For servers where automatic updates are disabled or version-pinned, review /etc/cpupdate.conf now, so there are no delays when the patch lands.", url: "https://security-hub.ncsc.admin.ch/api/posts/12550/details"}
+      detection: []
+      triage: []
+      takeaway:
+        - {quote: "Update the cPanel version on the server to one of the versions listed above. This can be done with the following: # /scripts/upcp --force ... verify the cPanel version with the following to ensure the update was successful. # /usr/local/cpanel/cpanel -V", url: "https://support.cpanel.net/hc/en-us/articles/40311426610327-Security-CVE-2026-29202-cPanel-WHM-WP2-Security-Update-May-08-2026"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-thn.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-ncsc12550.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-panelica.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-v29201.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-v29202.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-v29203.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-euvd-CVE-2026-29201.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-euvd-CVE-2026-29202.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-euvd-CVE-2026-29203.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-cveorg-CVE-2026-29201.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-cveorg-CVE-2026-29202.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-cveorg-CVE-2026-29203.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-thn-41940.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-v41940.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/cpanel-sw-zeroday.txt
+    possible_twin_outside_batch: null

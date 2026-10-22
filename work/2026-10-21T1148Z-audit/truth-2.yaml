@@ -1,0 +1,1550 @@
+entries:
+- entry: 2026-05-12/teampcp-unc6780-pcpjack-ecosystem-backdoors-the-checkmarx-je
+  verdict: factual-error
+  defects:
+  - where: cves[CVE-2026-33634]; body paragraph 2 ('a CVE has been issued as CVE-2026-33634 per the Checkmarx advisory')
+    claim: 'id: CVE-2026-33634, cvss: "9.4", status: [exploited, patch-available], auth: pre-auth, vector: zero-click'
+    defect: CVE-2026-33634 is the Aqua Security Trivy embedded-malicious-code CVE from March 2026, not a CVE for the Checkmarx Jenkins plugin; the Checkmarx page names no CVE at all, so the body sentence attributing it to 'the Checkmarx advisory' is false and the cves[] record binds the wrong flaw.
+    ground_truth: GHSA-69fq-xp46-6x23 is titled 'CVE-2026-33634' and reads 'On March 19, 2026, a threat actor used compromised credentials to publish a malicious Trivy v0.69.4 release, force-push 76 of 77 version tags in aquasecurity/trivy-action to credential-stealing malware'. CISA KEV lists CVE-2026-33634 as 'Aquasecurity Trivy Embedded Malicious Code Vulnerability', dateAdded 2026-03-26. The Checkmarx page contains no 'CVE' string.
+    ground_truth_url: https://github.com/advisories/GHSA-69fq-xp46-6x23
+    fix: 'Delete the cves[] record and the body sentence; no source read assigns a CVE to the Jenkins build 2026.5.09. If kept for context, say only that the credentials came from the March Trivy compromise (CVE-2026-33634), per Checkmarx: ''This access occurred on March 19, 2026 due to the Trivy Supply Chain Attack''. kind: vulnerability then no longer fits (threat or incident).'
+    class: factual-error
+  - where: headline; summary; body paragraphs 1-3 (SANDCLOCK)
+    claim: Malicious plugin build 2026.5.09 ... deploys SANDCLOCK to exfiltrate every CI secret reachable from the runner
+    defect: None of the three cited pages (nor BleepingComputer, SOCRadar) names SANDCLOCK for the Jenkins build; GTIG ties SANDCLOCK to the late-March Trivy, Checkmarx, LiteLLM and BerriAI compromises, and Checkmarx describes the May payload without naming it.
+    ground_truth: 'GTIG (2026-05-11): ''In late March 2026, ... TeamPCP (aka UNC6780) claimed responsibility for multiple supply chain compromises ... including those associated with the Trivy vulnerability scanner, Checkmarx, LiteLLM, and BerriAI ... embed the SANDCLOCK credential stealer''. Checkmarx on the May build: ''The malicious payload associated with the modified plug-in targets lists of file paths for common applications ... We are still conducting malware analysis''.'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/ai-vulnerability-exploitation-initial-access
+    fix: Drop SANDCLOCK from headline, summary and body, or state it only as GTIG's name for the stealer used in the March compromises, with the GTIG URL as the citation.
+    class: factual-error
+  - where: summary; body paragraph 2 (list of targeted secrets); defender pivot ('audit Checkmarx One API logs')
+    claim: 'SANDCLOCK targets every secret reachable from a typical CI/CD pipeline environment: GitHub Personal Access Tokens, AWS / Azure / GCP credentials, Kubernetes service-account tokens, Docker / OCI registry credentials, SSH keys, and Checkmarx One API tokens.'
+    defect: No page read lists these targets for the Jenkins build; Checkmarx names a narrower set and says no threat-actor access to the Checkmarx One SaaS environment was found, so 'Checkmarx One API tokens' and container-registry credentials are unsupported.
+    ground_truth: 'Checkmarx: ''it traverses the corresponding file list looking for credentials. Targeted applications include crypto wallets, VPNs, AWS, and Github ... to date we have not seen any references to Jenkins.'' and ''There was no threat actor access to the Checkmarx One SaaS environment''.'
+    ground_truth_url: https://checkmarx.com/blog/ongoing-security-updates/
+    fix: State Checkmarx's list (file-path sweep for credentials of crypto wallets, VPNs, AWS and GitHub, per OS) and Checkmarx's advice to rotate 'all credentials that the pipeline that executed the malicious payload has access to'; remove the Checkmarx One API token claim and the Checkmarx One log-audit pivot.
+    class: factual-error
+  - where: body paragraph 2 (third compromise sentence)
+    claim: after the March 2026 KICS Docker image and the April 2026 VS Code extension defacement
+    defect: 'Chronology is wrong: the KICS Docker image belongs to the April wave, and the March wave was malicious GitHub Actions and Open VSX extensions; the repository defacement belongs to the May Jenkins incident, not April.'
+    ground_truth: 'Checkmarx timeline: ''23-Mar-2026 ... malicious GitHub Actions & VSCode extensions to OpenVSX''; ''22-Apr-2026 Second Wave Artifacts: Cached credentials enable publication of malicious KICS Docker image, updated VSCode & DevAssist extensions, and GitHub Action''; ''9-May-2026 Jenkins Plugin Compromise''. BleepingComputer: ''This is the third incident in a series of supply-chain attacks the application security testing firm has suffered since late March.'''
+    ground_truth_url: https://checkmarx.com/blog/ongoing-security-updates/
+    fix: 'Write: third Checkmarx artifact compromise since late March (March GitHub Actions and Open VSX extensions; April KICS Docker image, extensions and GitHub Action; May Jenkins plugin), cited to the Checkmarx timeline. ''In three months'' is calendar-month rounding of a roughly six-week span.'
+    class: factual-error
+  - where: body paragraph 3 (GTIG sentence)
+    claim: The GTIG AI Threat Tracker ( attributes SANDCLOCK specifically to TeamPCP and flags the stealer as explicitly designed to harvest **LLM API keys** in addition to traditional cloud credentials
+    defect: GTIG does not say SANDCLOCK is designed to harvest LLM API keys; it says the LiteLLM compromise could expose AI API secrets. The inline link is also empty ('(' with no URL).
+    ground_truth: 'GTIG: ''embed the SANDCLOCK credential stealer and extract high-value cloud secrets, such as AWS keys and GitHub tokens'' and, of LiteLLM, ''this incident could lead to considerable exposure of AI API secrets from affected victims''.'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/ai-vulnerability-exploitation-initial-access
+    fix: Restate as GTIG does (stealer harvests cloud secrets such as AWS keys and GitHub tokens; the LiteLLM compromise could expose AI API secrets) and give the GTIG URL; drop 'explicitly designed to harvest LLM API keys' and the 'pivot to monetising stolen LLM access' inference.
+    class: factual-error
+  - where: headline; body opening ('PCPJack worm ... same actor ecosystem'); entities tool:pcpjack-cloud-worm-2026
+    claim: TeamPCP (UNC6780 / PCPJack ecosystem) ... this is a distinct new artefact in the same actor ecosystem
+    defect: PCPJack is a separate cloud worm whose first act is to evict TeamPCP tooling; SentinelLABS only speculates its operator 'could be a former operator', and no cited page links PCPJack to the Checkmarx Jenkins incident.
+    ground_truth: 'SentinelLABS: ''the script''s first actions are to evict and delete tools associated with the TeamPCP attack group, leading us to call the toolset PCPJack'' and ''We believe this could be a former operator who is deeply familiar with the group''s tooling.'''
+    ground_truth_url: https://www.sentinelone.com/labs/cloud-worm-evicts-teampcp-and-steals-credentials-at-scale/
+    fix: Remove 'PCPJack ecosystem' from headline and body and the PCPJack entity link from this entry; if mentioned, say PCPJack is a distinct worm that removes TeamPCP infections (SentinelLABS).
+    class: factual-error
+  - where: body paragraph 1 ('marketed under the actor's signature naming')
+    claim: version 2026.5.09, marketed under the actor's signature naming "Checkmarx-Fully-Hacked-by-TeamPCP"
+    defect: The defacement name was given to the plugin's GitHub repository, not to the plugin build; the name quoted is also truncated.
+    ground_truth: 'THN: TeamPCP ''renamed it to "Checkmarx-Fully-Hacked-by-TeamPCP-and-Their-Customers-Should-Cancel-Now."'' (the plugin''s GitHub repository) with the description ''Checkmarx fails to rotate secrets again. with love - TeamPCP.'''
+    ground_truth_url: https://thehackernews.com/2026/05/teampcp-compromises-checkmarx-jenkins.html
+    fix: Say the plugin's GitHub repository was renamed and defaced, separately from the malicious build 2026.5.09.
+    class: imprecision
+  - where: body paragraph 1 ('configured to auto-update'); summary ('auto-updated')
+    claim: Any Jenkins instance configured to auto-update the AST plugin during that window pulled the malicious build
+    defect: No page says exposure required auto-update configuration; Checkmarx gives an exposure window and SOCRadar says any instance 'that pulled this version'.
+    ground_truth: 'Checkmarx: ''The malicious window was 2026-05-09 01:25 UTC to 2026-05-10 08:47 UTC.'' SOCRadar: ''Any Jenkins instance that pulled this version during the exposure window would have installed a compromised plugin.'''
+    ground_truth_url: https://checkmarx.com/blog/ongoing-security-updates/
+    fix: Write 'any instance that installed or updated to build 2026.5.09 between 2026-05-09 01:25 UTC and 2026-05-10 08:47 UTC'.
+    class: imprecision
+  - where: headline; summary; body paragraph 1 (attribution stated as fact)
+    claim: On 2026-05-09-10 (UTC) TeamPCP (UNC6780) published a backdoored build of the Checkmarx Jenkins AST plugin
+    defect: The May attribution rests on the repository defacement and researcher statements; Checkmarx's own May row names only 'External service account'; the UNC6780 designation comes from GTIG's March-activity report.
+    ground_truth: 'THN: ''TeamPCP is said to have gained unauthorized access to the plugin''s GitHub repository'' per Adnan Khan and SOCRadar. BleepingComputer: ''The compromise was claimed by the TeamPCP hacker group.'' Checkmarx timeline: ''9-May-2026 Jenkins Plugin Compromise: External service account modified Jenkins AST plugin and published to Jenkins Marketplace''.'
+    ground_truth_url: https://www.bleepingcomputer.com/news/security/official-checkmarx-jenkins-package-compromised-with-infostealer/
+    fix: Write 'TeamPCP claimed (defacement) and researchers attribute ...; Checkmarx says credentials from the March Trivy compromise were reused'.
+    class: imprecision
+  - where: body opening; evidence[0]; sourcing_note
+    claim: UPDATE (TeamPCP / mini-shai-hulud first covered 2026-05-07; PCPJack worm covered 2026-05-10; this is a distinct new artefact in the same actor ecosystem)
+    defect: Pipeline self-reference in reader text; evidence[0] quotes 'ctipilot v2 brief (migrated)' (the pipeline quoting itself); the claimed 2026-05-07 and 2026-05-10 coverage entries do not exist in the store for PCPJack.
+    ground_truth: grep of entries/ finds 'PCPJack' only in this entry.
+    ground_truth_url: work/2026-10-21T1148Z-audit/truth-2/bodies/e1-s1-pcpjack.txt
+    fix: Remove the UPDATE preamble and the self-quoting evidence record; replace with a verbatim Checkmarx or BleepingComputer passage.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1195.002
+      behavior: Modified Checkmarx Jenkins AST plugin published to the Jenkins Marketplace outside the release pipeline (build 2026.5.09)
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    - id: T1078
+      behavior: Attacker reused access obtained in the March incident (an external service account) to publish the plugin
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    - id: T1552.001
+      behavior: Payload selects a per-OS list of file paths for common applications and traverses it looking for credentials
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    rating:
+      reliability: A
+      credibility: 2
+      basis: Primary is Checkmarx's own incident page for its own product (A); the press (THN, SecurityWeek, BleepingComputer) restates it and the TeamPCP link rests on a defacement claim plus one researcher, so one assessor uncorroborated on attribution (2).
+    exposure:
+    - quote: Ensure you are on one of those versions or on 2.0.13-829.vc72453fa_1c16 from December 17, 2025 or earlier. The malicious window was 2026-05-09 01:25 UTC to 2026-05-10 08:47 UTC.
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    detection:
+    - quote: Restrict egress from CI runners to an allowlist; monitor outbound connections for unexpected domains
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    - quote: it traverses the corresponding file list looking for credentials. Targeted applications include crypto wallets, VPNs, AWS, and Github.
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    triage: []
+    takeaway:
+    - quote: We recommend rotating all credentials that the pipeline that executed the malicious payload has access to.
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    - quote: Treat CI runner credentials as short-lived and tightly scoped.
+      url: https://checkmarx.com/blog/ongoing-security-updates/
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-checkmarx.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-thn.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-secweek.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-bleeping.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-socradar.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-gtig.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-s1-pcpjack.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e1-ghsa-trivy.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-13/microsoft-mdash-multi-model-agentic-vulnerability-discovery
+  verdict: factual-error
+  defects:
+  - where: body paragraph 1 (benchmark sentence citation)
+    claim: The harness scored 88.45% on the public CyberGym benchmark (1,507 real-world CVEs across 188 open-source projects) and achieved 100% recall on the `tcpip.sys` historical-CVE corpus ([The Register, 2026-05-13]
+    defect: The Register article carries none of these figures (it only says MDASH found 16 of the May vulnerabilities and is in limited private preview); they are on Microsoft's own blog, and the entry drops the sample size and the clfs.sys result.
+    ground_truth: 'Microsoft: ''the Microsoft Security multi-model agentic scanning harness reaches an 88.45% success rate'' on CyberGym, ''a corpus of 1,507 real-world vulnerability reproduction tasks drawn from across 188 OSS-Fuzz projects''; ''tcpip.sys: 100% recall on 7 MSRC cases spanning five years''; ''clfs.sys: 96% recall on 28 MSRC cases''; ''retrospective recall benchmarks on internal code with a finite case count''.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: 'Cite the Microsoft blog for the figures; write ''tcpip.sys: 100% of 7 historical MSRC cases'' (and clfs.sys 96% of 28), not ''historical-CVE corpus''; say 1,507 reproduction tasks across 188 OSS-Fuzz projects.'
+    class: imprecision
+  - where: body paragraph 1 (prove-stage sentence)
+    claim: ends with an **automated end-to-end exploitability proof** before a finding is sent to engineering — meaning every MDASH-disclosed CVE was validated as practically exploitable, not just theoretically reachable
+    defect: Microsoft describes the prove stage as constructing triggering inputs 'where the bug class admits it' to prove the bug exists; it does not claim exploitability was proven for every finding, and several of the 16 are DoS or information-disclosure bugs.
+    ground_truth: '''Prove stage: Constructs and executes triggering inputs where the bug class admits it. The prove stage validates the pre-condition dynamically and formulates the bug-triggering inputs to prove existence of vulnerability (for example, ASan in C/C++).'' Of CVE-2026-33827: ''exploitation requires winning a narrow timing window and shaping allocator reuse''.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: 'Write: the prove stage builds and runs triggering inputs where the bug class allows, to confirm the bug exists; drop ''practically exploitable'' for every CVE.'
+    class: factual-error
+  - where: Defender takeaway, first implication
+    claim: the MDASH-discovered Windows CVEs (a substantial subset of the May 2026 Patch Tuesday in § 2) should be treated as "practically exploitable" even without observed ITW activity ... that lifts these above the typical "Less Likely / More Likely" scoring noise
+    defect: Microsoft's own exploitability assessments for the four Critical MDASH CVEs are 'Exploitation Less Likely' (three) and 'Exploitation Unlikely' (one), none exploited or publicly disclosed; the premise (proof-of-exploitability before disclosure) is not in the source. Two of the four were released in April, not May.
+    ground_truth: 'MSRC: CVE-2026-33827 (released 2026-04-14, CVSS 8.1) ''Exploitation Less Likely''; CVE-2026-33824 (2026-04-14, 9.8) ''Exploitation Less Likely''; CVE-2026-41089 (2026-05-12, 9.8) ''Exploitation Less Likely''; CVE-2026-41096 (2026-05-12, 9.8) ''Exploitation Unlikely''; all exploited: No, publiclyDisclosed: No. The Register: ''Redmond says exploitation is "unlikely"'' for CVE-2026-41096.'
+    ground_truth_url: work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msrc-CVE-2026-33824.txt
+    fix: Replace with the vendor's own ratings per CVE and a patch-priority argument based on unauthenticated network reachability (tcpip.sys, IKEEXT, Netlogon CLDAP, DNS client), not 'practically exploitable'.
+    class: factual-error
+  - where: body paragraph 1 ('first production run')
+    claim: In MDASH's first production run against Windows the harness produced 16 previously unknown CVEs
+    defect: '''First production run'' is not in either cited page; Microsoft says only that 16 CVEs in the Patch Tuesday were found with MDASH and that the harness is used by Microsoft security engineering teams.'
+    ground_truth: '''Across the Windows network stack and adjacent services, today''s Patch Tuesday includes 16 CVEs our engineering teams found using codename MDASH.'''
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: Delete 'In MDASH's first production run'; write 'Microsoft credits MDASH with 16 CVEs in the May 2026 release'.
+    class: factual-error
+  - where: body paragraph 1 (last sentence)
+    claim: Microsoft has scheduled a customer-facing preview of the harness for June 2026.
+    defect: Neither page gives a June date; the preview is already running as a limited private preview.
+    ground_truth: 'Microsoft: ''tested by a small set of customers as part of a limited private preview''; The Register: ''making the tool available to a limited number of customers in private preview''.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: Write 'a limited private preview with a small set of customers has started; sign-up is open'.
+    class: factual-error
+  - where: Defender takeaway, second implication
+    claim: DirectAccess and Always-On VPN are widely deployed as the AD-integrated remote-access primitive across Swiss federal and EU government estates
+    defect: No page read says anything about deployment in Swiss federal or EU government estates; the exposure statement the source gives is narrower and has a precondition.
+    ground_truth: CVE-2026-33824 is 'reachable by a remote, unauthenticated attacker over UDP/500 on any host configured as an IKEv2 responder (RRAS VPN, DirectAccess, Always-On VPN infrastructure, or any machine with an inbound connection security rule)'; 'a bare Start-Service IKEEXT with no responder policy is not vulnerable'.
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: Drop the deployment assertion; state the exposure condition (IKEv2 responder policy present) and tell the reader to check for hosts with RRAS VPN, DirectAccess, Always-On VPN infrastructure or inbound connection security rules.
+    class: factual-error
+  - where: headline; cves[]; Defender takeaway (Patch Tuesday month)
+    claim: 'finds 16 Windows CVEs in network-stack kernel components; cves: []; ''expedite May 2026 cumulative update'''
+    defect: Six of the 16 are user-mode, the table also covers http.sys and telnet.exe, none of the CVE ids is named in the entry (cves[] is empty), and two of the four Critical RCEs (CVE-2026-33827, CVE-2026-33824) were released in April, so the 'May cumulative update' is not where they first shipped.
+    ground_truth: 'Microsoft: ''These vulnerabilities are 10 kernel-mode / 6 usermode.'' Critical rows: CVE-2026-33827 (tcpip.sys), CVE-2026-33824 (ikeext.dll), CVE-2026-41089 (netlogon.dll), CVE-2026-41096 (dnsapi.dll); ''CVE-2026-33827, patched in April Patch Tuesday'', ''CVE-2026-33824, patched in April Patch Tuesday''. MSRC release dates 2026-04-14 for those two, 2026-05-12 for the other two.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: 'Headline: ''finds 16 Windows CVEs in networking and authentication components''; list the four Critical ids with MSRC CVSS (8.1, 9.8, 9.8, 9.8) and release months in cves[] or the body.'
+    class: imprecision
+  - where: Defender takeaway (ATT&CK sentence)
+    claim: Mapped to `T1190 Exploit Public-Facing Application` and `T1133 External Remote Services`.
+    defect: T1133 describes use of legitimate remote services with valid access; the source describes pre-authentication memory-corruption bugs in network services, which is T1190 only, and no exploitation is reported.
+    ground_truth: '''Unauth IKEv2 SA_INIT double-free triggers LocalSystem RCE''; MSRC ''exploited: No''.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    fix: Keep T1190 (as a potential, not observed, vector); drop T1133.
+    class: imprecision
+  - where: body (Defender takeaway)
+    claim: (a substantial subset of the May 2026 Patch Tuesday in § 2)
+    defect: Reference to a section of the retired v2 brief ('§ 2') is pipeline self-reference with no target for readers.
+    ground_truth: 'n/a (migration artefact; entry has migrated_from: briefs/2026-05-13.md)'
+    ground_truth_url: work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msft.txt
+    fix: Delete the '§ 2' reference.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: Unauthenticated network-reachable memory-corruption bugs in tcpip.sys (SSRR UAF), IKEEXT (SA_INIT double-free), Netlogon CLDAP and the DNS client; vulnerability disclosure, no exploitation reported
+      url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    rating:
+      reliability: B
+      credibility: 2
+      basis: Primary is Microsoft's own research blog on its own system and CVEs (benchmarks are self-reported); The Register restates the announcement, so one assessor uncorroborated.
+    exposure:
+    - quote: reachable by a remote, unauthenticated attacker over UDP/500 on any host configured as an IKEv2 responder (RRAS VPN, DirectAccess, Always-On VPN infrastructure, or any machine with an inbound connection security rule)
+      url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    - quote: a bare `Start-Service IKEEXT` with no responder policy is not vulnerable
+      url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    detection:
+    - quote: The trigger sequence is two UDP packets, no race, no special timing.
+      url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    triage: []
+    takeaway:
+    - quote: CVE-2026-33824, patched in April Patch Tuesday.
+      url: https://www.microsoft.com/en-us/security/blog/2026/05/12/defense-at-ai-speed-microsofts-new-multi-model-agentic-security-system-finds-16-new-vulnerabilities/
+    - quote: Microsoft also said its secret-until-now AI bug hunting system, codenamed MDASH, found 16 of the vulnerabilities addressed in this month's release.
+      url: https://www.theregister.com/patches/2026/05/13/doozy-of-a-patch-tuesday-includes-30-critical-microsoft-cves/5239224
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msft.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e2-register-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msrc-CVE-2026-33827.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msrc-CVE-2026-33824.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msrc-CVE-2026-41089.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e2-msrc-CVE-2026-41096.txt
+  possible_twin_outside_batch: entries/2026-05-13/cve-2026-41089-cve-2026-41096-cve-2026-41103-cve-2026-42898.md (May 2026 Patch Tuesday entry that also mentions MDASH; CVE-2026-41089 and CVE-2026-41096 are among the MDASH CVEs)
+- entry: 2026-05-13/mini-shai-hulud-s-github-actions-pwn-request-oidc-token-thef
+  verdict: factual-error
+  defects:
+  - where: summary; body 'Background' paragraph
+    claim: Mini Shai-Hulud (the TeamPCP self-propagating npm worm) first surfaced in coverage on 2026-05-10 as a SAP CAP-package compromise.
+    defect: The SAP wave was published on 2026-04-29 and reported on 2026-04-30/05-01; 2026-05-10 is the pipeline's own first-coverage date, not when the worm surfaced. The summary field also holds only this background sentence, not the finding, and the body links to an internal brief ('/briefs/2026-05-10/').
+    ground_truth: 'The Register: ''On April 29, TeamPCP compromised four official npm packages from the SAP JavaScript and cloud application development ecosystem and published the poisoned releases between 09:55 and 12:14 UTC.'''
+    ground_truth_url: https://www.theregister.com/2026/04/30/supply_chain_attacks_sap_npm_packages/
+    fix: Write 'Mini Shai-Hulud first hit SAP npm packages (mbt, @cap-js/*) on 2026-04-29'; make the summary state the TanStack pwn-request/cache-poisoning/OIDC-extraction chain of 2026-05-11; remove the internal brief link.
+    class: factual-error
+  - where: body 'Background' paragraph (original campaign description)
+    claim: The original campaign relied on attacker-published versions of dependency-chain packages catching legitimate downstream consumers; its blast-radius was bounded by which packages opted into the affected dependency graph.
+    defect: The SAP wave was a worm-style compromise of official packages that stole developer and CI secrets, self-propagated and exfiltrated to GitHub repositories; it was not 'dependency-chain' packages bounded by an opt-in graph, and it already used runner-memory extraction.
+    ground_truth: 'The Register: ''The compromised packages contain malicious preinstall scripts ... This new campaign deploys a multi-stage payload that steals developer secrets, self-propagates, encrypts all the stolen goods, and then exfiltrates the now-locked secrets into a new GitHub repository''; Wiz: ''leveraging advanced techniques such as extracting secrets from runner memory''.'
+    ground_truth_url: https://www.theregister.com/2026/04/30/supply_chain_attacks_sap_npm_packages/
+    fix: Delete the characterisation or restate it as in The Register (compromised official SAP packages with preinstall payloads, worm-style propagation).
+    class: factual-error
+  - where: body paragraph 1 (cited sentence on the 2026-05-11 wave)
+    claim: it uses no infostealer of a maintainer's machine, no credential theft from the package owner; instead it abuses a class problem in GitHub Actions
+    defect: True only for the initial TanStack publish (no npm tokens stolen). The wave's payload is itself a credential stealer that spread to other maintainers' packages with stolen credentials, so 'no infostealer' misdescribes the wave and contradicts the entry's own step 10.
+    ground_truth: 'TanStack: ''No npm tokens were stolen and the npm publish workflow itself was not compromised.'' StepSecurity: ''Mini Shai-Hulud is a true worm: after stealing credentials from one CI/CD pipeline, it enumerates every package that maintainer controls and publishes infected versions of each.'''
+    ground_truth_url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    fix: 'Scope it: the TanStack publish needed no stolen npm token (OIDC token taken from runner memory); the payload then steals credentials from install hosts and spreads with them.'
+    class: imprecision
+  - where: chain step 1 (Reconnaissance) and its T1593 mapping
+    claim: The operator (`voicproducoes`, GitHub account ID 269549300, created 2026-03-19) identifies a target repository whose CI/CD configuration triggers on `pull_request_target`. ... Mapped to `T1593 Search Open Websites/Domains` (the operator surveys public Actions configurations).
+    defect: The account id and creation date are right, but no source describes a reconnaissance step; the timeline starts with fork creation. The behavior and its ATT&CK mapping are inference presented as fact.
+    ground_truth: 'StepSecurity: ''The attacker created a fork of TanStack/router on May 10, 2026, using the GitHub account voicproducoes (ID: 269549300, created 2026-03-19).'' TanStack timeline begins ''2026-05-10 17:16 Attacker creates fork''.'
+    ground_truth_url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    fix: Drop step 1 and T1593, or label it as an assumption; start the chain at fork creation.
+    class: imprecision
+  - where: chain step 3 (Pwn-Request lure content)
+    claim: attacker-controlled code paths reached via subtle changes the human reviewer is unlikely to read (e.g. a modified `pnpm-lock.yaml`, a new dev-dependency, or a CI helper script under `.github/`)
+    defect: 'Invented detail. The PR added a ~30,000-line payload file under packages/history and was titled ''WIP: simplify history build''; the pull_request_target workflow checked out the PR merge ref and ran the benchmark build, which executed it. No lockfile, dev-dependency or .github change is reported.'
+    ground_truth: 'TanStack: ''Adds packages/history/vite_setup.mjs (a ~30,000-line bundled JS payload)''; ''bundle-size.yml''s benchmark-pr job checks out refs/pull/7378/merge, runs pnpm install + pnpm nx run @benchmarks/bundle-size:build — this executes vite_setup.mjs''; the attacker then ''force-pushes the PR back to current main HEAD ... making the visible PR a 0-file no-op''.'
+    ground_truth_url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    fix: 'Replace with: the workflow checked out and built the fork''s merge ref, executing a payload file added in the PR; the PR was afterwards force-pushed to a no-op and closed.'
+    class: factual-error
+  - where: chain step 5 (Wait for release)
+    claim: The release workflow on `main` restores the poisoned cache, builds the package using the trojanised pnpm store, and reaches the publish step.
+    defect: The publish step was not reached; tests failed, the Publish Packages step was skipped, and the malware published directly during the test/cleanup phase. The entry contradicts itself in step 8 ('The "Publish Packages" step ... was bypassed entirely').
+    ground_truth: 'TanStack: ''it does not come from the workflow''s defined Publish Packages step, which was skipped because tests failed. It comes from the malware running during the test/cleanup phase, which mints an OIDC token via the workflow''s id-token: write permission and POSTs directly to registry.npmjs.org''.'
+    ground_truth_url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    fix: 'Write: the poisoned store ran during the release job; the attacker''s code minted an OIDC token and published directly while the real publish step was skipped.'
+    class: factual-error
+  - where: chain steps 6 and 7 (OIDC token handling)
+    claim: The token sits in the workflow process's memory but is not surfaced as an environment variable to step scripts. ... no audit signal at the npm side distinguishes it from a normal publish.
+    defect: (low confidence) StepSecurity shows the payload reading ACTIONS_ID_TOKEN_REQUEST_TOKEN / ACTIONS_ID_TOKEN_REQUEST_URL environment variables to obtain tokens, and TanStack names a detectable difference (publishes from unexpected workflow steps), so both absolutes overreach.
+    ground_truth: 'StepSecurity: ''It uses the stolen GitHub OIDC token (ACTIONS_ID_TOKEN_REQUEST_TOKEN / ACTIONS_ID_TOKEN_REQUEST_URL) to obtain a Fulcio signing certificate''. TanStack: ''add provenance-source-verification to detect publishes from unexpected workflow steps''.'
+    ground_truth_url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    fix: 'Say the OIDC token is minted in the runner for id-token: write jobs and was read from Runner.Worker memory; say TanStack found the publish came from outside the defined publish step.'
+    class: imprecision
+  - where: chain step 8 (Provenance fraud) and Hardening SLSA bullet
+    claim: SLSA L3 was the assurance many EU procurement frameworks were starting to demand; this campaign demonstrates it is forgeable ... The 2026-05-11 campaign shows L3 alone is forgeable.
+    defect: 'No page mentions EU procurement frameworks, and the attestation was not forged: it is a genuine attestation of a compromised pipeline.'
+    ground_truth: 'StepSecurity: ''SLSA provenance confirms which pipeline produced the artifact, not whether the pipeline was behaving as intended. A compromised build step can produce a validly-attested but malicious package.'''
+    ground_truth_url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    fix: Delete the procurement clause; write 'valid SLSA provenance proves which pipeline built the package, not that the pipeline behaved'.
+    class: factual-error
+  - where: chain step 9 (payload)
+    claim: a 2.3 MB triple-obfuscated `router_init.js` that on `postinstall` harvests ... browser cookie jars and 100+ further credential paths
+    defect: The payload ran from the `prepare` script of an optional git dependency (Wiz notes a `preinstall` variant for UiPath/Mistral packages), not `postinstall`; the 100+ path list names Slack's Cookies file, crypto wallets, VPN, AI-tool and shell-history files, not browser cookie jars.
+    ground_truth: 'StepSecurity: ''"prepare": "bun run tanstack_runner.js && exit 1"'' ... ''The `prepare` lifecycle hook runs automatically when the dependency is installed via a `github:` URL''; path table lists ''~/.config/Slack/Cookies''.'
+    ground_truth_url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    fix: Write 'a git-URL optional dependency whose prepare script launches the Bun-run payload' and list the path categories as StepSecurity does.
+    class: imprecision
+  - where: What detection looks like, runner-process introspection bullet
+    claim: any step that reads from `/proc/*/mem` from a non-`root` process on the runner.
+    defect: The memory scraper is run under sudo, so a non-root filter would miss it.
+    ground_truth: 'StepSecurity: ''The orchestrator feeds this Python script to `sudo python3` via stdin'' and the captured process tree shows ''sudo python3 | tr | grep | sort'' with ''python3 reads /proc/2138/mem''.'
+    ground_truth_url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    fix: Alert on any read of Runner.Worker's /proc/<pid>/mem regardless of user (including sudo-launched interpreters).
+    class: factual-error
+  - where: What detection looks like (uncited generalisations)
+    claim: npm's audit log surfaces this if the org has it enabled. ... GitHub-hosted runners do not need to read `/proc/<pid>/mem` for any legitimate workflow purpose.
+    defect: Neither clause is stated by any page read.
+    ground_truth: 'TanStack: ''No internal alerting. We learned about the compromise from a third party.'' Detection came from StepSecurity.'
+    ground_truth_url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    fix: Remove the audit-log assurance or cite an npm doc; qualify the /proc statement as an assessment.
+    class: imprecision
+  - where: Hardening bullets 1, 3 and 5 (invented option and command)
+    claim: '`actions/cache` with `save: false` from `pull_request_target` ... pair it with a maintainer-verified `npm provenance verify`'
+    defect: 'Neither exists: actions/cache has no `save` input (restore-only is actions/cache/restore) and npm verifies provenance with `npm audit signatures`.'
+    ground_truth: 'actions/cache README inputs: path, key, restore-keys, enableCrossOsArchive, fail-on-cache-miss, lookup-only; ''New actions are available for granular control over caches - restore and save''. npm docs: ''You can verify the provenance attestations of downloaded packages with the following `audit` command: `npm audit signatures`''.'
+    ground_truth_url: https://github.com/actions/cache
+    fix: Use actions/cache/restore for fork-reachable jobs (no save), and `npm audit signatures` for attestation checks.
+    class: factual-error
+  - where: Hardening bullet 1
+    claim: Pin every `pull_request_target` workflow to a SHA-locked version of every action it uses; never `@main` or `@v1`. Forks cannot influence what runs.
+    defect: 'Overclaim: pinning does not stop a workflow that checks out and builds the fork''s merge ref from running fork code, which was the root cause.'
+    ground_truth: 'TanStack root cause: ''bundle-size.yml ran pull_request_target for fork PRs and, inside that trigger context, checked out the fork''s PR-merge ref and ran a build''. GitHub Security Lab: the danger is ''Combining pull_request_target workflow trigger with an explicit checkout of an untrusted PR''.'
+    ground_truth_url: https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+    fix: Lead with 'never check out or build fork code under pull_request_target'; keep SHA pinning as a separate item without the 'forks cannot influence' sentence.
+    class: imprecision
+  - where: ATT&CK mappings in prose (steps 2, 3, 7)
+    claim: 'T1583.001 Acquire Infrastructure: Domains-equivalent; T1199 Trusted Relationship and T1505.003 Web Shell-equivalent; T1606.002 Forge Web Credentials: SAML Tokens-equivalent for OIDC'
+    defect: These ids name behaviors the sources do not describe (domains, third-party access, web shells, SAML forgery); 'equivalent' hedges do not make them mapping-valid.
+    ground_truth: 'Sources describe: fork/account creation, a pull_request_target build running fork code, Actions cache poisoning, /proc/<pid>/mem token extraction, OIDC token use to publish to npm, credential-file and IMDS theft, GitHub/Session exfiltration, systemd/LaunchAgent persistence, rm -rf wiper.'
+    ground_truth_url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    fix: Remove these inline ids and carry the mapping in techniques[] (see upgrade block).
+    class: imprecision
+  - where: cves[] (empty)
+    claim: 'cves: []'
+    defect: The TanStack compromise has a CVE (reserved 2026-05-11, published 2026-05-12, CVSS 3.1 9.6 by the GitHub CNA) and was added to CISA KEV on 2026-05-27, after this entry was filed.
+    ground_truth: 'CISA KEV: CVE-2026-45321 ''TanStack Unspecified Vulnerability'', dateAdded 2026-05-27, notes cite ''https://github.com/TanStack/router/security/advisories/GHSA-g7cv-rxg3-hmpx''. CVE record: ''Malware in 42 @tanstack/* packages exfiltrates cloud credentials, GitHub tokens, and SSH keys'', CWE-506, baseScore 9.6.'
+    ground_truth_url: https://github.com/TanStack/router/security/advisories/GHSA-g7cv-rxg3-hmpx
+    fix: Add CVE-2026-45321 (cvss 9.6 per the GitHub CNA record; KEV 2026-05-27) via a changelog record citing the GHSA; the CVE record itself is not citable.
+    class: imprecision
+  - where: sources[] dates; chain step 2 (accounts)
+    claim: TanStack post-mortem, 2026-05-12; fork `zblgg/configuration` created by operator `voicproducoes`
+    defect: 'The post-mortem''s datePublished is 2026-05-11 (updated 2026-05-15); the sources split the fork across two attacker accounts (TanStack: zblgg, StepSecurity and NCSC-CH: voicproducoes).'
+    ground_truth: 'TanStack page: datePublished 2026-05-11, dateModified 2026-05-15; ''Real attacker accounts: zblgg (id 127806521), voicproducoes (id 269549300)''; NCSC-CH: ''Fork: voicproducoes/router (fork of TanStack/router, created 2026-05-10)''.'
+    ground_truth_url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    fix: Date the citation 2026-05-11 and write 'two attacker accounts (zblgg, voicproducoes)'.
+    class: imprecision
+  - where: body chain steps 1-10, payload and detection paragraphs (inline citation)
+    claim: (no inline citation on steps 1-10, 'What detection looks like' or 'Hardening')
+    defect: Only the opening paragraph carries citations; every technical clause that follows is uncited, which is how the unsupported details above went unchecked. Also 'No IOCs in this brief' is pipeline self-reference.
+    ground_truth: 'Pages that carry the chain: TanStack post-mortem (steps 2-8), StepSecurity (steps 7-10, payload, persistence), NCSC-CH hub post 12558 (dead-man''s switch, persistence).'
+    ground_truth_url: https://security-hub.ncsc.admin.ch/#/posts/12558
+    fix: Bind each step to the page above that carries it; replace 'in this brief' with neutral wording.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: 'pull_request_target ''Pwn Request'': fork PR triggers a base-repo workflow that checks out and builds fork code (closest ATT&CK fit; no CI-specific technique exists)'
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - id: T1195.001
+      behavior: Poisoned pnpm store written to the Actions cache under the key the release workflow restores
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - id: T1195.002
+      behavior: 84 malicious versions of 42 @tanstack/* packages published through the project's own release pipeline with valid provenance
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - id: T1003.007
+      behavior: Runner.Worker located via /proc/*/cmdline; /proc/<pid>/maps and /proc/<pid>/mem read to dump secrets and the OIDC token
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - id: T1528
+      behavior: GitHub Actions OIDC token taken from runner memory
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - id: T1550.001
+      behavior: OIDC token exchanged at the npm registry for a per-package publish token; direct POSTs to registry.npmjs.org
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - id: T1552.001
+      behavior: Payload reads 100+ credential file paths (cloud, SSH/Git, developer tools, AI tools, wallets, VPN, messaging, shell history)
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - id: T1552.005
+      behavior: AWS IMDSv2 and ECS credential queries from the payload
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - id: T1567
+      behavior: Encrypted exfiltration to the Session file-upload network
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - id: T1567.001
+      behavior: GitHub GraphQL createCommitOnBranch dead-drop commits authored as a spoofed claude identity on Dune-named branches
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - id: T1543.002
+      behavior: gh-token-monitor systemd user service on Linux
+      url: https://security-hub.ncsc.admin.ch/#/posts/12558
+    - id: T1543.001
+      behavior: gh-token-monitor LaunchAgent on macOS
+      url: https://security-hub.ncsc.admin.ch/#/posts/12558
+    - id: T1546
+      behavior: Persistence via Claude Code SessionStart hook and VS Code folderOpen task (generic event-triggered fit)
+      url: https://security-hub.ncsc.admin.ch/#/posts/12558
+    - id: T1485
+      behavior: 'Dead-man''s switch: gh-token-monitor runs rm -rf ~/ when tokens are revoked'
+      url: https://security-hub.ncsc.admin.ch/#/posts/12558
+    - id: T1027
+      behavior: Three obfuscation layers (string table, per-byte cipher, AES-256-GCM payloads)
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - id: T1105
+      behavior: Bun runtime installed and second-stage scripts fetched/decrypted on the victim host
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    rating:
+      reliability: A
+      credibility: 1
+      basis: TanStack's own post-mortem and GHSA for its incident (A), corroborated independently by StepSecurity's payload analysis, Wiz and the NCSC-CH hub post, which agree on the pwn-request, cache-poisoning and OIDC-extraction chain.
+    exposure:
+    - quote: anyone who installed an affected version on 2026-05-11 must treat the install host as potentially compromised.
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - quote: Only the Router/Start repo was affected — 42 monorepo packages, 2 versions each.
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    detection:
+    - quote: The `files` field in `package.json` only lists `["dist", "src"]`, so `router_init.js` should *not* be included in the published tarball. Its presence confirms the tarball was tampered with outside the normal build process.
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    - quote: 'GitHub commit author: claude@users.noreply.github.com - dead-drop commit author; unexpected commits = active exfiltration'
+      url: https://security-hub.ncsc.admin.ch/#/posts/12558
+    triage: []
+    takeaway:
+    - quote: we strongly recommend that anyone who installed an affected version on 2026-05-11 rotate AWS, GCP, Kubernetes, Vault, GitHub, npm, and SSH credentials reachable from the install host.
+      url: https://tanstack.com/blog/npm-supply-chain-compromise-postmortem
+    - quote: Do not revoke these tokens before isolating and imaging the machine - the payload includes a destructive wipe routine triggered by revocation.
+      url: https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-stepsec.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-stepsec-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-tanstack.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-tanstack-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-wiz.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-wiz-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-ncsc-12558.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-reg-sap.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-gh-prt.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-npm-prov.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-actions-cache.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-ghsa-tanstack.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e3-cve45321.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-13/ncsc-uk-10-questions-to-ask-when-using-ai-models-to-find-vul
+  verdict: factual-error
+  defects:
+  - where: body paragraph 1, list (a)-(f)
+    claim: (f) false-positive overhead on the blue team.
+    defect: The page has no question or passage about false-positive overhead; the nearest item is resourcing ('spending all my money/time/people finding vulnerabilities, and have nothing left to fix them'). The list also glosses (b) as covering 'secrets' and (d) as 'magnify attacker reach if the agent itself is compromised', neither of which is on the page.
+    ground_truth: 'Question 5 bullets: ''How could I leak information?''; ''Have I sandboxed my system so that it can only talk to the LLM and my code base?''; ''Will I give access to my production environment?''; ''What permissions have I given the LLM?''; ''How can I avoid spending all my money/time/people finding vulnerabilities, and have nothing left to fix them?''; ''Do I understand the terms and conditions, and data retention policies?''; ''How will I ensure the activity is legal?'''
+    ground_truth_url: https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities
+    fix: Delete (f); rewrite (b) and (d) as 'information leakage and production access' and 'what permissions the LLM is given'.
+    class: factual-error
+  - where: body paragraph 1 (last sentence)
+    claim: The piece explicitly warns that **AI-accelerated vulnerability discovery without matching remediation capacity makes the organisation worse off, not better** — a direct critique of "buy the AI tool" patterns.
+    defect: NCSC's wording is hedged and general ('You could even make your security worse'); it does not say 'worse off, not better', does not name remediation capacity in that sentence, and does not critique buying tools.
+    ground_truth: '''just *finding* vulnerabilities does nothing to improve your security. You could even make your security worse.'' and Q3 ''Do I have a process to manage any vulnerabilities that AI finds?'''
+    ground_truth_url: https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities
+    fix: 'Quote NCSC: finding vulnerabilities alone does not improve security and ''could even make your security worse''; drop ''direct critique of buy the AI tool patterns''.'
+    class: imprecision
+  - where: body paragraph 1 (second sentence)
+    claim: 'The guidance is substantively different from the previously-covered NCSC-CH BACS strategic assessment: it is process- and infrastructure-flavoured rather than landscape-flavoured.'
+    defect: Pipeline self-reference to another entry; the cited page never mentions NCSC-CH or BACS, so the comparison is uncited and meaningless to a reader who has not seen that item.
+    ground_truth: The NCSC-UK page contains no reference to NCSC-CH or BACS.
+    ground_truth_url: https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities
+    fix: Delete the sentence.
+    class: imprecision
+  upgrade:
+    techniques: []
+    rating:
+      reliability: A
+      credibility: 2
+      basis: NCSC-UK publishing its own guidance (national CERT for its own advisory, A); single authoritative assessor, uncorroborated (2). No attacker behavior is described, so no ATT&CK mapping applies.
+    exposure:
+    - quote: Written for Cyber security professionals Large organisations Public sector Small & medium sized organisations
+      url: https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities
+    detection: []
+    triage: []
+    takeaway:
+    - quote: just *finding* vulnerabilities does nothing to improve your security. You could even make your security worse.
+      url: https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities
+    - quote: When using AI to find vulnerabilities prioritise your external attack surface. You should also look for ways to verify the results, by using both AI and humans.
+      url: https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e4-ncsc-uk.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e4-ncsc-uk-raw.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-13/trickmo-trickmo-c-android-banking-trojan-migrates-c2-to-the
+  verdict: imprecision
+  defects:
+  - where: Defender takeaway (first sentence)
+    claim: blocking TON traffic at the corporate gateway is non-trivial because TON shares the standard internet routes; behaviour-side, detect Android devices that initiate the TON loopback proxy and that issue outbound to non-corporate SOCKS5 / SSH ports under unusual entitlements.
+    defect: The source's point is that the traffic is encrypted and indistinguishable from other TON applications, so it cannot be told apart from legitimate TON use; it does not say TON shares standard routes or that blocking it is hard. 'Under unusual entitlements' has no basis in any page.
+    ground_truth: 'ThreatFabric: ''Traffic-pattern detection at the network edge sees only TON traffic, which is encrypted and indistinguishable from any other TON-enabled application''s outbound flow.'' and ''Traditional domain takedowns are largely ineffective because the operator''s endpoints do not rely on the public DNS hierarchy''.'
+    ground_truth_url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    fix: 'Write: network-edge signatures cannot separate TrickMo from other TON traffic, so rely on device-side controls and on the SSH-tunnel and SOCKS5 behavior; drop ''shares the standard internet routes'' and ''unusual entitlements''.'
+    class: imprecision
+  - where: body paragraph 1 (dormant code sentence)
+    claim: Dormant code includes the Pine hooking framework and NFC permissions, suggesting contactless-payment interception is in development.
+    defect: ThreatFabric says NFC and Pine are declared but not exercised and read them as reserved for future runtime-delivered features; it does not say contactless-payment interception is in development.
+    ground_truth: '''NFC is declared and reported but not exercised, which fits the same reserved-capability pattern as the dormant Pine framework.'' and ''these dormant components suggest the operators are preparing the platform for future runtime-delivered features''.'
+    ground_truth_url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    fix: 'Write: Pine and NFC permissions are bundled but unused, suggesting future runtime-delivered capabilities (possibly NFC-targeted).'
+    class: imprecision
+  - where: body paragraph 1 (dropper sentence)
+    claim: Droppers masquerade as TikTok variants distributed via Facebook ads
+    defect: (low confidence) The sources say the droppers are TikTok look-alikes (adult-friendly versions per The Hacker News) delivered 'through Facebook' / 'over Facebook'; none says ads.
+    ground_truth: 'THN: ''Dropper apps containing the malware masquerade as adult-friendly versions of TikTok through Facebook''. ThreatFabric campaign tags: ''Tic_Italy_FB: TikTok campaign over Facebook''; also ''distributed via phishing websites and dropper apps'' (THN).'
+    ground_truth_url: https://thehackernews.com/2026/05/new-trickmo-variant-uses-ton-c2-and.html
+    fix: Write 'TikTok look-alike droppers delivered through Facebook campaigns and phishing websites'.
+    class: imprecision
+  - where: body (ATT&CK ids in prose)
+    claim: 'T1517 Access Notifications; T1090.001 Proxy: Internal Proxy; T1422 System Network Configuration Discovery and T1437.001 Application Layer Protocol: Web Protocols'
+    defect: T1517, T1422 and T1437.001 are real ATT&CK Mobile ids but are not in the pinned Enterprise dataset, so they cannot be carried in techniques[]; T1090.001 (internal proxy) is a weak fit for an external traffic-exit node (T1090).
+    ground_truth: 'attack.mitre.org lists T1517 ''Access Notifications'', T1422 ''System Network Configuration Discovery'', T1437.001 ''Application Layer Protocol: Web Protocols'' as Mobile techniques; the pinned attack/enterprise-attack.json returns UNKNOWN for all three.'
+    ground_truth_url: https://attack.mitre.org/techniques/T1422/
+    fix: Use Enterprise ids in techniques[] (see upgrade block) and drop the inline Mobile ids.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1071.001
+      behavior: All C2 HTTP requests go through an embedded local TON proxy to .adnl hostnames
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1090
+      behavior: Embedded local TON proxy for C2 and on-device authenticated SOCKS5 proxy turning the phone into a traffic-exit node
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1572
+      behavior: SSH local-forward and remote-forward tunnels reaching the device's LAN
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1016
+      behavior: curl, dnslookup, ping, telnet and traceroute commands run from the device to map the victim network
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1046
+      behavior: telnet command performs multi-port TCP connect probes
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1056.001
+      behavior: Keylogging capturing typed text and field metadata correlated with the foreground package
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1113
+      behavior: Screen recording and live screen streaming
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - id: T1036.005
+      behavior: Droppers named as TikTok apps; the host APK impersonates Google Play Services
+      url: https://thehackernews.com/2026/05/new-trickmo-variant-uses-ton-c2-and.html
+    rating:
+      reliability: B
+      credibility: 2
+      basis: ThreatFabric is the original research lab (B); The Hacker News and Security Affairs restate its report, so one assessor uncorroborated (2). The sources do not say how victims are first reached beyond Facebook and phishing-site delivery, so no access technique is mapped beyond masquerading.
+    exposure:
+    - quote: Across the period covered by this report we have observed multiple parallel campaigns operating against banking and wallet customers in France, Italy, and Austria
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - quote: Telemetry and infrastructure observations indicate that this new variant is progressively replacing its predecessor across active operator campaigns.
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    detection:
+    - quote: Traffic-pattern detection at the network edge sees only TON traffic, which is encrypted and indistinguishable from any other TON-enabled application's outbound flow.
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    - quote: TrickMo carries an embedded native TON proxy that the host APK starts on a loopback port at process start.
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    triage: []
+    takeaway:
+    - quote: reducing the effectiveness of traditional takedown and network-blocking efforts while making the traffic blend with legitimate TON activity
+      url: https://thehackernews.com/2026/05/new-trickmo-variant-uses-ton-c2-and.html
+    - quote: Once the user grants the bot accessibility-service permission, which the bot's on-device automation actively coerces, the operator obtains a real-time interactive view of the device.
+      url: https://www.threatfabric.com/blogs/new-trickmo-variant-device-take-over-malware-targeting-banking-fintech-wallet-auth-app
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e5-tf.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e5-thn.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e5-sa.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e5-attack-T1422.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e5-attack-T1517.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e5-attack-T1437-001.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-14/cve-2026-8043-ivanti-xtraction-external-file-control-cvss-9
+  verdict: factual-error
+  defects:
+  - where: cves[CVE-2026-8043].type; tags (rce)
+    claim: 'type: rce'
+    defect: The vendor and ENISA describe CVE-2026-8043 as file read plus arbitrary HTML write leading to information disclosure and client-side attacks, not remote code execution. The EPM SQL injection (CVE-2026-8111) and vTM command injection (CVE-2026-8051) are the RCE flaws; cves[] also leaves affected and fixed null although both are given.
+    ground_truth: 'EUVD-2026-29487 (CVE-2026-8043, base score 9.6, CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:N): ''External control of a file name in Ivanti Xtraction before version 2026.2 allows a remote authenticated attacker to read sensitive files and write arbitrary HTML files to a web directory, leading to information disclosure and possible client-side attacks.'' product_version ''patch: 2026.2''.'
+    ground_truth_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043
+    fix: Set type to information-disclosure (or null), affected '< 2026.2', fixed '2026.2'; drop the rce tag or scope it to the EPM and vTM flaws (CVE-2026-8111 8.8 and CVE-2026-8051 7.2 per EUVD-2026-29491 and EUVD-2026-29488) and list those ids in cves[].
+    class: factual-error
+  - where: summary; body paragraph 3 ('Affected and fixed versions'); actions[0]
+    claim: Ivanti EPM ≤ 2024 SU6 → 2024 SU6 ... SQL injection in the EPM web console (≤ 2024 SU6)
+    defect: EPM is affected before 2024 SU6 and fixed in 2024 SU6; 'up to and including SU6' contradicts the fix, and the entry's own paragraph 2 says 'prior to 2024 SU6'.
+    ground_truth: 'CERT-FR: ''Endpoint Manager (EPM) versions antérieures à 2024 SU6'' (versions prior to 2024 SU6). EUVD-2026-29491 (CVE-2026-8111): ''SQL injection in the web console of Ivanti Endpoint Manager before version 2024 SU6 allows a remote authenticated attacker to achieve remote code execution'', product_version ''patch: 2024 SU6''.'
+    ground_truth_url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0576/
+    fix: Write 'Ivanti EPM before 2024 SU6 (fixed in 2024 SU6)'.
+    class: factual-error
+  - where: body paragraph 2 (cited sentence on exploitation)
+    claim: Ivanti states no in-the-wild exploitation as of 2026-05-12 for any of the four advisories; CERT-FR ([CERTFR-2026-AVI-0576, 2026-05-13](...)) and SecurityWeek ([2026-05-13](...)) corroborated the disclosure within 24 hours.
+    defect: The citation sits on CERT-FR, whose avis contains no exploitation statement; the statement is on Ivanti's blog (and SecurityWeek).
+    ground_truth: 'Ivanti blog (2026-05-12): ''We have no evidence of these vulnerabilities being exploited in the wild.'' SecurityWeek: ''Both Fortinet and Ivanti said they were not aware of any of the patched vulnerabilities being exploited in the wild.'' CERT-FR first version dated 13 mai 2026 lists risks and affected systems only.'
+    ground_truth_url: https://www.ivanti.com/blog/may-2026-security-update
+    fix: Cite Ivanti's blog for the no-exploitation statement; keep CERT-FR for affected versions.
+    class: imprecision
+  - where: summary; body paragraph 1 (Xtraction primitives)
+    claim: read arbitrary files and write HTML to the web directory, staging XSS or web-shell drop points ... is sufficient to chain to web-shell drop in environments where the attacker can guess or read deployment paths
+    defect: The vendor says 'sensitive files' and 'arbitrary HTML files' with 'possible client-side attacks'; a web-shell chain from an HTML write is not stated by any source, and an HTML file is not server-side code.
+    ground_truth: '''allows a remote authenticated attacker to read sensitive files and write arbitrary HTML files to a web directory, leading to information disclosure and possible client-side attacks.'''
+    ground_truth_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043
+    fix: Restate as the vendor does; delete the web-shell chain, the T1505.003 mapping and the 'web-shell drop' detection clause.
+    class: factual-error
+  - where: summary; body paragraph 4 (last sentence); actions[0]
+    claim: Xtraction is commonly deployed on internal management networks where egress controls are looser than perimeter
+    defect: No page read says where Xtraction is deployed or anything about egress controls; the same unsupported premise drives the patch-first ordering in actions[0] and the T1041 remark.
+    ground_truth: The Ivanti blog and CERT-FR avis contain no deployment or egress statement; no exploitation is reported.
+    ground_truth_url: https://www.ivanti.com/blog/may-2026-security-update
+    fix: Delete the clause and the T1041 sentence; base the patch order on the vendor's severity (CVSS 9.6 for Xtraction).
+    class: factual-error
+  - where: body paragraph 4 (detection)
+    claim: audit Xtraction installations for any HTML file in the web tree whose timestamp post-dates 2026-04-01 and whose content does not match a release manifest
+    defect: The 2026-04-01 threshold has no source (the flaw was disclosed 2026-05-12 with no exploitation window), and the web-shell mapping (T1505.003) for EPM SQL injection is unsupported.
+    ground_truth: 'No page gives an exposure window; Ivanti: ''We have no evidence of these vulnerabilities being exploited in the wild.'''
+    ground_truth_url: https://www.ivanti.com/blog/may-2026-security-update
+    fix: Drop the date; advise reviewing HTML files in the Xtraction web directory not belonging to a release, without a start date, or remove the clause.
+    class: factual-error
+  - where: body paragraph 2 (EPM technique-class sentence)
+    claim: SQL injection against EPM's SQL Server back-end is the well-documented `xp_cmdshell` (T1059) or stored-procedure code-execution pivot ransomware initial-access brokers have weaponised against EPM and analogous endpoint-management platforms for years.
+    defect: Uncited and not stated by any page read; the vendor's description is 'remote authenticated attacker to achieve remote code execution' and it reports no exploitation of the May flaws.
+    ground_truth: 'EUVD-2026-29491: ''allows a remote authenticated attacker to achieve remote code execution.'''
+    ground_truth_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8111
+    fix: Remove the IAB claim or cite a source for earlier EPM exploitation; state the vendor's RCE description.
+    class: imprecision
+  - where: body paragraph 1 (Xtraction primitive wording)
+    claim: letting a remote authenticated attacker read arbitrary server-side files
+    defect: (low confidence) The vendor says 'sensitive files'; 'arbitrary server-side files' is a stronger reading.
+    ground_truth: '''read sensitive files and write arbitrary HTML files to a web directory''.'
+    ground_truth_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043
+    fix: Write 'read sensitive files'.
+    class: imprecision
+  - where: headline; body paragraph 3 ('Inclusion gate cleared'); actions[0] ('See § 2')
+    claim: '...May 2026 advisory batch, no | Inclusion gate cleared: CVE-2026-8043 sits in the ENISA EUVD CVSS 9.0–10.0 critical band'
+    defect: The headline is cut off mid-phrase ('no'), and the body and action carry pipeline self-reference ('Inclusion gate cleared', 'See § 2'). The batch also omits the fourth advisory (Secure Access Client, CVE-2026-7431 4.4 and CVE-2026-7432 7.8) although it says 'four product-line advisories' and 'any of the four'.
+    ground_truth: 'Ivanti: ''today Ivanti is disclosing vulnerabilities in Ivanti Secure Access Client, Xtraction, Virtual Traffic Manager and Endpoint Manager (EPM)''. EUVD-2026-29487 baseScore 9.6.'
+    ground_truth_url: https://www.ivanti.com/blog/may-2026-security-update
+    fix: Complete the headline ('no in-the-wild exploitation'); delete the internal phrases; name the Secure Access Client advisory or say 'three of four'.
+    class: imprecision
+  - where: priority (high)
+    claim: 'priority: high'
+    defect: 'Context only: on the facts known on 2026-05-14 the entry is an unexploited, authenticated (PR:L) flaw in a reporting product with no PoC and no evidence of constituency exposure, so ''high'' rests on CVSS alone (severity statistics are an F16 disqualifier on a high); the two RCE flaws are authenticated as well (SQLi PR:L, vTM admin).'
+    ground_truth: 'Ivanti: ''We have no evidence of these vulnerabilities being exploited in the wild.'' EUVD vectors: CVE-2026-8043 PR:L, CVE-2026-8111 PR:L, CVE-2026-8051 PR:H; none in CISA KEV as of 2026-10-20.'
+    ground_truth_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043
+    fix: Treat as regular-cycle patch priority (notable or routine) unless constituency exposure of Xtraction or EPM is documented.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: 'Network-reachable authenticated flaws: Xtraction file read/HTML write (CVE-2026-8043), EPM web-console SQL injection to RCE (CVE-2026-8111); disclosure only, no exploitation reported'
+      url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8111
+    - id: T1059
+      behavior: vTM admin-interface OS command injection achieving remote code execution (CVE-2026-8051, admin privileges required)
+      url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8051
+    rating:
+      reliability: A
+      credibility: 2
+      basis: Ivanti is the vendor for its own products (blog 2026-05-12, per-CVE records); CERT-FR and SecurityWeek restate the vendor batch, so one assessor (2). The vendor's per-product advisory pages (hub.ivanti.com) are a JavaScript shell no transport here rendered; facts were read from ENISA EUVD (numbering-authority records) and the CNA CVE records.
+    exposure:
+    - quote: External control of a file name in Ivanti Xtraction before version 2026.2 allows a remote authenticated attacker to read sensitive files and write arbitrary HTML files to a web directory, leading to information disclosure and possible client-side attacks.
+      url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043
+    - quote: SQL injection in the web console of Ivanti Endpoint Manager before version 2024 SU6 allows a remote authenticated attacker to achieve remote code execution.
+      url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8111
+    - quote: OS command injection in Ivanti Virtual Traffic Manager before version 22.9r4 allows a remote authenticated attacker with admin privileges to achieve remote code execution.
+      url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8051
+    detection: []
+    triage: []
+    takeaway:
+    - quote: We have no evidence of these vulnerabilities being exploited in the wild.
+      url: https://www.ivanti.com/blog/may-2026-security-update
+    - quote: Se référer au bulletin de sécurité de l'éditeur pour l'obtention des correctifs (cf. section Documentation).
+      url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0576/
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-ivanti-blog.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-certfr.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-certfr-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-secweek.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-euvd-8043.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-euvdsearch-CVE-2026-8111.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-euvdsearch-CVE-2026-8051.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-cve-CVE-2026-8043.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-cve-CVE-2026-8111.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e6-cve-CVE-2026-8051.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-14/dutch-igj-rules-clinical-diagnostics-nmdl-failed-nen-7510-in
+  verdict: factual-error
+  defects:
+  - where: summary; body paragraph 2 (IGJ demands)
+    claim: IGJ has no fining power and has demanded short-term independent NEN 7510 certification; ... IGJ also signalled sector-wide enforcement intent by publicly calling for all healthcare providers to demonstrate independent certification
+    defect: IGJ asked Clinical Diagnostics to demonstrably comply with NEN 7510 in the short term; the certification is Clinical Diagnostics' own statement, and the release contains no call to other providers (it says IGJ keeps following this company's progress). The company's reported positive external audit is omitted.
+    ground_truth: 'IGJ: ''De inspectie heeft Clinical Diagnostics gevraagd om op korte termijn aantoonbaar te voldoen aan de NEN7510. Op basis van de Wabvpz kan de IGJ geen bestraffende maatregelen opleggen. De AP kan dat wel op basis van de AVG. Inmiddels heeft Clinical Diagnostics laten weten dat een externe audit heeft plaatsgevonden met positieve uitkomst en dat naar verwachting de certificering binnenkort is afgerond. De inspectie blijft de voortgang en naleving nauwgezet volgen.'''
+    ground_truth_url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    fix: 'Write: IGJ asked the lab to demonstrate NEN 7510 compliance at short notice and cannot impose punitive measures (AP can under the GDPR); the lab reports a positive external audit with certification expected. Delete the sector-wide sentence (the Computable page, which returned HTTP 503 here, was not readable; cite a source that carries it or drop it).'
+    class: factual-error
+  - where: summary; body paragraph 4 (Swiss comparison)
+    claim: NEN 7510 (Dutch healthcare security baseline) is the structural analogue of Switzerland's EPDG security profile — same gap, same regulator pattern ... the same hygiene-baseline gaps Swiss healthcare providers face under cantonal supervision.
+    defect: No page read compares NEN 7510 with the EPDG or says anything about Swiss providers; the claim that Swiss providers have the same gaps and a 'same regulator pattern' is unsupported and reads as fact.
+    ground_truth: The IGJ release concerns Clinical Diagnostics LCPL BV and NMDL BV in Rijswijk only; it names Wabvpz, NEN 7510, the AP and the AVG.
+    ground_truth_url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    fix: Delete the Swiss comparison, or present it as the analyst's assessment with a source for the EPDG certification requirement.
+    class: factual-error
+  - where: body paragraph 4 (last sentence)
+    claim: The breach scale (941k records, mass-screening data) is the proximate consequence of those structural gaps
+    defect: IGJ says working to the standard could have reduced the likelihood and limited the impact; it does not call the breach scale the proximate consequence of the gaps.
+    ground_truth: '''Het werken volgens deze norm had de kans op een informatiebeveiligingsincident als dit kunnen verkleinen en de gevolgen beperken.'''
+    ground_truth_url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    fix: 'Write: IGJ concludes compliance ''could have reduced the likelihood and limited the consequences''.'
+    class: imprecision
+  - where: body paragraph 1 (cited sentence)
+    claim: did not meet the mandatory NEN 7510 information-security standard at the time of their July 2025 ransomware breach, and had not fully remediated the deficiencies as of IGJ's December 2025 follow-up inspection
+    defect: IGJ's release says 'datahack' and an 'inspectiebezoek' in December 2025 at which the company still did not meet the norm; 'ransomware' and 'follow-up' are not on the cited page (ransomware, group Nova and the 941,000 figure come from the lab and press reporting).
+    ground_truth: '''Uit het onderzoek blijkt dat de betrokken bedrijfsonderdelen van Clinical Diagnostics zowel op het moment van de hack als tijdens een inspectiebezoek in december 2025 niet voldeden aan de norm.'''
+    ground_truth_url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    fix: Say 'data hack' for the IGJ clause and 'inspection visit in December 2025'; keep 'ransomware (Nova)' with the GovInfoSecurity or Computable citation.
+    class: imprecision
+  - where: body paragraph 1, second sentence (NEN 7510 description)
+    claim: structurally aligned with ISO/IEC 27001 but extended for health-data obligations; non-compliance is independently actionable by multiple regulators.
+    defect: Uncited; IGJ's page says Wabvpz requires NEN 7510 compliance but gives no ISO relationship, and IGJ itself cannot sanction under the Wabvpz.
+    ground_truth: '''Die vereist dat organisaties die werken met patiëntgegevens moeten voldoen aan de norm NEN 7510 om risico''s op cyberincidenten te beperken.'' and ''Op basis van de Wabvpz kan de IGJ geen bestraffende maatregelen opleggen.'''
+    ground_truth_url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    fix: Cite NEN's own description for the ISO relationship or drop it; say IGJ cannot impose punitive measures and the AP can.
+    class: imprecision
+  - where: body paragraph 2 (cited sentence, 941,000 and Nova)
+    claim: The July 2025 breach — Computable's prior reporting attributes it to the Nova ransomware group — exposed approximately 941,000 patients' personal and medical records
+    defect: The cited Computable page returned HTTP 503 on every transport tried, so the clause could not be checked against it. Independent reporting supports Nova and 941,000 but as the number of patients whose data the lab held and was notified, with the lab unable to confirm the full extent; other figures (485,000, then 715,000, 850,000) circulated.
+    ground_truth: 'GovInfoSecurity: ''the lab ... says the cyberattack in July has affected 941,000 patients - nearly double the initial estimate of 485,000''; ''Ransomware-as-a-service gang Nova had first threatened in July on its dark website to leak the lab''s stolen data''; BVO: ''Clinical Diagnostics cannot confirm that this is the full extent of the data breach''.'
+    ground_truth_url: https://www.govinfosecurity.com/dutch-lab-cancer-screening-hack-balloons-to-941000-victims-a-29360
+    fix: Cite GovInfoSecurity (or the lab statement) for Nova and the 941,000 patients whose data the lab held; qualify as 'up to 941,000, extent unconfirmed'.
+    class: imprecision
+  - where: priority (high)
+    claim: 'priority: high'
+    defect: 'Context only: a Dutch regulator''s compliance finding on a ten-month-old single-victim breach, with no vector, no new TTP and no Swiss nexus beyond an unsupported analogy; the entry''s reason for attention is a record count and a regulator pattern, which are high-bar disqualifiers.'
+    ground_truth: IGJ release names no technical vector or actor; it reports gaps (no independent audit, no periodic risk assessment).
+    ground_truth_url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    fix: Notable or routine, two to four sentences.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1657
+      behavior: Ransomware gang Nova threatened to leak the stolen data and negotiated payment (extortion); initial access and exfiltration method are not stated in the sources read
+      url: https://www.govinfosecurity.com/dutch-lab-cancer-screening-hack-balloons-to-941000-victims-a-29360
+    rating:
+      reliability: A
+      credibility: 2
+      basis: IGJ is the regulator publishing its own finding (A); one assessor on the compliance conclusion, with the lab's own statements reported in the release (2). Computable's 2026-05-13 article was unreadable (HTTP 503); the breach facts rest on 2025 reporting (GovInfoSecurity).
+    exposure:
+    - quote: De IGJ deed onderzoek op basis van de Wet aanvullende bepalingen verwerking persoonsgegevens in de zorg (Wabvpz). Die vereist dat organisaties die werken met patiëntgegevens moeten voldoen aan de norm NEN 7510 om risico's op cyberincidenten te beperken.
+      url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    detection: []
+    triage: []
+    takeaway:
+    - quote: Er was onder meer geen onafhankelijke audit uitgevoerd op informatiebeveiliging. Daarnaast had het bedrijf risico's bij het verwerken van gegevens niet periodiek in kaart gebracht.
+      url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    - quote: Het werken volgens deze norm had de kans op een informatiebeveiligingsincident als dit kunnen verkleinen en de gevolgen beperken.
+      url: https://www.igj.nl/actueel/nieuws/2026/05/13/clinical-diagnostics-voldeed-niet-aan-wettelijke-norm-voor-informatiebeveiliging
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e7-igj.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e7-govinfosec.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e7-computable.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-14/famoussparrow-three-wave-intrusion-of-an-azerbaijani-energy
+  verdict: factual-error
+  defects:
+  - where: summary; Background paragraph; 'Operationally critical context' paragraph
+    claim: making Azerbaijani energy infrastructure a high-value collection target for Chinese state actors monitoring European energy supply dependencies
+    defect: Bitdefender gives the European-gas context but explicitly says it does not establish motive, and calls the actor 'likely affiliated with the Chinese APT ecosystem' at moderate-to-high confidence; the entry turns the context into a stated motive of 'Chinese state actors'.
+    ground_truth: '''This context does not establish motive. We have N=1 victim and moderate-to-high attribution confidence.'' and ''FamousSparrow is likely affiliated with the Chinese APT ecosystem.'''
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Keep the 13-countries context as Bitdefender's, add its 'does not establish motive' caveat, and write 'China-nexus actor (moderate-to-high confidence)'; drop 'structurally collection against the upstream end of European energy supply'.
+    class: factual-error
+  - where: summary; headline-level claim; body 'Named clusters' paragraph
+    claim: deployed Deed RAT via a novel DLL-sideloading technique ... the LogMeIn Hamachi sideloading host is freshly observed for this cluster and indicates active tooling rotation rather than reuse of a known signed-binary host
+    defect: Bitdefender calls the technique 'evolved' and shows the loader closely matches a Deed RAT loader Trend Micro already documented for Earth Estries (same exports, same StartServiceCtrlDispatcherW hook-and-restore); no page says the Hamachi host is new for the cluster or that the binary is signed.
+    ground_truth: '''These characteristics closely match a Deed RAT loader described by Trend Micro in its reporting on the Earth Estries threat actor. In particular, the sample identified by MD5 ... exhibits the same unusual exports, similar mbedTLS-derived code, and an almost identical execution model.'''
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Write 'an evolved two-stage DLL side-loading loader (Init/ComMain exports, StartServiceCtrlDispatcherW hook) closely matching an Earth Estries loader Trend Micro documented'; say 'legitimate' not 'signed'; delete 'freshly observed'.
+    class: factual-error
+  - where: Exploitation chain, Wave 2 bullet; 'Implants observed' sentence
+    claim: 'Wave 2: TernDoor deployed via DLL sideloading against a renamed-but-legitimate `deskband_injector64.exe` ... Implants observed include Deed RAT (Snappybee), TernDoor, Mofu Loader'
+    defect: The second-wave installation was blocked by the security product; TernDoor was identified only by assessment from recovered memory pages, so it was attempted, not deployed or observed running.
+    ground_truth: '''The attempt was unsuccessful, as the security solution blocked execution before the malware could complete its installation.'' and ''the partially recovered payload in this case is assessed to be Terndoor''. THN: ''attempting to unsuccessfully employ DLL side-loading to drop TernDoor by means of Mofu Loader''.'
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: 'Write ''Wave 2: attempted TernDoor (assessed) via a Mofu-loader chain sideloaded through a renamed deskband_injector64.exe; blocked before installation completed''.'
+    class: factual-error
+  - where: 'Detection: Exchange patch-verification, Web-shell survival sweep; T1505.003 bullet; Vulnerability-mechanics paragraph'
+    claim: Persistence outliving clean-up was the structural enabler of re-exploitation in this case. ... surviving persistence from an earlier wave is the most plausible explanation for re-exploitation across remediation attempts
+    defect: Bitdefender's account is that the attackers came back to the same still-vulnerable Exchange server; its lesson is patching plus credential rotation. No surviving web shell or scheduled task is reported, so the 'structural enabler' sentence states an inference as fact.
+    ground_truth: '''the attackers returned to the same vulnerable Exchange server nearly a month after the initial compromise attempt'' and ''actors will exploit and re-exploit the same access path until the original vulnerability is patched, compromised credentials are rotated, and the attacker''s ability to return is fully disrupted.'''
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Replace with Bitdefender's explanation (unpatched entry point, credentials not rotated, domain admin credentials in use); keep the web-shell sweep as a check, not as the established cause.
+    class: factual-error
+  - where: 'Detection: DLL load-order hunt and Hamachi sideload bullet'
+    claim: Hunt Sysmon event ID 7 (Image Load) records for the Hamachi process loading DLLs from `%LOCALAPPDATA%\Temp\` or other writable user-context paths rather than from the legitimate `Program Files\LogMeIn Hamachi\` install directory.
+    defect: The loader was persisted inside a directory chosen to mimic the legitimate Hamachi install path (and staged first from C:\TEMP), so a hunt that treats the Program Files Hamachi path as clean misses the observed persistence; the payload injects into system processes rather than spawning encoded PowerShell children.
+    ground_truth: 'Bitdefender: "the malware was installed in C:\Program Files (x86)\LogMeIn Hamachi\, a location deliberately chosen to mimic the legitimate installation path of LogMeIn Hamachi"; first stage "C:\TEMP\LMIGuardianSvc.exe ... sideloaded C:\TEMP\lmiguardiandll.dll"; config lists SearchIndexer.exe, taskeng.exe, iexplore.exe, taskhost.exe as "Process to inject into"; service "LogMeIn Hamachi" (later "HamachiNet").'
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Hunt for a LogMeIn Hamachi service or LMIGuardianSvc.exe on hosts without a sanctioned Hamachi install, for the loader in C:\TEMP or C:\Recovery, and for Bitdefender's own signals (w3wp.exe writing .aspx under MSExchangePowerShellAppPool, unsigned code patching StartServiceCtrlDispatcherW, kernel-driver services with ImagePath under ProgramData); drop the -EncodedCommand child-process claim.
+    class: factual-error
+  - where: 'Detection: Exchange patch-verification bullet; Operationally critical context'
+    claim: CU-level patch status alone is insufficient — the cumulative-update installer occasionally rolls back fixes if an OWA front-end customisation conflicts. ... any organisation in CH / EU with an on-premise Exchange server that received CU patches but lacks `HealthChecker.ps1`-level verification carries the same exposure.
+    defect: No page read supports the rollback claim or the claim that a patched server carries the same exposure; Bitdefender's condition is an unpatched entry point and unrotated credentials.
+    ground_truth: 'Bitdefender: ''Patch internet-facing services immediately. ProxyShell and ProxyNotShell exploits against Exchange have been publicly documented since 2021 and 2022 respectively.'' HealthChecker documents a ''-VulnerabilityReport'' mode.'
+    ground_truth_url: https://microsoft.github.io/CSS-Exchange/Diagnostics/HealthChecker/
+    fix: Delete the rollback sentence; write 'verify the ProxyNotShell fixes are present (HealthChecker -VulnerabilityReport) and rotate credentials used during any intrusion'.
+    class: factual-error
+  - where: Background paragraph (first-in-some-time claim)
+    claim: Recent primary technical detail has been sparse — the Bitdefender Labs publication on 2026-05-13 is the first multi-wave intrusion case study against an energy-sector victim published in some time
+    defect: Unsupported quantifier; Bitdefender's own claim is narrower (first public link of this cluster to South Caucasus energy targets), and it builds on Cisco Talos' 2026 UAT-9244 report.
+    ground_truth: '''This research documents energy-sector targeting in the South Caucasus, a region not previously linked to this activity cluster in public reporting.'''
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Use Bitdefender's sentence.
+    class: factual-error
+  - where: Background paragraph (victimology and overlap)
+    claim: tracked publicly since 2021 as a China-nexus espionage cluster targeting hotels, government and engineering firms; Bitdefender's 2026-05-13 write-up cites tooling and infrastructure overlap with the Earth Estries cluster
+    defect: The victimology is not in either cited page (Bitdefender lists telecoms, government and technology) and Bitdefender cites toolset and tradecraft overlap, not infrastructure.
+    ground_truth: '''Prior public reporting documents activity against telecoms, government, and technology sectors across the United States, Asia-Pacific, Middle East, and South Africa.'' and ''substantial overlap with the Earth Estries toolset and tradecraft''.'
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Use Bitdefender's victimology and 'toolset and tradecraft overlap'.
+    class: imprecision
+  - where: cves[] (empty); Vulnerability mechanics paragraph
+    claim: 'cves: [] ... CVE-2022-41040 (SSRF in the Exchange front-end Auto-discover handler) chained with CVE-2022-41082 (deserialisation in the back-end PowerShell remoting endpoint) ... yields code execution under the Exchange application-pool identity (typically `LocalSystem`)'
+    defect: The body names two CVEs that cves[] lacks; the Autodiscover/LocalSystem mechanics are uncited; and the authentication prerequisite is missing (Microsoft scores both PR:L and CISA calls 41082 authenticated RCE, while Bitdefender says 'unauthenticated', a contradiction the entry should surface).
+    ground_truth: 'MSRC: CVE-2022-41040 ''Microsoft Exchange Server Elevation of Privilege Vulnerability'', 8.8, CVSS:3.1/AV:N/AC:L/PR:L, exploited Yes; CVE-2022-41082 ''Remote Code Execution Vulnerability'', 8.0, CVSS:3.1/AV:A/AC:L/PR:L, exploited Yes. CISA KEV (added 2022-09-30, ransomware use Known): 41082 ''allows for authenticated remote code execution''. Bitdefender: ''Both allow unauthenticated attackers to execute code on unpatched Exchange servers''.'
+    ground_truth_url: work/2026-10-21T1148Z-audit/truth-2/bodies/e8-msrc-CVE-2022-41082.txt
+    fix: Add both CVEs to cves[] (exploited, KEV, MSRC scores 8.8 and 8.0, auth post-auth); add a Contradiction line on the authentication requirement; drop the uncited Autodiscover.svc/LocalSystem detail or cite Microsoft's guidance.
+    class: imprecision
+  - where: Detection and Hardening bullets (uncited generic content)
+    claim: Cross-reference IIS log analysis for repeated POST requests to `/autodiscover/autodiscover.json` ... Impacket execution patterns (`smbexec.py` / `wmiexec.py`) ... on-premises Exchange remains a top initial-access vector across China-nexus campaigns ... ASR rules ... legacy authentication on hybrid setups continues to expose ProxyNotShell-adjacent paths
+    defect: None of these specifics is in the cited pages (Bitdefender reports atexec and smbexec-style tooling, not wmiexec), and the entry omits Bitdefender's own observed detection signals in favour of generic guidance.
+    ground_truth: 'Bitdefender defender actions: ''Monitor for w3wp.exe writing .aspx files to publicly accessible directories, especially under the MSExchangePowerShellAppPool context''; ''Monitor for service creation events where Type = 1 (kernel driver) and the ImagePath points to a non-standard location''; ''they used atexec and smbexec-style utilities (consistent with the Impacket toolkit)''.'
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Replace generic bullets with Bitdefender's defender actions; cut the ASR and legacy-auth bullets.
+    class: imprecision
+  - where: body ATT&CK ids; headline
+    claim: 'T1574.002 Hijack Execution Flow: DLL Side-Loading is the ATT&CK umbrella'
+    defect: T1574.002 is revoked in the pinned ATT&CK v20 dataset (revoked_by T1574.001 'DLL'); the headline is also cut mid-phrase ('Overrides Two Hamachi').
+    ground_truth: 'attack/enterprise-attack.json: T1574.002 ''DLL Side-Loading'' revoked: true, revoked_by: T1574.001.'
+    ground_truth_url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    fix: Use T1574.001 in techniques[]; complete the headline.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: ProxyNotShell exploitation of on-prem Exchange (w3wp.exe under MSExchangePowerShellAppPool), same entry point revisited in three waves
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1505.003
+      behavior: w3wp.exe attempts to write .aspx web shells into a publicly accessible directory (Dec 25, 26, 29)
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1574.001
+      behavior: Legitimate LMIGuardianSvc.exe (LogMeIn Hamachi) loads malicious LMIGuardianDll.dll; renamed deskband_injector64.exe loads malicious winmm.dll
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1543.003
+      behavior: 'Service ''LogMeIn Hamachi'' (wave 3: ''HamachiNet'') auto-starts LMIGuardianSvc.exe'
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1036.005
+      behavior: Loader installed under a path mimicking the legitimate Hamachi install directory; second-wave host renamed USOShared.exe in ProgramData\USOShared
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1685
+      behavior: Loader changes memory protection and patches StartServiceCtrlDispatcherW, restoring the bytes after use (Bitdefender maps this to T1562 Impair Defenses, revoked in v20 in favour of T1685)
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1027
+      behavior: Payload in .hamachi.lng AES-128-CBC encrypted, orchestrator RC4-encrypted and LZNT1-compressed; ELF-hash API resolution
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1055
+      behavior: 'Deed RAT configuration names SearchIndexer.exe, taskeng.exe, iexplore.exe, taskhost.exe (wave 3: wininit.exe, dwm.exe) as injection targets'
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1112
+      behavior: Registry key SOFTWARE\Microsoft\LogMeIn Hamachi used for configuration and plugin storage
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1071.001
+      behavior: Deed RAT HTTPS C2 to domains masquerading as security vendors
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1078.002
+      behavior: RDP pivot authenticated with a domain administrator account
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1021.001
+      behavior: RDP lateral movement to a second server, interactive session
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1059.001
+      behavior: PowerShell console launched in the RDP session, Deed RAT files staged within minutes
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1105
+      behavior: Deed RAT payload manually downloaded and staged on the second host
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1021.002
+      behavior: atexec and smbexec-style (Impacket) remote execution to a third machine
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - id: T1014
+      behavior: Second wave tried to create kernel-driver service vmflt (Type 1) with ImagePath under ProgramData\USOShared
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    rating:
+      reliability: B
+      credibility: 2
+      basis: Bitdefender Labs original IR and malware research (B); THN restates it, so one assessor (2); attribution itself is moderate-to-high confidence per Bitdefender.
+    exposure:
+    - quote: ProxyShell and ProxyNotShell exploits against Exchange have been publicly documented since 2021 and 2022 respectively. Attackers will continue to exploit unpatched servers until they are either patched or taken offline.
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    detection:
+    - quote: Monitor for w3wp.exe writing .aspx files to publicly accessible directories, especially under the MSExchangePowerShellAppPool context.
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - quote: Monitor for changes to the first few bytes of commonly-hooked Windows APIs (NtCreateFile, CreateProcessW, StartServiceCtrlDispatcherW, LdrLoadDll).
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - quote: Monitor for service creation events where Type = 1 (kernel driver) and the ImagePath points to a non-standard location (C:\ProgramData, C:\Temp, user-writable directories).
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    triage:
+    - quote: Legitimate Exchange maintenance workflows rarely write web-accessible script files through the IIS worker process.
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - quote: Legitimate workflows rarely involve deskband_injector64.exe launching diagnostic tools.
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    takeaway:
+    - quote: If domain administrator credentials are used during an intrusion, they must be rotated immediately after remediation. Attackers will reuse compromised credentials to regain access even after malware is removed.
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    - quote: The intrusion illustrates that actors will exploit and re-exploit the same access path until the original vulnerability is patched, compromised credentials are rotated, and the attacker's ability to return is fully disrupted.
+      url: https://www.bitdefender.com/en-us/blog/businessinsights/famoussparrow-apt-targets-azerbaijani-oil-gas-industry
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e8-bitdefender.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e8-thn.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e8-msrc-CVE-2022-41040.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e8-msrc-CVE-2022-41082.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e8-css-healthchecker.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e8-css-exchange.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-14/gemstuffer-rubygems-weaponised-as-a-one-way-exfiltration-cha
+  verdict: factual-error
+  defects:
+  - where: title; headline
+    claim: OpenAI's own agents ran a supply-chain campaign against RubyGems; independent researchers found the RCE OpenAI didn't disclose
+    defect: States as fact an attribution that only the researchers make ('We believe'), that RubyGems says it cannot confirm and that OpenAI disputes; 'supply-chain campaign' mislabels activity Socket says was not designed for developer compromise and that left existing packages unaffected; 'the RCE OpenAI didn't disclose' implies OpenAI knew of the RCE, which no source says.
+    ground_truth: 'Nightingale: ''We believe that this incident was the result of an OpenAI agent swarm.'' RubyGems: ''The researchers attribute the activity to OpenAI agents. Based on the evidence available to us, we cannot determine whether the packages were created or published by AI agents.'' OpenAI: ''we have not been able to verify the specific claims of our models uploading malicious packages''. Socket: ''The packages do not appear designed for mass developer compromise.'''
+    ground_truth_url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    fix: 'Headline: ''Researchers attribute RubyGems GemStuffer spam to OpenAI agents and document RCE on RubyDoc.info; RubyGems cannot confirm, OpenAI disputes''.'
+    class: factual-error
+  - where: summary; title
+    claim: originally documented anonymously by Socket ... RubyGems' companion documentation-build service, RubyDoc.info ... OpenAI never filed a formal EU AI Act incident report over the episode
+    defect: Socket documented the campaign under its own name (it simply did not attribute it); RubyDoc.info is a separate documentation site, not a RubyGems service; and Euractiv reports the report had not been shared as of 2026-09-18, which 'never' overstates.
+    ground_truth: 'Socket post by Joseph Edwards: ''Socket''s threat research team is tracking a suspicious RubyGems campaign we''re calling GemStuffer''. Nightingale: ''Whenever you publish a package ... the site RubyDoc.info builds and hosts documentation for it.'' Euractiv (2026-09-18): ''the company had not shared a formal incident report''.'
+    ground_truth_url: https://www.euractiv.com/news/exclusive-openai-didnt-report-another-incident-under-eu-ai-safety-rules
+    fix: Write 'first documented by Socket without attribution', 'the separate documentation site RubyDoc.info', and 'had not filed ... as of 2026-09-18 (Euractiv)'.
+    class: imprecision
+  - where: section 2026-09-19 (last paragraph)
+    claim: a package registry's companion documentation-build service sits inside the same trust boundary as the registry itself and needs the same execution-surface scrutiny
+    defect: No source places RubyDoc.info inside RubyGems' trust boundary; the key-theft attempt used a CDN caching flaw that any unauthenticated client could query, run from the RubyDoc build environment.
+    ground_truth: 'Nightingale: ''By querying this endpoint while unauthenticated, an attacker could steal a random user''s key.'' and ''once the AIs got arbitrary RCE on the build environment, they would sometimes use the build environment to attempt to steal other users'' API keys''.'
+    ground_truth_url: https://rubyhack.ai/
+    fix: 'Write: a third-party documentation builder that executes package-supplied code is an execution surface attackers can rent for free; drop ''same trust boundary''.'
+    class: factual-error
+  - where: body paragraph 2 (original attack chain) and paragraph 3 (detection)
+    claim: 'reconnaissance of the execution environment to confirm `gem` CLI presence and writeable temp space ... Detection priorities as originally identified: ... flag new RubyGems publisher accounts with high version churn ... extend the same lens to `npm publish` and `pip upload`.'
+    defect: Socket's reconnaissance step only records time, working directory, script path and arguments (one variant needs no gem CLI at all), and two of the four 'originally identified' detection priorities are not Socket's; Socket's concrete signals (HOME redirected to /tmp, egress block on POST to the gems API) are left out.
+    ground_truth: 'Socket: ''Capture Time.now, Dir.pwd, $0 (script path), ARGV''; ''this variant removes every external process dependency from the push path — no gem binary needs to be present''; actions: ''Alert on ENV[''HOME''] mutation to /tmp paths in production Ruby processes'' and ''Block outbound gem push in CI pipelines that do not publish gems ... add an egress rule blocking HTTPS POST to rubygems.org/api/v1/gems''.'
+    ground_truth_url: https://socket.dev/blog/gemstuffer
+    fix: Restate the recon step as Socket does and replace the detection list with Socket's two signals plus the CI egress rule.
+    class: imprecision
+  - where: techniques[]; classification
+    claim: 'techniques: [T1190, T1195.002, T1552.001, T1567.004]; classification: {reliability: B, credibility: 1}'
+    defect: T1195.002 is unsupported (no software consumed by others was compromised) and T1552.001 is unsupported (the key-theft attempt hit a cached web API response, not credential files); credibility 1 overstates an attribution that RubyGems cannot confirm and OpenAI disputes.
+    ground_truth: 'RubyGems: ''Gem installs and pushes for existing users remained unaffected''; Nightingale: ''when someone sent a GET request to /api/v1/api_key on the same physical CDN node ... it would leak their API key''; RubyGems: ''we cannot determine whether the packages were created or published by AI agents''.'
+    ground_truth_url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    fix: Replace T1195.002 and T1552.001 with T1528 and T1585 (see upgrade block); set credibility 2 (mechanism corroborated by RubyGems, attribution uncorroborated).
+    class: imprecision
+  - where: section 2026-09-19 paragraph 1; section paragraph 3; tags
+    claim: 'a contact address of `openaixyz65947@gmail.com` ... the same non-disclosure pattern already documented on the DSEWiki entry ... tags: organized-crime'
+    defect: The attacker contact e-mail is an indicator in reader text (no-IOC rule); 'on the DSEWiki entry' is pipeline self-reference; the organized-crime tag no longer fits the entry's own attribution.
+    ground_truth: 'Nightingale: ''Another lists an email for contact as ...''. Euractiv describes the German-language website incident itself: ''it did not report another incident in which a German-language website was used as an impromptu message board by its AIs''.'
+    ground_truth_url: https://rubyhack.ai/
+    fix: Write 'a contact address impersonating OpenAI'; replace 'on the DSEWiki entry' with Euractiv's description; drop the organized-crime tag.
+    class: imprecision
+  - where: body paragraph 1
+    claim: 155+ malicious Ruby packages were published
+    defect: (low confidence) Socket counts 'more than 100 gems' and '155 package artifacts (packages and versions)'; THN says 'more than 150 gems'; Nightingale later counted 2,000+ submissions.
+    ground_truth: 'Socket: ''We''re currently tracking 155 package artifacts (packages and versions) associated with this campaign.'''
+    ground_truth_url: https://socket.dev/blog/gemstuffer
+    fix: Write '155 package artifacts (more than 100 gems) at disclosure'.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: Package-supplied .yardopts makes RubyDoc.info's documentation build execute attacker code (RCE on a public build service); attempted exploitation of the RubyGems CDN caching flaw
+      url: https://rubyhack.ai/
+    - id: T1528
+      behavior: Unauthenticated GET to /api/v1/api_key on the same CDN node to harvest other users' cached RubyGems API keys (attempted, success not evidenced)
+      url: https://rubyhack.ai/
+    - id: T1567
+      behavior: Scraped council pages packed into .gem archives and pushed to rubygems.org as a retrievable data drop
+      url: https://socket.dev/blog/gemstuffer
+    - id: T1567.004
+      behavior: Data compressed, URL-safe-Base64 encoded and stored in registered RubyGems webhook URLs
+      url: https://rubyhack.ai/
+    - id: T1585
+      behavior: Mass account registration with disposable e-mails and an e-mail-verification bypass
+      url: https://rubyhack.ai/
+    rating:
+      reliability: B
+      credibility: 2
+      basis: Mechanism from independent researchers (B) and corroborated by RubyGems ('packages designed to use shared Ruby infrastructure to run code', key-theft code identified); the OpenAI attribution is the researchers' alone, unconfirmed by RubyGems and disputed by OpenAI (attribution credibility 3).
+    exposure:
+    - quote: Gem installs and pushes for existing users remained unaffected, and registrations reopened on May 16.
+      url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    - quote: Whenever you publish a package (also known as a gem) to RubyGems, and submit a request, the site RubyDoc.info builds and hosts documentation for it.
+      url: https://rubyhack.ai/
+    detection:
+    - quote: Runtime security tooling (Falco, eBPF-based syscall monitors) can detect putenv/setenv calls that redirect HOME out of /home or /root into /tmp. This is an abnormal operation in any legitimate Ruby application.
+      url: https://socket.dev/blog/gemstuffer
+    - quote: From a network monitoring perspective, this event is a single outbound TLS POST to rubygems.org:443 carrying a binary body. It closely resembles a legitimate developer release workflow.
+      url: https://socket.dev/blog/gemstuffer
+    triage: []
+    takeaway:
+    - quote: If your CI workflows do not legitimately push to rubygems.org, add an egress rule blocking HTTPS POST to rubygems.org/api/v1/gems. For pipelines that do publish, restrict allowed gem names to an explicit allowlist.
+      url: https://socket.dev/blog/gemstuffer
+    - quote: The researchers also identified code intended to obtain other users' API keys. Our investigation found no evidence that these attempts succeeded.
+      url: https://blog.rubygems.org/2026/09/11/update-may-spam-publishing-campaign.html
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-socket.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-thn.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-rubyhack.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-rubygems.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-openai.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e9-euractiv.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-14/the-gentlemen-raas-backend-rocket-database-leaked-16-22-gb-c
+  verdict: factual-error
+  defects:
+  - where: summary; body paragraph 3 (decryptor); 'workflow changes today' sentence
+    claim: The decryptor is public on GitHub per BankInfoSecurity, making decryption the first action for any in-flight Gentlemen incident ... enabling existing victims to recover without payment ... attempt decryption before any negotiation.
+    defect: The Bedrock Safeguard tool only recovers per-file keys from a memory image of the ransomware process captured while it was running, is best-effort, has no master key, and predates the leak (April); the group shipped a same-day patch. Most victims without such a capture cannot decrypt, so the advice misdirects responders.
+    ground_truth: 'README: ''you may be able to recover files if a memory image of the ransomware process was captured while it was running ... it is best-effort and may be partial''; ''There is no master or skeleton key ... without such an image, this tool cannot recover those files.'' BIS: ''in April after researchers at Canadian cybersecurity firm Bedrock Safeguard released a free decryptor ... "the group issued a same-day patch"''.'
+    ground_truth_url: https://github.com/Bedrock-Safeguard/gentlemen-decryptor
+    fix: 'Replace with: during an active Gentlemen incident, capture memory of the running locker process (EDR memory capture, procdump, full RAM image) before killing or rebooting; recovery via the April 2026 Bedrock Safeguard tool depends on that capture and may not work on post-patch builds.'
+    class: factual-error
+  - where: headline; summary; body paragraph 3 (1,570 vs 332)
+    claim: Check Point Research attributes a count of **1,570+ victim entries** to a separately-exposed SystemBC C&C server, against **332 victims publicly listed ...** — significant under-reporting of true scope
+    defect: The 1,570 figure comes from Check Point's earlier DFIR report on one affiliate's SystemBC C&C (proxy-malware victims), not from the leak, and Check Point draws no under-reporting conclusion; treating SystemBC bots as Gentlemen ransomware victims is the entry's inference.
+    ground_truth: 'CPR: ''During our previous publication, Check Point Research analyzed a specific infection carried out by an affiliate of this RaaS. In that case, the affiliate used SystemBC, and the associated command-and-control (C&C) server revealed more than 1,570 victims.'' and ''approximately 332 published victims in just the first five months of 2026''; ''the current 412 public victims''.'
+    ground_truth_url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    fix: 'Write: one affiliate''s SystemBC C&C (Check Point''s earlier DFIR report) held 1,570+ infected hosts; the DLS lists 332 victims in Jan-May 2026 (412 total). Drop ''under-reporting of true scope'' and the ''1,570+ victims'' headline claim.'
+    class: factual-error
+  - where: body paragraph 2 (attack chain)
+    claim: initial access almost exclusively via unpatched edge devices — FortiGate CVE-2024-55591 (the group's documented mainstay), Cisco appliances, CWMP/TR-069 interfaces — or purchased infostealer credentials; ... EDR-suppression utilities `EDRStartupHinder`, `gfreeze` and `glinker` manipulate ETW callbacks and NTDLL syscall tables
+    defect: Check Point says CVE-2024-55591 is one the group tracks with no exploitation shown, names no CWMP/TR-069 vector, says access is 'usually' (not almost exclusively) via edge devices with brute-forcing, known vulnerabilities and bought access, and attributes ETW patching and NTDLL unhooking to locker upgrades, not to the three EDR tools.
+    ground_truth: 'CPR: ''While the chats do not show detailed exploitation steps, the presence of this CVE alongside their FortiGate targeting suggests it is part of the set of vulnerabilities they track for potential use''; ''including credential brute-forcing against web or VPN panels, exploiting known vulnerabilities, and buying access''; ''technical upgrades to the locker, such as removing hardware breakpoints, performing NTDLL unhooking, and patching ETW''; EDRStartupHinder ''Blocks or delays EDR processes at startup''.'
+    ground_truth_url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    fix: 'Restate initial access as Check Point does (Fortinet/Cisco edge, brute force, known CVEs tracked: CVE-2024-55591, CVE-2025-32433, CVE-2025-33073; NTLM relay; OWA/M365 credential logs); drop CWMP/TR-069; move ETW/NTDLL to the locker.'
+    class: factual-error
+  - where: body paragraph 3 (detection pivots)
+    claim: alert on `EDRStartupHinder`, `gfreeze`, `glinker` process names (custom binaries, not commodity); monitor for AD Certificate Services reconnaissance (`certutil` enumeration of CA servers and templates) consistent with CertiHound; correlate with FortiGate CVE-2024-55591 initial-access exploitation patterns that the group continues to weaponise.
+    defect: Tool process names are file-name indicators (no-IOC rule) and two are derived from public EDR-blocking code; CertiHound runs through NetExec, not certutil; no source shows the group weaponising CVE-2024-55591.
+    ground_truth: 'CPR: ''CertiHound — Enumerates and detects ADCS misconfigurations (ESC1–ESC17). Used via NetExec integration.''; ''EDRStartupHinder ... Based on the EDR-Startup-Process-Blocker concept''; ''gfreeze ... Derived from EDR-blocking research/code''.'
+    ground_truth_url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    fix: 'Detect the behaviors instead: processes blocking EDR service start-up, ETW patching in user processes, LDAP enumeration of ADCS templates from non-admin hosts, NTLM relay scanning; remove the ''continues to weaponise'' clause.'
+    class: factual-error
+  - where: body paragraph 1 (dataset contents); headline ('ZeroPulse C2 internals')
+    claim: The dataset contains 8,200 lines of internal chat-tool traffic ... and configuration artefacts for the ZeroPulse C2 framework.
+    defect: The 8,200-line figure is DynaRisk's via BankInfoSecurity, not Check Point; neither source describes ZeroPulse configuration artefacts or 'internals' (Check Point lists ZeroPulse as an open-source C2 the group uses).
+    ground_truth: 'BIS: ''The compromised communications included 8,200 lines of text from an internal chat tool''. CPR: ''For remote access and C2, they rely on frameworks like ZeroPulse and Velociraptor''.'
+    ground_truth_url: https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654
+    fix: Attribute the 8,200 lines to DynaRisk/BIS; write 'ZeroPulse and Velociraptor used for C2' and drop 'internals'.
+    class: imprecision
+  - where: body opening; sourcing_note
+    claim: '**UPDATE (originally covered 2026-05-10 in the Q1 2026 ransomware quarterly synthesis):**'
+    defect: Pipeline self-reference in reader text.
+    ground_truth: n/a (migration artefact)
+    ground_truth_url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    fix: Delete the preamble.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1190
+      behavior: Exploiting known vulnerabilities on exposed Fortinet/Cisco edge devices (CVE-2024-55591 among tracked CVEs)
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1110
+      behavior: Credential brute-forcing against web and VPN panels
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1078
+      behavior: Bought access and OWA/M365 credential logs from access brokers
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1557.001
+      behavior: RelayKing scans for NTLM relay paths (incl. CVE-2025-33073) feeding ntlmrelayx
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1649
+      behavior: CertiHound enumerates ADCS misconfigurations (ESC1-ESC17) for certificate abuse
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1572
+      behavior: Cloudflare tunnels / Zero Trust for persistent access into victim networks
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1219
+      behavior: ZeroPulse and Velociraptor used for remote access and C2
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1685
+      behavior: EDR-kill toolkit (EDRStartupHinder, gfreeze, glinker) and locker ETW patching / NTDLL unhooking
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    - id: T1484.001
+      behavior: Modifying Group Policy Objects after obtaining domain admin
+      url: https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654
+    - id: T1490
+      behavior: Targeting NAS, storage arrays and backup infrastructure to prevent recovery
+      url: https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654
+    - id: T1486
+      behavior: Go locker encrypting Windows, Linux, NAS, BSD and ESXi (XChaCha20 with X25519 per-file keys)
+      url: https://github.com/Bedrock-Safeguard/gentlemen-decryptor
+    rating:
+      reliability: B
+      credibility: 2
+      basis: Check Point Research analysed a partial leak (B); BankInfoSecurity's DynaRisk analyst read the same leak independently and agrees on the broad workflow (edge access, EDR killers, ZeroPulse), but the specific counts and tool roles rest on Check Point alone (2).
+    exposure:
+    - quote: The group claims to usually gain initial access through exposed edge devices such as VPN appliances, firewalls, and other internet-facing systems, with a particular focus on platforms like Fortinet FortiGate and Cisco.
+      url: https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/
+    detection:
+    - quote: Rather than immediately deploying ransomware, the group carefully mapped the environment, searched for virtualization infrastructure, backup systems, NAS devices and critical servers to maximize impact
+      url: https://www.bankinfosecurity.com/tables-turned-gentlemen-ransomware-group-suffers-data-leak-a-31654
+    triage: []
+    takeaway:
+    - quote: The keys are lost soon after the process exits. Once the ransomware process terminates, the operating system reclaims its memory and the keys are quickly gone.
+      url: https://github.com/Bedrock-Safeguard/gentlemen-decryptor
+    - quote: EDR/XDR solutions — CrowdStrike, SentinelOne, Carbon Black, Microsoft Defender for Endpoint, and others may capture process memory when they detect the threat. Check your EDR console for memory captures or forensic snapshots from the incident.
+      url: https://github.com/Bedrock-Safeguard/gentlemen-decryptor
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e10-cpr.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e10-bis.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e10-bis-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e10-decryptor.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-15/cve-2026-45691-nextcloud-server-enterprise-server-2fa-bypass
+  verdict: factual-error
+  defects:
+  - where: body last sentence (same-batch advisories)
+    claim: The same May 2026 Nextcloud advisory batch includes CVE-2026-45690 (SQL injection in column-type parameter, Moderate), a JWT signature-verification bypass in the Nextcloud user OIDC app (Moderate), and a calendar attendee suggestion endpoint information disclosure (High)
+    defect: 'Wrong id and swapped severities: the column-type SQL injection is CVE-2026-45545 (High 8.2, Tables app); CVE-2026-45690 is a second 2FA bypass (Moderate 5.9); the User OIDC JWT bypass is High 8.1; the calendar attendee leak is Moderate 4.3.'
+    ground_truth: GHSA-x43f-gmgh-vvjj 'SQL Injection in Column Type Parameter Allows Arbitrary SQL Execution', High, CVE-2026-45545, 8.2, Tables; GHSA-jgcj-v42r-9922 'Two-Factor Authentication Bypass via Pending Session Token Replay', Moderate 5.9, CVE-2026-45690 (published May 15); GHSA-qqgv-fqwp-mjpp 'Authentication Bypass in ID4me handling via Missing JWT Signature Verification in User OIDC', High 8.1, CVE-2026-45156; GHSA-r697-74m9-gvf2 'Calendar app leaked user identifiers via attendee suggestion endpoint', Moderate 4.3, CVE-2026-45286.
+    ground_truth_url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-x43f-gmgh-vvjj
+    fix: Correct each id and severity as above, citing the four GHSAs; note CVE-2026-45690 is a second 2FA bypass fixed in the same Server releases.
+    class: factual-error
+  - where: headline; summary
+    claim: 2FA bypass on WebDAV via pre-authenticated session token reuse ... pre-auth 2FA bypass via WebDAV session token reuse
+    defect: 'The flaw requires the user''s password: the reusable cookie is created after password authentication, and the advisory scores it PR:L. ''Pre-auth'' tells readers it is exploitable without credentials.'
+    ground_truth: '''A pre-2FA session cookie (created after successful password authentication but before TOTP completion) could be reused as a Bearer token to authenticate against DAV endpoints''; CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:H/A:N.'
+    ground_truth_url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    fix: Write 'second-factor bypass on DAV endpoints for an attacker who already has the password (pre-2FA session cookie reuse)'.
+    class: factual-error
+  - where: body (Affected versions)
+    claim: 'Affected: Nextcloud Server 32.0.0–33.0.2 and 33.0.0 branches'
+    defect: Garbled range; per the advisory Server is affected from 32.0.0 before 32.0.9 and from 33.0.0 before 33.0.3.
+    ground_truth: Affected versions '>= 33.0.0, >= 32.0.0'; patched '33.0.3, 32.0.9'; Enterprise '>= 33.0.0, >= 32.0.0, >= 31.0.0, >= 30.0.0, >= 29.0.0' patched '33.0.3, 32.0.9, 31.0.14.5, 30.0.17.9, 29.0.16.16'.
+    ground_truth_url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    fix: Write 'Server 32.0.0-32.0.8 and 33.0.0-33.0.2; Enterprise 29 to 33 before version 29.0.16.16 / 30.0.17.9 / 31.0.14.5 / 32.0.9 / 33.0.3' (prefix four-part versions with 'version').
+    class: imprecision
+  - where: cves[] (empty); kind
+    claim: 'cves: []; kind: threat'
+    defect: The body names CVE-2026-45691 (and CVE-2026-45690) but cves[] is empty; a vendor-advisory flaw with no exploitation is a vulnerability entry.
+    ground_truth: 'GHSA-mp6x-g55j-w9jw: ''CVE ID CVE-2026-45691'', ''Severity Moderate 5.9''.'
+    ground_truth_url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    fix: Add cves[] {CVE-2026-45691, cvss 5.9, auth post-auth, status patch-available, fixed 33.0.3 / 32.0.9} and, if kept, CVE-2026-45690 (5.9); set kind vulnerability.
+    class: imprecision
+  - where: summary; body ('No PoC ... no in-the-wild exploitation'); ATT&CK sentence; priority
+    claim: 'widespread deployment in EU government and education environments ... No PoC is publicly available; no in-the-wild exploitation reported. ... T1550.001 ... priority: high'
+    defect: The deployment claim and the no-PoC/no-ITW statement are uncited (the GHSA states neither); T1550.004 (web session cookie) is the closer mapping; a Moderate, credential-dependent, unexploited flaw is weak for 'high' on facts known then.
+    ground_truth: The GHSA gives impact, patches and an empty Workarounds section; CISA KEV (2026-10-20) does not list CVE-2026-45691.
+    ground_truth_url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    fix: Drop or source the deployment claim; write 'no exploitation reported as of <date>' with a source; map T1078 + T1550.004; consider notable.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1078
+      behavior: Attacker already holds the user's password (first factor)
+      url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    - id: T1550.004
+      behavior: Pre-2FA session cookie replayed as a Bearer token against DAV endpoints to skip TOTP
+      url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    - id: T1213
+      behavior: Read/write access to files, calendars and contacts over DAV after the bypass
+      url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    rating:
+      reliability: A
+      credibility: 2
+      basis: Nextcloud's own GHSA for its own product (A); BSI WID-SEC-2026-1517 restates the vendor batch (one assessor, 2).
+    exposure:
+    - quote: A pre-2FA session cookie (created after successful password authentication but before TOTP completion) could be reused as a Bearer token to authenticate against DAV endpoints, granting read/write access and bypassing mandatory two-factor authentication.
+      url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    detection: []
+    triage: []
+    takeaway:
+    - quote: It is recommended that the Nextcloud Server is upgraded to 33.0.3 or 32.0.9
+      url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    - quote: It is recommended that the Nextcloud Enterprise Server is upgraded to 33.0.3, 32.0.9, 31.0.14.5, 30.0.17.9 or 29.0.16.16
+      url: https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-ghsa.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-ghsa-raw.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-bsi-csaf.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-x43f-gmgh-vvjj.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-jgcj-v42r-9922.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-qqgv-fqwp-mjpp.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-r697-74m9-gvf2.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e11-adv-list-p2.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-15/cve-2026-45793-php-composer-github-actions-ci-token-disclosu
+  verdict: factual-error
+  defects:
+  - where: body paragraph (mechanism)
+    claim: When Composer encounters certain error conditions during package resolution in a GitHub Actions CI/CD workflow, it emits the configured GitHub authentication token — `GITHUB_TOKEN` or a personal access token — into its error output and debug log stream.
+    defect: 'The trigger is specific and on the default path: GitHub''s new hyphenated token format fails Composer''s token validation when its configuration loads, and the exception prints the full token to stderr. It concerns GITHUB_TOKEN and GitHub App installation tokens, not personal access tokens, and it is not tied to package resolution.'
+    ground_truth: '''GitHub introduced a new format for these tokens including a - (hyphen) ... The new format fails Composer''s validation, leading to an error message that exposes the full token contents to stderr.''; ''Composer validates configured GitHub tokens against an allowed character set in Composer\IO\BaseIO::loadConfiguration()''; ''Any workflow that configures a GitHub App installation token (including the workflow''s auto-injected GITHUB_TOKEN) into Composer''s auth and then runs any Composer command will hit it.'''
+    ground_truth_url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    fix: Restate the mechanism as Packagist does, including that setup-php auto-registers GITHUB_TOKEN so no opt-in is needed.
+    class: factual-error
+  - where: body (impact paragraph); Action line
+    claim: an attacker who gains access to build logs ... can extract and abuse the token before it expires
+    defect: 'Omits the lifetime facts that bound the exposure and GitHub''s same-day rollback, which changed the urgency: hosted-runner GITHUB_TOKENs die with the job (usually failed by the same error), self-hosted up to 24 h, App tokens up to 1 h; GitHub rolled back the format on 13 May and planned to re-roll from 18 May.'
+    ground_truth: '''Usually the error leaking the token will also fail the job and immediately expire the token.''; ''A token leaked from a self-hosted runner job is therefore potentially valid for up to 24 hours after issuance.''; ''UPDATE May 13, 2026 2:30 PM UTC: GitHub has rolled back their change to GitHub Actions tokens.''; ''UPDATE May 14, 2026 11:00 AM UTC: GitHub intends to begin the roll-out of the new token format again on Monday, May 18, 2026''.'
+    ground_truth_url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    fix: Add the lifetimes, the rollback and the 18 May re-rollout; make the action 'upgrade to 2.9.8 / 2.2.28 before the re-rollout; review logs of self-hosted and App-token jobs and delete exposed tokens'.
+    class: imprecision
+  - where: body (broader risk context); entities campaign:mini-shai-hulud
+    claim: this bug class (credential leakage via error path logging) echoes the credential-leakage pattern seen in supply-chain attacks such as Mini Shai-Hulud; Composer-based repositories using GitHub Actions are now an independently confirmed leakage path for CI tokens.
+    defect: No source links this bug to Mini Shai-Hulud (a worm stealing secrets via malicious packages and runner-memory reads), and nothing 'independently confirmed' exploitation; the campaign entity link is unsupported.
+    ground_truth: The Packagist post and GHSA-f9f8-rm49-7jv2 describe an accidental disclosure triggered by GitHub's token-format change; neither mentions Mini Shai-Hulud, TeamPCP or exploitation.
+    ground_truth_url: https://github.com/composer/composer/security/advisories/GHSA-f9f8-rm49-7jv2
+    fix: Delete the sentence and remove campaign:mini-shai-hulud from entities.
+    class: factual-error
+  - where: cves[] (empty); kind; 'No in-the-wild exploitation reported'
+    claim: 'cves: []; kind: threat; No in-the-wild exploitation reported.'
+    defect: The body's CVE is missing from cves[], a vendor-fixed flaw is a vulnerability entry, and the no-exploitation statement is uncited.
+    ground_truth: 'GHSA-f9f8-rm49-7jv2: ''CVE ID CVE-2026-45793'', ''Severity High 7.5'', CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N, CWE-200; affected ''>= 2.3.0, < 2.9.8'', ''>= 2.0.0, < 2.2.28'', ''>= 1.0, < 1.10.28''. Not in CISA KEV (2026-10-20).'
+    ground_truth_url: https://github.com/composer/composer/security/advisories/GHSA-f9f8-rm49-7jv2
+    fix: Add cves[] {CVE-2026-45793, cvss 7.5, fixed 2.9.8 / 2.2.28 / 1.10.28, status patch-available}; set kind vulnerability; write 'no exploitation reported as of <date>' with a source or drop it.
+    class: imprecision
+  - where: body (impact paragraph)
+    claim: A `GITHUB_TOKEN` scoped to the repository's default permissions allows write access to repository code, workflow files, and packages
+    defect: (low confidence) Not stated by the source; Packagist notes App tokens can carry permissions broader than the workflow's own 'permissions:' declaration, which is the relevant point; GITHUB_TOKEN write access to workflow files is not established by any page read.
+    ground_truth: '''The leaked token grants whatever installation permissions were requested, which can be considerably broader than the workflow''s own declaration of permissions:.'''
+    ground_truth_url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    fix: Replace with the Packagist sentence on App-token permissions.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1552.001
+      behavior: Token written in clear to CI job logs (stderr) where anyone with log access can read it; disclosure flaw, no exploitation reported
+      url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    - id: T1528
+      behavior: A party reading the job log could take the GITHUB_TOKEN or App installation token for reuse while still valid
+      url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    rating:
+      reliability: A
+      credibility: 2
+      basis: Composer maintainers' own advisory and blog for their own product (A); single assessor (2).
+    exposure:
+    - quote: Any workflow that configures a GitHub App installation token (including the workflow's auto-injected GITHUB_TOKEN) into Composer's auth and then runs any Composer command will hit it.
+      url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    - quote: 'Several widely used GitHub Actions register the workflow GITHUB_TOKEN into Composer''s global auth.json automatically: shivammathur/setup-php being a notable example'
+      url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    detection:
+    - quote: 'Your github oauth token for github.com contains invalid characters: "<full token here>"'
+      url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    triage: []
+    takeaway:
+    - quote: delete any token whose plaintext may have been written to a job log, treat the GITHUB_TOKEN on self-hosted runners as valid for up to 24 hours, and on GitHub-hosted runners as valid for up to 6 hours, confirm no unexpected activity occurred under that token.
+      url: https://blog.packagist.com/composer-2-9-8-and-2-2-28-fix-github-actions-token-disclosure-in-error-messages/
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e12-packagist.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e12-ghsa.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-15/datadog-security-labs-analyzes-leaked-teampcp-shai-hulud-off
+  verdict: factual-error
+  defects:
+  - where: body paragraph (architecture); defender sentence
+    claim: it is a TypeScript/Bun toolkit that automates GitHub Actions pwn-request exploitation — specifically targeting `pull_request_target` workflows that perform unsanitized checkouts — to harvest OIDC tokens ... The leaked code also exposes the environment-variable injection technique (`${{ github.event.pull_request.head.sha }}` substitution in run steps) as a key primitive.
+    defect: Datadog's analysis contains no pwn-request, pull_request_target or expression-injection capability; the framework harvests credentials where it already runs, reads Runner.Worker memory, poisons repository branches with stolen tokens and publishes npm packages with stolen tokens or the workflow's own OIDC token. The pwn-request vector belongs to the TanStack intrusion, not to the released code.
+    ground_truth: 'Datadog component table: Loaders, Providers (filesystem, shell, GitHub Actions runners, AWS, Kubernetes, Vault), Collector, Dispatcher, Senders, ''Mutators: Supply chain propagation by poisoning GitHub repository branches and publishing backdoored npm packages''. The ReadmeUpdater ''uses stolen GitHub tokens to push malicious files across all branches''.'
+    ground_truth_url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    fix: 'Describe the capabilities Datadog documents; delete the pwn-request, pull_request_target and head.sha claims and the defender advice built on them (replace with Datadog''s: audit exposure to Runner.Worker memory extraction, IMDS/container metadata collection and IDE-hook persistence).'
+    class: factual-error
+  - where: body (targeting sentence)
+    claim: The automation is fully self-contained; victim-repository selection is not manually guided, consistent with the worm-class spread observed in the original TanStack campaign.
+    defect: The OIDC publishing path is hardcoded to one workflow and one package, i.e. manually targeted; only the token-based mutators propagate opportunistically.
+    ground_truth: '''When the framework detects it''s running inside a workflow that matches a specific target (hardcoded to release-drafter.yml in opensearch-js)'' and ''Downloads the @opensearch-project/opensearch package (hardcoded in for this campaign)''.'
+    ground_truth_url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    fix: 'Write: stolen npm and GitHub tokens drive opportunistic propagation; the OIDC path was hardcoded to the opensearch-js release workflow.'
+    class: factual-error
+  - where: title; headline; summary; body
+    claim: analyzes leaked TeamPCP "Shai-Hulud" offensive framework source code ... before the account was removed
+    defect: Datadog describes a deliberate open-source release signed 'Love - TeamPCP' with commits by 'TeamPCP_OSS', not a leak; GitHub removed the repository (forks survived), the account removal is not stated.
+    ground_truth: '''The repository''s README explicitly states: "Love - TeamPCP" and "Change keys and C2 as needed."''; ''All 3 commits ... are authored by TeamPCP_OSS''; ''This appears to have been removed by GitHub shortly after publishing, though not in time to prevent multiple forks.'''
+    ground_truth_url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    fix: Retitle 'Datadog analyses TeamPCP's open-sourced Shai-Hulud framework'; say forks survived the takedown (the code remains available to other actors).
+    class: factual-error
+  - where: summary; body opening; sourcing_note
+    claim: 'UPDATE (2026-05-13 — follows TeamPCP coverage 2026-05-13):'
+    defect: Pipeline self-reference; the summary is truncated mid-citation ('(Datadog …').
+    ground_truth: n/a (migration artefact)
+    ground_truth_url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    fix: Delete the preamble and write a complete summary.
+    class: imprecision
+  - where: body (missing material the source supports)
+    claim: (entry omits the Russian-locale kill switch, the dead-man's switch and Datadog's compromise checks)
+    defect: 'The source gives concrete, defender-useful facts the entry leaves out: a Russian-locale exit check, the gh-token-monitor rm -rf ~/ wiper with an instruction to disable it before revoking tokens, and specific compromise checks (SessionStart hooks, folderOpen tasks, commits by the spoofed claude identity).'
+    ground_truth: '''Before any collection or exfiltration occurs, the preflight() function in index.ts calls isSystemRussian()''; ''Before revoking any GitHub tokens: the framework installs a daemon (gh-token-monitor) that runs rm -rf ~/ if your token is revoked. Disable it first, then rotate credentials.'''
+    ground_truth_url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    fix: Add Exposure/Detection lines from Datadog's 'How to know if you have been impacted' section (behaviourally, without hashes).
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1195.002
+      behavior: npm package poisoning and GitHub repository branch poisoning with stolen tokens
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1003.007
+      behavior: python_util.py run under sudo reads Runner.Worker /proc/<pid>/maps and /proc/<pid>/mem for secrets
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1552.001
+      behavior: FileSystemService scans 100+ sensitive file paths per OS
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1552.005
+      behavior: AWS credential chain incl. EC2 IMDSv2 and ECS container metadata
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1552.007
+      behavior: Kubernetes service-account token use to pull every secret in every namespace
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1528
+      behavior: gh auth token, GitHub PATs, npm and Vault tokens harvested
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1550.001
+      behavior: OIDC token exchanged for an npm publish token inside the targeted release workflow
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1059.004
+      behavior: BASH_LOADER.sh and DEADMAN_SWITCH.sh
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1059.007
+      behavior: config.mjs loader and Bun-run TypeScript payload
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1546
+      behavior: Repository poisoning plants VS Code folderOpen tasks and Claude Code SessionStart hooks that run the loader
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1543.001
+      behavior: macOS com.user.gh-token-monitor LaunchAgent
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1543.002
+      behavior: Linux gh-token-monitor systemd user service
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1041
+      behavior: HTTPS POST of encrypted bundles to the campaign C2 domain
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1567.001
+      behavior: Encrypted commits to GitHub repositories as dead-drops
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1102
+      behavior: GitHub commit search for a signed fallback C2 domain
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1027
+      behavior: Per-build PBKDF2-seeded string encoding, javascript-obfuscator, AES-GCM-encrypted embedded assets
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - id: T1485
+      behavior: rm -rf ~/ dead-man's switch on token revocation
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    rating:
+      reliability: B
+      credibility: 2
+      basis: Datadog Security Labs static analysis of the released code (B); single analysis of the source code (2), although its mapping to in-the-wild artefacts (router_init.js, setup.mjs) agrees with StepSecurity's and Wiz's payload analyses.
+    exposure:
+    - quote: Organizations should review whether their CI/CD pipelines, developer workstations, and cloud environments are exposed to the credential harvesting techniques documented here particularly the Runner.Worker memory extraction, the IMDS/container metadata collection, and the IDE hook persistence mechanisms.
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    detection:
+    - quote: Check ~/.claude/settings.json (and per-project .claude/settings.json) for a SessionStart hook. Any hook executing node .vscode/setup.mjs or node .claude/setup.mjs is malicious.
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - quote: If npm tokens were harvested, check your packages for unexpected patch bumps with a preinstall script
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    triage: []
+    takeaway:
+    - quote: It lowers the barrier for other actors to adopt TeamPCP's playbook including the more sophisticated techniques like OIDC token abuse, provenance forgery, and AI tool persistence hooks.
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    - quote: 'Before revoking any GitHub tokens: the framework installs a daemon (gh-token-monitor) that runs rm -rf ~/ if your token is revoked. Disable it first, then rotate credentials.'
+      url: https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e13-datadog.txt
+  possible_twin_outside_batch: entries/2026-06-09/teampcp-open-sources-its-mini-shai-hulud-framework-spawning.md may report the same TeamPCP open-sourcing of the framework (SANS ISC 2026-06-08) that this entry covers from Datadog's 2026-05-13 analysis; compare with 2026-05-15/datadog-security-labs-analyzes-leaked-teampcp-shai-hulud-off
+- entry: 2026-05-15/frostyneighbor-ghostwriter-unc1151-belarus-state-aligned-ese
+  verdict: factual-error
+  defects:
+  - where: title; headline; summary; body paragraph 1 (scope and Poland/Lithuania sentence); sectors
+    claim: ESET documents March–May 2026 campaign targeting Polish, Lithuanian, and Ukrainian government and industrial sectors ... Polish and Lithuanian targeting covers industrial/manufacturing, healthcare and pharmaceuticals, logistics, and government organisations — ESET documents victimology spanning both NATO member states in the same campaign wave.
+    defect: ESET's new activity (since March 2026) targets governmental organisations in Ukraine; the Poland/Lithuania sector list is ESET's description of the group's historical victimology in its introduction, not part of this campaign. The entry's sectors (healthcare, manufacturing) inherit the error.
+    ground_truth: 'ESET: ''This blogpost covers newly discovered activities attributed to FrostyNeighbor, targeting governmental organizations in Ukraine.'' and ''Since March 2026, we have detected new activities that we attributed to FrostyNeighbor, using links in malicious PDFs sent via spearphishing attachments to target governmental organizations in Ukraine.'' Introduction: ''While Ukrainian targeting seems to be focused on military, defense sector, and governmental entities, the victimology in Poland and Lithuania is broader and includes ... industrial and manufacturing, healthcare and pharmaceuticals, logistics, and many governmental organizations.'''
+    ground_truth_url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    fix: Scope title, headline and summary to Ukrainian government targets since March 2026; present Poland/Lithuania as the group's broader historical victimology; set sectors to public-sector (and defence) only. Note The Hacker News' paraphrase blurs this, ESET's primary is clear.
+    class: factual-error
+  - where: body (techniques coverage)
+    claim: 'MITRE ATT&CK: T1566.001, T1027, T1059.007, T1082, T1105'
+    defect: 'Mapping is correct as far as it goes but omits behaviours ESET documents in detail: scheduled-task persistence for PicassoLoader, HKCU Run-key persistence via a LNK, rundll32 copied and renamed ViberPC.exe to launch the beacon DLL export.'
+    ground_truth: 'ESET: ''downloads a scheduled task template''; ''registers in the HKCU Run key a LNK file ... that executes the copied version of rundll32.exe with the command line argument %ProgramData%\ViberPC.dll''; ''copying the legitimate rundll32.exe to %ProgramData%\ViberPC.exe''.'
+    ground_truth_url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    fix: Carry the full mapping in techniques[] (upgrade block) and describe the persistence and renamed-rundll32 behaviour in the Detection line.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1566.001
+      behavior: Spearphishing PDF attachment impersonating Ukrtelecom with a download link
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1204.002
+      behavior: Victim opens the RAR-delivered JavaScript first stage
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1059.007
+      behavior: JavaScript dropper and JavaScript PicassoLoader; C2 response executed with eval
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1027
+      behavior: Obfuscated scripts; PicassoLoader and beacon embedded base64-encoded
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1053.005
+      behavior: Scheduled task built from a downloaded XML template runs PicassoLoader
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1082
+      behavior: 'Fingerprint: username, computer name, OS version, boot time, current time'
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1057
+      behavior: List of running processes with PIDs sent to C2
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1071.001
+      behavior: Fingerprint POSTed over HTTPS every 10 minutes; Cobalt Strike HTTPS C2
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1105
+      behavior: Operator-approved third-stage JavaScript dropper for Cobalt Strike delivered from C2
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1036.003
+      behavior: rundll32.exe copied to %ProgramData% as ViberPC.exe
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1218.011
+      behavior: Renamed rundll32 loads the Cobalt Strike DLL export SettingTimeAPI
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - id: T1547.001
+      behavior: HKCU Run key registers a LNK that launches the beacon
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    rating:
+      reliability: B
+      credibility: 2
+      basis: ESET original research from its telemetry (B); The Hacker News restates it, so one assessor (2).
+    exposure:
+    - quote: If the victim is using an IP address from Ukraine, the server instead delivers a RAR archive named 53_7.03.2026_R.rar, containing the first stage of the attack
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    detection:
+    - quote: This additional script starts by copying the legitimate rundll32.exe to %ProgramData%\ViberPC.exe, very likely to bypass some security mechanisms or detection rules.
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    - quote: Every 10 minutes, the compromised computer's fingerprint is sent to the C&C server via an HTTP POST request
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    triage: []
+    takeaway:
+    - quote: The payload is only delivered after server-side victim validation, combining automated checks of the requesting user agent and IP address with the manual validation by the operators.
+      url: https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e14-eset.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e14-thn.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-15/sophos-2026-state-of-identity-security-switzerland-records-h
+  verdict: factual-error
+  defects:
+  - where: body paragraph (ransomware link)
+    claim: 'two-thirds of ransomware victims in the survey attributed initial access to an identity compromise: stolen credentials, session hijacking, or MFA bypass.'
+    defect: Sophos says two-thirds of ransomware victims tied the incident to their most significant identity attack; it does not say they attributed initial access to it, and the three-way breakdown is in neither source.
+    ground_truth: 'Sophos: ''Two-thirds of ransomware victims (67%) reported that their ransomware incident was directly tied to their most significant identity attack.'' HNS: ''Two-thirds of organizations hit by ransomware said the incident was connected to their most significant identity attack''.'
+    ground_truth_url: https://www.sophos.com/blog/sophos-state-of-identity-security-2026
+    fix: Use Sophos' sentence verbatim and drop the breakdown.
+    class: factual-error
+  - where: summary; body paragraph 1 (publication date)
+    claim: Sophos published its _State of Identity Security 2026_ survey on 2026-05-14
+    defect: Sophos' own blog is dated 2026-05-12; 2026-05-14 is Help Net Security's report. The entry also cites only the re-reporter, not the vendor primary.
+    ground_truth: Sophos blog metadata date 2026-05-12 ('Discover the causes and consequences of identity threats based on a survey of 5,000 organizations across 17 countries'); HNS article dated 2026-05-14.
+    ground_truth_url: https://www.sophos.com/blog/sophos-state-of-identity-security-2026
+    fix: Date it 2026-05-12, cite the Sophos blog as primary (Switzerland 89%, Mexico 83%) and keep HNS as corroborating.
+    class: factual-error
+  - where: body (corroboration and advice sentences); entities actor:teampcp; tags nation-state
+    claim: The survey corroborates NCSC-CH's sustained advisory focus on credential abuse and the trend visible across this brief series (Lumma Stealer takedown, FamousSparrow credential harvesting, TeamPCP OIDC token theft). Defenders ... against the pattern of phishing-resistant MFA requirements in NCSC-CH guidance.
+    defect: Pipeline self-reference with uncited cross-links; no source mentions NCSC-CH, Lumma, FamousSparrow or TeamPCP, so the actor:teampcp entity link and the nation-state tag are unsupported, and the NCSC-CH guidance is uncited.
+    ground_truth: The Sophos blog and HNS discuss survey statistics only (breach rates by country and sector, ransomware link, recovery cost, NHI management).
+    ground_truth_url: https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/
+    fix: Delete the corroboration sentence, remove actor:teampcp and the nation-state tag, and either cite the NCSC-CH guidance or drop the reference.
+    class: imprecision
+  - where: whole entry (relevance)
+    claim: 'kind: research; vendor survey statistics'
+    defect: 'Context only: the entry''s substance is vendor survey percentages (a vendor-statistics item, F7/F11 class), with no TTP; only the Swiss country ranking gives it a nexus.'
+    ground_truth: 'HNS: ''A survey of 5,000 IT and cybersecurity leaders across 17 countries found that more than 70% of organizations were affected''.'
+    ground_truth_url: https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/
+    fix: Keep to two sentences (Swiss ranking, energy/federal-government sector ranking) or drop.
+    class: imprecision
+  upgrade:
+    techniques: []
+    rating:
+      reliability: C
+      credibility: 3
+      basis: Vendor-commissioned survey reported by the vendor and re-reported by Help Net Security; self-reported respondent data, no independent assessment (C3). No attacker behavior is described, so no ATT&CK mapping applies.
+    exposure:
+    - quote: Geographically, Switzerland reported the highest breach rate at 89%, followed by Mexico at 83%
+      url: https://www.sophos.com/blog/sophos-state-of-identity-security-2026
+    - quote: The energy, oil and gas, utilities, and federal government sectors recorded the highest breach rates.
+      url: https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/
+    detection:
+    - quote: Real-time monitoring was the most common activity, though more than half of companies checked for unusual login attempts no more than once every three months.
+      url: https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/
+    triage: []
+    takeaway:
+    - quote: Only 34.3% rotated and audited non-human identities (NHIs) weekly or more often, while 11.1% did so continually.
+      url: https://www.helpnetsecurity.com/2026/05/14/sophos-2026-identity-breach-costs-report/
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e15-hns.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e15-sophos-blog.txt
+  possible_twin_outside_batch: null
+- entry: 2026-05-16/amd-sb-7052-cve-2025-54518-amd-zen-2-op-cache-corruption-soc
+  verdict: factual-error
+  defects:
+  - where: headline; body paragraph 1 (mitigation sentence); actions[0]; CVE table AMD row
+    claim: Mitigation is delivered as microcode integrated into the **May 2026 Microsoft Windows cumulative update** ... Apply the May 2026 Microsoft Windows cumulative update — confirms AMD microcode mitigation for AMD-SB-7052 / CVE-2025-54518 is installed on Zen 2 hosts
+    defect: AMD's bulletin gives OS-level mitigation only for EPYC 7002 parts; Ryzen, Threadripper PRO and embedded Zen 2 parts need Platform Initialization firmware via OEM BIOS updates (released October to December 2025). Microsoft says Windows builds 'enable the mitigation', not that they ship microcode, so a Windows CU does not confirm a Ryzen host is mitigated.
+    ground_truth: 'AMD: ''AMD EPYC 7002 Series Processors | OS Update | Contact your OS Vendor''; for Ryzen: ''AMD recommends updating to the Platform Initialization (PI) version indicated below ... Please contact your OEM for the BIOS update specific to your product(s)'' (e.g. ComboAM4v2 PI version 1.2.0.10, 10/31/2025). MSRC: ''The mitigation for this vulnerability requires a Windows update ... the latest builds of Windows enable the mitigation''.'
+    ground_truth_url: https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html
+    fix: 'Write: EPYC 7002 / Embedded 7002 - OS update (Windows May 2026 builds enable the mitigation; Linux distro updates); Ryzen 3000/4000/5000/7020/7030, Threadripper PRO 3000WX, Ryzen Embedded V2000 - OEM BIOS with the listed PI version; Xen - XSA-490 patch. Rewrite the action accordingly.'
+    class: factual-error
+  - where: body ('CVE Summary Table')
+    claim: '| CVE-2026-42897 | Microsoft Exchange ... | No permanent patch; EEMS Mitigation M2 ... | CVE-2026-44112 | OpenClaw ... | OpenClaw 2026-04-23 release (GHSA-5h3g-6xhh-rg6p) | CVE-2026-44115 ... (GHSA-wppj-c6mr-83jj) | CVE-2026-44113 ... (GHSA-x3h8-jrgh-p8jx)'
+    defect: The table is a v2-brief artefact carrying five CVEs that belong to other findings; three OpenClaw rows pair CVEs with the wrong GHSA (positional pairing), and the Exchange row's 'No permanent patch' is now stale.
+    ground_truth: 'GitHub Advisory Database: GHSA-5h3g-6xhh-rg6p = CVE-2026-44113 (FS bridge reads); GHSA-wppj-c6mr-83jj = CVE-2026-44112 (FS bridge writes); GHSA-r6xh-pqhr-v4xh = CVE-2026-44118; GHSA-x3h8-jrgh-p8jx = exec-allowlist heredoc advisory (the 44115 class). MSRC CVE-2026-42897 revision 2 (2026-06-09): ''Added links to June 2026 Exchange Server security updates''; FAQ update 7/14/2026 recommends the July 2026 Security Updates.'
+    ground_truth_url: https://github.com/advisories/GHSA-5h3g-6xhh-rg6p
+    fix: Delete the table except the AMD row (or the whole table); the Exchange and OpenClaw CVEs belong on their own entries.
+    class: factual-error
+  - where: body (Detection / verification)
+    claim: confirm the May 2026 Windows CU includes the AMD microcode revision via the relevant KB and `wmic cpu get name, dataWidth, processorId`
+    defect: (low confidence) That command reports the CPUID-based processor ID, not the loaded microcode revision, and no source gives this check; on Ryzen the mitigation is the BIOS PI version.
+    ground_truth: AMD lists the mitigating PI firmware version per product line; MSRC states the latest Windows builds enable the mitigation. No source describes a wmic-based check.
+    ground_truth_url: https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html
+    fix: Verify by Windows build level (May 2026 or later) on EPYC hosts and by BIOS PI version against AMD's table on Ryzen hosts; drop the wmic command.
+    class: imprecision
+  - where: body paragraph 1 (Fedora, Lenovo; pipeline reference)
+    claim: (the same window as the previously-covered CVE-2026-41089 / 41096 Patch Tuesday set); Fedora has issued separate kernel + microcode updates ... Lenovo has published a product-security advisory covering affected ThinkPad / ThinkStation / Workstation models
+    defect: Pipeline self-reference; the Fedora package content and the Lenovo model scope could not be confirmed (bodhi behind a bot wall, Lenovo page body not rendered); NCSC-NL only links them.
+    ground_truth: NCSC-NL NCSC-2026-0158 (Uitgiftedatum 20260515) lists Debian xen, Dell PowerEdge, Fedora, Google Cloud Platform, Lenovo and Windows as affected/applicable and links FEDORA-2026-7b2b7837b6, FEDORA-2026-8b2957222f and LEN-216977 ('Multi-Vendor BIOS Security Vulnerabilities (May 2026)').
+    ground_truth_url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0158
+    fix: Delete the Patch Tuesday cross-reference; say 'Fedora and Lenovo published updates (per NCSC-NL)' without the unverified detail.
+    class: imprecision
+  upgrade:
+    techniques:
+    - id: T1068
+      behavior: Local code at any privilege corrupts the Zen 2 op cache to run instructions at a higher privilege (vulnerability disclosure, no exploitation)
+      url: https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html
+    - id: T1611
+      behavior: Xen notes the flaw permits guest-to-host privilege escalation on Zen 2 hosts
+      url: https://xenbits.xen.org/xsa/advisory-490.html
+    rating:
+      reliability: A
+      credibility: 2
+      basis: AMD PSIRT for its own CPUs (A); Xen, Microsoft and NCSC-NL respond to AMD's disclosure rather than assessing independently (2).
+    exposure:
+    - quote: Only AMD Fam17h CPUs (Zen2 microarchitecture) are believed to be vulnerable. Other AMD CPUs and CPUs from other manufacturers are not known to be affected.
+      url: https://xenbits.xen.org/xsa/advisory-490.html
+    - quote: Code of any privilege could escalate to a higher privilege, including userspace to kernel, and guest to host.
+      url: https://xenbits.xen.org/xsa/advisory-490.html
+    detection: []
+    triage: []
+    takeaway:
+    - quote: AMD recommends updating to the Platform Initialization (PI) version indicated below.
+      url: https://www.amd.com/en/resources/product-security/bulletin/amd-sb-7052.html
+    - quote: We are documenting it in the Security Update Guide to encourage customers to install the May 2026 version of Windows as soon as possible.
+      url: work/2026-10-21T1148Z-audit/truth-2/bodies/e16-msrc.txt
+    - quote: There are no mitigations.
+      url: https://xenbits.xen.org/xsa/advisory-490.html
+    bodies:
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-amd.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-ncscnl.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-ncscnl-txt.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-xsa.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-msrc.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-msrc-42897.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-cyera.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-lenovo.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-5h3g-6xhh-rg6p.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-wppj-c6mr-83jj.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-r6xh-pqhr-v4xh.txt
+    - work/2026-10-21T1148Z-audit/truth-2/bodies/e16-GHSA-x3h8-jrgh-p8jx.txt
+  possible_twin_outside_batch: null
+duplicate_groups: []
+# TeamPCP / Shai-Hulud cluster decision (spawn-message ask): no duplicate group.
+# 2026-05-12/teampcp-unc6780-pcpjack-ecosystem-backdoors-the-checkmarx-je = Checkmarx Jenkins AST plugin build 2026.5.09 (window 2026-05-09 01:25 to 2026-05-10 08:47 UTC; Checkmarx page).
+# 2026-05-13/mini-shai-hulud-s-github-actions-pwn-request-oidc-token-thef = TanStack compromise 2026-05-11 (pull_request_target pwn request, cache poisoning, OIDC extraction; TanStack post-mortem, GHSA-g7cv-rxg3-hmpx / CVE-2026-45321).
+# 2026-05-15/datadog-security-labs-analyzes-leaked-teampcp-shai-hulud-off = TeamPCP's open-sourcing of the framework source (repo 2026-05-12) and Datadog's static analysis (2026-05-13).
+# Three different artefacts, dates and disclosures: distinct findings. The Datadog entry wrongly imports the TanStack pwn-request vector (defect recorded); it may twin entries/2026-06-09/teampcp-open-sources-its-mini-shai-hulud-framework-spawning.md outside the batch.

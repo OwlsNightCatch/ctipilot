@@ -1,0 +1,69 @@
+- entry: 2026-05-15/datadog-security-labs-analyzes-leaked-teampcp-shai-hulud-off
+  verdict: factual-error
+  defects:
+    - where: "body paragraph (architecture); defender sentence"
+      claim: "it is a TypeScript/Bun toolkit that automates GitHub Actions pwn-request exploitation — specifically targeting `pull_request_target` workflows that perform unsanitized checkouts — to harvest OIDC tokens ... The leaked code also exposes the environment-variable injection technique (`${{ github.event.pull_request.head.sha }}` substitution in run steps) as a key primitive."
+      defect: "Datadog's analysis contains no pwn-request, pull_request_target or expression-injection capability; the framework harvests credentials where it already runs, reads Runner.Worker memory, poisons repository branches with stolen tokens and publishes npm packages with stolen tokens or the workflow's own OIDC token. The pwn-request vector belongs to the TanStack intrusion, not to the released code."
+      ground_truth: "Datadog component table: Loaders, Providers (filesystem, shell, GitHub Actions runners, AWS, Kubernetes, Vault), Collector, Dispatcher, Senders, 'Mutators: Supply chain propagation by poisoning GitHub repository branches and publishing backdoored npm packages'. The ReadmeUpdater 'uses stolen GitHub tokens to push malicious files across all branches'."
+      ground_truth_url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"
+      fix: "Describe the capabilities Datadog documents; delete the pwn-request, pull_request_target and head.sha claims and the defender advice built on them (replace with Datadog's: audit exposure to Runner.Worker memory extraction, IMDS/container metadata collection and IDE-hook persistence)."
+      class: factual-error
+    - where: "body (targeting sentence)"
+      claim: "The automation is fully self-contained; victim-repository selection is not manually guided, consistent with the worm-class spread observed in the original TanStack campaign."
+      defect: "The OIDC publishing path is hardcoded to one workflow and one package, i.e. manually targeted; only the token-based mutators propagate opportunistically."
+      ground_truth: "'When the framework detects it's running inside a workflow that matches a specific target (hardcoded to release-drafter.yml in opensearch-js)' and 'Downloads the @opensearch-project/opensearch package (hardcoded in for this campaign)'."
+      ground_truth_url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"
+      fix: "Write: stolen npm and GitHub tokens drive opportunistic propagation; the OIDC path was hardcoded to the opensearch-js release workflow."
+      class: factual-error
+    - where: "title; headline; summary; body"
+      claim: "analyzes leaked TeamPCP \"Shai-Hulud\" offensive framework source code ... before the account was removed"
+      defect: "Datadog describes a deliberate open-source release signed 'Love - TeamPCP' with commits by 'TeamPCP_OSS', not a leak; GitHub removed the repository (forks survived), the account removal is not stated."
+      ground_truth: "'The repository's README explicitly states: \"Love - TeamPCP\" and \"Change keys and C2 as needed.\"'; 'All 3 commits ... are authored by TeamPCP_OSS'; 'This appears to have been removed by GitHub shortly after publishing, though not in time to prevent multiple forks.'"
+      ground_truth_url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"
+      fix: "Retitle 'Datadog analyses TeamPCP's open-sourced Shai-Hulud framework'; say forks survived the takedown (the code remains available to other actors)."
+      class: factual-error
+    - where: "summary; body opening; sourcing_note"
+      claim: "UPDATE (2026-05-13 — follows TeamPCP coverage 2026-05-13):"
+      defect: "Pipeline self-reference; the summary is truncated mid-citation ('(Datadog …')."
+      ground_truth: "n/a (migration artefact)"
+      ground_truth_url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"
+      fix: "Delete the preamble and write a complete summary."
+      class: imprecision
+    - where: "body (missing material the source supports)"
+      claim: "(entry omits the Russian-locale kill switch, the dead-man's switch and Datadog's compromise checks)"
+      defect: "The source gives concrete, defender-useful facts the entry leaves out: a Russian-locale exit check, the gh-token-monitor rm -rf ~/ wiper with an instruction to disable it before revoking tokens, and specific compromise checks (SessionStart hooks, folderOpen tasks, commits by the spoofed claude identity)."
+      ground_truth: "'Before any collection or exfiltration occurs, the preflight() function in index.ts calls isSystemRussian()'; 'Before revoking any GitHub tokens: the framework installs a daemon (gh-token-monitor) that runs rm -rf ~/ if your token is revoked. Disable it first, then rotate credentials.'"
+      ground_truth_url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"
+      fix: "Add Exposure/Detection lines from Datadog's 'How to know if you have been impacted' section (behaviourally, without hashes)."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1195.002, behavior: "npm package poisoning and GitHub repository branch poisoning with stolen tokens", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1003.007, behavior: "python_util.py run under sudo reads Runner.Worker /proc/<pid>/maps and /proc/<pid>/mem for secrets", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1552.001, behavior: "FileSystemService scans 100+ sensitive file paths per OS", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1552.005, behavior: "AWS credential chain incl. EC2 IMDSv2 and ECS container metadata", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1552.007, behavior: "Kubernetes service-account token use to pull every secret in every namespace", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1528, behavior: "gh auth token, GitHub PATs, npm and Vault tokens harvested", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1550.001, behavior: "OIDC token exchanged for an npm publish token inside the targeted release workflow", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1059.004, behavior: "BASH_LOADER.sh and DEADMAN_SWITCH.sh", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1059.007, behavior: "config.mjs loader and Bun-run TypeScript payload", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1546, behavior: "Repository poisoning plants VS Code folderOpen tasks and Claude Code SessionStart hooks that run the loader", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1543.001, behavior: "macOS com.user.gh-token-monitor LaunchAgent", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1543.002, behavior: "Linux gh-token-monitor systemd user service", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1041, behavior: "HTTPS POST of encrypted bundles to the campaign C2 domain", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1567.001, behavior: "Encrypted commits to GitHub repositories as dead-drops", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1102, behavior: "GitHub commit search for a signed fallback C2 domain", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1027, behavior: "Per-build PBKDF2-seeded string encoding, javascript-obfuscator, AES-GCM-encrypted embedded assets", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {id: T1485, behavior: "rm -rf ~/ dead-man's switch on token revocation", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+    rating: {reliability: B, credibility: 2, basis: "Datadog Security Labs static analysis of the released code (B); single analysis of the source code (2), although its mapping to in-the-wild artefacts (router_init.js, setup.mjs) agrees with StepSecurity's and Wiz's payload analyses."}
+    exposure:
+      - {quote: "Organizations should review whether their CI/CD pipelines, developer workstations, and cloud environments are exposed to the credential harvesting techniques documented here particularly the Runner.Worker memory extraction, the IMDS/container metadata collection, and the IDE hook persistence mechanisms.", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+    detection:
+      - {quote: "Check ~/.claude/settings.json (and per-project .claude/settings.json) for a SessionStart hook. Any hook executing node .vscode/setup.mjs or node .claude/setup.mjs is malicious.", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {quote: "If npm tokens were harvested, check your packages for unexpected patch bumps with a preinstall script", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+    triage: []
+    takeaway:
+      - {quote: "It lowers the barrier for other actors to adopt TeamPCP's playbook including the more sophisticated techniques like OIDC token abuse, provenance forgery, and AI tool persistence hooks.", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+      - {quote: "Before revoking any GitHub tokens: the framework installs a daemon (gh-token-monitor) that runs rm -rf ~/ if your token is revoked. Disable it first, then rotate credentials.", url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e13-datadog.txt]
+  possible_twin_outside_batch: "entries/2026-06-09/teampcp-open-sources-its-mini-shai-hulud-framework-spawning.md may report the same TeamPCP open-sourcing of the framework (SANS ISC 2026-06-08) that this entry covers from Datadog's 2026-05-13 analysis; compare with 2026-05-15/datadog-security-labs-analyzes-leaked-teampcp-shai-hulud-off"

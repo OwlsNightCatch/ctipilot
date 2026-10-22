@@ -1,0 +1,89 @@
+- entry: 2026-05-14/cve-2026-8043-ivanti-xtraction-external-file-control-cvss-9
+  verdict: factual-error
+  defects:
+    - where: "cves[CVE-2026-8043].type; tags (rce)"
+      claim: "type: rce"
+      defect: "The vendor and ENISA describe CVE-2026-8043 as file read plus arbitrary HTML write leading to information disclosure and client-side attacks, not remote code execution. The EPM SQL injection (CVE-2026-8111) and vTM command injection (CVE-2026-8051) are the RCE flaws; cves[] also leaves affected and fixed null although both are given."
+      ground_truth: "EUVD-2026-29487 (CVE-2026-8043, base score 9.6, CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:N): 'External control of a file name in Ivanti Xtraction before version 2026.2 allows a remote authenticated attacker to read sensitive files and write arbitrary HTML files to a web directory, leading to information disclosure and possible client-side attacks.' product_version 'patch: 2026.2'."
+      ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043"
+      fix: "Set type to information-disclosure (or null), affected '< 2026.2', fixed '2026.2'; drop the rce tag or scope it to the EPM and vTM flaws (CVE-2026-8111 8.8 and CVE-2026-8051 7.2 per EUVD-2026-29491 and EUVD-2026-29488) and list those ids in cves[]."
+      class: factual-error
+    - where: "summary; body paragraph 3 ('Affected and fixed versions'); actions[0]"
+      claim: "Ivanti EPM ≤ 2024 SU6 → 2024 SU6 ... SQL injection in the EPM web console (≤ 2024 SU6)"
+      defect: "EPM is affected before 2024 SU6 and fixed in 2024 SU6; 'up to and including SU6' contradicts the fix, and the entry's own paragraph 2 says 'prior to 2024 SU6'."
+      ground_truth: "CERT-FR: 'Endpoint Manager (EPM) versions antérieures à 2024 SU6' (versions prior to 2024 SU6). EUVD-2026-29491 (CVE-2026-8111): 'SQL injection in the web console of Ivanti Endpoint Manager before version 2024 SU6 allows a remote authenticated attacker to achieve remote code execution', product_version 'patch: 2024 SU6'."
+      ground_truth_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0576/"
+      fix: "Write 'Ivanti EPM before 2024 SU6 (fixed in 2024 SU6)'."
+      class: factual-error
+    - where: "body paragraph 2 (cited sentence on exploitation)"
+      claim: "Ivanti states no in-the-wild exploitation as of 2026-05-12 for any of the four advisories; CERT-FR ([CERTFR-2026-AVI-0576, 2026-05-13](...)) and SecurityWeek ([2026-05-13](...)) corroborated the disclosure within 24 hours."
+      defect: "The citation sits on CERT-FR, whose avis contains no exploitation statement; the statement is on Ivanti's blog (and SecurityWeek)."
+      ground_truth: "Ivanti blog (2026-05-12): 'We have no evidence of these vulnerabilities being exploited in the wild.' SecurityWeek: 'Both Fortinet and Ivanti said they were not aware of any of the patched vulnerabilities being exploited in the wild.' CERT-FR first version dated 13 mai 2026 lists risks and affected systems only."
+      ground_truth_url: "https://www.ivanti.com/blog/may-2026-security-update"
+      fix: "Cite Ivanti's blog for the no-exploitation statement; keep CERT-FR for affected versions."
+      class: imprecision
+    - where: "summary; body paragraph 1 (Xtraction primitives)"
+      claim: "read arbitrary files and write HTML to the web directory, staging XSS or web-shell drop points ... is sufficient to chain to web-shell drop in environments where the attacker can guess or read deployment paths"
+      defect: "The vendor says 'sensitive files' and 'arbitrary HTML files' with 'possible client-side attacks'; a web-shell chain from an HTML write is not stated by any source, and an HTML file is not server-side code."
+      ground_truth: "'allows a remote authenticated attacker to read sensitive files and write arbitrary HTML files to a web directory, leading to information disclosure and possible client-side attacks.'"
+      ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043"
+      fix: "Restate as the vendor does; delete the web-shell chain, the T1505.003 mapping and the 'web-shell drop' detection clause."
+      class: factual-error
+    - where: "summary; body paragraph 4 (last sentence); actions[0]"
+      claim: "Xtraction is commonly deployed on internal management networks where egress controls are looser than perimeter"
+      defect: "No page read says where Xtraction is deployed or anything about egress controls; the same unsupported premise drives the patch-first ordering in actions[0] and the T1041 remark."
+      ground_truth: "The Ivanti blog and CERT-FR avis contain no deployment or egress statement; no exploitation is reported."
+      ground_truth_url: "https://www.ivanti.com/blog/may-2026-security-update"
+      fix: "Delete the clause and the T1041 sentence; base the patch order on the vendor's severity (CVSS 9.6 for Xtraction)."
+      class: factual-error
+    - where: "body paragraph 4 (detection)"
+      claim: "audit Xtraction installations for any HTML file in the web tree whose timestamp post-dates 2026-04-01 and whose content does not match a release manifest"
+      defect: "The 2026-04-01 threshold has no source (the flaw was disclosed 2026-05-12 with no exploitation window), and the web-shell mapping (T1505.003) for EPM SQL injection is unsupported."
+      ground_truth: "No page gives an exposure window; Ivanti: 'We have no evidence of these vulnerabilities being exploited in the wild.'"
+      ground_truth_url: "https://www.ivanti.com/blog/may-2026-security-update"
+      fix: "Drop the date; advise reviewing HTML files in the Xtraction web directory not belonging to a release, without a start date, or remove the clause."
+      class: factual-error
+    - where: "body paragraph 2 (EPM technique-class sentence)"
+      claim: "SQL injection against EPM's SQL Server back-end is the well-documented `xp_cmdshell` (T1059) or stored-procedure code-execution pivot ransomware initial-access brokers have weaponised against EPM and analogous endpoint-management platforms for years."
+      defect: "Uncited and not stated by any page read; the vendor's description is 'remote authenticated attacker to achieve remote code execution' and it reports no exploitation of the May flaws."
+      ground_truth: "EUVD-2026-29491: 'allows a remote authenticated attacker to achieve remote code execution.'"
+      ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8111"
+      fix: "Remove the IAB claim or cite a source for earlier EPM exploitation; state the vendor's RCE description."
+      class: imprecision
+    - where: "body paragraph 1 (Xtraction primitive wording)"
+      claim: "letting a remote authenticated attacker read arbitrary server-side files"
+      defect: "(low confidence) The vendor says 'sensitive files'; 'arbitrary server-side files' is a stronger reading."
+      ground_truth: "'read sensitive files and write arbitrary HTML files to a web directory'."
+      ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043"
+      fix: "Write 'read sensitive files'."
+      class: imprecision
+    - where: "headline; body paragraph 3 ('Inclusion gate cleared'); actions[0] ('See § 2')"
+      claim: "...May 2026 advisory batch, no | Inclusion gate cleared: CVE-2026-8043 sits in the ENISA EUVD CVSS 9.0–10.0 critical band"
+      defect: "The headline is cut off mid-phrase ('no'), and the body and action carry pipeline self-reference ('Inclusion gate cleared', 'See § 2'). The batch also omits the fourth advisory (Secure Access Client, CVE-2026-7431 4.4 and CVE-2026-7432 7.8) although it says 'four product-line advisories' and 'any of the four'."
+      ground_truth: "Ivanti: 'today Ivanti is disclosing vulnerabilities in Ivanti Secure Access Client, Xtraction, Virtual Traffic Manager and Endpoint Manager (EPM)'. EUVD-2026-29487 baseScore 9.6."
+      ground_truth_url: "https://www.ivanti.com/blog/may-2026-security-update"
+      fix: "Complete the headline ('no in-the-wild exploitation'); delete the internal phrases; name the Secure Access Client advisory or say 'three of four'."
+      class: imprecision
+    - where: "priority (high)"
+      claim: "priority: high"
+      defect: "Context only: on the facts known on 2026-05-14 the entry is an unexploited, authenticated (PR:L) flaw in a reporting product with no PoC and no evidence of constituency exposure, so 'high' rests on CVSS alone (severity statistics are an F16 disqualifier on a high); the two RCE flaws are authenticated as well (SQLi PR:L, vTM admin)."
+      ground_truth: "Ivanti: 'We have no evidence of these vulnerabilities being exploited in the wild.' EUVD vectors: CVE-2026-8043 PR:L, CVE-2026-8111 PR:L, CVE-2026-8051 PR:H; none in CISA KEV as of 2026-10-20."
+      ground_truth_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043"
+      fix: "Treat as regular-cycle patch priority (notable or routine) unless constituency exposure of Xtraction or EPM is documented."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1190, behavior: "Network-reachable authenticated flaws: Xtraction file read/HTML write (CVE-2026-8043), EPM web-console SQL injection to RCE (CVE-2026-8111); disclosure only, no exploitation reported", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8111"}
+      - {id: T1059, behavior: "vTM admin-interface OS command injection achieving remote code execution (CVE-2026-8051, admin privileges required)", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8051"}
+    rating: {reliability: A, credibility: 2, basis: "Ivanti is the vendor for its own products (blog 2026-05-12, per-CVE records); CERT-FR and SecurityWeek restate the vendor batch, so one assessor (2). The vendor's per-product advisory pages (hub.ivanti.com) are a JavaScript shell no transport here rendered; facts were read from ENISA EUVD (numbering-authority records) and the CNA CVE records."}
+    exposure:
+      - {quote: "External control of a file name in Ivanti Xtraction before version 2026.2 allows a remote authenticated attacker to read sensitive files and write arbitrary HTML files to a web directory, leading to information disclosure and possible client-side attacks.", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8043"}
+      - {quote: "SQL injection in the web console of Ivanti Endpoint Manager before version 2024 SU6 allows a remote authenticated attacker to achieve remote code execution.", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8111"}
+      - {quote: "OS command injection in Ivanti Virtual Traffic Manager before version 22.9r4 allows a remote authenticated attacker with admin privileges to achieve remote code execution.", url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-8051"}
+    detection: []
+    triage: []
+    takeaway:
+      - {quote: "We have no evidence of these vulnerabilities being exploited in the wild.", url: "https://www.ivanti.com/blog/may-2026-security-update"}
+      - {quote: "Se référer au bulletin de sécurité de l'éditeur pour l'obtention des correctifs (cf. section Documentation).", url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0576/"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e6-ivanti-blog.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-certfr.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-certfr-raw.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-secweek.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-euvd-8043.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-euvdsearch-CVE-2026-8111.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-euvdsearch-CVE-2026-8051.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-cve-CVE-2026-8043.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-cve-CVE-2026-8111.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e6-cve-CVE-2026-8051.txt]
+  possible_twin_outside_batch: null

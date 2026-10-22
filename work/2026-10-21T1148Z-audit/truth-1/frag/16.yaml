@@ -1,0 +1,61 @@
+  - entry: 2026-05-13/certfr-2026-avi-0572-centreon-infra-monitoring-rce-sqli-xss
+    verdict: factual-error
+    defects:
+      - where: "body (\"CVE Summary Table\" and its closing paragraph)"
+        claim: "#### CVE Summary Table | CVE-2026-44277 | Fortinet FortiAuthenticator ... | CVE-2026-34260 | SAP S/4HANA ... Vendor PSIRT pages (re-fetched at verification time) consistently publish CVSS 9.1 for both FortiAuthenticator CVE-2026-44277 and FortiSandbox CVE-2026-26083; early NCSC-CH / NVD reports cited 9.8 for one or both before convergence. § 7 documents the source discrepancy."
+        defect: "A brief-wide CVE table from the v2 migration (Fortinet, Exim, Microsoft, SAP) sits inside the Centreon entry; none of its rows concern Centreon. The closing paragraph misdescribes the Fortinet scores: the PSIRT pages show CVSSv3 base 9.8 and temporal 9.1; 9.1 is the score the CVE records carry (vector with E:F/RL:O/RC:C), and NCSC-CH's 9.8 is the base score, not an early error that 'converged'. 'verification time' and '§ 7' are pipeline self-reference. The table's other rows check out."
+        ground_truth: "FortiGuard FG-IR-26-128 and FG-IR-26-136: 'CVSSv3 Score 9.8 CVSSv3 Temporal Score 9.1'; EUVD-2026-29729 / EUVD-2026-29550: 9.1 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/E:F/RL:O/RC:C. Other rows verified: MSRC CVE-2026-41089 9.8, CVE-2026-41096 9.8, CVE-2026-41103 9.1, CVE-2026-42898 9.9, CVE-2026-40361/40364 8.4 (all 'exploited: No'); Exim advisory 4.97-4.99.2 fixed 4.99.3 CVSS 9.8; SAP May 2026 CVE-2026-34263 Note 3733064 and CVE-2026-34260 Note 3724838, both 9.6."
+        ground_truth_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"
+        fix: "Delete the whole table and closing paragraph from this entry (the Fortinet, Exim and SAP findings have their own entries; the Microsoft rows belong to a Patch Tuesday entry if any)."
+        class: imprecision
+      - where: "body paragraph 1 (CVE identifiers)"
+        claim: "Per-CVE identifiers are enumerated in the Centreon bulletin rather than the CERT-FR advisory."
+        defect: "The Centreon bulletin lists every vulnerability with 'Reference: N/A'; neither page carries any CVE identifier."
+        ground_truth: "Centreon bulletin (May 12th, 2026), each component: 'Reference: N/A'. CERT-FR AVI-0572: no CVE section."
+        ground_truth_url: "https://thewatch.centreon.com/latest-security-bulletins-64/april-2026-monthly-security-bulletin-for-centreon-infra-monitoring-high-5660"
+        fix: "'No CVE identifiers were published by Centreon or CERT-FR.'"
+        class: factual-error
+      - where: "summary; body paragraph 1 (deployment claim)"
+        claim: "the enterprise monitoring platform widely deployed in French and EU public-sector NOCs and government ISPs"
+        defect: "Stated on neither page; it is the entry's relevance argument presented as fact."
+        ground_truth: "CERT-FR AVI-0572 and the Centreon bulletin list products, versions and CVSS only."
+        ground_truth_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0572/"
+        fix: "Cite a deployment source or drop the clause."
+        class: imprecision
+      - where: "body paragraph 1 (credential-store and detection claims)"
+        claim: "Centreon stores **privileged monitored-host credentials** (SNMP communities, SSH private keys, vendor-API tokens) ... alert on Centreon process spawning child shells outside scheduled poller intervals"
+        defect: "Uncited; neither page describes stored credentials or detection telemetry. The sourced severity detail is missing: eight components carry the same SQL injection (CVSS 8.8), Centreon Map an SVG XSS (6.8), MBI a command injection via dos2unix exec (8.8)."
+        ground_truth: "Centreon: 'SQL injection via string concatenation across legacy PHP files ... CVSS: 8.8'; 'XSS in images by altering the SVG ... CVSS: 6.8'; 'Command injection via dos2unix exec ... CVSS: 8.8'."
+        ground_truth_url: "https://thewatch.centreon.com/latest-security-bulletins-64/april-2026-monthly-security-bulletin-for-centreon-infra-monitoring-high-5660"
+        fix: "Give the per-component flaw and CVSS from the bulletin with CERT-FR's fixed-version table; cite or drop the credential-store claim."
+        class: imprecision
+    upgrade:
+      techniques:
+        - {id: T1190, behavior: "SQL injection in eight Centreon web components and command injection in Centreon MBI (no authentication requirement stated by the vendor)", url: "https://thewatch.centreon.com/latest-security-bulletins-64/april-2026-monthly-security-bulletin-for-centreon-infra-monitoring-high-5660"}
+      rating:
+        reliability: A
+        credibility: 2
+        basis: "Vendor bulletin (Centreon) for its own products, restated by CERT-FR AVI-0572 (national CERT for its jurisdiction restating the vendor): one assessor."
+      exposure:
+        - {quote: "MBI versions 24.04.x antérieures à 24.04.15", url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0572/"}
+        - {quote: "Fixes have been provided for all supported versions and it is recommended to update Centreon Anomaly Detection on Central Server", url: "https://thewatch.centreon.com/latest-security-bulletins-64/april-2026-monthly-security-bulletin-for-centreon-infra-monitoring-high-5660"}
+      detection: []
+      triage: []
+      takeaway:
+        - {quote: "Se référer au bulletin de sécurité de l'éditeur pour l'obtention des correctifs", url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0572/"}
+      bodies:
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/centreon-certfr.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/centreon-bulletin.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-FG-IR-26-128.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/forti-FG-IR-26-136.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/msrc-CVE-2026-41089.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/msrc-CVE-2026-41096.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/msrc-CVE-2026-41103.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/msrc-CVE-2026-42898.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/msrc-CVE-2026-40361.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/msrc-CVE-2026-40364.json
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/ms-tenable-may2026.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/ms-zdi-may2026.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/sap-patchday-may2026.txt
+        - work/2026-10-21T1148Z-audit/truth-1/bodies/exim-advisory.txt
+    possible_twin_outside_batch: null

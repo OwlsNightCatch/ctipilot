@@ -1,0 +1,53 @@
+- entry: 2026-05-15/cve-2026-45691-nextcloud-server-enterprise-server-2fa-bypass
+  verdict: factual-error
+  defects:
+    - where: "body last sentence (same-batch advisories)"
+      claim: "The same May 2026 Nextcloud advisory batch includes CVE-2026-45690 (SQL injection in column-type parameter, Moderate), a JWT signature-verification bypass in the Nextcloud user OIDC app (Moderate), and a calendar attendee suggestion endpoint information disclosure (High)"
+      defect: "Wrong id and swapped severities: the column-type SQL injection is CVE-2026-45545 (High 8.2, Tables app); CVE-2026-45690 is a second 2FA bypass (Moderate 5.9); the User OIDC JWT bypass is High 8.1; the calendar attendee leak is Moderate 4.3."
+      ground_truth: "GHSA-x43f-gmgh-vvjj 'SQL Injection in Column Type Parameter Allows Arbitrary SQL Execution', High, CVE-2026-45545, 8.2, Tables; GHSA-jgcj-v42r-9922 'Two-Factor Authentication Bypass via Pending Session Token Replay', Moderate 5.9, CVE-2026-45690 (published May 15); GHSA-qqgv-fqwp-mjpp 'Authentication Bypass in ID4me handling via Missing JWT Signature Verification in User OIDC', High 8.1, CVE-2026-45156; GHSA-r697-74m9-gvf2 'Calendar app leaked user identifiers via attendee suggestion endpoint', Moderate 4.3, CVE-2026-45286."
+      ground_truth_url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-x43f-gmgh-vvjj"
+      fix: "Correct each id and severity as above, citing the four GHSAs; note CVE-2026-45690 is a second 2FA bypass fixed in the same Server releases."
+      class: factual-error
+    - where: "headline; summary"
+      claim: "2FA bypass on WebDAV via pre-authenticated session token reuse ... pre-auth 2FA bypass via WebDAV session token reuse"
+      defect: "The flaw requires the user's password: the reusable cookie is created after password authentication, and the advisory scores it PR:L. 'Pre-auth' tells readers it is exploitable without credentials."
+      ground_truth: "'A pre-2FA session cookie (created after successful password authentication but before TOTP completion) could be reused as a Bearer token to authenticate against DAV endpoints'; CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:L/I:H/A:N."
+      ground_truth_url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"
+      fix: "Write 'second-factor bypass on DAV endpoints for an attacker who already has the password (pre-2FA session cookie reuse)'."
+      class: factual-error
+    - where: "body (Affected versions)"
+      claim: "Affected: Nextcloud Server 32.0.0–33.0.2 and 33.0.0 branches"
+      defect: "Garbled range; per the advisory Server is affected from 32.0.0 before 32.0.9 and from 33.0.0 before 33.0.3."
+      ground_truth: "Affected versions '>= 33.0.0, >= 32.0.0'; patched '33.0.3, 32.0.9'; Enterprise '>= 33.0.0, >= 32.0.0, >= 31.0.0, >= 30.0.0, >= 29.0.0' patched '33.0.3, 32.0.9, 31.0.14.5, 30.0.17.9, 29.0.16.16'."
+      ground_truth_url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"
+      fix: "Write 'Server 32.0.0-32.0.8 and 33.0.0-33.0.2; Enterprise 29 to 33 before version 29.0.16.16 / 30.0.17.9 / 31.0.14.5 / 32.0.9 / 33.0.3' (prefix four-part versions with 'version')."
+      class: imprecision
+    - where: "cves[] (empty); kind"
+      claim: "cves: []; kind: threat"
+      defect: "The body names CVE-2026-45691 (and CVE-2026-45690) but cves[] is empty; a vendor-advisory flaw with no exploitation is a vulnerability entry."
+      ground_truth: "GHSA-mp6x-g55j-w9jw: 'CVE ID CVE-2026-45691', 'Severity Moderate 5.9'."
+      ground_truth_url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"
+      fix: "Add cves[] {CVE-2026-45691, cvss 5.9, auth post-auth, status patch-available, fixed 33.0.3 / 32.0.9} and, if kept, CVE-2026-45690 (5.9); set kind vulnerability."
+      class: imprecision
+    - where: "summary; body ('No PoC ... no in-the-wild exploitation'); ATT&CK sentence; priority"
+      claim: "widespread deployment in EU government and education environments ... No PoC is publicly available; no in-the-wild exploitation reported. ... T1550.001 ... priority: high"
+      defect: "The deployment claim and the no-PoC/no-ITW statement are uncited (the GHSA states neither); T1550.004 (web session cookie) is the closer mapping; a Moderate, credential-dependent, unexploited flaw is weak for 'high' on facts known then."
+      ground_truth: "The GHSA gives impact, patches and an empty Workarounds section; CISA KEV (2026-10-20) does not list CVE-2026-45691."
+      ground_truth_url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"
+      fix: "Drop or source the deployment claim; write 'no exploitation reported as of <date>' with a source; map T1078 + T1550.004; consider notable."
+      class: imprecision
+  upgrade:
+    techniques:
+      - {id: T1078, behavior: "Attacker already holds the user's password (first factor)", url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"}
+      - {id: T1550.004, behavior: "Pre-2FA session cookie replayed as a Bearer token against DAV endpoints to skip TOTP", url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"}
+      - {id: T1213, behavior: "Read/write access to files, calendars and contacts over DAV after the bypass", url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"}
+    rating: {reliability: A, credibility: 2, basis: "Nextcloud's own GHSA for its own product (A); BSI WID-SEC-2026-1517 restates the vendor batch (one assessor, 2)."}
+    exposure:
+      - {quote: "A pre-2FA session cookie (created after successful password authentication but before TOTP completion) could be reused as a Bearer token to authenticate against DAV endpoints, granting read/write access and bypassing mandatory two-factor authentication.", url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"}
+    detection: []
+    triage: []
+    takeaway:
+      - {quote: "It is recommended that the Nextcloud Server is upgraded to 33.0.3 or 32.0.9", url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"}
+      - {quote: "It is recommended that the Nextcloud Enterprise Server is upgraded to 33.0.3, 32.0.9, 31.0.14.5, 30.0.17.9 or 29.0.16.16", url: "https://github.com/nextcloud/security-advisories/security/advisories/GHSA-mp6x-g55j-w9jw"}
+    bodies: [work/2026-10-21T1148Z-audit/truth-2/bodies/e11-ghsa.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-ghsa-raw.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-bsi-csaf.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-x43f-gmgh-vvjj.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-jgcj-v42r-9922.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-qqgv-fqwp-mjpp.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-GHSA-r697-74m9-gvf2.txt, work/2026-10-21T1148Z-audit/truth-2/bodies/e11-adv-list-p2.txt]
+  possible_twin_outside_batch: null

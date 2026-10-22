@@ -1,9 +1,9 @@
 ---
 schema: 1
 kind: threat
-title: "FrostyNeighbor / Ghostwriter (UNC1151, Belarus state-aligned): ESET documents March–May 2026 campaign targeting Polish, Lithuanian, and Ukrainian government and industrial sectors"
-headline: "FrostyNeighbor / Ghostwriter (UNC1151, Belarus state-aligned): ESET documents March–May 2026 campaign targeting Polish, Lithuanian, and Ukrainian government"
-summary: "ESET published a new technical report on 2026-05-14 documenting fresh operational activity from FrostyNeighbor — a cluster ESET and Mandiant track as Ghostwriter / UNC1151 / UAC-0057, assessed as apparently Belarus state-aligned — against Polish, Lithuanian, and Ukrainian government and industrial organisations across …"
+title: "FrostyNeighbor (Ghostwriter, UNC1151): since March 2026, geofenced PDF lures deliver a JavaScript PicassoLoader and Cobalt Strike to Ukrainian government organisations"
+headline: "Belarus-aligned FrostyNeighbor hits Ukrainian government bodies with geofenced PDF lures and Cobalt Strike"
+summary: "ESET reported on 2026-05-14 new activity since March 2026 by FrostyNeighbor (Ghostwriter, UNC1151), a cyberespionage group apparently aligned with Belarus, against governmental organisations in Ukraine: spearphishing PDFs impersonating Ukrtelecom link to a server that returns a benign PDF outside Ukraine and a RAR archive with a JavaScript dropper to Ukrainian IP addresses. The JavaScript PicassoLoader it installs reports a host fingerprint every 10 minutes, and operators decide manually whether to send a dropper that runs a Cobalt Strike beacon through a renamed copy of rundll32 with Run-key persistence."
 discovered_at: "2026-05-15T05:00:02Z"
 event_date: 2026-05-14
 run_id: 2026-05-15-58b94fbd
@@ -12,36 +12,78 @@ immediate_action: null
 tags:
   - nation-state
   - espionage
-  - russia-nexus
+  - phishing
 regions:
   - europe
 sectors:
   - public-sector
-  - healthcare
-  - manufacturing
 entities:
   - "campaign:frostyneighbor-2026-05-campaign"
+  - "actor:frostyneighbor"
+techniques: [T1566.001, T1204.002, T1059.007, T1027, T1140, T1053.005, T1082, T1057, T1071.001, T1105, T1036.003, T1218.011, T1547.001]
+affected_products: []
 cves: []
 sources:
   - url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"
-    publisher: "ESET WeLiveSecurity, 2026-05-14"
+    publisher: "ESET"
+    date: "2026-05-14"
     role: primary
   - url: "https://thehackernews.com/2026/05/ghostwriter-targets-ukrainian.html"
-    publisher: "The Hacker News, 2026-05-14"
+    publisher: "The Hacker News"
+    date: "2026-05-14"
     role: corroborating
 closed_sources: []
-evidence: []
+evidence:
+  - quote: "Since March 2026, we have detected new activities that we attributed to FrostyNeighbor, using links in malicious PDFs sent via spearphishing attachments to target governmental organizations in Ukraine."
+    publisher: ESET
+    source_url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"
+  - quote: "The decision whether or not to deliver a payload is very likely manually performed by the operators, based on the collected information to decide if the victim is of interest."
+    publisher: ESET
+    source_url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"
+  - quote: "The payload is only delivered after server-side victim validation, combining automated checks of the requesting user agent and IP address with the manual validation by the operators."
+    publisher: ESET
+    source_url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"
 verification: multi-source
-sourcing_note: null
+sourcing_note: "ESET's research from its own telemetry is the only analysis; The Hacker News reports it."
 confidence: high
 update_of: null
 references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null
+classification:
+  reliability: B
+  credibility: 2
 watchlist_hit: false
 actions: []
 migrated_from: briefs/2026-05-15.md
+updated_at: null
+updates:
+  - at: "2026-10-21T20:36:01Z"
+    run_id: 2026-10-21T1148Z-audit
+    type: correction
+    summary: >
+      ESET's new FrostyNeighbor activity since March 2026 targets governmental organisations in Ukraine;
+      the industrial, healthcare, pharmaceutical and logistics victims in Poland and Lithuania are ESET's
+      description of the group's broader historical victimology, not targets of this campaign wave. The
+      chain also includes scheduled-task persistence for the JavaScript PicassoLoader and a Cobalt Strike
+      beacon run by a renamed copy of rundll32 from an HKCU Run-key LNK, which the detection guidance now
+      covers.
+    fields: [affected_products, body, classification, evidence, headline, sectors, sources, sourcing_note, summary, tags, techniques, title, entities]
 ---
 
-ESET published a new technical report on 2026-05-14 documenting fresh operational activity from FrostyNeighbor — a cluster ESET and Mandiant track as Ghostwriter / UNC1151 / UAC-0057, assessed as apparently Belarus state-aligned — against Polish, Lithuanian, and Ukrainian government and industrial organisations across a March–May 2026 wave ([ESET WeLiveSecurity, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)). The Ukraine strand distributes RAR archives via spear-phishing PDFs impersonating Ukrtelecom; the archives drop a JavaScript downloader (a PicassoLoader variant) that fingerprints the victim environment (username, process list, OS version) and beacons every 10 minutes to operator infrastructure. A server-side geofencing check delivers a benign decoy to IPs outside Ukraine, making emulation from a non-Ukrainian network appear clean. Polish and Lithuanian targeting covers industrial/manufacturing, healthcare and pharmaceuticals, logistics, and government organisations — ESET documents victimology spanning both NATO member states in the same campaign wave. Once operators manually approve a victim, a Cobalt Strike Beacon payload is staged, indicating deliberate victim-vetting prior to full post-compromise operations. MITRE ATT&CK: [T1566.001](https://attack.mitre.org/techniques/T1566/001/) (Spearphishing Attachment), [T1027](https://attack.mitre.org/techniques/T1027/) (Obfuscated Files), [T1059.007](https://attack.mitre.org/techniques/T1059/007/) (JavaScript), [T1082](https://attack.mitre.org/techniques/T1082/) (System Information Discovery — victim-vetting step), [T1105](https://attack.mitre.org/techniques/T1105/) (Ingress Tool Transfer — Cobalt Strike staging). Detection: alert on JavaScript execution from browser/document-viewer parent-process trees, followed by 10-minute periodic outbound HTTP(S) beacons to a new destination; test detections with Ukrainian-egress routing to bypass the geofencing blind spot.
+ESET attributes new activity since March 2026 to FrostyNeighbor, also known as Ghostwriter, UNC1151, UAC-0057, TA445, PUSHCHA or Storm-0257, a long-running cyberespionage group apparently aligned with the interests of Belarus, using links in spearphishing PDFs to target governmental organisations in Ukraine ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)). In ESET's telemetry the group's Ukrainian targeting focuses on military, defence and government, while its victimology in Poland and Lithuania is broader, spanning industry and manufacturing, healthcare and pharmaceuticals, logistics and many governmental organisations ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)).
+
+The lure is a blurred PDF impersonating Ukrtelecom whose download button leads to the group's delivery server; visitors outside Ukraine receive a benign PDF of the same name, while Ukrainian IP addresses receive a RAR archive holding a JavaScript first stage that shows a decoy, re-runs itself, drops a base64-embedded JavaScript PicassoLoader and builds a scheduled task from an XML template the C2 serves as a fake JPG ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)). PicassoLoader collects the username, computer name, OS version, boot time, current time and running processes, posts them over HTTPS every 10 minutes and evaluates any response longer than 100 bytes ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)). Operators very likely decide by hand whether the victim is of interest; if so, the C2 returns a third-stage dropper that copies `rundll32.exe` into `%ProgramData%` under another name, writes the base64-decoded Cobalt Strike beacon DLL beside it, and registers in the HKCU Run key a LNK that starts the copied `rundll32` with the DLL's export ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)).
+
+**Exposure:** governmental organisations in Ukraine are the targets of this chain; the payload is delivered only after server-side checks of the user agent and IP address and a manual operator decision, so a request from outside Ukraine sees only the benign PDF ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)).
+
+**Detection:** in process telemetry, a JavaScript file from a RAR archive that relaunches itself, followed by scheduled-task creation from a downloaded XML template; in network telemetry, a script process posting to the same HTTPS endpoint every 10 minutes; in persistence telemetry, an HKCU Run entry pointing at a LNK in `%ProgramData%` that starts a renamed copy of `rundll32.exe` loading a DLL from the same directory ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)).
+
+**Triage:** `rundll32.exe` is a normal Windows binary when it runs from the system directory; a copy of it under a different name in `%ProgramData%`, which ESET says is very likely meant to bypass detection rules, is the signal ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)).
+
+**Defender takeaway:** because delivery is geofenced and operator-gated, a clean verdict on an Ukrtelecom-themed lure link from a sandbox outside Ukraine proves nothing; hunt on the host artefacts above instead ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)). The Hacker News reports the same chain ([The Hacker News, 2026-05-14](https://thehackernews.com/2026/05/ghostwriter-targets-ukrainian.html)).
+
+## Correction — 2026-10-21T20:36:01Z
+
+The activity ESET documents since March 2026 targets governmental organisations in Ukraine ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)); the industrial, healthcare and pharmaceutical, logistics and governmental victims in Poland and Lithuania come from ESET's introduction to the group's broader victimology, not from this campaign wave. The chain also persists: the first stage builds a scheduled task from a downloaded XML template to run PicassoLoader, and the Cobalt Strike stage copies `rundll32.exe` into `%ProgramData%` under another name and starts it from a LNK registered in the HKCU Run key ([ESET, 2026-05-14](https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/)), which gives defenders host artefacts to hunt where geofencing hides the network side.
