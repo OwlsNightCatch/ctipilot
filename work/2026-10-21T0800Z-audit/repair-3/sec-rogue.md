@@ -1,0 +1,1 @@
+Microsoft identifies the vulnerable engine as `mpengine.dll` and says Defender runs on all supported versions of Windows, so every Windows host with Defender enabled was in scope until its engine reached 1.1.26060.3008; hosts with Defender disabled are not in an exploitable state ([Microsoft MSRC, 2026-07-08](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656)).

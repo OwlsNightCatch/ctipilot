@@ -1,7 +1,7 @@
 ---
 schema: 1
 kind: threat
-title: "CHOSEN BRICK — Iranian state cyber actors run Telegram-C2 Windows spyware against dissidents, activists and journalists, per joint NCSC-UK/FBI/AIVD advisory"
+title: "CHOSEN BRICK: Iranian state cyber actors run Telegram-C2 Windows spyware against dissidents, activists and journalists, per joint NCSC-UK/FBI/AIVD advisory"
 headline: "NCSC-UK, the FBI and AIVD detail an Iranian spyware family that gives every victim their own private Telegram bot for command and control"
 summary: >
   NCSC-UK, the FBI and the Netherlands' AIVD jointly published a technical advisory on 2026-09-15 for
@@ -67,6 +67,8 @@ evidence:
     publisher: "NCSC UK"
   - quote: "The personal details of some previous victims of CHOSEN BRICK have appeared on pro-Iranian leak sites, potentially increasing the risk to the personal safety of those affected."
     publisher: "NCSC UK"
+  - quote: "Wipe the computer system (T1485)"
+    publisher: "NCSC UK"
 verification: single-source-national-cert
 sourcing_note: >
   NCSC UK, the FBI and AIVD co-authored one joint advisory rather than three independent
@@ -108,6 +110,15 @@ updates:
     summary: >
       The link between CHOSEN BRICK's tradecraft and activity the FBI attributed to Iran's Ministry of Intelligence and Security is The Record's assessment; NCSC UK does not draw it. The analysis now attributes it.
     fields: [body]
+  - at: "2026-10-21T08:18:41Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: correction
+    summary: >
+      NCSC lists wiping the computer system among the functions the malware can be tasked with through its
+      Telegram bot, and separately notes data-wiping functionality in at least one sample; the 2026-09-30
+      correction said NCSC mentioned only the latter. The analysis now uses NCSC's wording, wiping the
+      computer system, instead of a full disk wipe.
+    fields: [body, evidence, title]
 migrated_from: null
 ---
 
@@ -117,7 +128,7 @@ Access begins with rapport-building over messaging apps such as WhatsApp and Tel
 
 CHOSEN BRICK persists across reboot via the registry Run key `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`, registers a mutex so only one copy runs, and adds Microsoft Defender exclusions to evade detection. Command and control runs over Telegram, with each victim device assigned its own unique Telegram Bot ID as an explicit operational-security measure to prevent cross-contamination between victims ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)); newer variants layer HTTPS/SOCKS5 proxies over that channel to further obscure it. No automated lateral-movement capability has been observed, though the malware can download and persist additional payloads through the same registry mechanism, making it technically possible.
 
-Tasking supports process and system enumeration, screen capture, microphone capture, theft of Telegram/WhatsApp browser data and email content, and file deletion or a full disk wipe. NCSC says screen capture is a data-theft feature commonly observed in these infections, which the actor can use to identify a victim's contacts, location and pattern of life ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). Collected data exfiltrates through the Telegram bot or cloud object stores such as VultrObjects and StorjShare. NCSC states the most commonly observed additional-malware drop location is a lookalike of the system SysWOW64 directory under a folder named "Windows" with a trailing space, which NCSC states the actor created specifically for the purpose of deploying malware. NCSC adds that in at least one sample there was functionality for data wiping ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). Some victims' personal data has since surfaced on pro-Iranian leak sites, which NCSC reads as a further harassment vector rather than incidental exposure ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)).
+Tasking supports process and system enumeration, screen capture, microphone capture, theft of Telegram/WhatsApp browser data and email content, file deletion and wiping the computer system. NCSC says screen capture is a data-theft feature commonly observed in these infections, which the actor can use to identify a victim's contacts, location and pattern of life ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). Collected data exfiltrates through the Telegram bot or cloud object stores such as VultrObjects and StorjShare. NCSC states the most commonly observed additional-malware drop location is a lookalike of the system SysWOW64 directory under a folder named "Windows" with a trailing space, which NCSC states the actor created specifically for the purpose of deploying malware. NCSC adds that in at least one sample there was functionality for data wiping ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). Some victims' personal data has since surfaced on pro-Iranian leak sites, which NCSC reads as a further harassment vector rather than incidental exposure ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)).
 
 **Defender takeaway:** CHOSEN BRICK targets people, not infrastructure, so the relevant defensive population is any organization with staff whose personal profile makes them a plausible transnational-repression target, such as diplomatic missions, asylum and refugee-support units, and any authority protecting activists, journalists or dissidents. Because operators explicitly pivot to a victim's personal device when a corporate one resists, guidance and detection support need to extend to personal devices for at-risk staff, not only managed endpoints. **Triage:** legitimate use of the Telegram Bot API, Backblaze B2, Vultr and Storj object storage, and the IPRoyal and Lightning Proxies proxy services is common and none is inherently malicious. The discriminator NCSC gives is connections to these services in DNS or web proxy logs where they are not expected as part of normal business ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). NCSC's investigation guidance lists a separate check of the current user's Run key, where the malware most often persists, for programs set to start at logon ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)), so a Run-key entry the user did not knowingly set up on the same host corroborates the lead.
 
@@ -125,8 +136,12 @@ Tasking supports process and system enumeration, screen capture, microphone capt
 
 NCSC does not contrast CHOSEN BRICK with conventional espionage. Its investigation guidance gives two separate checks: the current user's Run key for programs set to start at logon, and connections to the listed legitimate services where they are not expected as part of normal business ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). NCSC says the malware adds exclusions to Microsoft Defender to evade detection, not that it disables Defender ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)).
 
-NCSC gives the targeting as individuals around the world including in the UK, US and the Netherlands, not as confirmed victims in those three countries, while The Record reads the advisory as covering victims in all three ([The Record, 2026-09-15](https://therecord.media/iran-cyber-spies-use-fake-mri-scans-as-lure)). It calls screen capture a commonly observed data-theft feature, not the most common one, and it says only that at least one sample had data-wiping functionality, without tying that to the payloads the malware downloads ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)).
+NCSC gives the targeting as individuals around the world including in the UK, US and the Netherlands, not as confirmed victims in those three countries, while The Record reads the advisory as covering victims in all three ([The Record, 2026-09-15](https://therecord.media/iran-cyber-spies-use-fake-mri-scans-as-lure)). It calls screen capture a commonly observed data-theft feature, not the most common one, and it lists wiping the computer system among the functions the malware can be tasked with through its Telegram bot, separately noting data-wiping functionality in at least one sample ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)).
 
 ## Correction — 2026-10-11T14:02:26Z
 
 The comparison with activity the FBI attributed to actors working for Iran's Ministry of Intelligence and Security is The Record's reading; NCSC UK's advisory names no Iranian government entity and does not make that link ([The Record, 2026-09-15](https://therecord.media/iran-cyber-spies-use-fake-mri-scans-as-lure)).
+
+## Correction — 2026-10-21T08:18:41Z
+
+Wiping is a function the operator can task, not only a capability seen in one sample: NCSC lists wiping the computer system, alongside deleting files, among the functions the malware can be tasked with through the Telegram bot, and separately notes data-wiping functionality in at least one sample ([NCSC UK, 2026-09-15](https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists)). NCSC's wording is wiping the computer system, not a full disk wipe.

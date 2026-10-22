@@ -1,0 +1,1 @@
+As of 2026-10-20 none of the fifty flaws appears in CISA's Known Exploited Vulnerabilities catalog ([CISA KEV catalog, 2026-10-20](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)), and Oracle's risk matrix gives no exploitation status for any of them ([Oracle, 2026-09-15](https://www.oracle.com/security-alerts/cspusep2026.html)).

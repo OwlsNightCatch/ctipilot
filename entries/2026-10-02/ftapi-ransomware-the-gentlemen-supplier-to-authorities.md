@@ -4,7 +4,7 @@ kind: incident
 title: "FTAPI, a file-transfer vendor whose customers include authorities, confirms ransomware on an internal server; The Gentlemen list it on their leak site"
 headline: "A file-transfer supplier to authorities had ransomware on one internal server; the vendor says its platform is untouched"
 summary: >
-  FTAPI Software of Munich, whose secure file-transfer service is used by authorities and companies, told heise that
+  FTAPI of Munich, whose secure file-transfer service is used by authorities and companies, told heise that
   unauthorised parties installed ransomware on a single internal server, detected on 2026-09-14, and says its platform,
   customer systems and exchanged data were not affected. The Gentlemen ransomware group listed FTAPI on its leak site
   with a countdown that heise read as about five days on 2026-09-29.
@@ -58,7 +58,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-21T08:14:50Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The summary names the vendor 'FTAPI of Munich', as the cited reports do, instead of a company name
+      none of them uses.
+    fields: [summary]
 migrated_from: null
 ---
 

@@ -18,7 +18,7 @@ regions:
   - switzerland
 sectors: []
 entities: ["campaign:ncsc-ch-m365-voicemail-phishing-week25"]
-techniques: [T1566.001, T1566.002, T1204.002, T1555, T1539, T1078.004, T1114.002]
+techniques: [T1566.001, T1566.002, T1684.001, T1204.002, T1555, T1539, T1078.004, T1114.002]
 cves: []
 sources:
   - url: "https://www.bacs.admin.ch/en/26w25-en"
@@ -64,13 +64,33 @@ updates:
     summary: >
       Relabels the closing line as the Defender takeaway, the label the rest of the store uses; its text is unchanged.
     fields: [body]
+  - at: "2026-10-21T08:22:37Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      The analysis gains Exposure, Detection and Triage lines: Microsoft 365 and OneDrive for Business
+      users as the exposed group, mail-flow signs of the lure and of chain phishing ahead of the existing
+      marked inference, and NCSC's audio-file tell plus its advice to check voice messages in the official
+      app. The takeaway adds NCSC's warning that harvested data resurfaces later, so an infected host's
+      credentials and sessions need resetting, and the imitation of Microsoft notifications is mapped.
+    fields: [body, techniques]
 migrated_from: briefs/2026-06-25.md
 ---
 
 Switzerland's National Cyber Security Centre received a higher-than-usual number of reports about a dual-path Microsoft 365 / OneDrive-for-Business phishing campaign, its Week 25 review says ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)). In the malware-delivery variant the email carries a ZIP "audio" attachment, and running its contents installs malware, such as an infostealer, that can harvest login details, cookies or wallet information. In the credential-harvest variant a fake Microsoft login page with a simulated audio player ("Play voicemail as guest") captures the M365 username and password. The link in the notification, or an HTML file attached to it, leads to that page. NCSC-CH notes that a compromised mailbox is then often used to send phishing to all of the victim's contacts ("chain phishing"), that the attackers read business communications to prepare CEO fraud and business email compromise from a real employee's address, and that data an infostealer harvests may also be resold and in some cases resurfaces weeks or months later.
 
-**Defender takeaway:** The discriminator is mechanical: genuine voicemail notifications are usually audio files such as `.wav` or `.mp3`, not ZIP archives. In analyst judgement, phishing-resistant MFA (FIDO2 / certificate-based Conditional Access) blocks the fake-login path even when the lure succeeds, though not a session cookie an infostealer has already taken. By inference from the mailbox monitoring NCSC-CH describes, hunt M365 audit logs for mailbox access from a new country or ASN shortly after a sign-in, and for inbox or forwarding rules created in that session.
+**Exposure:** organisations on Microsoft 365 or OneDrive for Business, whose users receive the fake voicemail notifications by email; stolen Microsoft 365 login details open the victim's email, OneDrive, SharePoint and Teams ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)).
+
+**Detection:** in mail-flow telemetry, inbound messages styled as Microsoft 365 or OneDrive voicemail notifications that carry a ZIP archive, an HTML attachment or a link, and later a burst of outbound mail from one mailbox to many of its contacts, the chain phishing NCSC describes ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)). By inference from the mailbox monitoring NCSC-CH describes, hunt M365 audit logs for mailbox access from a new country or ASN shortly after a sign-in, and for inbox or forwarding rules created in that session.
+
+**Triage:** genuine voicemails from telephone systems usually arrive as audio files such as `.wav` or `.mp3`, not as ZIP archives, and NCSC advises checking voice messages in the official app rather than through an email notification ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)); a notification whose message plays only through an attachment or a "Play voicemail as guest" sign-in page is the lure.
+
+**Defender takeaway:** in analyst judgement, phishing-resistant MFA (FIDO2 / certificate-based Conditional Access) blocks the fake-login path even when the lure succeeds, though not a session cookie an infostealer has already taken. Where the ZIP's contents ran, treat the host's login details, cookies and wallet information as harvested, since NCSC says such data may be resold and resurface weeks or months later in targeted follow-up attacks ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)): reset those credentials and revoke the sessions rather than only cleaning the host.
 
 ## Correction — 2026-09-30T06:43:01Z
 
 NCSC Switzerland's Week 25 review describes what attackers do with a compromised mailbox: they send phishing to the victim's contacts ("chain phishing") and read business communications to prepare CEO fraud and business email compromise ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)). It does not describe forwarding rules or account manipulation, which the analysis had mapped. It also says genuine voicemails are usually sent as audio files rather than ZIP archives, and that data an infostealer harvests may be resold, where the analysis had said never and frequently. The analysis now follows the page, and the hunt for inbox and forwarding rules is marked as an inference from the mailbox monitoring NCSC describes. NCSC gives the infostealer only as an example of the malware the ZIP installs, and it names no sector and no Swiss public-sector recipients, so the title and analysis now say so and the entry's priority is notable rather than high. The citation now points at the page's new address on bacs.admin.ch, after the old ncsc.admin.ch page went dead.
+
+## Improvement — 2026-10-21T08:22:37Z
+
+NCSC advises checking voice messages in the official app rather than through an email notification, and it warns that login details, cookies and wallet information an infostealer harvests may be resold and resurface weeks or months later in targeted follow-up attacks ([NCSC-CH, 2026-06-23](https://www.bacs.admin.ch/en/26w25-en)). A host where the ZIP's contents ran therefore needs its credentials reset and its sessions revoked, not only cleaning.

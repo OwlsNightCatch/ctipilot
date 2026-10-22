@@ -2,7 +2,7 @@
 
 Program: [`prompts/cleanup-coordinator.md`](../../prompts/cleanup-coordinator.md). Machine-readable plan with every row's entry ids: [`work/cleanup/plan.json`](../../work/cleanup/plan.json); this file is rendered from it (`python3 work/cleanup/render_status.py`). Inventory: `python3 work/cleanup/inventory.py`. Each cleanup session takes the next wave, updates the rows it touched in plan.json, re-renders, and names the next wave below.
 
-**Next wave:** 03, 04 and 05 are ready and run in parallel, one session each (lanes A, B, C; kickoff lines in work/cleanup/wave-03/, wave-04/ and wave-05/HANDOVER.md). 06, 07 and 08 become ready when wave 02's record is on main, 09 and 10 when a lane frees up. Earliest start: any time, except Saturday 18:00Z until the Sunday audit's record lands on main.
+**Next wave:** Wave 02 is done. In flight: 03, 04 and 05. Ready now, one session each and in parallel: 06, 07 and 08 (kickoff lines in work/cleanup/wave-<NN>/HANDOVER.md). Planned: 09, 10, 11 and 12. 09 has no prerequisite and starts when a lane frees up. 10 has no prerequisite and starts when a lane frees up. 12 waits for 04 and 05. 11 (W7-08, W7-17, C9 retirement) is last. Earliest start: any time, except Saturday 18:00Z until the Sunday audit's record lands on main.
 
 ## Definition of done (§ Mandate)
 
@@ -21,13 +21,13 @@ After every wave: `python3 tools/check_run.py --all` ends `0 warn · 0 fail`, `p
 | Measure | Baseline | Now |
 |---|---|---|
 | Entries in the store | 996 | 1002 |
-| Legacy queue pending | 408 | 406 |
-| 2026-10-18 out-of-week verdicts not yet applied (factual error / imprecision / clean) | 77 / 63 / 42 (182 rows, 25 on entries since folded) | 61 / 63 / 42 (W1-A's 16 factual-error rows closed) |
+| Legacy queue pending | 408 | 388 |
+| 2026-10-18 out-of-week verdicts not yet applied (factual error / imprecision / clean) | 77 / 63 / 42 (182 rows, 25 on entries since folded) | 61 / 6 / 37 (wave 01 closed W1-A's 16 factual-error rows, wave 02 W1-B's 57 imprecision and W1-C's 5 clean rows) |
 | Never-verified non-legacy entries (W3) | 71 | 71 |
 | Known duplicate groups open (W4) | 4 + scan | 4 + scan |
 | Registry orphans (no entry key, no relation) | 179 non-product + 4 product | 183, none a duplicate (W5-04, W5-05) |
 | check_run.py --all | 0 fail, 1 warn, 25 acknowledged | 0 fail, 0 warn, 26 acknowledged |
-| Rows done / declined / in a wave / open | 56 rows | 24 / 2 / 12 / 18 |
+| Rows done / declined / in a wave / open | 56 rows | 29 / 2 / 7 / 18 |
 
 ## Waves
 
@@ -36,13 +36,13 @@ Waves marked `ready` can start now, each in its own session and in parallel; `af
 | Wave | Lane | Rows | After | Status |
 |---|---|---|---|---|
 | 01 | - | W7-01, W7-02, W6-04, W1-A (16 entries); standalone W5/W6/W7 rows shipped during it | - | done 2026-10-20T0835Z-audit: 5 verifier iterations, residual 1, 8 of 20 spawns |
-| 02 | - | W1-B (57), W1-C (5), W1-E (34 items), W1-F (8), W1-H; inputs in work/cleanup/wave-02/ | - | in-flight 2026-10-21T0800Z-audit |
+| 02 | - | W1-B (57), W1-C (5), W1-E (34 items), W1-F (8), W1-H; inputs in work/cleanup/wave-02/ | - | done 2026-10-21T0800Z-audit: 8 verifier iterations (cap, fail-open), residual 2, 72 records on 85 entries, 18 legacy entries reviewed, 19 of 20 spawns |
 | 03 | A | W4-01, W4-03, W4-04, W4-05, W1-D (33 entries); inputs in work/cleanup/wave-03/ | - | in-flight 2026-10-21T1149Z-audit |
 | 04 | B | W2-01 (76 legacy entries) | - | in-flight 2026-10-21T1148Z-audit |
 | 05 | C | W2-02 (76 legacy entries) | - | in-flight 2026-10-21T1147Z-audit |
-| 06 | - | W4-02, W1-D2 (10 entries), W1-I (45 residuals) | 02 | planned |
-| 07 | - | W2-03 (77 legacy entries) | 02 | planned |
-| 08 | - | W2-04 (76 legacy entries), W4-06 (2) | 02 | planned |
+| 06 | - | W4-02, W1-D2 (10 entries), W1-I (45 worker residuals and 7 verifier advisories) | 02 | ready |
+| 07 | - | W2-03 (77 legacy entries) | 02 | ready |
+| 08 | - | W2-04 (76 legacy entries), W4-06 (2) | 02 | ready |
 | 09 | - | W2-05 (76 legacy entries) | - | planned |
 | 10 | - | W3-01 (71), W6-05 (4 entry-scoped acknowledgments) | - | planned |
 | 11 | - | W7-08, W7-17, C9 retirement | 03, 04, 05, 06, 07, 08, 09, 10, 12 | planned |
@@ -58,10 +58,10 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 | W7-02 | W7 | Gate false positives: _page_text (extract skips the tag stripper, description metas kept, 'opens in a new window' labels removed, cache header dropped), image-only PDF unreadable for citation-cve and quote-literal; tools/test_check_run.py | 1 | 01 | done 2026-10-20T0835Z-audit (commit 4ca3e3b) |
 | W6-04 | W6 | Acknowledge the one open WARN: 2026-10-18T1307Z-audit duration_seconds=117266 (settled history, the fire spanned the v4.21 pause) | 1 | 01 | done 2026-10-20T0835Z-audit |
 | W1-A | W1 | Non-legacy-batch factual errors, passes T1-T9 (2 of them legacy-pending: mark reviewed after repair) | 16 | 01 | done 2026-10-20T0835Z-audit: 13 records (9 corrections, 3 updates, 1 improvement); Kairos Libercourt, Bitget and Apple CoreGraphics already fixed by 2026-10-11T1307Z-audit |
-| W1-B | W1 | Imprecisions, passes T1-T9 (13 legacy-pending: mark reviewed after repair, add rating and mapping) | 57 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
-| W1-C | W1 | Clean verdicts on legacy-pending entries, passes T4/T5: mark reviewed after the rating and mapping their kind requires | 5 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
-| W1-E | W1 | Carried residuals and (pre-existing) advisories, audits 2026-09-27 to 10-18 (labelled lines on RoguePlanet 07-09 and SAP 08-12, LiteLLM affected_products, OpenAI agents marker strings, WinRAR/Splunk event_date, PHP SOAP CVE-2026-7262 score, ShinyHunters PeopleSoft action scope and 'external', Instructure uncited source, Acronis JSON primary, Exchange 10-14 10-16 section citation, Ivanti 10-14 25.1.3.0 framing; em dashes fixed wherever a wave writes a record, else declined: stripped at render); plus the VWBP untranslated German evidence quotes, the TeamCity Triage line and the UNCTAD Triage examples (wave 01 residuals). Wave 01 applied the UNCTAD marker-string item and declined the Acronis JSON-primary item (the readable advisory page is an empty script shell). Input: work/cleanup/wave-02/findings-W1-E.yaml (34 items) | 26 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
-| W1-F | W1 | Portable reference-branch entry hunks (re-derive on main, re-verify, re-record) | 8 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
+| W1-B | W1 | Imprecisions, passes T1-T9 (13 legacy-pending: mark reviewed after repair, add rating and mapping) | 57 | 02 | done 2026-10-21T0800Z-audit: 50 of 57 entries carry a record, 7 needed none (already fixed by 2026-10-11T1307Z-audit, or declined with reason); 13 legacy entries reviewed |
+| W1-C | W1 | Clean verdicts on legacy-pending entries, passes T4/T5: mark reviewed after the rating and mapping their kind requires | 5 | 02 | done 2026-10-21T0800Z-audit: 5 improvement records (labelled lines and mapping); left the legacy queue |
+| W1-E | W1 | Carried residuals and (pre-existing) advisories, audits 2026-09-27 to 10-18 (labelled lines on RoguePlanet 07-09 and SAP 08-12, LiteLLM affected_products, OpenAI agents marker strings, WinRAR/Splunk event_date, PHP SOAP CVE-2026-7262 score, ShinyHunters PeopleSoft action scope and 'external', Instructure uncited source, Acronis JSON primary, Exchange 10-14 10-16 section citation, Ivanti 10-14 25.1.3.0 framing; em dashes fixed wherever a wave writes a record, else declined: stripped at render); plus the VWBP untranslated German evidence quotes, the TeamCity Triage line and the UNCTAD Triage examples (wave 01 residuals). Wave 01 applied the UNCTAD marker-string item and declined the Acronis JSON-primary item (the readable advisory page is an empty script shell). Input: work/cleanup/wave-02/findings-W1-E.yaml (34 items) | 26 | 02 | done 2026-10-21T0800Z-audit: 19 of its 26 entries carry a record (Virtualizor's only for its W1-B findings, its W1-E item stays declined), 7 none; every item applied or declined with reason in docs/audits/2026-10-21-cleanup-wave-02.md |
+| W1-F | W1 | Portable reference-branch entry hunks (re-derive on main, re-verify, re-record) | 8 | 02 | done 2026-10-21T0800Z-audit: all 8 hunks re-derived and re-verified on main, folded into each entry's wave 02 record |
 | W1-D | W1 | Duplicate and legacy batch verdicts (D1-D3, L) on entries the 2026-10-11 audit corrected after the pass read them: re-derive each defect on the current text (25 rows were folded, their defects re-checked on the survivor) | 33 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
 | W1-D2 | W1 | W1-D verdicts on the entries wave 02 also changed, and on the 2026-06-19 RoguePlanet entry that the W4-02 fold takes: re-derive each defect on the current text (input: work/cleanup/wave-03/findings-W1-D-and-groups.yaml, these entries only) | 10 | 06 | open |
 | W4-01 | W4 | YellowKey 2026-05-15 vs Nightmare Eclipse 2026-05-30: distinct findings sharing CVE-2026-45585, link through references[]; Nightmare Eclipse re-verified and rewritten (watch item) | 2 | 03 | in-wave 03 (2026-10-21T1149Z-audit) |
@@ -104,8 +104,8 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 | W7-13 | W7 | Tool tests (test_entry_record, test_check_run, test_source_health, test_fetch_source_pdf) are run by no workflow or gate: wire them into check_run.py's build-side smoke tests | 4 | standalone | done 2026-10-20T0835Z-audit (commit f037aa0) |
 | W1-G | W1 | Reference-branch tool hunk (_page_skeletons) and registry hunk (Eurail): ported as W7-02 and W5-01 | 2 | 01 | done 2026-10-20T0835Z-audit: tool hunk as W7-02, registry hunk as W5-01 |
 | C9 | C9 | Retirement: remove § Secondary work, tools/legacy_review.py, state/legacy_review.json; banner; memory note; final report; delete the reference branch | 1 | 11 | open |
-| W1-H | W1 | Page-check lead: Drupal SA-CORE-2026-014 entry, an evidence quote not contiguous on drupal.org/sa-core-2026-014 and a CVE-2026-108097 clause citing a page without the id (found by the W7-02 smoke run); folded into W1-E's findings file | 1 | 02 | in-wave 02 (2026-10-21T0800Z-audit) |
-| W1-I | W1 | Residuals the wave 02 repair workers noticed outside their findings and left unfixed (headlines over 120 characters, non-canonical Detection labels, stale cves_seen titles, priority calibration on Check Point IKEv1, PeopleSoft and JFrog, retired update_of keys, sync_products.py --report writing the registry, and more); check each against its source, then fix or decline. Input: work/cleanup/wave-06/findings-W1-I.md | 45 | 06 | open |
+| W1-H | W1 | Page-check lead: Drupal SA-CORE-2026-014 entry, an evidence quote not contiguous on drupal.org/sa-core-2026-014 and a CVE-2026-108097 clause citing a page without the id (found by the W7-02 smoke run); folded into W1-E's findings file | 1 | 02 | done 2026-10-21T0800Z-audit: entry correct, the lead was a gate false positive (drupal.org challenge page), fixed as W7-15 |
+| W1-I | W1 | Residuals the wave 02 repair workers noticed outside their findings and left unfixed (headlines over 120 characters, non-canonical Detection labels, stale cves_seen titles, priority calibration on Check Point IKEv1, PeopleSoft and JFrog, retired update_of keys, sync_products.py --report writing the registry, and more); check each against its source, then fix or decline. Input: work/cleanup/wave-06/findings-W1-I.md | 52 | 06 | open |
 | W7-14 | W7 | tools/claim_ledger.py: claims for sentences a fire edits inside earlier ## <Type> — <at> sections are not listed (the ledger takes this fire's own sections plus declared fields), so a post-fix verifier pass can miss them; list changed sentences of earlier sections against base.sha and add a test | 1 | standalone | done 2026-10-21T0800Z-audit (commit 731706f) |
 | W7-15 | W7 | tools/check_run.py page checks: a bot-challenge interstitial (drupal.org 'Client Challenge', Cloudflare, Anubis) cleared the size floor and was compared as page text; treat it as unread, with a test | 1 | standalone | done 2026-10-21T0800Z-audit (commit 1f8d69e) |
 | W7-16 | W7 | tools/entry_record.py add stops with 'frontmatter has no updates: key' on the 581 entries without one; make add insert the key itself, with a test | 1 | standalone | open |
@@ -121,3 +121,4 @@ W5, W6 and W7 rows marked `standalone` ship as small merges of their own between
 - 2026-10-21: wave 05 (lane C) claimed by 2026-10-21T1147Z-audit.
 - 2026-10-21: wave 04 (2026-10-21T1148Z-audit) claimed, lane B: W2-01 (76 legacy entries).
 - 2026-10-21: wave 03 (2026-10-21T1149Z-audit) claim, lane A: rows W4-01, W4-03, W4-04, W4-05 and W1-D in flight (first claim attempt as 2026-10-21T1147Z-audit collided with wave 05's run id and was withdrawn).
+- 2026-10-21: wave 02 (2026-10-21T0800Z-audit) claim landed; standalone merges W7-14 (claim ledger, 731706f) and W7-15 (challenge pages, 1f8d69e); 72 records on 85 entries (W1-B, W1-C, W1-E, W1-F, W1-H), 18 legacy entries reviewed (406 to 388 pending); report docs/audits/2026-10-21-cleanup-wave-02.md.

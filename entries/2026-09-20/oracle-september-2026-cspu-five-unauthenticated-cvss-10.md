@@ -489,6 +489,10 @@ sources:
     publisher: "BleepingComputer"
     date: "2026-08-17"
     role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA KEV catalog"
+    date: "2026-10-20"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "This Critical Security Patch Update contains 153 new security patches for Oracle Fusion Middleware."
@@ -561,6 +565,13 @@ updates:
       release is Oracle's regular monthly cycle. The count of Fusion Middleware components with a
       CVSS 10.0 flaw is corrected from four to five.
     fields: [headline, summary, actions, body, sourcing_note, tags, cves, verification, sources, priority]
+  - at: "2026-10-21T08:09:24Z"
+    run_id: 2026-10-21T0800Z-audit
+    type: improvement
+    summary: >
+      The statement that none of the fifty flaws is exploited now cites Oracle's advisory and CISA's Known
+      Exploited Vulnerabilities catalog, which lists none of them as of 2026-10-20.
+    fields: [body, sources]
 migrated_from: null
 ---
 
@@ -609,8 +620,8 @@ Outside Fusion Middleware there are four more: two further Hyperion Financial Ma
 Analytics (CVE-2026-83269 in BI Publisher's BI Platform Security component, over HTTP, alongside CVE-2026-83283
 in Business Intelligence Enterprise Edition), and one in Oracle Supply Chain's Product Lifecycle Analytics (CVE-2026-83261, Core component, HTTP). The total for the release is fifty unauthenticated CVSS 9.8-10.0 flaws.
 
-None of the fifty is reported exploited by Oracle or any other source, and none appears in the CISA Known
-Exploited Vulnerabilities catalog. Oracle E-Business Suite deserves early patching despite the absence of exploitation reporting: Cl0p exploited an earlier Oracle EBS zero-day from early August 2025 to steal files from many organizations ([BleepingComputer, 2026-08-17](https://www.bleepingcomputer.com/news/security/philips-and-ge-investigating-clop-ransomware-data-theft-claims/)), and an estate running EBS 12.2.3-12.2.15 should treat
+None of the fifty is reported exploited by Oracle or any other source ([Oracle, 2026-09-15](https://www.oracle.com/security-alerts/cspusep2026.html)), and none appears in the CISA Known
+Exploited Vulnerabilities catalog as of 2026-10-20 ([CISA KEV catalog, 2026-10-20](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). Oracle E-Business Suite deserves early patching despite the absence of exploitation reporting: Cl0p exploited an earlier Oracle EBS zero-day from early August 2025 to steal files from many organizations ([BleepingComputer, 2026-08-17](https://www.bleepingcomputer.com/news/security/philips-and-ge-investigating-clop-ransomware-data-theft-claims/)), and an estate running EBS 12.2.3-12.2.15 should treat
 its three unauthenticated flaws as an extension of that same exposure class rather than a routine patch-cycle
 item. By count, the exposure is dominated by Fusion Middleware: Access Manager, Forms and Internet
 Directory alone carry five to six unauthenticated CVSS 9.8-10.0 flaws each, and an estate that patched only the
@@ -620,3 +631,7 @@ contains.
 ## Correction — 2026-09-30T06:57:52Z
 
 Oracle's risk matrix lists fifty unauthenticated, no-interaction flaws at CVSS 9.8 to 10.0 in this release, not six, and none is reported exploited ([Oracle, 2026-09-15](https://www.oracle.com/security-alerts/cspusep2026.html)). Oracle gives no vulnerability class for any of them, so the earlier authentication-bypass label and the triage guidance that assumed an exploitation mechanism are withdrawn. Oracle now patches monthly, and its next releases are the Critical Patch Update of 20 October 2026 and Critical Security Patch Updates on 17 November and 15 December 2026 ([Oracle, 2026-09-15](https://www.oracle.com/security-alerts/cspusep2026.html)). NCSC-NL relayed the 153 Fusion Middleware fixes and rated likelihood and damage high ([NCSC-NL, 2026-09-16](https://advisories.ncsc.nl/advisory?id=NCSC-2026-0372)). The 2025 E-Business Suite campaign was Cl0p's exploitation of an earlier zero-day ([BleepingComputer, 2026-08-17](https://www.bleepingcomputer.com/news/security/philips-and-ge-investigating-clop-ransomware-data-theft-claims/)).
+
+## Improvement — 2026-10-21T08:09:24Z
+
+As of 2026-10-20 none of the fifty flaws appears in CISA's Known Exploited Vulnerabilities catalog ([CISA KEV catalog, 2026-10-20](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)), and Oracle's risk matrix gives no exploitation status for any of them ([Oracle, 2026-09-15](https://www.oracle.com/security-alerts/cspusep2026.html)).
