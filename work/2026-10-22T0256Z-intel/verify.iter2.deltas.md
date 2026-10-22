@@ -1,0 +1,32 @@
+# Prior-iteration deltas (iteration 1 NEEDS_FIXES → iteration 2 post-fix pass)
+
+Each row: finding → remediation applied → what to verify in this pass. Findings I declined are listed last with the reason.
+
+| finding | entry | remediation applied | verify in this iteration |
+|---|---|---|---|
+| F4 (hallucinated-fact) LiteLLM: "maintainers have not said how the build was authorised" | litellm-1-107-0-pypi-docker-credential-stealer-lookalike | Summary, body paragraph 2, sourcing_note, evidence rewritten to the maintainers' account (stolen GitHub CLI OAuth tokens of three engineers, org-owner token disabled branch protection, look-alike repository); stale Socket "does not establish" quote and the "not yet identified" quote removed; vendor incident post and Wiz added to sources[] | the new chain matches https://docs.litellm.ai/blog/security-incident-oct-21-2026 and issue #47826; the three new evidence quotes are verbatim |
+| F8 LiteLLM exposure windows + Wiz credential abuse | same | Exposure line carries PyPI 11:39-13:23 UTC, GHCR to about 13:51 UTC, Docker Hub to 14:20 UTC; Detection leads with the Wiz cloud-log sequence; action text carries the windows | windows and Wiz sequence against the two pages |
+| F10 LiteLLM embargoed vulnerability 2026-10-27 | same | body states the embargoed enterprise release and the 2026-10-27 disclosure; run-record Next-fire watch lists it | wording, no overreach |
+| F11 LiteLLM techniques | same | T1195.001, T1027.013, T1140 added (Socket's mapping), plus T1528, T1078.004, T1087.004 for the token theft and the Wiz-observed cloud abuse | ids active in the pin, each supported by a cited page |
+| F3 ARTEX "not a vulnerability" attributed to Microsoft | artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse | Now Microsoft: ARTEX accelerated abuse of compromised applications already granted access; Expel: not a vulnerability, only speeds up familiar techniques; Expel quote added to evidence[]; Defender takeaway says "Expel's reading" | attribution against both pages |
+| F11 shared 2,250-tenant figure in two entries | same | the 2,250 figure removed from the ARTEX entry (kept in the ConnectWise entry) | no duplicate figure |
+| F13 k0t alias and access-broker hedge dropped | k0t-fortiweb-fortigate-globalprotect-edge-device-campaign (file renamed from k0t-access-broker-...) | title says "probable access broker"; body says Group-IB lists CryptoFeel as a potential alias and Scrooge as a likely collaborator and possible alias; registry alias removed (summary carries the hedge); registry relation sources renamed | hedges against the Group-IB page; slug and registry consistency |
+| F11 entity linking | PAN-OS, k0t, Cisco | PAN-OS entity keys restored (pan-os, panorama) and the two earlier PAN-OS entries added to references[]; k0t gained product:palo-alto-networks-pan-os and a reference to the CVE-2026-0322 entry; Cisco gained expressway-series, unity-connection, ios-xe | keys exist in the registry; references[] semantics acceptable |
+| F8 PAN-OS availability-only vector; priority | pan-os-panorama-php2shell-mgmt-interface-no-fixed-release | priority high → notable; summary, cvss text, body state Palo Alto scores the PAN-OS impact as availability only (VA:H, no confidentiality/integrity) against the 9.2 vendor vector, and that the advisory describes the flaws as RCE; detection clause no longer presents multipart POST logging as an established log source | vector reading against the advisory; priority defensible |
+| F8 GitLab git-side hunt, preview signal, visibility mitigation | cve-2026-110264-gitlab-org-mode-renderer-unauth-rce | Exposure now says GitLab advises reducing public visibility until patched; Detection adds the git-side oversized TODO-keyword scan and the preview-mismatch signal; body trimmed to the word limit | wording against the org_mode_render_error_burst write-up (saved at bodies/gl-det-orgburst.txt) |
+| F8 Cisco UTD on IOS XE; F11 AI wording | cve-2026-76466-cisco-expressway-cluster-unauth-root-rce | UTD on IOS XE fixed-release table (17.12.8, 17.15.6, 17.18.5, 26.1.2, 26.2.1) added to body, affected_products, CVE affected/fixed fields; AI wording now states all the hardening advisories say "existing testing processes as well as frontier AI models" | table and sentence against the Snort 3 and Unified Communications advisories |
+| F4 run record slugs | run record | the six slugs now match the files on disk; PAN-OS description updated to notable | slugs |
+| F3 PHP php.net wording | php-critical-release-pre-announced-cve-2026-109618-109619 | sentence now follows php.net: "with a demonstrated exploit where an unauthenticated request can trigger the attack before any application code runs" | wording |
+| F8 PHP memory disclosure | same | body adds that the second advisory lists heap use-after-free and memory disclosure as confirmed impacts and Sansec's note on what the leaked memory can hold; takeaway adds a secret-rotation consideration for hosts reachable while unpatched | claims against GHSA-6wmf-4rv5-p3rp and Sansec |
+| F9 PHP CVE mapping and release time | same | Sansec's reversed CVE assignment is stated and the PHP advisories named as authoritative; release time given as 13:30 (CERT-EU) to 14:00 UTC (Sansec) with ENISA at 13:40; the Update section says "between 13:30 and 14:00 UTC, depending on the source" | spread and attribution |
+| F18 PHP actions[1] | same | second action removed | actions[] has one entry |
+| F5 PHP RTS clause | same | RTS link attached to the EPFL / University of Geneva clause | citation |
+| F9 Publica present-tense "still unclear" | publica-pk-softech-supplier-malware-intrusion-data-outflow | the Netzwoche sentence is dated ("reported on 2026-10-08 that it was still unclear") | no contradiction left |
+| F11 Publica summary length | same | summary cut from about 330 words to three sentences | summary states what the body states |
+
+## Declined or left as is (with reason)
+
+- F11 PHP `cves[].status` lacks `exploited`: neither CVE is in KEV, exploitation is written as attempts, and the sourcing_note says so. Kept.
+- F11 watchTowr FAQ dateline 2026-10-20 vs 2026-10-21 (low confidence): rolling FAQ; the exploitation line is dated 2026-10-21 in the page text. Kept.
+- F11 OVHcloud envchecker folder name and the extension name: the folder name is the one hunt the advisory publishes for the stealer and the extension name identifies the vector; no hash, IP or domain is spelled out. Kept.
+- F11 Cisco "AI models" wording: fixed (see table).
