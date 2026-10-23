@@ -1,0 +1,693 @@
+# work/2026-10-23T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-23T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-23T02:58:14Z
+ended_at: 2026-10-23T03:22:16Z
+duration_seconds: 1442
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 7
+  bridge_fetches: 105
+window_hours: 26
+lookback_note: "slice records swept to their own lookback_hours (122 h; air-security 98 h); items found only through the longer lookback carry lookback: true"
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "M365 token spray and replay: Huntress tracks a 10-week campaign that replays stolen post-MFA tokens from rented hosting, registers rogue Entra devices, wipes and re-registers MFA methods and hides mail with one-character inbox rules"
+    sources:
+      - { url: "https://www.huntress.com/blog/token-replay-spray", publisher: "Huntress", date: "2026-10-22", role: "primary" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml (feed, 2026-10-22T13:00Z item) -> primary (no pivot needed): extract of https://www.huntress.com/blog/token-replay-spray"
+    summary: |
+      Huntress reports that between 2026-07-14 and 2026-09-22 it detected 497 Microsoft 365 sign-in events across 79 victim organizations
+      that replayed tokens stolen from users instead of guessing passwords; the figures come from Huntress's own telemetry. The tokens came from adversary-in-the-middle relays behind fake sign-in pages, from device-code
+      phishing and from social engineering during a genuine login; the replay followed within minutes (12 minutes on 2026-07-21, 4 on
+      2026-09-22) from a rotating set of six addresses in one rented hosting range, so a block on one address stopped at most one phase.
+      Two toolsets appear: a scripted replayer (user agent "node", OAuth2:Token requests made with the Microsoft Office and Microsoft
+      Authentication Broker client apps against Graph, Exchange Online, SharePoint Online and the Device Registration Service) that joins
+      rogue Entra devices named DESKTOP- plus eight uppercase hex characters (48 of them; the Windows default is DESKTOP- plus seven
+      alphanumerics), and a browser-session replayer using current Chrome/Edge via the OfficeHome client. Persistence is the part that
+      outlives a password reset: in 19 organizations the victim's existing MFA methods were wiped and a new authenticator registered within
+      three hours, and hidden inbox rules (one-to-three-character or punctuation-only names, moving mail to RSS Feeds or Conversation
+      History, one keyed on payroll and bank terms, four created through the Outlook REST API) were created from VPN or other rented
+      addresses, never from the replay range. Huntress notes that Conditional Access blocks (AADSTS53003) fire only after authentication
+      succeeded, so they signal a valid credential, and that one address produced 1,052 blocked sign-ins in four tenants but 232 successes in
+      28 others, so ranking tenants by failed attempts points responders at the wrong ones. Huntress states Microsoft Entra ID Protection
+      independently flagged several of the addresses; that is Huntress's statement and was not checked against a Microsoft source.
+    region_nexus: "global; Huntress customer base, no Swiss or public-sector victim named"
+    primary_sector_nexus: "indirect: any Microsoft 365 / Entra ID tenant, public administration included; no public-sector victim named"
+    sector: "technology"
+    cves: []
+    techniques: [T1557, T1566.002, T1528, T1550.001, T1078.004, T1098.005, T1556.006, T1564.008, T1090.003]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365", "Exchange Online", "SharePoint Online"]
+    entity_keys: ["product:microsoft-entra-id", "product:microsoft-365"]
+    new_entities:
+      - { key: "campaign:m365-token-spray-replay-huntress-2026", type: campaign, name: "M365 token spray and replay campaign (Huntress)", aliases: [],
+          summary: "Huntress-tracked July-September 2026 campaign replaying stolen post-MFA Microsoft 365 tokens against 79 organizations, with rogue Entra device registration, MFA-method replacement and hidden inbox rules (Huntress, 2026-10-22)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Between July 14, 2026 and September 22, 2026, Huntress detected 497 Microsoft 365 sign-in events across 79 victim organizations related to a token replay campaign"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/token-replay-spray"
+      - quote: "In 19 organizations, the victim's existing MFA methods were wiped and a new method registered within three hours of the first sign-in from a campaign address."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/token-replay-spray"
+      - quote: "the threat actor registered at least 48 fake computers in victim organizations' Microsoft directories"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/token-replay-spray"
+      - quote: "A password reset alone does not remove attacker-registered devices or MFA methods."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/token-replay-spray"
+    extended_notes: |
+      Exposure: any tenant where users can reach Microsoft 365 from unmanaged networks and where Conditional Access does not require MFA or a
+      compliant device for all users, all cloud apps and all client app types, and where the device-code flow is left open.
+      Detection (telemetry class first): Entra sign-in logs (non-interactive and interactive) for OAuth2:Token and Cmsi:Cmsi requests from
+      hosting or VPN ranges using the Office or Authentication Broker client with a "node" or bare "Mozilla/5.0" user agent, especially
+      against mailboxes or the Device Registration Service; Entra audit log for device registrations from hosting addresses and device
+      names of the DESKTOP-plus-eight-hex shape (Huntress: rare but not unique, confirm before deleting); security-info audit events where
+      an MFA method is deleted and another added within minutes; Exchange audit for inbox rules created via the REST API with one-to-three
+      character or punctuation-only names or targets such as RSS Feeds and Conversation History.
+      Post-patch compromise check does not apply (no vulnerability); the remediation sequence Huntress gives is revoke sessions (the access
+      token lives about 90 minutes after a reset), then audit devices, MFA methods, inbox rules and newly consented enterprise applications.
+      Triage: a "node" user agent and Office client ID can be legitimate automation, so Huntress focuses on sign-ins that touch user
+      mailboxes or the Device Registration Service from hosting infrastructure.
+      Hardening named by the source: Conditional Access requiring MFA or block for All users / All cloud apps / All client app types
+      unconditionally, restricting device-code flow with authentication-flow policies, and disabling user consent to new applications.
+      Suggested priority: notable (generic cloud-identity tradecraft, no named Swiss exposure). No IOCs carried: the replay addresses,
+      relay hosts and client-app GUIDs sit in the source.
+  # ------------------------------------------------------------------ 2
+  - title: "Vishing plus self-service password reset abuse yields a Primary Refresh Token session: Sophos incident response traces Graph reconnaissance, about 100,000 SharePoint downloads and a ServiceNow user-table export from one compromised account"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion", publisher: "Sophos X-Ops", date: "2026-10-19", role: "primary" }
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft", publisher: "Mandiant / Google Threat Intelligence Group", date: "2026-01-31", role: "corroborating" }
+    discovery_trace: "first seen at: sophos-xops, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 (feed, 2026-10-19 item) -> primary (no pivot needed): extract of the Sophos post -> background pivot: the Mandiant post Sophos links, URL https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft"
+    summary: |
+      Sophos X-Ops incident response describes a case in which an attacker phoned several employees posing as help desk staff; one user
+      gave out the SMS verification code that completed a self-service password reset (SSPR), after an anomalous SSPR attempt from another
+      address the day before. Within minutes the actor registered a new Windows device in Entra ID, used a Primary Refresh Token and
+      authenticated Microsoft Edge with that device context; later federated sign-ins to ServiceNow show SAML 2.0 with the PRT and MFA
+      recorded as "previously satisfied". Post-compromise activity from that single account, per Sophos's reading of Defender GraphApiAuditEvents,
+      Purview and ServiceNow logs: Microsoft Graph reconnaissance (licence details, organization, tenant relationships, transitive directory
+      role assignments, owned service principals, domains, sites, user counts), over 100 unique mail items and about 100,000 unique
+      SharePoint files accessed, SharePoint search queries for credentials, PII and the name of the organization's identity-verification vendor,
+      a ServiceNow sys_user export of about 2,500 records plus a view of the CMDB computer table, and a Salesforce sign-in that
+      Salesforce's own anomaly containment froze. The actor deleted the organization's vishing-awareness mail from the victim's mailbox,
+      created no inbox rules, forwarding or applications, and Sophos notes that passive reading of Teams messages leaves no audit event.
+      Sophos does not attribute the activity; it points to Mandiant's reporting on ShinyHunters-linked vishing and SSO-to-SaaS fan-out as the
+      same operational pattern, which is a similarity statement, not an attribution. Single incident, single vendor, no victim named.
+    region_nexus: "global; victim unnamed, not a Sophos customer before the incident"
+    primary_sector_nexus: "indirect: Microsoft 365 plus federated SaaS (ServiceNow, Salesforce) is a common public-sector stack; no public-sector victim named"
+    sector: "technology"
+    cves: []
+    techniques: [T1566.004, T1078.004, T1098.005, T1087.004, T1069.003, T1526, T1114.002, T1213.002, T1213, T1070.008]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365", "SharePoint Online", "ServiceNow", "Salesforce"]
+    entity_keys: ["product:microsoft-entra-id", "product:microsoft-365"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 3 }
+    novelty: new
+    borderline: true
+    borderline_reason: "published 2026-10-19, outside the 26 h window and not a record of my slice (found by the majors sweep); returned because it is substantive, absent from the store and gives concrete M365/SaaS telemetry hooks. Single vendor, single unnamed victim."
+    evidence:
+      - quote: "impersonated help desk personnel"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "Entra ID registration of a new Windows device"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "Approximately 100,000 unique SharePoint files downloaded"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "Effective containment requires revoking active sessions and refresh tokens across the identity provider"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/graph-reconnaissance-and-servicenow-user-enumeration-in-a-modern-identity-intrusion"
+      - quote: "These operations primarily leverage sophisticated voice phishing (vishing) and victim-branded credential harvesting sites"
+        attribution: "Mandiant / Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/expansion-shinyhunters-saas-data-theft"
+    extended_notes: |
+      Exposure: tenants whose SSPR still accepts SMS or voice verification (including directory-sourced phone numbers), where device
+      registration needs no second check, and where ServiceNow or Salesforce accept Entra SAML sign-in from a PRT-backed session.
+      Detection (telemetry class first): Entra audit and sign-in logs for an SSPR completion from a new address followed within minutes by a
+      device registration and a PRT-backed sign-in; Defender GraphApiAuditEvents for directory, role and service-principal enumeration from one
+      user session; Purview/unified audit for SearchQueryInitiatedSharePoint terms such as password, cred, aws, vpn, ssh and the
+      organization's own MFA vendor, MailItemsAccessed volume plus deletion of security-awareness mail; ServiceNow logs for bulk export of
+      sys_user or cmdb_ci_computer; federated SAML sign-ins to SaaS with MFA satisfied by an existing token claim from a session that never used
+      that app before. Containment is not "reset the password": revoke sessions and refresh tokens at the IdP and in each federated SaaS.
+      Hardening named by Sophos: phishing-resistant factors (FIDO2, passkeys, Windows Hello for Business, certificate-based) as the
+      recovery method, exclude administrators from SMS recovery, require explicit registration instead of directory phone numbers, alert on
+      new device registration shortly after a reset or MFA change, require MFA on device registration itself.
+      Triage: Sophos treats a device registration inside a short window of a password reset or MFA change as the discriminating signal;
+      individually, SSPR use and Graph calls are routine.
+      Suggested priority: notable. Related registry entity: actor:storm-2949 (Microsoft's SSPR-abuse actor, 2026-05) is the same abuse class
+      but no source ties the two.
+  # ------------------------------------------------------------------ 3
+  - title: "BlackX: Kaspersky finds a BlackLotus-style UEFI bootkit on fully patched Windows machines of Central Asian diplomatic bodies, because the Baton Drop fix never revokes the old boot-manager certificate unless an administrator triggers it"
+    sources:
+      - { url: "https://securelist.com/uefi-bootkit-blackx/121539/", publisher: "Kaspersky GReAT (Securelist)", date: "2026-10-22", role: "primary" }
+      - { url: "https://support.microsoft.com/en-us/servicing/os/windows/2023/03/how-to-manage-the-windows-boot-manager-revocations-for-secure-boot-changes-associated-with-cve-2023", publisher: "Microsoft Support (KB5025885)", date: "2026-09-30", role: "corroborating" }
+      - { url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/", publisher: "ESET Research", date: "2026-06-16", role: "corroborating" }
+    discovery_trace: "first seen at: kaspersky-securelist, URL https://securelist.com/feed/ (feed, 2026-10-22T06:00Z item, listing title 'How APT41 revived the BlackLotus bootkit...') -> primary: extract of https://securelist.com/uefi-bootkit-blackx/121539/ (page title 'New BlackX UEFI bootkit exploiting Baton Drop') -> pivot: the Microsoft KB5025885 page Securelist links, URL https://support.microsoft.com/en-us/servicing/os/windows/2023/03/how-to-manage-the-windows-boot-manager-revocations-for-secure-boot-changes-associated-with-cve-2023 -> pivot: ESET FishMonger post Securelist cites for the attribution evidence, URL https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+    summary: |
+      Kaspersky GReAT reports that in early 2026 it found BlackX, a UEFI bootkit that exploits the Baton Drop flaw (CVE-2022-21894) the way
+      BlackLotus did, installed after the attackers already held administrator rights on networks of diplomatic agencies in Tajikistan,
+      Uzbekistan and Turkmenistan. An installer plus an RC4-encrypted package (the key passed on the command line, nothing malicious inside the
+      installer itself) drops files to the system and EFI partitions to enrol attacker-controlled Machine Owner Keys, which lets arbitrary EFI
+      binaries load despite Secure Boot. The bootkit loads a kernel driver, signed with a certificate its issuer has since revoked, that disables
+      process, thread and registry callbacks and ETW providers tied to security products (some routines run only if Kaspersky or Avast products
+      are present, and Kaspersky says they failed against its own) and hands back a calc.exe handle when something opens the bootkit's files. Two
+      user-mode payloads were seen: a RAT that loads .NET modules and talks through Google Drive, OneDrive or Yandex.Disk, and an OLLVM-obfuscated
+      loader started by DLL sideloading from a renamed signed executable, which decrypts shellcode and a Rust implant. The point that matters
+      for defenders: Kaspersky states the targeted machines were fully patched. Microsoft's fix for Baton Drop revokes the "Windows Production
+      PCA 2011" certificate only when an administrator sets a Secure Boot registry flag and runs the Secure-Boot-Update scheduled task, and
+      Microsoft's own KB5025885 says the mitigations "are not enabled by default" and that the automatic Enforcement Phase will not begin before
+      January 2026 with at least six months of notice (page last revised 2026-09-30); Kaspersky says that phase has not shipped and that the PCA 2011
+      certificate expired on 2026-10-19, which by itself blocks nothing unless it is on the forbidden list. Attribution is Kaspersky's: APT41 with
+      medium confidence, resting on the same "xdd" developer identifier that ESET found in a FishMonger kernel implant (ESET's June 2026 post also
+      raised a possible UEFI bootkit component), on sideloading plus encrypted-file loading, and on OLLVM; Kaspersky writes that the community
+      assumes FishMonger is related to APT41; ESET describes FishMonger as believed operated by the contractor I-SOON and as falling under the Winnti Group umbrella, so the APT41 label overlaps rather than contradicts. Kaspersky also infers
+      the operators either reverse-engineered BlackLotus or bought its source, because the source was never published.
+    region_nexus: "Central Asia (Tajikistan, Uzbekistan, Turkmenistan) for the observed victims; the exposure is every Windows fleet that relies on Secure Boot"
+    primary_sector_nexus: "direct for foreign-affairs and diplomatic bodies; indirect for any administration with Windows endpoints"
+    sector: "public-sector"
+    cves: [CVE-2022-21894, CVE-2023-24932]
+    techniques: [T1542.003, T1553.006, T1687, T1014, T1685, T1574.001, T1102.002, T1027]
+    affected_products: ["Microsoft Windows (Secure Boot, Windows Boot Manager)"]
+    entity_keys: ["actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu", "campaign:fishmonger-isoon-sprysocks-windows-kernel-rootkit"]
+    new_entities:
+      - { key: "malware:blackx-uefi-bootkit", type: malware, name: "BlackX", aliases: ["BlackX UEFI bootkit"],
+          summary: "UEFI bootkit similar to BlackLotus that exploits Baton Drop (CVE-2022-21894) to enrol attacker Machine Owner Keys and load a kernel driver; found by Kaspersky GReAT in early 2026 against Central Asian diplomatic bodies and attributed by Kaspersky to APT41 with medium confidence (Securelist, 2026-10-22)." }
+      - { key: "malware:blacklotus", type: malware, name: "BlackLotus", aliases: ["BlackLotus UEFI bootkit"],
+          summary: "UEFI bootkit sold on forums from 2022 that bypasses Secure Boot through Baton Drop (CVE-2022-21894); confirmed in the wild by ESET in March 2023 (as recounted by Kaspersky, 2026-10-22)." }
+      - { key: "actor:apt41", type: actor, name: "APT41", aliases: [],
+          summary: "Chinese-speaking espionage actor; Kaspersky GReAT attributes the BlackX UEFI bootkit campaign to APT41 with medium confidence (Securelist, 2026-10-22)." }
+    relation_suggestions:
+      - { subject: "malware:blackx-uefi-bootkit", object: "campaign:fishmonger-isoon-sprysocks-windows-kernel-rootkit",
+          basis: "Kaspersky assesses BlackX is the UEFI bootkit ESET's June 2026 FishMonger post alluded to, because the kernel-implant PDB identifier 'xdd' recurs in BlackX payloads (Securelist, 2026-10-22; ESET, 2026-06-16)" }
+      - { subject: "actor:apt41", object: "actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu",
+          basis: "Kaspersky writes that the community assumes FishMonger to be related to APT41 and attributes BlackX to APT41 with medium confidence (Securelist, 2026-10-22); ESET describes FishMonger as believed operated by I-SOON and under the Winnti Group umbrella (ESET, 2026-06-16) - an overlap claim, not an identity" }
+      - { subject: "malware:blackx-uefi-bootkit", object: "malware:blacklotus",
+          basis: "Kaspersky: BlackX is 'similar to BlackLotus', exploiting the same Baton Drop flaw with a similar chain but different exploit code (Securelist, 2026-10-22)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    references_suggested: ["2026-06-17/fishmonger-i-soon-ports-its-sprysocks-backdoor-to-windows-wi", "2026-07-14/eset-forgotten-uefi-shims-secure-boot-bypass"]
+    references_note: "CVE-2023-24932 is already carried by the 2026-06-17 FishMonger entry in the store-wide CVE index, so check_run will require that entry in references[]"
+    evidence:
+      - quote: "the targeted machines were fully patched"
+        attribution: "Kaspersky GReAT"
+        source_url: "https://securelist.com/uefi-bootkit-blackx/121539/"
+      - quote: "However, this revocation does not happen automatically upon patch installation"
+        attribution: "Kaspersky GReAT"
+        source_url: "https://securelist.com/uefi-bootkit-blackx/121539/"
+      - quote: "we have attributed this attack to the APT41 threat actor with medium confidence"
+        attribution: "Kaspersky GReAT"
+        source_url: "https://securelist.com/uefi-bootkit-blackx/121539/"
+      - quote: "these mitigations are not enabled by default"
+        attribution: "Microsoft Support"
+        source_url: "https://support.microsoft.com/en-us/servicing/os/windows/2023/03/how-to-manage-the-windows-boot-manager-revocations-for-secure-boot-changes-associated-with-cve-2023"
+      - quote: "The Enforcement Phase will not begin before January 2026"
+        attribution: "Microsoft Support"
+        source_url: "https://support.microsoft.com/en-us/servicing/os/windows/2023/03/how-to-manage-the-windows-boot-manager-revocations-for-secure-boot-changes-associated-with-cve-2023"
+      - quote: "there are limited indications that some SprySOCKS attack scenarios may involve a UEFI bootkit component"
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+    extended_notes: |
+      Exposure: every Windows machine that boots with Secure Boot and has the July 2024 or later cumulative updates but has not had the
+      revocation steps applied. Microsoft's documented check: the PowerShell test that the forbidden-list (DBX) variable matches 'Microsoft
+      Windows Production PCA 2011' returns True once the revocation is in (event 1037 records the DBX update; 1036 the 2023 certificate added
+      to the DB; 1799 the 2023-signed boot manager; 1042 the version-number update), and the Servicing registry value UEFICA2023Status
+      should read Updated. Microsoft's step 3 sets AvailableUpdates=0x80 and runs the Secure-Boot-Update task; step 4 uses 0x200 for the firmware
+      version number. Devices marked "High Confidence" in the monthly updates may already have step 1 (the 2023 certificates) done, which is
+      not the revocation.
+      Post-patch compromise check: a patched, unrevoked machine can still carry the bootkit; Kaspersky says the installer needs admin rights, so
+      the hunt is for the admin-level intrusion that precedes it. Telemetry hooks the source supports: process creation of an executable
+      from a program-data subfolder that takes an encrypted data file and a key as arguments; file writes to the EFI system partition by
+      non-servicing processes; kernel-driver load events for drivers signed by unfamiliar or revoked certificates; security-product telemetry that
+      goes silent (ETW providers, callbacks) after a reboot; a signed-looking executable renamed to a vendor updater loading a sideloaded DLL; and
+      non-browser processes talking to consumer cloud storage APIs. Once the bootkit runs, host telemetry is unreliable by design, so firmware
+      or boot-measurement attestation (TPM/PCR values, Secure Boot variables) is the trustworthy source.
+      Hardening caveats from Microsoft's KB: the revocation cannot be reverted while Secure Boot stays in use; BitLocker recovery keys should be
+      backed up first; older external boot media, PXE and recovery media signed with PCA 2011 stop booting; multi-boot systems must carry
+      post-2024-07 updates in every OS; a Secure Boot reset to defaults can leave the machine unbootable.
+      Suggested priority: high for Windows fleet owners (the mitigation gap is a default-off control); the observed targeting is diplomatic.
+      No IOCs carried (file names, certificate subject, C2 hosts sit in the source).
+  # ------------------------------------------------------------------ 4
+  - title: "Ebury 1.8.3 behind 333 hijacked Tor exit relays: attackers rewrote exit policies so port-22 traffic ran through SSH interception servers that harvest passwords and push an Ebury installer, and first-hand forensics show package verification does not catch the implant"
+    sources:
+      - { url: "https://kaba.cx/posts/20261020_Tor/", publisher: "kaba (independent researcher)", date: "2026-10-20", role: "primary" }
+      - { url: "https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/WOHPLKCSHYXFTBRZXDENDKJZMBMPLMG5/", publisher: "Tor Project network health team (tor-relays list)", date: "2026-10-05", role: "primary" }
+      - { url: "https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/QHRD6YOX6RZRDR7NCHNDO7GLCEA6VFM6/", publisher: "Quetzalcoatl relay operators (tor-relays list)", date: "2026-10-07", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html", publisher: "The Hacker News", date: "2026-10-21", role: "corroborating" }
+      - { url: "https://news.risky.biz/risky-bulletin-hacker-hijacks-10-of-tor-exit-nodes/", publisher: "Risky Bulletin (Catalin Cimpanu)", date: "2026-10-21", role: "corroborating" }
+      - { url: "https://www.welivesecurity.com/en/eset-research/ebury-alive-unseen-400k-linux-servers-compromised-cryptotheft-financial-gain/", publisher: "ESET Research", date: "2024-05-14", role: "background" }
+    discovery_trace: "first seen at: risky-biz-news, URL https://news.risky.biz/rss/ (feed, 2026-10-21 item 'Hacker hijacks 10% of Tor exit nodes') -> primary: kaba.cx post, URL https://kaba.cx/posts/20261020_Tor/ -> pivot: Tor Project notice, URL https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/WOHPLKCSHYXFTBRZXDENDKJZMBMPLMG5/ -> pivot: victim post-mortem, URL https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/QHRD6YOX6RZRDR7NCHNDO7GLCEA6VFM6/ -> corroboration: https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html -> background: ESET 2024 Ebury research"
+    lookback: true
+    summary: |
+      An independent researcher (kaba) found that on 2026-10-02 roughly 10% of Tor's exit relays (333 in his scan of about 3,000) redirected SSH
+      connections to the same 12 interception servers; a user who accepted the changed host key and typed a password handed it over, and the
+      interceptor then logged in to the real server, watched commands and ran a base64-encoded Perl installer that places the Ebury
+      OpenSSH backdoor and credential stealer. The Tor Project network health team flagged the relays on 2026-10-04 and says the attacker
+      gained access to Linux hosts and edited torrc to turn non-exits into exits; by 2026-10-05 none remained in the consensus (The Hacker News
+      cites a directory-data analysis counting 377 relays of 59 operators that switched to the attacker's exit policy, with a peak of 7.46% of
+      exit capacity, "a policy match, not proof of compromise"). The policy change closed the TLS mail ports and opened plaintext POP3/IMAP,
+      so the attackers also wanted cleartext mail. A relay family that was hit published a post-mortem: the attacker logged in on 2026-08-28
+      with the operator password on the first try (SSH password authentication was on at an internet-facing management server, and the same
+      password served for SSH, sudo and a backup passphrase kept in a cleartext script), installed Ebury 1.8.3 there, then reached a relay VPS
+      through the backdoor and changed the exit policy on 2026-10-01 and 2026-10-02. The implant is one unowned setuid shared library next to
+      libkeyutils with the libkeyutils.so.1 symlink repointed at it, so package verification (dpkg -V, debsums) and checksums of sshd, sudo
+      and PAM stay clean; on Debian 13 it loads into sshd-session through libkrb5, so ldd on sshd looks clean; backdoor logins bypass PAM,
+      logging and shell history; and it captures every password exactly as typed, failed attempts included. The operators say version 1.8.3 is newer than
+      ESET's public indicators (updated May 2024, up to 1.8.2) and that ESET's detection script would not flag it, while an ESET YARA rule
+      still matched; that is the victims' statement. How the attackers reached 333 servers is unknown (a hosting-provider compromise is a
+      theory only). Risky Bulletin says a Swiss engineer spotted it. ESET's 2024 research already described Ebury operators using access to
+      hosting providers to infect rented servers and intercepting SSH in data centers.
+    region_nexus: "global; discovery credited by Risky Bulletin to a Swiss engineer; hosting locations of the victim servers not stated"
+    primary_sector_nexus: "indirect: Linux/SSH server estates and any staff SSH session routed through Tor"
+    sector: "technology"
+    cves: []
+    techniques: [T1078, T1021.004, T1554, T1574.006, T1056, T1557, T1070.006, T1685.006, T1690]
+    affected_products: ["OpenSSH", "Tor (relay software)", "Linux (Debian, Ubuntu)"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:ebury", type: malware, name: "Ebury", aliases: ["Linux/Ebury"],
+          summary: "OpenSSH backdoor and credential stealer for Linux, tracked by ESET since 2014 (Operation Windigo); version 1.8.3 was found on hijacked Tor relay hosts in October 2026 (kaba, 2026-10-20; tor-relays post-mortem, 2026-10-07)." }
+      - { key: "incident:tor-exit-relay-ebury-ssh-interception-2026-10", type: incident, name: "Tor exit relay hijack and SSH interception (October 2026)", aliases: [],
+          summary: "333 Tor exit relays, about 10% of exits, redirected SSH to interception servers from 2026-10-02 until the Tor Project flagged them on 2026-10-04; the relay hosts carried Ebury 1.8.3 installed from August (kaba, 2026-10-20; Tor Project, 2026-10-05)." }
+    relation_suggestions:
+      - { subject: "incident:tor-exit-relay-ebury-ssh-interception-2026-10", object: "malware:ebury",
+          basis: "the Quetzalcoatl post-mortem found Ebury 1.8.3 on its two compromised servers and kaba's honeypot saw the interception servers attempt an Ebury install (tor-relays, 2026-10-07; kaba, 2026-10-20)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: B, credibility: 1 }
+    novelty: new
+    evidence:
+      - quote: "On Friday Oct 2, 09:35am, 333 infected exit nodes started a coordinated campaign to intercept SSH connections"
+        attribution: "kaba (independent researcher)"
+        source_url: "https://kaba.cx/posts/20261020_Tor/"
+      - quote: "It seems the attacker is gaining access to Linux based hosts and when these machines are running non-exits they are editing the torrc file and turning them into exits to be able to carry out the SSH attack."
+        attribution: "Tor Project network health team"
+        source_url: "https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/WOHPLKCSHYXFTBRZXDENDKJZMBMPLMG5/"
+      - quote: "so package verification (dpkg -V, debsums) won't catch it"
+        attribution: "Quetzalcoatl relay operators"
+        source_url: "https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/QHRD6YOX6RZRDR7NCHNDO7GLCEA6VFM6/"
+      - quote: "Backdoor logins bypass PAM, logging and shell history"
+        attribution: "Quetzalcoatl relay operators"
+        source_url: "https://lists.torproject.org/mailman3/hyperkitty/list/tor-relays@lists.torproject.org/thread/QHRD6YOX6RZRDR7NCHNDO7GLCEA6VFM6/"
+      - quote: "A key-based SSH login could not be relayed this way."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html"
+    extended_notes: |
+      Exposure: any Linux host that runs OpenSSH with password authentication enabled, especially internet-facing management or jump servers and
+      rented VPS or hosting; any admin who SSHes through Tor exits and clicks through a changed-host-key warning. Key-based SSH logins cannot be relayed
+      to the real server by the interceptor (the signature covers the session identifier), but a password can.
+      Detection (telemetry class first): on the Linux host, root-level actions with no logged-in user behind them: apt history entries without
+      "Requested-By", su sessions opened by uid 0, systemctl calls from the ssh.service cgroup, service reloads nobody ordered, systemd's
+      "remains running after unit stopped" on sshd restart, a setuid shared library no package owns, a library symlink repointed, hidden
+      processes with system-daemon names and an abstract socket inside the ssh.service cgroup; SSH client side: host-key-change warnings treated as
+      an incident, not a prompt. Because package checks stay clean, check from a rescue system or an offline disk image (the operators' advice) and
+      compare the effective sshd configuration with sshd -T (a VPS image left PermitRootLogin yes first in the file and it beat the later "no").
+      Tor-relay-specific checks from the Tor notice: torrc and include paths for ExitRelay, ExitPolicy, ContactInfo, MyFamily, NAT redirects for port 22,
+      unknown listeners, new cron units; treat the old relay identity keys as stolen.
+      Post-compromise: Ebury captures passwords as typed, so rotate every credential and key that touched an infected host, and treat SSH keys
+      and offline "master" key copies on the same host as exposed.
+      Triage: a changed SSH host-key warning from a Tor path is the discriminating signal for the interception; for the implant, the combination of
+      an unowned setuid library, the repointed symlink and root actions with no session is not seen on a clean host.
+      Hardening: key-only SSH everywhere, management and jump servers reachable only through a VPN or allow-list with nothing web-facing and no key
+      backups on them, one password never reused across SSH login, sudo and backups, no passwords in scripts.
+      Suggested priority: notable. No IOCs carried (relay fingerprints, interceptor addresses, file hashes and the socket name sit in the sources).
+  # ------------------------------------------------------------------ 5
+  - title: "CVE-2026-99999 (PwnEscape): a Linux kernel IPv4 checksum-offload flaw lets an untrusted KVM guest corrupt host kernel memory and escape; fixed in stable kernels from 2026-10-15, researcher expects working exploits within weeks"
+    sources:
+      - { url: "https://pwn.ai/blog/pwnescape", publisher: "PWNAI Research (Paulos Yibelo)", date: "2026-10-19", role: "primary" }
+      - { url: "https://access.redhat.com/security/cve/cve-2026-99999", publisher: "Red Hat", date: "2026-10-15", role: "corroborating" }
+      - { url: "https://news.risky.biz/risky-bulletin-pwnescape-vulnerability-lets-you-escape-kvm/", publisher: "Risky Bulletin (Catalin Cimpanu)", date: "2026-10-19", role: "corroborating" }
+    discovery_trace: "first seen at: risky-biz-news, URL https://news.risky.biz/rss/ (feed, 2026-10-19 item 'PwnEscape vulnerability lets you escape KVM') -> primary: pwn.ai write-up, URL https://pwn.ai/blog/pwnescape -> pivot: CVE.org record read through https://cveawg.mitre.org/api/cve/CVE-2026-99999 (Linux CNA, published 2026-10-15; affected and fixed versions) -> pivot: Red Hat CVE page, URL https://access.redhat.com/security/cve/cve-2026-99999"
+    lookback: true
+    summary: |
+      Researchers at PWNAI report a Linux kernel flaw, CVE-2026-99999 ("PwnEscape"), in the IPv4 stack: a guest-controlled checksum_start value in a
+      CHECKSUM_PARTIAL packet is trusted after the kernel has validated the packet, so skb_checksum_help() writes at an attacker-chosen offset
+      inside the IPv4 header and ip_do_fragment() later trusts the altered header length. The reachable path is a guest (for example a microVM)
+      that transmits crafted virtio-net frames the VMM forwards to a host TAP interface; it is a guest-to-host or local path, not an internet
+      receive path. The researcher demonstrated repeatable 32-byte host-memory disclosure, selected 64-byte host-kernel writes and a lab chain that
+      ran a host-root helper on its own KVM fixture, and says other hypervisors are affected too; a Vercel sandbox contest report led to
+      the finding. The Linux CNA record lists everything from 2.6.27 as affected, fixed in 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113,
+      6.18.57, 7.2.11 and mainline 7.3, scores it CVSS 3.1 9.3 (AV:L/PR:N/S:C), and notes crafted packets can also crash the host. Red Hat scores it
+      8.8, marks every tracked product stream affected, says fixes are still being pursued, and states that mitigation is not available. The
+      researcher says he expects exploits "in weaker configurations to arrive in weeks" and in default hypervisor configurations "in under a month" (a forecast,
+      not an observation). Exploitation in the wild is not reported by any source I read: Red Hat's page says it tracks the flaw "as a KEV active-exploit case", but the
+      CISA catalogue fetched on 2026-10-23 carries no entry for it, so that statement is unresolved.
+    region_nexus: "global; shared-hosting, cloud, sandbox and CI/CD operators and any organization running KVM guests it does not fully trust"
+    primary_sector_nexus: "indirect: administrations hosting multi-tenant or untrusted workloads on Linux KVM (OpenStack, libvirt, Proxmox-class stacks); this is not stated by a source, it follows from the affected component"
+    sector: "technology"
+    cves: [CVE-2026-99999]
+    techniques: [T1611, T1068]
+    affected_products: ["Linux kernel", "KVM on x86"]
+    entity_keys: ["product:linux-kernel", "product:linux-kernel-kvm-x86"]
+    new_entities:
+      - { key: "tool:pwnescape", type: tool, name: "PwnEscape", aliases: ["CVE-2026-99999"],
+          summary: "Branded name for CVE-2026-99999, a Linux kernel IPv4 checksum-offload flaw that gives an untrusted KVM guest a host-memory disclosure and write primitive (PWNAI Research, 2026-10)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: B, credibility: 1 }
+    novelty: new
+    cross_domain_note: "S1 (vulnerabilities) may return the same CVE from the Linux CNA / Red Hat side; dedup by CVE, not by title. Not in the 2026-10-22 KEV window."
+    evidence:
+      - quote: "A local attacker or untrusted guest virtual machine can exploit this vulnerability by transmitting network packets containing malformed checksum metadata into the IPv4 networking subsystem."
+        attribution: "Red Hat"
+        source_url: "https://access.redhat.com/security/cve/cve-2026-99999"
+      - quote: "Mitigation for this issue is either not available"
+        attribution: "Red Hat"
+        source_url: "https://access.redhat.com/security/cve/cve-2026-99999"
+      - quote: "we expect exploits in weaker configurations to arrive in weeks, and exploits working in default hypervisor configurations to arrive in under a month"
+        attribution: "PWNAI Research"
+        source_url: "https://pwn.ai/blog/pwnescape"
+      - quote: "PwnEscape impacts KVM running on x86 CPU architectures, which is the most common setup used by most shared cloud environments."
+        attribution: "Risky Bulletin"
+        source_url: "https://news.risky.biz/risky-bulletin-pwnescape-vulnerability-lets-you-escape-kvm/"
+    extended_notes: |
+      Exposure: Linux hosts that run guests or sandboxes they do not fully trust over virtio-net with a TAP path (KVM/QEMU, Firecracker-class microVMs,
+      CI runners, malware-analysis and AI-sandbox hosts). Read the running kernel with uname -r and compare with the fixed releases per branch; distribution
+      kernels backport, so use the distributor's advisory (Red Hat: no fix shipped yet, no mitigation).
+      Fix reference: mainline commit "ipv4: validate checksum_start before completing checksum" (6785011f8b16), merged 2026-10-14; the researcher calls it a
+      defence-in-depth guard, and the CNA text says a more complete validation at input is forthcoming, so expect follow-up patches.
+      Detection (telemetry class first): host kernel logs for WARN or panic traces in skb_checksum_help / ip_do_fragment paths and unexplained host
+      crashes on hypervisor hosts (the CNA says malformed offsets can trip those paths); no network signature is published. Guest-side, the attack
+      needs the guest to send crafted checksum metadata, so a tenant VM with offload settings or a custom virtio driver it has no reason to touch is
+      the behavioural lead; the sources state no specific telemetry for this, so treat it as a hunting idea, not a documented detection.
+      Hardening: patch hypervisor host kernels first (multi-tenant before single-tenant), restrict who can run arbitrary guest code, and treat the
+      guest-to-host boundary as breakable until the host kernel is updated.
+      Suggested priority: notable to high for operators of multi-tenant or untrusted-guest Linux hosts; otherwise routine kernel patching.
+      Note on dates: the pwn.ai page metadata reads 2026-10-23 while Risky Bulletin linked it on 2026-10-19, so the post date used above is the earlier one.
+  # ------------------------------------------------------------------ 6
+  - title: "DeadTag: Report URI and iVerify find 660+ re-registered expired tag domains on thousands of websites selling visitor traffic, with one buyer serving the Coruna and DarkSword iPhone exploit kits by iOS version"
+    sources:
+      - { url: "https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/", publisher: "Report URI (Scott Helme) with iVerify", date: "2026-10-22", role: "primary" }
+      - { url: "https://www.iverify.com/blog/darksword-variant-threat-research", publisher: "iVerify", date: "2026-10-08", role: "corroborating" }
+    discovery_trace: "first seen at: report-uri-blog, URL https://blog.report-uri.com/rss/ (feed, 2026-10-22T10:05Z item) -> primary: extract of the DeadTag post -> pivot: iVerify P7 DarkSword research linked from the post, URL https://www.iverify.com/blog/darksword-variant-threat-research"
+    summary: |
+      Report URI, working with iVerify (which covers the client side), says an operator it names DeadTag buys expired domains that once served
+      analytics or advertising tags still embedded in other companies' pages, so every site still carrying the old tag loads attacker code without any
+      change on the site. The post counts 660+ such domains on thousands of confirmed sites and a "cautiously estimated" 135 million visits a month. The
+      served script is about 2 KB, returns nothing to bots, scanners and data-centre addresses (and stops answering visitors who return too often), and
+      lets the operator's server decide per visitor where to redirect; most destinations are scams (fake "use a VPN" pop-ups, prize pages, betting and
+      casino sign-ups). One buyer is a crew that ends on a fake prediction-market page serving Coruna to iOS 13 to 17.2.1 and a modified "P7" build
+      of DarkSword (iVerify's variant, first described on 2026-10-08) to iOS 18.4 to 18.7; both attack the browser, need no tap, and steal keychain
+      secrets and crypto-wallet data, reporting to the same server. The crew also plants DarkSword loaders on hundreds of PrestaShop shops in a folder
+      named like analytics code. Report URI's attribution reading: DeadTag unknown, the exploit crew at least Chinese-speaking and financially motivated,
+      with the caveat that the crew may want to look Chinese. Caveats: Report URI sells script-monitoring and its threat-intelligence feed; no
+      government or Swiss site is named; earlier fires of this pipeline dropped the P7 DarkSword chain because the exploited iOS flaws are fixed
+      in current iOS and the observed victims were Chinese-language crypto users; what is new here is the scale and delivery path, not the kit.
+    region_nexus: "global; no Swiss or public-sector site named"
+    primary_sector_nexus: "indirect: any public website that still loads legacy third-party tags, and administration iPhones that lag on iOS updates"
+    sector: "technology, retail"
+    cves: []
+    techniques: [T1189, T1583.001, T1608.004]
+    affected_products: ["Apple iOS", "PrestaShop"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:deadtag", type: campaign, name: "DeadTag", aliases: [],
+          summary: "Operation that re-registers expired analytics and advertising tag domains still embedded on thousands of websites and sells the resulting visitor traffic, including to an iPhone exploit-kit crew (Report URI with iVerify, 2026-10-22)." }
+      - { key: "tool:coruna-ios-exploit-kit", type: tool, name: "Coruna", aliases: ["Coruna iOS exploit kit"],
+          summary: "iOS browser exploit kit for iOS 13 to 17.2.1 served by the DeadTag-linked crew; steals keychain and crypto-wallet data (Report URI, 2026-10-22)." }
+      - { key: "tool:darksword-ios-exploit-kit", type: tool, name: "DarkSword", aliases: ["DarkSword iOS exploit kit", "P7 DarkSword"],
+          summary: "iOS browser exploit kit for iOS 18.4 to 18.7; iVerify documented the 'P7' variant with keychain and crypto-wallet theft on 2026-10-08, and Report URI saw it served through DeadTag traffic (2026-10-22)." }
+    relation_suggestions:
+      - { subject: "campaign:deadtag", object: "tool:darksword-ios-exploit-kit",
+          basis: "Report URI: traffic from DeadTag tag domains is passed through an advertising gateway to a page that serves DarkSword or Coruna by iOS version (Report URI, 2026-10-22)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "the 2026-10-10, 2026-10-12 and 2026-10-13 fires dropped the P7 DarkSword chain as borderline (patched flaws, no public-sector victim, one researcher who sells a product); the delta now is a second researcher (iVerify), a second kit, 660+ domains and brokered traffic. The operator decides whether that clears the gate."
+    evidence:
+      - quote: "Attackers are buying up the expired domains behind old analytics and advertising tags that thousands of websites still load"
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/"
+      - quote: "Simply opening the page is enough for your device to be compromised."
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/"
+      - quote: "the crew looks to be at least Chinese-speaking"
+        attribution: "Report URI"
+        source_url: "https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/"
+      - quote: "P7 reduces its on-device footprint, adds on-device keychain and crypto-wallet theft, and adds two way C2 communication with the attacker's infrastructure."
+        attribution: "iVerify"
+        source_url: "https://www.iverify.com/blog/darksword-variant-threat-research"
+    extended_notes: |
+      Exposure: any site whose pages load third-party scripts from domains the owner no longer controls (retired analytics, chat, ad or widget tags), and any iPhone
+      below the fixed iOS releases. How to tell: inventory every external script host of your public sites against current registration and ownership, flag
+      hosts whose registration changed or whose service is dead.
+      Detection (telemetry class first): web-page script inventories and Content Security Policy violation reports (a new script origin appearing without a
+      deployment), certificate-transparency and registration monitoring for tag domains you reference, and mobile-device-management compliance for iOS
+      versions. Scanners from data-centre addresses see nothing, so server-side reproduction needs residential-style egress (Report URI's experience).
+      Hardening named by the source: remove tags for services you no longer use, monitor what pages load, enforce a CSP allow-list, keep iOS current, enable
+      Lockdown Mode for likely targets. Post-exposure on a phone: restart, change keychain passwords, move wallet funds (Report URI's advice).
+      Suggested priority: low to notable; the actionable part for a public-sector web team is the dead-tag audit.
+  # ------------------------------------------------------------------ 7
+  - title: "MythicRatatoskr: ESET documents a Go backdoor that hides its C2 inside the Yggdrasil mesh network and a UAC-0099 to Sandworm access handoff that ended in a data-wiping attack on a Ukrainian grain logistics firm"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/", publisher: "ESET Research", date: "2026-10-22", role: "primary" }
+    discovery_trace: "first seen at: majors sweep, URL https://www.welivesecurity.com/en/eset-research/ (extract of the ESET Research listing, newest card 2026-10-22; the main ESET RSS feed https://www.welivesecurity.com/en/rss/feed/ did not yet list it) -> primary (no pivot needed): extract of the MythicRatatoskr post"
+    summary: |
+      ESET reports that UAC-0099, a Russia-aligned group active since 2022, gained initial access to a Ukrainian grain logistics company on
+      2025-07-16 with a spearphishing attachment that ran a scheduled task and a PowerShell payload, then the MATCHBOIL downloader and the MATCHWOK
+      backdoor, and that on 2025-07-17 a previously undocumented Go backdoor, MythicRatatoskr, arrived. The backdoor reaches its command server
+      inside the Yggdrasil decentralized mesh network (an encrypted IPv6 overlay in 200::/7): it is built on yggstack, so it needs no tunnel
+      interface or privileges, joins the public mesh through three randomly chosen peers from an embedded list and then speaks HTTPS on port 443 to a
+      server that has an address only inside the mesh; some samples wait ten minutes before connecting. ESET adds that this can keep outbound connections
+      invisible to network security tools, but that blocking the public peer addresses is a viable mitigation. It ran as a Windows service named
+      like a browser updater, was copied to other machines over an OpenSSH SFTP server, and a SOCKS5 server followed; data was not staged before
+      exfiltration. On 2025-09-17 the SDelete utility was deployed through Active Directory Group Policy, which ESET recognises as standard Sandworm tradecraft, and ESET
+      assesses with high confidence that UAC-0099 handed access to Sandworm, without being able to say which group operated the backdoor. ESET places the pair
+      beside the earlier Gamaredon-Turla collaboration as a pattern of Russia-aligned actors passing access along. The intrusion is from 2025 and the victim Ukrainian.
+    region_nexus: "Ukraine (victim); Russia-aligned actors whose cooperation pattern and C2 technique transfer to European administrations"
+    primary_sector_nexus: "indirect: the observed victim is a logistics company; UAC-0099 itself targets Ukrainian government bodies, finance and media"
+    sector: "transport"
+    cves: []
+    techniques: [T1566.001, T1053.005, T1543.003, T1572, T1090, T1021.004, T1113, T1041, T1484.001, T1485]
+    affected_products: ["Microsoft Windows", "Windows Active Directory Group Policy"]
+    entity_keys: ["actor:uac-0099", "actor:sandworm"]
+    new_entities:
+      - { key: "malware:mythicratatoskr", type: malware, name: "MythicRatatoskr", aliases: [],
+          summary: "Go backdoor that reaches its command server inside the Yggdrasil mesh network, found by ESET in a 2025 UAC-0099 intrusion that Sandworm then used for a data-wiping attack (ESET, 2026-10-22)." }
+    relation_suggestions:
+      - { subject: "actor:uac-0099", object: "actor:sandworm",
+          basis: "ESET assesses with high confidence that UAC-0099 handed access to Sandworm, which then ran a data-wiping attack (ESET, 2026-10-22)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "victim and intrusion are Ukrainian and from 2025; returned for the Yggdrasil C2 technique (a detection and blocking lever) and the Russia-aligned access-handoff pattern. Single vendor (ESET), who also holds the telemetry."
+    evidence:
+      - quote: "Ultimately, UAC-0099 handed off access to Sandworm, which then carried out a data-wiping attack."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/"
+      - quote: "blocking the public peer addresses is a viable mitigation"
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/"
+      - quote: "The data-wiping attack was executed by deploying the SDelete utility via Active Directory Group Policy"
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/"
+    extended_notes: |
+      Exposure: Windows estates where staff can open attachments from outside and where egress to arbitrary internet peers is not filtered; there is no product
+      vulnerability. Detection (telemetry class first): egress and DNS logs for connections to the public Yggdrasil peer list or any host exchanging
+      Yggdrasil mesh traffic (a user-space mesh stack looks like ordinary outbound TCP, so the peer list is the handle, per ESET); process and
+      service-creation events for a new Windows service with an updater-style name (ieupdate-style) running a Go binary from a system or user folder; a scheduled task
+      that runs a PowerShell payload from a temp folder after a document is opened; SFTP/OpenSSH server
+      activity on workstations; and, for the destructive stage, Group Policy objects that deploy SDelete or similar wipers and mass file-overwrite activity
+      after a long quiet period (two months here between access and wiping).
+      Hardening: block egress to the public peer addresses (ESET's mitigation), and alert on Group Policy changes that deploy wiper-class tools such as SDelete.
+      Triage: Yggdrasil is also used by hobbyists and researchers, so a single mesh connection needs a business owner check; a mesh peer plus a service
+      named like an updater is the stronger combination.
+      Suggested priority: notable. No IOCs carried (file names, hosts, keys and peers sit in the source).
+  # ------------------------------------------------------------------ 8
+  - title: "ANNUAL REPORT (quarterly) - Rapid7 Q3 2026 Threat Landscape Report: high-severity flaws exploited within an average of three days, government-sector ransomware listings up, AI an operational component in 8% of tracked incidents"
+    sources:
+      - { url: "https://www.rapid7.com/research/report/quarterly-threat-landscape-report/", publisher: "Rapid7", date: "2026-10-21", role: "primary" }
+      - { url: "https://www.securityweek.com/high-severity-flaws-exploited-in-three-days-as-ransomware-dominates-q3-rapid7/", publisher: "SecurityWeek", date: "2026-10-21", role: "corroborating" }
+    discovery_trace: "first seen at: securityweek, URL https://www.securityweek.com/ (WebFetch href list, headline 'High-Severity Flaws Exploited in Three Days as Ransomware Dominates Q3: Rapid7', 2026-10-21) -> pivot: article URL https://www.securityweek.com/high-severity-flaws-exploited-in-three-days-as-ransomware-dominates-q3-rapid7/ -> primary: Rapid7 report page, URL https://www.rapid7.com/research/report/quarterly-threat-landscape-report/"
+    lookback: true
+    summary: |
+      Rapid7 published its Q3 2026 quarterly threat landscape report on 2026-10-21 (a periodic report, quarterly rather than annual). Headline figures from the report
+      page and SecurityWeek's reading: new high-severity vulnerabilities were exploited an average of three days after disclosure, with 71% of tracked
+      exploitation inside the first seven days, and 34 of 43 exploited flaws rated CVSS 7 to 10 needed neither authentication nor user interaction; The Gentlemen (342
+      leak-site posts) and Qilin (339) led ransomware, followed by INC Ransom (99); the US took 60% of attacks, Germany 7%, Italy 5% and Canada 5%; ransomware victims in
+      government rose 15% on the previous quarter, the US share of 55 government-centric incidents among the top-ten countries moving from 33% to 45%; 41 of 63
+      tracked underground posts sold RDP or network access; AI was an operational component in 8% of tracked incidents, human-directed in every documented case,
+      with automation growing in the middle of the attack chain. Rapid7 also describes an undocumented Linux toolkit used by a DPRK-linked actor against South Korean
+      organizations (a backdoor built into a trojanized HAProxy build, an SSH keylogger and a curl-based RAT). Switzerland is not named in what I read. The counts
+      are Rapid7's tracked leak-site and incident data, not a census.
+    region_nexus: "global; Germany and Italy are the most-targeted neighbours named; Switzerland not mentioned"
+    primary_sector_nexus: "direct for the government-sector ransomware trend; counts are leak-site listings"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:rapid7-quarterly-threat-landscape-q3-2026", type: report, name: "Rapid7 Q3 2026 Quarterly Threat Landscape Report", aliases: [],
+          summary: "Rapid7 quarterly report of 2026-10-21: three-day average time to exploitation of new high-severity flaws, The Gentlemen and Qilin leading ransomware, government-sector victim share rising, AI in 8% of tracked incidents." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "periodic vendor report flagged under the S3 duty; mostly aggregate leak-site counts. The only decision-relevant takeaway is the three-day exploitation window against a monthly patch cadence; the main agent decides whether that clears the gate or ships as a one-line mention."
+    evidence:
+      - quote: "That's the average time between a new high-severity vulnerability going public and someone using it against somebody else."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/research/report/quarterly-threat-landscape-report/"
+      - quote: "Of exploited vulnerabilities rated 7-10 CVSS required no authentication and no user interaction (34 of 43)"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/research/report/quarterly-threat-landscape-report/"
+      - quote: "Government sector victims of ransomware are increasing (up 15% on the previous three months)"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/high-severity-flaws-exploited-in-three-days-as-ransomware-dominates-q3-rapid7/"
+    extended_notes: |
+      Defender takeaway tied to the data: Rapid7 reads the three-day figure as a design requirement for patch and mitigation cadence on internet-facing edge
+      products; the store tracks individual exploited edge flaws, so this report adds the cadence framing, not new CVEs.
+      Rapid7's suggestion for AI telemetry: monitor AI API usage patterns from unexpected hosts and processes.
+      Not a vulnerability or incident entry; if shipped it is a short research/annual-report-class entry with the periodic flag.
+  # ------------------------------------------------------------------ 9
+  - title: "Hunt Intelligence: a Russian-speaking operator swept Ukraine for X-Road-based state data-exchange hosts and ran a Log4Shell chain against Graylog logging servers beside them, until an open working directory exposed the whole toolkit"
+    sources:
+      - { url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell", publisher: "Hunt Intelligence", date: "2026-10-21", role: "primary" }
+      - { url: "https://news.risky.biz/risky-bulletin-hacker-hijacks-10-of-tor-exit-nodes/", publisher: "Risky Bulletin (Catalin Cimpanu)", date: "2026-10-21", role: "corroborating" }
+    discovery_trace: "first seen at: risky-biz-news, URL https://news.risky.biz/rss/ (feed, 2026-10-21 item 'Hacker hijacks 10% of Tor exit nodes', section 'Ukraine data platform breach') -> primary: Hunt Intelligence write-up, URL https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+    lookback: true
+    summary: |
+      Hunt Intelligence describes an operator who, between May and September 2026 and from one rented server, searched Ukrainian address space for hosts whose
+      web page title reads "UXP Verifier", the message-log interface of a Cybernetica UXP security server (UXP is built on X-Road, whose security-server ports 5500,
+      5577 and 4000 the operator also probed; the management port must not be internet-reachable, per the documentation Hunt cites). The operator obtained code
+      execution on at least two Graylog logging servers at two Ukrainian organizations with a Log4Shell JNDI string placed in the username field of a POST to the
+      Graylog sessions API, delivered through a two-stage CommonsBeanutils2 gadget chain; the exploit trees were mostly unmodified public proofs of concept. On one
+      host the Elasticsearch cluster held 6,833,058 documents of the state data-exchange platform and the operator ran aggregate queries on a transaction schema it already
+      knew; Hunt says it observed no exfiltration from that cluster, which is absence of evidence rather than proof. Risky Bulletin's summary says the actor "stole 6.8
+      million documents", which the primary does not support; treat that as a contradiction in favour of Hunt. Hunt found it all because the operator served its working directory over
+      HTTP for 17 hours (shell history, scan output, payload builder). Side findings: attempts against a hotel-management platform and a national e-government integration
+      service, a failed original exploit for a RouterOS SCEP heap overflow (CVE-2021-41987) and a CVE-2018-14847 loop against nearby routers. Hunt shared the victim data with the national
+      CERTs of the affected countries. No Swiss use of UXP or X-Road is stated anywhere in the sources.
+    region_nexus: "Ukraine (victims); the technique and exposure pattern apply to any state data-exchange or interoperability platform and to internet-reachable log servers"
+    primary_sector_nexus: "direct for public-sector interoperability platforms (state data exchange); no Swiss victim or deployment stated"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1595.001, T1059.004, T1572, T1213]
+    affected_products: ["Graylog", "Cybernetica UXP", "X-Road", "Apache Log4j", "MikroTik RouterOS"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Ukrainian victims, a 2021 vulnerability class and no confirmed data theft; returned for the concrete hunting hooks against Graylog and the targeting of a state data-exchange ecosystem, which is the nearest analogue to Swiss federal and cantonal interoperability platforms. Single vendor (Hunt), who also holds the artefacts."
+    evidence:
+      - quote: "Between May and September 2026, one operator worked from a single rented server to find a specific piece of software across Ukrainian address space."
+        attribution: "Hunt Intelligence"
+        source_url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+      - quote: "No exfiltration observed from the data-exchange logging cluster"
+        attribution: "Hunt Intelligence"
+        source_url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+      - quote: "POST requests to /api/system/sessions carrying a ${jndi: substring in the username field, paired with the X-Requested-By: cli header."
+        attribution: "Hunt Intelligence"
+        source_url: "https://hunt.io/blog/ukraine-state-data-exchange-graylog-log4shell"
+      - quote: "A Russian-speaking threat actor has gained access to an Elasticsearch server and stole 6.8 million documents from Ukraine's state data-exchange platform."
+        attribution: "Risky Bulletin"
+        source_url: "https://news.risky.biz/risky-bulletin-hacker-hijacks-10-of-tor-exit-nodes/"
+    extended_notes: |
+      Exposure: Graylog (or any log-management stack) reachable from the internet and not patched against Log4Shell; X-Road/UXP security servers with message-exchange (5500),
+      OCSP (5577) or management (4000) ports reachable from outside their partner network; a log cluster that holds full transaction records (client and service member
+      codes, user IDs) is a high-value store in its own right.
+      Detection (telemetry class first): web or reverse-proxy access logs on the log server for POST /api/system/sessions whose username field contains a ${jndi: string,
+      paired with the X-Requested-By: cli header (the header is what Graylog's CSRF check requires, so it marks an attempt against this application); host process-creation
+      events for a child process spawned from the Java service; outbound LDAP/JNDI callbacks from the log server; the ysoserial StubTranslet template name in captured payloads.
+      Hunt advises hunting from the stager's access log, not the JNDI listener log. Hunt notes the operator-side port combination 8888 with 1389 and 8890 has no common
+      legitimate use (addresses and paths are for retrohunting only).
+      Hardening: update Graylog and Log4j, take log-management consoles off the internet, keep X-Road management and message ports to partner networks, and review who can
+      query the transaction indices.
+      Triage: a single request with a jndi string is routine internet noise; the discriminating signals are the cli header on the sessions endpoint plus a Java child process or a
+      stager fetch seconds later.
+      Suggested priority: low to notable. No IOCs carried (operator servers, ports, files and victim sectors sit in the source).
+# Leads read to the primary or the listing and consciously dropped (audit trail, not for composition)
+dropped_leads:
+  - { lead: "Cisco Talos 'Parasitizing trust' (platform-as-proxy: Staples/Dell order-notification callback phishing, list bombing, bounce abuse; 25+ abused platforms)", url: "https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/", published: "2026-10-21", reason: "published 17 h before the 26 h window and not a slice record; single-vendor trend piece, only the callback-phishing pattern is new. Substantive enough that the main agent may reconsider (primary read, quotes verified)." }
+  - { lead: "Sophos CTU BRONZE SANDCASTLE (Sandboxie DLL sideloading, modified Meterpreter-style payload, GitHub-hosted config)", url: "https://www.sophos.com/en-us/blog/bronze-sandcastle-deploys-modified-meterpreter-shells", published: "2026-10-20", reason: "outside the window, victims in Asia and Africa only, no European nexus; the sideloading-pair table is the only reusable part" }
+  - { lead: "Huntress Amazon-themed ClickFix using finger.exe (Doina, Lumma Stealer, pirated NetSupport)", url: "https://www.huntress.com/blog/amazon-clickfix-finger", published: "2026-10-21", reason: "outside the window; finger.exe ClickFix abuse has been public for about a year, the Amazon sponsored-search lure and commodity payloads are the only new parts" }
+  - { lead: "Zscaler ThreatLabz 'Inside a Global AI-Assisted Hacking Campaign' (ARTEX operator with Claude Code/Codex/Grok workspaces, 19 target countries, financially motivated)", url: "https://www.zscaler.com/blogs/security-research/inside-global-ai-assisted-hacking-campaign", published: "2026-10-21", reason: "extends the CrowdStrike/Recorded Future operator already in entry 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse; no Swiss or European-government nexus and no new defender action, so not worth an update record" }
+  - { lead: "Zscaler Armorsteal (SEO poisoning, fake Chocolatey and MAS sites, Pyarmor-protected Python stealer)", url: "https://www.zscaler.com/blogs/security-research/seo-poisoning-campaign-delivers-new-armorsteal-malware", published: "2026-10-22", reason: "commodity infostealer aimed at consumers (Discord, Steam, wallets); the typosquatted package-manager installer lure is not new" }
+  - { lead: "Unit 42 'Next Exploit Opportunities' (BUGSTER, Hermes agent with DeepSeek V4 against Indian universities)", url: "https://unit42.paloaltonetworks.com/ai-assisted-cybercrime-analysis/", published: "2026-10-21", reason: "low-skill operator, India-only victims, AI-agent theme already covered by the ARTEX, CL-UNK-1211 and ReliaQuest entries" }
+  - { lead: "Unit 42 'The Current Landscape of OAuth Attacks'", url: "https://unit42.paloaltonetworks.com/current-landscape-oauth-attacks/", published: "2026-10-22", reason: "educational overview of known OAuth phishing classes, no new campaign or telemetry" }
+  - { lead: "CrowdStrike 'Uncovers New Agentic AI Campaigns' (four unreported actors; Argentine healthcare, Indonesian government domains)", url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/", published: "2026-10-21", reason: "marketing blog for a gated report; AI-agent intrusion theme already carried by four entries; no Swiss or EU nexus" }
+  - { lead: "Kaspersky 'Operation FlashHole' (Lazarus, CrossWeb EX watering hole, GitHub-API C2, post-quantum payload delivery)", url: "https://securelist.com/lazarus-operation-flashhole/121541/", published: "2026-10-21", reason: "South Korea-specific victim set and delivery through mandatory Korean banking software; transferable parts (GitHub private-repo C2, in-memory chains) are too thin for a Tier 2/3 hook here" }
+  - { lead: "Kaspersky 'Different types of attacks on warehouses'", url: "https://securelist.com/paper-unicorn-warehouse-security/121537/", published: "2026-10-20", reason: "security-assessment overview of warehouse OT/IT, no campaign or new technique" }
+  - { lead: "Group-IB 'Inside SiriusQT' (HVNC RAT sold as malware-as-a-service, 30+ licence buyers, EU targets incl. DE/FR/IT)", url: "https://www.group-ib.com/blog/siriusqt-rat-hvnc-stealer/", published: "2026-10-22", reason: "commodity MaaS RAT; read only the executive part, no detection-relevant novelty beyond HVNC" }
+  - { lead: "Krebs 'Feds Suspect Ransom Negotiator Ran ShinyHunters Extortion Site'", url: "https://krebsonsecurity.com/2026/10/feds-suspect-ransom-negotiator-ran-shinyhunters-extortion-site/", published: "2026-10-19", reason: "anonymous-source law-enforcement reporting, no charges against the second executive; the transferable lesson (vet IR/negotiation vendors) does not change a technical action" }
+  - { lead: "StepSecurity 'OpenCode Security Breach' (OpenCode Console users with linked AI providers, 1.4% affected)", url: "https://www.stepsecurity.io/blog/opencode-security-breach", published: "2026-10-18", reason: "the only primary is a vendor post on X (not fetchable), no root cause, no affected-version data; developer-tool vendor incident with no Swiss nexus" }
+  - { lead: "Citizen Lab 'How Generative AI is Scaling Transnational Repression' and Citizen Lab Pegasus Serbia", url: "https://citizenlab.ca/how-generative-ai-is-scaling-transnational-repression/", published: "2026-10-22", reason: "expert-insight link-out and a civil-society spyware case; no Swiss or EU-government nexus" }
+  - { lead: "Check Point Research 'The Risk of AI-Powered Antidetect Browsers in Online Fraud and Influence Operations' (Kameleo, AdsPower, MultiLogin)", url: "https://research.checkpoint.com/2026/the-risk-of-ai-powered-antidetect-browsers-in-online-fraud-and-influence-operations/", published: "2026-10-20", reason: "fraud and influence-operation tooling analysis for platform trust-and-safety teams; no enterprise detection hook and no Swiss nexus" }
+  - { lead: "Akamai 'When DNS Trust Breaks' (ccTLD registry hijacks and counterfeit Google certificates)", url: "https://www.akamai.com/blog/security/dns-trust-breaks-counterfeit-google-certificates-reveal", published: "2026-10-22", reason: "restates Google's 2026-10-06 disclosure already carried by entry 2026-10-11/cctld-registry-hijacks-gh-sl-as-certificates-for-google; adds only generic domain-portfolio advice" }
+  - { lead: "Proofpoint 'Generative AI is erasing behavioral tells' (THN), Push Security ClickFix detection-data piece (BleepingComputer, sponsored), Huntress phishing-kit webinar recap, SANS ISC orphaned VBA in DWG YARA, AIR Security PHP2Shell-in-skills", url: "https://thehackernews.com/2026/10/generative-ai-is-erasing-behavioral.html", published: "2026-10-18..2026-10-22", reason: "vendor positioning, sponsored content, webinar recap, a single YARA rule with two hits, and an AI-agent-skills marketing post: all fail the PD-11 gate" }
+# Leads belonging to other domains, surfaced from my sweeps so the main agent can cross-check S1/S4 returns (not verified by me, not for composition from here)
+cross_domain_leads:
+  - { domain: S1, lead: "Arista VeloCloud Orchestrator critical SQL-injection zero-day exploited in attacks (BleepingComputer/THN 2026-10-22)" }
+  - { domain: S1, lead: "Plex2Shell exploit chain, CISA warning of active exploitation (BleepingComputer 2026-10-21; SecurityWeek)" }
+  - { domain: S1, lead: "Two CVSS 9.0 Linux KSMBD RCE flaws disclosed on public mailing lists before kernel fixes (THN 2026-10-22); Node.js Brotli decoder RCE; OpenCode MCP sign-in code execution on Windows/WSL (THN 2026-10-22)" }
+  - { domain: S1, lead: "Rapid7 NetScaler intrusions chaining CVE-2026-88771 and CVE-2026-88779 (Rapid7 blog listing 2026-10-21) and Eptura Archibus auth-bypass/RCE/database read (Rapid7, fixed): possible update-of for the NetScaler entries" }
+  - { domain: S4, lead: "South Carolina state capital cyberattack (The Record 2026-10-22); Toronto crime-tips organisation freezes operations after breach (The Record 2026-10-22); Ahold Delhaize services restored after cyberattack (SecurityWeek 2026-10-20); LOXONE building-automation intrusion, internal IT shut down (Risky Bulletin 2026-10-21); Radiocom Romania state broadcaster network crippled (Risky Bulletin 2026-10-21); Railway rotate-secrets warning and Onamae Desktop Cloud VPS breach (BleepingComputer 2026-10-21/22)" }
+candidate_sources:
+  - id: pwn-ai
+    publisher: "PWNAI Research (pwn.ai blog)"
+    url: "https://pwn.ai/blog/pwnescape"
+    category: research
+    why: "Primary for CVE-2026-99999 (PwnEscape, Linux KVM guest-to-host escape found with an AI research harness); first-hand, evidence-labelled kernel research. Listing path not probed; reliability B."
+coverage_gaps:
+  - source_id: eset (main RSS) / eset-research
+    reason: "RECIPE: https://www.welivesecurity.com/en/eset-research/feed/ answers 404, and the main feed https://www.welivesecurity.com/en/rss/feed/ (40 items) did not yet list the 2026-10-22 MythicRatatoskr post. Working command: python3 tools/fetch_source.py extract https://www.welivesecurity.com/en/eset-research/ returns the dated research listing; drill each post with extract."
+  - source_id: rapid7-research
+    reason: "RECIPE: feed https://www.rapid7.com/rss.xml fails (not well-formed XML at line 73, jina empty). python3 tools/fetch_source.py extract https://www.rapid7.com/blog/ returns the newest four headlines without dates; the Q3 report page https://www.rapid7.com/research/report/quarterly-threat-landscape-report/ reads with extract."
+  - source_id: sysdig
+    reason: "RECIPE: the RSS item links point to the staging host webflow.sysdig.com/blog/...; the canonical host is www.sysdig.com/blog/... and I did not fetch a canonical page, so I cited nothing from it (the only in-horizon item was PHP2Shell, already covered)."
+  - source_id: stepsecurity-blog
+    reason: "RECIPE: extract of the listing returns raw Webflow HTML with no dates; the dated reading needs one extract per post (the post pages carry a date field). Newest in horizon: OpenCode 2026-10-18, eMudhra 2026-10-22, LiteLLM, GhostAction (the last three already covered)."
+  - source_id: securityweek
+    reason: "RECIPE confirmed: extract returns widget text only; WebFetch with a headline+date+href prompt returns 25 dated headlines (works)."
+  - source_id: push-security
+    reason: "RECIPE: extract returns an undated title list; WebFetch with a title+date+href prompt returns dates (works). Newest threat-research posts are 2026-10-09 (outside the lookback); the blog is now mostly buyer's guides."
+  - source_id: therecord
+    reason: "RECIPE confirmed: feed returns 5 items only (all 2026-10-22); no further listing read, so deeper in-window items would need WebSearch."
+  - source_id: novee-security
+    reason: "extract returns one undated marketing post (MCP Assets); nothing returnable in the lookback. Candidate for demotion at the next audit (same verdict as 2026-10-18)."
+  - source_id: air-security
+    reason: "raw listing parsed; only post inside the 98 h lookback is 'Skills Still Use Vulnerable PHP2Shell Libraries' (2026-10-22, marketing). Candidate for demotion."
+source_ledger:
+  - { id: krebs, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 122, in_horizon_items: 2, returned: 0, note: "PHP outage piece covered; ShinyHunters negotiator piece dropped (see dropped_leads)" }
+  - { id: novee-security, tier: candidate, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "one undated marketing post" }
+  - { id: previdian, tier: standard, attempted: true, transport: "extract (per-CVE page CVE-2026-21589)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "page now shows last-observed 2026-10-22 and KEV listing, already carried by entry 2026-10-06/cve-2026-21589-atlassian-data-center-arbitrary-file-access; no delta" }
+  - { id: push-security, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest threat posts 2026-10-09; the rest are buyer's guides" }
+  - { id: report-uri-blog, tier: candidate, attempted: true, transport: "feed + extract", horizon_hours: 122, in_horizon_items: 2, returned: 1, note: "DeadTag returned (borderline); PHP2Shell response covered by the PHP entries" }
+  - { id: risky-biz-news, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 122, in_horizon_items: 4, returned: 3, note: "Tor exit relay Ebury, PwnEscape and (via the Oct 21 bulletin) the Hunt Intelligence Ukraine data-exchange research returned as lookback items; ShinyHunters and breach roundups routed to dropped/cross-domain leads" }
+  - { id: sans-isc, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 122, in_horizon_items: 2, returned: 0, note: "PHP diary covered; orphaned VBA in DWG YARA diary dropped" }
+  - { id: securityweek, tier: standard, attempted: true, transport: "WebFetch (href list) + extract", horizon_hours: 122, in_horizon_items: 25, returned: 1, note: "Rapid7 Q3 report returned (periodic-report flag, borderline); the rest S1/S4 or covered" }
+  - { id: stepsecurity-blog, tier: standard, attempted: true, transport: "extract (listing + 5 posts)", horizon_hours: 122, in_horizon_items: 4, returned: 0, note: "OpenCode dropped; eMudhra, LiteLLM, GhostAction already covered" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "PHP2Shell post only (covered)" }
+  - { id: therecord, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 5, returned: 0, note: "ARTEX and eMudhra covered; Toronto, South Carolina and Interpol items routed to S4" }
+  - { id: theregister-security-feed, tier: standard, attempted: true, transport: "feed (atom)", horizon_hours: 122, in_horizon_items: 25, returned: 0, note: "PHP2Shell, GitLab, eMudhra, ConnectWise, LiteLLM, PAN-OS ransomware items all covered or S1; extract returns navigation only (known)" }
+  - { id: trellix, tier: standard, attempted: true, transport: "extract (dated listing)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13 marketing/press, research post 2026-09-17" }
+  - { id: volexity, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 (Mind the Patch Gap part 3), outside the lookback" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "PHP2Shell covered; AI-assisted ARTEX campaign and Armorsteal dropped (see dropped_leads)" }
+  - { id: air-security, tier: candidate, attempted: true, transport: "url (raw listing) + extract of 3 posts", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "only the PHP2Shell-in-skills marketing post is in the lookback" }
+sweep_beyond_slice:
+  - "Fetched and read the newest items of: Microsoft Security blog (msft-secblog recent), Google Threat Intelligence (feed + WebFetch listing; newest in window none, AI Threat Tracker is dated 2026-09-08), Cisco Talos, Unit 42, Check Point Research (+ weekly bulletin 2026-10-19), ESET (listing), Kaspersky Securelist, SentinelLABS (nothing since 2026-09-16), Proofpoint (nothing since 2026-10-14), Trend Micro (nothing since 2026-09-25), Elastic Security Labs (PHP2Shell only), Huntress, Sophos, Group-IB, Akamai, Socket, Recorded Future Insikt, Citizen Lab, Cloudflare Cloudforce One (nothing since 2026-10-07), DFIR Report (nothing since 2026-08-24), watchTowr (nothing since 2026-10-09), CrowdStrike, Rapid7, Aikido, Wiz threat feed (nothing since 2026-09-26), BleepingComputer, The Hacker News, Dark Reading."
+periodic_reports_in_window:
+  - "Rapid7 Q3 2026 Quarterly Threat Landscape Report (2026-10-21) returned as item 8. Not new in window: ENISA Threat Landscape 2026 (about 2026-09-22), GTIG AI Threat Tracker (2026-09-08), ESET Threat Report H1 2026 (2026-07-08), Microsoft Digital Defense Report 2026 (2026-10-01). Not yet published as far as search showed: UK NCSC Annual Review 2026, a BACS half-year report."
