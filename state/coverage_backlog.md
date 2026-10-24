@@ -11,6 +11,7 @@
 
 | Surfaced | By run | Item | Why it clears the gate | Primary source | Event date |
 |---|---|---|---|---|---|
+| 2026-10-24 | 2026-10-24T0255Z-intel | **ARX Group SA (Swiss engineering consultancy for federal infrastructure projects) is listed on the Aurora ransomware leak site, with the group claiming Ceneri Base Tunnel documentation, 9,510 project fee structures and 881,205 employee time entries.** | Held, not published: it would clear PD-11(c) as a supplier-borne exposure of federal-contract material (SBB and federal roads projects) only once the claim is confirmed; today it is a leak-site claim indexed by Ransomware.live with no victim statement, regulator notice or press report in German, Italian or English (PD-6). **Hold condition: ARX, a federal client (SBB, ASTRA/USTRA) or Swiss press (SRF, NZZ, Inside IT, RSI) confirms the intrusion or the data; expiry 2026-11-07, struck if the condition is unmet.** | https://www.ransomware.live/id/QVJYIEdyb3VwIFNBQGF1cm9yYQ | 2026-10-23 |
 
 ## Struck
 

@@ -1,0 +1,309 @@
+# work/2026-10-24T0255Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-24T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-24T02:57:55Z
+ended_at: 2026-10-24T03:15:58Z
+duration_seconds: 1083
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 11
+  bridge_fetches: 144
+items:
+  - title: "LiteLLM 1.107.0 root cause corrected: the maintainers' attack-chain post traces the compromise to a master key committed to a public repository on 2026-05-27 and never revoked, with the attacker inside the GitHub organization from 2026-10-10, eleven days before the poisoned release"
+    sources:
+      - { url: "https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain", publisher: "LiteLLM maintainers (attack-chain and root-cause post)", date: "2026-10-23", role: "primary" }
+      - { url: "https://socket.dev/blog/litellm-attack-timeline", publisher: "Socket Threat Research", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/", publisher: "Microsoft Threat Intelligence", date: "2026-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: msft-ti (msft-secblog bridge recent 15), URL https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/ -> pivot: Socket timeline post, URL https://socket.dev/blog/litellm-attack-timeline (via Socket feed, 2026-10-23 21:00 UTC item; its body links the maintainers' post) -> primary: LiteLLM attack-chain post, URL https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain"
+    summary: |
+      The LiteLLM maintainers published their root-cause post on 2026-10-23 (about 21:00 UTC) and call it the canonical account, saying that some assumptions in their earlier status updates proved inaccurate or incomplete; the covered entry still carries the earlier hypothesis that the engineers' GitHub tokens were read from the logs of an internet-exposed internal LiteLLM deployment, and the maintainers now say the request logs show the first token came from a different service. Per the maintainers, a configuration file committed on 2026-05-27 to the public LiteLLM-Labs/lite-harness repository contained the master key of a LiteLLM Agent Platform deployment, an experimental self-hosted cloud-agent service; the commit was force-pushed over, but the key was never revoked. On 2026-10-10 the attacker used that key against the Agent Platform API, whose managed-agents listing returned the GitHub CLI OAuth token of a GitHub organization owner (not a service account, not scoped down; such CLI tokens are post-2FA and not subject to GitHub's re-authentication for sensitive organization actions), giving owner-level access to every repository. With it the attacker pushed commits to short-lived throwaway branches named ci-tmp-<hex> in BerriAI/litellm and BerriAI/litellm-auto whose push-triggered workflows posted CI secrets to a public webhook-capture service, among them a second maintainer's token (GH_TOKEN) and a third maintainer's token (RELEASE_PLEASE_TOKEN), and deleted the workflow runs about three minutes later. Socket independently reconstructed the same activity from Actions performance metrics and environment deployment records: a one-job workflow on 2026-10-10 and a six-job workflow on 2026-10-12 that reached environment-scoped secrets (databases, Redis, cloud and AI-provider keys), a compromise window of at least eleven days; Socket says it has not established how the attacker first obtained access and does not claim the 2026-10-10 theft produced the access used on 2026-10-21. On 2026-10-21 the attacker changed the release workflow in the private project-releaser repository to build from the lookalike Berri-AI/litellm repository: the push was rejected with the second maintainer's token by branch protection, then forced with the owner's token by overriding protection; the production gate was approved with the second maintainer's token (the maintainers had relaxed approval earlier that week so any two engineers could trigger and approve a release), the run records were deleted with the third maintainer's token, and the change was reverted and main force-pushed back, removing it from visible history while the organization audit log recorded each override. Microsoft's separate analysis of the wheels (cook.pth, cook.py and sitecustomize.py placed in the Python library directory, so merely starting Python can run the collector) says it has not independently determined how the attacker first reached the upstream environment, and repeats that removing the package is not sufficient recovery.
+    region_nexus: "global; any organization building AI gateway or agent tooling on LiteLLM, or running GitHub organizations with long-lived owner CLI tokens"
+    primary_sector_nexus: "indirect (public-sector AI platform and software-development teams that install LiteLLM from PyPI or the official images, or that hold org-owner GitHub tokens)"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1552.001, T1528, T1550.001, T1567, T1070]
+    affected_products: ["LiteLLM"]
+    entity_keys: ["product:litellm", "product:berriai-litellm"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-22/litellm-1-107-0-pypi-docker-credential-stealer-lookalike"
+    classification_hint: "A2 (maintainers' own root-cause post for their own incident; Socket reconstructed the 2026-10-10 and 2026-10-12 workflows independently from repository metadata)"
+    evidence:
+      - quote: "key revocation did not occur for the master key"
+        attribution: "LiteLLM maintainers (attack-chain and root-cause post)"
+        source_url: "https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain"
+      - quote: "On October 10th, the threat actor used this key to gain access to our LiteLLM Agent Platform and extracted this GitHub CLI OAuth token."
+        attribution: "LiteLLM maintainers (attack-chain and root-cause post)"
+        source_url: "https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain"
+      - quote: "Our first post suspected the tokens were taken from the logs of an internal LiteLLM deployment. The request logs show the first token came from a different service, described in step 1."
+        attribution: "LiteLLM maintainers (attack-chain and root-cause post)"
+        source_url: "https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain"
+      - quote: "Neither commit was pushed to a branch that still exists."
+        attribution: "Socket Threat Research"
+        source_url: "https://socket.dev/blog/litellm-attack-timeline"
+      - quote: "Those records remain visible after a workflow file is deleted."
+        attribution: "Socket Threat Research"
+        source_url: "https://socket.dev/blog/litellm-attack-timeline"
+      - quote: "Removing the package or a release tag is not sufficient recovery."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/"
+      - quote: "Microsoft has not independently determined how the attacker first accessed the upstream environment or obtained those credentials."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/"
+    extended_notes: |
+      Delta for the composer (correction plus update on the covered entry): (1) the root cause and the initial-access statement in the entry's body and evidence quote ("obtained the GitHub CLI OAuth tokens from its logs") are superseded by the maintainers' own post, which says the first token came from the Agent Platform API after a master key committed in May was never revoked; (2) the attacker's access began 2026-10-10, not 2026-10-21; (3) three credentials were used for different steps (owner token for protection overrides and the force-push cover-up, second maintainer's token for the production approval, third maintainer's token for deleting run records); (4) the release approval had been relaxed that week.
+      Defender-relevant mechanics from the sources (telemetry class first): SCM organization audit log (creation and deletion of throwaway ci-tmp-<hex> branches within minutes, pushes of a single new workflow file under a subject like "ci: bump cache config", branch-protection overrides, force pushes, deletion of workflow runs, and the per-action token hash that ties an action to a stolen token); CI platform run metrics and environment deployment records, which outlive a deleted workflow file (an Active deployment from a branch that no longer exists); workflows with an on-push trigger that read secrets and make one outbound POST to a public webhook-capture service; secrets scope (organization-level secrets reachable by any push, environment-bound jobs unlocking environment secrets). Post-incident check named by the sources: treat every token and secret reachable from the organization as exposed, since the maintainers say they rotated all tokens for every internal system and vendor platform.
+      Transferable hardening named or implied by the sources: revoke exposed keys when a commit leaks them (revocation was identified as required and never done); do not hold org-owner GitHub CLI tokens in agent or automation platforms (a CLI token is post-2FA and bypasses the sensitive-action re-authentication); keep release approval separation. The post does not say whether anything was published to registries between 2026-10-10 and 2026-10-21.
+      The LiteLLM post says process improvements follow "next week" and that a clean release removing the eMudhra CA from the trust store was planned for the same day.
+  - title: "PHP2Shell exploitation status diverges: Unit 42 reports an agentic attacker accessing a European government entity's password hashes and MFA secrets within two hours of initial exploitation, while CrowdStrike, Wordfence, Hunt.io and SOCRadar see no successful exploitation; the PHP project adds an informational advisory (CVE-2026-115560) on session upload progress"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/", publisher: "Palo Alto Networks Unit 42 (threat brief, updated 2026-10-23 12:30 PT)", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.php.net/archive/2026.php#2026-10-23-1", publisher: "PHP (php.net news archive, Informational advisory: Session upload progress)", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.crowdstrike.com/en-us/blog/obstacles-to-weaponizing-php2shell-likely-constrain-exploitation/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-10-23", role: "corroborating" }
+      - { url: "https://isc.sans.edu/diary/33452", publisher: "SANS Internet Storm Center", date: "2026-10-23", role: "corroborating" }
+      - { url: "https://socradar.io/blog/php2shell-exploit-tooling-attacker-server/", publisher: "SOCRadar Threat Intelligence Unit", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://www.wordfence.com/blog/2026/10/attacks-on-php2shell-continue-but-no-known-compromises-as-a-result-yet/", publisher: "Wordfence", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://hunt.io/blog/php2shell-cve-2026-109618-109619-open-directories", publisher: "Hunt.io", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://mysites.guru/blog/php-session-upload-progress-advisory/", publisher: "mySites.guru (relays the php.net advisory)", date: "2026-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: malware-news feed page 1, URL https://malware.news/latest.rss (CrowdStrike 'Obstacles to Weaponizing PHP2Shell' topic, 2026-10-23 23:45 UTC) -> primary: CrowdStrike post, URL https://www.crowdstrike.com/en-us/blog/obstacles-to-weaponizing-php2shell-likely-constrain-exploitation/ (originating link surfaced by WebFetch of the malware.news topic); Unit 42 update found via the pivot sweep of the unit42 feed, URL https://unit42.paloaltonetworks.com/feed/ -> primary: https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/; PHP advisory via mySites.guru feed item https://mysites.guru/blog/php-session-upload-progress-advisory/ (2026-10-23) -> primary: https://www.php.net/archive/2026.php; SOCRadar via socradar listing, URL https://socradar.io/blog/ -> https://socradar.io/blog/php2shell-exploit-tooling-attacker-server/; ISC via sans-isc feed -> https://isc.sans.edu/diary/33452"
+    summary: |
+      Palo Alto Networks Unit 42 updated its PHP2Shell threat brief on 2026-10-23 (12:30 PT) to say it observed attackers using agentic AI attack platforms for post-exploitation: in one case against a government entity in Europe, within two hours of the initial exploitation they had accessed password hashes and multi-factor authentication secrets, established an NTLM-relay tunnel into Active Directory and attempted Domain Admin privilege escalation. Unit 42 says the commands and behavioral markers are strong indicators of an agentic attacker: each command batch is wrapped in section-header delimiters such as ==SHELLUSER== and ==PASSWD== that give machine-parseable output, tasks are short and serially spaced, and the attacker pivots quickly after failures; the brief does not say which flaw or exploit delivered the initial foothold. The same brief reports over 22.6 million exposed instances potentially vulnerable from Cortex Xpanse telemetry. This conflicts with four other telemetry holders: CrowdStrike (2026-10-23) has not observed successful exploitation in the wild or in its honeypots and has seen no weaponized or widely usable exploit, only testing, probing and unsuccessful attempts, and assesses that a universal exploit is unlikely but a reliable one is feasible against a fixed deployment profile such as one Docker image or one PHP, libc, SAPI and application combination; Wordfence (2026-10-22) has not observed any confirmed compromise while its firewall blocked over 74,000 exploit or probing attempts; Hunt.io says that as of 2026-10-21 23:45 UTC it sees live attempts and staged tooling but no successful in-the-wild compromise and no vendor-confirmed one; and SOCRadar found a lab-tested mod_php exploit for PHP 8.4.26 on an exposed attacker server whose screening of about 20 sites found none meeting its preconditions (visible errors, session upload progress on with strict mode off, a very low memory limit and a single worker, and a command limited to a very short length), with no evidence of shell access. SANS ISC (Bojan Zdrnja, 2026-10-23) reaches a similar view from the public proofs of concept: the one that makes sense needs memory_limit around 8 MB and a single-worker prefork setup, reads libphp offsets from the target to defeat ASLR, and is limited to a short command. Separately, the PHP project posted an informational advisory on 2026-10-23: it suggests setting session.upload_progress.enabled=0 until the next regular bugfix release to fully protect against what it calls an unlikely RCE vector, tracked as CVE-2026-115560, which needs an application that sets session.serialize_handler to php_binary or php_serialize and switches it to php with ini_set() before session_start() while session upload progress is enabled; the full advisory follows with the next release, and the setting was already listed as a mitigation for CVE-2026-109619 on 2026-10-21.
+    region_nexus: "global; Switzerland (BACS warning, cantonal and federal PHP applications affected per the covered entry); Unit 42's observation concerns an unnamed European government entity"
+    primary_sector_nexus: "direct (Unit 42 reports a government-entity victim in Europe; Swiss federal, cantonal and communal web stacks run PHP)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619, CVE-2026-115560]
+    techniques: [T1190, T1059.004, T1003, T1557]
+    affected_products: ["PHP"]
+    entity_keys: ["product:php", "tool:php2shell"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    classification_hint: "B2 for the Unit 42 observation (one telemetry holder, claim not independently confirmed and conflicting with four others); A1 for the PHP informational advisory (project's own page)"
+    evidence:
+      - quote: "In one case, the attackers targeted a government entity in Europe and within two hours of the initial exploitation they had successfully accessed password hashes and multi-factor authentication secrets."
+        attribution: "Palo Alto Networks Unit 42 (threat brief, updated 2026-10-23 12:30 PT)"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+      - quote: "Each command batch is wrapped in section-header delimiters, such as ==SHELLUSER== and ==PASSWD==."
+        attribution: "Palo Alto Networks Unit 42 (threat brief, updated 2026-10-23 12:30 PT)"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+      - quote: "to fully protect from an unlikely RCE vector"
+        attribution: "PHP (php.net news archive, Informational advisory: Session upload progress)"
+        source_url: "https://www.php.net/archive/2026.php#2026-10-23-1"
+      - quote: "CrowdStrike Counter Adversary Operations has not observed successful exploitation of these vulnerabilities in the wild or within our honeypot environments."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/obstacles-to-weaponizing-php2shell-likely-constrain-exploitation/"
+      - quote: "it looks like building a universal, reliable, one click exploit is quite difficult"
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33452"
+      - quote: "as of October 22, 2026, we have seen no evidence of shell access on any screened site."
+        attribution: "SOCRadar Threat Intelligence Unit"
+        source_url: "https://socradar.io/blog/php2shell-exploit-tooling-attacker-server/"
+      - quote: "we have not observed any confirmed compromises"
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/10/attacks-on-php2shell-continue-but-no-known-compromises-as-a-result-yet/"
+      - quote: "As of October 21, 2026 at 23:45 UTC, we see live php2shell attempts and plenty of tooling being staged, but no successful in-the-wild compromise, and no vendor has confirmed one."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/php2shell-cve-2026-109618-109619-open-directories"
+    extended_notes: |
+      Delta for the composer on the covered PHP entry (priority stays critical; fixed releases 8.5.12, 8.4.27, 8.3.36, 8.2.35 unchanged): (1) the entry's sourcing statement that no source reports a confirmed compromise now needs Unit 42's claim set against it, attributed and flagged as a single-vendor observation whose initial-exploitation vector the brief does not state; (2) three new exploitability assessments agree that a universal one-request exploit does not exist and that reliable exploitation needs per-deployment calibration (CrowdStrike, SANS ISC, SOCRadar), matching Sansec and Red Hat already carried; (3) the new CVE-2026-115560 informational advisory means session.upload_progress.enabled=0 should stay in place after patching until the next regular release (it is a php.ini or pool setting, not changeable with ini_set()), and the project defers the full advisory to that release; CVE-2026-115560 is not yet published with a score or affected-version list (mySites.guru, relaying php.net, says so; do not infer one).
+      Detection concepts the sources add: PHP-FPM or Apache error logs showing bursts of "Allowed memory size exhausted" (Hunt.io: a trace of an attempt, not of compromise); multipart POSTs carrying a PHP_SESSION_UPLOAD_PROGRESS field with an oversized body or deeply nested field names (Wordfence, Hunt.io, SOCRadar, OffSeq); Wordfence's sample also shows serialized-object gadget-chain attempts (Laravel, Monolog, Symfony, Guzzle, ThinkPHP and others) on the same surface, which are a different, older class of PHP exploitation. For the agentic post-exploitation pattern Unit 42 describes: process-creation telemetry on the web host where a shell started by the PHP worker or web server account runs batched enumeration commands whose output sections are delimited by marker lines such as ==SHELLUSER== and ==PASSWD==, followed by relay or tunnel setup toward Active Directory; Unit 42 publishes managed-hunting XQL that anchors on shells and commands under PHP-FPM, php-cgi, Apache, w3wp and web service accounts (vendor-specific; the concept is parent-lineage from the web worker).
+      Context: Unit 42's two-hour interval is the only reported timing; the same brief says at least one European government took its website offline as a precaution. Palo Alto also lists a Cortex Xpanse count of over 22.6 million exposed potentially vulnerable instances, a vendor-telemetry figure the composer should attribute and not repeat as a fact about Switzerland.
+  - title: "Zimbra CVE-2026-73570: Elastic reproduces the chain and finds that several public proofs of concept never trigger it, so a failed test does not prove a server patched; it publishes a process-lineage detection for the Swatchdog notification path"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/threat-command/command-injection-zimbra-cve-2026-73570", publisher: "Elastic Security Labs", date: "2026-10-23", role: "primary" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs/rss/feed.xml (2026-10-23 item) -> primary (no pivot needed): extract of https://www.elastic.co/security-labs/threat-command/command-injection-zimbra-cve-2026-73570"
+    summary: |
+      Elastic Security Labs (2026-10-23) reproduced the unauthenticated command injection CVE-2026-73570 while building a detection and describes the chain stage by stage: an SMTP client sends a recipient address with an unclosed angle bracket, Postfix logs it to /var/log/zimbra.log as an illegal-address warning, Zimbra's bundled Swatchdog daemon matches a log line of the form "Service status change: <host> <service> changed from stopped to running", and the notification routine dosnmp, generated from /opt/zimbra/conf/swatchrc.in, interpolates the service field into a Perl backtick string that /bin/sh executes, giving code execution as the zimbra user, which can read every mailbox and send as any local identity; the trigger needs SNMP notifications enabled. Elastic's practical finding is that several public proofs of concept it tested write a payload that Swatchdog never matches, so a failed test looks like a patched server; its own proof of concept proves execution with an out-of-band callback that changes nothing on disk. Elastic says upgrading to Zimbra 10.1.20 or later is the only complete fix. Its detection is a Linux process sequence on one host within 30 seconds: a shell whose parent is a Perl process running the Swatchdog script and whose command line carries snmptrap and the service-name and service-status MIB strings, followed by any child of that shell other than snmptrap, which it calls a very strong indicator of successful exploitation and also recommends for retroactive hunting of pre-patch attempts. If exploitation is found, Elastic lists hunting for standard remote-code-execution indicators, phishing emails originating from the server, compromise of local databases and signing keys and LDAP exports, and less direct surfaces beyond the mail store.
+    region_nexus: "global; Zimbra is widely deployed in European public-sector and education mail estates (the covered entry carries CSIRT Italia and CERT-FR reporting)"
+    primary_sector_nexus: "direct (public-sector mail servers running Zimbra Collaboration with the optional SNMP package)"
+    sector: "public-sector"
+    cves: [CVE-2026-73570]
+    techniques: [T1190, T1059.004]
+    affected_products: ["Zimbra Collaboration"]
+    entity_keys: ["product:zimbra-collaboration"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-08-20/cve-2026-73570-zimbra-snmp-command-injection-exploited"
+    classification_hint: "B2 (Elastic reproduced the chain itself; mechanism consistent with the vendor-fixed behavior and the covered entry's Microsoft, CERT-FR and CSIRT Italia reporting, but this post is a single source for the PoC-reliability and detection claims)"
+    evidence:
+      - quote: "several of the public proofs of concept (PoCs) we tested write a payload that Swatchdog never matches, so a failed test looks like a patched server"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/command-injection-zimbra-cve-2026-73570"
+      - quote: "Upgrade to Zimbra 10.1.20 or later."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/command-injection-zimbra-cve-2026-73570"
+      - quote: "this is a very strong indicator of successful exploitation"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/command-injection-zimbra-cve-2026-73570"
+    extended_notes: |
+      Delta for the composer (improvement or update on the covered entry; the entry already carries a mechanism-level Detection line and the fixed version 10.1.20): add (a) Elastic's reproduction with the trigger precisely described (malformed RCPT TO with an unclosed address logged by Postfix, matched by Swatchdog, executed through Perl backticks); (b) the caution that a negative result from a public PoC is not evidence of a patched or unaffected server, so exposure validation should use the package and version (zimbra-snmp installed, SNMP notifications enabled, version below 10.1.20) rather than a PoC run; (c) the concrete sequence detection and its Triage property: on a healthy Zimbra host the only process the notification shell should start is snmptrap, so any other child of that shell is the discriminator; (d) post-compromise scope Elastic names. Elastic's rule is vendor-specific (Elastic Defend and its SIEM rule); only the telemetry concept (process creation with parent command-line lineage on the mail server) is portable. Elastic inspected swatchrc.in on a 10.1.16 beta build for Ubuntu 24 and tested a remote host against the PoC.
+  - title: "Aokigahara infostealer: Check Point Research confirms Symantec's report that the stealer now harvests AI coding-assistant and cloud-development credentials, and documents its handler set, module-mask configuration and chunked encrypted exfiltration protocol"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/infostealer-riding-the-ai-train/", publisher: "Check Point Research", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting", publisher: "Symantec Threat Hunter Team / Carbon Black", date: "2026-10-15", role: "corroborating" }
+    discovery_trace: "first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ (2026-10-23 13:00 UTC item) -> primary (no pivot needed): extract of https://research.checkpoint.com/2026/infostealer-riding-the-ai-train/ -> corroboration: Symantec Aoki post found via the pivot sweep of https://www.security.com/threat-intelligence (listing) -> https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting (dated 2026-10-15; an earlier S3 run saw and dropped this Symantec post alone)"
+    summary: |
+      Check Point Research (2026-10-23) describes Aokigahara, a newly observed Windows infostealer that an earlier version may have known as Kamidere or Stygian, and Symantec (2026-10-15), which calls it Aoki, independently reports the same family and says the AI-assistant targeting is a recent addition that older samples lacked. Beyond the usual browser, cryptocurrency-wallet, messenger, gaming, password-manager, VPN, FTP and email theft, its aisessions handler collects credential, session and configuration files of Claude Code and Desktop, Codex, ChatGPT Desktop, Cursor, Windsurf, Kiro, GitHub Copilot, Gemini CLI, Amazon Q and JetBrains AI Assistant, and an ide handler collects Git credential files, SSH private keys and AWS, Azure and Google Cloud credential and configuration files; Check Point says the monetization route is not confirmed, and that valid tokens could expose conversations and source, allow use of paid services or resale, and offer data-extortion leverage. Check Point describes an encrypted configuration blob (AES-256-CBC, key derived from a seed) holding the server address, build identifier, a module bitmask that selects which collection handlers run, optional language and analysis-environment checks, certificate pinning and up to three fallback servers; with the language check on, the malware stops when the keyboard layout or Windows UI language is one of eleven former-Soviet-region languages (Russian, Ukrainian, Belarusian, Tajik, Armenian, Azerbaijani, Georgian, Kazakh, Kyrgyz, Turkmen, Uzbek). Exfiltration is a three-step HTTP exchange (a handshake that sends an X25519 public key, one chunk upload per module as AES-GCM-encrypted ZIP archives with the module label in a header, and a completion marker) using a Windows CryptoAPI-style user agent, and the malware also drops a clipper component under C:\Microsoft\Vault. Symantec adds that it has no backdoor command list and that no threat group or link to an existing family is known. Neither report states how the stealer is delivered.
+    region_nexus: "global; no regional targeting stated, systems using former-Soviet-region languages excluded by the language check"
+    primary_sector_nexus: "indirect (developer and AI-platform workstations in public-sector IT; no government victim reported)"
+    sector: "technology"
+    cves: []
+    techniques: [T1555.003, T1539, T1555.005, T1552.001, T1005, T1560, T1041, T1071.001, T1027, T1497, T1614.001, T1115, T1113]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:aokigahara", type: malware, name: "Aokigahara", aliases: ["Aoki", "Kamidere", "Stygian"], summary: "Windows infostealer first seen in 2026 that recently added theft of AI coding-assistant and cloud-development credentials (Symantec, 2026-10-15; Check Point Research, 2026-10-23); Check Point says an earlier version may have been known as Kamidere or Stygian; no actor attribution reported." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "commodity infostealer with no stated government or Swiss victim and no stated delivery vector; kept because two independent vendors now report credential theft aimed at AI coding assistants and cloud and SSH secrets on developer endpoints, a defender-relevant asset class; an earlier S3 run (2026-10-21) dropped the Symantec post alone"
+    classification_hint: "B1 (two independent first-hand vendor analyses agree on the capability)"
+    evidence:
+      - quote: "a newly observed infostealer, has been spotted in the wild."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/infostealer-riding-the-ai-train/"
+      - quote: "the analysis does not confirm how its operators monetize the stolen data."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/infostealer-riding-the-ai-train/"
+      - quote: "should be treated as sensitive assets alongside browser sessions, cloud credentials, and developer keys"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/infostealer-riding-the-ai-train/"
+      - quote: "Earlier versions of the malware did not target AI-related files, which indicates the capability is a recent addition."
+        attribution: "Symantec Threat Hunter Team / Carbon Black"
+        source_url: "https://www.security.com/threat-intelligence/aoki-infostealer-ai-targeting"
+    extended_notes: |
+      Detection concepts tied to telemetry: file-access and process-creation telemetry for reads of AI-tool credential and session stores by processes that do not belong to the tool (Check Point's table lists per-tool paths such as the Claude credential and config files under the user profile, Codex auth and config files, Cursor, Windsurf and VS Code global-storage state databases, Copilot and Gemini CLI config and token files, and the AWS credentials, config and SSO cache); outbound web-session telemetry for a non-system process posting binary bodies in a handshake, repeated chunk uploads and a completion call, under a Windows CryptoAPI user-agent string, to a server it has no business with; creation of a component under a C:\Microsoft\Vault path. Triage: the CryptoAPI user agent is normal for Windows components, so the discriminator is the sending process (unsigned or user-writable-path binary, not a Windows service) and the three-step handshake-chunk-complete sequence. Hardening: treat AI-assistant tokens and sessions like browser sessions and cloud keys (short lifetimes, revocation and rotation on suspected stealer infection, secrets out of plaintext config such as .env files); the sources give no vendor-neutral fix for the stealer itself. The language-exclusion bitmask is an operator-origin hint only, not attribution (neither source attributes).
+  - title: "SOCRadar: exposed servers of INC and The Gentlemen ransomware affiliates show an AI-run, human-approved intrusion workbench that exploits FortiClient EMS, SimpleHelp and cPanel and stages 46 INC encryptor builds, with a local-government victim among the leak-site matches"
+    sources:
+      - { url: "https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/", publisher: "SOCRadar Threat Research Unit", date: "2026-10-20", role: "primary" }
+      - { url: "https://hackread.com/inc-the-gentlemen-ransomware-affiliates-ai-messages/", publisher: "Hackread (relays SOCRadar)", date: "2026-10-21", role: "corroborating" }
+    discovery_trace: "first seen at: socradar, URL https://socradar.io/blog/ (listing, extract; per-article date read on the article page) -> primary: https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/ (2026-10-20) -> secondary relay found via WebSearch (\"INC ransomware The Gentlemen affiliates AI framework Phantom OpenCode OpenRouter exposed server FortiClient EMS SimpleHelp\") -> https://hackread.com/inc-the-gentlemen-ransomware-affiliates-ai-messages/ (relays SOCRadar; not an independent observation)"
+    summary: |
+      SOCRadar's Threat Research Unit reports (2026-10-20) that in late September 2026 it found seven exposed adversary servers, the first an open directory holding the operators' AI session databases, a knowledge base and the source of Phantom, an "Autonomous Red Team Kill Chain Framework"; it says intrusions ran through OpenCode with OpenRouter-hosted commercial models (8,257 messages across 133 sessions), with a human approving each step, and that when models refused the operators rewrote requests as "Authorized Red Team Assessment Request" templates. Per operator records that SOCRadar says are not independently verified, initial access came from edge and remote-access systems: FortiClient EMS (CVE-2026-35616; 2,236 targets, 108 created administrator accounts, with backdoor admins planted and payloads pushed through modified VPN on-connect scripts), SimpleHelp (CVE-2024-57727; scans of 4,922 servers yielding 427 admin passwords, with stolen MSP technician credentials opening every client those technicians managed) and cPanel (CVE-2026-41940; 49+ claimed small-hosting-provider breaches used to reach hosted mail), with other gateways evaluated. Inside victim networks the recurring lifecycle was domain enumeration, escalation, credential theft, prioritised collection of finance, HR, legal and executive files over reverse-SOCKS tunnels, security-product impairment with a driver-abuse killer, and data extortion preferred over encryption with scripted vishing and 24 to 72 hour deadlines. The servers held 46 INC encryptor builds for six victims packed for an intended 2026-10-01 deployment, and a 2026-09-30 screenshot shows live encryption on a victim workstation. SOCRadar ties the infrastructure to INC (three INC leak-site victims, Aidon, Trulite and City of Princeton, TX, match internal case files) and to The Gentlemen (a branded extortion package), assesses with low confidence a formal alliance and with moderate-to-high confidence a shared operational environment, and grades 62 named organizations, 36 in the United States. The report is a single vendor's reading of attacker-held records; no independent source confirms the victim counts or exploitation volumes.
+    region_nexus: "global; named victims mostly United States; no Swiss or European public-sector victim named, a US city is among the INC leak-site matches"
+    primary_sector_nexus: "indirect (affiliates exploit edge and remote-management products used by public-sector IT and their MSPs; one local-government victim)"
+    sector: "multi"
+    cves: [CVE-2026-35616, CVE-2024-57727, CVE-2026-41940]
+    techniques: [T1190, T1133, T1078, T1199, T1219, T1136, T1566.001, T1566.004, T1090, T1685, T1486, T1490, T1567]
+    affected_products: ["FortiClient EMS", "SimpleHelp", "cPanel & WHM"]
+    entity_keys: ["actor:inc-ransom", "actor:thegentlemen", "product:simplehelp", "product:cpanel-whm"]
+    new_entities:
+      - { key: "tool:phantom-autonomous-red-team-framework", type: tool, name: "Phantom (Autonomous Red Team Kill Chain Framework)", aliases: ["Phantom"], summary: "Modular AI-driven intrusion framework (18 skill modules, an autopilot and agents disguised as Windows Update components) recovered by SOCRadar from exposed servers used by INC and The Gentlemen affiliates, reported 2026-10-20; operators also used OpenCode, OpenRouter models and 32 MCP servers." }
+    relation_suggestions:
+      - { subject: "actor:inc-ransom", object: "actor:thegentlemen", basis: "SOCRadar assesses with moderate-to-high confidence a shared operational environment used by operators across both groups, and low confidence in a formal alliance (SOCRadar STRU, 2026-10-20); an overlap, not an attribution" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "single-vendor report (SOCRadar, reliability C) built on attacker-held records whose victim and exploitation counts are unverified, and Hackread only relays it; kept because it is the only first-hand view of how ransomware affiliates drive intrusions with AI frameworks against FortiClient EMS, SimpleHelp and MSP access, products Swiss public-sector IT and its suppliers run, and it lists detection hooks"
+    classification_hint: "C3 (single reliability-C source; claims attributed to operator records; no independent corroboration)"
+    evidence:
+      - quote: "Operators ran intrusions through OpenCode with OpenRouter-hosted commercial models, logging 8,257 messages across 133 sessions"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/"
+      - quote: "According to operator records, which are not independently verified:"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/"
+      - quote: "the operators planted backdoor admins and pushed payloads to endpoints through modified VPN connection scripts"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/"
+      - quote: "stolen MSP technician credentials opened access to every client those technicians managed"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/"
+      - quote: "three INC leak site victims (Aidon, Trulite and City of Princeton, TX) match internal case files"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/inc-gentlemen-ransomware-ai-infrastructure/"
+    extended_notes: |
+      Detection and hunt hooks SOCRadar lists (behavioral, telemetry-class first): management-console audit logs of the endpoint-management server (new privileged accounts with service-style names, VPN profile changes, missing audit logs, forged client-certificate headers); Office applications downloading remote templates and curl, certutil or PowerShell spawned from Office or browsers; a scheduled task with a media-driver-style name; reverse-proxy and SOCKS tunnelling tools (RevSocks, Chisel, Ligolo) and Python beacons with TLS verification disabled; directory-replication requests from non-domain-controller hosts, reads of shadow-copied ntds.dit and RC4 Kerberos service-ticket spikes; unauthorized RMM agents or sessions outside change windows and Remote Registry started shortly before RDP is enabled; a vulnerable signed driver load paired with termination of a security product; restic or rclone execution with bulk uploads to external object storage; Restart Manager sessions from non-installer processes and mass renames to a ransom-note extension. Hardening named: patch FortiClient EMS and Fortinet or SonicWall gateways and remove management interfaces from the internet, MFA and IP allowlists on RMM and MSP tooling (and demand the same of third-party MSPs), inventory SimpleHelp, MeshCentral and N-central, LAPS and gMSA with admin tiering, immutable backups, EDR tamper protection and a vulnerable-driver blocklist. Store cross-reference: FortiClient EMS CVE-2026-35616 is covered by entry 2026-05-29/forticlient-ems-cve-2026-35616-ekz-infostealer-kill-chain and cPanel CVE-2026-41940 by 2026-05-10/cpanel-whm-second-emergency-tsr-in-10-days-embargo-lifted-on; the composer should check KEV state for SimpleHelp CVE-2024-57727 itself. The operator-reported counts (2,236 EMS targets and so on) must stay attributed to attacker records, never stated as victim totals.
+  - title: "ARTEX in the wild: Wiz sees an ARTEX-using actor overlapping Storm-0940 hit identity providers (Okta, Entra, Cognito) and software vendors, and publishes the log signatures that mark an agentic attacker"
+    sources:
+      - { url: "https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors", publisher: "Wiz Research", date: "2026-10-22", role: "primary" }
+    discovery_trace: "first seen at: pivot sweep of the Wiz blog listing, URL https://www.wiz.io/blog (extract; the listing's featured card) -> primary (no pivot needed): https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors; the covered entry already cites Microsoft, Expel, CrowdStrike and Recorded Future"
+    summary: |
+      Wiz Research (2026-10-22) says that throughout October 2026 it tracked an actor using ARTEX-associated tooling, overlapping with Storm-0940, against multiple IT and software vendors, focusing on identity providers (Okta, Entra, Cognito) and Microsoft 365 integrations, and that the same infrastructure and patterns also targeted the sector as a whole and expanded into other software sectors. Wiz describes a consistent sequence: downloading JavaScript bundles, exposed source maps, runtime configuration and Swagger or OpenAPI documents to find internal API routes, then calling those routes by name minutes later; repeated sign-in and account-recovery requests (password-reset token generation, forgot-password, Cognito InitiateAuth, ForgotPassword, ResendConfirmationCode and SignUp calls); manipulated Microsoft OAuth callbacks with fabricated codes and malformed state; unsigned (alg none) JWT probes against more than 60 SSO route variants in two minutes; self-registration with disposable mailboxes followed by attempts to read another tenant's data; and password-spray bursts against Entra and Okta that targeted hundreds of users, mainly software engineers, with a unique user agent per burst, a median one-second gap between attempts, bursts of 20 to 60 minutes and more than 15 user-agent strings overall, rotating IP addresses within minutes of a block. Wiz says most attempts failed and that none of the techniques is novel, but that the chaining and adaptation show an autonomous agent. The covered entry carries the Microsoft and Expel observations; Wiz adds an independent telemetry holder for the Storm-0940 overlap and these per-burst log signatures.
+    region_nexus: "global; software vendors and identity-provider tenants; no Swiss victim named"
+    primary_sector_nexus: "indirect (SaaS and identity tenants used by public-sector organizations and their software suppliers)"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1110.003, T1595.002]
+    affected_products: ["Okta", "Microsoft Entra ID", "Amazon Cognito"]
+    entity_keys: ["tool:artex", "actor:storm-0940"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    borderline: true
+    borderline_reason: "published 2026-10-22 (outside the 26 h window, inside the 72 h developing window); an independent telemetry holder and detection signatures for an entry already covered, no change in priority and no new defender action beyond the covered Detection line"
+    classification_hint: "B2 (Wiz first-hand telemetry; the Storm-0940 link is Wiz's own overlap assessment, 'overlapping with')"
+    evidence:
+      - quote: "Throughout October 2026, we identified an actor using tooling associated with ARTEX, an autonomous AI penetration-testing agent, to target multiple IT and software vendors."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors"
+      - quote: "The median gap between authentication attempts was strictly one second."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors"
+      - quote: "The agent bombarded more than 60 variations of SSO routes with this payload in just two minutes."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors"
+    extended_notes: |
+      Telemetry classes: web and application access logs (source-map and OpenAPI downloads followed minutes later by calls to internal route names that appear only in those files; unsigned-JWT SSO probes; fabricated OAuth callback parameters), identity-provider sign-in logs (Entra, Okta, Cognito: per-burst user-agent changes, one-second cadence, engineer-account focus), account-recovery and sign-up endpoints. Triage discriminator per Wiz: chained automatic steps, instant adaptation to rate limits and blocks, and illogical tests against heavily scrutinised Microsoft OAuth flows separate it from a human operator; ordinary credential-stuffing botnets lack the route-name-after-source-map sequence. Hardening named by implication: do not ship source maps and API documents to production, rate-limit and monitor recovery and sign-up flows, and shorten the exposure-to-remediation gap.
+watchlist_sweep:
+  duty: none
+  note: "watchlist_duty none for S3; no product or supplier watchlists configured in the profile"
+dropped_leads:
+  - { lead: "Sophos X-Ops vishing + SSPR + PRT case (2026-10-19)", reason: "already returned by the 2026-10-23 S3 run (entry exists)" }
+  - { lead: "Symantec Skynet LLMjacking agent (2026-10-21), CrowdStrike four agentic actors (2026-10-21), Wiz LLMjacking billing hijack (2026-10-20), Wiz AI-driven multi-cloud intrusion", reason: "returned by the 2026-10-22 S3 run" }
+  - { lead: "Zscaler 'Inside a Global AI-Assisted Hacking Campaign' (2026-10-21) and Unit 42 'Next Exploit Opportunities' BUGSTER (2026-10-21)", reason: "financially motivated operators against dating, SMS, retail and Indian university targets; no Swiss or European-government nexus; dropped by earlier S3 runs and re-checked here" }
+  - { lead: "Unit 42 'The Current Landscape of OAuth Attacks' (2026-10-22)", reason: "educational taxonomy of known OAuth abuse classes, no new campaign; outside the window" }
+  - { lead: "Kaspersky Operation FlashHole (2026-10-21), Sophos CTU BRONZE SANDCASTLE (2026-10-20), Group-IB SiriusQT (2026-10-22), Talos 'Parasitizing trust' (2026-10-21), Huntress Amazon ClickFix (2026-10-21), Acronis The Gentlemen (2026-10-21)", reason: "outside the 26 h window and seen and dropped by earlier S3 runs; Acronis re-describes The Gentlemen from the May 2026 backend leak already covered in the store" }
+  - { lead: "Check Point Research 'The Risk of AI-Powered Antidetect Browsers' (2026-10-20)", reason: "fraud and influence-operation tooling analysis, dropped twice by earlier S3 runs; no defender action for the constituency" }
+  - { lead: "Seqrite 'PHP2Shell: Failed Requests, Memory Corruption and RCE' (2026-10-23), Elastic 'php2shell detection coverage' (2026-10-21), Tenable 'adversary economy' (2026-10-22), OffSeq honeypot field report (2026-10-22)", reason: "technical or honeypot analyses of the already-covered PHP2Shell flaws; OffSeq and Hunt.io confirm attempts, not compromise; used only as corroboration in the PHP item" }
+  - { lead: "Citizen Lab 'Built-In Weakness' (2026-10-23) and 'How Generative AI is Scaling Transnational Repression' (2026-10-22)", reason: "commentary and a Just Security relay, no technical research and no Swiss nexus" }
+  - { lead: "Truesec 'Russian Hybrid Campaign Shifts Towards Ukraine's Military Enablers' (2026-10-22)", reason: "physical sabotage of Starlink sites, not cyber; outside the window" }
+  - { lead: "Symantec 'Swallowtail' (2026-10-20)", reason: "same intrusion set and HOOKEDGE backdoor already covered by entry 2026-10-21/apt28-hookedge-backdoor-nato-police-shipbuilder-ssh-tunnel" }
+  - { lead: "Trend Micro / TrendAI 'Earth Sirrush' (2026-10-05)", reason: "outside the window; overlaps UAC-0099, whose MythicRatatoskr activity is covered" }
+  - { lead: "GuidePoint GRIT Q3 2026 ransomware report (2026-10-09)", reason: "periodic report published outside the window; victim-count statistics only" }
+candidate_sources:
+  - id: trendai-security-blog
+    publisher: "TrendAI Security Blog (Trend Micro research, new home trendaisecurity.com)"
+    url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog"
+    category: research
+    why: "Trend Micro research moved to trendaisecurity.com; the feedburner feed recorded for trendmicro-research has had no item since 2026-09-25 while the new blog listing carries 2026-10 posts (PHP2Shell, eMudhra, Earth Sirrush, ShinyHunters PeopleSoft WAF bypass). `extract` of the listing returns clean titles and links; per-article extract returns the date."
+coverage_gaps:
+  - source_id: trendmicro-research
+    reason: "RECIPE CHANGE: the feedburner feed (https://feeds.feedburner.com/TrendMicroResearch) is stale (newest 2026-09-25) and https://www.trendmicro.com/en_us/research.html returns stale content with a July-dated listing; the working recipe is `python3 tools/fetch_source.py extract https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog` for the listing, then `extract <post>` for the per-article date (Earth Sirrush extracted with date 2026-10-05)."
+  - source_id: msft-ti
+    reason: "No gap: `msft-secblog recent 15` returned posts back to 2026-10-01 in one call and covered the 5-day lookback; the per-topic WebFetch page was not needed this run."
+  - source_id: socradar
+    reason: "Recipe confirmed: `extract https://socradar.io/blog/` lists links and teasers; the listing date metadata is stale (2026-09-10) and per-article extract gives the true date (INC/Gentlemen 2026-10-20, PHP2Shell tooling 2026-10-22). `url https://socradar.io/blog/` returned the full article-link set."
+  - source_id: ibm-xforce
+    reason: "Recipe confirmed: raw `url` listing shows six cards without the /think/x-force/<slug> hrefs in a plain regex; the slugs appear as absolute https://www.ibm.com/think/x-force/<slug> links, and `extract <post>` gives the date. Newest post 2026-10-19 (product launch)."
+  - source_id: jamf-threat-labs
+    reason: "Recipe confirmed: `url` listing gives /blog/<slug>/ links, `extract` gives dates; newest research post 2026-09-30 (CloudSyncD), 2026-10-13 is a CISO perspective piece."
+  - source_id: fortinet-fortiguard-blog
+    reason: "Recipe confirmed: raw `url` card list parses; dates follow titles (newest 2026-10-05)."
+  - source_id: sentinellabs
+    reason: "Recipe confirmed: raw `url` listing embeds published_date epochs (milliseconds) next to each title; newest 2026-09-18."
+  - source_id: rapid7-research
+    reason: "https://www.rapid7.com/rss.xml returned an error through `feed` this run (rc=1, empty body); `extract https://www.rapid7.com/blog/` returned a 535 KB Next.js page without per-post dates in extractable form. Not in this slice; the 2026-10-23 S3 run already covered Rapid7's Q3 report."
+source_ledger:
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed (https://research.checkpoint.com/feed/) + extract", horizon_hours: 121, in_horizon_items: 3, returned: 1, note: "Aokigahara returned (borderline); antidetect browsers dropped (seen twice before); weekly threat-intelligence report is a roundup, lead only" }
+  - { id: dfirreport, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest item 2026-08-24 (publisher cadence, not a fetch failure)" }
+  - { id: elastic-seclabs, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 2, returned: 1, note: "Zimbra CVE-2026-73570 returned as update-of; 'php2shell detection coverage' (2026-10-21) is a rule list for an already-covered flaw" }
+  - { id: fortinet-fortiguard-blog, tier: standard, attempted: true, transport: "bridge url (card list)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-05" }
+  - { id: ibm-xforce, tier: standard, attempted: true, transport: "bridge url listing + extract per post", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "only 2026-10-19 product launch (X-Force Advanced Proactive Security), no research" }
+  - { id: intel471, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "2026-10-22 'Building a Hunt Team the SOC Can Rely On' is practice advice, not research" }
+  - { id: jamf-threat-labs, tier: standard, attempted: true, transport: "bridge url listing + extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13 is a CISO piece; newest research 2026-09-30" }
+  - { id: malware-news, tier: standard, attempted: true, transport: "feed pages 1 and 2 (latest.rss, latest.rss?page=1), 60 items back to 2026-10-22 07:35 UTC", horizon_hours: 121, in_horizon_items: 60, returned: 0, note: "leads only; led to CrowdStrike PHP2Shell obstacles post (returned inside the PHP item) and CPR Aokigahara; page 3 not fetched because page 2 already reached the previous run's cut" }
+  - { id: mandiant-gtig, tier: standard, attempted: true, transport: "feed (feedburner)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15 (ARMORY CASTLE/BeyondTrust and ephemeral supply-chain tampering, both covered)" }
+  - { id: msft-ti, tier: standard, attempted: true, transport: "bridge msft-secblog recent 15", horizon_hours: 121, in_horizon_items: 3, returned: 1, note: "LiteLLM analysis (2026-10-23) folded into the LiteLLM update; Storm-0940 ARTEX (2026-10-21) already covered; 'Agents are your newest insiders' (2026-10-19) is policy commentary" }
+  - { id: proofpoint, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14" }
+  - { id: sentinellabs, tier: standard, attempted: true, transport: "bridge url (embedded JSON epochs)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-09-18" }
+  - { id: seqrite-labs, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "PHP2Shell technical analysis (2026-10-23) of an already-covered flaw; WP2Shell (2026-10-16) outside the horizon" }
+  - { id: socradar, tier: standard, attempted: true, transport: "extract listing + bridge url listing + extract per article", horizon_hours: 121, in_horizon_items: 8, returned: 2, note: "INC/Gentlemen AI infrastructure returned (borderline, C-reliability single source); PHP2Shell tooling folded into the PHP item; LiteLLM and eMudhra SOCRadar posts are covered topics; 'Japan data breaches October surge' (2026-10-20) and the ZoomInfo dark-web post (2026-10-19) are roundups of claims, not returned" }

@@ -1,0 +1,221 @@
+# extract: served via trafilatura-direct
+---
+title: CVE-2026-109618 Impact of Critical Vulnerabilities in PHP (CVE-2026-109618, CVE-2026-109619) on Palo Alto Networks Products
+author: PAN PSIRT
+url: https://security.paloaltonetworks.com/CVE-2026-109618
+hostname: paloaltonetworks.com
+description: "Palo Alto Networks is aware of two critical vulnerabilities in PHP: CVE-2026-109618 and CVE-2026-109619. CVE-2026-109618 involves a remote code execution vulnerability where handling out-of-memory er..."
+sitename: Palo Alto Networks Product Security Assurance
+date: "2026-10-21"
+tags: ['psirt, PANW, PAN, CVE, Report Vulnerabilities, Palo Alto Networks']
+fingerprint: "2c01bd4cd83bebe6"
+---
+[Palo Alto Networks Security Advisories](https://security.paloaltonetworks.com/)/
+
+[CVE-2026-109618]
+
+## CVE-2026-109618 Impact of Critical Vulnerabilities in PHP (CVE-2026-109618, CVE-2026-109619) on Palo Alto Networks Products
+
+**N/A**
+
+**MODERATE**
+
+**USER**
+
+**DIFFUSE**
+
+**NETWORK**
+
+**LOW**
+
+**NONE**
+
+**NO**
+
+**NONE**
+
+**NONE**
+
+**NONE**
+
+**HIGH**
+
+**NONE**
+
+**NONE**
+
+**NONE**
+
+**NONE**
+
+### Description
+
+Palo Alto Networks is aware of two critical vulnerabilities in PHP: CVE-2026-109618 and CVE-2026-109619.
+
+CVE-2026-109618 involves a remote code execution vulnerability where handling out-of-memory errors via longjmp() leaves request memory uninitialized due to improper control flow management, allowing attackers to reliably achieve RCE using out-of-memory (OOM) triggers.
+
+CVE-2026-109619 describes a remote code execution vulnerability where longjmp() fatal error handling leaves global memory pointing to freed memory regions. These regions can later be read or branched on during subsequent requests, enabling attackers to execute arbitrary code.
+
+Palo Alto Networks has conducted an evaluation of our product portfolio regarding this issue; a summary of the status across products is provided in the table below. We will update the below table when we get more information.
+
+### Product Status
+
+| Versions | Affected | Unaffected | 
+|---|---|---|
+| Bridgecrew | None | All | 
+| [Cloud NGFW](https://www.paloaltonetworks.com/network-security/cloud-ngfw) | None | All | 
+| Cortex XCORE (SaaS) | None \* | All \* | 
+| [Cortex XDR Agent](https://www.paloaltonetworks.com/cortex/cortex-xdr) | None | All | 
+| Cortex XDR Broker VM | None | All | 
+| [Cortex XSIAM](https://www.paloaltonetworks.com/cortex/cortex-xsiam) | None | All | 
+| [Cortex XSOAR](https://www.paloaltonetworks.com/cortex/cortex-xsoar) | None | All | 
+| [Cortex Xpanse](https://www.paloaltonetworks.com/cortex/cortex-xpanse) | None | All | 
+| [GlobalProtect App](https://www.paloaltonetworks.com/sase/globalprotect) | None | All | 
+| Idira | None | All | 
+| Next Generation Trust Security | None | All | 
+| [PAN-OS 12.2](https://www.paloaltonetworks.com/network-security/pan-os) | \< 12.2.4-h1 | >= 12.2.4-h1 (ETA: 10/28) | 
+| [PAN-OS 12.1](https://www.paloaltonetworks.com/network-security/pan-os) | \< 12.1.4-h13 \< 12.1.7-h11 \< 12.1.10-h3 | >= 12.1.4-h13 (ETA: 10/29) >= 12.1.7-h11 (ETA: 10/28) >= 12.1.10-h3 (ETA: 10/30) | 
+| [PAN-OS 11.2](https://www.paloaltonetworks.com/network-security/pan-os) | \< 11.2.4-h23 \< 11.2.7-h23 \< 11.2.10-h16 \< 11.2.13-h4 \< 11.2.16-h1 | >= 11.2.4-h23 (ETA: 10/30) >= 11.2.7-h23 (ETA: 10/29) >= 11.2.10-h16 (ETA: 10/26) >= 11.2.13-h4 (ETA: 10/27) >= 11.2.16-h1 (ETA: 10/28) | 
+| [PAN-OS 11.1](https://www.paloaltonetworks.com/network-security/pan-os) | \< 11.1.4-h38 \< 11.1.6-h40 \< 11.1.7-h12 \< 11.1.10-h36 \< 11.1.13-h16 \< 11.1.16-h4 | >= 11.1.4-h38 (ETA: 10/29) >= 11.1.6-h40 (ETA: 10/29) >= 11.1.7-h12 (ETA: 10/30) >= 11.1.10-h36 (ETA: 10/28) >= 11.1.13-h16 (ETA: 10/27) >= 11.1.16-h4 (ETA: 10/26) | 
+| [PAN-OS 10.2](https://www.paloaltonetworks.com/network-security/pan-os) | \< 10.2.7-h39 \< 10.2.10-h42 \< 10.2.13-h27 \< 10.2.16-h12 \< 10.2.18-h13 | >= 10.2.7-h39 (ETA: 10/30) >= 10.2.10-h42 (ETA: 10/29) >= 10.2.13-h27 (ETA: 10/27) >= 10.2.16-h12 (ETA: 10/28) >= 10.2.18-h13 (ETA: 10/26) | 
+| Prisma Access Agent | None | All | 
+| [Prisma Cloud](https://www.paloaltonetworks.com/prisma/cloud) | None | All | 
+| [Prisma Access](https://www.paloaltonetworks.com/sase/access) | None | All | 
+| Prisma SD-WAN Controller | None | All | 
+| [Prisma SD-WAN ION](https://www.paloaltonetworks.com/sase/sd-wan) | None | All | 
+| Prisma SD-WAN On-Prem Controller | None | All | 
+| [Strata Cloud Manager](https://www.paloaltonetworks.com/network-security/strata-cloud-manager) | None | All | 
+| Trust Protection Foundation | None | All | 
+| WildFire Appliance WF-500 and WF-500-B | None | All | 
+| [WildFire Cloud](https://www.paloaltonetworks.com/network-security/wildfire) | None \*\* | All \*\* | 
+
+**\*** Although Cortex XCORE (SaaS) was previously impacted, a remediation patch was deployed on October 21, 2026.
+
+**\*\*** Although WildFire Cloud was previously impacted, a remediation patch was deployed on October 22, 2026.
+
+**Note**: This issue is applicable to PAN-OS software on PA-Series and VM-Series firewalls and on Panorama (virtual and M-Series).
+
+### Required Configuration for Exposure
+
+No special configuration is required to be affected by this issue.
+
+### Severity: HIGH, Suggested Urgency: MODERATE
+
+The risk is highest on PAN-OS when you allow access to the management interface from external IP addresses on the internet. Based on our assessment the CVSS score of this issue in our product is
+
+CVSS-B: 8.7 ([CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/AU:N/R:U/V:D/RE:M/U:Amber](https://www.first.org/cvss/calculator/4.0#CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/AU:N/R:U/V:D/RE:M/U:Amber))
+
+You can reduce the risk of exploitation by restricting access to a jump box that is the only system allowed to access the management interface.
+
+CVSS-B: 7.1 ([CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/AU:N/R:U/V:D/RE:M/U:Amber](https://www.first.org/cvss/calculator/4.0#CVSS:4.0/AV:A/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/AU:N/R:U/V:D/RE:M/U:Amber))
+
+Vendor
+
+CVSS-B: 9.2 ([CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N](https://www.first.org/cvss/calculator/4.0#CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N))
+
+### Exploitation Status
+
+Palo Alto Networks is not aware of any malicious exploitation of this issue against our products.
+
+### Weakness Type and Impact
+
+[CWE-754 Improper Check for Unusual or Exceptional Conditions](https://cwe.mitre.org/data/definitions/754)
+
+[CAPEC-153 Input Data Manipulation](https://capec.mitre.org/data/definitions/153)
+
+### Solution
+
+**PAN-OS**
+
+This issue will be fixed in the upcoming releases of PAN-OS. This advisory will be updated with fixed versions and release estimates as they become available.
+
+Until PAN-OS fix versions are available we recommend implementing the workaround and mitigations listed below.
+
+See [https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/](https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/) for more details on the Palo Alto Networks product capabilities to protect against attacks that exploit this issue.
+
+### Workarounds and Mitigations
+
+Customers with [Frontier Virtual Patching](https://www.paloaltonetworks.com/blog/network-security/harnessing-ai-for-prevention-introducing-frontier-virtual-patching/) (ATP Plus) on PAN-OS 12.2.4 and later versions received advance coverage, released via Threat ID 543004, which was released at 10:21 PM PT on Oct 20.
+
+Customers with a Threat Prevention subscription are provided with coverage against this vulnerability by enabling Threat ID 543004, 97622, 97623, 97624, 97625, 97643, 97647, 97649, 97652, 97653, 97656, 97657, 97658, 97659, 97662, 97663, 97664, 97670, 97671, 97672, 97673, 97674, 97676, 97677, 97678 (from Applications and Threats content version 9162, 9163, 9164 and later). For these Threat IDs to protect against attacks for this vulnerability:
+
+- [Route incoming traffic for the MGT port through a DP port](https://docs.paloaltonetworks.com/best-practices/10-1/administrative-access-best-practices/administrative-access-best-practices/deploy-administrative-access-best-practices#id59206398-3dab-4b2f-9b4b-7ea500d036ba), e.g., enabling management profile on a DP interface for management access.
+- [Replace the Certificate for Inbound Traffic Management](https://docs.paloaltonetworks.com/best-practices/10-1/administrative-access-best-practices/administrative-access-best-practices/deploy-administrative-access-best-practices#id112f7714-8995-4496-bbf9-781e63dec71c).
+- [Decrypt inbound traffic to the management interface so the firewall can inspect it](https://docs.paloaltonetworks.com/best-practices/10-1/administrative-access-best-practices/administrative-access-best-practices/deploy-administrative-access-best-practices#idbbd82587-17a2-42b4-9245-d3714e1e13a2).
+- Enable threat prevention on the inbound traffic to management services.
+
+The security risk posed by this issue on PAN-OS and Panorama is minimized by restricting access to the management interface to only trusted internal IP addresses according to our recommended
+
+[best practice deployment guidelines](https://live.paloaltonetworks.com/t5/community-blogs/tips-amp-tricks-how-to-secure-the-management-access-of-your-palo/ba-p/464431).
+
+### Frequently Asked Questions
+
+#### Q. Is GlobalProtect™ impacted?
+
+GlobalProtect portal, gateway and Clientless VPN are not impacted.
+
+
+#### Q. Is Captive Portal impacted?
+
+The captive portal is not impacted.
+
+
+#### Q. Which part of the PAN-OS® product is affected?
+
+This issue strictly affects the management web interface, which includes the HTTPS web UI and XML API service.
+
+
+#### Q. Does it affect any standard dataplane interface, or specifically ones with a management profile attached?
+
+It affects the dataplane interface only if a management profile is attached to it.
+
+
+#### Q. When will PAN-OS fixes be available?
+
+Patches will be made available as quickly as possible. Please monitor the [security advisory](https://security.paloaltonetworks.com/CVE-2026-109618) for the latest information on mitigations and updates.
+
+
+### CPEs
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.3:\*:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.2:\*:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.10:-:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.9:\*:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.8:\*:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.7:h6:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.7:h5:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.7:h3:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.7:h2:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.7:h1:\*:\*:\*:\*:\*:\*
+
+### CPE Applicability
+
+- cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.2.4 **and** up to (excluding)12.2.4-h1
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.1.4 **and** up to (excluding)12.1.4-h13
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.1.7 **and** up to (excluding)12.1.7-h11
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.1.10 **and** up to (excluding)12.1.10-h3
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.4 **and** up to (excluding)11.2.4-h23
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.7 **and** up to (excluding)11.2.7-h23
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.10 **and** up to (excluding)11.2.10-h16
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.13 **and** up to (excluding)11.2.13-h4
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.16 **and** up to (excluding)11.2.16-h1
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.1.4 **and** up to (excluding)11.1.4-h38
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.1.6 **and** up to (excluding)11.1.6-h40
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.1.7 **and** up to (excluding)11.1.7-h12
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.1.10 **and** up to (excluding)11.1.10-h36
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.1.13 **and** up to (excluding)11.1.13-h16
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.1.16 **and** up to (excluding)11.1.16-h4
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)10.2.7 **and** up to (excluding)10.2.7-h39
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)10.2.10 **and** up to (excluding)10.2.10-h42
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)10.2.13 **and** up to (excluding)10.2.13-h27
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)10.2.16 **and** up to (excluding)10.2.16-h12
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)10.2.18 **and** up to (excluding)10.2.18-h13
