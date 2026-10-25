@@ -1,0 +1,57 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-10-25T05:17:58Z · ended_at=2026-10-25T05:35:06Z · duration_seconds=1028
+
+## Verification report — 2026-10-25T0256Z-intel (iteration 6)
+
+Scope (post-fix pass, role stated in the spawn message): the run record read in full, every count, date, list and statement in its frontmatter and notes checked against the files (findings.S1 to S4 and their source ledgers, attempted.json, S*.started_at/ended_at, the sources.json structural diff against HEAD, the registry diff, the cves_seen diff, source_health.out/out2 and state/source_health.json, kev-window.txt and the live KEV catalogue, earlier run records 2026-10-15 to 2026-10-24, the entries' updates[] and sections, verification.iter1 to 5 claim and finding files, live pages), plus a seeded random quarter of the entry claims (58 of 231, `random.seed(6252510)`: 14 Publica, 14 PHP2Shell, 14 eMudhra, 8 Danfoss, 5 ZDI, 3 NTLM; 13 of them also in iteration 5's draw). 58 rows in `verification.iter6.claims.yaml`: 55 ok, 1 F3, 1 F5, 1 F14. `claims.changed.iter6.yaml` is empty and `git status` shows no entry file changed after iteration 4.
+
+Pages were read from `bodies/` where they existed and re-fetched live this iteration otherwise: CISA KEV (catalogue 2026.10.23, newest dateAdded 2026-10-23, neither PHP CVE nor CVE-2026-115560 listed), Wayback snapshot of the eMudhra tracker (20261023054447), openjdk.org/emudhra and the 2026-10-24 advisory, Oracle CVE-2026-114820, Cisco cisco-sa-emudhra-info v1.1, ENISA EUVD-2026-109299, Python Discourse, The Hacker News, BleepingComputer, Google and Mozilla posts, Sysdig, TuxCare, SpecterOps (live, for the FAQ lines), Blackfield (feed, home, about page), the two Microsoft KB pages, AFP, Public Sénat, Le Monde Informatique, Le Monde, SecurityWeek, Infosecurity, Censys, Forescout, php.net archive (raw HTML), GHSA-w8hw, Cloudflare, Security.nl, CrowdStrike, Splunk, BACS, Unit 42, VulnCheck, Siemens, Tenable x2, ReliaQuest, EDÖB release, Der Bund, admin.ch, Netzwoche, PKZH, Pensionskasse Post, Publica, Inside IT, 20 Minuten, watson, NZZ, BPK PDF (`pdf`), IPCT letter, ransomware.live Aurora list, the Trend Micro feed.
+
+### Prior-iteration delta (iteration 5), checked
+
+1. Opening paragraph: now limited to the national-CERT and vendor-advisory feeds with the Palo Alto revision and the EUVD rows named as exceptions. The fix is only partly right; see F4 #1 below (the same S1 ledger rows that the iteration-5 finding cited, MSRC, are still outside the exceptions, as is Cisco's 2026-10-24 revision).
+2. ConnectWise "sixth consecutive run": correct against the run records (failures on 2026-10-20, 21, 22, 23, 24 and today; 2026-10-19 was the last read). Noted as advisory F11 #8 that the two previous records said "third" and "fourth".
+3. Juniper "eleven days old": correct (vendor second-Wednesday release 2026-10-14, per the 2026-10-16 record; CCB and Singapore relay it on 10-16 and 10-19).
+4. sources_changed reasons for the two added candidates read as full clauses; the blackfield-ch method row (rss to bridge) and the "Source health" paragraph match source_health.out/out2 and state/source_health.json (first sweep: content_verdict shell, content_alnum 141 on the feed transport against a minimum of 600; the feed holds one item; second sweep: bridge route, relevant, no UNSOLVED row; 266 probed in both).
+5. Summary length of Publica, Danfoss and PHP2Shell: carried below as advisory.
+
+### Unsupported / hallucinated facts
+
+- F4 #1 Run record, notes, opening paragraph: "the national-CERT and vendor-advisory feeds carried nothing new after 2026-10-23 apart from a Palo Alto revision of 2026-10-24 and the 2026-10-24 EUVD rows behind the eMudhra update". S1's source ledger lists `msrc-update-guide` (essential, vendor advisories) with "in_horizon_items: 46 ... 46 rows dated 2026-10-24 are Linux-kernel/Azure Linux and curl/expat third-party CVEs", and `cisco-psirt` with a feed item dated 2026-10-24 20:55 (the eMudhra informational advisory, version 1.1 of 2026-10-24, returned in S1's item 1). The record's own iteration-5 finding summary names "MSRC rows" among the 2026-10-24 exceptions, yet the remediation names only Palo Alto and EUVD. Fix: add Cisco's advisory revision and the 46 Microsoft rows (kernel and third-party, no exploitation flags) to the exceptions, or say "nothing relevant". Secondary, same sentence: "two slice-lookback research posts (SpecterOps, Blackfield)": Blackfield was not a slice record (it was found through SpecterOps' link and added as a candidate the same run).
+- F4 #2 (low confidence) Run record, `sub_agents.S4.sources_used: [edoeb-ch-press, hackernews]`: findings.S4.yaml, S4.progress and S4's ledger never mention The Hacker News (0 hits); it is cited in S1's eMudhra item and S3's Linux kernel item, and neither S1's nor S3's `sources_used` lists it. The return headers are not persisted, so this cannot be settled from the files; if S4's return did not list it, correct it. The edoeb-ch-press attribution is supported (S4's own EDÖB finding and its sources.json note).
+
+### Citation does not support the claim
+
+- F3 #3 (low confidence) Danfoss entry, body Exposure, 2026-10-25 section and the record summary: "finds that 80 percent of the exposed Danfoss AK-SM 800A StoreView observations run firmware older than 4.3.1" (claims b150aa516c, 8847e03ec2, 4d2af56ad5). Forescout: "specifically for Danfoss AK-SM 800A, we could see that 3,762 StoreView service observations (80% of the total) run firmware older than 4.3.1"; 3,762 / 4,697 Danfoss StoreView services = 80.1% and no AK-SM 800A subtotal appears on the page, so the entry's denominator is not in the source. Fix: "3,762 AK-SM 800A StoreView observations, 80 percent of the total".
+
+### Quantifier without source
+
+- F14 #4 (low confidence) Run record, sources_changed trendmicro-research `rss_url`: "parses directly with 15 dated items". `fetch_source.py feed <rss.xml> 100` returns 25 dated items now (newest 2026-10-22, oldest 2026-08-04); 15 is the count S3 requested. Fix: drop the number.
+- F14 #6 (low confidence) eMudhra record summary (updates[] of 2026-10-25T03:36:20Z): "ACME clients will not replace affected certificates outside their renewal window by themselves". The Hacker News: "standard ACME clients do not replace certificates outside their renewal window unless they support ACME Renewal Information (ARI) or someone steps in by hand". The section, takeaway and action keep the qualifier; the record summary drops it.
+
+### Claims missing inline citation
+
+- F5 #5 (low confidence) eMudhra 2026-10-25 section: "a Python core developer stresses that pip before 26.2.2 keeps trusting ...". The cited Discourse post is by "tiran (Christian Heimes)" with no role shown and the tracker does not name him; he is a core developer per opensource.com and the CPython developer guide (read via search), but no cited page says so. Fix: "a Python developer" or cite a page with the role.
+
+### Editorial / less-is-more flags (advisory)
+
+- F11 #7 Summary length carried from iterations 1, 3, 4, 5: Publica 1,491 characters, Danfoss 1,407, PHP2Shell 1,290 against the 1 to 3 sentence contract; eMudhra (875, 3 sentences) is within it. May be left.
+- F11 #8 (low confidence) ConnectWise ordinal: the 2026-10-23 record says "third consecutive run" and the 2026-10-24 record "fourth", today's says "sixth" (the count is right; the earlier two undercounted by one). Optional clause: "counting from 2026-10-20".
+
+### Checks with no findings
+
+- Run record frontmatter: gap 24.0 h from 2026-10-24T02:55:54Z, window 26 h and developing window 72 h (formulas in cti-run.md); S1 to S4 start, end, duration, items_returned and telemetry equal the findings files and `S*.started_at/ended_at`; `sources_attempted` equals attempted.json (29, 21, 14, 13); `sources_used` union (10) equals the 10 `last_successful_fetch` rows; entries_published 2, entries_updated 4 and updated_entry_ids equal the files whose last updates[] record carries this run id, all type update, updated_at equal to each record's `at`; 12 `entities_added` equal the 12 keys the registry diff adds (diff is insertions only; the keys the entries reference but did not add all exist); sources_changed equals the structural sources.json diff (10 last_successful_fetch, 2 promotions, ConnectWise counter 2 to 3, trendmicro rss_url and method, 24 notes appended on exactly 24 sources, 2 additions); fetch_failures and bridge_uses match S1, S2 and S4 ledgers and the saved bodies (all 20 named deep-read pages exist); verification block: iteration timestamps and durations equal the `verify.iterN.*` files, finding counts equal the findings files (7/6/1, 3/4/3, 1/0/1, 1/0/1, 3/0/2), claims_in_scope equal the claim-row counts (226, 159, 160, 92, 58), residual 3 equals the last pass's truth plus editorial. `completed`, `duration_seconds` and `verification_iterations` not flagged, per the spawn message.
+- Notes: KEV sweep (kev-window.txt, live catalogue 2026.10.23, Arista and Collabora covered by existing entries); ARX backlog row (one open row, expiry 2026-11-07, `state/coverage_backlog.md` unchanged, S2 and S4 rechecks in four languages, live ransomware.live Aurora record present); Published and Updated paragraphs against the six entries and `git diff HEAD` (eMudhra tracker-build sentence: the Wayback snapshot of 2026-10-23 05:44Z lists "Java | 27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.33.0.2, 8u511" as patched against Oracle's affected list; Danfoss headline and summary replacement, T1133 and T1078, one action reworded; Publica 12 records and 11 sections, one internal; PHP priority stays critical); Contradiction line (present in the Danfoss section); borderline drops against S1 to S4 and the prior run records (Juniper dropped 2026-10-15 and 10-16, Next.js 10-16, 10-17, 10-19, EFK 10-22, ksmbd 10-24, Plex and SiteGuard 10-21, IDC Frontier routine, AdFection notable, Talos about 1,400 messages, CrowdStrike dated 2026-10-23, Camel 35 of 38 on 4.14.x, BIND 8.1 AC:H); coverage gaps and candidate sources against the S1 to S4 ledgers and sources.json (blackfield.ch about page: "in Switzerland, the most beautiful country in the world"); Source health paragraph; audit note (Publica file 77,562 bytes, the largest in the store; the 2026-10-24 record carries the consolidation suggestion).
+- Sampled claims (58): 55 ok after reading every cited passage this iteration; the three exceptions are above.
+- Style: no em dash in reader-facing entry text outside headings, no IOC, no workflow-internal language, no org_triage or watchlist use in the six entries.
+- Missed angles: live KEV catalogue has no uncovered addition; NCSC.ch hub newest post 13101 (2026-10-23, covered); searches for emergency patches and for Swiss public-body incidents on 2026-10-24/25 surfaced nothing in the window (the Montreux hit is a 2021 incident). Coverage looks complete.
+
+### Verdict
+
+NEEDS_FIXES (truth: 5, editorial: 1, advisory: 2)
+
+The six entries hold (55 of 58 sampled claims ok, three low-confidence wording points). The substantive finding is the run record's opening paragraph, which is still literally false for the Microsoft and Cisco feed rows of 2026-10-24; the remaining truth findings are low-confidence wording and count points, each with a one-line fix.
+
+### Findings summary (machine-readable)
+
+See `work/2026-10-25T0256Z-intel/verification.iter6.findings.yaml` (8 records: F4 x2, F14 x2, F3 x1, F5 x1, F11 x2).

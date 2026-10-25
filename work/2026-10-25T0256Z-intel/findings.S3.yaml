@@ -1,0 +1,307 @@
+# work/2026-10-25T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-25T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-25T02:58:16Z
+ended_at: 2026-10-25T03:17:52Z
+duration_seconds: 1176
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 7
+  bridge_fetches: null   # roughly 190 fetch_source.py invocations (feed/extract/url/msrc); not counted exactly
+window_note: >
+  Window 26 h (since 2026-10-24T00:56Z). 2026-10-24/25 is a weekend: no major lab or slice record published a
+  new research post inside the 26 h window except Sysdig (2026-10-24). Everything else returned here is a
+  rotational-lookback item (slice records carry 122-146 h lookbacks) and is marked lookback: true, or is
+  flagged borderline with the window reason stated.
+items:
+
+  # ------------------------------------------------------------------ 1
+  - title: "NTLM relay past required signing: SpecterOps (LDAP) and Blackfield (SMB) show signing bypassed by re-authenticating a connection the attacker already signs, fixed silently in Windows updates of September and October 2026"
+    sources:
+      - { url: "https://specterops.io/blog/2026/10/23/ldap-signing-bypass-ntlm-relay/", publisher: "SpecterOps (Raj Patel)", date: "2026-10-23", role: "primary" }
+      - { url: "https://blackfield.ch/blog/defeating-enforced-smb-signing/", publisher: "Blackfield (Lyderic Lefebvre)", date: "2026-10-21", role: "primary" }
+      - { url: "https://support.microsoft.com/en-us/servicing/os/windows-server/2026/10/kb5126646-windows-server-2025-security-update", publisher: "Microsoft Support (KB5126646 release notes, Windows Server 2025)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://github.com/grayhatkiller/switcheroo", publisher: "grayhatkiller/switcheroo (SpecterOps PoC repository)", date: "2026-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: specterops, URL https://specterops.io/feed/ (feed listing, item 2026-10-23T16:08Z) → primary: https://specterops.io/blog/2026/10/23/ldap-signing-bypass-ntlm-relay/ (extract) → pivot (the post's own reference to the independent SMB finding): https://blackfield.ch/blog/defeating-enforced-smb-signing/ (extract; its feed https://blackfield.ch/feed.xml also parsed) → pivot: Microsoft KB release notes https://support.microsoft.com/en-us/servicing/os/windows-server/2026/10/kb5126646-windows-server-2025-security-update (the KB SpecterOps names; read for a fix line) → PoC repository https://github.com/grayhatkiller/switcheroo; a WebSearch for a Microsoft CVE/KB statement ('LDAP signing bypass ... KB5126646') returned nothing on point."
+    summary: |
+      SpecterOps (Raj Patel, 2026-10-23) shows that required LDAP signing on a domain controller can be bypassed by NTLM relay: the attacker first opens a signed LDAP session with valid domain credentials or, where the DC accepts it, an anonymous NTLM SASL context, and keeps that session key; coerces a victim over SMB; and sends the victim's relayed NTLM AUTHENTICATE bind and a malicious LDAP ModifyRequest together in one SASL record signed with the attacker's own key. The DC checks the signature once, against the attacker's key, then switches the connection to the victim's identity and executes the modification with the victim's rights (the demonstration writes the resource-based constrained delegation attribute msDS-AllowedToActOnBehalfOfOtherIdentity; the post names msDS-KeyCredentialLink, shadow credentials, as the other primitive, and says the path continues to DCSync and domain or forest compromise when a domain controller's machine account is relayed to another DC). The tested DC enforced both LDAP signing and channel binding and the attack still worked over 389/TCP; LDAPS on 636/TCP is not reachable by this variant. Independently, Blackfield (2026-10-21) shows the same idea against SMB: re-authenticating an existing signed session with a relayed privileged identity keeps the low-privilege signing key, so a host that requires SMB signing, domain controllers included, accepts the privileged session, because the server does not check that the re-authenticating identity matches the original. SpecterOps says Microsoft fixed the SMB variant quietly in September 2026 and the LDAP one in the 2026-10-13 cumulative update (it reported the flaw on 2026-10-06 and never received an MSRC response); Blackfield found no CVE in the update guide, the KB notes or public trackers and calls it silent hardening, adding that one or two end-of-life Windows versions may never get the change. Both researchers publish tooling (SpecterOps an ntlmrelayx wrapper for the LDAP case; Blackfield a krbrelayx fork and a NetExec module that tests whether a host still allows the swap); neither reports in-the-wild use. Microsoft's own release notes for the Windows Server 2025 KB (KB5126646) and the Windows Server 2022 KB (KB5122882) that SpecterOps names contain no LDAP or SMB signing line, consistent with a silent fix; those KB numbers are per operating system, not a single fix for every server.
+    region_nexus: "global; on-premises Active Directory estates (domain controllers, Windows file servers) of the Swiss federal, cantonal and communal administrations"
+    primary_sector_nexus: "direct (technology class: Windows Server 2016-2025 domain controllers and SMB servers are the default identity and file backbone of public administrations); no sector targeting reported"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1557, T1557.001, T1187, T1098, T1003.006]
+    affected_products: ["Microsoft Windows Server"]
+    entity_keys: ["product:microsoft-windows-server"]
+    new_entities:
+      - { key: "trend:ntlm-relay-signing-bypass-reauthentication-2026-10", type: trend, name: "NTLM relay signing bypass through re-authentication (SMB signing / LDAP Switcheroo)", aliases: ["LDAP Switcheroo", "Defeating enforced SMB signing", "reauth signing bypass"], summary: "Class of NTLM-relay bypasses in which a signed SMB or LDAP session the attacker controls is re-authenticated with a relayed victim identity so the connection keeps the attacker's signing key; SpecterOps (LDAP, 2026-10-23) and Blackfield (SMB, 2026-10-21) report it, Microsoft fixed it silently in September (SMB) and October 2026 (LDAP) cumulative updates." }
+      - { key: "tool:ldap-switcheroo", type: tool, name: "LDAP Switcheroo (switcheroo)", aliases: ["switcheroo", "The LDAP Switcheroo"], summary: "SpecterOps proof-of-concept wrapper around Impacket ntlmrelayx that relays a coerced SMB client's NTLM authentication into an LDAP operation executed with the victim's permissions on a domain controller requiring LDAP signing (SpecterOps, 2026-10-23)." }
+    relation_suggestions:
+      - { subject: "tool:ldap-switcheroo", object: "trend:ntlm-relay-signing-bypass-reauthentication-2026-10", basis: "SpecterOps releases it as the proof of concept for its LDAP signing bypass (SpecterOps, 2026-10-23)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Microsoft fixed SMB quietly in September 2026 and LDAP in October 2026. Every Windows Server from 2016 to 2025 was vulnerable to NTLM relay attacks, even with signing enforced in both protocols."
+        attribution: "SpecterOps (Raj Patel)"
+        source_url: "https://specterops.io/blog/2026/10/23/ldap-signing-bypass-ntlm-relay/"
+      - quote: "The domain controller we tested against had both LDAP signing and channel binding enforced, and the attack still worked over 389/TCP."
+        attribution: "SpecterOps (Raj Patel)"
+        source_url: "https://specterops.io/blog/2026/10/23/ldap-signing-bypass-ntlm-relay/"
+      - quote: "We reported this vulnerability to Microsoft on October 6, 2026 but we never received a response to that MSRC report."
+        attribution: "SpecterOps (Raj Patel)"
+        source_url: "https://specterops.io/blog/2026/10/23/ldap-signing-bypass-ntlm-relay/"
+      - quote: "On any host that requires SMB signing, Domain Controllers included, a relayed privileged authentication yields a privileged session that is still signed with the low-privilege key."
+        attribution: "Blackfield (Lyderic Lefebvre)"
+        source_url: "https://blackfield.ch/blog/defeating-enforced-smb-signing/"
+      - quote: "I could not find a CVE for this specific change, in Microsoft’s update guide, the KB notes, or public trackers; it reads as silent hardening rather than a tracked fix."
+        attribution: "Blackfield (Lyderic Lefebvre)"
+        source_url: "https://blackfield.ch/blog/defeating-enforced-smb-signing/"
+    extended_notes: |
+      Suggested classification B2 (two independent researcher write-ups plus public PoCs; Microsoft has published no advisory, CVE or release-note line, so patch status rests on the researchers' build testing). Suggested priority: notable to high as a hardening and AD-exposure item (no exploitation reported); not an immediate-action item.
+      Exposure (stated by sources): Windows Server 2016 through 2025 domain controllers accepted the relay before the cumulative updates (SpecterOps tested 2016 DCs and above; the FAQ says every 2022 and 2025 DC it tested accepted it); SMB servers requiring signing are affected by the SMB variant. Preconditions: a coercion primitive toward an SMB client (the demo uses PetitPotam-class coercion; the victim must authenticate over SMB, WebDAV/HTTP victims do not work for the LDAP case), a signed LDAP session of the attacker (valid account, or anonymous NTLM SASL where the DC accepts it), and 389/TCP reachable (LDAPS-only breaks the LDAP variant). Patch-state caveat the composer must not flatten: KB5126646 is the Windows Server 2025 October 2026 cumulative update and KB5122882 the Windows Server 2022 September 2026 one (both fetched); SpecterOps' advice to install them 'on every domain controller / server' must be read as the equivalent cumulative update for each OS build. Blackfield's patch check reports the SMB same-user re-authentication change as a 'feature flag' in September 2026 builds; Blackfield says it did not trace every build.
+      Hardening named by the sources: patch domain controllers first; enforce LDAP signing and channel binding together; restrict LDAP on 389/TCP so only LDAPS remains; reduce NTLM; SMB signing stays necessary but is not sufficient (Blackfield: the clean fix is requiring the same identity on re-authentication).
+      Detection: neither source gives detection guidance. Hooks that follow mechanically from the stated attack (inference, not a source claim): directory-service change auditing (Windows event 5136) on computer objects for msDS-AllowedToActOnBehalfOfOtherIdentity and msDS-KeyCredentialLink, where the writing principal is a machine account that has just authenticated by NTLM over the network from an unexpected source; and coercion RPC activity toward servers and DCs. Post-patch compromise check (inference): patching does not remove delegation or key-credential values already written, so review those two attributes across computer accounts for unexplained entries.
+      Triage lookalike: machine accounts legitimately write some of their own attributes (device registration, WHfB key trust), so the discriminator is value provenance and the NTLM-from-unexpected-host sequence, not the attribute write alone (inference, not source-stated). Treat as unconfirmed until the entry's author weighs it.
+
+  # ------------------------------------------------------------------ 2
+  - title: "PHP2Shell detection delta: ReliaQuest's lab reproduction gives a request-to-worker-crash log sequence for CVE-2026-109618, OffSeq's honeypots show the request shapes arriving, AhnLab reproduces a web-account shell from the public PoC"
+    sources:
+      - { url: "https://reliaquest.com/blog/threat-spotlight-php2shell-responding-to-critical-php-vulnerabilities/", publisher: "ReliaQuest Threat Research", date: "2026-10-22", role: "primary" }
+      - { url: "https://offseq.com/en/research/php2shell-first-48-hours/", publisher: "OffSeq (Mirage honeypot field report 005)", date: "2026-10-22", role: "primary" }
+      - { url: "https://asec.ahnlab.com/en/95956/", publisher: "AhnLab ASEC", date: "2026-10-21", role: "corroborating" }
+    discovery_trace: "first seen at: reliaquest, URL https://reliaquest.com/sitemap.xml (blog sitemap filtered to /blog/, lastmod 2026-10-23T20:17Z on the PHP2Shell spotlight) → primary: https://reliaquest.com/blog/threat-spotlight-php2shell-responding-to-critical-php-vulnerabilities/ (extract; the 2026-10-22 lab update sits at the top of the post). Second thread: offseq, URL https://offseq.com/en/research/rss.xml (item 2026-10-22) → primary: https://offseq.com/en/research/php2shell-first-48-hours/ (extract). Third: asec.ahnlab.com listing via WebFetch https://asec.ahnlab.com/en/ → https://asec.ahnlab.com/en/95956/ (extract served via the jina reader)."
+    summary: |
+      Delta for the existing PHP2Shell entry, which carries a generic Detection line (worker crashes, fatal errors, multipart POSTs from unfamiliar sources, post-exploitation process telemetry) but no concrete sequence. ReliaQuest says it independently reproduced exploitation of CVE-2026-109618 in separate controlled labs (code execution only where the exploit prerequisites were already present, not a universal chain; it has not seen successful exploitation in customer environments) and reports the artifact sequence across PHP error, Apache access, Apache error and system logs: a POST returns HTTP 500, PHP logs memory exhaustion that ends 'in Unknown on line 0' (failure inside PHP before an application file is identified) followed by heap corruption, and the Apache worker handling the request exits on an abort signal within seconds. Each event can be benign alone; the full sequence on the same process is the strong indicator, and linking request to crash needs the worker PID in both the access and error logs, which ReliaQuest found was often not collected. OffSeq's honeypot fleet (20-22 Oct) recorded the attacker-side request shapes: multipart POSTs combining the session upload-progress trigger field with deeply nested array-style field names, a chunked transfer with no usable Content-Length, bursts from one source whose body sizes climb step by step (the exploit searching for the per-target memory threshold), and separate 1-2 MB single-field bodies consistent with the out-of-memory strategy; the earliest such body was seen about 16 hours before the 2026-10-21 patch. OffSeq's decoys are low-interaction, so this characterises tooling and sequence, not exploitation success. AhnLab ASEC reproduced the public PoC and shows a command shell running as the web account (www-data).
+    region_nexus: "global; Swiss federal, cantonal and communal PHP estates (the existing entry records BACS statements and Swiss take-downs)"
+    primary_sector_nexus: "direct (public-sector websites and PHP applications; see existing entry)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["PHP"]
+    entity_keys: ["product:php", "tool:php2shell"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    lookback: true
+    evidence:
+      - quote: "Defenders should focus on the sequence: a POST request returns a 500 error, PHP reports memory exhaustion and heap corruption, and the Apache worker handling the request crashes."
+        attribution: "ReliaQuest Threat Research"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-php2shell-responding-to-critical-php-vulnerabilities/"
+      - quote: "Organizations should collect both sources and configure Apache access logs to include the PID."
+        attribution: "ReliaQuest Threat Research"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-php2shell-responding-to-critical-php-vulnerabilities/"
+      - quote: "ReliaQuest has not observed successful exploitation in customer environments."
+        attribution: "ReliaQuest Threat Research"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-php2shell-responding-to-critical-php-vulnerabilities/"
+      - quote: "Bursts of upload-progress POSTs from one source whose body sizes climb monotonically."
+        attribution: "OffSeq"
+        source_url: "https://offseq.com/en/research/php2shell-first-48-hours/"
+      - quote: "Decoys are low-interaction and cannot be exploited, so this characterises tooling and sequence, not exploitation success."
+        attribution: "OffSeq"
+        source_url: "https://offseq.com/en/research/php2shell-first-48-hours/"
+    extended_notes: |
+      Suggested changelog record type: improvement (new detection content on an existing finding; no change in exploitation status or patch facts), fields: body (Detection line). The existing entry's status is unchanged: ReliaQuest and OffSeq both stop short of confirmed in-the-wild compromise, consistent with CrowdStrike/Sophos/Wordfence already cited.
+      Triage: the ReliaQuest sequence is a lab artifact from one distribution layout (log paths are lab-specific); the discriminators it gives are the same-PID correlation of a 500 response and an abort-signal worker exit within seconds, the 'in Unknown on line 0' memory-error text (ordinary PHP memory errors name the application file and line), and the absence of that sequence is not proof of no exploitation when PHP/Apache logs or the worker PID are not collected. The OffSeq request-shape list is behaviour only; OffSeq also publishes a self-identifying multipart boundary string and source addresses, deliberately not carried here (IOCs).
+      ReliaQuest also reports it used a commercial AI model with public reporting to reproduce the memory-corruption behaviour in a lab with prerequisites present, and explicitly says this shows acceleration, not universal weaponisation.
+
+  # ------------------------------------------------------------------ 3
+  - title: "Linux kernel: ZDI reports posted to public lists give a working root exploit for an skb_zerocopy page-cache write that bypasses the Dirty Frag fix, plus two ksmbd flaws (CVSS 9.0), with no CVEs and no merged fixes (Sysdig analysis)"
+    sources:
+      - { url: "https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws", publisher: "Sysdig Threat Research Team", date: "2026-10-24", role: "primary" }
+      - { url: "https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/", publisher: "TuxCare (KernelCare)", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/two-cvss-90-linux-ksmbd-rce-flaws.html", publisher: "The Hacker News", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://www.phoronix.com/news/LKML-New-Trend-Vulnerabilities", publisher: "Phoronix", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://pwn.watch/i/linux-kernel-zdi-reports-leaked-to-lkml", publisher: "pwn.watch (incident tracker)", date: "2026-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: sans-newsbites, URL https://www.sans.org/newsletters/newsbites/xxviii-79 (Internet Storm Center StormCast 2026-10-23 headline 'Linux Kernel KSMBD Vulnerability Reports Leaked') → WebSearch ('ZDI accidentally posted unpatched Linux kernel ksmbd vulnerability reports public mailing list', nothing on point) → and independently the Sysdig item in the research-feed sweep, URL https://www.sysdig.com/blog/rss.xml (feed item dated 2026-10-24, link host webflow.sysdig.com) → primary: https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws (extract; the webflow.sysdig.com copy read identically) → pivots cited in it: https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/, https://pwn.watch/i/linux-kernel-zdi-reports-leaked-to-lkml, https://thehackernews.com/2026/10/two-cvss-90-linux-ksmbd-rce-flaws.html, https://www.phoronix.com/news/LKML-New-Trend-Vulnerabilities; the LKML/netdev postings themselves (lore.kernel.org) answered with an Anubis proof-of-work challenge and could not be read."
+    summary: |
+      On 2026-10-20/21 Trend Micro's Zero Day Initiative sent one ConnMan report and five Linux kernel reports to the kernel security team while copying public lists (LKML, netdev, linux-cifs, dri-devel, linux-nvme), without patches; Greg Kroah-Hartman replied that they were now public and unpatched. Sysdig's Threat Research Team (2026-10-24) ranks the batch by what defenders should do now. ZDI-CAN-33367 is the one that matters: skb_zerocopy() moves shared page-cache fragments into a new socket buffer without carrying the shared-fragment marker the Dirty Frag fix introduced, so ESP decrypts in place and an unprivileged local user can write attacker bytes into the cached copy of a file it can only read, which gives root without opening the file for writing; a public exploit exists, TuxCare reproduced a root shell on AlmaLinux 8-10 (including with the Dirty Frag fix installed), CloudLinux 9-10, Debian 12 and 13 and Ubuntu 24.04 and 26.04 (Ubuntu's AppArmor user-namespace restriction was bypassed through a container-launcher profile), and a small patch is on netdev, reviewed but not merged. The exploit needs unprivileged user namespaces and a set of networking modules (nlmon, nft_queue, nfnetlink_queue, cls_u32, act_pedit, act_mirred, esp4). The two ksmbd reports (ZDI-scored CVSS 9.0) matter only where the in-kernel SMB server ksmbd, not Samba, runs: ZDI-CAN-33774 is a pre-authentication SMB1/SMB2 dispatch race whose public proof of concept leaks 28 bytes of kernel heap per attempt and can crash the kernel (the maintainer says a fix commit is queued in ksmbd-for-next, not in a release), and ZDI-CAN-33549 is an SMB Direct integer underflow needing an RDMA-capable interface and a writable share, whose proof of concept crashes the kernel. ZDI-CAN-34068 (vmwgfx, VMware guests, local privilege escalation) and ZDI-CAN-34076 (nvmet information leak) have only titles public and no patch. None of the six has a CVE and no in-the-wild exploitation is reported as of 2026-10-23/24.
+    region_nexus: "global; Linux server, VDI and container estates; Swiss public-sector Linux hosts where unprivileged user namespaces are enabled (shared hosting, CI runners, Kubernetes) or ksmbd is used"
+    primary_sector_nexus: "indirect (no sector targeting; relevant to public-sector Linux fleets)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1068, T1210, T1499.004]
+    affected_products: ["Linux kernel", "ksmbd (Linux in-kernel SMB server)", "vmwgfx (Linux VMware virtual GPU driver)"]
+    entity_keys: ["product:linux-kernel", "trend:dirty-frag-linux-kernel-page-cache-lpe"]
+    new_entities:
+      - { key: "incident:zdi-linux-kernel-reports-public-lists-2026-10", type: incident, name: "ZDI Linux kernel reports sent to public lists (October 2026)", aliases: ["ZDI-CAN-33367", "ZDI-CAN-33774", "ZDI-CAN-33549", "ZDI-CAN-34068", "ZDI-CAN-34076"], summary: "On 2026-10-20/21 Trend Micro's Zero Day Initiative copied public kernel mailing lists on five unpatched Linux kernel vulnerability reports (and one ConnMan report), publishing reproduction details before fixes: an skb_zerocopy page-cache write local root exploit, two ksmbd flaws scored CVSS 9.0, a vmwgfx LPE and an nvmet information leak, none with a CVE (Sysdig, TuxCare, The Hacker News, Phoronix, 2026-10-22 to 2026-10-24)." }
+      - { key: "product:linux-kernel-ksmbd", type: product, name: "Linux kernel ksmbd (in-kernel SMB server)", aliases: ["ksmbd", "KSMBD"], summary: "The Linux kernel's built-in SMB file-sharing server, distinct from Samba; off unless an administrator sets it up, not built into AlmaLinux/CloudLinux 9-10 kernels and not included in RHEL by default (TuxCare; The Hacker News citing Red Hat, 2026-10-22)." }
+    relation_suggestions:
+      - { subject: "incident:zdi-linux-kernel-reports-public-lists-2026-10", object: "trend:dirty-frag-linux-kernel-page-cache-lpe", basis: "Sysdig: ZDI-CAN-33367 is 'the seventh path found to drop the Dirty Frag flag'; TuxCare reproduced root with the Dirty Frag fix installed (Sysdig 2026-10-24, TuxCare 2026-10-22)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A working root exploit for a Linux kernel bug is now public, before it has a CVE or a merged fix."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws"
+      - quote: "None of the six bugs has been assigned a CVE ID yet, and no in-the-wild exploitation has been reported as of the publication of this blog."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws"
+      - quote: "Nothing legitimate does all of that from a single unprivileged process."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws"
+      - quote: "Samba users are unaffected."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws"
+      - quote: "it gets around May’s fix for Dirty Frag (CVE-2026-43284), and no fix has been merged upstream or shipped in a distro kernel."
+        attribution: "TuxCare"
+        source_url: "https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/"
+      - quote: "The public PoCs show a kernel heap leak and crashes rather than code execution, though that doesn’t rule out worse."
+        attribution: "TuxCare"
+        source_url: "https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/"
+      - quote: 'The vulnerabilities have yet to be patched on mainline but at least in some cases there are patches undergoing testing or queued in "-next" branches.'
+        attribution: "Phoronix"
+        source_url: "https://www.phoronix.com/news/LKML-New-Trend-Vulnerabilities"
+    extended_notes: |
+      Overlaps S1's remit (exploit-class, public PoC, no patch, no CVE); returned here because Sysdig's 2026-10-24 analysis is the in-window primary. Suggested classification B2 (Sysdig original analysis; TuxCare independently reproduced the root exploit; ksmbd RCE claims are ZDI's scores, not demonstrated). Suggested priority: high for Linux fleets that allow unprivileged user namespaces on multi-tenant or build hosts; notable elsewhere. ZDI-scored CVSS are ZDI's own (33367: 7.8, 33774 and 33549: 9.0, 34068: 8.8, 34076: 8.6 per TuxCare/The Hacker News), not NVD.
+      Exposure: ZDI-CAN-33367 needs local code execution first (shared hosting, CI runners, container workloads, login nodes count) plus unprivileged user namespaces; TuxCare says EL6/EL7 kernels are not vulnerable and CloudLinux 8 and Ubuntu 22.04 were not yet tested. ksmbd: check for the ksmbd kernel module, the ksmbd.mountd daemon and a kernel-owned listener on TCP 445 (Sysdig); The Hacker News gives 'systemctl status ksmbd' / 'lsmod | grep ksmbd' and says RHEL does not include ksmbd by default; TuxCare says AlmaLinux and CloudLinux 9-10 kernels do not build it. vmwgfx matters only on VMware guests (vSphere, Workstation, VMware VDI); Sysdig could not reproduce it on Lima or EC2.
+      Detection (Sysdig): the 33367 exploit is one unprivileged process doing, in order: unshare into new user and network namespaces and write sysctls, bring up an nlmon interface, install XFRM state over netlink, add an nftables NFQUEUE rule, attach a tc pedit action with a redirect, then splice() into a socket on the loopback address; syscall-level runtime telemetry sees it in motion. The ksmbd bugs run inside kernel worker threads with no attacker process on the host, so only exposure control and post-exploitation telemetry apply. Post-compromise (inference from Sysdig's description that the write lands in the page cache of a read-only file): on-disk content of the targeted setuid binary or /etc/passwd may not show the change, so file-integrity checks of disk contents are not proof of absence.
+      Hardening (stated): patch the day the distribution ships the skb_zerocopy() fix (a kernel with only the CVE-2026-90049 fix is not covered); restrict unprivileged user namespaces with user.max_user_namespaces=0 (kernel.unprivileged_userns_clone=0 on Debian), TuxCare has not validated it against the PoC and it breaks rootless containers, some browser sandboxes and build tooling; do not rely on Ubuntu's AppArmor user-namespace restriction (bypassed); block nlmon and act_pedit where possible (may not close every path); enforce seccomp RuntimeDefault on Kubernetes pods (Docker's default profile blocks unshare(CLONE_NEWUSER), pods run Unconfined unless set); ksmbd: unload and block the module where unused, restrict TCP 445, disable SMB Direct unless RDMA storage needs it; vmwgfx: disable 3D acceleration or block the module on guests that do not need it. Vendor mitigations seen only in secondary sources (pwn.watch): AlmaLinux testing-repo kernels with the backported fix and blocking esp4/esp6 stopping the public exploit; KernelCare livepatch for EL10 (TuxCare).
+      Source disagreements to surface: pwn.watch says the ksmbd race needs a guest share while Sysdig and TuxCare say the public PoC works pre-authentication (ZDI's write-past-buffer path needs share access); ZDI's formal advisories are scheduled for 2027-02-18 per TuxCare (ZDI upcoming list). The finder credit is stated differently across sources (The Hacker News says the ZDI reports credit TrendAI, Trend Micro's AI scanner, as the finder and names a researcher for 33367); not needed for the entry.
+
+  # ------------------------------------------------------------------ 4
+  - title: "Forescout adds hacktivist and exposure context to the French refrigeration-control attacks: over 20 claimed attacks on refrigeration HMIs since January 2026, internet-facing supervisory platforms by design, and no confirmed access vector in France"
+    sources:
+      - { url: "https://www.forescout.com/blog/cold-chain-open-control-exposed-refrigeration-systems-reveal-global-risk/", publisher: "Forescout Research, Vedere Labs", date: "2026-10-22", role: "primary" }
+    discovery_trace: "first seen at: forescout-research, URL https://www.forescout.com/blog/ (extract and raw url listing; the listing is undated, hrefs read from the raw HTML) → primary: https://www.forescout.com/blog/cold-chain-open-control-exposed-refrigeration-systems-reveal-global-risk/ (extract, date 2026-10-22)."
+    summary: |
+      Forescout's Vedere Labs analysis of the October 2026 attacks on refrigeration supervisory systems in France (CERT-FR confirmed Danfoss AK-SM and AK-SC and Copeland/Dixell XWEB compromises) adds three points to the existing entry. It states the access vector, exploited vulnerabilities, attacker infrastructure, persistence and responsible actors in the French incidents remain unconfirmed, and that the reported manipulation (rapid successive configuration changes suggestive of automation) used ordinary supervisory functions. Its own tracking of hacktivist groups found over 20 claimed attacks on refrigeration systems since January 2026, mostly by the pro-Russian Z-Pentest Alliance and NoName057(16), mainly changing temperature and defrost settings through internet-exposed HMIs at fruit stores, wineries, supermarkets and food processors in Spain, Italy and elsewhere in Europe, with Danfoss's own 2025 bulletin describing 2022 hacktivist attacks on the same device class where the Israeli installations lacked firewall or VPN protection. And from Shodan data it finds the two attack paths still open (weak or missing authentication, and known vulnerabilities, including end-of-life Danfoss AK-SM 800 units that cannot be patched), noting that manufacturer documentation describes internet-based remote maintenance via port forwarding as a supported option, and that 80 % of the exposed Danfoss AK-SM 800A StoreView observations run firmware older than 4.3.1, which is affected by CVE-2025-41451 and CVE-2025-41452.
+    region_nexus: "global; France (incident), Spain, Italy and other European states (hacktivist claims); Switzerland not named"
+    primary_sector_nexus: "indirect (food retail and cold-storage operators; cooling equipment in hospitals and agriculture is named as the broader exposure)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1078, T1133]
+    affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SM 800A", "Danfoss AK-SC 355", "Copeland XWEB Pro", "Copeland/Dixell XWEB", "Copeland Site Supervisor", "CAREL pCOWeb"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "product:danfoss-ak-sm-800a", "product:copeland-xweb"]
+    new_entities:
+      - { key: "actor:z-pentest-alliance", type: actor, name: "Z-Pentest Alliance", aliases: ["Z-Pentest"], summary: "Pro-Russian hacktivist group that Forescout's Vedere Labs tracks as one of the two most active claimants of attacks on internet-exposed refrigeration HMIs since January 2026, claiming ten attacks on 26 April alone (Forescout, 2026-10-22)." }
+      - { key: "actor:noname057-16", type: actor, name: "NoName057(16)", aliases: ["NoName057", "NoName"], summary: "Pro-Russian hacktivist group named by Forescout as one of the two most active claimants of attacks on internet-exposed refrigeration systems since January 2026 (Forescout, 2026-10-22); a FIOD operation against its DDoS infrastructure is already recorded in the registry." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    lookback: true
+    borderline: true
+    borderline_reason: "Context, not a new fact about the French incident: no confirmed vector or actor, exposure counts come from Shodan and are not Swiss-specific, single vendor source; the entry already carries CERT-FR, NCSC.ch and Danfoss statements. Worth a two-sentence improvement on the hacktivist history at most."
+    evidence:
+      - quote: "Since January 2026, our tracking of hacktivist groups identified over 20 claimed attacks against refrigeration systems."
+        attribution: "Forescout Research, Vedere Labs"
+        source_url: "https://www.forescout.com/blog/cold-chain-open-control-exposed-refrigeration-systems-reveal-global-risk/"
+      - quote: "Initial access methods, exploited vulnerabilities, attacker infrastructure, persistence mechanism, and responsible actors in those incidents remain unconfirmed"
+        attribution: "Forescout Research, Vedere Labs"
+        source_url: "https://www.forescout.com/blog/cold-chain-open-control-exposed-refrigeration-systems-reveal-global-risk/"
+      - quote: "specifically for Danfoss AK-SM 800A, we could see that 3,762 StoreView service observations (80% of the total) run firmware older than 4.3.1"
+        attribution: "Forescout Research, Vedere Labs"
+        source_url: "https://www.forescout.com/blog/cold-chain-open-control-exposed-refrigeration-systems-reveal-global-risk/"
+    extended_notes: |
+      Detection concept stated by Forescout: correlate remote-access sessions with changes to defrost schedules, alarms, setpoints, users and network configuration, because the abused functions are legitimate and malicious changes resemble routine activity; a supervisor may log temperature data without the account behind a change, and a remote-access gateway may log a session without the modified setpoint. Hardening: remove public access to refrigeration management interfaces, restore remote maintenance through a secure remote-access gateway, replace unsupported supervisory systems, eliminate shared or stale contractor credentials (named identities, MFA, least privilege, session logging). Hacktivist claims are Forescout's tracking of the groups' own posts, i.e. claims, not victim-confirmed.
+
+  # ------------------------------------------------------------------ 5
+  - title: "Talos: platform-as-proxy abuse widens to order-notification templates, list bombing and bounce messages, so authenticated mail from trusted brands carries attacker-chosen phone numbers and lures"
+    sources:
+      - { url: "https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/", publisher: "Cisco Talos (Diana Brown)", date: "2026-10-21", role: "primary" }
+    discovery_trace: "first seen at: talos, URL https://blog.talosintelligence.com/rss/ (feed, item 2026-10-21T10:00Z) → primary: https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/ (extract, date 2026-10-21; it links Talos's earlier 'weaponizing SaaS notification pipelines' research, not re-fetched)."
+    summary: |
+      Talos reports abuse of more than 25 legitimate platforms over the past year as delivery pipelines and details three mail-borne variants. Order-notification abuse: roughly 1,400 observed messages from two campaigns that rode Staples and Dell transactional email, where the attacker's phone number sits inside fields that normally hold shipping or billing data, the message passes DKIM and DMARC for the retailer's domain, and the goal is a call to the attacker (callback social engineering, payment manipulation, credential theft or remote-assistance fraud) rather than a link click. List bombing: attacker-chosen strings submitted to registration, profile or project-name forms are reflected by the platform into its welcome or verification emails, turning an inbox-flooding technique into content delivery through a high-reputation sender. Bounce abuse: delivery-status notifications that echo attacker-influenced content, for example a WeTransfer-themed lure inside a mail-delivery failure wrapper, whether through backscatter to a forged envelope sender or a deliberately triggered failure. Talos's defensive point is that sender authentication (SPF, DKIM, DMARC) says nothing about what the trusted system was told to carry, and it recommends content-aware inspection of the fully rendered message, recursive MIME inspection of DSN containers, and correlating notification content with account and payment context.
+    region_nexus: "global; mail gateways of any public-sector organisation"
+    primary_sector_nexus: "indirect (no sector targeting stated)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1598]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Original Talos telemetry and a transferable gateway-tuning lesson (authenticated brand mail carrying callback numbers; DSN nested content), but modest scale (two campaigns, ~1,400 messages), single source, no sector or Swiss nexus; awareness-grade."
+    evidence:
+      - quote: "Talos has since tracked a significant acceleration in this trend, observing abuse across more than 25 distinct legitimate platforms in the past year."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/"
+      - quote: "Authentication helped establish that the outer message was credible, while offering no assurance that the phone number or transaction context was legitimate."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/"
+      - quote: "Gateways should parse DSN containers, extract returned messages or message fragments, and apply normal phishing, malware, and URL analysis to the nested content."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/"
+    extended_notes: |
+      Triage discriminator stated by Talos: an order notification containing unexpected support numbers, cancellation instructions or high-urgency language in transaction fields (ship-to, bill-to, company name, order note) differs from a routine receipt even when SPF/DKIM/DMARC pass; a DSN's administrative appearance does not validate the content inside it.
+
+  # ------------------------------------------------------------------ 6
+  - title: "CrowdStrike: four previously unreported actors ran agentic Claude Code intrusion harnesses against government and healthcare targets between May and August 2026"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-10-23", role: "primary" }
+    discovery_trace: "first seen at: crowdstrike (Counter Adversary Operations listing, extract), URL https://www.crowdstrike.com/blog/category/counter-adversary-operations/ → primary: https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/ (extract, date 2026-10-23); the full report page it links (https://www.crowdstrike.com/en-us/resources/reports/agentic-ai-attack-campaigns/) was not fetched (gated download)."
+    summary: |
+      CrowdStrike Intelligence says that between May and August 2026 it documented incidents in which actors used AI not only to build tooling but to run agentic campaigns where agents decide and execute. Its blog summary of four previously unreported actors: a Spanish/English-speaking operator that compromised at least 15 Argentina-based healthcare entities with a purpose-built Supervisor/Executor Claude Code harness derived from the open-source PentestGPT project; a Chinese-speaking operator with 20+ named targets, including government entities of two countries, who reached Claude models through a China-based AI proxy service and built two pentest harnesses of differing autonomy; an Indonesian-speaking actor that gave Claude Code 819 public skills without orchestration and compromised several Indonesian government domains, though it had to intervene around the model's guardrails; and a Russian-speaking group that used a single slash command with a seven-step workflow to exfiltrate customer data from a US CRM vendor and compromise private entities and one government domain of another country. CrowdStrike assesses with moderate confidence that agentic AI commoditises baseline offensive operations and with high confidence that agentic-AI-supported intrusions will increase. The detail (case studies, defender guidance) sits in a gated report; the blog carries no detection content.
+    region_nexus: "global; named victims in Argentina, Indonesia, Brazil, US, Russia, Kyrgyzstan; Switzerland not named"
+    primary_sector_nexus: "indirect (government domains of non-Swiss states are among the victims; no Swiss nexus)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1588.007, T1059]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Source dated 2026-10-23, before the 26 h window opened (2026-10-24T00:56Z), and not from a slice record, so it falls outside the recency rule; the blog is a summary of a gated report with no detection content; it extends the ARTEX / CL-UNK-1211 / SOCRadar INC-Gentlemen agentic-intrusion thread already in the store with four more actors, three of them with government-entity victims. Return only if the composer wants the thread rounded out; the same morning's SOCRadar sibling report was dropped at triage."
+    evidence:
+      - quote: "Between May and August 2026, CrowdStrike Intelligence documented several incidents in which threat actors used AI not only to create tooling or artifacts, but to conduct agentic campaigns in which AI agents make decisions and execute commands."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/"
+    extended_notes: |
+      Dropped as lower value this window (listed so the drop is auditable): CrowdStrike 'U.S. Government Disrupts FAMOUS CHOLLIMA Operation' (2026-10-23, US laptop farms, sector-agnostic DPRK IT-worker fraud, no Swiss nexus); Eye Security Operation IXIM / CVE-2026-30612 Time4Popcorn abandoned-updater sinkhole (primary 2026-10-22, THN rewrite 2026-10-24: abandoned update domain gave SYSTEM/root code execution on pirated-software endpoints, government and military addresses seen in a sample, no actionable Swiss angle); Sansec Magento CMS-block loader (2026-10-24, e-commerce skimmer, 953 stores); SOCRadar INC/Gentlemen AI infrastructure (2026-10-20; returned by the earlier S3 run and dropped at triage); Talos 'There's only so much code' (2026-10-20, vulnerability-volume commentary, vanity-metric territory); AhnLab ASEC unnamed Rust infostealer disguised as cracked software (primary 2026-10-20/21; commodity, hooks limited to AutoIt/explorer.exe injection); KELA 'Qilin and Japan' (2026-10-23, Japan-centred, edge-device scanning of GlobalProtect portals, gated); Netcraft 'Year-End Phishing Lures' and 'PHP2Shell: 50,000 proactive notifications' (2026-10-22, generic/vanity); Citizen Lab 'Built-In Weakness' lawful-access paper (2026-10-23, policy). SANS NewsBites/ISC leads for S1: Signal call hang-up flaw CVE-2026-113380 (public write-up), Cisco Snort 3 critical flaws (four CVEs, base CVSS 9.0; two prior-coverage hits exist for Snort 3, not re-checked), Linux kernel ksmbd reports (item 3).
+
+candidate_sources:
+  - id: blackfield-ch
+    publisher: "Blackfield (blackfield.ch), Lyderic Lefebvre"
+    url: "https://blackfield.ch/blog/"
+    rss_url: "https://blackfield.ch/feed.xml"
+    category: research
+    why: "Swiss-domain researcher blog on Active Directory, authentication relaying and Windows internals; its 2026-10-21 post is the independent SMB half of the signing-bypass finding returned in item 1 and the feed parses with dated items on the direct transport. Single post so far; low cadence, so promote only if it publishes again."
+  - id: pwn-watch
+    publisher: "pwn.watch (live incident tracker)"
+    url: "https://pwn.watch/"
+    category: discovery
+    why: "Aggregates live critical/unpatched incidents with timelines, per-fix status and primary links (the ZDI Linux leak page carried the fix-commit and distribution-status trail that the vendor posts only gave in pieces). Discovery lead only (reliability not established); every claim must be traced to its cited primary."
+
+coverage_gaps:
+  - source_id: ahnlab-asec
+    reason: "RECIPE CHANGE: `extract https://asec.ahnlab.com/en/` is served through the jina reader and returns a stale partial listing (newest 2026-10-21; it missed the two 2026-10-22 PHP2Shell posts and the 2026-10-14 Suo5 case studies), and per-post `extract` is also served via jina (two reader keys answered HTTP 402 before a third worked). `WebFetch https://asec.ahnlab.com/en/` with the title/date/href prompt returned ten dated items with absolute URLs and is the better listing recipe; use per-post `extract` (or WebFetch) for bodies. Dates: the listing and the page agree except the reader shows a 2026-10-20/21 UTC time for the infostealer post."
+  - source_id: schneier
+    reason: "Recipe confirmed: `url https://www.schneier.com/feed/` is answered by the jina reader fallback (two keys exhausted, third served); the XML parses with ten dated items. Per-post `extract` was also served by jina."
+  - source_id: lore-kernel-org
+    reason: "lore.kernel.org answers every message URL (netdev/LKML ZDI postings) with an Anubis proof-of-work challenge on `extract`; the primary LKML postings could not be read, so item 3 cites Sysdig, TuxCare, The Hacker News, Phoronix and pwn.watch for them. No working recipe found."
+  - source_id: rapid7-research
+    reason: "`feed https://www.rapid7.com/rss.xml` still exits 1 with an empty body (same as noted by the 2026-10-24 S3 run); not in this slice, no alternative tried this run."
+  - source_id: kela-cyber
+    reason: "Recipe confirmed: the research listing is undated; per-post `extract` carries the date (Qilin and Japan 2026-10-23, Silent Ransom Group 2026-10-14, AI Cybercrime Report 2026-09-22, TeamPCP 2026-09-09); report bodies are gated landing pages with only key findings."
+  - source_id: forescout-research
+    reason: "Recipe confirmed: `extract` of the listing is undated and lacks hrefs; raw `url` gives the hrefs; per-post `extract` carries the date (Cold Chain 2026-10-22, Secure Remote Access 2026-10-19). The listing mixes 2026 April posts with October ones."
+  - source_id: trendmicro-research
+    reason: "RECIPE CONFIRMED (matches the 2026-10-24 note): the working feed is https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/rss.xml (15 dated items, `feed` parses it directly; newest 2026-10-22). Not in this slice."
+
+source_ledger:
+  - { id: offseq, tier: standard, attempted: true, transport: "feed (https://offseq.com/en/research/rss.xml) + extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "PHP2Shell first-48-hours field report folded into the PHP2Shell update item; the other posts are 2026-06 to 2026-09" }
+  - { id: specterops, tier: standard, attempted: true, transport: "feed (https://specterops.io/feed/) + extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "LDAP signing bypass (2026-10-23) returned; ConnectWise SkyKick post (2026-10-17) is outside the horizon and already covered" }
+  - { id: talos, tier: standard, attempted: true, transport: "feed (https://blog.talosintelligence.com/rss/) + extract", horizon_hours: 146, in_horizon_items: 5, returned: 1, note: "Parasitizing trust returned (borderline); eMudhra and PHP RCE posts already covered; Threat Source newsletter and the vulnerability-numbers commentary dropped" }
+  - { id: xlab-qianxin, tier: standard, attempted: true, transport: "feed (https://blog.xlab.qianxin.com/rss/)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest item 2026-07-29 (publisher cadence, not a failure)" }
+  - { id: ahnlab-asec, tier: standard, attempted: true, transport: "WebFetch listing + extract (jina-served)", horizon_hours: 122, in_horizon_items: 4, returned: 0, note: "PHP2Shell reproduction (2026-10-21/22) used as a corroborating source in the PHP update item; unnamed Rust infostealer, the Korea PHP-server count and a ransom roundup dropped; September APT report (10-16) and ARTEX #4 (10-15) are outside the horizon" }
+  - { id: blick-ch, tier: standard, attempted: true, transport: "feed (https://www.blick.ch/rss.xml, 12 h) + news sitemap `url --direct https://www.blick.ch/news.xml` (302 items over 48 h)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "no cyber or public-sector security item in the 48 h sitemap; the 168 h lookback cannot be served by this source (as already recorded); one data-protection/AI interview is not a security item" }
+  - { id: cloudflare-cf1, tier: standard, attempted: true, transport: "feed (https://blog.cloudflare.com/tag/cloudforce-one/rss/)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-07" }
+  - { id: forescout-research, tier: standard, attempted: true, transport: "extract + raw url listing + per-post extract", horizon_hours: 124, in_horizon_items: 2, returned: 1, note: "Cold Chain (2026-10-22) returned as a borderline update-of; Secure Remote Access (2026-10-19) is a product-positioning piece" }
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "extract of research listing + per-post extract", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "Qilin and Japan (2026-10-23) dropped: Japan-centred, gated report" }
+  - { id: netcraft, tier: standard, attempted: true, transport: "url https://www.netcraft.com/resources/blog (HTML card list)", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "PHP2Shell notification volume, year-end phishing lures and scam-conversation posts are generic or vanity; the calendar-invite post (2026-10-16) is outside the horizon and its topic is covered" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed (Zscaler blog feed)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-08" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "bridge url sitemap (filtered to /blog/) + extract", horizon_hours: 122, in_horizon_items: 4, returned: 1, note: "PHP2Shell threat spotlight (2026-10-21, lab update 2026-10-22) returned in the PHP update item; three SOC-marketing posts dropped" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract of the listing + extract of issue xxviii-79", horizon_hours: 122, in_horizon_items: 2, returned: 0, note: "issues 78 (10-20) and 79 (10-23) are roll-ups; leads pursued: ZDI Linux kernel reports (item 3), Signal CVE-2026-113380 and Cisco Snort 3 (S1 leads, not pursued)" }
+  - { id: schneier, tier: standard, attempted: true, transport: "url feed (jina-served)", horizon_hours: 122, in_horizon_items: 6, returned: 0, note: "commentary; the Cellebrite 'Advanced Unlocks' leaked-document item (2026-10-20) cites a third-party blog and is not a defender-actionable finding; TLS-certificate and PHP posts cover already-covered topics" }

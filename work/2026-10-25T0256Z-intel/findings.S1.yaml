@@ -1,0 +1,372 @@
+# work/2026-10-25T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-25T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-25T02:58:16Z
+ended_at: 2026-10-25T03:19:41Z
+duration_seconds: 1285
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 14
+  bridge_fetches: 125
+window_note: >
+  Run start 2026-10-25T02:56:21Z, window 26 h (window start 2026-10-24T00:56Z, a Saturday; the window spans a weekend).
+  Mechanical KEV sweep and a live fetch of the catalogue both show zero KEV additions dated 2026-10-24 or later
+  (catalogue version 2026.10.23, newest dateAdded 2026-10-23: CVE-2026-114625 Arista, CVE-2026-110447 Collabora, both already covered).
+  Essential vendor/CERT feeds (NCSC-NL, NCSC.ch hub, CERT-EU, CERT-FR, BSI, CERT-PL, NCSC-UK, CISA, Fortinet, Palo Alto, MSRC)
+  published nothing new after 2026-10-23 evening, apart from the Palo Alto PHP2Shell revision of 2026-10-24 that the covered entry already carries.
+  No scheduled multi-product release landed in the window; the nearest ones (Oracle CPU 2026-10-21, Atlassian 2026-10-20, Cisco/Fortinet 2026-10-21/22,
+  HPE 2026-10-23) are already in the store or dispositioned below. The only in-window primary signal is the 2026-10-24 eMudhra trust-store wave (item 1).
+items:
+  - title: "eMudhra trust-store follow-up: Oracle's second Java alert (CVE-2026-114820) removes four root CAs including Sectigo's COMODO AAA; Python adds a built-in denylist (CVE-2026-115557); Cisco lists impacted products"
+    sources:
+      - { url: "https://www.oracle.com/security-alerts/alert-cve-2026-114820.html", publisher: "Oracle (Security Alert CVE-2026-114820)", date: "2026-10-24", role: "primary" }
+      - { url: "https://openjdk.org/groups/vulnerability/advisories/2026-10-24", publisher: "OpenJDK (Vulnerability Advisory 2026/10/24)", date: "2026-10-24", role: "primary" }
+      - { url: "https://openjdk.org/emudhra", publisher: "OpenJDK (Compromised Certificates and OpenJDK Java Runtimes, updated 2026-10-24)", date: "2026-10-24", role: "corroborating" }
+      - { url: "https://ops.java/emudhra", publisher: "Oracle (Distrusting eMudhra Intermediate Certificates in Oracle JDK, last updated 2026-10-24)", date: "2026-10-24", role: "corroborating" }
+      - { url: "https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/", publisher: "Python Software Foundation (security-announce, CVE-2026-115557)", date: "2026-10-24", role: "primary" }
+      - { url: "https://github.com/python/cpython/issues/160040", publisher: "CPython (issue 160040, ssl: distrust compromised eMudhra intermediate CA keys)", date: "2026-10-21", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r", publisher: "Cisco PSIRT (Informational advisory, v1.1 2026-10-24)", date: "2026-10-24", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/compromised-intermediate-certificates/", publisher: "Cisco Talos", date: "2026-10-21", role: "corroborating" }
+      - { url: "https://emudhra.com/en/press-release/emudhra-to-exit-global-ssl-tls-certificate-business", publisher: "eMudhra (press release)", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/emudhra-to-exit-global-ssltls-business.html", publisher: "The Hacker News", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromDate=2026-10-24&toDate=2026-10-24&fromScore=8.5&toScore=10&page=0&size=100 (EUVD-2026-109314 Oracle Java JSSE 9.1 and EUVD-2026-109299 Python ssl 9.4, both published 2026-10-24) -> primary: Oracle alert, URL https://www.oracle.com/security-alerts/alert-cve-2026-114820.html -> pivot: ops.java/emudhra and openjdk.org/emudhra (Oracle/OpenJDK remediation pages) -> pivot: OpenJDK advisory 2026-10-24, URL https://openjdk.org/groups/vulnerability/advisories/2026-10-24 -> pivot: PSF security-announce, URL https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/ and CPython issue 160040 -> second lead: cisco-psirt feed, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (item dated 2026-10-24 20:55) -> primary: Cisco advisory page -> Talos blog; eMudhra press release found via The Hacker News"
+    summary: |
+      The covered eMudhra entry (2026-10-21) says Oracle's first alert, CVE-2026-91403, distrusted the eight intermediates. Four things moved on 2026-10-23/24.
+      (1) Oracle published a second Security Alert on Saturday 2026-10-24, CVE-2026-114820 (CVSS 3.1 9.1, JSSE, remotely exploitable without authentication through APIs that process data), whose
+      fix "removes the set of impacted root CA certificates related to eMudhra". Oracle's JDK remediation page lists the four roots deleted from the cacerts keystore: emSign Root CA G1, emSign Root CA G2,
+      emSign ECC Root CA G3 and COMODO AAA Certificate Services ("comodoaaaca", the Sectigo root that cross-signed all eight intermediates in May 2025 per Cisco). The OpenJDK advisory of the same day lists
+      27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.32.1 and 8u504 and earlier as affected, which means the builds of 2026-10-21 that fixed CVE-2026-91403 are themselves still affected, and the
+      OpenJDK page tells standalone-runtime users to act "even if you have updated your runtime in the past few days". The fixed build numbers sit in Oracle's Patch Availability Document (My Oracle Support CPU427), which is not public.
+      Stop-gaps, per Oracle and OpenJDK: delete the four aliases from cacerts (keytool -delete -cacerts), or enable revocation checking (com.sun.net.ssl.checkRevocation, com.sun.security.enableCRLDP); Debian and Ubuntu OpenJDK packages need the keystore recreated because ca-certificates-java does not refresh it.
+      (2) The Python Software Foundation announced CVE-2026-115557 (CVSS 4.0 9.4 in EUVD) on 2026-10-24: the standard library ssl module now carries a denylist of compromised intermediate keys (SPKI match, so cross-signs are caught) that applies whatever the SSLContext policy; ENISA's record lists CPython up to 3.16.0, no fixed release numbers are published in the sources read, and the CPython pull request is labelled "needs backport" to 3.11 to 3.14. A commenter on the CPython issue reports that on Windows Python still accepted AAA cross-signed eMudhra chains because Windows still trusts the COMODO AAA root and Python does not read the Disallowed store (single-commenter claim, unverified).
+      (3) Cisco PSIRT's informational advisory (v1.0 2026-10-23, v1.1 2026-10-24) lists vulnerable products with remediation: Secure Firewall Management Center (TLS policy to block known eMudhra issuers via a TechZone article), ThousandEyes Application-hosting Agent 5.2.2 (2026-10-23), Duo Access Gateway 3.2.0, Duo Network Gateway 3.4.1, Duo Agentic Authorization Connector 1.0.1, IOS XR 26.4.1 (planned 2026-11-30), Meraki MV firmware (2026-11-18) and Ultra Cloud Core SMI (Nov 2026); Identity Services Engine, Secure Firewall ASA and Threat Defense, Secure Web Appliance, Secure Network Analytics, UCS Director, Jabber and RoomOS endpoints are still listed under investigation, and Cisco PSIRT is not aware of malicious use.
+      (4) eMudhra's board decided on 2026-10-22 to withdraw from the global SSL/TLS business; its G1 RSA roots keep serving customers during the transition, revocation services stay up until every issued certificate has expired or been replaced, and The Hacker News reports about 30,800 unexpired certificates chain to the emSign ECC Root CA G3 that Chrome stops trusting on 2026-10-27, 99.9% issued through InCommon.
+      No exploitation or forged certificate is reported by any source read.
+    region_nexus: "global; Java, Python and Cisco estates are common in Swiss public-sector infrastructure; InCommon is a US higher-education service, so direct certificate impact on Swiss entities is not indicated by the sources"
+    primary_sector_nexus: "indirect (Java and Python runtimes and Cisco security/collaboration appliances are standard government stack components)"
+    sector: "public-sector"
+    cves: [CVE-2026-114820, CVE-2026-115557]
+    techniques: [T1557]
+    affected_products: ["Oracle Java SE", "Oracle GraalVM for JDK", "Oracle GraalVM Enterprise Edition", "OpenJDK", "CPython", "Cisco Secure Firewall Management Center", "Cisco Duo Access Gateway", "Cisco IOS XR Software"]
+    entity_keys: ["incident:emudhra-intermediate-ca-key-compromise-2026-10", "product:oracle-java-se", "product:openjdk"]
+    new_entities:
+      - { key: "product:cpython", type: product, name: "CPython", aliases: ["Python ssl module"], summary: "Reference implementation of the Python language; CVE-2026-115557 adds a denylist of compromised eMudhra intermediate keys to its ssl module (PSF, 2026-10-24)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates"
+    evidence:
+      - quote: "This Security Alert addresses CVE-2026-114820 by providing Java updates which removes the set of impacted root CA certificates related to eMudhra."
+        attribution: "Oracle (Security Alert CVE-2026-114820)"
+        source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-114820.html"
+      - quote: "Oracle has removed the relevant root certificates from the Oracle JDK keystore"
+        attribution: "Oracle (Distrusting eMudhra Intermediate Certificates in Oracle JDK, last updated 2026-10-24)"
+        source_url: "https://ops.java/emudhra"
+      - quote: "take one of the following actions immediately — even if you have updated your runtime in the past few days."
+        attribution: "OpenJDK (Compromised Certificates and OpenJDK Java Runtimes, updated 2026-10-24)"
+        source_url: "https://openjdk.org/emudhra"
+      - quote: "The affected versions are 27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.32.1, 8u504, and earlier."
+        attribution: "OpenJDK (Vulnerability Advisory 2026/10/24)"
+        source_url: "https://openjdk.org/groups/vulnerability/advisories/2026-10-24"
+      - quote: 'Python has added a denylist for known compromised certificates to the "ssl" module to ensure user safety even without certificate revocation configured.'
+        attribution: "Python Software Foundation (security-announce, 2026-10-24)"
+        source_url: "https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/"
+      - quote: "cross-signed by Sectigo’s AAA Certificate Services root"
+        attribution: "Cisco PSIRT (cisco-sa-emudhra-info, v1.1)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+      - quote: "The Cisco PSIRT is not aware of any malicious use of the issue that is described in this advisory."
+        attribution: "Cisco PSIRT (cisco-sa-emudhra-info, v1.1)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+    extended_notes: |
+      Delta against the covered entry (updated 2026-10-23T03:43Z): the entry names Oracle alert CVE-2026-91403, Go 1.27.3/1.26.10, certifi, rustls-webpki and curl as fixed paths and does not mention
+      the second Oracle alert, the removal of the Sectigo COMODO AAA root from the JDK keystore, the Python denylist, Cisco's product list, or eMudhra's exit decision. The AAA point matters for
+      detection: the entry's Detection line tells defenders to look for the eight intermediates or "their Sectigo cross-signs" in chain metadata; a chain that reaches the AAA root through a cross-sign is the path that stays trusted
+      in platform trust stores that still ship the AAA root (a CPython issue commenter says Windows does), so removing the AAA root from application-owned stores is what Oracle/OpenJDK now recommend.
+      Open questions the sources leave: Python fixed releases not stated; Oracle fixed build numbers not public; Microsoft/Apple status for the AAA root not stated in anything read.
+    borderline: false
+  - title: "PHP2Shell vendor status delta: Tenable Security Center and Enclave Security ship a PHP 8.2.35 patch; Siemens lists RUGGEDCOM APE1808 (PAN-OS) as affected with no public fix"
+    sources:
+      - { url: "https://www.tenable.com/security/tns-2026-30", publisher: "Tenable (TNS-2026-30, Security Center patch SC-202610.2)", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.tenable.com/security/tns-2026-31", publisher: "Tenable (TNS-2026-31, Enclave Security patch SC-202610.2)", date: "2026-10-23", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-566512.html", publisher: "Siemens ProductCERT (SSA-566512)", date: "2026-10-23", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-566435.html", publisher: "Siemens ProductCERT (SSA-566435)", date: "2026-10-23", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1370/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1370)", date: "2026-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1370/ (Tenable products, CVE-2026-109618/-109619, listed in the avis-recent feed, 2026-10-23) -> primary: Tenable TNS-2026-28/-29 (revision R2 pointing onward), URL https://www.tenable.com/security/tns-2026-30 and https://www.tenable.com/security/tns-2026-31; second lead: siemens-productcert atom feed, URL https://cert-portal.siemens.com/productcert/rss/advisories.atom (SSA-566435 and SSA-566512 of 2026-10-23) -> primary: Siemens advisory pages"
+    summary: |
+      Two vendor-status additions to the covered PHP2Shell entry (2026-10-21) and the covered PAN-OS PHP2Shell entry (2026-10-22), neither of which names these products.
+      Tenable: the PHP bundled in Security Center (versions 6.6.0, 6.7.2, 6.8.0, 6.9.1) and in Enclave Security (1.7.0, 1.8.0, 1.9.1) carries CVE-2026-109618/-109619; patch SC-202610.1 of 2026-10-22 was replaced on
+      2026-10-23 by SC-202610.2, which updates php to 8.2.35 (TNS-2026-30, TNS-2026-31, R1; the earlier TNS-2026-28/-29 now point to them). CERT-FR counts both products as exposed to remote code execution through the two PHP CVEs.
+      Siemens: SSA-566512 (V1.0, 2026-10-23, CVSS 3.1 9.8 / 4.0 9.2) lists RUGGEDCOM APE1808 application-hosting devices running Palo Alto Networks PAN-OS (10.2, 11.1, 11.2, 12.1 and 12.2, all versions) as affected and gives
+      "Contact customer support to receive patch and update information", so the OT-edge variant of the PAN-OS management-interface exposure has no public fix yet; SSA-566435 (V1.0) is a long list of Siemens software products
+      (CADRA, HyperLynx, Opcenter X, Polarion, Teamcenter and others) confirmed not affected because PHP is not present.
+      FIRST EPSS for CVE-2026-109618 on 2026-10-24 is 0.118 (96th percentile). CISA KEV (catalogue 2026.10.23) still lists neither PHP CVE.
+    region_nexus: "global; Tenable Security Center is a common government vulnerability-management platform; RUGGEDCOM APE1808 is utility/industrial edge hardware"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Tenable Security Center", "Tenable Enclave Security", "Siemens RUGGEDCOM APE1808", "Palo Alto Networks PAN-OS"]
+    entity_keys: ["product:php", "tool:php2shell"]
+    new_entities:
+      - { key: "product:tenable-security-center", type: product, name: "Tenable Security Center", aliases: ["Tenable.sc", "Tenable Enclave Security"], summary: "Self-hosted Tenable vulnerability-management platform; bundles PHP, so it needed patch SC-202610.2 for PHP2Shell (Tenable, 2026-10-23)." }
+      - { key: "product:siemens-ruggedcom-ape1808", type: product, name: "Siemens RUGGEDCOM APE1808", aliases: ["RUGGEDCOM APE1808"], summary: "Siemens utility-grade application-hosting platform that runs third-party software such as PAN-OS, Fortigate NGFW and Nozomi Guardian; SSA-566512 lists PAN-OS on it as affected by PHP2Shell (Siemens, 2026-10-23)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    evidence:
+      - quote: "One of the third-party components (php) was found to contain vulnerabilities, and updated versions have been made available by the providers."
+        attribution: "Tenable (TNS-2026-30)"
+        source_url: "https://www.tenable.com/security/tns-2026-30"
+      - quote: "All versions with Palo Alto Networks PAN-OS (10.2 All, 11.1 All, 11.2 All, 12.1 All, 12.2 All) affected by"
+        attribution: "Siemens ProductCERT (SSA-566512)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-566512.html"
+      - quote: "Contact customer support to receive patch and update information"
+        attribution: "Siemens ProductCERT (SSA-566512)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-566512.html"
+    extended_notes: |
+      Also relevant to entry 2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release (the Siemens line). Palo Alto's own advisory (read 2026-10-25, revised 2026-10-24) is unchanged: hotfix ETAs 2026-10-26 to 2026-10-30,
+      "not aware of any malicious exploitation". NetScaler's fixes remain announced for 2026-10-27 (NetScaler Product Security post, last updated 2026-10-22). Low-priority delta; the main agent may fold it into one
+      improvement record or drop it if the entries are already long.
+    borderline: true
+    borderline_reason: "vendor-status delta only (no new exploitation or fix for the core PHP flaws); relevant because Security Center is security tooling and RUGGEDCOM APE1808 is OT-edge hardware"
+  - title: "Next.js out-of-band release fixes two unauthenticated RCEs (GHSA-673q-mjm6-r5xr in use cache functions, CVE-2026-96889 in SVG image optimization) in 16.4.1 and 15.5.28, no exploitation reported"
+    sources:
+      - { url: "https://nextjs.org/blog/nextjs-security-update-october-14-2026", publisher: "Next.js (Vercel) security update blog", date: "2026-10-14", role: "primary" }
+      - { url: "https://github.com/vercel/next.js/security/advisories/GHSA-673q-mjm6-r5xr", publisher: "Vercel (GitHub security advisory GHSA-673q-mjm6-r5xr)", date: "2026-10-14", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-2464-fhr4-w9xw", publisher: "GitHub Advisory Database (GHSA-2464-fhr4-w9xw, CVE-2026-96889, reviewed 2026-10-22)", date: "2026-10-22", role: "primary" }
+      - { url: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-148/", publisher: "Cyber Security Agency of Singapore (AL-2026-148)", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-nextjs-use-cache-librsvg-rce-20261016-csa/", publisher: "Cloud Security Alliance Labs (research note)", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: github-advisory, URL https://api.github.com/advisories?per_page=60&severity=critical&type=reviewed&sort=published&direction=desc (GHSA-673q-mjm6-r5xr and GHSA-2464-fhr4-w9xw, both critical, published 2026-10-22) -> pivot: nextjs-blog, URL https://nextjs.org/feed.xml (post 'Next.js Security Update for Upstream Vulnerabilities', 2026-10-14) -> primary: https://nextjs.org/blog/nextjs-security-update-october-14-2026 -> corroborating: WebSearch ('Next.js use cache typed arrays remote code execution GHSA-673q-mjm6-r5xr React GHSA-xqc2-xf4c-x3h3') -> CSA Singapore alert and CSA Labs note, URLs above"
+    summary: |
+      Vercel's out-of-band release of 2026-10-14 (Next.js 16.4.1 on the Active LTS line and 15.5.28 on Maintenance LTS) fixes two critical, unauthenticated remote-code-execution flaws and one high-severity denial of service.
+      GHSA-673q-mjm6-r5xr (no CVE assigned) affects App Router applications that use Cache Components where a `use cache` function returns multiple typed arrays; Vercel says there is no known workaround and to upgrade even if the application has no such function; the root cause lies in React's RSC server packages (react-server-dom-webpack, -parcel, -turbopack), for which React issued a related advisory (GHSA-xqc2-xf4c-x3h3) with fixes in 19.0.9, 19.1.10, 19.2.9 and 19.3.1 as relayed by CSA Labs. Affected: 16.0.0 to 16.4.0.
+      CVE-2026-96889 / GHSA-2464-fhr4-w9xw is a memory-safety flaw in an upstream library (librsvg through `sharp`; ENISA's EUVD record of the upstream CVE describes a use-after-free on a crafted SVG with nested XIncludes and duplicate entity declarations) reachable through the Image Optimization API when Next.js runs on glibc-based Linux; affected 10.0.0 to 15.5.27 and 16.0.0 to 16.4.0; interim mitigation is `sharp` 0.35.5 or later. Both rated CVSS 4.0 9.5 by Vercel as relayed by Singapore's CSA, while ENISA's EUVD record of the upstream librsvg CVE scores it 7.8 (CVSS 3.1) and FIRST EPSS is 0.002.
+      The third fix is GHSA-p3m5-59mp-jv5r, CPU exhaustion through crafted Server Action requests in App Router. As of 2026-10-15 CSA Labs found no public report of active exploitation of any of the three; the public record does not settle whether a proof of concept exists (one press source attributes a PoC report to NHS England, which could not be fetched here, so treat as unverified). GitHub's database carried the advisories only from 2026-10-22, and the `use cache` and Server Actions advisories had no CVE at publication, so scanners keyed to CVE feeds can miss them.
+    region_nexus: "global; Next.js is a common front-end framework for internet-facing portals, no Swiss-specific exposure reported"
+    primary_sector_nexus: "indirect (modern citizen-portal and agency web front ends)"
+    sector: "public-sector"
+    cves: [CVE-2026-96889]
+    techniques: [T1190]
+    affected_products: ["Next.js", "sharp", "React Server Components (react-server-dom-webpack, react-server-dom-parcel, react-server-dom-turbopack)"]
+    entity_keys: ["product:vercel"]
+    new_entities:
+      - { key: "product:nextjs", type: product, name: "Next.js", aliases: ["Next.js (Vercel)"], summary: "React web framework from Vercel; the 2026-10-14 out-of-band release 16.4.1 / 15.5.28 fixed two unauthenticated RCEs (Vercel, 2026-10-14)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "There is no known workaround for affected applications. You should upgrade immediately even if your application does not have similar functions."
+        attribution: "Next.js (Vercel) security update blog"
+        source_url: "https://nextjs.org/blog/nextjs-security-update-october-14-2026"
+      - quote: "A memory-related vulnerability in an upstream library used for Image Optimization can lead to remote code execution when Next.js runs on glibc-based Linux."
+        attribution: "Next.js (Vercel) security update blog"
+        source_url: "https://nextjs.org/blog/nextjs-security-update-october-14-2026"
+      - quote: "These vulnerabilities both have Common Vulnerability Scoring System (CVSS v4.0) scores of 9.5 out of 10."
+        attribution: "Cyber Security Agency of Singapore (AL-2026-148)"
+        source_url: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-148/"
+      - quote: "As of October 15, we found no public reports of active exploitation of the three flaws."
+        attribution: "Cloud Security Alliance Labs"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-nextjs-use-cache-librsvg-rce-20261016-csa/"
+    extended_notes: |
+      Why it is returned: unauthenticated RCE class in an internet-facing framework, never covered in the store, and the GitHub Advisory Database / Singapore CSA publications fall inside the 122 h lookback of
+      the github-advisory and nextjs-blog records although Vercel's own post is 2026-10-14. Exposure check: `npm ls next sharp` / lockfile versions, whether Cache Components (`use cache`) is enabled,
+      whether the image optimizer is enabled and whether the container is glibc (Debian/Ubuntu) rather than musl (Alpine); CSA Labs relays a press claim that the SVG path needs `dangerouslyAllowSVG` or `next/og`, which the GitHub advisory does not state.
+      Post-patch compromise check is generic for node RCE: unexpected child processes (sh, curl) of the Node.js server process, restarts/crashes of the app server, new files in the app or cache directories. No source gives a behavioural signature.
+    borderline: true
+    borderline_reason: "no exploitation or confirmed PoC; primary disclosure is 11 days old; kept because it is an unauthenticated RCE class in an internet-facing framework that the store has not covered"
+  - title: "Juniper Junos OS and Junos OS Evolved October 2026 bulletin: nine unauthenticated or peer-reachable CVSS 9.8 flaws (J-Web authentication bypass, httpd and rpd stack overflows), not yet in the store"
+    sources:
+      - { url: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/", publisher: "Cyber Security Agency of Singapore (AL-2026-146)", date: "2026-10-19", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-multiple-critical-vulnerabilities-juniper-networks-junos-os-patch-immediately", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0430", publisher: "NCSC-NL (NCSC-2026-0430)", date: "2026-10-16", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (listing; warning 'Multiple Critical Vulnerabilities in Juniper Networks Junos OS, Patch Immediately!') -> https://ccb.belgium.be/advisories/warning-multiple-critical-vulnerabilities-juniper-networks-junos-os-patch-immediately -> corroborating: advisories-ncsc-nl feed item NCSC-2026-0430 (CSAF read with ncsc-nl csaf NCSC-2026-0430) and WebSearch ('Juniper Junos OS October 2026 security bulletin CVE-2026-101954 J-Web authentication bypass CVE-2026-101982 rpd') -> CSA Singapore alert; Juniper's own bulletin pages (supportportal.juniper.net, Salesforce SPA) return no article body on any rung tried, so they are not cited"
+    summary: |
+      Juniper's 2026-10 security bulletins (published 2026-10-14/15; relayed by CCB on 2026-10-16, NCSC-NL on 2026-10-16 and Singapore's CSA on 2026-10-19) fix a large set of Junos OS and Junos OS Evolved flaws; Singapore and CCB single out nine rated CVSS 3.1 9.8:
+      CVE-2026-101954 (J-Web management interface and NETCONF session handling: an unauthenticated network attacker obtains root-level configuration access over a reachable J-Web HTTP/HTTPS service when web management is enabled),
+      CVE-2026-101986 (J-Web authentication bypass to execute CGI content with elevated privileges through a crafted HTTP request), CVE-2026-101983 (stack-based overflow in the httpd process, unauthenticated RCE and DoS),
+      CVE-2026-101982 (rpd stack overflow, a configured BGP/EVPN peer sending protocol-valid EVPN-VPWS route advertisements reaches root code execution on Junos OS, an rpd crash on Evolved),
+      CVE-2026-101990 and CVE-2026-102178 (rpd stack overflows via BGP flowspec updates), CVE-2026-33796 and CVE-2026-33789 (rpd overflows via BMP route monitoring) and CVE-2026-102175 (heap overflow in the sdxd service-deployment daemon, root code execution for an attacker who controls or intercepts the configured SDX/SRC server connection).
+      NCSC-NL's advisory adds further components (VXLAN gateway daemon, kmd on MX with crafted IKE certificate-based packets, SDK service with JDAF routing, ipfd on SRX) and rates probability medium, damage high.
+      Affected (per CSA Singapore): Junos OS before 23.2R2-S7.7, 23.4R2-S8.13, 24.2R2-S5.5, 24.4R2-S5, 25.2R2-S2, 25.4R1-S3 and 26.2R1-S2, and the matching -EVO builds for Junos OS Evolved (23.4R2-S8.11-EVO, 24.2R2-S5.6-EVO, plus 25.2X100-D35-EVO and 25.4X300-D40-EVO); fixed in those releases or later.
+      No source reports exploitation. FIRST EPSS on 2026-10-24 is low (0.0049 for CVE-2026-101954, 0.0057 for CVE-2026-101982). Mitigation named by CCB/CSA for the J-Web flaws: disable web management or restrict it to trusted hosts; several of the BGP flaws require a configured peer (flowspec/BMP/EVPN-VPWS), which limits exposure to hosts that accept those sessions.
+    region_nexus: "global; Junos is widely deployed in government and ISP backbones, Swiss exposure not stated by sources"
+    primary_sector_nexus: "indirect (network core and edge routing/firewall OS)"
+    sector: "public-sector"
+    cves: [CVE-2026-101954, CVE-2026-101986, CVE-2026-101983, CVE-2026-101982, CVE-2026-101990, CVE-2026-102178, CVE-2026-33796, CVE-2026-33789, CVE-2026-102175]
+    techniques: [T1190]
+    affected_products: ["Juniper Junos OS", "Juniper Junos OS Evolved"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:juniper-junos-os", type: product, name: "Juniper Networks Junos OS", aliases: ["Junos OS Evolved", "Junos"], summary: "Network operating system of Juniper routers, switches and SRX firewalls; the 2026-10 bulletins fix nine CVSS 9.8 flaws (CSA Singapore, 2026-10-19)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-101954: An Improper Authentication vulnerability in the J-Web management interface and its NETCONF session handling of Juniper Networks Junos OS and Junos OS Evolved allows an unauthenticated network attacker to obtain root-level device configuration access and take over the device via a reachable J-Web HTTP or HTTPS service when web management is enabled."
+        attribution: "Cyber Security Agency of Singapore (AL-2026-146)"
+        source_url: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/"
+      - quote: "These vulnerabilities have Common Vulnerability Scoring System (CVSS v3.1) scores of 9.8 out of 10."
+        attribution: "Cyber Security Agency of Singapore (AL-2026-146)"
+        source_url: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/"
+      - quote: "These critical vulnerabilities are remotely exploitable without authentication or user interaction."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-critical-vulnerabilities-juniper-networks-junos-os-patch-immediately"
+    extended_notes: |
+      Outside the 26 h window and outside the 122 h lookback of the ccb-belgium record (freshest source is Singapore CSA 2026-10-19): returned because a grep of entries/, state/ and prior_coverage.json finds no Junos/Juniper coverage at all
+      although this is an unauthenticated CVSS 9.8 batch in a network OS common in government networks. NCSC.ch and BACS published nothing on it in the hub feed read this run. The audit may prefer to treat this as a coverage-gap item.
+    borderline: true
+    borderline_reason: "published 2026-10-14/16, outside the window and the source lookback; no exploitation reported; surfaced solely because the store carries no Juniper coverage for an unauthenticated CVSS 9.8 batch"
+  - title: "ConnectWise Cloud Backup (SkyKick) status updates of 2026-10-22/23 give the restoration plan: backup restore access early this week, phased re-enrollment after, connections stay disabled until instructed"
+    sources:
+      - { url: "https://status.connectwise.com/pages/incident/619cf82551fec9053d612f09/6ad263692dc48705ab3da2cb", publisher: "ConnectWise (status page, Cloud Backup investigation updates)", date: "2026-10-23", role: "primary" }
+    discovery_trace: "first seen at: connectwise-trust-center (https://www.connectwise.com/company/trust/advisories answered 403 on direct, extract, jina relay and WebFetch) -> working route from the record note: url --direct https://status.connectwise.com/ -> primary: https://status.connectwise.com/pages/incident/619cf82551fec9053d612f09/6ad263692dc48705ab3da2cb"
+    summary: |
+      ConnectWise's status page carries three updates newer than the covered entry's last record (2026-10-22T03:46Z): 2026-10-22 12:52 UTC and 13:22 UTC say phased restoration is under way with each step subject to security validation, and 2026-10-23 01:11 UTC says it anticipates completing testing and security validation of the restored environment by the end of the weekend, then enabling backup-restore access first ("early next week") and phased full re-enrollment after that.
+      ConnectWise repeats that existing backup archives remain encrypted, isolated and preserved with no indication of compromise, that it has no indication that other ConnectWise products are impacted, that individual Microsoft 365 tenants still require review for unauthorized changes or persistent access, and that affected application connections must stay disabled until it issues instructions; updates move to once daily from 2026-10-23.
+      No update after 2026-10-23 01:11 UTC was on the page when read (2026-10-25 03:1x UTC). The trust-center page itself, which the covered entry cites, is unreachable from this environment; the status page is the readable primary.
+    region_nexus: "global; MSP-managed Microsoft 365 tenants, Swiss exposure not stated"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078.004]
+    affected_products: ["ConnectWise Cloud Backup (SkyKick)"]
+    entity_keys: ["product:connectwise-cloud-backup", "incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse"
+    lookback: true
+    evidence:
+      - quote: "We anticipate completing the testing and security validation of the restored environment by the end of this weekend."
+        attribution: "ConnectWise (status page)"
+        source_url: "https://status.connectwise.com/pages/incident/619cf82551fec9053d612f09/6ad263692dc48705ab3da2cb"
+      - quote: "Keep affected application connections disabled until ConnectWise provides instructions that apply to your service."
+        attribution: "ConnectWise (status page)"
+        source_url: "https://status.connectwise.com/pages/incident/619cf82551fec9053d612f09/6ad263692dc48705ab3da2cb"
+      - quote: "We have no indication that other ConnectWise products, services or offerings are impacted by this incident."
+        attribution: "ConnectWise (status page)"
+        source_url: "https://status.connectwise.com/pages/incident/619cf82551fec9053d612f09/6ad263692dc48705ab3da2cb"
+    extended_notes: |
+      S4 domain (incident); returned by S1 because the connectwise-trust-center record sits in the S1 slice and the status page was the only readable route. The main agent should de-duplicate against S4's return.
+    borderline: true
+    borderline_reason: "incident-domain delta (restoration timetable) read as a by-product of the S1 slice record; operationally useful to MSP-managed tenants but adds no new technique or exposure"
+cve_table:
+  - { cve: "CVE-2026-114820", product: "Oracle Java SE, Oracle GraalVM for JDK, Oracle GraalVM Enterprise Edition (JSSE); OpenJDK", cvss: "9.1 (CVSS 3.1)", epss: null, kev: false, exploited: false,
+      affected: "Oracle Java SE 8u511-b32, 8u511-perf-b32, 11.0.33.0.2, 17.0.21.0.2, 21.0.13.0.2, 25.0.5.0.2, 27.0.1.0.2; GraalVM for JDK 17.0.21.0.2 and 21.0.13.0.2; GraalVM Enterprise Edition 21.3.20.0.2; OpenJDK 27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.32.1, 8u504 and earlier",
+      fixed: "update to the latest Java build; build numbers are in Oracle's Patch Availability Document (My Oracle Support CPU427, not public); stop-gap: delete the cacerts aliases emsignrootcag1, emsignrootcag2, emsigneccrootcag3, comodoaaaca or enable revocation checking",
+      type: "improper-certificate-validation (compromised root/intermediate CAs left trusted)", vector: "network", auth: "none", source: "https://www.oracle.com/security-alerts/alert-cve-2026-114820.html" }
+  - { cve: "CVE-2026-115557", product: "CPython (ssl module)", cvss: "9.4 (CVSS 4.0, ENISA EUVD)", epss: null, kev: false, exploited: false,
+      affected: "CPython up to 3.16.0 per ENISA EUVD (product_version '0 <=3.16.0')",
+      fixed: "not stated in the sources read; CPython pull request 160042 carries backport labels for 3.11 to 3.14",
+      type: "improper-certificate-validation (denylist added for compromised eMudhra intermediate keys)", vector: "network", auth: "none", source: "https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/" }
+  - { cve: "CVE-2026-96889", product: "Next.js Image Optimization API (sharp/librsvg)", cvss: "9.5 (CVSS 4.0, Vercel via CSA Singapore); 7.8 (CVSS 3.1, EUVD)", epss: 0.002, kev: false, exploited: false,
+      affected: "Next.js 10.0.0 to 15.5.27 and 16.0.0 to 16.4.0, when running on glibc-based Linux",
+      fixed: "15.5.28, 16.4.1; interim: sharp 0.35.5 or later",
+      type: "use-after-free (memory corruption), RCE", vector: "network", auth: "none", source: "https://github.com/advisories/GHSA-2464-fhr4-w9xw" }
+  - { cve: "GHSA-673q-mjm6-r5xr (no CVE assigned)", product: "Next.js App Router with Cache Components (use cache)", cvss: "9.5 (CVSS 4.0, per CSA Singapore)", epss: null, kev: false, exploited: false,
+      affected: "Next.js 16.0.0 to 16.4.0 where a use cache function returns multiple typed arrays",
+      fixed: "16.4.1 (15.5.28 on the 15.x line); no workaround",
+      type: "unsafe deserialization in React RSC server packages, RCE", vector: "network", auth: "none", source: "https://github.com/vercel/next.js/security/advisories/GHSA-673q-mjm6-r5xr" }
+  - { cve: "CVE-2026-101954", product: "Juniper Junos OS / Junos OS Evolved (J-Web)", cvss: "9.8 (CVSS 3.1)", epss: 0.00492, kev: false, exploited: false,
+      affected: "Junos OS before 23.2R2-S7.7, 23.4R2-S8.13, 24.2R2-S5.5, 24.4R2-S5, 25.2R2-S2, 25.4R1-S3, 26.2R1-S2; Junos OS Evolved before the matching -EVO builds (23.2R2-S7.7-EVO, 23.4R2-S8.11-EVO, 24.2R2-S5.6-EVO, 24.4R2-S5-EVO, 25.2R2-S2-EVO, 25.4R1-S3-EVO, 26.2R1-S2-EVO; 25.2X100-D35-EVO, 25.4X300-D40-EVO)",
+      fixed: "the same releases or later", type: "improper-authentication", vector: "network", auth: "none", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-101986", product: "Juniper Junos OS / Junos OS Evolved (J-Web)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "improper-authentication (CGI execution with elevated privileges)", vector: "network", auth: "none", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-101983", product: "Juniper Junos OS / Junos OS Evolved (httpd)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "stack-based buffer overflow, RCE", vector: "network", auth: "none", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-101982", product: "Juniper Junos OS / Junos OS Evolved (rpd, EVPN-VPWS)", cvss: "9.8 (CVSS 3.1)", epss: 0.00568, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "stack-based buffer overflow, root RCE on Junos OS, rpd crash on Evolved", vector: "network (configured BGP/EVPN peer)", auth: "none (peer session)", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-101990", product: "Juniper Junos OS / Junos OS Evolved (rpd, BGP flowspec)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "stack-based buffer overflow", vector: "network (configured BGP peer)", auth: "none (peer session)", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-102178", product: "Juniper Junos OS / Junos OS Evolved (rpd, BGP flowspec)", cvss: "9.8 (CVSS 3.1)", epss: 0.00454, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "stack-based buffer overflow (needs BGP update-threading)", vector: "network (configured BGP flowspec peer)", auth: "none (peer session)", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-33796", product: "Juniper Junos OS / Junos OS Evolved (rpd, BMP)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "stack-based buffer overflow (BMP route monitoring)", vector: "network (configured external BGP neighbour)", auth: "none (peer session)", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-33789", product: "Juniper Junos OS / Junos OS Evolved (rpd, BMP)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "stack-based buffer overflow (BMP enabled)", vector: "network (BGP peer)", auth: "none (peer session)", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-102175", product: "Juniper Junos OS / Junos OS Evolved (sdxd)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "as CVE-2026-101954", fixed: "as CVE-2026-101954", type: "heap-based buffer overflow, root RCE", vector: "network (attacker controls or intercepts the SDX/SRC server connection)", auth: "none", source: "https://www.csa.gov.sg/alerts-and-advisories/alerts/al-2026-146/" }
+  - { cve: "CVE-2026-109618", product: "PHP", cvss: "9.2 (CVSS 4.0)", epss: 0.11841, kev: false, exploited: true,
+      affected: "PHP 8.5 before 8.5.12, 8.4 before 8.4.27, 8.3 before 8.3.36, 8.2 before 8.2.35; 8.1 and older no upstream release (unchanged from the covered entry)",
+      fixed: "8.5.12, 8.4.27, 8.3.36, 8.2.35", type: "memory corruption on out-of-memory handling, RCE", vector: "network", auth: "none",
+      source: "https://www.tenable.com/security/tns-2026-30" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in the org profile; sweep is a no-op, general coverage rules applied"
+candidate_sources:
+  - id: csa-sg-alerts
+    publisher: "Cyber Security Agency of Singapore (CSA) Alerts"
+    url: "https://www.csa.gov.sg/alerts-and-advisories/alerts/"
+    category: gov
+    why: "National authority publishing one concise per-vendor alert (affected versions, CVSS, patch statement) per critical vulnerability, with dated titles and hrefs on the listing; surfaced the Juniper (AL-2026-146) and Next.js (AL-2026-148) bundles that no store entry covers. `extract` reads both the listing and each alert page; no RSS feed (the guessed /rss/alerts-and-advisories path 404s). Reliability A for its own jurisdiction, B as a relay of vendor facts."
+  - id: openjdk-vulnerability-advisories
+    publisher: "OpenJDK Vulnerability Advisories"
+    url: "https://openjdk.org/groups/vulnerability/advisories/"
+    category: vendor-psirt
+    why: "First-party advisory of record for OpenJDK, quarterly on the third Tuesday plus off-cycle pages (the 2026-10-24 advisory for CVE-2026-114820 carries the exact affected builds and was published before any news outlet covered the second Oracle alert); pages read cleanly with `extract`; the index lists no hrefs in extracted form, so drill by date slug (advisories/YYYY-MM-DD)."
+coverage_gaps:
+  - source_id: connectwise-trust-center
+    reason: "https://www.connectwise.com/company/trust/advisories still answers 403 on every rung (direct HTTP 403, extract 'no readable body', jina relay 'upstream block/challenge', WebFetch HTTP 403) on 2026-10-25. Working route: `url --direct https://status.connectwise.com/` then `extract` of the incident page https://status.connectwise.com/pages/incident/619cf82551fec9053d612f09/6ad263692dc48705ab3da2cb (last update 2026-10-23 01:11 UTC at read time). Recipe confirmed, keep fetch_method blocked for the trust center."
+  - source_id: zimbra-security-advisories
+    reason: "RECIPE UPDATE: the 503 maintenance page is gone; `extract https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories` returned the full 78 KB page on 2026-10-25 (served via trafilatura-direct). Newest listed fixes are 10.1.21 (CERT.PL-reported Classic Web Client XSS CVE-2026-66912/-66911); the table's dates are not exposed in extracted form, so no in-window judgement was possible and nothing was returned."
+  - source_id: rapid7-research
+    reason: "RECIPE UPDATE: `feed https://www.rapid7.com/rss.xml` fails on 2026-10-25 (not well-formed XML, line 82 column 37; jina returned no items). Working: `extract https://www.rapid7.com/blog/` (direct-raw, 535 KB) lists /blog/post/<slug>/ hrefs but no dates; per-post `extract` carries date and author in the front matter (dates 2026-10-19 for the NetScaler intrusion post and the Eptura Archibus post)."
+  - source_id: atlassian-security-advisories
+    reason: "The index page `extract` returns a stale 2026-05-11 text without per-bulletin hrefs; `url` (raw HTML) lists them (security-bulletin-october-20-2026-1874690162.html found) and `extract` of that bulletin page reads the full table. Working two-step recipe: `url` index -> grep href security-bulletin-<month>-<day>-<year> -> `extract` bulletin."
+  - source_id: ccb-belgium
+    reason: "`extract https://ccb.belgium.be/advisories` returns only 'Published: dd/mm/yyyy' lines without titles or hrefs on 2026-10-25; the raw `url` fetch exposes /advisories/<slug> hrefs and each warning page then reads with `extract` (front matter date). Recipe: url -> href grep -> extract."
+  - source_id: onapsis
+    reason: "`extract https://onapsis.com/blog` works (3.8 KB, dated list); newest post 2026-10-13 (SAP Patch Day), nothing in horizon."
+  - source_id: pwn-ai
+    reason: "`extract https://pwn.ai/blog/` returns a single 2025 article (CVE-2025-54322 Xspeeder) with no recent posts; nothing in horizon."
+  - source_id: resecurity
+    reason: "`extract https://www.resecurity.com/blog` returns an empty JS shell (newsletter boilerplate only); no listing readable on this transport, no reader rung tried (credit-metered); nothing returned. Candidate for a `blocked`/low-value note."
+  - source_id: searchlight-cyber
+    reason: "`extract` of the listing shows no hrefs; raw `url https://slcyber.io/research-center/` exposes /research/<slug> hrefs (six read), dated only on the article pages. Items 2026-10-22 (AEM pre-auth RCE chain on AEM Cloud, patched; Discourse image pipeline) read; neither returned (see dropped_candidates)."
+  - source_id: ncsc-ch-security-hub
+    reason: "no gap; newest hub post 2026-10-23 13:27 UTC (HPE Aruba, post 13101). Noted because the hub carried no post for the Juniper October bulletin or the Next.js release, which is why the store lacks them."
+dropped_candidates:
+  - { item: "Oracle Java second Security Alert CVE-2026-114820 as a separate entry", reason: "folded into the eMudhra update-of item (same incident entry)" }
+  - { item: "Atlassian October 2026 bulletin (2026-10-20): 176 rows, 14 critical, 75 unique CVEs", reason: "every row is a third-party dependency that Atlassian assesses as non-critical risk; no exploitation; SecurityWeek (2026-10-23) and the bulletin page agree; scheduled release before the window" }
+  - { item: "Apache Camel 38 advisories (2026-10-15; CCB warning 2026-10-20: 13 HIGH, CVSS up to 8.8, 'a proof-of-concept online', no active exploitation)", reason: "component-specific, authenticated or config-dependent, highest score 8.8, outside the window; 35 of 38 affect the EOL 4.14.x line" }
+  - { item: "Linux ksmbd ZDI-CAN-33774 (unauthenticated, SMB1/SMB2 handler race) and ZDI-CAN-33549, disclosed on public lists 2026-10-22 without a fix (The Hacker News 2026-10-22)", reason: "niche exposure (ksmbd is not in RHEL, service not default), no CVE yet, no exploitation, outside the window; a web search found no fix commit yet. Worth a re-check next fire if a mainline fix or CVE appears" }
+  - { item: "Laravel TokenGuard authentication bypass (GHSA-f9x3-7vq9-cph6, reported CVE-2026-114509, CVSS 9.2)", reason: "only guards configured with driver 'token' on MySQL/MariaDB, fixed 12.68.0 and 13.29.0, no exploitation, published ~2026-10-19 to 21" }
+  - { item: "Pillow critical heap overflows (CVE-2026-112398 FlashPix, -112393, -112403, -112900 Ghostscript argument injection)", reason: "need an application that decodes attacker-supplied images with the affected plugin, no exploitation, outside the window" }
+  - { item: "ISC BIND 2026-10-21 (CVE-2026-94300 GSS-TSIG replay memory corruption CVSS 8.1 AC:H; CVE-2026-96888 and CVE-2026-97313 DoS 7.5)", reason: "below the bar (high attack complexity, DoS), fixed in 9.20.30 and 9.21.27, no exploitation" }
+  - { item: "PaperCut NG/MF security bulletin 'sep-2026' relayed by CERT-FR on 2026-10-23 (CVE-2026-14780, -82077, -87739, Hive CVE-2026-11744)", reason: "authenticated-admin RCEs and an information disclosure, PaperCut states no evidence of exploitation, bulletin last updated 2026-10-13; CVE-2026-82077 is already part of the covered PaperCut entry" }
+  - { item: "Searchlight Cyber 'More Critical Bugs in Adobe Experience Manager: Pre-Auth RCE' (2026-10-22)", reason: "research write-up of an AEM Cloud chain that Searchlight says is cloud-only and already patched; on-premises users are only told to upgrade; lead for S3 rather than an S1 item; the October Adobe bundle is already covered" }
+  - { item: "KEV additions of 2026-10-20 not in the store: Plex Media Server CVE-2026-96652/-96654/-96655/-96656 and EG Secure Solutions SiteGuard Server Edition CVE-2026-106931", reason: "before the window and a prior fire's decision; consumer media server and a Japanese WAF product, no Swiss public-sector nexus in the sources; flagged only so the audit can confirm the disposition" }
+  - { item: "Rapid7 'NetScaler intrusions chaining CVE-2026-88771 and CVE-2026-88779' (2026-10-19) and Rapid7 Eptura Archibus authentication bypass/RCE write-up (2026-10-19)", reason: "the NetScaler post is already cited by two covered entries; the Archibus post is outside the lookback and lacks a public-sector nexus in the sources" }
+  - { item: "EUVD 2026-10-24 high-score rows: Postiz CVE-2026-115933/-115932 (9.9/9.6), WordPress plugins (newsletters-lite, Paytium, asVereinbase, Prime Mover), Unitree Go2 CVE-2026-115995, Camaleon CMS, Grav, open62541 CVE-2026-116014", reason: "none exploited, no KEV, low-prevalence products or niche exposure; recorded for audit only" }
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "feed+ncsc-nl recent 30 (+ncsc-nl csaf NCSC-2026-0430)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory NCSC-2026-0453 (Brotli) 2026-10-23 09:55 UTC; Juniper NCSC-2026-0430 (2026-10-16) read as corroboration for the Juniper item" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 30 + actu-recent 15 + feed cti + feed alerte", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "newest avis dated 2026-10-23; CERTFR-2026-AVI-1370 (Tenable, PHP CVEs) led to the PHP2Shell vendor-status item; AVI-1377 PaperCut relay and AVI-1365 BIND dispositioned" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bsi-rss (250 items, raw XML)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-23 11:25; no [NEU] kritisch item for a new product after the Arista/ArubaOS rows already covered" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-018 (PHP) refreshed 2026-10-23 16:36 CEST, content already in the covered PHP entry (CVE-2026-115560 note)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-23 (CGM CLININET, CVE-2025-30043 family); EUVD shows CVE-2025-30054 at 9.3 local privilege escalation, not in horizon" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + cisa csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-10-23 (two KEV alerts, already covered); ICS CSAF newest batch 2026-10-22 (20 items icsa-26-295-*), none in window" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogue 2026.10.23, count 1756, newest dateAdded 2026-10-23 (CVE-2026-114625, CVE-2026-110447); zero additions dated 2026-10-24 or later; PHP CVEs not listed" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "url --direct search 2026-10-24/25 score>=8.5 + enisa-euvd recent exploited/criticals/lastvulnerabilities", horizon_hours: 26, in_horizon_items: 16, returned: 1, note: "16 rows on 2026-10-24, 0 on 2026-10-25; exploited list holds only already-covered CVEs; EUVD-2026-109314 and -109299 led to the eMudhra update" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13101 (HPE Aruba) 2026-10-23 13:27 UTC; no post for Juniper October bulletin or Next.js" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed all-rss-feed.xml 12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 (PHP alert)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed https://labs.watchtowr.com/rss/ + extract https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-10-09 (PaperCut); intelligence page lists FAQs already known (PHP2Shell, BeyondTrust, Ivanti, Atlassian, NetScaler, FortiMail); nothing new" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed filestore.fortinet.com ir.xml 20 + url --direct FG-IR-26-175", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-186 (PHP, 2026-10-21); hardening-release CVEs still due 2026-11-10 per covered entry; FortiMail CVE-2026-104286 already covered" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "msrc recent 60", horizon_hours: 26, in_horizon_items: 46, returned: 0, note: "46 rows dated 2026-10-24 are Linux-kernel/Azure Linux and curl/expat third-party CVEs, none with exploited or publiclyDisclosed flags; highest base score 8.8 (xen/pvcalls kernel)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed security.paloaltonetworks.com rss.xml 20 + extract advisory CVE-2026-109618", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "CVE-2026-109618 advisory revised 2026-10-24, already carried by the covered entry; hotfix ETAs 2026-10-26 to 10-30 and 'not aware of any malicious exploitation' unchanged" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "extract (fail), jina relay (block), WebFetch (HTTP 403), url --direct status.connectwise.com (ok)", horizon_hours: 146, in_horizon_items: 3, returned: 1, note: "trust center unreachable on every rung; status-page route reads; three updates 2026-10-22/23 returned as a borderline update-of" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "page reachable again (maintenance over); no dates in extracted form, newest fix 10.1.21; recipe update in coverage_gaps" }
+  - { id: atlassian-security-advisories, tier: standard, attempted: true, transport: "extract + url + extract bulletin", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "October 20 bulletin read in full; third-party dependency rows only; dispositioned" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "extract + url + extract per warning", horizon_hours: 122, in_horizon_items: 2, returned: 1, note: "warnings of 2026-10-19/20/22 are covered topics or below the bar; the Juniper warning (2026-10-16, outside lookback) led to the Juniper item" }
+  - { id: censys-blog, tier: standard, attempted: true, transport: "feed https://censys.com/feed/ 10", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16 (ASM product post); Danfoss StoreView exposure report 2026-10-14 predates lookback" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed psirtrss20 40 + extract advisory", horizon_hours: 122, in_horizon_items: 3, returned: 1, note: "eMudhra informational (2026-10-24) returned; PHP advisory (2026-10-23) and Snort/Expressway bundles already covered" }
+  - { id: exodus-intelligence, tier: standard, attempted: true, transport: "feed 10", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-07-27; bursty cadence" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge url api.github.com/advisories critical reviewed 60", horizon_hours: 122, in_horizon_items: 20, returned: 1, note: "GHSA-673q/-2464 Next.js returned; Node2Shell/Brotli, eMudhra certifi/uv rows already covered; Pillow, Laravel, wasmtime, Postiz rows dispositioned" }
+  - { id: nextjs-blog, tier: standard, attempted: true, transport: "feed https://nextjs.org/feed.xml 10 + extract post", horizon_hours: 122, in_horizon_items: 0, returned: 1, note: "newest feed items 2026-10-16/14; the 2026-10-14 security post is outside lookback but is the primary for the Next.js item" }
+  - { id: onapsis, tier: standard, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-13" }
+  - { id: pwn-ai, tier: standard, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "only a 2025 article is listed" }
+  - { id: rapid7-research, tier: standard, attempted: true, transport: "feed (fail: malformed XML) + extract blog + extract posts", horizon_hours: 124, in_horizon_items: 0, returned: 0, note: "posts dated 2026-10-19 (NetScaler intrusion, Archibus) at the lookback edge; NetScaler post already cited by covered entries" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "JS shell, no readable listing on this transport; no reader rung tried" }
+  - { id: searchlight-cyber, tier: standard, attempted: true, transport: "extract + url + extract posts", horizon_hours: 122, in_horizon_items: 3, returned: 0, note: "PHP2Shell detection note (2026-10-20), AEM pre-auth RCE chain (2026-10-22, cloud-only, patched), Discourse image pipeline (2026-10-22); dispositioned" }
+  - { id: siemens-productcert, tier: standard, attempted: true, transport: "feed atom 40 + extract SSA pages", horizon_hours: 124, in_horizon_items: 2, returned: 1, note: "SSA-566512 and SSA-566435 (PHP2Shell, 2026-10-23) returned inside the PHP2Shell vendor-status item" }
