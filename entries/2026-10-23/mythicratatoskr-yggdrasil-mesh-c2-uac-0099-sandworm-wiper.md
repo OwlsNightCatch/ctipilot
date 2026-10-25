@@ -48,7 +48,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-25T13:42:26Z"
+    run_id: 2026-10-25T1308Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Triage line placed its own discriminator under ESET's citation; ESET's citation now covers only
+      ESET's observations (legitimate mesh use, the backdoor's updater-like service name), and the triage conclusion
+      stands as analysis.
+    fields: [body]
 migrated_from: null
 ---
 ESET reports that on 2025-07-16 UAC-0099 gained access to a Ukrainian grain logistics company through a spearphishing attachment: a scheduled task ran a PowerShell payload, the MATCHBOIL downloader deployed the MATCHWOK backdoor, and the next day a previously undocumented Go backdoor, MythicRatatoskr, arrived, which ESET ties to that chain with high confidence because of the timing ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)). Further copies reached other machines through an OpenSSH SFTP server, and a SOCKS5 server appeared on some of them ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)). About two months later, on 2025-09-17, the SDelete utility was deployed through Active Directory Group Policy, which ESET calls standard Sandworm tradecraft and assesses with high confidence as Sandworm after UAC-0099 handed off the access; ESET could not say which group operated MythicRatatoskr, and it sets the pair beside the earlier Gamaredon and Turla collaboration ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)).
@@ -59,6 +68,6 @@ The backdoor is built on the user-space yggstack, so it needs no tunnel interfac
 
 **Detection:** in egress and DNS logs, connections to the public Yggdrasil peer addresses, since the mesh traffic looks like ordinary outbound connections and the peer list is the handle; in service-creation and process telemetry, a new Windows service with an updater-style name that runs a Go binary from a system or user folder, a scheduled task that runs a PowerShell payload from a temporary folder after an attachment is opened, and an OpenSSH SFTP server appearing on a workstation; and for the destructive stage, Group Policy objects that deploy SDelete or a similar wiper and mass file overwriting after a long quiet period ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)).
 
-**Triage:** ESET notes that legitimate users adopt Yggdrasil for resilient connectivity, research and hobby networking, so a single mesh connection needs a business-owner check, while a mesh peer connection together with a service named like an updater is the stronger combination ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)).
+**Triage:** ESET notes that legitimate users adopt Yggdrasil for resilient connectivity, research and hobby networking ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)), so a single mesh connection needs a business-owner check; a mesh peer connection together with a service named like an updater, as ESET found the backdoor's service to be ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)), is the stronger combination.
 
 **Defender takeaway:** where the mesh has no business use, block egress to the public Yggdrasil peers and alert on Group Policy changes that deploy wiper-class tools; the observed victim is Ukrainian and ESET describes UAC-0099 as targeting Ukrainian governmental, financial and media organizations, so the lesson transfers as tradecraft, in particular that initial-access activity by one group preceded a destructive stage by another two months later ([ESET Research, 2026-10-22](https://www.welivesecurity.com/en/eset-research/mythicratatoskr-yggdrasil-enabled-backdoor-deployed-uac0099-sandworm-collaboration/)).

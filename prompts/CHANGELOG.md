@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.24 — 2026-10-25 (an update rewrites the analysis in place instead of growing it)
+
+### Why
+
+The 2026-10-25 quality audit found 18 of the 37 entries active in its window with a main analysis over the 550-word bound, and two headlines over 120 characters. Every one of them grew through changelog records: the PHP2Shell entry, filed at `critical` on 2026-10-21, reached 2,061 words after four updates, Danfoss 1,291 and Publica PK 1,161. The supersession sweep (v4.17) rightly makes a record rewrite every sentence its delta touches, but the `entry-shape` length check only reads new entries, so nothing noticed when a rewrite added text instead of replacing it. The 2026-10-18 audit carried the pattern as a watch item; this window confirmed it.
+
+### What changed
+
+- `prompts/cti-run.md` Phase 4 § Updating an existing entry, step 4: a rewrite replaces, it never accretes. After the record the main analysis stays within the new-entry bound and the headline within 120 characters, so a delta that adds a fact cuts the sentence it supersedes and anything the labelled lines already carry.
+- `tools/check_run.py` `entry-shape`: on an existing entry this fire rewrote (`body` or `headline` in its record's `fields`), WARN when the fire grew the main analysis past the bound or lengthened the headline past 120 characters, measured against the committed copy. Shrinking a long entry, or a metadata-only record, never warns. Test in `tools/test_check_run.py`.
+- `tools/kev_window_diff.py --since` accepts the audit's window-start timestamp (it crashed on anything but a bare date, although `quality-audit.md` Phase 3 item 11 passes the window start).
+- `prompts/quality-audit.md` moves to v4.24 in lockstep, with no other change.
+
+### What stays
+
+- The supersession sweep and every changelog rule: the entry still reads as today's truth, and the record still declares every field it moved.
+- The length bound itself, and the store-wide report: entries already over the bound are not flagged by `--all`; they come back within it as later records rewrite them.
+
 ## 4.23 — 2026-10-21 (cleanup waves run in parallel on disjoint lanes)
 
 ### Why

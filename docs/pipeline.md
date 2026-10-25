@@ -1182,7 +1182,8 @@ source URL plus an entity or most of its title, FAIL unless declared in
 `duration_seconds` vs the stamps, a NEEDS_FIXES final pass with no truth or
 editorial finding); `entry-shape` (a new body with no inline citation FAILs;
 headline over 120 characters, main analysis over 550 words or 1,100 for a
-deep dive, an uncited `sources[]` URL, an inline citation date differing from
+deep dive (on an existing entry: when this fire's record grew the analysis
+past the bound or lengthened the headline past 120, v4.24), an uncited `sources[]` URL, an inline citation date differing from
 its `sources[]` record, an inline citation whose URL has no `sources[]`
 record (v4.19), `no-patch` beside a fixed version, a critical
 `immediate_action` naming no fixed version — WARN); `exploitation-consistency`

@@ -29,8 +29,8 @@ cves:
     vector: local
     auth: admin-required
     status: [exploited, patch-available]
-    affected: "Windows devices that boot with Secure Boot and have not had the Windows Production PCA 2011 revocation applied; Microsoft's mitigations are in the updates of 2024-07-09 and later and are not enabled by default"
-    fixed: "mitigation only when the revocation steps in Microsoft's KB5025885 are applied"
+    affected: "Windows devices that boot with Secure Boot and have not had the Windows Production PCA 2011 revocation applied"
+    fixed: "mitigation only when the Windows Production PCA 2011 revocation is applied, which Kaspersky says the Baton Drop patch is designed to do and which the user has to trigger manually"
   - id: CVE-2023-24932
     cvss: null
     epss: null
@@ -78,7 +78,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-10-25T13:42:37Z"
+    run_id: 2026-10-25T1308Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The CVE-2022-21894 record attributed its mitigation to Microsoft's KB5025885, which documents the
+      revocation for CVE-2023-24932; the record now rests on Kaspersky's statement that the Baton Drop
+      patch revokes the Windows Production PCA 2011 certificate and must be triggered manually.
+    fields: [cves]
 migrated_from: null
 ---
 Kaspersky GReAT reports that in early 2026 it found BlackX, a UEFI bootkit similar to BlackLotus, used against diplomatic agencies in Tajikistan, Uzbekistan and Turkmenistan after the attackers held administrator privileges: an installer takes an RC4-encrypted package and its key as command-line arguments and drops files to the system and UEFI partitions that exploit Baton Drop (CVE-2022-21894) to enrol attacker-controlled Machine Owner Keys, so arbitrary EFI files load despite Secure Boot ([Kaspersky GReAT, 2026-10-22](https://securelist.com/uefi-bootkit-blackx/121539/)). Kaspersky ties the exploitation to Baton Drop alone; CVE-2023-24932, the flaw Microsoft's revocation guidance is titled for, appears in its post only as the one a UEFI component in ESET's FishMonger report might exploit ([Kaspersky GReAT, 2026-10-22](https://securelist.com/uefi-bootkit-blackx/121539/)). The bootkit injects a kernel driver, signed with a certificate its issuer has since revoked, that disables process, thread and registry callbacks and ETW providers of security products; the user-mode payloads were a RAT that uses Google Drive, OneDrive or Yandex.Disk for command and control and a sideloaded loader ([Kaspersky GReAT, 2026-10-22](https://securelist.com/uefi-bootkit-blackx/121539/)).

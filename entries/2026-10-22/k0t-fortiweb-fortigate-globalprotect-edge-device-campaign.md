@@ -24,7 +24,7 @@ techniques: [T1190, T1596.005, T1110.001, T1133, T1136.001, T1602.002, T1552.001
 affected_products: ["Fortinet FortiWeb", "Fortinet FortiGate", "Palo Alto Networks PAN-OS"]
 cves:
   - id: CVE-2025-64446
-    cvss: null
+    cvss: "9.8 (CVSS 3.x, Fortinet FG-IR-25-910)"
     epss: null
     type: path-traversal
     vector: zero-click
@@ -33,7 +33,7 @@ cves:
     affected: "FortiWeb 8.0.0 through 8.0.1, 7.6.0 through 7.6.4, 7.4.0 through 7.4.9, 7.2.0 through 7.2.11 and 7.0.0 through 7.0.11; 6.4 and FortiAppSec Cloud are not affected"
     fixed: "8.0.2, 7.6.5, 7.4.10, 7.2.12, 7.0.12; interim: disable HTTP and HTTPS on internet-facing interfaces"
   - id: CVE-2019-6693
-    cvss: null
+    cvss: "4.3 (CVSS 3.x, Fortinet FG-IR-19-007)"
     epss: null
     type: info-disclosure
     vector: local
@@ -102,7 +102,15 @@ classification:
 watchlist_hit: false
 actions:
   - "On every FortiGate (FortiOS 5.6.11, 6.0.7, 6.2.1 or later; check the FortiManager and HA note in Fortinet's FG-IR-19-007 first where it applies), enable private-data-encryption with an operator-defined key, and for any device that was internet-reachable with a brute-forceable administrator login or an unpatched exposed service, treat the LDAP and Active Directory bind and administrator credentials stored in its configuration as known to the attacker and rotate them, bind accounts first."
-updates: []
+updates:
+  - at: "2026-10-25T13:41:38Z"
+    run_id: 2026-10-25T1308Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The CVE records for CVE-2025-64446 and CVE-2019-6693 left the score empty; they now carry Fortinet's
+      own CVSS 3 scores from FG-IR-25-910 (9.8) and FG-IR-19-007 (4.3).
+    fields: [cves]
 migrated_from: null
 ---
 

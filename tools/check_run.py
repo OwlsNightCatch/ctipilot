@@ -4444,6 +4444,21 @@ _VERSIONISH_RE = re.compile(r"\b\d+(?:\.\d+)+(?:[-_.][0-9A-Za-z]+)*\b")
 _CITATION_LINK_RE = re.compile(r"\[[^\]\n]*?(\d{4}-\d{2}-\d{2})\]\((https?://(?:[^()\s]|\([^()\s]*\))+)\)")
 
 
+def _main_words(body: str) -> int:
+    main, _ = cm.split_update_sections(body or "")
+    return len(re.sub(r"\s+", " ", _MD_LINK_TEXT_RE.sub(r"\1", main)).split())
+
+
+def _committed_entry(entry_id: str) -> tuple[dict, str] | None:
+    """The entry as committed at HEAD (before this fire's working-tree edit), or None."""
+    try:
+        proc = subprocess.run(["git", "show", f"HEAD:entries/{entry_id}.md"], capture_output=True,
+                              text=True, cwd=ROOT, timeout=15)
+        return _frontmatter_and_body(proc.stdout) if proc.returncode == 0 else None
+    except Exception:
+        return None
+
+
 def check_entry_shape_v417(new_entries: list[dict], run_entries: list[dict], run_id: str,
                            enforce: bool) -> None:
     """Composition-shape checks the 2026-09-29 entry audit found missing
@@ -4455,11 +4470,38 @@ def check_entry_shape_v417(new_entries: list[dict], run_entries: list[dict], run
     (23 hand-found mislabels in September); a `no-patch` status beside a
     `fixed` version with no `patch-available`; a critical entry whose
     `immediate_action` names none of the fixed versions its `cves[]` carries
-    (WARN)."""
+    (WARN). An existing entry this fire rewrote: a main analysis the fire grew
+    past the limit, a headline it lengthened past 120 characters (WARN; the
+    2026-10-25 audit found 18 of 37 window entries over the limit, every one
+    grown through changelog records the new-entry check never saw)."""
     if not enforce:
         return
     fails: list[str] = []
     warns: list[str] = []
+    new_ids = {e.get("id") for e in new_entries}
+    for e in run_entries:
+        if e.get("id") in new_ids or str(e.get("run_id") or "") == str(run_id):
+            continue
+        own = [r for r in (e.get("updates") or [])
+               if isinstance(r, dict) and str(r.get("run_id") or "") == str(run_id)]
+        fields = {f for r in own for f in (r.get("fields") or [])}
+        if not own or not fields & {"body", "headline"}:
+            continue
+        before = _committed_entry(e["id"])
+        if before is None:
+            continue
+        fm_before, body_before = before
+        limit = 1100 if e.get("deep_dive") else 550
+        words, words_before = _main_words(e.get("body") or ""), _main_words(body_before)
+        if words > limit and words > words_before:
+            warns.append(f"{e['id']}: this fire's record grew the main analysis from "
+                         f"{words_before} to {words} words (limit {limit}) — supersede in place: "
+                         "replace the sentences the delta disproves instead of adding to them, "
+                         "and cut what the labelled lines already carry")
+        head, head_before = str(e.get("headline") or ""), str(fm_before.get("headline") or "")
+        if len(head) > 120 and len(head) > len(head_before):
+            warns.append(f"{e['id']}: this fire's record lengthened the headline to {len(head)} "
+                         "characters — keep it within 120")
     for e in new_entries:
         main, _ = cm.split_update_sections(e.get("body") or "")
         links = _BODY_LINK_RE.findall(main)

@@ -54,8 +54,18 @@ sources:
     publisher: "Aikido Security"
     date: "2026-10-21"
     role: corroborating
+  - url: "https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/"
+    publisher: "Microsoft Threat Intelligence"
+    date: "2026-10-23"
+    role: corroborating
 closed_sources: []
 evidence:
+  - quote: "Endpoint observations on Windows and macOS matched the recovered collector’s discovery, encryption, and outbound-connection behavior."
+    publisher: "Microsoft Threat Intelligence"
+    source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/"
+  - quote: "In one Windows example, a routine Python invocation to install an unrelated dependency activated the collector."
+    publisher: "Microsoft Threat Intelligence"
+    source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/"
   - quote: "contains malicious Python startup files that collect cloud credentials, private keys, browser data, and authentication files for AI development tools"
     publisher: "Socket Research Team"
     source_url: "https://socket.dev/blog/litellm-compromise"
@@ -77,7 +87,7 @@ evidence:
   - quote: "Each credential was checked with sts:GetCallerIdentity, followed by bedrock:ListFoundationModels and a ListModels call, consistent with LLMjacking."
     publisher: "Wiz Research"
     source_url: "https://www.wiz.io/blog/litellm-compromised-steals-credentials"
-  - quote: "PyPI has now quarantined version 1.107.0."
+  - quote: "PyPI has now quarantined and removed version 1.107.0."
     publisher: "Aikido Security"
     source_url: "https://www.aikido.dev/blog/litellm-compromised-infostealer-rat"
 verification: multi-source
@@ -109,6 +119,14 @@ updates:
       organization owner's GitHub CLI token on 2026-10-10, eleven days before the release, and Socket
       independently found secret-stealing workflows running that day.
     fields: [body, evidence, sources, sourcing_note, summary, techniques]
+  - at: "2026-10-25T13:42:16Z"
+    run_id: 2026-10-25T1308Z-audit
+    type: improvement
+    summary: >
+      Adds Microsoft Threat Intelligence's analysis of 2026-10-23: the collector ran on Windows and macOS
+      endpoints too, a routine Python call activated it, and responders should investigate without
+      starting Python in the affected environment.
+    fields: [evidence, sources, body]
 migrated_from: null
 ---
 
@@ -127,3 +145,7 @@ The payload is not in the git tag: a packaging setting in an untagged commit pul
 The maintainers published a root-cause post on 2026-10-23 that supersedes the earlier hypothesis that the tokens were read from the logs of an internet-exposed internal deployment: their request logs show the first token came from a different service, an experimental agent platform whose master key had been committed to a public repository on 2026-05-27 and never revoked ([LiteLLM, 2026-10-23](https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain)). The attacker used the key on 2026-10-10 to obtain an organization owner's GitHub CLI token, so access began eleven days before the release, and the same day throwaway branches in two repositories ran workflows that posted CI secrets to an external capture endpoint and were deleted minutes later, yielding the tokens of two further maintainers ([LiteLLM, 2026-10-23](https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain)).
 
 Socket found the same activity independently from the repository's Actions performance metrics, including a second run on 2026-10-12 that took 14 further secrets, and says it has not established how the attacker first obtained access ([Socket, 2026-10-23](https://socket.dev/blog/litellm-attack-timeline)). On 2026-10-21 three credentials did different jobs: the owner's token overrode branch protection and later force-pushed the history clean, a second maintainer's token approved the production gate and a third maintainer's token deleted the run records, after the maintainers had relaxed the release rule earlier that week so that any two engineers could trigger and approve a release ([LiteLLM, 2026-10-23](https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain)). The maintainers say they are revoking every token tied to every internal system and vendor platform, and that the attacker's activity on other systems focused on upstream inference API tokens ([LiteLLM, 2026-10-23](https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain)).
+
+## Improvement — 2026-10-25T13:42:16Z
+
+Microsoft Threat Intelligence's analysis of 2026-10-23 adds that endpoint observations on Windows and macOS matched the collector's discovery, encryption and outbound-connection behaviour, and that in one Windows case a routine Python invocation to install an unrelated dependency activated it, so developer workstations on Windows and macOS are in scope as well, not only gateways, CI runners and containers ([Microsoft Threat Intelligence, 2026-10-23](https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/)). Microsoft advises isolating affected hosts and investigating them from a known-clean system without running python, pip or other commands that invoke the affected interpreter, confirming that the malicious startup files are gone from the library path rather than assuming that deleting the litellm directory removed them, and it treats Python-launched OpenSSL public-key encryption of files staged in a temporary directory as a behavioural lead ([Microsoft Threat Intelligence, 2026-10-23](https://www.microsoft.com/en-us/security/blog/2026/10/23/inside-the-litellm-1-107-0-supply-chain-compromise-credential-theft-through-python-startup-hooks/)).

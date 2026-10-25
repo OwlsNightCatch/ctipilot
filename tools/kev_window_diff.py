@@ -149,7 +149,10 @@ def _now_from_args(args: argparse.Namespace) -> datetime:
 
 def _since_from_args(args: argparse.Namespace) -> date:
     if args.since:
-        return date.fromisoformat(args.since)
+        # KEV `dateAdded` is a calendar date, so a window-start timestamp (the
+        # audit passes its `AUDIT_START`, e.g. 2026-10-18T13:07:08Z) counts from
+        # its UTC date; through 2026-10-25 a timestamp crashed fromisoformat.
+        return date.fromisoformat(str(args.since)[:10])
     hours = args.window_hours if args.window_hours is not None else 24
     return (_now_from_args(args) - timedelta(hours=hours)).date()
 
@@ -159,7 +162,7 @@ def main() -> int:
         description="List CISA KEV additions inside a window and flag the ones "
                     "the content store has never covered.")
     g = p.add_mutually_exclusive_group()
-    g.add_argument("--since", metavar="YYYY-MM-DD",
+    g.add_argument("--since", metavar="YYYY-MM-DD[THH:MM:SSZ]",
                    help="earliest KEV dateAdded to report (inclusive)")
     g.add_argument("--window-hours", type=float, metavar="N",
                    help="derive --since from now minus N hours (the run's window_hours)")

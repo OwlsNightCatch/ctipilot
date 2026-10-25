@@ -7,6 +7,7 @@
 the cited page as `_page_text` normalises it. Each case below is a false
 positive an audit hit on a real page; the cases make no network call (the
 `citation-cve` case stubs the bridge subprocess and the cache directory).
+The `entry-shape` case stubs the committed copy of an entry this fire updated.
 """
 from __future__ import annotations
 
@@ -120,8 +121,32 @@ def test_citation_cve_counts_image_only_pdf_as_unreadable():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_entry_shape_flags_growth_of_an_updated_entry():
+    saved = (cr._committed_entry, cr.warn, cr.ok, cr.fail)
+    warns = []
+    run = "2026-10-25T1308Z-audit"
+    long_main = " ".join(["word"] * 600)
+    try:
+        cr._committed_entry = lambda eid: ({"headline": "Short"}, " ".join(["word"] * 500))
+        cr.warn = lambda label, detail="": warns.append((label, detail))
+        cr.ok = cr.fail = lambda label, detail="": None
+        grown = {"id": "2026-10-01/grown", "run_id": "2026-10-01T0256Z-intel", "headline": "Short",
+                 "body": long_main, "updates": [{"run_id": run, "fields": ["body"]}]}
+        cr.check_entry_shape_v417([], [grown], run, enforce=True)
+        assert any("grew the main analysis from 500 to 600" in d for _, d in warns), warns
+        warns.clear()
+        # Shrinking a long entry, or an internal metadata record, never warns.
+        cr._committed_entry = lambda eid: ({"headline": "Short"}, " ".join(["word"] * 700))
+        cr.check_entry_shape_v417([], [grown], run, enforce=True)
+        meta = dict(grown, updates=[{"run_id": run, "fields": ["cves"]}])
+        cr.check_entry_shape_v417([], [meta], run, enforce=True)
+        assert not [d for _, d in warns if "grew" in d], warns
+    finally:
+        cr._committed_entry, cr.warn, cr.ok, cr.fail = saved
+
+
 def main() -> int:
-    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    tests =[v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0
     for t in tests:
         try:
