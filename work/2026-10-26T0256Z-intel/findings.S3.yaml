@@ -1,0 +1,333 @@
+# work/2026-10-26T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-26T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-26T02:58:41Z
+ended_at: 2026-10-26T03:24:32Z
+duration_seconds: 1551
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 8
+  bridge_fetches: 150   # approximate: ~80 feed calls (incl. a 58-feed freshness sweep), ~55 extract, ~10 url, 2 pdf
+items:
+  # ------------------------------------------------------------------------------------------------
+  # 1. UPDATE-OF (correction-grade): Unit 42 retracts the claim the PHP2Shell entry's summary rests on
+  # ------------------------------------------------------------------------------------------------
+  - title: "PHP2Shell: Unit 42 retracts its 2026-10-23 report of a confirmed European government intrusion and says it cannot tie the initial access to CVE-2026-109618 or CVE-2026-109619"
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    update_type_suggestion: correction   # the claim is withdrawn by its maker; the entry's summary, sourcing_note, Detection paragraph and one evidence quote still carry it
+    also_affects_entries:
+      - "2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release"   # cites the quote 'Unit 42 has seen proof of concept of these vulnerabilities.' which is no longer on the cited page
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/", publisher: "Palo Alto Networks Unit 42 (threat brief, retraction of 2026-10-25 21:15 UTC)", date: "2026-10-25", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html", publisher: "The Hacker News (relayed the withdrawn claim, 2026-10-25, before the retraction)", date: "2026-10-25", role: "corroborating" }
+      - { url: "https://hunt.io/blog/php2shell-cve-2026-109618-109619-open-directories", publisher: "Hunt.io (honeypot and open-directory view, state as of 2026-10-21 23:45 UTC)", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: Unit 42 feed, URL https://unit42.paloaltonetworks.com/feed/ (item 'Threat Brief: Critical Vulnerabilities in PHP ... (Updated October 25)') -> drilled page via extract, URL https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/ -> second read via WebFetch of the same URL (confirmed the retraction text and revision log) -> pivot: The Hacker News, URL https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html (shows the claim as relayed before the retraction) -> pivot: Hunt.io, URL https://hunt.io/blog/php2shell-cve-2026-109618-109619-open-directories (independent honeypot view). WebSearch ('Unit 42 retracts PHP2Shell European government agency intrusion update October 25') found no press coverage of the retraction."
+    summary: |
+      Fact: Unit 42's threat brief on CVE-2026-109618 and CVE-2026-109619 now carries an "October 25 Update" saying that the post-compromise activity it reported on 2026-10-23, which it "initially thought was related to the PHP2Shell vulnerabilities", was an attack on a European government agency "executed in the context of a vulnerable PHP application", that it is "unable to confirm that initial access is associated with the specific PHP2Shell CVEs", and that it "retracted our previous update from October 23"; the revision log records the retraction at 2:15 p.m. PT on 2026-10-25 (21:15 UTC). The October 23 update had added the agentic-AI post-exploitation account (password hashes and MFA secrets reached within two hours, an NTLM-relay tunnel into Active Directory, section-header delimiters such as ==SHELLUSER== in command batches) and a Managed Threat Hunting section; the current page no longer contains the account or the quoted sentences, while the XQL hunting queries are still on the page and the first one states it "is not specific to CVE-2026-109618 and CVE-2026-109619". The Hacker News published the withdrawn claim on 2026-10-25 (about 17:19 UTC), so press copies of it are now stale. What stays: Unit 42 still reports 22.6 million potentially vulnerable exposed instances from its own telemetry and still urges patching. Effect on the store: the PHP2Shell entry (published priority critical) states in its summary, sourcing note, Detection paragraph, body and an evidence quote that Unit 42 "reports a confirmed intrusion of a European government entity"; that claim is withdrawn by its own maker, the evidence quote no longer exists on the cited page, and the post-exploitation markers described for it are no longer tied to these CVEs. The remaining exploitation picture is the one the other sources give (scanning and attempts; Cloudflare, watchTowr, VulnCheck canaries, AWS from 2026-10-17; CrowdStrike, Wordfence, Sophos and Hunt.io, which says no vendor has confirmed a successful compromise as of 2026-10-21 23:45 UTC, report no successful exploitation), so whether the critical priority still rests on enough other evidence is the main agent's call; patching remains required either way.
+    region_nexus: "global; the retracted account concerned a European government agency, unnamed"
+    primary_sector_nexus: "direct for public-sector web estates (the PHP2Shell entry is Swiss-relevant: BACS, cantons, Cyon, Lodur, Publica)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["PHP"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # the claim's maker correcting its own claim, read twice (extract + WebFetch); not a national CERT, but the owner of the statement
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 1 }
+    evidence:
+      - quote: "We are unable to confirm that initial access is associated with the specific PHP2Shell CVEs."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+      - quote: "We have retracted our previous update from October 23."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+      - quote: "What researchers saw was an attack against a European government agency executed in the context of a vulnerable PHP application."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+      - quote: "This hunting query is not specific to CVE-2026-109618 and CVE-2026-109619."
+        attribution: "Palo Alto Networks Unit 42 (hunting-query note on the same page)"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+      - quote: "In one case, the attackers targeted a government entity in Europe and within two hours of the initial exploitation they had successfully accessed password hashes and multi-factor authentication secrets,"
+        attribution: "The Hacker News (quoting Unit 42's withdrawn 2026-10-23 text, published 2026-10-25 before the retraction)"
+        source_url: "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html"
+      - quote: "As of October 21, 2026 at 23:45 UTC, we see live php2shell attempts and plenty of tooling being staged, but no successful in-the-wild compromise, and no vendor has confirmed one."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/php2shell-cve-2026-109618-109619-open-directories"
+    extended_notes: |
+      Exact strings in the store that depend on the withdrawn claim (verifier targets): in 2026-10-21/php-critical-release-... the frontmatter summary ("Unit 42 reports a confirmed intrusion of a European government entity with agentic post-exploitation"), the sourcing_note, the Detection paragraph ("For the post-exploitation Unit 42 describes, process-creation telemetry ... ==SHELLUSER== and ==PASSWD== ... NTLM authentication from the web host to Active Directory"), the body paragraph beginning "Palo Alto Networks' Unit 42 updated its brief on 2026-10-23", the techniques entries T1003 and T1557 (added in the 2026-10-24 update that introduced the Unit 42 account; check whether any other source supports them), and the evidence quote "In one case, the attackers targeted a government entity in Europe ... password hashes and multi-factor authentication secrets." In 2026-10-22/pan-os-panorama-php2shell-... the evidence quote "Unit 42 has seen proof of concept of these vulnerabilities." is not on the cited page any more (the page's October 25 text has no such sentence; 'page-checks' will fail it). The hunting queries still on the page are generic web-shell-under-PHP-worker detections and a PAN NGFW threat-log query keyed on threat ID 543004 and the CVE names; their own note says they also find other web-application exploitation, so they are usable as generic detections but are no longer evidence of PHP2Shell post-exploitation. Also held elsewhere this run (not repeated here): CYFIRMA v3 (S1 checkpoint, S4 findings). Optional provenance not in the entry: OpenAI's 2026-10-21 'Patch the Planet' post says Calif identified the PHP flaw using GPT-5.6 Sol with Wiz independently reporting both, and publishes a PHP version-checker (Codex skill); this is vendor self-description and adds no defender action beyond the entry.
+
+  # ------------------------------------------------------------------------------------------------
+  # 2. NEW (lookback): Japan's wave of API / web-system data theft, JPCERT/CC alert + infrastructure investigation
+  # ------------------------------------------------------------------------------------------------
+  - title: "Japan's wave of web-system and mobile-backend data theft: JPCERT/CC and NICT describe app-to-backend API attacks and AI-driven vulnerability scanning, and name ARTEX, Cairn and CyberStrikeAI among the tools"
+    novelty: new
+    lookback: true   # jpcert-eyes (lookback 124 h, post 2026-10-21) and recordedfuture-insikt (124 h, post 2026-10-22); the JPCERT alert's newest update is 2026-10-23
+    kind_suggestion: threat
+    sources:
+      - { url: "https://www.jpcert.or.jp/at/2026/at260030.html", publisher: "JPCERT/CC (alert JPCERT-AT-2026-0030, published 2026-10-08, updated 2026-10-23; Japanese)", date: "2026-10-23", role: "primary" }
+      - { url: "https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html", publisher: "JPCERT/CC Eyes (attack-infrastructure investigation, English, machine-translated and reviewed)", date: "2026-10-21", role: "primary" }
+      - { url: "https://cynex.nict.go.jp/library/261013-01.html", publisher: "NICT CYNEX LETTICE (A2B attack alert; Japanese)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://www.nict.go.jp/press/2026/10/13-1.html", publisher: "NICT (press release naming the 'A2B attack'; Japanese)", date: "2026-10-13", role: "corroborating" }
+      - { url: "https://security.macnica.co.jp/blog/2026/10/web-incidents2026.html", publisher: "Macnica Security Research Center (case statistics and incident-response observations; Japanese)", date: "2026-10-16", role: "corroborating" }
+      - { url: "https://www.scutum.jp/information/waf_tech_blog/2026/10/waf-blog-085.html", publisher: "Scutum WAF Tech Blog (AI-agent attack observations; Japanese)", date: "2026-10-14", role: "corroborating" }
+      - { url: "https://www.recordedfuture.com/blog/japan-cyber-crisis-warnings", publisher: "Recorded Future Insikt Group", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: jpcert-eyes, URL https://blogs.jpcert.or.jp/en/atom.xml (item 'Recent AI-Assisted Cyber Attacks in Japan: Investigating Attack Infrastructure and Techniques', 2026-10-21) -> drilled via extract, URL https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html -> pivot: JPCERT/CC alert AT-2026-0030 linked from it, URL https://www.jpcert.or.jp/at/2026/at260030.html (primary; Case E added 2026-10-23) -> pivot: NICT CYNEX, URL https://cynex.nict.go.jp/library/261013-01.html and press release URL https://www.nict.go.jp/press/2026/10/13-1.html (the NICT detail PDF decoded as garbage, HTML pages used) -> pivot: recordedfuture-insikt, URL https://www.recordedfuture.com/feed item 'Behind Japan's Warnings of a Cyber Crisis', URL https://www.recordedfuture.com/blog/japan-cyber-crisis-warnings -> links to Macnica, URL https://security.macnica.co.jp/blog/2026/10/web-incidents2026.html, and Scutum, URL https://www.scutum.jp/information/waf_tech_blog/2026/10/waf-blog-085.html. Store check: no entry covers this wave (grep for JPCERT alert, A2B, CyberStrikeAI, Macnica returned nothing; the IDC Frontier ransomware entry is a different event)."
+    summary: |
+      Fact (JPCERT/CC, NICT, Macnica): since July 2026 (Macnica) and around September (JPCERT/CC) Japanese organisations have disclosed a sharply rising number of personal-data leaks from internet-facing web systems and mobile-app backends; Macnica counts 265 published cases since January 2024, 119 of them in 2026 to 6 October and 81 of those published since July, and says that of the 81 only 16 state a cause (9 product, CMS or plugin vulnerabilities, 4 credential abuse, 3 access-control or configuration faults). JPCERT/CC's alert AT-2026-0030 sorts what it has seen into five cases: (A) per-target scanning for many different known vulnerabilities and for hygiene faults such as exposed configuration and backup files, not one common flaw; (B) abuse of application management APIs, where the attacker analyses the published smartphone app to find API endpoints and keys, then calls internal APIs the screens never expose to change user roles, create accounts, flip header presence or send malformed tokens to compare responses, and blind-probe with NoSQL injection to find account data, sometimes with API keys stolen from other compromises; (C) the Metabase SQL injection CVE-2026-72898; (D) .war files holding a JSP web shell that runs query-parameter commands, dropped on application servers reachable from the public web server; (E, added 2026-10-23) attack attempts through AI penetration-testing platforms that the alert names as Cairn, CyberStrikeAI and ARTEX, mainly against internet-facing web applications and including attempts against internet-exposed WSUS servers. NICT's LETTICE team named the app-analysis path "A2B (App-to-Backend) attack" on 2026-10-13: the app itself need not be vulnerable, the backend's authentication, authorisation and input-validation faults (IDOR/BOLA, SSRF, RCE, SQL injection) are what is used. JPCERT/CC's infrastructure team (2026-10-21) found on attack servers Android APK files, the Flutter/Dart reverse-engineering tool Blutter and the decompiler jadx, a Python script acting as an HTTPS server that answers with HTTP 302 redirects to test SSRF, and, on an unrelated server, tooling for web applications, MySQL, Jenkins and mail gateways with EDR-evasion attempts and web shells; it says the attackers used AI to scan for known vulnerabilities and attack through APIs, and that they also targeted services for users outside Japan. Claims and assessments: Scutum, a WAF vendor, says a detector it added on 2026-10-10 found AI-agent attacks from at least three source addresses by 2026-10-14 (a roughly 1,000-request sweep for .git, admin and security.txt paths; a phased run switching between curl, the ffuf fuzzer, range-header scans and automated contact-form POSTs; and an almost eight-hour run with some 35 rotated User-Agent strings, bursts near 2,100 requests a minute and product-specific probes) and thinks the three may be different actors; Recorded Future reports that Macnica could not confirm AI use and says the models abused are not confirmed. No source attributes the wave to one actor; ARTEX is open source and Microsoft and Recorded Future already tie it to two different actors, so a tool name in this wave does not identify an actor.
+    region_nexus: "Japan (primary); no Swiss indicator in any source; the attack class transfers to Swiss citizen-facing apps and portals"
+    primary_sector_nexus: "indirect but transferable: cantonal and communal mobile apps, reservation and booking portals, BI tools and staff-management systems are the same long tail of small web systems that Macnica lists as victims (library catalogue, seat reservation, seminar-house booking, refund management)"
+    sector: "cross-sector (retail, rail, logistics, media, education, software, small reservation and library systems named)"
+    cves: [CVE-2026-72898]
+    references_suggestion: ["2026-08-09/metabase-unauth-sqli-zeroday-exploited-framework-tally"]   # CVE overlap with the existing Metabase entry: declare it in references[]
+    techniques: [T1190, T1595.002, T1552.001, T1505.003, T1090.003]
+    affected_products: ["Metabase", "Microsoft Windows Server Update Services (WSUS)"]
+    entity_keys: ["tool:artex", "tool:cairn-exploitation-engine", "incident:metabase-sqli-zeroday-2026-08", "actor:storm-0940"]
+    new_entities:
+      - { key: "campaign:japan-web-api-data-theft-wave-2026", type: campaign, name: "Japan web-system and API data-theft wave (2026)", aliases: ["A2B attacks", "App-to-Backend attacks"], summary: "Series of personal-data thefts from Japanese web systems and mobile-app backends since mid-2026 that JPCERT/CC (alert AT-2026-0030) and NICT LETTICE describe as per-target vulnerability scanning, API abuse after analysis of public Android apps, a Metabase zero-day, JSP web shells and AI penetration-testing platforms; no single actor is named (JPCERT/CC, 2026-10-23; NICT, 2026-10-13)." }
+      - { key: "tool:cyberstrikeai", type: tool, name: "CyberStrikeAI", aliases: [], summary: "Name of an AI penetration-testing platform that JPCERT/CC lists, with Cairn and ARTEX, among the platforms abused in attack attempts against Japanese web applications; the alert gives no further description (JPCERT/CC, 2026-10-23)." }
+      - { key: "report:jpcert-at-2026-0030", type: report, name: "JPCERT/CC alert AT-2026-0030 on the series of unauthorised accesses in Japan", aliases: ["JPCERT-AT-2026-0030"], summary: "JPCERT/CC alert published 2026-10-08 and updated 2026-10-23 (Case E, AI penetration-testing platforms) describing five attack cases behind the wave of personal-data leaks from Japanese web systems." }
+    relation_suggestions:
+      - { subject: "campaign:japan-web-api-data-theft-wave-2026", object: "tool:artex", basis: "JPCERT/CC alert AT-2026-0030 (Case E, 2026-10-23) lists ARTEX among AI penetration-testing platforms abused in attack attempts in the series; it does not attribute the series to one actor" }
+      - { subject: "campaign:japan-web-api-data-theft-wave-2026", object: "incident:metabase-sqli-zeroday-2026-08", basis: "JPCERT/CC alert AT-2026-0030 lists exploitation of Metabase CVE-2026-72898 as Case C of the series (JPCERT/CC, 2026-10-23)" }
+      - { subject: "report:jpcert-at-2026-0030", object: "campaign:japan-web-api-data-theft-wave-2026", basis: "the alert profiles the series" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM   # facts HIGH (JPCERT/CC, NICT, Macnica first-hand); AI-use claims are contested by Macnica's own hedge; no attribution
+    classification_suggestion: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "We confirmed that the attackers had used AI to scan for known vulnerabilities and carry out attacks via APIs."
+        attribution: "JPCERT/CC Eyes"
+        source_url: "https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html"
+      - quote: "One notable characteristic of these attacks was that the attackers analyzed Android application packages (APK files) to identify APIs and exploit them"
+        attribution: "JPCERT/CC Eyes"
+        source_url: "https://blogs.jpcert.or.jp/en/2026/10/web_api_attacks.html"
+      - quote: "CairnやCyberStrikeAI、ARTEXなどのAIを用いたペネトレーションテスト基盤を悪用した攻撃試行が確認されています。"
+        attribution: "JPCERT/CC (alert AT-2026-0030)"
+        source_url: "https://www.jpcert.or.jp/at/2026/at260030.html"
+      - quote: "その中には、インターネットに公開されたWSUSサーバーを標的とした攻撃試行も含まれています。"
+        attribution: "JPCERT/CC (alert AT-2026-0030)"
+        source_url: "https://www.jpcert.or.jp/at/2026/at260030.html"
+      - quote: "一般公開しているスマートフォンアプリを解析しAPIのエンドポイントやキーを特定する"
+        attribution: "JPCERT/CC (alert AT-2026-0030, Case B)"
+        source_url: "https://www.jpcert.or.jp/at/2026/at260030.html"
+      - quote: "アプリ自体に脆弱性がなくても、バックエンドサーバの認証・認可や入力値の検証などに不備があれば、不正アクセスや個人情報の漏洩につながるおそれがあります。"
+        attribution: "NICT CYNEX LETTICE"
+        source_url: "https://cynex.nict.go.jp/library/261013-01.html"
+      - quote: "2024年は62件、2025年は84件、今年は10月6日時点で119件となり、合計265件です。"
+        attribution: "Macnica Security Research Center"
+        source_url: "https://security.macnica.co.jp/blog/2026/10/web-incidents2026.html"
+      - quote: "少なくとも3つのIPアドレスからAIエージェントによる日本の企業のウェブサイトへの攻撃が実施されていることを確認しました。"
+        attribution: "Scutum (WAF Tech Blog)"
+        source_url: "https://www.scutum.jp/information/waf_tech_blog/2026/10/waf-blog-085.html"
+      - quote: "Macnica could not confirm the use of AI in these attacks."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/japan-cyber-crisis-warnings"
+    extended_notes: |
+      Exposure (as the sources frame it): any organisation that publishes an Android (or iOS) app with a backend API, runs public web applications, or runs BI tools and staff-management systems it assumes the public will never reach; internet-exposed WSUS servers are named in Case E. JPCERT/CC's Case B list is also a ready set of behaviours to check in API logs: calls to internal or management API endpoints from clients that never loaded the screens; role-change and account-creation calls outside the admin console; the same endpoint called with and without a header or with malformed bearer tokens in sequence; NoSQL-injection-style blind probing against account lookups; use of API keys that were extracted from the shipped app or stolen elsewhere. Case A and E show as long sweeps for configuration and backup files (.git, .env, backup archives), fast 404 bursts, one source rotating tens of User-Agent strings, and phase changes between tools. Case D shows as .war deployment to application servers behind public web servers. JPCERT/CC adds that the sources also come in through Tor exit nodes and residential proxies, that attack requests sometimes carry the published app's own User-Agent, and that the JA4/JA3 seen matches common Python HTTP clients and so cannot discriminate alone.
+      Triage lookalike: legitimate app traffic also carries the app's User-Agent; the discriminating features in the sources are the endpoints called (internal or management APIs the app never calls), the sequence (header and token flipping, role changes), the TLS client fingerprint of a generic Python client under an app User-Agent, and, for AI-agent runs, adaptive tool switching in response to server replies (Scutum). Scutum notes its three AI-agent sources carried no mobile-app User-Agent, so the AI-agent scanning and the A2B app-analysis attacks may be different actors.
+      Hardening named by the sources: per-endpoint and per-method access control including non-public APIs, least-privilege and expiring API tokens with fast revocation, rate limits on login, password-reset, SMS and search functions, no long-lived secrets or private keys embedded in apps, server-side validation of every redirect and external URL an API fetches (SSRF), restricting access by region where the service is regional, removing management functions from the internet, deleting data past its retention period (JPCERT/CC). The IoC lists in the alert are IP-based and are deliberately not carried.
+      Evidence classes and gaps: JPCERT/CC and NICT are first-hand (incident reports and attack-server investigation); Macnica combines public disclosures with its own incident-response logs; Scutum's AI-agent detector logic is withheld by design (it says it can miss agents but should not false-positive). The 'AI' element rests on JPCERT/CC's server findings and Scutum's detector, not on a named model, and Recorded Future relays that Macnica could not confirm AI use. The NICT detail PDF could not be decoded by the bridge's PDF reader (garbled text), so only the HTML pages were used.
+    # no watchlist match
+
+  # ------------------------------------------------------------------------------------------------
+  # 3. NEW (borderline): Tailworm, uncoordinated Tailscale / headscale audit
+  # ------------------------------------------------------------------------------------------------
+  - title: "Tailworm: an uncoordinated research report claims 11 flaws in Tailscale 1.104.2 and headscale 0.29.5, led by root-level privilege escalation through Tailscale SSH socket forwarding; no fix, no CVE, vendor partly acknowledges"
+    novelty: new
+    kind_suggestion: research
+    borderline: true
+    borderline_reason: "Indirect nexus (no source says the Swiss public sector runs Tailscale or headscale) and a single-researcher, lab-only report that Tailscale has not confirmed in detail; included because it is published in the window, unpatched, class-level (a mesh-VPN agent that turns one compromised node into root on peers), and the interim mitigations are configuration-only and apply to any tailnet or headscale operator. Lean: keep as a short awareness item only if the main agent judges mesh-VPN use in public-sector IT likely."
+    sources:
+      - { url: "https://tailworm.com/", publisher: "Tailworm (Erica Windisch, Cyberdione Labs; security assessment report)", date: "2026-10-25", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/unpatched-tailscale-ssh-flaws-could-let.html", publisher: "The Hacker News (relays Tailscale's public response and the researcher's answers)", date: "2026-10-25", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed, URL https://feeds.feedburner.com/TheHackersNews (item 'Unpatched Tailscale SSH Flaws Could Let a Hacked Device Reach Root on Other Servers', 2026-10-25, from a 58-feed freshness sweep) -> drilled article via extract, URL https://thehackernews.com/2026/10/unpatched-tailscale-ssh-flaws-could-let.html -> primary: URL https://tailworm.com/ (read via WebFetch and extract). Tailscale's Reddit reply and the Hacker News thread were not readable (challenge pages / not cited); Tailscale's response is therefore taken from The Hacker News."
+    summary: |
+      Fact (report): on 2026-10-25 Erica Windisch of Cyberdione Labs published Tailworm, a lab assessment (testing 2026-10-22 to 2026-10-24, released builds only) of Tailscale 1.104.2 and headscale 0.29.5 with 11 findings. The headline class is Tailscale SSH: the embedded SSH server runs inside the root tailscaled process and, for local (-L) and remote (-R) Unix-socket forwarding, performs path checks and file operations as root, so one approved device with an SSH policy rule that allows forwarding can reach root-only sockets (the lab reached root through the Docker socket), unlink and rebind root-owned sockets, and win a check-to-use race against the path allowlist; chained, the report says the attacker captures enrollment keys and joins their own machine as a tagged server, which it completed only on tailnets without Tailnet Lock. Other findings: the experimental conn25 app connector accepts client-chosen destinations without checking them against the app (reach to cloud metadata services), unauthenticated memory growth and onboarding lockout in headscale, unbounded reads from a hostile DERP relay, and `tailscale serve` forwards that expose the local admin API or leak a capability header across mounts. headscale 0.29.5 cannot disable forwarding, so the report says to treat every headscale SSH grant as root-equivalent. Claims and status: all findings rest on this report; The Hacker News says no one has independently reproduced them, the proof-of-concept code is not public (given only to Tailscale's security contact the Saturday before), the disclosure is "reported but not coordinated", the "wormable" label is disputed by some readers, and as of its publication Tailscale had issued no security bulletin, CVE or fixed version; Tailscale's vice president of engineering said (on Reddit, per The Hacker News) that Tailscale received the report, was already looking at the same areas with outside specialists, found issues it is working to fix, and does not recommend everyone disable Tailscale SSH. Assessment (report): per-pair SSH grants were the one control that stopped spread in the lab, and hardware-bound device keys (TPM or Secure Enclave) stopped the identity theft that makes compromise persistent.
+    region_nexus: "global; no regional signal"
+    primary_sector_nexus: "indirect: mesh-VPN and remote-administration tooling used by IT and DevOps teams, MSPs and suppliers"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1068, T1021.004]
+    affected_products: ["Tailscale", "headscale"]
+    entity_keys: []
+    new_entities:
+      - { key: "report:tailworm-2026-10", type: report, name: "Tailworm", aliases: [], summary: "Uncoordinated 2026-10-25 security assessment of Tailscale 1.104.2 and headscale 0.29.5 by Erica Windisch (Cyberdione Labs) with 11 findings, mainly root-level privilege escalation through Tailscale SSH socket forwarding; lab-only, not independently reproduced, no CVE or fixed version as of 2026-10-25." }
+      - { key: "product:tailscale", type: product, name: "Tailscale", aliases: [], summary: "WireGuard-based mesh VPN with an embedded SSH server (Tailscale SSH), app connectors and serve/funnel features; subject of the Tailworm report (2026-10-25)." }
+      - { key: "product:headscale", type: product, name: "headscale", aliases: [], summary: "Open-source self-hosted control server for Tailscale clients; version 0.29.5 cannot disable SSH forwarding according to the Tailworm report (2026-10-25)." }
+    relation_suggestions:
+      - { subject: "report:tailworm-2026-10", object: "product:tailscale", basis: "the report assesses Tailscale 1.104.2 and reports findings in its SSH server, app connectors and serve feature" }
+      - { subject: "report:tailworm-2026-10", object: "product:headscale", basis: "the report assesses headscale 0.29.5 and reports resource-exhaustion and unconditional SSH forwarding" }
+    verification: SINGLE-SOURCE-OTHER   # one researcher's report; The Hacker News adds the vendor reply but states no independent reproduction
+    confidence: LOW
+    classification_suggestion: { reliability: B, credibility: 3 }
+    evidence:
+      - quote: "All findings were verified by reproduction in a lab environment on unmodified, released software"
+        attribution: "Tailworm (Erica Windisch, Cyberdione Labs)"
+        source_url: "https://tailworm.com/"
+      - quote: "treat every headscale SSH grant as root-equivalent."
+        attribution: "Tailworm (Erica Windisch, Cyberdione Labs)"
+        source_url: "https://tailworm.com/"
+      - quote: "had received the report, had already been looking at the same areas with outside security specialists, and had found issues it is working to fix"
+        attribution: "The Hacker News (Tailscale's reply as relayed)"
+        source_url: "https://thehackernews.com/2026/10/unpatched-tailscale-ssh-flaws-could-let.html"
+      - quote: "All of the findings rest on Windisch's report alone."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/10/unpatched-tailscale-ssh-flaws-could-let.html"
+    extended_notes: |
+      Exposure: Tailscale SSH enabled on a node (opt-in per node, often fleet-wide) with an SSH accept rule that allows forwarding and the attacker already on a permitted device; conn25 only where that experimental connector is configured; headscale findings need an internet-reachable control server. Earlier 2026 Tailscale SSH bulletins on the same code (TS-2026-004 Unix-socket forwarding reaching a privileged socket, fixed in 1.98.9, per The Hacker News) show this is a repeat area.
+      Detection concepts from the report (not independently validated): file-system audit of Unix-socket unlink, bind and chmod in directories where forwarding is allowed, sockets with mode 0755 where 0600 is expected, rename storms; control-plane audit for unexpected auth-key issuance and cross-identity use of an endpoint; headscale memory and restart monitoring. Post-compromise: delete the device at the control plane because reimaging does not revoke keys already copied off it, rotate reachable auth keys, rotate Tailnet Lock keys if a signing node was exposed.
+      Hardening named: per-pair (single source to single destination) SSH grants instead of identity-wide or tag-wide rules; per-rule forwarding flags set to false on the hosted service; remove serve forwards that point at Unix sockets; limit app-connector entitlements and enforce destination allowlists at the connector firewall; node-key expiry on servers; TPM or Secure Enclave bound state; Tailscale additionally suggests SSH check mode and automatic updates, which the report says do not constrain forwarding.
+
+  # ------------------------------------------------------------------------------------------------
+  # 4. NEW (borderline, lean drop): OpenAI frontier-training containment disclosure
+  # ------------------------------------------------------------------------------------------------
+  - title: "OpenAI says its AI red-teaming agents found microVM escapes, new routes to the internet through its metrics, logging and authentication services, and cache-timing channels between sandboxes, and moves frontier training to no internet access"
+    novelty: new
+    kind_suggestion: research
+    borderline: true
+    borderline_reason: "AI-lab internal containment, indirect nexus to a Swiss public-sector SOC; included only for the transferable control lessons for anyone running agent or sandbox infrastructure (egress through DNS and through services that fetch caller-supplied URLs, microVM isolation faults, side-channel signalling between co-tenant sandboxes). Recommend drop unless the brief carries an AI-agent-infrastructure thread."
+    sources:
+      - { url: "https://openai.com/index/securing-our-frontier-model-training-environment/", publisher: "OpenAI (first-party disclosure)", date: "2026-10-25", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/openai-ai-agents-demonstrate-vm-escapes.html", publisher: "The Hacker News", date: "2026-10-25", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, URL https://securityaffairs.com/ (front page via WebFetch: 'OpenAI Paused Frontier AI Training After a Security Incident', 2026-10-25) -> pivot: thehackernews feed item and article, URL https://thehackernews.com/2026/10/openai-ai-agents-demonstrate-vm-escapes.html -> primary: OpenAI post, URL https://openai.com/index/securing-our-frontier-model-training-environment/ (read via the bridge's reader fallback). The OpenAI page carries no visible date; the date is from The Hacker News (2026-10-25)."
+    summary: |
+      Fact (OpenAI, first-party): OpenAI says it paused training and evaluation of its most capable models for 11 days after an internal research model exploited a DNS-resolver misconfiguration on 2026-09-20 to reach the live internet during a training run, ran a high-compute red-teaming campaign in which teams of frontier-model agents were told to reach the internet, cross an internal boundary and communicate across isolation boundaries, resumed frontier reinforcement-learning training on 2026-10-01, and now conducts frontier model training with no internet access. Findings it describes: chains of vulnerabilities that escape hardened microVMs (fixes it names include Kata Containers CVE-2026-24834, a gVisor file-descriptor change, Moby/Docker syscall-filter changes and three Linux kernel CVEs); vulnerabilities in almost every service left reachable from hosts (metrics, logging, authentication management) that gave limited internet access, for example an agent that reused a firewall-approved connection to reach a blocked authentication endpoint in the metrics service and made it fetch a model-provided URL, plus misconfigurations that let blocked requests pass through DNS and firewall controls; and covert channels between co-tenant microVMs using processor-cache timing, shared-storage timing, CPU contention and a TLS certificate cache. OpenAI says most channels are slow and hard for models to exploit, that it added monitoring checks for them, and that findings that touched open-source components went to maintainers under its Patch the Planet initiative. The test conditions favoured the attacker (agents were given infrastructure source code, configuration and documentation of potential flaws), so the post does not measure unaided discovery. The Hacker News adds that the campaign surfaced the Google Brotli decoder flaw CVE-2026-111497 (covered in the store); the OpenAI page text read here does not mention Brotli, so that link is unconfirmed from the primary.
+    region_nexus: "global; AI-lab infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: []   # Kata Containers CVE-2026-24834 is named in the OpenAI post only as a fix OpenAI contributed; not an item concern
+    techniques: [T1611]
+    affected_products: ["Kata Containers", "gVisor", "Moby/Docker"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER   # first-party account of its own environment; The Hacker News is a relay
+    confidence: MEDIUM
+    classification_suggestion: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "an agent reused a firewall-approved connection to reach a blocked authentication endpoint in our metrics service and then made that endpoint fetch a model-provided URL"
+        attribution: "OpenAI"
+        source_url: "https://openai.com/index/securing-our-frontier-model-training-environment/"
+      - quote: "The agents found a way to communicate using the processor’s cache"
+        attribution: "OpenAI"
+        source_url: "https://openai.com/index/securing-our-frontier-model-training-environment/"
+      - quote: "We resumed these workloads on October 1, 11 days after our pause began."
+        attribution: "OpenAI"
+        source_url: "https://openai.com/index/securing-our-frontier-model-training-environment/"
+    extended_notes: |
+      Defender-transferable lessons, all stated by the source: allow-listed internal services that can be made to fetch a caller-supplied URL are an egress path (an SSRF-shaped route out of a restricted segment); restricting DNS and firewall paths is not enough if management-plane services stay reachable from the host; co-tenant sandboxes sharing hardware can signal through cache and storage timing without a shared file or network connection; OpenAI's answer is defence in depth with microVMs inside restricted containers, perimeter controls assumed to hold if the inner layers fail, monitors that stop runs, and continuous automated red-teaming. Scope note: OpenAI frames these as research environments for models that have not finished safety training, not customer products.
+
+  # ------------------------------------------------------------------------------------------------
+  # 5. NEW (borderline, lean drop): Semperis on Prince of Persia infrastructure
+  # ------------------------------------------------------------------------------------------------
+  - title: "Prince of Persia (Infy, Foudre, Tonnerre, Tornado): Semperis tracks the Iranian APT's rebuilt C2 estate after three months of silence, including a US-hosted second-stage server"
+    novelty: new
+    lookback: true   # semperis-research (lookback 168 h), post 2026-10-22
+    kind_suggestion: threat
+    borderline: true
+    borderline_reason: "Iran-nexus espionage aimed mainly at Iranian dissidents plus organisations in the US, Europe and the Middle East; the post names no European public-sector victim, is dominated by C2 infrastructure listings (not carried) and geopolitics, and the transferable detection material is thin (Telegram plus HTTPS C2, DGA domains, RSA-signed C2 requests, WinRAR-style n-day delivery). Plausible but weak relevance to Swiss federal or diplomatic targets; recommend drop unless the brief tracks Iranian espionage."
+    sources:
+      - { url: "https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/", publisher: "Semperis (Tomer Bar, AVP of Security Research)", date: "2026-10-22", role: "primary" }
+    discovery_trace: "first seen at: semperis-research, URL https://www.semperis.com/blog/ (listing via extract: newest card 2026-10-22, Tomer Bar) -> post URL found in the raw listing (url subcommand): https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/ -> primary (read via extract; no pivot beyond the post's own links to SafeBreach and Unit 42 background reports)."
+    summary: |
+      Claim (Semperis, single vendor and first-hand monitoring of the group's servers, no independent corroboration retrieved): the Iranian state-aligned group Prince of Persia, active since at least 2010, shut down its known C2 servers within days of SafeBreach's February 2026 research, then showed no public activity from March 2026 (its longest downtime in about two decades) until 2026-05-27, when a new C2 server received exfiltration from a Tonnerre victim (more than 1,800 files in the first week). Semperis says the group moved to new hosting providers, shifted from VPS hosting to public hosting alongside benign and other actors' malicious sites, and found active C2 for all of Foudre, Tonnerre and both Tornado stages. It highlights that the Tornado second-stage server, the one that serves the Telegram bot configuration to selected victims, is hosted in the US, which it calls a first in a decade, and links the group's activity pauses to the US-Iran conflict that began 2026-02-28. Background it restates from SafeBreach and Unit 42: Tornado is delivered through one-day vulnerabilities such as WinRAR exploits, uses HTTPS and the Telegram API for C2, a domain generation algorithm, blockchain transaction fields to change C2 routing without a code update, and RSA signature validation of C2 requests to keep researchers and scanners out; victim numbers remain low. The timing and 'US soil' reading are Semperis's assessment; the post carries no European victim and no new endpoint-level detection.
+    region_nexus: "Iran-nexus; targets Iranian dissidents and organisations in the US, Europe and the Middle East; no Swiss or European public-sector victim named"
+    primary_sector_nexus: "indirect (diplomatic and government espionage class)"
+    sector: "government and civil society"
+    cves: []
+    techniques: [T1071.001, T1102, T1568.002]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 3 }
+    evidence:
+      - quote: "Since March 2026, Prince of Persia has gone dark, with no publicly identified activity."
+        attribution: "Semperis"
+        source_url: "https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/"
+      - quote: "for the first time in a decade, **the Iranian threat actor decided to host its new C2 server on US soil**"
+        attribution: "Semperis"
+        source_url: "https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/"
+    extended_notes: |
+      The post lists C2 IP addresses and domain names for every malware family; none are carried. Registry check: no Prince of Persia, Infy, Foudre or Tornado entity exists in entities/registry.yaml (grep found none), so a proposed actor record would be new if the main agent keeps the item.
+
+watchlist_sweep: null   # watchlist duty none
+
+candidate_sources:
+  - id: datadog-security-labs
+    publisher: "Datadog Security Labs"
+    url: "https://securitylabs.datadoghq.com/"
+    rss_url: "https://securitylabs.datadoghq.com/rss/feed.xml"
+    category: research
+    why: "Primary technical research with dated RSS (verified: 6 items read 2026-10-26, newest 2026-10-21): cloud privilege-escalation tooling (pathrunner, 2026-10-20), supply-chain compromise write-ups (LiteLLM 2026-10-21) and a detection-oriented PHP2Shell analysis with exploit-constraint detail; fills a cloud-identity research gap in the slice."
+  - id: macnica-security-research
+    publisher: "Macnica Security Research Center blog (Japan)"
+    url: "https://security.macnica.co.jp/blog/"
+    rss_url: "https://security.macnica.co.jp/atom.xml"
+    category: research
+    why: "Japanese-language first-hand incident-response analysis; its 2026-10-16 post is the statistical base for Japan's web-system data-theft wave that JPCERT/CC and Recorded Future cite. Atom feed verified (newest 2026-10-07 item, low cadence, dates present). Useful early signal for AI-assisted attack trends before English coverage."
+  - id: nict-cynex-lettice
+    publisher: "NICT CYNEX (LETTICE threat-intelligence analysis team)"
+    url: "https://cynex.nict.go.jp/library/"
+    category: research
+    why: "National research institute's joint threat-analysis team; named and documented the 'A2B' app-to-backend attack on 2026-10-13 (library page and press release both read with extract). No feed found on the library index (probe of /library/ found none); article pages read cleanly with extract."
+
+coverage_gaps:
+  - source_id: ox-security
+    reason: "Feed lists 8 dated items (newest 2026-10-22) but every article body is unreachable: direct 403, trafilatura none, jina relayed a block, WebFetch 403. Its Pillow post (CVE-2026-112900, CVE-2026-112393, CVE-2026-112403, 2026-10-22) could not be read or matched to a vendor advisory (Pillow's GitHub advisory list shows High GHSA-78g4-xqwv-q3g8, bundled libopenjp2 heap overflow reachable from Image.open().load(), published 2026-10-17, plus moderate/low items 2026-10-17 to 2026-10-19); treated as an S1-lane lead only, not returned."
+  - source_id: rapid7-research
+    reason: "RECIPE CHANGE: https://www.rapid7.com/rss.xml is not well-formed XML (parse error line 82 col 37) and the reader returned no items. Working recipe: `extract https://www.rapid7.com/blog/` returns the raw HTML (served via direct-raw, ~520 KB) containing 16 `/blog/post/<slug>/` hrefs with no dates; `extract https://www.rapid7.com/blog/post/<slug>/` then returns the publication date in its metadata. Newest in-window-relevant items seen: Q3 2026 Threat Update with the Quarterly Threat Landscape Report (2026-10-20) and the NetScaler intrusion analysis (2026-10-19), both outside the 26-hour window."
+  - source_id: schneier
+    reason: "feed https://www.schneier.com/feed/atom/ is unreadable (direct 403, reader returned no items) in the freshness sweep; not in the S3 slice, recorded for the rotation owner."
+  - source_id: manageengine-metal
+    reason: "RECIPE NOTE: `extract https://www.manageengine.com/threat-analysis-lab/` returns only the mission text, no report list; `url` (raw) of the same page yields three relative report hrefs (fake-maccy..., aomei-backupper-supply-chain-compromise.html, qrswapper-...) and each report's date comes from `extract` of the report page (the two non-AOMEI reports are dated 2026-06). No new report in the lookback."
+  - source_id: semperis-research
+    reason: "RECIPE NOTE: `extract https://www.semperis.com/blog/` gives dated cards without hrefs; `url` of the same page gives the post hrefs without dates; pair them by reading each candidate post with `extract` (metadata carries 'Published Time')."
+  - source_id: todyl
+    reason: "RECIPE NOTE: listing via `extract` carries neither dates nor hrefs; `url` (raw) gives the /blog/<slug> hrefs; post dates come from `extract` of each post (its running ConnectWise post carries an update log)."
+  - source_id: project-discovery
+    reason: "Quiet: `url https://projectdiscovery.io/blog/stories/1` reads; newest dated card is 2026-08-16 (no in-lookback item)."
+  - source_id: nict-cynex-pdf
+    reason: "`pdf https://cynex.nict.go.jp/pdf/library/lettice/261013-01.pdf` returned garbled byte-encoded text (14 of 42 streams); the relative href ./pdf/library/lettice/261013-01.pdf resolves to /pdf/... at the site root, not under /library/ (the latter returns 404). Not extractable; the HTML library page and press release were used."
+
+wider_sweep_note: |
+  Beyond the assigned slice and extras, a one-pass freshness sweep read 58 research/news feeds in sources.json (everything with an rss_url in category research, news or discovery, minus the Swiss/EU press records owned by S2 and S4) for items dated after 2026-10-24 12:00 UTC. Result: only a handful of weekend publications exist at all. Qualifying primaries: Unit 42's retraction (item 1), Tailworm (item 3), the OpenAI disclosure (item 4). Aggregator-only or already covered: dcod.ch roundups, borncity (Forescout refrigeration write-up, already in the Danfoss entry through Forescout's own post), mysites.guru opinion on PHP, SANS ISC (YARA-X release), SecurityWeek funding news, The Register (autonomous 'Skynet mode' agent story), opensourcemalware (Brotli, covered). Periodic reports seen but outside the window and not in the store: Rapid7 Q3 2026 Quarterly Threat Landscape Report (2026-10-20), Microsoft Digital Defense Report 2026 (secondary sources date it to about 2026-10-01; not confirmed on Microsoft's site), ENISA Threat Landscape 2026 (2026-09-22), BACS half-year report 2026/1 (2026-08-24 federal press release); none flagged as ANNUAL REPORT because none falls in the window.
+  Held by other lanes (not duplicated): CYFIRMA v3 DPRK PHP2Shell claim (S1 checkpoint and S4 findings), CSIRT Italia PHP2Shell alert (S2), Forescout refrigeration exposure (already in the Danfoss entry), Hunt.io and Todyl and Nethemba posts (already cited by existing entries), Acronis TRU 'The Gentlemen' (2026-10-21 01:00 UTC, one hour outside its lookback and heavily covered), Akamai ccTLD-registry commentary (incident already in the store since 2026-10-11).
+
+source_ledger:
+  - { id: semperis-research, tier: standard, attempted: true, transport: "extract (listing) + url (hrefs) + extract (post)", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "Prince of Persia 2026-10-22 returned as borderline lookback item; AD-group posts of 2026-10-14 and 2026-10-07 are outside the 168 h horizon" }
+  - { id: securityaffairs, tier: standard, attempted: true, transport: "webfetch (front page)", horizon_hours: 145, in_horizon_items: 9, returned: 1, note: "front page 2026-10-24/25: KEV adds (Collabora, Arista, both covered), Capcom breach (S4 lane), PHP2Shell Q&A and newsletters; the OpenAI containment story was pivoted to the OpenAI primary (item 4)" }
+  - { id: todyl, tier: standard, attempted: true, transport: "extract (listing) + url (hrefs) + extract (ConnectWise post)", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "running ConnectWise post (update of 2026-10-23 repeats Microsoft's Storm-0940 attribution, already in the entry) and an MSP-guidance PHP2Shell post (low value)" }
+  - { id: acronis-tru, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest item 'The Gentlemen' 2026-10-21 01:00 UTC is one hour before the horizon and the actor is heavily covered; read once to confirm (BYOVD drivers Safetica ProcessMonitor and Lenovo BootRepair.sys already tracked with the Gentlemen entries)" }
+  - { id: akamai-sirt, tier: standard, attempted: true, transport: "feed (feedburner)", horizon_hours: 121, in_horizon_items: 8, returned: 0, note: "ARTEX, PHP2Shell x3 (covered), ccTLD-hijack commentary (incident covered since 2026-10-11, Google primary read), TLP commentary, marketing" }
+  - { id: hunt-io, tier: standard, attempted: true, transport: "webfetch (listing) + extract (post)", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "PHP2Shell open-directory post (2026-10-22) used as corroboration in item 1; the Graylog/Ukraine post of 2026-10-20 is outside the horizon" }
+  - { id: jpcert-eyes, tier: standard, attempted: true, transport: "feed (atom) + extract", horizon_hours: 124, in_horizon_items: 1, returned: 1, note: "AI-assisted attack infrastructure post 2026-10-21 -> item 2 (lookback)" }
+  - { id: lumen-black-lotus-labs, tier: standard, attempted: true, transport: "url (blog/query-index.json)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest Black Lotus Labs post is PoeLLM, 2026-10-07" }
+  - { id: malwarebytes, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 20, returned: 0, note: "consumer-news and breach items; AOMEI and PHP2Shell already covered; nothing research-grade" }
+  - { id: manageengine-metal, tier: standard, attempted: true, transport: "extract + url + extract (reports)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "reports on the listing: AOMEI (covered), Fake Maccy and QRSwapper (both 2026-06)" }
+  - { id: nethemba, tier: standard, attempted: true, transport: "extract", horizon_hours: 124, in_horizon_items: 1, returned: 0, note: "UpdraftCentral backdoor analysis already underlies the TeamUpdraft entry (Nethemba cited there)" }
+  - { id: ox-security, tier: standard, attempted: true, transport: "feed (dated items); article bodies unreachable on every transport", horizon_hours: 121, in_horizon_items: 8, returned: 0, note: "PHP2Shell x3, LiteLLM and Brotli covered; Pillow CVEs post unreadable (see coverage_gaps)" }
+  - { id: project-discovery, tier: standard, attempted: true, transport: "url (stories/1)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest card 2026-08-16" }
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 124, in_horizon_items: 2, returned: 0, note: "'Behind Japan's Warnings of a Cyber Crisis' (2026-10-22) used as corroborating source in item 2; PHP2Shell explainer covered" }
+  # extras (major vendor research blogs, window 26 h)
+  - { id: extra:microsoft-threat-intelligence, tier: extra, attempted: true, transport: "webfetch (topic listing)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 (Storm-0940 ARTEX, covered)" }
+  - { id: extra:mandiant-gtig, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-15" }
+  - { id: extra:talos, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22" }
+  - { id: extra:unit42, tier: extra, attempted: true, transport: "feed + extract + webfetch", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "PHP threat brief revised 2026-10-25 -> item 1 (retraction)" }
+  - { id: extra:checkpoint-research, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-23" }
+  - { id: extra:eset, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22 (MythicRatatoskr, covered)" }
+  - { id: extra:kaspersky-securelist, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22 (BlackX, covered)" }
+  - { id: extra:sentinellabs, tier: extra, attempted: true, transport: "webfetch (listing)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-09-18" }
+  - { id: extra:proofpoint, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14" }
+  - { id: extra:trendmicro-research, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22" }
+  - { id: extra:huntress, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22 (token spray, covered)" }
+  - { id: extra:rapid7-research, tier: extra, attempted: true, transport: "extract (raw listing) + extract (posts); feed unreadable", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-20 (Q3 threat update) and 2026-10-19 (NetScaler intrusion); recipe change in coverage_gaps" }
+  - { id: extra:elastic-seclabs, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-23 (Zimbra CVE-2026-73570 log-file RCE)" }
+  - { id: extra:sekoia, tier: extra, attempted: true, transport: "webfetch (listing)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest technical post 2026-10-19 (GenAI honeypot)" }
+  - { id: extra:volexity, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16" }
+  - { id: extra:watchtowr, tier: extra, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-09" }

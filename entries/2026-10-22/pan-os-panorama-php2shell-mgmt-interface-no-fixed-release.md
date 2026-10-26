@@ -66,8 +66,8 @@ sources:
     date: "2026-10-25"
     role: primary
   - url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
-    publisher: "Palo Alto Networks Unit 42 (threat brief)"
-    date: "2026-10-21"
+    publisher: "Palo Alto Networks Unit 42 (threat brief, revised 2026-10-25)"
+    date: "2026-10-25"
     role: corroborating
   - url: "https://www.php.net/archive/2026.php#2026-10-21-5"
     publisher: "PHP (security advisory)"
@@ -96,9 +96,6 @@ evidence:
   - quote: "No special configuration is required to be affected by this issue."
     publisher: "Palo Alto Networks PSIRT (advisory, Impact of Critical Vulnerabilities in PHP on Palo Alto Networks Products)"
     source_url: "https://security.paloaltonetworks.com/CVE-2026-109618"
-  - quote: "Unit 42 has seen proof of concept of these vulnerabilities."
-    publisher: "Palo Alto Networks Unit 42 (threat brief)"
-    source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
   - quote: "Although WildFire Cloud was previously impacted, a remediation patch was deployed on October 22, 2026."
     publisher: "Palo Alto Networks PSIRT (advisory, revised 2026-10-23)"
     source_url: "https://security.paloaltonetworks.com/CVE-2026-109618"
@@ -108,7 +105,7 @@ evidence:
 verification: single-source
 sourcing_note: >
   Palo Alto Networks' advisory is the first-party record for its own products and the only source for the PAN-OS and Panorama
-  impact; Unit 42 is the same vendor's brief. The two flaws themselves are described by the PHP project. On 2026-10-25 the
+  impact. The two flaws themselves are described by the PHP project. On 2026-10-25 the
   advisory's revision history calls 10.2.18-h13, 11.1.16-h4 and 11.2.10-h16 released while its unrevised solution text still
   speaks of upcoming releases.
 confidence: high
@@ -152,12 +149,19 @@ updates:
       remaining hotfixes are due 2026-10-27 to 2026-10-30, and Palo Alto's current analysis finds no
       impact of CVE-2026-115560 on PAN-OS.
     fields: [title, headline, summary, cves, sources, evidence, body, tags, sourcing_note]
+  - at: "2026-10-26T03:40:53Z"
+    run_id: 2026-10-26T0256Z-intel
+    type: correction
+    summary: >
+      The entry said Unit 42 had seen a proof of concept of the PHP flaws; Unit 42's brief, revised on
+      2026-10-25, no longer says so, and the statement is removed.
+    fields: [body, evidence, sources, sourcing_note]
 migrated_from: null
 ---
 
 Palo Alto Networks' advisory of 2026-10-21 lists every release of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama as affected by CVE-2026-109618 and CVE-2026-109619, with no fixed build released at the time ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)); the revision of 2026-10-23 gave estimated dates from 2026-10-26 to 2026-10-30 for hotfix builds of every PAN-OS train and noted that Cortex XCORE (SaaS) and WildFire Cloud were remediated on 2026-10-21 and 2026-10-22 ([Palo Alto Networks, 2026-10-23](https://security.paloaltonetworks.com/CVE-2026-109618)). The advisory's timeline dates a correction of the WildFire appliances WF-500 and WF-500-B to 2026-10-23, and the table now lists them as unaffected, although the revision that morning had listed them as affected; the table no longer distinguishes Panorama, a note says the issue applies to PAN-OS software on PA-Series and VM-Series firewalls and on Panorama (virtual and M-Series), and the mitigation text covers PAN-OS and Panorama together ([Palo Alto Networks, 2026-10-24](https://security.paloaltonetworks.com/CVE-2026-109618)). The revision of 2026-10-24 added updated threat-signature and content-version details ([Palo Alto Networks, 2026-10-24](https://security.paloaltonetworks.com/CVE-2026-109618)). The two flaws are the unauthenticated remote-code-execution bugs in the PHP runtime that the PHP project fixed in its releases of the same day ([PHP, 2026-10-21](https://www.php.net/archive/2026.php#2026-10-21-5)). Palo Alto says no special configuration is required to be affected, that the issue strictly affects the management web interface, which includes the HTTPS web UI and the XML API service, and that a dataplane interface is affected only where a management profile is attached to it ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)). It states that the GlobalProtect portal and gateway and the captive portal are not impacted ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
-Palo Alto describes the flaws as remote code execution but scores their impact on its own product CVSS-B 8.7 (severity high, urgency moderate), with high availability impact and none on confidentiality or integrity, against a vendor-level 9.2 with high impact on all three, and says the risk is highest where management access is allowed from external addresses on the internet; restricting management to a single jump box lowers its rating to 7.1, and it is not aware of any malicious exploitation against its products ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)). Unit 42 says it has seen proof of concept of the PHP flaws ([Unit 42, 2026-10-21](https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/)). Until fixes ship, Palo Alto recommends restricting management access to trusted internal addresses and offers Threat Prevention coverage (Threat IDs 543004 and 97622 to 97625 and twenty further IDs from 97643 to 97678, Applications and Threats content versions 9162, 9163, 9164 and later) that applies only when management traffic is routed through a dataplane interface, the certificate for inbound management traffic has been replaced, inbound management traffic is decrypted so the firewall can inspect it, and threat prevention is enabled on that traffic ([Palo Alto Networks, 2026-10-24](https://security.paloaltonetworks.com/CVE-2026-109618)).
+Palo Alto describes the flaws as remote code execution but scores their impact on its own product CVSS-B 8.7 (severity high, urgency moderate), with high availability impact and none on confidentiality or integrity, against a vendor-level 9.2 with high impact on all three, and says the risk is highest where management access is allowed from external addresses on the internet; restricting management to a single jump box lowers its rating to 7.1, and it is not aware of any malicious exploitation against its products ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)). Until fixes ship, Palo Alto recommends restricting management access to trusted internal addresses and offers Threat Prevention coverage (Threat IDs 543004 and 97622 to 97625 and twenty further IDs from 97643 to 97678, Applications and Threats content versions 9162, 9163, 9164 and later) that applies only when management traffic is routed through a dataplane interface, the certificate for inbound management traffic has been replaced, inbound management traffic is decrypted so the firewall can inspect it, and threat prevention is enabled on that traffic ([Palo Alto Networks, 2026-10-24](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
 **Exposure:** every PAN-OS firewall and Panorama appliance below its train's hotfix, whatever the configuration, through its management web interface; the service is reachable from the internet where the management port, or a dataplane interface carrying a management profile, answers HTTPS or XML API requests from outside the administrator range ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
@@ -176,3 +180,7 @@ Palo Alto Networks' advisory now lists the WildFire appliances WF-500 and WF-500
 ## Update — 2026-10-25T14:00:17Z
 
 Palo Alto Networks' revision of 2026-10-25 removed the estimated dates of 10.2.18-h13, 11.1.16-h4 and 11.2.10-h16 "as these versions are released" ([Palo Alto Networks, 2026-10-25](https://security.paloaltonetworks.com/json/CVE-2026-109618)); the advisory's solution text, unrevised, still says the issue will be fixed in upcoming releases of PAN-OS, and every other hotfix carries an estimated date from 2026-10-27 to 2026-10-30 ([Palo Alto Networks, 2026-10-25](https://security.paloaltonetworks.com/CVE-2026-109618)). The FAQ adds that Palo Alto's current analysis shows no impact on PAN-OS firewalls or Panorama of CVE-2026-115560, the new vulnerability PHP announced, and Palo Alto still knows of no malicious exploitation against its products ([Palo Alto Networks, 2026-10-25](https://security.paloaltonetworks.com/CVE-2026-109618)).
+
+## Correction — 2026-10-26T03:40:53Z
+
+Unit 42's brief, revised on 2026-10-25, no longer says that it has seen a proof of concept of the PHP flaws ([Unit 42, 2026-10-25](https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/)).
