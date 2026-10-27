@@ -1,0 +1,440 @@
+# S1 findings, run 2026-10-27T0256Z-intel (re-spawn after container restart; every fact fetched fresh in this attempt)
+domain: S1
+run_id: 2026-10-27T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-27T03:14:56Z
+ended_at: 2026-10-27T03:34:48Z
+duration_seconds: 1192
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 4
+items:
+  # ---------------------------------------------------------------------------------------------
+  # A. KEV listing + first source-confirmed exploitation: update of the main PHP2Shell entry
+  - title: "PHP2Shell (CVE-2026-109618, CVE-2026-109619): CISA adds both to KEV on 2026-10-26 after the first source-confirmed code execution against honeypots"
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog (catalogVersion 2026.10.26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching", publisher: "CISA alert (updated 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md", publisher: "Adel Karimi (Perplexity) honeypot-data report", date: "2026-10-24", role: "primary" }
+      - { url: "https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells/", publisher: "SecurityWeek", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/", publisher: "BleepingComputer", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107260", publisher: "ENISA EUVD (EUVD-2026-107260, CVE-2026-109618)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107265", publisher: "ENISA EUVD (EUVD-2026-107265, CVE-2026-109619)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://www.vulncheck.com/blog/php2shell-vulnerabilities", publisher: "VulnCheck (blog, updated 2026-10-26)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://watchtowr.com/intelligence/php-cve-2026-109618-faq/", publisher: "watchTowr (FAQ, updated)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-186", publisher: "Fortinet PSIRT FG-IR-26-186 (revised 2026-10-26)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://www.bacs.admin.ch/de/warnung-php-de", publisher: "BACS (NCSC-CH) warning, unchanged", date: "2026-10-21", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (https://www.cisa.gov/known-exploited-vulnerabilities-catalog, catalogVersion 2026.10.26, both CVEs dateAdded 2026-10-26) -> primary: CISA alert https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching (fetched via extract, updated 2026-10-26) -> pivot: enisa-euvd bridge (exploitedSince 2026-10-26) -> pivot: SecurityWeek https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells/ -> primary: Karimi report https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md; BleepingComputer https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/ for Hutchins's confirmation"
+    summary: |
+      Exploitation-status change on the entry that carries the PHP project's two out-of-memory and stale-state flaws. CISA added CVE-2026-109618 ("PHP Memory Corruption Vulnerability") and CVE-2026-109619 ("PHP Stale Internal Request-State Vulnerability") to the KEV catalogue on 2026-10-26 (catalogVersion 2026.10.26): due date 2026-10-29, forensicTriage Yes (the listing carries CISA's forensic-triage requirement), knownRansomwareCampaignUse Unknown, notes pointing at the open-source-component caveat. CISA updated its alert the same day to record the listing; the alert's actions are: inventory every PHP including PHP bundled in other software, patch internet-facing systems first, take PHP-based systems offline if they cannot be patched or run PHP 8.1 or earlier, and monitor for PHP worker processes launching shells or downloading tools; the alert still names no actor and does not say how CISA learned of exploitation. ENISA's EUVD marks both records exploited since 2026-10-26 (EPSS shown as 99.98 and 100.0 on its percent scale); FIRST EPSS for 2026-10-26 is 0.99981 for CVE-2026-109618 and 0.99997 for CVE-2026-109619.
+      What the exploitation rests on, as sources state it: Adel Karimi (detection and response lead at Perplexity) published a honeypot report dated 2026-10-24 correlating 35 complete execution-stage HTTP POSTs with 35 /bin/sh starts directly parented by Apache workers (uid 33) on three disposable "phpot" targets running PHP 8.4.26 under single-worker Apache mod_php with a 128 MiB memory limit; the requests followed a four-stage multipart chain (memory pressure, memory disclosure through an oversized PHPSESSID of 800 KiB decoded, further memory pressure, then a target-adjusted execution stage) that matches the public HTTP-only proof-of-concept family, came from two hosting-network source clusters (registered to OVH US and Interserver; Karimi stresses these are two source-address clusters, not two actors), and ran id, proof-file, wget, curl and PHP CLI commands; no second-stage payload download was observed and the web-root writes failed on a read-only filesystem. Karimi says the chain is consistent with CVE-2026-109618 and that the records do not establish a distinct CVE-2026-109619 path, and he cautions that it demonstrates the chain on an intentionally favourable single-worker mod_php profile, not exploit reliability on other worker counts, PHP builds or applications. Expel's Marcus Hutchins (via BleepingComputer) called it by far the highest-quality confirmation of in-the-wild exploitation he has seen. SecurityWeek and BleepingComputer relayed it on 2026-10-26; SecurityWeek notes that as of that morning CISA had not yet listed the flaws.
+      VulnCheck's page, updated as of 17:30 ET on 2026-10-26, says its exploit now supports mod_php on AMD64 (and ARM64 for 8.4 and 8.5) across PHP 8.2.28-8.2.34, 8.3.22-8.3.35, 8.4.10-8.4.26 and 8.5.10-8.5.11, plus default WordPress Docker installs, and counts 2,608,039 internet-facing hosts running PHP. watchTowr's FAQ now carries "Exploited in the wild per CISA KEV" in its description. The store entry's statement that no source ties a confirmed compromise to these flaws is superseded: the honeypot execution is the first documented code execution outside a lab, but it is against honeypots, no victim organisation has been named, and CrowdStrike, Wordfence and Sophos earlier reported none. Fortinet's FG-IR-26-186 (revised 2026-10-26) now lists FortiOS, FortiManager, FortiAnalyzer, FortiWeb, FortiProxy and others as confirmed not impacted and keeps only FortiDDoS, FortiSOAR and FortiSOAR PaaS under investigation. BACS's warning page and the Cyber Security Hub post 13083 are unchanged since 2026-10-22 (no Swiss exploitation statement); PHP's archive shows no release after the 2026-10-26 Windows rebuilds.
+    region_nexus: "global; BACS (NCSC-CH) has warned and Swiss hosters, cantons and federal PHP applications are in the store entry"
+    primary_sector_nexus: "direct: PHP runs Swiss federal, cantonal and communal web portals, CMS sites and embedded admin interfaces"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190, T1059.004]
+    affected_products: ["PHP"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    priority_hint: "stays critical; cves[].status moves to exploited for both (CISA KEV, EUVD exploitedSince 2026-10-26); the first-party ground truth is CISA's listing, the technical confirmation is Karimi's honeypot report, and Karimi's own caveat is single-worker mod_php on PHP 8.4.26"
+    evidence:
+      - quote: "CISA has updated this Alert to reflect the addition of CVE-2026-109618 and CVE-2026-109619 to its Known Exploited Vulnerabilities (KEV) Catalog on Oct. 26, 2026."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching"
+      - quote: "Monitor for suspicious activity, including PHP worker processes launching shells or downloading tools."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching"
+      - quote: "PHP contains an out-of-memory corruption vulnerability that allows for unauthenticated remote code execution."
+        attribution: "CISA KEV catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "These are two source-address clusters, not an attribution to two actors."
+        attribution: "Adel Karimi honeypot-data report"
+        source_url: "https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md"
+      - quote: "these records do not establish use of a distinct CVE-2026-109619 path"
+        attribution: "Adel Karimi honeypot-data report"
+        source_url: "https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md"
+      - quote: "it is not a measurement of exploit reliability on other worker counts, PHP builds, or applications"
+        attribution: "SecurityWeek (quoting Karimi)"
+        source_url: "https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells/"
+      - quote: "No second-stage payload download was observed."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells/"
+      - quote: "This is by far the highest quality confirmation of in-the-wild php2shell exploitation I've seen so far."
+        attribution: "Marcus Hutchins (Expel), via BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/"
+      - quote: "exploitedSince\":\"Oct 26, 2026, 12:00:00 AM"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107260"
+      - quote: "has identified PHP on 2,608,039 internet-facing hosts"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/php2shell-vulnerabilities"
+    extended_notes: |
+      Detection anchors the sources support (behavioural, no IOCs): process-creation telemetry with Apache or PHP worker parent (apache2/httpd uid 33, php-fpm, php-cgi, lsphp, frankenphp) spawning /bin/sh, then wget/curl/PHP CLI; web-server access logs showing multipart/form-data POSTs with hundreds of parts, mostly "files*" or "x*" fields, no User-Agent, to / or /index.php, including PHPSESSID and PHP_SESSION_UPLOAD_PROGRESS fields; large (hundreds of KiB) Set-Cookie/PHPSESSID values in responses; PHP error-log lines "Allowed memory size ... exhausted in Unknown on line 0" at request startup and Apache worker SIGSEGV with no completed access-log entry for the final stage (Karimi: HTTP 200 on the first three stages is not a success criterion). Hardening: patch to 8.5.12/8.4.27/8.3.36/8.2.35 and restart workers; keep session.upload_progress.enabled=0 (CVE-2026-115560 is not fixed by the October releases).
+  # ---------------------------------------------------------------------------------------------
+  # B. PAN-OS hotfix status after Palo Alto's 2026-10-27T00:10Z revision
+  - title: "PAN-OS and Panorama PHP2Shell: six more hotfixes released by 2026-10-27 (nine in total), the 12.2 and 12.1 trains still unfixed, PHP now on CISA KEV"
+    novelty: "update-of:2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release"
+    sources:
+      - { url: "https://security.paloaltonetworks.com/json/CVE-2026-109618", publisher: "Palo Alto Networks PSIRT (advisory record with timeline, revised 2026-10-27T00:10Z)", date: "2026-10-27", role: "primary" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-109618", publisher: "Palo Alto Networks PSIRT (advisory, revised 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://security.paloaltonetworks.com/rss.xml", publisher: "Palo Alto Networks PSIRT feed (item timestamp 2026-10-27T00:10Z)", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: paloalto-psirt feed https://security.paloaltonetworks.com/rss.xml (CVE-2026-109618 item timestamp 2026-10-27T00:10:00Z) -> primary: advisory page https://security.paloaltonetworks.com/CVE-2026-109618 (extract) and its CVE record JSON https://security.paloaltonetworks.com/json/CVE-2026-109618 (timeline entries)"
+    summary: |
+      Palo Alto Networks revised its advisory at 2026-10-27T00:10Z. Its timeline now records the ETAs removed as released for 10.2.18-h13, 11.1.16-h4 and 11.2.10-h16 (2026-10-25), 11.1.4-h38, 11.1.6-h40, 11.1.10-h36 and 11.1.13-h16 (2026-10-26), and 10.2.13-h27 and 10.2.16-h12 (2026-10-27); the same revision updated the FAQ and the status of Koi, a product listed as affected below 12.2.4-h1. The product table still lists these hotfixes with ETAs: 12.2.4-h1 (10/28); 12.1.4-h13 (10/29), 12.1.7-h11 (10/28), 12.1.10-h3 (10/30); 11.2.4-h23 (10/30), 11.2.7-h23 (10/29), 11.2.13-h4 (10/27), 11.2.16-h1 (10/28); 11.1.7-h12 (10/30); 10.2.7-h39 (10/30), 10.2.10-h42 (10/29). In effect no PAN-OS 12.2 or 12.1 build and only one 11.2 build (11.2.10-h16) is fixed so far, and the FAQ says 11.2.10-h16 carries only the PHP fix while 11.2.10-h17 (ETA 10/27 in the Brotli advisory) carries both the PHP and the Brotli fix. The solution text is still unrevised ("This issue will be fixed in the upcoming releases of PAN-OS"). Palo Alto still says it is not aware of any malicious exploitation against its products and still places the highest risk on management access reachable from the internet; this is now read against CISA's KEV listing of both PHP CVEs on 2026-10-26 and the honeypot-confirmed code execution against Apache mod_php (see the main PHP2Shell update), though no source ties either to PAN-OS. Affected surface is unchanged: the management web interface (HTTPS web UI and XML API), and a dataplane interface only if a management profile is attached; GlobalProtect portal, gateway, Clientless VPN and Captive Portal are not affected; the FAQ analysis still finds no impact of CVE-2026-115560 on PAN-OS.
+    region_nexus: "global; PAN-OS is widely deployed in Swiss cantonal and federal perimeters"
+    primary_sector_nexus: "direct (public-sector perimeter firewalls and Panorama)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama"]
+    entity_keys: ["tool:php2shell", "product:php", "product:palo-alto-networks-panorama"]
+    new_entities: []
+    verification: SINGLE-SOURCE-VENDOR
+    confidence: HIGH
+    evidence:
+      - quote: "Removed the ETAs for 10.2.13-h27 and 10.2.16-h12 as these versions are released."
+        attribution: "Palo Alto Networks PSIRT (timeline 2026-10-27T00:10Z)"
+        source_url: "https://security.paloaltonetworks.com/json/CVE-2026-109618"
+      - quote: "Removed the ETAs for 11.1.4-h38, 11.1.6-h40, 11.1.10-h36 and 11.1.13-h16 as these versions are released"
+        attribution: "Palo Alto Networks PSIRT (timeline 2026-10-26T05:45Z)"
+        source_url: "https://security.paloaltonetworks.com/json/CVE-2026-109618"
+      - quote: "The only exception is 11.2.10-h16 which only includes the fix for PHP vulnerabilities; 11.2.10-h17 includes fixes for both vulnerabilities."
+        attribution: "Palo Alto Networks PSIRT (FAQ)"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-109618"
+      - quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue against our products."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-109618"
+  # ---------------------------------------------------------------------------------------------
+  # C. NetScaler: exploitation-status context only; fix status could not be verified
+  - title: "NetScaler management GUI and PHP2Shell: CISA KEV listing raises urgency, Citrix bulletin unchanged and fix status unverifiable"
+    novelty: "update-of:2026-10-23/netscaler-php2shell-management-gui-fixes-2026-10-27"
+    sources:
+      - { url: "https://support.citrix.com/external/article/CTX697263", publisher: "Citrix security bulletin CTX697263 (revision history unchanged since 2026-10-22)", date: "2026-10-22", role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA KEV catalog", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (both CVEs added 2026-10-26) -> re-check of the store entry's primary: Citrix CTX697263 https://support.citrix.com/external/article/CTX697263 (extract; Tech Zone post https://community.citrix.com/techzone-blogs/110_security-updates/protecting-netscaler-management-access-from-php-cve-2026-109618-cve-2026-109619-r1640/ returned HTTP 403 on extract, the bridge and WebFetch, so its current text and any fix announcement could not be read)"
+    summary: |
+      CISA's KEV listing of CVE-2026-109618 and CVE-2026-109619 on 2026-10-26 and the honeypot-confirmed code execution against Apache mod_php (see the main PHP2Shell update) move the NetScaler management-portal exposure from a pending-fix notice to an exploited-class flaw: Citrix's bulletin CTX697263 still lists NetScaler ADC and Gateway as impacted and points to the Tech Zone post for mitigation, lists NetScaler Console, StoreFront, Workspace App, XenServer and the other products as not impacted, and says Citrix-managed cloud services are already fixed. Its revision history shows only the 2026-10-22 initial publication and the 2026-10-22 addition of Citrix Provisioning. The fixes for all supported versions that the store entry says Citrix planned for 2026-10-27 could not be confirmed: the Tech Zone page, where Citrix publishes the dates and builds, was unreachable on every transport in this run, and a web search found no fixed-build announcement. No source states that NetScaler has been attacked through these flaws.
+    region_nexus: "global; NetScaler is common in Swiss federal and cantonal remote-access and application-delivery estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["tool:php2shell", "product:php", "product:citrix-netscaler"]
+    new_entities: []
+    verification: SINGLE-SOURCE-VENDOR
+    confidence: MEDIUM
+    borderline: true
+    borderline_reason: "status-only delta (KEV listing); the fix announcement due 2026-10-27 is not verifiable from this run, so the composer may prefer to fold the KEV status into the entry's cves[] and re-check the Tech Zone post on the next fire"
+    evidence:
+      - quote: "Impacted. Please refer to the blog for more information and immediate mitigation guidance"
+        attribution: "Citrix (CTX697263)"
+        source_url: "https://support.citrix.com/external/article/CTX697263"
+      - quote: "Citrix has investigated potential impacts on Citrix-managed cloud services and confirmed that CVE-2026-109618 and CVE-2026-109619 have been addressed in such services."
+        attribution: "Citrix (CTX697263)"
+        source_url: "https://support.citrix.com/external/article/CTX697263"
+  # ---------------------------------------------------------------------------------------------
+  # D. QNAP / Synology
+  - title: "QNAP QSA-26-18 now lists QVR Surveillance (ARM32) and TVR OS as resolved; Note Station 3 and QNE (ADRA) still without a fix"
+    novelty: "update-of:2026-10-25/qnap-synology-php2shell-qts-quts-hero-fixed-others-unfixed"
+    sources:
+      - { url: "https://www.qnap.com/en/security-advisory/qsa-26-18", publisher: "QNAP security advisory QSA-26-18 (as fetched 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_14", publisher: "Synology advisory Synology-SA-26:14 (revision 2, 2026-10-26)", date: "2026-10-26", role: "primary" }
+    discovery_trace: "first seen at: re-check of the store entry's primary https://www.qnap.com/en/security-advisory/qsa-26-18 (fetched with extract, which served it through the reader fallback) -> Synology https://www.synology.com/en-global/security/advisory/Synology_SA_26_14 (extract)"
+    summary: |
+      QNAP's advisory table, as fetched on 2026-10-27, now shows QVR Surveillance 3.0.3 and earlier (ARM32 models) resolved by QVR Surveillance 3.0.3.1756 and TVR OS 1.0.4 and earlier resolved by TVR OS 1.0.5, where the store entry (written 2026-10-25) says QNAP had no fix for either. Notes Station 3 3.9.14 and earlier and QNE (ADRA) 1.0.7 and earlier remain "Fixing" with the fixed version "To be announced"; the QTS, QuTS hero and QuTScloud builds dated 2026-10-23 are unchanged. The revision history on the page still lists only V1.0 (2026-10-22) and V1.1 (2026-10-24, QTS, QuTS hero and QuTScloud resolved), so the table change carries no dated revision; the affected-products line no longer names QuMagie, which the store entry lists as affected without a fix row. QNAP still says it has not received reports of exploitation targeting QNAP products, still says the most effective protection is to keep the device off the internet until fixes are applied, and says PHP inside containers on Container Station or in third-party applications is not covered by its updates. Synology revised Synology-SA-26:14 on 2026-10-26 (revision 2, "Add Hyper Backup package"); it lists Hyper Backup as not affected, which changes nothing for the fixed Calendar, Mail Station and PHP 7.4 to 8.4 packages or for the end-of-life PHP 7.3 that gets no fix.
+    region_nexus: "global; QNAP and Synology NAS and QVR video recorders are used across Swiss municipalities and agencies"
+    primary_sector_nexus: "indirect to direct (municipal video surveillance and NAS)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["QNAP QVR Surveillance", "QNAP TVR OS", "QNAP Note Station 3", "QNAP QNE (ADRA)", "Synology Hyper Backup"]
+    entity_keys: ["tool:php2shell", "product:php", "product:qnap-note-station-3", "product:qnap-qne", "product:qnap-qts"]
+    new_entities:
+      - { key: "product:qnap-qvr-surveillance", type: product, name: "QNAP QVR Surveillance", aliases: ["QVR Surveillance"], summary: "QNAP video-surveillance application and ARM32 recorder firmware; listed in QNAP QSA-26-18 as affected by the PHP2Shell flaws and fixed in 3.0.3.1756 (QNAP, fetched 2026-10-27)." }
+      - { key: "product:qnap-tvr-os", type: product, name: "QNAP TVR OS", aliases: ["TVR OS"], summary: "Operating system of QNAP's TVR-series surveillance appliances; listed in QNAP QSA-26-18 as affected by the PHP2Shell flaws and fixed in 1.0.5 (QNAP, fetched 2026-10-27)." }
+    verification: SINGLE-SOURCE-VENDOR
+    confidence: MEDIUM
+    evidence:
+      - quote: "QVR Surveillance 3.0.3 and earlier (ARM32 models)Resolved QVR Surveillance 3.0.3.1756"
+        attribution: "QNAP (QSA-26-18)"
+        source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
+      - quote: "TVR OS 1.0.4 and earlier Resolved TVR OS 1.0.5"
+        attribution: "QNAP (QSA-26-18)"
+        source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
+      - quote: "Notes Station 3 3.9.14 and earlier Fixing To be announced"
+        attribution: "QNAP (QSA-26-18)"
+        source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
+      - quote: "V1.1 (October 24, 2026) - QTS、QuTS hero and QuTScloud Resolved Published"
+        attribution: "QNAP (QSA-26-18 revision history)"
+        source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
+      - quote: "QNAP has not received reports of exploitation targeting QNAP products."
+        attribution: "QNAP (QSA-26-18)"
+        source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
+  # ---------------------------------------------------------------------------------------------
+  # E. Brotli (CVE-2026-111497): vendor and authority statements of 2026-10-26
+  - title: "Brotli decoder flaw CVE-2026-111497: NCSC-CH advisory, PAN-OS firewalls with Brotli inspection and decryption, Windows PHP rebuilds and Linux distribution fixes"
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13105", publisher: "NCSC Switzerland (BACS) Cyber Security Hub advisory 13105", date: "2026-10-26", role: "primary" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-111497", publisher: "Palo Alto Networks PSIRT (Brotli portfolio status)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.php.net/archive/2026.php#2026-10-26-1", publisher: "PHP (news: updated Windows builds for Brotli security fix)", date: "2026-10-26", role: "primary" }
+      - { url: "https://thehackernews.com/2026/10/php-issues-second-windows-security.html", publisher: "The Hacker News", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://ubuntu.com/security/CVE-2026-111497", publisher: "Ubuntu Security (CVE-2026-111497, updated 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-111497", publisher: "Debian Security Tracker (DSA-6582-1, DLA-4855-1)", date: "2026-10-26", role: "primary" }
+      - { url: "https://security.alpinelinux.org/vuln/CVE-2026-111497", publisher: "Alpine Linux security tracker", date: "2026-10-26", role: "primary" }
+      - { url: "https://access.redhat.com/security/cve/cve-2026-111497", publisher: "Red Hat CVE page", date: "2026-10-26", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187", publisher: "Fortinet PSIRT FG-IR-26-187 (Multiple Node.js CVEs)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.aikido.dev/blog/python-packages-vulnerable-node2shell-brotli-cve-2026-111497", publisher: "Aikido Security (update of 2026-10-26)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-111497", publisher: "Microsoft MSRC (revision 1.1, 2026-10-26)", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-csh bridge (python3 tools/fetch_source.py ncsc-csh recent 12; post 13105 published 2026-10-26T13:02Z, citation https://security-hub.ncsc.admin.ch/#/posts/13105) -> pivot: paloalto-psirt feed https://security.paloaltonetworks.com/rss.xml (CVE-2026-111497 item 2026-10-26T23:40Z) -> primary: https://security.paloaltonetworks.com/CVE-2026-111497; php.net archive https://www.php.net/archive/2026.php; distro trackers (Ubuntu, Debian, Alpine, Red Hat); fortinet-psirt feed https://www.fortiguard.com/rss/ir.xml -> https://fortiguard.fortinet.com/psirt/FG-IR-26-187; aikido-security blog update"
+    summary: |
+      Vendor and authority statements published 2026-10-26 on the Brotli decoder out-of-bounds write that the store entry covers for Node.js, PyPI, Envoy and .NET. (1) NCSC Switzerland (BACS) published Cyber Security Hub advisory 13105 on 2026-10-26: successful exploitation allows unauthenticated remote attackers to cause denial of service or potentially execute code when an application decodes attacker-controlled Brotli data such as compressed HTTP request or response bodies or files; it lists Node.js, Microsoft .NET, Visual Studio, PowerShell, the Python Brotli and brotlicffi packages and Bun among dependants, rates exploitation status UNKNOWN with a proof of concept available, and names the temporary mitigation as disabling Brotli decoding of untrusted data and rejecting Content-Encoding: br until patched, with services restarted and containers rebuilt after updating. (2) Palo Alto Networks lists PAN-OS 12.2 below 12.2.4-h1 (ETA 10/28), 12.1 below 12.1.4-h13 (10/29), 12.1.7-h11 (10/28) and 12.1.10-h3 (10/30), and 11.2 below 11.2.4-h23 (10/30), 11.2.7-h23 (10/29), 11.2.10-h17 (10/27), 11.2.13-h4 (10/27) and 11.2.16-h1 (10/28) as affected; PAN-OS 11.1 and 10.2 are unaffected, and the advisory's table has no Panorama row. The exposure condition is PA-Series or VM-Series firewalls with inspection of Brotli-compressed traffic and TLS/SSL decryption enabled on the dataplane: Brotli inspection is unsupported before PAN-OS 11.2.4 and disabled by default from 11.2.4, the management interface (web and API) is not affected, `show system setting brotli` (11.2.4 and later) or Device > Setup > Content-ID "Allow Brotli Encoding" (12.1.2 and later) shows whether it is on, `set system setting brotli-encoding disable` (verify Enabled: no) is the mitigation, Threat ID 97686 (content version 9165 and later) gives partial coverage, and Palo Alto is not aware of any malicious exploitation; Prisma Cloud Application Security Transporter Client below 0.2.9 is also affected. Palo Alto scores it CVSS 4.0 9.2 critical with moderate urgency. (3) PHP rebuilt its Windows packages (8.5.12-1, 8.4.27-1, 8.3.36-1, 8.2.35-1, which keep the same PHP source and version string) with Brotli 1.2.1 on 2026-10-26: the vulnerable decoder is reachable through the cURL extension when automatic HTTP response decompression is enabled, which is off by default; The Hacker News reads Guzzle's code as enabling that by default and says it did not test it on Windows, and notes the PHP SBOMs of the 2026-10-21 x64 NTS builds list Brotli 1.2.0. (4) Linux distributions: Ubuntu fixed brotli on 26.10 (1.2.0-4ubuntu0.1), 26.04 LTS (1.2.0-3ubuntu0.1), 24.04 LTS (1.1.0-2ubuntu0.1) and 22.04 LTS (1.0.9-2ubuntu0.1), per USN-8956-1, while 20.04, 18.04 and 16.04 "need evaluation" and nodejs on 20.04 is marked vulnerable (vendored Brotli); Debian fixed bookworm (1.0.9-2+deb12u1, DLA-4855-1) and trixie (1.1.0-2+deb13u1, DSA-6582-1) and sid, with its nodejs packages and python-brotlicffi on trixie still marked vulnerable; Alpine fixed brotli 1.2.1-r0 on edge, 3.24 and 3.23 and 1.1.1-r0 on 3.21; Red Hat rates it Important (CVSS 3.1 8.1) and says there is no public, reliable RCE proof of concept; Aikido's update of 2026-10-26 says Amazon Linux, Debian and Alpine have fixes and that Ubuntu, SUSE and the standard RHEL repositories did not yet (Ubuntu has since published). (5) Fortinet's FG-IR-26-187 (2026-10-26), covering ten Node.js CVEs including this one and three other high-rated ones (CVE-2026-105482 dns.resolve NUL truncation, CVE-2026-105483 and CVE-2026-106069 TLS hostname-verification bypasses), lists FortiOS as under investigation and 22 other Fortinet products as not impacted. Aikido also lists fixes for Java brotli4j 1.24.0, Bun 1.4.4, Istio 1.29.9, 1.30.6 and 1.31.2, and says libcurl users need an updated Brotli dependency. Microsoft's MSRC page was revised on 2026-10-26 (version 1.1, acknowledgement only) and still says publicly disclosed yes, exploited no, Exploitation More Likely. No source reports exploitation outside Imperva's laboratory demonstration.
+    region_nexus: "Switzerland: NCSC-CH advisory; PAN-OS firewalls and Linux, Node.js and .NET estates in Swiss federal and cantonal administrations"
+    primary_sector_nexus: "direct (perimeter firewalls with TLS decryption, web application runtimes, Linux hosts)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190, T1203]
+    affected_products: ["Google Brotli", "Palo Alto Networks PAN-OS", "PHP for Windows", "Ubuntu brotli", "Debian brotli", "Node.js", "Fortinet FortiOS"]
+    entity_keys: ["tool:node2shell", "product:google-brotli", "product:palo-alto-networks-pan-os", "product:php"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Proof of Concept Available"
+        attribution: "NCSC Switzerland (Cyber Security Hub advisory 13105)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13105"
+      - quote: "Application decodes attacker-controlled Brotli data, such as compressed HTTP request/response bodies or compressed files; no authentication required."
+        attribution: "NCSC Switzerland (Cyber Security Hub advisory 13105)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13105"
+      - quote: "This issue is applicable to PAN-OS software on PA-Series and VM-Series firewalls that have inspection of Brotli compressed traffic and TLS/SSL decryption enabled on the dataplane."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-111497"
+      - quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-111497"
+      - quote: "There is no impact on the Management interface (web or API) of the PAN-OS devices."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-111497"
+      - quote: "In PHP Windows builds, the vulnerable decoder can be reached through the cURL extension when automatic HTTP response decompression is enabled."
+        attribution: "PHP (news archive 2026-10-26)"
+        source_url: "https://www.php.net/archive/2026.php#2026-10-26-1"
+      - quote: "Fixed in 1.1.0-2ubuntu0.1"
+        attribution: "Ubuntu Security (24.04 LTS row)"
+        source_url: "https://ubuntu.com/security/CVE-2026-111497"
+      - quote: "there is no public, reliable remote code execution proof-of-concept"
+        attribution: "Red Hat"
+        source_url: "https://access.redhat.com/security/cve/cve-2026-111497"
+      - quote: "Fortinet is currently investigating the impact of these CVEs over Fortinet Products."
+        attribution: "Fortinet PSIRT (FG-IR-26-187)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187"
+    extended_notes: |
+      Triage-relevant: the PAN-OS exposure needs both Brotli inspection and inbound or outbound TLS decryption on a dataplane policy, so a firewall that does not decrypt, or runs 11.1 or 10.2, is out of scope; the NCSC-CH mitigation (reject Content-Encoding: br on the way in, remove br from Accept-Encoding and disable Brotli decoding of responses on the way out) does not help against a malicious server answering a client regardless of its Accept-Encoding, a point Aikido and OpenAI's advice both make. Brotli bundled into an application (Node.js, Bun, Java brotli4j, static libcurl) is not fixed by updating the system libbrotli package.
+  # ---------------------------------------------------------------------------------------------
+  # F. Apple: the exploited CoreGraphics flaw is fixed for older iPhones and iPads
+  - title: "CVE-2026-86950 (Apple CoreGraphics, exploited): iOS 18.7.11 and iPadOS 18.7.11 deliver the fix to iPhone XS, XS Max, XR and iPad 7th generation"
+    novelty: "update-of:2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev"
+    sources:
+      - { url: "https://support.apple.com/en-us/149225", publisher: "Apple (security content of iOS 18.7.11 and iPadOS 18.7.11)", date: "2026-10-26", role: "primary" }
+      - { url: "https://support.apple.com/en-us/149226", publisher: "Apple (security content of iOS 26.7.1 and iPadOS 26.7.1, 2026-09-28)", date: "2026-09-28", role: "primary" }
+      - { url: "https://support.apple.com/en-us/100100", publisher: "Apple (security releases index, entries of 2026-10-26)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://isc.sans.edu/diary/33458", publisher: "SANS Internet Storm Center", date: "2026-10-27", role: "corroborating" }
+    discovery_trace: "first seen at: isc.sans.edu Apple October 2026 diary https://isc.sans.edu/diary/33458 -> primary: Apple security releases https://support.apple.com/en-us/100100 -> https://support.apple.com/en-us/149225 (iOS 18.7.11) compared with https://support.apple.com/en-us/149226 (iOS 26.7.1, the 2026-09-28 fix)"
+    summary: |
+      Apple's 2026-10-26 releases (iOS and iPadOS 27.2, 26.7.2 and 18.7.11, macOS Golden Gate 27.2, Tahoe 26.7.2 and Sequoia 15.8.2, Safari 27.2, tvOS, watchOS and visionOS 27.2) include iOS 18.7.11 and iPadOS 18.7.11 for iPhone XS, iPhone XS Max, iPhone XR and iPad 7th generation. Its CoreGraphics entry for CVE-2026-86950 repeats Apple's statement that it is aware of a report that the issue may have been exploited in an extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 27. The 2026-09-28 fix (iOS and iPadOS 26.7.1) was listed for iPhone 11 and later and iPad models from the iPad 8th generation, so those four older device families had no fix for four weeks while the flaw was on CISA's KEV list and a public proof of concept crashed unpatched devices. SANS ISC counts 304 vulnerabilities fixed in the 2026-10-26 round, notes that CVE-2026-86950 was patched originally a month ago and that this round delivers the corresponding iOS 18 patches, and says no new vulnerability is marked as already exploited; the iOS 27.2 security notes carry no exploitation statement. Remaining unpatched population: any iPhone or iPad that cannot run iOS 26 or 27 and has not been moved to 18.7.11.
+    region_nexus: "global; relevant to any Swiss agency fleet that still carries iPhone XS/XR or iPad 7th generation devices"
+    primary_sector_nexus: "indirect (mobile device fleets; Apple describes targeted-individual exploitation)"
+    sector: "public-sector"
+    cves: [CVE-2026-86950]
+    techniques: [T1203]
+    affected_products: ["Apple iOS", "Apple iPadOS"]
+    entity_keys: ["product:apple-ios"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Apple is aware of a report that this issue may have been exploited in an extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 27."
+        attribution: "Apple (iOS 18.7.11 security content)"
+        source_url: "https://support.apple.com/en-us/149225"
+      - quote: "Available for: iPhone XS, iPhone XS Max, iPhone XR, iPad 7th generation"
+        attribution: "Apple (iOS 18.7.11 security content)"
+        source_url: "https://support.apple.com/en-us/149225"
+      - quote: "Available for: iPhone 11 and later"
+        attribution: "Apple (iOS 26.7.1 security content, 2026-09-28)"
+        source_url: "https://support.apple.com/en-us/149226"
+      - quote: "No new vulnerability is marked as already exploited."
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33458"
+  # ---------------------------------------------------------------------------------------------
+  # G. OT / building / network-access vendors' PHP2Shell impact (new vendor-roundup entry referencing the main entry)
+  - title: "PHP2Shell in OT, building and network-access products: Belden NetModule NRSW has no fix, macmon, Schneider Security Expert, Johnson Controls Illustra, B&R APROL, HMS Netbiter and Wibu CodeMeter License Central are affected"
+    novelty: "new"
+    references_hint: ["2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619", "2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release"]
+    sources:
+      - { url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/", publisher: "SecurityWeek", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://assets.belden.com/asset/0e20ea6c-c1f5-4269-b765-e160a2bf4965/PSIRT-10-Critical-PHP-Vulnerabilities-in-macmon-and-NRSW.pdf", publisher: "Belden security advisory PSIRT-10 (macmon, NetModule NRSW)", date: "2026-10-22", role: "primary" }
+      - { url: "https://download.se.com/files?p_Doc_Ref=SESB-2026-295-01&p_enDocType=Security+and+Safety+Notice&p_File_Name=SESB-2026-295-01.pdf", publisher: "Schneider Electric security notice SESB-2026-295-01 (v2.0.0, 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://tyco.widen.net/s/pjjcj5sd2m/jci-psa-2026-24-v2-1", publisher: "Johnson Controls product security advisory JCI-PSA-2026-24 (v2.0)", date: "2026-10-23", role: "primary" }
+      - { url: "https://br-cws-assets.de-fra-1.linodeobjects.com/SA26P015-7cd6ca9c.pdf", publisher: "B&R (ABB) cyber security advisory SA26P015 (APROL)", date: "2026-10-23", role: "primary" }
+      - { url: "https://library.e.abb.com/public/a6d687e7d11440308a4198cc9666c585/4HZK000017_en_A_Cyber%20Security%20Advisory%20for%20MES%20Dokuwiki%20Installations.pdf", publisher: "ABB cyber security advisory 4HZK000017 (MES with DokuWiki)", date: "2026-10-23", role: "primary" }
+      - { url: "https://hmsnetworks.blob.core.windows.net/nlw/docs/default-source/products/cybersecurity/security-advisory/hms-security-advisory-2026-10-22-002---netbiter-and-argos-php-vulnerabilities.pdf", publisher: "HMS Networks advisory HMSSAR-2026-10-22-002 (Netbiter, Argos)", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.wibu.com/support/product-alerts.html", publisher: "Wibu-Systems product alert (CodeMeter License Central, updated 2026-10-23)", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.rockwellautomation.com/en-ro/trust-center/security-advisories/advisory.SD1802.html", publisher: "Rockwell Automation SD1802", date: "2026-10-23", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-566512.html", publisher: "Siemens ProductCERT SSA-566512", date: "2026-10-23", role: "primary" }
+      - { url: "https://www.belden.com/news/belden-acquires-netmodule-ag", publisher: "Belden (acquisition notice naming NetModule AG's Bern headquarters)", date: "2022-03-14", role: "context" }
+    discovery_trace: "first seen at: SecurityWeek https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/ (2026-10-26, listed in the S1 discovery sweep) -> primaries: Belden PSIRT-10 PDF, Schneider SESB-2026-295-01 PDF (pdf subcommand), B&R SA26P015 PDF, ABB 4HZK000017 PDF, JCI-PSA-2026-24 PDF (text extracted from the widen.net viewer's PDF), HMS PDF, Wibu product alerts page, Rockwell SD1802, Siemens SSA-566512 (all fetched in this run)"
+    summary: |
+      SecurityWeek's roundup of 2026-10-26, checked against the vendors' own notices, shows PHP2Shell reaching products that Swiss public-sector operators run in buildings, transport, networks and plants. Belden (advisory of 2026-10-22): all versions of NetModule NRSW, including the latest mainline release 5.0.0.104, are affected and no patched release exists; the advised interim step is to disable the web interface after confirming SSH access to the device (cli-set http.status=0 and cli-set https.status=0); macmon 6.x and 7.x use PHP for the web UI and are affected, a patch for 7.x is in the service portal, 6.x must move to 7.x, and the HTTPS/443 web UI and guest portal must not be reachable from the internet unprotected. NetModule AG is headquartered in Bern with a strong focus on mass transit and intelligent traffic systems, according to Belden's acquisition notice. Schneider Electric (SESB-2026-295-01, v1.0.0 2026-10-22, v2.0.0 2026-10-26): EcoStruxure Security Expert (patched 1.48.4.0 from the Customer Care Center, per SecurityWeek), ProLeiT LINEoptimize (formerly Plant iT LMS, all versions, remediation from ProLeiT support) and EcoStruxure Control Engineering (all versions; the v2.0.0 revision of 2026-10-26 adds a remediation: the hosting VM updates automatically if it can reach the debian.org and sury.org repositories, otherwise only through a Schneider patch). Johnson Controls (JCI-PSA-2026-24 v2.0, 2026-10-22, updated 2026-10-23): patches for Illustra Flex4 (MII, Fixed and PTZ, DS), Gen5 Pano and Multi, Pro, Pro4 (PTZ, LPR, Multi Sensor) and Essentials Gen 4 camera firmware (build numbers SS021.25.09.06.0001, SS025.26.01.03.0002, SS016.26.09.03.0002, SS024.26.03.05.0002, SS017.26.03.00.0002, SS022.26.03.02.0002) and Visonic PowerManage 5.0.45, with compensating controls (limit internet-facing web interfaces, WAF or reverse proxy, monitor for unusual web requests, PHP errors, unexpected processes and outbound connections). B&R (ABB) APROL up to R 4.4-65 (SA26P015, 2026-10-23): patches were planned for 2026-10-26 and 2026-10-29 (as printed, R 4.4-65 and R 4.4-01); until then restrict HTTP(S) to the APROL system from untrusted networks. ABB MES deliveries that include DokuWiki are affected through the PHP packages on the DokuWiki host; ABB advises updating only the PHP packages to 8.5.12, 8.4.27, 8.3.36 or 8.2.35 and says no active exploitation had been reported when it wrote on 2026-10-23. HMS Networks: Netbiter firmware up to 3.00.10 is affected through its web server (exploitable from the LAN or the USB port), 3.00.11 fixes it, its Argos documentation server and Talk2M services were patched with no indicators of compromise found, and Flexy and Cosy+ do not use PHP. Wibu-Systems: the CodeMeter License Central web interface and its PHP-based extensions (WebDepot, Gateways, Portal, Connectors) are affected; License Central 5.2.2, a PHP patch installer for 5.1.2 and 5.0.x and Ubuntu Pro updates for 4.x are out, and an mTLS reverse proxy in front of License Central limits the attack surface. Siemens SSA-566512 (2026-10-23; already in the store) lists RUGGEDCOM APE1808 running PAN-OS as affected with patches from support. Rockwell Automation (SD1802) says no product is confirmed affected so far; Moxa reportedly found none and Hitachi Energy was still investigating, per SecurityWeek. These notices predate CISA's KEV listing of 2026-10-26 and none reports exploitation of the vendor's product.
+    region_nexus: "Switzerland: NetModule is a Bern-headquartered vendor focused on mass transit and intelligent traffic systems (Belden); the other products are building-technology, access-control, video, network-access-control and plant products used across public-sector estates"
+    primary_sector_nexus: "direct to indirect (building automation, access control, video, transport routers, network access control)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Belden NetModule NRSW", "macmon NAC", "Schneider Electric EcoStruxure Security Expert", "Schneider Electric EcoStruxure Control Engineering", "ProLeiT LINEoptimize", "Johnson Controls Illustra", "Johnson Controls Visonic PowerManage", "B&R APROL", "ABB MES (DokuWiki)", "HMS Networks Netbiter", "Wibu-Systems CodeMeter License Central", "Siemens RUGGEDCOM APE1808"]
+    entity_keys: ["tool:php2shell", "product:php", "product:siemens-ruggedcom-ape1808"]
+    new_entities:
+      - { key: "product:belden-netmodule-nrsw", type: product, name: "Belden NetModule NRSW", aliases: ["NetModule Router Software", "NRSW"], summary: "NetModule router operating software (Belden, Bern-headquartered NetModule AG); all versions including 5.0.0.104 are affected by the PHP2Shell flaws with no patch, web interface to be disabled meanwhile (Belden PSIRT-10, 2026-10-22)." }
+      - { key: "product:macmon-nac", type: product, name: "macmon NAC", aliases: ["macmon", "Belden macmon"], summary: "Network access control product (Belden); versions 6.x and 7.x use PHP in the web UI and are affected by the PHP2Shell flaws, patch for 7.x in the service portal (Belden PSIRT-10, 2026-10-22)." }
+      - { key: "product:schneider-electric-ecostruxure-security-expert", type: product, name: "Schneider Electric EcoStruxure Security Expert", aliases: ["Security Expert"], summary: "Schneider access-control and security-management platform; affected by the PHP2Shell flaws, fixed in 1.48.4.0 (SecurityWeek relaying SESB-2026-295-01, 2026-10-26)." }
+      - { key: "product:johnson-controls-illustra", type: product, name: "Johnson Controls Illustra cameras", aliases: ["Illustra"], summary: "Johnson Controls IP camera lines (Flex4, Gen5, Pro, Pro4, Essentials Gen 4) with firmware patches for the PHP2Shell flaws (JCI-PSA-2026-24 v2.0, 2026-10-23)." }
+      - { key: "product:br-aprol", type: product, name: "B&R APROL", aliases: ["APROL", "ABB B&R APROL"], summary: "B&R (ABB) process control system; versions up to R 4.4-65 are affected by the PHP2Shell flaws, patches planned 2026-10-26 and 2026-10-29 (B&R SA26P015, 2026-10-23)." }
+      - { key: "product:hms-netbiter", type: product, name: "HMS Netbiter", aliases: ["Netbiter"], summary: "HMS Networks remote-management gateways; firmware up to 3.00.10 is affected by the PHP2Shell flaws, 3.00.11 fixes it (HMS advisory HMSSAR-2026-10-22-002)." }
+      - { key: "product:wibu-codemeter-license-central", type: product, name: "Wibu-Systems CodeMeter License Central", aliases: ["CodeMeter License Central"], summary: "Wibu-Systems licence-management web platform and its PHP-based extensions; affected by the PHP2Shell flaws, fixed in 5.2.2 and by a patch installer for 5.1.2 and 5.0.x (Wibu product alert, updated 2026-10-23)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "said all versions of its NetModule NRSW are affected, including the latest mainline release, and a patched version has yet to be released."
+        attribution: "SecurityWeek (relaying Belden PSIRT-10)"
+        source_url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/"
+      - quote: "In the meantime, the company recommends disabling the web interface."
+        attribution: "SecurityWeek (relaying Belden PSIRT-10)"
+        source_url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/"
+      - quote: "Customers can obtain the patched Security Expert version 1.48.4.0 from Schneider’s Customer Care Center"
+        attribution: "SecurityWeek (relaying SESB-2026-295-01)"
+        source_url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/"
+      - quote: "EcoStruxure Control Engineering users can only rely on mitigations for the time being."
+        attribution: "SecurityWeek (before Schneider's v2.0.0 remediation of 2026-10-26)"
+        source_url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/"
+      - quote: "Its Visonic PowerManage product has been fixed in version 5.0.45."
+        attribution: "SecurityWeek (relaying JCI-PSA-2026-24)"
+        source_url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/"
+      - quote: "said its APROL process control system is affected in versions up to R 4.4-65. Patches were expected on October 26 and October 29."
+        attribution: "SecurityWeek (relaying B&R SA26P015)"
+        source_url: "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities/"
+      - quote: "As of the date of this notice, no Rockwell Automation products have been confirmed as affected."
+        attribution: "Rockwell Automation (SD1802)"
+        source_url: "https://www.rockwellautomation.com/en-ro/trust-center/security-advisories/advisory.SD1802.html"
+      - quote: "headquartered in Bern, Switzerland"
+        attribution: "Belden (acquisition notice for NetModule AG)"
+        source_url: "https://www.belden.com/news/belden-acquires-netmodule-ag"
+    extended_notes: |
+      Detection and hardening anchors the vendors state: Belden's NRSW interim step is CLI disablement of HTTP and HTTPS after confirming SSH reachability; macmon, APROL, License Central and Illustra advisories all reduce to keeping the web UI off untrusted networks until patched. Behavioural hunt: PHP worker or web-server parent processes spawning shells on these appliances is only observable where the product exposes logs; most of these are appliances without EDR, so network-side signals (multipart POSTs with hundreds of parts to the product's web port, from untrusted segments) and reachability review are the realistic controls. Checking the Schneider Security Expert page 1 (affected-products row) was not possible: the pdf subcommand extracted 13 of 44 streams; its Security Expert fixed version comes from SecurityWeek.
+  # ---------------------------------------------------------------------------------------------
+  # H. Oracle Security Alert for PHP2Shell
+  - title: "Oracle Security Alert for PHP2Shell: patches for Oracle Secure Backup 19.1, Solaris 11 and eight Oracle Communications products, alert still being extended"
+    novelty: "new"
+    references_hint: ["2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"]
+    sources:
+      - { url: "https://www.oracle.com/security-alerts/alert-cve-2026-109618.html", publisher: "Oracle Security Alert Advisory CVE-2026-109618 and CVE-2026-109619 (Rev 2, 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.oracle.com/security-alerts/", publisher: "Oracle Critical Patch Updates, Security Alerts and Bulletins (index listing the alert)", date: "2026-10-27", role: "context" }
+    discovery_trace: "first seen at: oracle-cpu bridge https://www.oracle.com/security-alerts/ (link /security-alerts/alert-CVE-2026-109618.html in the page) -> primary: https://www.oracle.com/security-alerts/alert-cve-2026-109618.html (extract)"
+    summary: |
+      Oracle published a Security Alert for CVE-2026-109618 and CVE-2026-109619 (Rev 1 on 2026-10-25, Rev 2 on 2026-10-26 "Added Oracle Secure Backup"), saying it strongly recommends applying the available patches without delay and that the alert will be extended as more product patches become available. Its risk matrices list CVE-2026-109618 (CVSS 3.1 9.8, HTTP, remotely exploitable without authentication; the patch also addresses CVE-2026-109619) for: Oracle Secure Backup 19.1.0.0.0 to 19.1.0.1.0 (component Oracle Secure Backup (PHP)); Oracle Solaris 11 (Utility (PHP)); and eight Oracle Communications products: Diameter Signaling Router 8.6.0 and 9.0.0, EAGLE Application Processor 17.0 and 17.1, EAGLE Element Management System 47.0, EAGLE LNP Application Processor 11.1, LSMS 14.0, Performance Intelligence Center Software 10.4 and 10.5, Unified Assurance 6.1.1 to 7.0.0, and User Data Repository 15.0. Oracle patches only versions in Premier or Extended Support and says earlier versions are likely affected too but untested. The alert says nothing about exploitation. The October 2026 Critical Patch Update (Rev 1, 2026-10-20) is separate and already in the store.
+    region_nexus: "global; Oracle Secure Backup and Solaris appear in database and legacy-platform estates, Oracle Communications in telecom environments"
+    primary_sector_nexus: "indirect (database backup servers and Solaris hosts in public-sector data centres)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Oracle Secure Backup", "Oracle Solaris", "Oracle Communications Diameter Signaling Router", "Oracle Communications EAGLE", "Oracle Communications LSMS", "Oracle Communications Performance Intelligence Center", "Oracle Communications Unified Assurance", "Oracle Communications User Data Repository"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities:
+      - { key: "product:oracle-secure-backup", type: product, name: "Oracle Secure Backup", aliases: ["OSB"], summary: "Oracle backup-management product with a PHP web tool; versions 19.1.0.0.0 to 19.1.0.1.0 are affected by the PHP2Shell flaws and patched through Oracle's Security Alert Rev 2 of 2026-10-26." }
+    verification: SINGLE-SOURCE-VENDOR
+    confidence: HIGH
+    borderline: true
+    borderline_reason: "vendor product-impact on already-covered CVEs for products of narrower footprint (Oracle Secure Backup, Solaris 11, Oracle Communications); the composer may fold it into the main PHP2Shell entry as an update or into the vendor roundup instead of a separate entry"
+    evidence:
+      - quote: "This Security Alert addresses CVE-2026-109618 and CVE-2026-109619."
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-109618.html"
+      - quote: "Rev 2. Added Oracle Secure Backup"
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-109618.html"
+      - quote: "The patch for CVE-2026-109618 also addresses CVE-2026-109619."
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-109618.html"
+cve_table:
+  - { cve: CVE-2026-109618, product: "PHP (core runtime: mod_php, PHP-FPM, php-cgi, FrankenPHP, LiteSpeed; mod_php rated highest risk)", cvss: "4.0 9.2 (PHP/CNA); 3.1 9.8 (Fortinet, Oracle, B&R, Synology)", epss: 0.99981, kev: true, exploited: "yes: CISA KEV 2026-10-26 (due 2026-10-29, forensicTriage Yes, ransomware use Unknown); ENISA EUVD exploitedSince 2026-10-26; Karimi honeypot report 2026-10-24 documents 35 Apache-parent /bin/sh starts on three honeypots running PHP 8.4.26 under single-worker mod_php, consistent with this CVE", affected: "PHP 8.2 below 8.2.35, 8.3 below 8.3.36, 8.4 below 8.4.27, 8.5 below 8.5.12 (EUVD); PHP 8.1 and older and 7.x unsupported upstream and affected (CISA alert, watchTowr)", fixed: "8.2.35, 8.3.36, 8.4.27, 8.5.12 (CISA alert); no upstream release for 8.1 and older (minimal source backports for 7.4, 8.0, 8.1 per CERT-EU); PAN-OS hotfixes per train, QNAP QTS/QuTS hero builds of 2026-10-23, Oracle alert patches, Wibu License Central 5.2.2, HMS Netbiter 3.00.11, JCI Visonic PowerManage 5.0.45 per vendors", type: "memory corruption (out-of-memory longjmp leaves request memory uninitialised) -> RCE", vector: "network, HTTP(S) multipart POSTs", auth: none, source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json; https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107260; https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching; https://api.first.org/data/v1/epss?cve=CVE-2026-109618,CVE-2026-109619,CVE-2026-111497,CVE-2026-86950" }
+  - { cve: CVE-2026-109619, product: "PHP (core runtime, same SAPIs)", cvss: "4.0 9.2; 3.1 9.8 (vendors)", epss: 0.99997, kev: true, exploited: "yes per CISA KEV 2026-10-26 and EUVD exploitedSince 2026-10-26; Karimi's records do not establish a distinct CVE-2026-109619 path", affected: "same branches and versions as CVE-2026-109618", fixed: "same fixed releases as CVE-2026-109618 (the Oracle patch for CVE-2026-109618 also addresses CVE-2026-109619)", type: "stale global state outliving request memory -> RCE in a later request on the same worker", vector: network, auth: none, source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json; https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107265" }
+  - { cve: CVE-2026-111497, product: "Google Brotli decoder (c/dec/decode.c) and every bundler: Node.js, Python Brotli and brotlicffi, .NET, Envoy, Bun, Java brotli4j, libcurl dependents, PAN-OS 12.2/12.1/11.2 with Brotli inspection and decryption, PHP for Windows cURL extension", cvss: "4.0 9.2 (Google/Node.js CNA, Palo Alto); 3.1 8.1 (Red Hat, Microsoft)", epss: 0.36027, kev: false, exploited: "no source reports exploitation: Microsoft MSRC exploited No, publicly disclosed Yes, Exploitation More Likely; Palo Alto not aware of any malicious exploitation; NCSC-CH exploitation UNKNOWN, PoC available; Imperva ran code only in a laboratory; Red Hat says no public reliable RCE PoC", affected: "Brotli 1.0.3 through 1.2.0 (Palo Alto, Ubuntu); PAN-OS 12.2 below 12.2.4-h1, 12.1 below 12.1.4-h13/12.1.7-h11/12.1.10-h3, 11.2 below 11.2.4-h23/11.2.7-h23/11.2.10-h17/11.2.13-h4/11.2.16-h1 (11.1 and 10.2 not affected); Ubuntu 20.04 nodejs (vendored Brotli) vulnerable; PHP Windows builds 8.5.12, 8.4.27, 8.3.36, 8.2.35 without the -1 suffix", fixed: "Brotli 1.0.10, 1.1.1, 1.2.1; Node.js 22.23.4, 24.22.1, 26.12.1; Ubuntu brotli 1.2.0-4ubuntu0.1 (26.10), 1.2.0-3ubuntu0.1 (26.04), 1.1.0-2ubuntu0.1 (24.04), 1.0.9-2ubuntu0.1 (22.04); Debian 1.0.9-2+deb12u1 (bookworm), 1.1.0-2+deb13u1 (trixie); Alpine 1.2.1-r0 (edge, 3.24, 3.23), 1.1.1-r0 (3.21); PHP Windows 8.5.12-1, 8.4.27-1, 8.3.36-1, 8.2.35-1; PAN-OS hotfixes ETA 2026-10-27 to 2026-10-30; Java brotli4j 1.24.0; Bun 1.4.4; Istio 1.29.9, 1.30.6, 1.31.2 (Aikido)", type: "out-of-bounds write in streaming decoder -> memory disclosure, DoS, potential RCE", vector: "network: crafted Content-Encoding br request body or response body", auth: none, source: "https://security-hub.ncsc.admin.ch/#/posts/13105; https://security.paloaltonetworks.com/CVE-2026-111497; https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-111497; https://api.first.org/data/v1/epss?cve=CVE-2026-109618,CVE-2026-109619,CVE-2026-111497,CVE-2026-86950" }
+  - { cve: CVE-2026-86950, product: "Apple CoreGraphics (iOS, iPadOS, macOS)", cvss: null, epss: 0.26166, kev: true, exploited: "yes: Apple is aware of a report that this issue may have been exploited in an extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 27; CISA KEV (listed 2026-09-29 per the store entry)", affected: "iPhone XS, XS Max, XR and iPad 7th generation on iOS 18 below 18.7.11 (no fix until 2026-10-26); iPhone 11 and later below the 2026-09-28 releases", fixed: "iOS and iPadOS 26.7.1 (2026-09-28, iPhone 11 and later); iOS and iPadOS 18.7.11 (2026-10-26, iPhone XS, XS Max, XR, iPad 7th generation); iOS 27 and later", type: "out-of-bounds write -> arbitrary code execution on a crafted file", vector: "user interaction (crafted file processed)", auth: none, source: "https://support.apple.com/en-us/149225; https://support.apple.com/en-us/149226; https://api.first.org/data/v1/epss?cve=CVE-2026-109618,CVE-2026-109619,CVE-2026-111497,CVE-2026-86950" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty (profile configures none); sweep is a no-op"
+candidate_sources:
+  - id: belden-psirt
+    publisher: "Belden PSIRT security advisories (macmon, NetModule NRSW, Hirschmann HiOS)"
+    url: "https://www.belden.com/security"
+    category: vendor-psirt
+    why: "First-party advisories for NetModule NRSW (Bern-headquartered, mass-transit routers), macmon NAC and Hirschmann HiOS switches; the listing (PSIRT-2 to PSIRT-10, dated, with PDF links) is server-rendered and read cleanly with extract this run; PSIRT-10 (2026-10-22, PHP2Shell in NRSW, no fix) was not on any slice source."
+  - id: karimi-honeypot-data
+    publisher: "Adel Karimi honeypot-data reports (GitHub 0x4D31/honeypot-data)"
+    url: "https://github.com/0x4D31/honeypot-data/tree/main/reports/php2shell"
+    category: exploitation-ground-truth
+    why: "Primary packet-and-process-level evidence for in-the-wild exploitation (35 confirmed PHP2Shell shells on honeypots, dated reports with datasets); the only source behind the first confirmed code execution that CISA's KEV listing followed within two days; directory lists dated report files, repository-level watch is possible."
+coverage_gaps:
+  - source_id: connectwise-trust-center
+    reason: "Rotation-priority record, attempted once more: direct bridge GET HTTP 403 (6068 B challenge), jina reader failed, WebFetch HTTP 403; no transport on the ladder returns the advisories listing (8th consecutive run). Corroborating coverage for ConnectWise items must come from WebSearch or the S2/S4 domains."
+  - source_id: citrix-techzone (community.citrix.com, primary of the store's NetScaler PHP2Shell entry)
+    reason: "https://community.citrix.com/techzone-blogs/110_security-updates/protecting-netscaler-management-access-from-php-cve-2026-109618-cve-2026-109619-r1640/ returns HTTP 403 on extract, the bridge and WebFetch; whether the NetScaler fixes planned for 2026-10-27 shipped could not be checked. CTX697263 (support.citrix.com) reads fine with extract but its revision history has not moved since 2026-10-22."
+  - source_id: fortinet-psirt
+    reason: "Recipe drift: the record's rss_url https://filestore.fortinet.com/fortiguard/rss/ir.xml resets the connection on the direct and reader transports in this run. Working recipe: python3 tools/fetch_source.py feed https://www.fortiguard.com/rss/ir.xml 30 (served direct on the second call; the first call in the same minute also reset, so retry once), then extract https://fortiguard.fortinet.com/psirt/FG-IR-26-NNN for the full affected/not-impacted lists and timeline."
+  - source_id: ssd-disclosure
+    reason: "Recipe drift (the record says every transport hits SiteGround's captcha): this run `fetch_source.py url https://ssd-disclosure.com/advisories/` returned the 159 KB server-rendered listing (undated cards, newest first) and `extract <article URL>` returned each article with a date field and vendor-response text. Working recipe: listing via url, then extract per article for the date."
+  - source_id: tp-link-omada-psirt
+    reason: "Quiet: newest bulletins 136188 and 136187 are dated 2026-10-14 (read with extract per bulletin URL; the listing page is a server-rendered Vue list with bulletin hrefs and titles but no dates)."
+  - source_id: rapid7-blog / cisa all.xml (discovery feeds, not slice records)
+    reason: "https://www.rapid7.com/blog/rss/ is not well-formed XML and https://www.cisa.gov/cybersecurity-advisories/all.xml is refused by every in-container transport; cisa.gov pages were read with extract (served through the reader fallback this run) and WebFetch."
+fetch_failures:
+  - id: connectwise-trust-center
+    url_tried: "https://www.connectwise.com/company/trust/advisories"
+    fetch_method: "bridge:url"
+    status_code: 403
+    error_class: transport-403
+    error_message: "both transports failed: direct=(direct HTTP 403, 6068 B); jina=(reader failure); WebFetch: The server returned HTTP 403 Forbidden"
+    attempted_methods: [bridge:url, jina, webfetch]
+    mitigation_applied: "none; no alternate source for the advisories index"
+    covered_anyway: false
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "CVE-2026-109618 and CVE-2026-109619 (dateAdded 2026-10-26) folded into items A-D; no other additions after 2026-10-23" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent {exploited,criticals,lastvulnerabilities} + enisaid", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "exploited list: the two PHP records (exploitedSince 2026-10-26) and the two AhsayCBS records already covered; criticals list holds only 2026-10-04 to 10-12 VulnCheck-assigned library CVEs; latest list 2026-10-26 holds four CVSS 5.1-7.1 device records, dropped" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest lab post 2026-10-09 (PaperCut); the watchtowr.com/intelligence PHP FAQ page (different site area) was re-read and cited in item A" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed https://www.fortiguard.com/rss/ir.xml (record rss_url resets) + extract", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "FG-IR-26-186 revised 2026-10-26 and FG-IR-26-187 (new, 2026-10-26) folded into items A and E; no other advisories since 2026-10-13" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent/releases/cve", horizon_hours: 26, in_horizon_items: 16, returned: 0, note: "CVE-2026-111497 revision 1.1 (acknowledgement only) folded into item E; 15 Chromium Mobile CVE rows imported 2026-10-26 carry no exploited flag; latest security release is 2026-Oct (2026-10-13), outside the window" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + extract + json", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "CVE-2026-109618 (revised 2026-10-27T00:10Z) -> item B; CVE-2026-111497 Brotli status (2026-10-26) -> item E; CVE-2026-0322 and CVE-2026-0257 unchanged" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "bridge:url, jina, webfetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "HTTP 403 on every rung; logged in fetch_failures" }
+  - { id: oracle-cpu, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 148, in_horizon_items: 1, returned: 1, note: "Security Alert for CVE-2026-109618/109619 (Rev 2, 2026-10-26) -> item H; October CPU (Rev 1, 2026-10-20) already covered" }
+  - { id: sansec-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 148, in_horizon_items: 3, returned: 0, note: "2026-10-26 Convertr/Plausible Magecart and 2026-10-24 Magento CMS-block loader (953 stores) are e-commerce skimming with no public-sector nexus, dropped; 2026-10-21 PHP2Shell post already covered" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "bridge:url + extract per article", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest dated article 2026-10-12 (LG webOS sync-demo); the DCOM PsmServiceExtHost LPE (2026-09-10) is patched as CVE-2026-69459; Cisco CUCM write (2026-06-23) fixed" }
+  - { id: trail-of-bits, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-10-21 AI-agent change-audit post is methodology, not a vulnerability or technique class change; dropped" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest bulletins dated 2026-10-14 (CVE-2026-102298, CVE-2026-107795, fixed in Omada Controller 6.3.0.45)" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "October patch day was 2026-10-13, page last updated 2026-10-13; next 2026-11-10" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed", horizon_hours: 148, in_horizon_items: 1, returned: 0, note: "2026-10-21 PHP major-security alert already covered; nothing newer" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "bridge:url (chimera collection API)", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "APSB26-170 and APSB26-159 (Substance 3D Stager, Sampler) carry 2026-10-22 republish timestamps but were published 2026-10-13, priority 3, no known exploitation; dropped" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "bridge:url listing + extract", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "Node2Shell/HTTP2Shell post (updated 2026-10-26) folded into item E; how-to-patch-php2shell post is a product tutorial" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "bridge:url listing + extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-15 (skynox7 proxyjacking); nothing in horizon" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "bridge:url listing", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest items are the node2shell and php2shell vulnerability alerts, already covered" }
+notes_for_main_agent:
+  no_change_checks_this_attempt: "Re-read this run with no new statement: Citrix CTX697096 and CTX697174 (NetScaler, initial publications only), Ivanti October blog (2026-10-13), BeyondTrust BT26-05 (updated 2026-10-15), Cisco Secure Email Gateway cisco-sa-esa-afw (v1.0 2026-10-14), Arista advisory 0199 (v1.0 2026-10-22, 'known to be actively exploited'), Collabora GHSA-g3vx-3m76-fghh (2026-10-14), SonicWall SNWLID-2026-0017 (no exploitation evidence), GitLab critical patch release 19.5.1 (2026-10-21), Atlassian CVE-2026-21589 (2026-10-05), PaperCut security bulletin (last update 2026-09-10), Drupal RSS (latest SA-CORE-2026-016 on 2026-10-14), NCSC-NL Zammad alert, Fortinet hardening-release post (2026-10-21), PAN CVE-2026-0322 and CVE-2026-0257 (feed unchanged), NCSC-CH PHP post 13083 and BACS PHP warning (no edits since 2026-10-22)."
+  candidate_drops: "Considered and dropped as outside the relevance bar: Tailscale SSH 'Tailworm' report (2026-10-25: no CVE, no fix, needs a foothold on a permitted device first), Wasmtime Cranelift sandbox escapes (fixed 2026-10-19/20, embedder-specific, no attacks), Plex Media Server and EG SiteGuard KEV additions of 2026-10-20 (outside the window, consumer or Japan-specific), Chromium Mobile CVEs in MSRC (no exploitation flag), Magecart campaigns reported by Sansec."
+  pending_check_next_fire: "NetScaler: re-read the Tech Zone post (HTTP 403 here) or CTX bulletin for the PHP fixed builds due 2026-10-27; PAN-OS: 12.2.4-h1 (10/28), 12.1.x (10/28 to 10/30), 11.2.x (10/27 to 10/30), 11.1.7-h12, 10.2.7-h39 and 10.2.10-h42; B&R APROL patch of 2026-10-26 and 2026-10-29; QNAP Note Station 3 and QNE (ADRA); Oracle Security Alert further revisions; KEV additions after catalogVersion 2026.10.26."

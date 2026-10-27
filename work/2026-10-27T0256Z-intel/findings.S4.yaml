@@ -1,0 +1,325 @@
+# work/2026-10-27T0256Z-intel/findings.S4.yaml  (re-spawn; attempt 1 was killed before writing findings)
+domain: S4
+run_id: 2026-10-27T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-27T03:14:56Z
+ended_at: 2026-10-27T03:31:29Z
+duration_seconds: 993
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 21
+  bridge_fetches: 95
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "supplier watchlist is empty in the org profile; sweep is a no-op"
+
+# ---------------------------------------------------------------------------
+# Backlog re-gate (state/coverage_backlog.md ## Open): ARX Group SA
+# ---------------------------------------------------------------------------
+backlog_regate:
+  - row: "ARX Group SA (Swiss engineering consultancy, Ceneri Base Tunnel / USTRA / SBB contracts) listed by the Aurora ransomware leak site on 2026-10-23"
+    hold_condition_met: false
+    checked_at: 2026-10-27T03:30:00Z
+    evidence: |
+      Ransomware.live API record (fetched this run, https://api.ransomware.live/v2/searchvictims/ARX) still shows the Aurora
+      listing of 2026-10-23T17:57Z with `press: null` and no ransom/data-size field; the claim text lists 9,510 project fee
+      structures, 8 GB of Ceneri Base Tunnel documentation and 881,205 employee time entries. No Swiss press report found:
+      Inside IT, Netzwoche, ICTjournal, SRF, Blick, NZZ, RTS and Ticinonline feeds (all fetched 2026-10-27, nothing on ARX),
+      plus DE, IT and EN WebSearch queries naming ARX, Ceneri, SBB, USTRA and Aurora returned nothing on this firm. No ARX statement,
+      no SBB or ASTRA/USTRA statement, no regulator notice found. Ransomware.live's own country list (countryvictims/CH, fetched)
+      has no newer Swiss claim than ECOM (Qilin, 2026-10-25).
+    recommendation: "keep held; expiry 2026-11-07 unchanged"
+    note: "The only identity facts found are from business registries (ARX Group SA, Grono GR, former Pini Group, renamed 2025); no source ties it to a confirmed intrusion."
+
+# ---------------------------------------------------------------------------
+# Items
+# ---------------------------------------------------------------------------
+items:
+  - title: "Camping.Care booking system (reservations for all TCS campsites): customer and booking data stolen through the PHP flaw, fraudulent WhatsApp messages already quote real reservation numbers"
+    sources:
+      - { url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping", publisher: "SRF (Kassensturz Espresso)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.blick.ch/wirtschaft/hackerangriff-auf-tcs-camping-15000-kunden-gewarnt/nws2bcn", publisher: "Blick", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/erfolgreiche-angriffe-auf-php-luecken-bestaetigt-20261026", publisher: "Inside IT", date: "2026-10-26", role: "context" }
+      - { url: "https://www.bacs.admin.ch/de/warnung-php-de", publisher: "BACS (Federal Office for Cybersecurity)", date: "2026-10-21", role: "context" }
+      - { url: "https://borncity.com/blog/2026/10/27/sicherheitsvorfall-bei-secra-bookings-mittelholstein-tourismus-betroffen/", publisher: "Borns IT- und Windows-Blog", date: "2026-10-27", role: "context" }
+    discovery_trace: "first seen at: srf-news, URL https://www.srf.ch/news/bnf/rss/1646 (feed fetched 2026-10-27; item 'PHP-Sicherheitslücke – Betrugsversuche nach Datenleck im Buchungssystem für TCS-Camping', 2026-10-26 17:04Z) → primary: SRF Espresso article, URL https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping (extract; carries the TCS spokesman's confirmation) → corroborating: blick-ch feed https://www.blick.ch/rss.xml, URL https://www.blick.ch/wirtschaft/hackerangriff-auf-tcs-camping-15000-kunden-gewarnt/nws2bcn (relays SRF, adds supplier nationality and the wider PHP wave) → context: Inside IT 2026-10-26 (BACS knew of no Swiss attacks at that time) and BACS PHP warning page. No Camping.Care or TCS own notice could be fetched (tcs.ch pages read, no notice found); no Dutch-language report found (WebSearch 'Camping.Care datalek' returned only an unrelated Secureholiday/Ctoutvert breach from July)."
+    summary: |
+      TCS Camping is warning about 15,000 guests after Camping.Care, the Dutch supplier of the booking system through which all Touring Club Schweiz campsites take reservations, suffered a data theft. TCS confirmed to SRF's consumer programme Espresso on 2026-10-26 that fraudsters could steal customer and booking information, and SRF ties the case to the worldwide PHP vulnerability; Blick, relaying SRF, says the attackers used the two critical PHP flaws disclosed the week before and that Camping.Care is not the only software supplier hit. The stolen fields already in criminal use are names, telephone numbers and reservation numbers: fraudulent WhatsApp messages that refer to existing reservations have been reported to guests. TCS says account details and IBANs were not affected, that credit card data is not stored in the booking system, that TCS Camping sends no booking details, payment requests or reservation links over WhatsApp, and that the vulnerability has since been closed. No source names the CVE identifiers, the exploited entry point, the date of the intrusion, how many other Camping.Care customers are affected or an actor, and Camping.Care itself is not quoted. No earlier Swiss victim disclosure for the PHP flaws turned up in this run's sources: Inside IT reported earlier the same day that the BACS knew of no attacks in Switzerland while not ruling out unreported ones, so this is the first Swiss-linked victim in this run's reading, one hop away from the Swiss organisation (a supplier) rather than at TCS itself. A parallel booking-platform case is reported by the Borns IT blog (reliability C): secra bookings (Germany) states a 2026-10-23 attack that exported booking data, but the blogger's PHP link is his own suspicion, not secra's statement.
+    region_nexus: "switzerland (15,000 TCS campsite guests; supplier in the Netherlands)"
+    primary_sector_nexus: "indirect (consumer/association victim; a supplier-hosted PHP application, the exposure class that BACS tells public bodies to ask their suppliers about)"
+    sector: "tourism / consumer services"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    cve_note: "SRF names only 'the PHP vulnerability' and Blick 'the two critical PHP vulnerabilities' of the previous week; the CVE ids are the main agent's mapping to the store's PHP2Shell entries (references[] needed), not quoted by either outlet."
+    techniques: [T1190, T1566.003]
+    technique_note: "T1190: Blick says the attackers used the PHP flaw against the booking system; T1566.003: the follow-on is fraud over WhatsApp using real reservation data."
+    affected_products: ["Camping.Care (booking system)", "PHP"]
+    entity_keys: ["tool:php2shell"]
+    new_entities:
+      - { key: "incident:camping-care-tcs-camping-data-theft-2026-10", type: incident, name: "Camping.Care / TCS Camping booking-data theft (PHP flaw)", aliases: ["TCS Camping data leak"], summary: "Data theft at the Dutch booking-system supplier Camping.Care, which handles reservations for all TCS campsites; TCS warned about 15,000 guests on 2026-10-26 and ties it to the PHP flaw (SRF, Blick, 2026-10-26)." }
+    relation_suggestions:
+      - { subject: "incident:camping-care-tcs-camping-data-theft-2026-10", object: "tool:php2shell", basis: "Blick states the attackers used the critical PHP vulnerabilities of the previous week to steal Camping.Care customer and booking data, citing SRF Espresso (2026-10-26); SRF says the data theft is 'in connection with' the worldwide PHP flaw" }
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "two outlets, one first-hand chain: the TCS spokesman's confirmation to SRF Espresso; Blick relays SRF. The PHP link is TCS's/the supplier's account as SRF relays it; Camping.Care is not quoted."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    references_suggested: ["2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619", "2026-10-23/netscaler-php2shell-management-gui-fixes-2026-10-27"]
+    novelty_note: "A distinct supplier-breach finding that builds on the PHP2Shell entries (CVE overlap, so references[] is required); the main agent may instead fold it into those entries as an update of the 'PHP2Shell victims' running story, which is what the spawn message lists under developing incidents."
+    evidence:
+      - quote: "Wie der TCS gegenüber dem SRF-Konsumentenmagazin «Espresso» bestätigt, konnten Betrüger Kunden- und Buchungsinformationen entwenden."
+        attribution: "SRF (Kassensturz Espresso)"
+        source_url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping"
+      - quote: "Im Schreiben an Camping-Gäste heisst es, es seien betrügerische Whatsapp-Nachrichten gemeldet worden, die sich auf bestehende Reservationen beziehen."
+        attribution: "SRF (Kassensturz Espresso)"
+        source_url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping"
+      - quote: "Die Hacker nutzten die kritische Sicherheitslücke der Programmiersprache PHP, um Kunden- und Buchungsdaten zu stehlen"
+        attribution: "Blick"
+        source_url: "https://www.blick.ch/wirtschaft/hackerangriff-auf-tcs-camping-15000-kunden-gewarnt/nws2bcn"
+      - quote: "Über das Buchungssystem der holländischen Firma werden unter anderem Reservationen für sämtliche Campingplätze des Touring Club Schweiz (TCS) abgewickelt."
+        attribution: "Blick"
+        source_url: "https://www.blick.ch/wirtschaft/hackerangriff-auf-tcs-camping-15000-kunden-gewarnt/nws2bcn"
+      - quote: "Dem Bundesamt für Cybersicherheit (Bacs) waren gemäss dem bisherigen Stand keine Angriffe in der Schweiz bekannt."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/erfolgreiche-angriffe-auf-php-luecken-bestaetigt-20261026"
+    extended_notes: |
+      Exposure (what the sources support): customers of a PHP-based, supplier-hosted booking or portal application. The BACS PHP warning
+      page tells operators to ask their software suppliers and service providers which products are affected, to check hosted offers for
+      confirmed fixes, and says an update does not remove an earlier compromise; that is the supplier-chain question for any Swiss
+      public body whose tourism, camping, ticketing, citizen-portal or booking service runs on a third party's PHP stack.
+      Detection / triage (from the stated mechanism): the visible follow-on is WhatsApp fraud that quotes real names, telephone numbers and
+      reservation numbers; TCS states it never sends booking details, payment requests or reservation links over WhatsApp, which is the
+      discriminator between a genuine message and the fraud. No post-exploitation behaviour (web shell, persistence) is described by any source.
+      Gaps: no CVE ids, entry point, intrusion date, Camping.Care statement, count of other Camping.Care customers (Switzerland or elsewhere).
+      TCS (Touring Club Suisse) is also in the Ransomware.live Swiss list as a Qilin claim of 2026-09-20 (unrelated date and actor; no
+      source ties the two).
+      Same-day sibling: borncity.com (C) on secra bookings (DE) 2026-10-23 attack with exported booking data, partner names including
+      Mittelholstein-Tourismus; PHP2Shell is the blogger's suspicion (the firm publishes Contao modules), not secra's statement.
+
+  - title: "PK Softech / Publica: the data protection commissioner does not rule out widening the formal investigation to federal bodies and pension funds; Publica's page of 2026-10-26 still reports no darkweb publication"
+    sources:
+      - { url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026", publisher: "Inside IT", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.tio.ch/svizzera/attualita/1958918/dati-violazioni-sicurezza-aumento-svizzera", publisher: "Ticinonline", date: "2026-10-25", role: "corroborating" }
+      - { url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten", publisher: "Publica (Pensionskasse des Bundes), page status 2026-10-26", date: "2026-10-26", role: "primary" }
+    discovery_trace: "first seen at: inside-it-ch feed https://www.inside-it.ch/rss.xml (2026-10-26 12:19Z item 'Edöb untersucht Cyberangriff auf PK Softech') → extract of https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026 (relays the SonntagsBlick interview of 2026-10-25) → corroborating: tio-ch-attacco-informatico, URL https://www.tio.ch/svizzera/attualita/1958918/dati-violazioni-sicurezza-aumento-svizzera (ATS-style relay of the same interview, 2026-10-25) → primary for status: Publica page https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten (carries 'Stand: 26.10.2026'). The SonntagsBlick interview itself was not found (WebSearch returned nothing); EDÖB press release of 2026-10-23 already cited in the entry."
+    summary: |
+      Two stated facts beyond the entry's 2026-10-25 update. First, in an interview with SonntagsBlick (2026-10-25), relayed by Inside IT and Ticinonline, the federal data protection commissioner Adrian Lobsiger says the formal investigation opened on 2026-10-22 is currently directed against the external IT supplier but that he does not rule out extending it later to federal bodies such as the pension funds; he adds that the interlinking of data and the removal of data silos raise breach risk, that only strictly necessary data should be transmitted, and that anonymised test data is preferable to productive data, which maps onto the entry's test-data and migration-copy findings. He also reports 455 data-security-breach notifications in 2026 so far against 343 in all of 2025, with a high number of unreported cases. Second, Publica's page, status of 2026-10-26, again states it has no indication that data from the attack has been published on the darkweb and that it keeps monitoring. Neither the Confederation nor Publica has changed what it says about the actor, the demand or the scope; the Inside IT piece repeats the 2026-10-23 EDÖB press release.
+    region_nexus: "switzerland (federal administration, cantonal and municipal pension funds)"
+    primary_sector_nexus: "direct (public sector: federal pension fund and supplier chain)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199, T1657]
+    technique_note: "unchanged from the entry (trusted-relationship supplier compromise; extortion by Akira per Tamedia)"
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09", "actor:akira"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    verification_note: "Inside IT and Ticinonline both relay the SonntagsBlick interview (one origin); Publica's status line is its own page."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    borderline: true
+    borderline_reason: "marginal delta on an already heavily covered entry: a possible widening of the EDÖB proceeding (not a decision) and a repeated 'no darkweb publication' status; worth a short update record at most, or only the EDÖB breach-count context if the main agent wants it"
+    evidence:
+      - quote: "Lobsiger schloss jedoch nicht aus, das Verfahren später auf Bundesorgane wie Pensionskassen auszuweiten."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026"
+      - quote: "Im laufenden Jahr 2026 hätten sie bereits 455 Meldungen über Datensicherheitsverletzungen erhalten, sagte Adrian Lobsiger."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026"
+      - quote: "Ausserdem müsse sichergestellt werden, dass nur die nötigsten Daten übertragen werden und bevorzugt mit anonymisierten Testdaten anstatt mit produktiven Daten gearbeitet werde."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026"
+      - quote: "Attualmente essa è rivolta contro il fornitore IT esterno."
+        attribution: "Ticinonline"
+        source_url: "https://www.tio.ch/svizzera/attualita/1958918/dati-violazioni-sicurezza-aumento-svizzera"
+      - quote: "Aktuell liegen uns keine Hinweise vor, dass Daten aus dem Cyberangriff auf den Softwarelieferanten von Publica im Darkweb veröffentlicht wurden."
+        attribution: "Publica (Pensionskasse des Bundes)"
+        source_url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten"
+    extended_notes: |
+      Re-gate of the other PK Softech angles this run: Ransomware.live has no listing for PK Softech (searchvictims/softech returns 404, i.e. no
+      match), consistent with Publica's no-darkweb-publication line; dcod.ch (2026-10-26) and tio.ch (2026-10-20) restate known facts only.
+      Publica's page also records that publica.ch was taken offline on 2026-10-21 for the PHP flaws, unrelated to the supplier incident (already
+      on the page since 2026-10-22).
+
+  - title: "South Korean police arrest a gang leader who used the ARTEX agentic penetration-testing framework against 90+ organisations, hospitals and universities among them, and extorted 38 of them"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/former-pentester-used-artex-ai-to-steal-82-million-data-records/", publisher: "BleepingComputer", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.yna.co.kr/view/AKR20261026075100004", publisher: "Yonhap News (Korean)", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, feed https://www.bleepingcomputer.com/feed/ (2026-10-26 17:08 EDT item 'Former pentester used ARTEX AI to steal 8.2 million data records') → extract of the BleepingComputer article → primary-by-origin: Yonhap, URL https://www.yna.co.kr/view/AKR20261026075100004 (Korean; reports the Seoul Metropolitan Police Cyber Investigation Unit statement of 2026-10-26; translated inline)"
+    summary: |
+      The Seoul Metropolitan Police Agency's cyber investigation unit announced on 2026-10-26 (Yonhap) that it referred a 32-year-old gang leader to prosecutors on 2026-10-23 and that six accomplices are investigated without detention; the group is accused of stealing 8.2 million personal-data records and internal files from more than 90 organisations since September 2025 (cram schools, hospitals, golf courses, universities, large-company affiliates) and sending extortion messages to 38 of them demanding 360 million won in total (BleepingComputer: by e-mail; Yonhap: accomplices also threatened victims' staff by telephone and text message; Yonhap's sub-headline says about 300 million won was extorted, its body gives 360 million as the amount demanded), warning that a disclosed leak would damage the firm's image and could bring regulatory fines; no encryption step is reported. Per Yonhap the leader, a self-taught former penetration tester (2019 to 2022), used conventional vulnerability-finding tools at first and from late August 2026 used generative AI to attack a far broader set of firms indiscriminately; 60 of the victims were hacked with AI, and the AI autonomous penetration-testing system recently used in the South Korean finance-sector data thefts was also used. BleepingComputer, citing Korean media, names that framework as ARTEX, the framework the store already covers through Microsoft's Storm-0940 reporting and CrowdStrike's and Recorded Future's reporting on South Korean banks; Yonhap itself describes the system without naming it, so the ARTEX label is BleepingComputer's. The new point for defenders is the actor class: a non-state, financially motivated extortion gang using the same agentic framework against hospitals and education, with a stated police view that AI lowers the entry barrier.
+    region_nexus: "global; South Korea (no Swiss victim named)"
+    primary_sector_nexus: "indirect (transferable: hospitals and education targeted by AI-driven data-theft extortion without encryption)"
+    sector: "healthcare / education / cross-sector"
+    cves: []
+    techniques: [T1190, T1657]
+    technique_note: "T1190: the leader used tools that find website vulnerabilities and exploited them (Yonhap); T1657: financial extortion over data-theft threats by e-mail, no encryption stage reported"
+    affected_products: []
+    entity_keys: ["tool:artex"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    verification_note: "BleepingComputer relays Korean media; Yonhap is the origin and reports the police statement. The ARTEX name rests on BleepingComputer."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    borderline: true
+    borderline_reason: "a law-enforcement development on an existing entry's tool, no Swiss victim; worth one short update record naming the actor class and sectors (hospitals, universities), not a standalone entry"
+    evidence:
+      - quote: "South Korean police identified seven suspects linked to a cybercrime operation that breached more than 90 organizations in the country, with ARTEX AI pentesting framework used in most of the attacks."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/former-pentester-used-artex-ai-to-steal-82-million-data-records/"
+      - quote: "In 38 of the incidents, the threat actor demanded ransom payments of 360 million won ($270,000), promising in exchange not to leak stolen data."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/former-pentester-used-artex-ai-to-steal-82-million-data-records/"
+      - quote: "Initially, the hacker used conventional tools but adopted AI utilities in late August 2026 to expand the attacks."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/former-pentester-used-artex-ai-to-steal-82-million-data-records/"
+      - quote: "피해 업체 중 AI를 활용해 해킹한 곳은 60곳으로 집계됐다."
+        attribution: "Yonhap News"
+        source_url: "https://www.yna.co.kr/view/AKR20261026075100004"
+    extended_notes: |
+      Yonhap (translated): the group is accused of stealing 8.2 million personal-data records and internal data from cram schools, hospitals, golf
+      courses, universities and large-company affiliates since September 2025, then sending threat e-mails. Only the leader is in custody
+      (arrested 2026-10-15). The case began with a victim's complaint in June; police traced the leader through victim-server logs, arrested five
+      accomplices who phoned or texted victims' staff from July, say they recovered the stolen personal data and are still checking for secondary
+      crime such as dark-web leaks (Yonhap).
+
+  - title: "University of Copenhagen: attackers reached a test environment holding personal data of about 525,000 people, and ID-card PIN codes of about 20,000 staff and students were compromised"
+    sources:
+      - { url: "https://news.ku.dk/all_news/2026/10/university-of-copenhagen-hit-by-cyber-attack/", publisher: "University of Copenhagen (UCPH news)", date: "2026-10-25", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/university-of-copenhagen-data-breach-exposes-data-of-525-000-people/", publisher: "BleepingComputer", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed https://www.bleepingcomputer.com/feed/ (2026-10-26 18:20 EDT item 'University of Copenhagen data breach exposes data of 525,000 people') → extract of the BleepingComputer article → primary: UCPH statement, URL https://news.ku.dk/all_news/2026/10/university-of-copenhagen-hit-by-cyber-attack/ (read via the reader fallback because the direct extract has no readable body; original 2026-10-23 20:05, update 2026-10-25 20:00)"
+    summary: |
+      The University of Copenhagen confirmed on 2026-10-23 that hackers reached one of its test environments, detected on Tuesday 2026-10-20 and then brought under control; the database holds personally identifiable information (full name, national identity number, work and home telephone number, personal e-mail address) on about 525,000 individuals. The university says it has no indication that systems supporting day-to-day operations were reached or that activity was affected, and it reported the incident to the Danish Data Protection Agency. In an update of 2026-10-25 20:00 it added that the PIN codes of the ID cards of about 20,000 staff and students were compromised, that this is not a new breach but information it chose not to publish until the codes were changed, and that on 2026-10-23 it restricted physical access to selected critical campus locations and reopened them once new PIN codes were issued. No source names the initial access, an actor, a ransom or the dwell time. The transferable point is the exposure class that also runs through the PK Softech case: production personal data sitting in a test environment, and access-control secrets stored next to it.
+    region_nexus: "europe (Denmark); no Swiss nexus stated"
+    primary_sector_nexus: "indirect (public university; analogue of Swiss cantonal universities and the ETH domain)"
+    sector: "education / public-sector"
+    cves: []
+    techniques: []
+    technique_note: "no source states the access vector; no ATT&CK id can be supported"
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:university-of-copenhagen-test-environment-breach-2026-10", type: incident, name: "University of Copenhagen test-environment breach", aliases: ["UCPH cyber attack"], summary: "Attackers accessed a University of Copenhagen test environment holding personal data of about 525,000 people; ID-card PIN codes of about 20,000 staff and students compromised (UCPH, 2026-10-23 and 2026-10-25)." }
+    verification: MULTI-SOURCE
+    verification_note: "UCPH's own statement plus BleepingComputer, which relays it"
+    confidence: MEDIUM
+    classification_hint: { reliability: A, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "out-of-nexus (Danish public university); it meets none of the global-significance, new-TTP, same-actor or imminent-threat floors on its own, and no vector is public; kept only for the test-data and physical-access-code lesson that echoes PK Softech; drop if the main agent holds the incident floor strictly"
+    evidence:
+      - quote: "The University of Copenhagen has confirmed a cyber attack in which hackers gained access to one of the university’s test environments."
+        attribution: "University of Copenhagen"
+        source_url: "https://news.ku.dk/all_news/2026/10/university-of-copenhagen-hit-by-cyber-attack/"
+      - quote: "The hackers have gained access to information on approximately 525,000 individuals."
+        attribution: "University of Copenhagen"
+        source_url: "https://news.ku.dk/all_news/2026/10/university-of-copenhagen-hit-by-cyber-attack/"
+      - quote: "This concerns the PIN codes of approximately 20,000 people, who have therefore been issued with new PIN codes."
+        attribution: "University of Copenhagen"
+        source_url: "https://news.ku.dk/all_news/2026/10/university-of-copenhagen-hit-by-cyber-attack/"
+    extended_notes: |
+      Exposure/Detection ground truth is thin: no vector, so no post-compromise check beyond what the university did (re-issue of ID-card PIN codes,
+      temporary restriction of physical access to critical locations).
+
+  - title: "Medienwerkstatt (Sulgen TG, Mattenbach group): ransomware on 2026-10-09 with copied business data, Akira claims 130 GB; the company restored from backups without paying"
+    sources:
+      - { url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss", publisher: "Netzwoche", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.inside-it.ch/thurgauer-medienwerkstatt-meldet-cybervorfall-20261023", publisher: "Inside IT", date: "2026-10-23", role: "corroborating" }
+      - { url: "https://hacksnack.ch/ransomware-angriff-auf-thurgauer-medienwerkstatt/", publisher: "hacksnack.ch", date: "2026-10-23", role: "corroborating" }
+      - { url: "https://api.ransomware.live/v2/searchvictims/medienwerkstatt", publisher: "Ransomware.live (API record of the Akira listing)", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: netzwoche feed https://www.netzwoche.ch/rss.xml (2026-10-26 'Medienwerkstatt meldet Datenabfluss') → extract of https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss → corroborating: inside-it-ch feed https://www.inside-it.ch/rss.xml item of 2026-10-23, hacksnack.ch article above, and Ransomware.live searchvictims/medienwerkstatt (Akira listing discovered 2026-10-22T16:00Z, filed under country DE although the company is in Switzerland). The company's own notice (on its website, cited by Inside IT) was not fetched: no URL could be derived without guessing."
+    summary: |
+      The media and print production firm Medienwerkstatt in Sulgen TG, a subsidiary of the Mattenbach group, says its IT noticed unusual activity on 2026-10-09 and disconnected the affected systems; a forensic investigation found the attackers copied business contact data, production and order data and image files, a ransomware attack impaired individual systems, only part of the customers are affected and are informed directly, the incident was reported to the federal data protection commissioner and the police, and systems and production were restored without concessions to the attackers. The company does not name the actor; the Akira ransomware group lists the firm on its leak site and claims 130 GB (names, postal addresses, telephone numbers, customer data, contracts), per Netzwoche, Inside IT and hacksnack.ch; the Ransomware.live record shows the Akira listing from 2026-10-22. The victim confirms the intrusion and the copy, the 130 GB figure and the data-type list are the group's claim. No source ties the firm to a public body or says whether any public-sector customer is among the copied files.
+    region_nexus: "switzerland (Thurgau)"
+    primary_sector_nexus: "indirect (private SME; same actor as the federal PK Softech case)"
+    sector: "media / print services"
+    cves: []
+    techniques: [T1486, T1657]
+    technique_note: "T1486: the company reports a ransomware attack that impaired individual systems (the second source calls it ransomware); T1657: data theft with extortion claimed by Akira; the access vector is not stated"
+    affected_products: []
+    entity_keys: ["actor:akira"]
+    new_entities:
+      - { key: "incident:medienwerkstatt-sulgen-akira-2026-10", type: incident, name: "Medienwerkstatt (Sulgen TG) ransomware, Akira claim", aliases: [], summary: "Ransomware at the Thurgau media and print firm Medienwerkstatt on 2026-10-09 with copied business data; Akira claims 130 GB (Netzwoche, Inside IT, 2026-10-23 to 2026-10-26)." }
+    verification: MULTI-SOURCE
+    verification_note: "the company's statement is relayed by Netzwoche and Inside IT; the actor and volume are Akira's claim via Ransomware.live and the outlets"
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss (home region) and victim-confirmed, but a private print/media SME with no stated public-sector customer and no vector; the only link to the constituency is the same actor (Akira) as the PK Softech case, which the store already tracks"
+    evidence:
+      - quote: "Zudem sei es den Angreifern gelungen, Unternehmensdaten zu kopieren, schreibt die Medienwerkstatt weiter."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+      - quote: "Im Dark Web bekennt sich jedoch die Hackergruppe Akira zum Angriff"
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+      - quote: "Zugeständnisse an die Angreifer kamen für uns nicht infrage."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+
+# ---------------------------------------------------------------------------
+# Leads read and dropped (audit trail; not items)
+# ---------------------------------------------------------------------------
+dropped_leads:
+  - lead: "Stadtverwaltung Eichstätt (Bavaria): ransomware 2026-10-08/09, double extortion, entry through a vulnerability in third-party software despite two-factor authentication, attackers stayed several days, backups integrity-checked, supplier dropped, data on a server abroad"
+    reason: "German municipality; the decisive statements are dated 2026-10-22 (eichstaett.de) and 2026-10-23 (eichstaett.de, BR24), outside kommunaler-notbetrieb-de's 74 h lookback; no software vendor or actor is named. Not in the store. The audit's G2 sweep could weigh it as a transferable municipal lesson (urls fetched: https://www.eichstaett.de/aktuelles/cyber-attacke_auf_stadtverwalt-2861/ , https://www.eichstaett.de/aktuelles/cyber-attacke_hochfahren_der_s-2863/ , https://www.br.de/nachrichten/bayern/nach-cyber-angriff-in-eichstaett-daten-liegen-jetzt-im-ausland%2CVYsngYl)"
+  - lead: "Kreisverwaltung Oberspreewald-Lausitz (Brandenburg): systems shut down 2026-10-20 after a ministry hint, LKA investigates"
+    reason: "German, 2026-10-21, no attack confirmed ('could neither confirm nor deny'), no vector; outside lookback (https://www.rbb24.de/politik/beitrag/2026/10/it-vorfall-oberspreewald-lausitz-verwaltung.html)"
+  - lead: "Swiss Ice Hockey Federation (SIHF) data for sale, 87,226 people (FrenchBreaches, 2026-10-26)"
+    reason: "forum sale claim only, no SIHF statement, private sports association (PD-6); FrenchBreaches reliability C (https://frenchbreaches.com/alertes/f-d-ration-suisse-de-hockey-sur-glace-sihf-mvovz4lyan9qc7wovbi)"
+  - lead: "Ircantec (French public pension scheme) PEP's employer platform: illegitimate access to several employer accounts by social engineering, platform reopened 2026-10-19; forum sale claim of 450,000 records on 2026-10-22"
+    reason: "France, older than the window, the link between the claim and the incident is not established by the source (https://frenchbreaches.com/alertes/ircantec-retraites-mvk0hhi1k0g8fp7vhof)"
+  - lead: "secra bookings / Mittelholstein-Tourismus / ferienwohnungen.de (Germany): booking-platform attack 2026-10-23 with exported data incl. IBAN and key-safe codes"
+    reason: "German private firms; PHP2Shell link is a blogger's suspicion, secra does not say it; used only as context on the TCS item (https://borncity.com/blog/2026/10/27/sicherheitsvorfall-bei-secra-bookings-mittelholstein-tourismus-betroffen/)"
+  - lead: "DreamHost (US hosting provider, 400,000+ customers): forced email/FTP/SFTP password resets since 2026-10-23, still ongoing"
+    reason: "no root cause or scope published, US provider, no Swiss or PHP2Shell link stated (https://www.bleepingcomputer.com/news/security/dreamhost-forces-email-ftp-sftp-password-resets-in-ongoing-incident/)"
+  - lead: "Orange (France) internal Jira exports, about 30,000 files, posted by a forum user 2026-10-23"
+    reason: "Orange had not confirmed it per cyberattaque.org (C); claim only (https://www.cyberattaque.org/cyberattaque-contre-orange-pres-de-30-000-fichiers-internes-devoilent-les-secrets-de-son-reseau/)"
+  - lead: "University of New Mexico claim by 'BYOD' group (36,000 machines, hospital AD forest), Ransomware.live 2026-10-26"
+    reason: "claim only, US, no victim statement seen"
+  - lead: "Phishing mail impersonating the Swiss hoster Metanet with a fake 'PHP update required' customer portal (borncity reader comment, 2026-10-25)"
+    reason: "single reader comment on a blog; WebSearch found no corroboration (https://borncity.com/blog/2026/10/25/php2shell-erste-phishing-nachrichten-all-inkl-com-information/); Strato's generic PHP-phishing warning is quoted there; for S2 if corroborated"
+  - lead: "Ransomware.live Swiss and DACH claims in the 26 h window"
+    reason: "no new Swiss claim since ECOM (Qilin, 2026-10-25); window DACH claims are private SMEs only (APPL Holding, Taubensee Steel & Wire, Glückauf-Vermessung, Miletic, Edelstahl-Mechanik, Hossner-Textil)"
+  - lead: "SEC EDGAR 8-K Item 1.05, 2026-10-20 to 2026-10-27"
+    reason: "the search returned one hit, Agassi Sports Entertainment Corp. 8-K of 2026-10-26 with items 5.02/5.05/8.01/9.01 (not 1.05), no cyber content seen; no Item 1.05 filing in the window"
+  - lead: "ConnectWise Cloud Backup/SkyKick, OVHcloud CLI, LiteLLM, TeamUpdraft, Rank Math, Danfoss/Copeland, Tangerhütte, Metabase victims, IDC Frontier"
+    reason: "no in-window new stated facts found: TeamUpdraft page last updated 2026-10-23, LiteLLM blog 2026-10-23, Rank Math KB 2026-10-16, Forescout's cold-chain post already in the Danfoss entry, ConnectWise trust-center page returns 403 on every transport (WebSearch shows nothing newer than 2026-10-22), no new Metabase victim found. IDC Frontier published a sixth report 'バックアップサービスの提供再開について' (backup service restored) on 2026-10-18 that the entry does not cite; outside the window, flagged for the audit (https://www.idcf.jp/news/topics/ lists it)"
+
+candidate_sources:
+  - id: hacksnack-ch
+    publisher: "hacksnack.ch (Emrida GmbH), Swiss SME cyber news"
+    url: "https://hacksnack.ch/"
+    rss_url: "https://hacksnack.ch/feed/"
+    category: [breaches, ch-eu, news]
+    language: [de]
+    why: "Feed reads direct (dated items). Reports Swiss ransomware leak-site claims (it carried the Medienwerkstatt/Akira claim on 2026-10-23 and Netzwoche cites it by name). Mostly KMU explainers, so low value and derivative (reliability C/D); worth one trial run only if the main agent wants a Swiss leak-claim lead, otherwise skip."
+
+coverage_gaps:
+  - source_id: "connectwise-trust-advisories (cited by the ConnectWise entry)"
+    reason: "https://www.connectwise.com/company/trust/advisories returns 403 on extract, url (direct and reader) and WebFetch; no in-window status could be read; WebSearch found nothing newer than 2026-10-22"
+  - source_id: "tio-ch-attacco-informatico"
+    reason: "`extract` of the topic page returns only the site menu; the raw `url --direct` HTML works and lists article paths (/svizzera/attualita/<id>/<slug>), with no dates; ids ascend with time, so the newest ids (about 1957xxx to 1959xxx on 2026-10-27) are the recent items; each article page then extracts with a date"
+  - source_id: "ico-uk"
+    reason: "no enforcement or news item inside the 74 h lookback; sitemap recipe works (https://ico.org.uk/sitemap.xml, 5 MB, filter on /action-weve-taken/enforcement/2026/10/ and /media-centre/news-and-blogs/2026/10/); newest enforcement items are 2026-10-20 (Local Government Data Unit Wales, OGI Networks) and a Metropolitan Police Service action of 2026-10-20"
+  - source_id: "sec-edgar"
+    reason: "the item filter `sec-edgar 8k <start> <end> 1.05` returns hits that do not carry Item 1.05 in their item list (Agassi Sports 8-K, items 5.02/5.05/8.01/9.01); treat the hit list as full-text matches, check the `items` field"
+  - source_id: "news.ku.dk"
+    reason: "`extract` on https:// worked only through the reader fallback (jina, metered); direct trafilatura has no readable body"
+
+# Slice completion: one row per slice record (8 of 8)
+source_ledger:
+  - { id: divd-csirt, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "feed's newest item is the 2026-10-09 case update; nothing in the 121 h lookback" }
+  - { id: borncity, tier: standard, attempted: true, transport: "feed (direct, 40 items) + extract", horizon_hours: 97, in_horizon_items: 6, returned: 0, note: "relevant leads (secra bookings, all-inkl/PHP phishing, Forescout cold-chain) were context, already covered or out of nexus; secra used as context on the TCS item" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "extract (direct trafilatura)", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "listing's newest item is dated 2026-10-20; nothing in the lookback" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "url --direct sitemap.xml", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "no enforcement/news page since 2026-10-20; only FOI decision notices" }
+  - { id: kommunaler-notbetrieb-de, tier: standard, attempted: true, transport: "extract (direct trafilatura)", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest card is Kreisverwaltung Oberspreewald-Lausitz of 2026-10-21; Eichstätt's 2026-10-22/23 statements dropped as outside lookback (see dropped_leads)" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "feed (direct, 40 items) + extract", horizon_hours: 74, in_horizon_items: 15, returned: 0, note: "SIHF (claim only), Ircantec, Engie, Alliance Police Nationale, Ined, FSU etc. French or private, none meets the incident floor; SIHF and Ircantec logged in dropped_leads" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed (direct, 40 items)", horizon_hours: 74, in_horizon_items: 2, returned: 0, note: "general-news feed; only briefs on FFTir data theft and a Capcom leak in lookback, French/gaming, out of nexus" }
+  - { id: tio-ch-attacco-informatico, tier: standard, attempted: true, transport: "url --direct (raw HTML) + extract per article", horizon_hours: 76, in_horizon_items: 1, returned: 1, note: "returned as corroborating source on the Publica/EDÖB update-of (2026-10-25 article); the other topic-page articles are older and Publica/IPCT/Republik already covered" }

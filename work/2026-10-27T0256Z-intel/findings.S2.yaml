@@ -1,0 +1,249 @@
+# work/2026-10-27T0256Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-10-27T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-27T03:14:56Z
+ended_at: 2026-10-27T03:32:34Z
+duration_seconds: 1058
+note_on_started_at: "Re-spawn after the first S2 attempt was killed by a container restart; started_at is this re-spawn's start (attempt 1 started earlier, see S2.attempt1.started_at)."
+watchlist_duty: sector-lens   # no product/supplier sweep; Swiss public sector weighting applied
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 32
+  bridge_fetches: 90
+items:
+
+  # ------------------------------------------------------------------
+  - title: "PHP2Shell: first documented successful remote code execution (honeypot evidence), CISA KEV listing with a 2026-10-29 due date, and the first Swiss data-theft report tied by media to the PHP flaws"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog (version 2026.10.26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/26/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching", publisher: "CISA (alert of 2026-10-21, revised 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md", publisher: "Adel Karimi (Perplexity), honeypot-data repository", date: "2026-10-24", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/", publisher: "BleepingComputer", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/erfolgreiche-angriffe-auf-php-luecken-bestaetigt-20261026", publisher: "Inside IT", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping", publisher: "SRF (Kassensturz Espresso)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.bacs.admin.ch/de/warnung-php-de", publisher: "BACS / NCSC.ch", date: "2026-10-21", role: "context" }
+    discovery_trace: "first seen at: inside-it-ch, RSS https://www.inside-it.ch/rss.xml (item 'Erfolgreiche Angriffe auf PHP-Lücken bestätigt', 2026-10-26) → extract https://www.inside-it.ch/erfolgreiche-angriffe-auf-php-luecken-bestaetigt-20261026 → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/ → primary: Karimi honeypot report, URL https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md; KEV leg: cisa-advisories, WebFetch https://www.cisa.gov/news-events/cybersecurity-advisories → alert https://www.cisa.gov/news-events/alerts/2026/10/26/cisa-adds-two-known-exploited-vulnerabilities-catalog → structured check `cisa-kev` bridge (catalogVersion 2026.10.26, dateReleased 2026-10-26T22:24:24Z); Swiss leg: srf-news feed https://www.srf.ch/news/bnf/rss/1646 (keyword sweep) → extract of the Espresso article; Risikomonitor numbers come only from Inside IT (php.risikomonitor.com/ch renders them client-side, the extract showed no figures)."
+    summary: |
+      Three developments since the covered entry's 2026-10-26 state, which still says no source ties a confirmed compromise to these flaws.
+      (1) Exploitation. Adel Karimi (Perplexity) published honeypot evidence dated 2026-10-24 of successful remote code execution against PHP 8.4.26 under single-worker Apache mod_php with a 128 MiB memory limit: 35 execution-stage requests, each followed by a /bin/sh started directly by an Apache worker (uid 33), on three disposable honeypot targets, from two source-address clusters, which he says does not establish two actors. The chain was a four-stage multipart sequence: memory-pressure request, memory disclosure through an oversized PHPSESSID (an 819,200-byte decoded cookie returned in the response), a second memory-pressure request, then an execution request adjusted to the leaked memory layout. The report says the worker usually crashes right after the shell starts, so no normal access-log line exists and HTTP 200 on the first stages is not the success criterion, and that the first commands were an id/proof-file write plus wget, curl or PHP CLI file_get_contents callbacks that failed on the minimal honeypot images. Karimi says the traffic closely matches the public HTTP-only PoC family, that the observed chain is consistent with CVE-2026-109618 and does not establish a distinct CVE-2026-109619 path, and that the evidence "is not a measurement of exploit reliability on other worker counts, PHP builds, or applications". BleepingComputer (2026-10-26) relays it and quotes Expel's Marcus Hutchins calling it the highest-quality confirmation of in-the-wild exploitation he has seen. This is honeypot evidence, not a production victim; it is consistent with CrowdStrike's earlier expectation that a reliable exploit needs a favourable deployment profile.
+      (2) KEV. CISA added CVE-2026-109618 ("PHP Memory Corruption Vulnerability") and CVE-2026-109619 ("PHP Stale Internal Request-State Vulnerability") to its Known Exploited Vulnerabilities catalog on 2026-10-26 (catalog 2026.10.26); the entries carry dueDate 2026-10-29, forensicTriage "Yes" and knownRansomwareCampaignUse "Unknown", and CISA revised its 2026-10-21 alert the same day. The FCEB due date is a US federal obligation, but the 'Yes' forensic-triage flag and the 3-day clock are the signal that CISA treats the exploitation evidence as sufficient. The covered entry's statement that neither CVE is in KEV (as of 2026.10.23) is superseded.
+      (3) Switzerland. Inside IT relays the Risikomonitor live monitor: on 2026-10-26, 54,229 of the Swiss domains checked (more than 1.8 million web servers in scope) were still unpatched; the same outlet gave 20,231 of 576,549 on 2026-10-22, so the two figures have different scopes and are not a like-for-like trend, and an unpatched domain is not a compromised one. BACS had said no attacks were known in Switzerland and Inside IT says whether the new findings change that is open. SRF Espresso (2026-10-26) reports that TCS Camping is warning about 15,000 customers because the provider of its booking system, Camping.Care, was hit by data theft "in connection with" the PHP security hole: fraudulent WhatsApp messages referencing existing reservations used names, phone numbers and reservation numbers, no account or IBAN data was affected, and the hole has been closed. Neither SRF nor TCS names the CVE or the technique, no vendor statement from Camping.Care was found, and this is a private-sector booking supplier, so it is a reported Swiss data theft linked by TCS to the PHP flaws and not a confirmed PHP2Shell compromise.
+    region_nexus: "Switzerland (Risikomonitor Swiss unpatched count; BACS position; TCS Camping / Camping.Care customer-data theft) plus global exploitation status"
+    primary_sector_nexus: "direct: Swiss cantonal and federal administrations took PHP sites offline in the covered entry; KEV listing and honeypot-confirmed RCE raise the urgency of the runtime update for every internet-facing PHP host and for appliances with PHP-based portals"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190, T1059.004, T1105, T1033, T1082]
+    affected_products: ["PHP", "Apache HTTP Server mod_php"]
+    entity_keys: ["product:php", "tool:php2shell"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    evidence:
+      - quote: "PHP contains a stale internal request-state vulnerability that allows for unauthenticated remote code execution."
+        attribution: "CISA Known Exploited Vulnerabilities catalog (CVE-2026-109619, dateAdded 2026-10-26, dueDate 2026-10-29)"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "PHP contains an out-of-memory corruption vulnerability that allows for unauthenticated remote code execution."
+        attribution: "CISA Known Exploited Vulnerabilities catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "HTTP 200 on A1/B1/A2 is therefore not the success criterion."
+        attribution: "Adel Karimi (Perplexity)"
+        source_url: "https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md"
+      - quote: "The defensible finding is two source-address episodes using closely related tooling."
+        attribution: "Adel Karimi (Perplexity)"
+        source_url: "https://github.com/0x4D31/honeypot-data/blob/main/reports/php2shell/2026-10-24-confirmed-rce.md"
+      - quote: "This is now confirmed RCE with usable memory disclosure, not just a crash followed by a suspicious process."
+        attribution: "Adel Karimi (Perplexity), quoted by BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/"
+      - quote: "it is not a measurement of exploit reliability on other worker counts, PHP builds, or applications"
+        attribution: "Adel Karimi (Perplexity), quoted by BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild/"
+      - quote: "waren am 26. Oktober von den überprüften Schweizer Domains noch 54'229 nicht gepatcht"
+        attribution: "Inside IT (relaying Risikomonitor)"
+        source_url: "https://www.inside-it.ch/erfolgreiche-angriffe-auf-php-luecken-bestaetigt-20261026"
+      - quote: "Dem Bundesamt für Cybersicherheit (Bacs) waren gemäss dem bisherigen Stand keine Angriffe in der Schweiz bekannt."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/erfolgreiche-angriffe-auf-php-luecken-bestaetigt-20261026"
+      - quote: "Im Zusammenhang mit der weltweiten Sicherheitslücke bei der Programmiersprache PHP warnt TCS Camping rund 15'000 Kundinnen und Kunden"
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping"
+      - quote: "Die Sicherheitslücke sei unterdessen geschlossen worden."
+        attribution: "SRF (relaying TCS Camping)"
+        source_url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/php-sicherheitsluecke-betrugsversuche-nach-datenleck-im-buchungssystem-fuer-tcs-camping"
+    extended_notes: |
+      Detection concepts from the Karimi report (behavioral only, no IOCs): (a) web-server process telemetry: an Apache worker (www-data) spawning /bin/sh followed by id, uname, hostname, wget, curl or php -r, then the worker exiting on a segmentation fault (process-creation events with parent lineage plus Apache error log "child pid ... exit signal Segmentation fault"); (b) PHP error log lines "Allowed memory size ... exhausted ... in Unknown on line 0" at request startup and "Session ID is too long or contains illegal characters" in bursts; (c) response-side: a Set-Cookie carrying a PHPSESSID of hundreds of kilobytes; (d) request-side: very large chunked or fixed-length multipart POSTs to / or /index.php with hundreds of form parts, PHPSESSID and PHP_SESSION_UPLOAD_PROGRESS fields, no User-Agent header, from hosting-provider address space; (e) egress from the web-server account to uncommon HTTP destinations right after such requests. Benign lookalike: a genuine OOM from a large legitimate upload also produces "memory exhausted" lines, but without a shell child process, an oversized session cookie in the response or the multipart structure. Karimi's data cover mod_php with a single worker; a defender running PHP-FPM or multi-worker mod_php should not read the absence of these patterns as safety. Post-patch check: because exploitation attempts began before the 2026-10-21 release (Amazon 2026-10-17), the earlier BACS/AWS guidance to look back to 2026-10-17 stands. Related store entries that mention PHP2Shell via products (PAN-OS/Panorama, NetScaler, QNAP) can note that KEV lists PHP itself, not those products.
+      Cross-domain: S1 may return the same KEV/honeypot delta; the Swiss figures (Risikomonitor, BACS position, TCS Camping/Camping.Care) are S2's contribution.
+
+  # ------------------------------------------------------------------
+  - title: "PK Softech / Publica: the Federal Data Protection Commissioner does not rule out widening the investigation to federal bodies such as pension funds; Publica states on 2026-10-26 that it still has no indication of publication on the darkweb"
+    sources:
+      - { url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026", publisher: "Inside IT", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten", publisher: "Publica (Stand 26.10.2026)", date: "2026-10-26", role: "primary" }
+    discovery_trace: "first seen at: inside-it-ch, RSS https://www.inside-it.ch/rss.xml (item 'Edöb untersucht Cyberangriff auf PK Softech', 2026-10-26) → extract https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026 → pivot: Publica incident page, extract https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten (status entry 'Stand: 26.10.2026'). The SonntagsBlick interview with Adrian Lobsiger that Inside IT cites was not found on any transport (two WebSearch attempts), so the Lobsiger statements are carried as Inside IT's relay; the EDÖB release of 2026-10-23 (formal investigation) is already cited in the covered entry."
+    summary: |
+      Two small, dated deltas on the covered entry. Inside IT (2026-10-26) relays, from a SonntagsBlick interview, that the Federal Data Protection and Information Commissioner Adrian Lobsiger could not say more about PK Softech because of investigative secrecy but did not rule out extending the procedure later to federal bodies such as pension funds; this would move the proceeding from the supplier to the public bodies (Publica among them) that handed data to it. In the same interview Lobsiger says the EDÖB had received 455 data-security-breach notifications so far in 2026 against 343 in all of 2025 and that, looking at the causes of the reported attacks, human failure rather than technology is the weak point in the large majority of cases; he also says that linking data and dismantling data silos raises breach risk and that anonymised test data should be preferred to production data, which is the issue behind the City of Zurich fund's test-data theft and the Publica legacy-data deletion promise. The Publica incident page carries a new status entry dated 2026-10-26 stating that it has no indication that data from the supplier attack was published on the darkweb and that it keeps monitoring; the covered entry already carries the 2026-10-20 version of that statement, so this is a re-confirmation, not a change. Neither the EDÖB's investigation scope nor Publica's own data-loss assessment has changed in these sources. Lobsiger statements are single-source (Inside IT relaying a paywalled interview).
+    region_nexus: "Switzerland (federal level)"
+    primary_sector_nexus: "direct: federal administration pension fund (Publica) and its supplier; regulator signal about possible proceedings against federal bodies"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09", "actor:akira"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    evidence:
+      - quote: "Lobsiger schloss jedoch nicht aus, das Verfahren später auf Bundesorgane wie Pensionskassen auszuweiten."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026"
+      - quote: "Im laufenden Jahr 2026 hätten sie bereits 455 Meldungen über Datensicherheitsverletzungen erhalten"
+        attribution: "Inside IT (relaying Adrian Lobsiger)"
+        source_url: "https://www.inside-it.ch/edoeb-untersucht-cyberangriff-auf-pk-softech-20261026"
+      - quote: "Aktuell liegen uns keine Hinweise vor, dass Daten aus dem Cyberangriff auf den Softwarelieferanten von Publica im Darkweb veröffentlicht wurden."
+        attribution: "Publica"
+        source_url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten"
+    extended_notes: |
+      Low-priority update: if the main agent judges the Lobsiger remark too thin to carry as a changelog record, drop it; the Publica darkweb status is a re-confirmation only. The regulator-widening signal is the only forward-looking element (a possible EDÖB proceeding against federal bodies would be an obligation-landscape change for the federal administration).
+    borderline: true
+    borderline_reason: "Single-source relay of an interview not found at the primary; the only new facts are a possible regulatory widening and a re-confirmed 'no darkweb publication' status."
+
+  # ------------------------------------------------------------------
+  - title: "Google Brotli CVE-2026-111497: NCSC.ch (BACS) published a Cyber Security Hub advisory on 2026-10-26 with exploitation status 'unknown, proof of concept available' and an interim mitigation"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13105", publisher: "NCSC Switzerland / BACS, Cyber Security Hub (GovCERT.ch)", date: "2026-10-26", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge `ncsc-csh recent 25` (post id 13105, created 2026-10-26T13:02:30Z; API JSON is the data, human page https://security-hub.ncsc.admin.ch/#/posts/13105) → primary (no pivot needed). Covered-entry check: neither 2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi nor 2026-10-26/cve-2026-111497-microsoft-net-oob-update-brotli-sockets-fix cites the CSH post."
+    summary: |
+      The Swiss national authority published on 2026-10-26 an advisory on the Brotli decoder out-of-bounds write (CVE-2026-111497, CVSS 4.0 9.2): unauthenticated remote attackers can cause denial of service or potentially execute code when an application decodes attacker-controlled Brotli data; the advisory states the current exploitation status as unknown with a proof of concept available, lists Node.js, Microsoft .NET, Visual Studio and PowerShell, the Python Brotli and brotlicffi packages and Bun among the dependents, and names as prerequisites an application decoding attacker-controlled Brotli data such as compressed HTTP request or response bodies or compressed files, no authentication required. Its interim mitigation is to disable Brotli decoding of untrusted data and reject Content-Encoding: br until patched, and to restart services and rebuild containers after updating. The covered entries describe the flaw, fixes and exploitation (none reported) but do not carry the interim 'reject Content-Encoding: br' mitigation or the Swiss authority's advisory. Value for the constituency: the Swiss authority has flagged it for its audience, and the mitigation is useful to estates that cannot yet roll Node.js, .NET or PyPI updates.
+    region_nexus: "Switzerland (national authority advisory) / global flaw"
+    primary_sector_nexus: "indirect: .NET, Node.js and Python stacks are common in cantonal and federal web applications"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190]
+    affected_products: ["Google Brotli", "Node.js", "Microsoft .NET", "Python Brotli (PyPI)", "brotlicffi (PyPI)", "Bun"]
+    entity_keys: ["product:google-brotli", "tool:node2shell"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    evidence:
+      - quote: "UNKNOWN, Proof of Concept Available"
+        attribution: "NCSC Switzerland / BACS"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13105"
+      - quote: "Disable Brotli decoding of untrusted data and reject"
+        attribution: "NCSC Switzerland / BACS"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13105"
+    extended_notes: |
+      The CSH post lists as primary references the Node.js October 2026 security releases and the MSRC update-guide entry, and as supporting the SecurityWeek write-up, Imperva's Node2Shell analysis and GHSA-9v8h-qqgm-4m35; all are already in the covered entries or reachable from them. Internal / improvement-grade delta: add the BACS advisory as a corroborating source and the interim mitigation line.
+    borderline: true
+    borderline_reason: "Adds only the Swiss authority advisory and an interim mitigation to an already-covered notable-priority vulnerability."
+
+  # ------------------------------------------------------------------
+  - title: "Medienwerkstatt Sulgen (TG): Swiss media and print production service provider confirms ransomware and data copying on 2026-10-09; Akira claims 130 GB"
+    sources:
+      - { url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss", publisher: "Netzwoche", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.inside-it.ch/thurgauer-medienwerkstatt-meldet-cybervorfall-20261023", publisher: "Inside IT", date: "2026-10-23", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Cyberangriff Schweiz 26. Oktober 2026\" gave no hit) → netzwoche.ch tag listing, `url --direct https://www.netzwoche.ch/tags/cyberangriff` (link /news/2026-10-26/medienwerkstatt-meldet-datenabfluss) → extract https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss; cross-referenced with Inside IT RSS item 2026-10-23, extract https://www.inside-it.ch/thurgauer-medienwerkstatt-meldet-cybervorfall-20261023. The victim's own website notice that both outlets relay was not located (WebSearch found nothing); the Hacksnack report with the Akira claim, cited by Netzwoche, was not fetched at its article URL."
+    summary: |
+      Both outlets relay a notice on the company's website: the media and production service provider Medienwerkstatt in Sulgen (TG), a subsidiary of the Mattenbach group, found unusual activity on 2026-10-09, cut the affected IT systems from the network, started a forensic investigation, and established that the attackers copied business contact data, production and order data and image files; only the Sulgen site is said to be affected, only part of the customer base is concerned and is being informed directly, and the company reported the incident to the Federal Data Protection Commissioner and the police. Systems were restored from backups, production runs normally, and the group says concessions to the attackers were never an option. The company does not name the actor; Netzwoche and Inside IT report that Akira claims the attack on its leak site and says it holds 130 GB (Inside IT: names, addresses, phone numbers, customer data, contracts) and threatens to publish; the size and content are Akira's claim, not victim-confirmed. Context for the constituency: Akira is the actor the covered Publica entry attributes, through the Federal Prosecutor's Office relayed by Tamedia, to the PK Softech theft, so this is a second Swiss Akira victim within three weeks; the victim is a private service provider, and nothing in the sources says whether public bodies are among its customers.
+    region_nexus: "Switzerland (Thurgau)"
+    primary_sector_nexus: "unknown: private print and media production provider; customer list undisclosed"
+    sector: "media / printing services"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: ["actor:akira"]
+    new_entities:
+      - { key: "incident:medienwerkstatt-sulgen-akira-ransomware-2026-10", type: incident, name: "Medienwerkstatt Sulgen ransomware attack (October 2026)", aliases: ["Medienwerkstatt Cyberangriff"], summary: "Ransomware attack on 2026-10-09 on the Sulgen (TG) site of the media and print production provider Medienwerkstatt (Mattenbach group); the company confirms copied business and order data and restored from backups; Akira claims 130 GB (Netzwoche and Inside IT, 2026-10-23 and 2026-10-26)." }
+    relation_suggestions:
+      - { subject: "incident:medienwerkstatt-sulgen-akira-ransomware-2026-10", object: "actor:akira", basis: "Netzwoche and Inside IT report that Akira claims the attack on its leak site and says it took 130 GB; the victim does not name the actor (claim relayed, not confirmed)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Dort beeinträchtigte der Ransomware-Angriff am 9. Oktober einzelne Systeme."
+        attribution: "Netzwoche (relaying the company's notice)"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+      - quote: "Im Dark Web bekennt sich jedoch die Hackergruppe Akira zum Angriff"
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+      - quote: "Demnach behauptet die Gruppe, 130 Gigabyte an Daten erbeutet zu haben und droht damit, diese zu veröffentlichen."
+        attribution: "Netzwoche (relaying Hacksnack)"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+      - quote: "Zugeständnisse an die Angreifer kamen für uns nicht infrage."
+        attribution: "Mattenbach group, quoted by Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-10-26/medienwerkstatt-meldet-datenabfluss"
+    extended_notes: |
+      Likely also returned by S4 (incident disclosures); dedup at triage. Lesson for defenders is limited to the pattern: segmentation of the affected site, backups that allowed restoration, and notification to the EDÖB and police within the supplier chain.
+    borderline: true
+    borderline_reason: "Swiss victim of an actor already tied to the federal Publica incident, but a private provider with no stated public-sector customers; Akira's 130 GB figure is a leak-site claim."
+
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "sector-lens duty carries no sweep; Swiss public-sector weighting applied to triage (BACS/NCSC.ch, cantonal, federal, armed forces and emergency-service items). No in-window Swiss Armed Forces, police, fire/rescue or emergency-medical-service incident was found in the sources read (VBS press listing newest 2026-10-23, BACS listings newest 2026-10-23)."
+
+policy_watch_sweep:
+  note: "No in-window obligation change found. Checked: BACS press/Im Fokus/aktuelle Vorfälle (newest 2026-10-23, the PHP warning of 2026-10-21 is not revised), NCSC.ch hub, ENISA (newest news 2026-10-21 joint PHP statement and 2026-09-11 CRA Single Reporting Platform, both outside the window and already reflected in the store's CRA entry), EDÖB press listing (newest 2026-09-16 in the listing; the 2026-10-23 release is already cited), VBS and admin.ch listings; WebSearch for ISG/CSG, NIS2 transposition, CRA standards, Cybersecurity Act 2, Europol and OFAC actions returned nothing dated 2026-10-26/27. Store already covers: Bern ICSG (in force 2026-11-01), Swiss Cybersicherheitsgesetz mandate (2026-09-25), Austria NISG. The EC digital-strategy newsroom stayed 403 on every transport, so EU Commission press items could not be read directly."
+
+candidate_sources:
+  - id: hacksnack-ch
+    publisher: "Hacksnack (hacksnack.ch), Swiss SME cybersecurity news"
+    url: "https://hacksnack.ch/"
+    category: ch-eu
+    why: "Swiss outlet that tracks Swiss ransomware victims (reported the Akira claim on Medienwerkstatt, cited by Netzwoche); leak-site claims are claims only (Admiralty C at best), so useful as a lead source for Swiss victims, never as terminal evidence. First seen this run via Netzwoche's citation; homepage extract returns dated teasers without per-article links."
+
+coverage_gaps:
+  - source_id: ec-digital-strategy-newsroom
+    reason: "Still 403 (CloudFront) on every transport on 2026-10-27: `extract` (jina fallback also 403), `url --direct`, `feed .../en/rss.xml`, and WebFetch. Policy items from the Commission were probed via WebSearch (NIS2, CRA, Cybersecurity Act 2) and nothing dated in-window surfaced. Recipe unchanged: remains blocked."
+  - source_id: bacs-press / ncsc-ch-focus / ncsc-ch-incidents
+    reason: "RECIPE CHANGE: on 2026-10-27 `url --direct` still works but the card markup is now `class=\"card card--default card--clickable color--text-900\"`, so the documented split on `class=\"card card--default card--clickable\"` (with closing quote) returns no cards. Working split: `class=\"card card--default card--clickable` (no closing quote); title in `class=\"card__title\"`, date in `meta-info__item\">`, href in the first `href=`. Working listing shapes: bacs.admin.ch/de/medienmitteilungen 161 cards, /de/im-fokus 87 cards, /de/aktuelle-vorfaelle 7 cards. Please record in the three source notes."
+  - source_id: anssi-fr
+    reason: "RECIPE NOTE: item links from `cert-fr avis-recent` / `actu-recent` and the CTI/alerte feeds now resolve under www.cert.cyber.gouv.fr (not www.cert.ssi.gouv.fr); `extract https://www.cert.cyber.gouv.fr/actualite/CERTFR-2026-ACT-045/` returns the weekly bulletin table with CVE, CVSS and PoC columns. Working feeds: `feed https://www.cert.ssi.gouv.fr/alerte/feed/ 8` (CERTFR-2026-ALE-nnn alerts) and `feed https://www.cert.ssi.gouv.fr/cti/feed/ 8`."
+  - source_id: swisscybersecurity-net / netzwoche
+    reason: "RECIPE NOTE: `url --direct https://www.swisscybersecurity.net/` and `url --direct https://www.netzwoche.ch/tags/cyberangriff` return server-rendered HTML whose article hrefs follow /news/YYYY-MM-DD/<slug>; regex `href=\"(/news/2026-10-2[3-7][^\"]+)\"` lists the newest items, then `extract` per article reads the body."
+  - source_id: safeonweb-be
+    reason: "RECIPE NOTE: `url https://safeonweb.be/en` returns raw HTML (no markdown); article dates sit in `datetime=\"...\"` attributes next to the h2/h3 headings (newest 2026-10-23: fake traffic-fine messages)."
+  - source_id: php.risikomonitor.com
+    reason: "The Swiss PHP2Shell patch-status figures render client-side; `extract https://php.risikomonitor.com/ch` carries the method text but no numbers, so the figures were taken from Inside IT only."
+  - source_id: bsi-de
+    reason: "BSI feed in-window items (2026-10-26: Zimbra Collaboration Suite 'hoch', Mautic 'hoch', Samba 'hoch', RabbitMQ 'hoch', PHP [NEU]) are vulnerability-domain items and were not checked for exploitation status; S1 owns that sweep."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 25", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0454 HPE Networking AOS (2026-10-26) already covered by the HPESBNW05162 entry" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent/actu-recent + feed cti + feed alerte + extract ACT-045", horizon_hours: 26, in_horizon_items: 9, returned: 0, note: "8 avis of 2026-10-26 (CPython, Mattermost, Tenable, .NET, Microsoft, XenServer, VMware, MongoDB) and weekly bulletin ACT-045 are routine/covered; no new alert after ALE-014 (PHP, 2026-10-21)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss (raw XML, regex)", horizon_hours: 26, in_horizon_items: 21, returned: 0, note: "21 [NEU] WID items on 2026-10-26; vulnerability domain (S1); see coverage_gaps" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed warnings + current", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warnings 2026-10-21 (PHP), current 2026-10-20" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-018 PHP on 2026-10-23" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "boneIO product vulnerabilities (CVE-2026-77052, 2026-10-26): not relevant to the constituency" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + WebFetch alert pages + bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "KEV addition of CVE-2026-109618/109619 on 2026-10-26 (update-of the PHP2Shell entry)" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract news listing + extract items", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 joint PHP statement (outside window, covered topic); CRA SRP launch 2026-09-11 already in store" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed https://www.heise.de/security/feed.xml 30", horizon_hours: 26, in_horizon_items: 7, returned: 0, note: "2026-10-26 items on PHP2Shell opinion, Brotli, eMudhra/Python, Arista/Collabora exploitation (all covered), Cloudflare CEO remarks, BND cloud: none new; the BleepingComputer lead came via Inside IT" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed https://www.inside-it.ch/rss.xml 30 + extract", horizon_hours: 26, in_horizon_items: 7, returned: 2, note: "PHP exploitation + Risikomonitor (update-of PHP2Shell) and EDÖB/PK Softech (update-of Publica); 2026-10-26 'Claude verschafft sich Zugang zu Wahldaten' is a US/AI story, dropped; Thurgauer Medienwerkstatt (2026-10-23) came through Netzwoche" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "bridge:url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "87 cards, newest 2026-10-23 (Cyber Security Month workshop); the weekly review for week 43 is not yet published" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "bridge:url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "7 cards, newest 2026-10-21 (PHP warning, unchanged)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "post 13105 Brotli (2026-10-26), update-of the Node2Shell entry; PHP post 13083 last modified 2026-10-22" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed all-rss-feed.xml 20", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 PHP news item" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "bridge:url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "161 cards, newest 2026-10-12" }
+  - { id: ec-digital-strategy-newsroom, tier: standard, attempted: true, transport: "extract (jina fallback), url --direct, feed rss.xml, WebFetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "HTTP 403 CloudFront on all four transports; known blocked record, see coverage_gaps" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "WebFetch /PSA + WebFetch PSA261023", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "PSA261023 (PHP core alert, 2026-10-23) restates CISA guidance; election PSAs are US-specific" }
+  - { id: jpcert, tier: standard, attempted: true, transport: "feed jpcert-en.rdf 20", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14 Microsoft October updates" }
+  - { id: openssf-policy, tier: standard, attempted: true, transport: "extract listing + extract item", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "2026-10-22 Gemara/CRA due-diligence post is conceptual, no obligation change" }
+  - { id: prodaft, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "no dated listing (single 'Latest Report' teaser from 2023)" }
+  - { id: ccn-cert-es, tier: standard, attempted: true, transport: "feed atom 10", horizon_hours: 97, in_horizon_items: 1, returned: 0, note: "2026-10-26 CPSTIC catalogue update only; AL 11/26 PHP is 2026-10-21" }
+  - { id: cisa-news, tier: standard, attempted: true, transport: "WebFetch listing + WebFetch item", horizon_hours: 97, in_horizon_items: 1, returned: 0, note: "'CISA 2030: Defend, Harden, Prevail' strategy (2026-10-26) is a US agency strategy with no obligation or action for the constituency; dropped" }
+  - { id: compass-security, tier: standard, attempted: true, transport: "feed 10", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest 2026-10-02" }
+  - { id: infoguard-labs, tier: standard, attempted: true, transport: "feed rss.xml 10", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28" }
+  - { id: ncsc-ie, tier: standard, attempted: true, transport: "extract", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest 2026-10-23 GitLab" }
+  - { id: oneconsult-ch, tier: standard, attempted: true, transport: "feed 10", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest 2026-09-30" }
+  - { id: safeonweb-be, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 97, in_horizon_items: 1, returned: 0, note: "2026-10-23 fake traffic-fine messages (consumer fraud); PHP crisis explainer is 2026-10-21" }
+  - { id: synacktiv, tier: standard, attempted: true, transport: "extract", horizon_hours: 97, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13" }
+  - { id: truesec, tier: standard, attempted: true, transport: "feed 10 + extract", horizon_hours: 97, in_horizon_items: 1, returned: 0, note: "2026-10-23 PHP2Shell commentary adds nothing beyond the covered entry" }

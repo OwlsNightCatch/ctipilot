@@ -1,0 +1,888 @@
+domain: S3
+run_id: 2026-10-27T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-27T03:14:56Z
+ended_at: 2026-10-27T03:31:26Z
+duration_seconds: 990
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 13
+  bridge_fetches: 92
+items:
+- title: 'Gheist: stolen GitHub tokens plant a secret-dumping workflow in every repository they reach; GitHub''s July approval hold stops it on public github.com
+    repositories but not on private ones or GitHub Enterprise Server'
+  sources:
+  - url: https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles
+    publisher: Wiz Research
+    date: '2026-10-25'
+    role: primary
+  - url: https://github.blog/changelog/2026-07-28-github-actions-holds-potentially-malicious-workflows-for-approval/
+    publisher: GitHub Changelog
+    date: '2026-07-28'
+    role: corroborating
+  - url: https://www.infosecurity-magazine.com/news/gheist-attackers-abuse-stolen/
+    publisher: Infosecurity Magazine
+    date: '2026-10-26'
+    role: corroborating
+  - url: https://www.darkreading.com/cyberattacks-data-breaches/gheist-stolen-github-tokens-cloud-secrets
+    publisher: Dark Reading
+    date: '2026-10-26'
+    role: corroborating
+  - url: https://thehackernews.com/2026/10/gheist-uses-stolen-github-tokens-to.html
+    publisher: The Hacker News
+    date: '2026-10-26'
+    role: corroborating
+  discovery_trace: 'first seen at: darkreading (RSS), URL https://www.darkreading.com/rss.xml (item https://www.darkreading.com/cyberattacks-data-breaches/gheist-stolen-github-tokens-cloud-secrets,
+    2026-10-26) -> pivot: Infosecurity Magazine, URL https://www.infosecurity-magazine.com/news/gheist-attackers-abuse-stolen/ (names the Wiz report) -> primary:
+    Wiz Research, URL https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles -> pivot: THN URL https://thehackernews.com/2026/10/gheist-uses-stolen-github-tokens-to.html
+    (links the GitHub changelog) -> GitHub Changelog, URL https://github.blog/changelog/2026-07-28-github-actions-holds-potentially-malicious-workflows-for-approval/'
+  summary: 'Wiz Research has tracked since 2026-09-15 an automated campaign it calls Gheist (after the user agent on its API calls) that uses stolen GitHub access
+    tokens to create a branch and commit a GitHub Actions workflow in every repository each token can reach: more than 13,500 branches from more than 850 compromised
+    accounts, from personal projects to enterprise private repositories. Wiz traces the tokens to infostealer logs and to earlier supply-chain compromises such as
+    the March Trivy compromise. The workflow prints the repository''s secrets, and the secrets of any deployment environment, into its own run log base32-encoded
+    so that GitHub''s masking, which matches only verbatim values, does not hide them; the tool then downloads the log through the GitHub API and deletes the run
+    seconds later, so there is no attacker domain or outbound connection to block. GitHub''s control of 2026-07-28 holds suspicious workflow runs for approval; Wiz
+    says every public-repository run it checked stayed in the action_required state, and GitHub''s changelog states the protection applies to public repositories
+    on github.com only and does not cover GitHub Enterprise Server. Wiz reports that in private repositories and GitHub Enterprise environments the runs on attacker
+    branches completed and were then deleted, that CloudTrail shows the organizations'' own workflows running on those branches and assuming AWS roles, and that in
+    enterprise organizations the tool cycled through user and automation-account tokens within minutes, cloned private repositories first and, hours later, cloud
+    credentials from the same organization were used to enumerate AWS Secrets Manager. A second variant (first run 2026-09-28) adds an environment matrix so that
+    environment-scoped, often production, secrets print; since 2026-10-19 it also pushes a self-hosted-runner job that searches the host for 31 token formats (including
+    AI-provider keys), private keys, .env files, Terraform state and shell history, reads every process environment, reaches the Docker socket to mount the host root
+    filesystem, and queries cloud instance metadata, though Wiz calls that job buggy. Wiz found the same accounts reused by other campaigns (cracked-software lure
+    repositories, Actions free-compute abuse, a DPRK-linked build-config implant, and an earlier Megalodon wave) and says Gheist is distinct from GhostAction. As
+    of 2026-10-24 about two thirds of the implicated accounts were no longer on GitHub, which Wiz reads as response to its report, and the campaign was still ongoing
+    and evolving; Wiz researcher Rami McCarthy told Dark Reading the campaign affected "on the scale of a dozen companies".'
+  region_nexus: global; no Swiss victim reported
+  primary_sector_nexus: 'indirect: any administration or supplier that builds software on GitHub with private repositories, GitHub Enterprise Server, cloud-OIDC workflows
+    or self-hosted runners'
+  sector: technology
+  cves: []
+  techniques:
+  - T1550.001
+  - T1078
+  - T1213.003
+  - T1552
+  - T1567
+  - T1070
+  - T1610
+  - T1611
+  affected_products:
+  - GitHub Actions
+  - GitHub Enterprise Server
+  entity_keys:
+  - product:github-actions
+  - campaign:megalodon-mass-github-cicd-backdoor-5561-repos-sysdiag-optimize-build
+  - campaign:ghostaction
+  - product:aqua-security-trivy
+  new_entities:
+  - key: campaign:gheist
+    type: campaign
+    name: Gheist
+    aliases: []
+    summary: 'Automated GitHub token-abuse campaign tracked by Wiz Research since 2026-09-15: stolen tokens commit a sync-check Actions workflow to every reachable
+      repository to print secrets into run logs, with no C2 server; named after the ''gheist'' API user agent (Wiz, 2026-10-25).'
+  relation_suggestions:
+  - subject: campaign:gheist
+    object: campaign:megalodon-mass-github-cicd-backdoor-5561-repos-sysdiag-optimize-build
+    basis: 'Wiz: 57 accounts from Gheist''s first phase were also victims of Megalodon in May (victim-pool overlap, not shared operator) (Wiz, 2026-10-25)'
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Wiz Research is the discloser with first-hand telemetry; Infosecurity Magazine, Dark Reading and The Hacker News relay it (Dark Reading adds
+    a Wiz researcher interview, still Wiz). Independent first-party corroboration only for the scope of GitHub's control (GitHub changelog). Campaign scale figures
+    are Wiz's.
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: We have recovered more than 13,500 planted branches from more than 850 compromised accounts, ranging from personal projects to enterprise organizations'
+      private repositories.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles
+  - quote: A recent GitHub control has been blocking the exploitation in public repositories, but we've observed successful exploitation and follow-on activity in
+      private repositories and GitHub enterprise environments.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles
+  - quote: Because the secrets leave through GitHub's own API, there is no attacker domain or outbound connection to block.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles
+  - quote: This protection currently applies to public repositories on github.com only. GitHub Enterprise Server doesn’t add this protection at this time.
+    attribution: GitHub Changelog
+    source_url: https://github.blog/changelog/2026-07-28-github-actions-holds-potentially-malicious-workflows-for-approval/
+  - quote: Rotate every repository, organization and environment secret available to an affected repository. Deleting the run or the branch doesn't undo the exposure.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/gheist-attempted-scaled-abuse-of-stolen-github-tokens-stumbles
+  extended_notes: 'Detection (Wiz): GitHub audit log runs on branches created by a token owner whose only change is one new workflow file, deleted within a minute
+    of completing; unsigned commit authored as the token owner; API user agent ''gheist''; where workflows use cloud OIDC, role assumptions or token exchanges whose
+    subject names the planted branch (finds it without GitHub logs); on self-hosted runners, helper files and log headers from the pivot job (Wiz names them). Wiz''s
+    branch-name pattern, workflow file name, commit message and file names are campaign artefacts, not IOCs in the hash/IP/domain sense; the composer decides whether
+    to carry them. Hardening (Wiz): reviewers required on environments that hold production secrets; OIDC trust policies scoped to protected branches or environments;
+    GitHub Apps or short-lived fine-grained tokens instead of personal access tokens; ephemeral self-hosted runners without Docker socket or unrestricted metadata
+    access. Post-incident: rotate every secret reachable from an affected repository (deleting the run does not undo exposure), revoke the pushing tokens and check
+    their owners'' devices for infostealers, treat a self-hosted runner host that ran such a branch, and its instance role, as compromised, and do not approve held
+    runs. Triage: legitimate automation branches carry reviewed multi-file changes; this pattern is a single new workflow file, an unsigned commit, and a run deleted
+    by the pusher within about a minute. Gap: Wiz gives no count of Swiss or public-sector victims; scale beyond ''on the scale of a dozen companies'' is unstated.'
+- title: 'Cisco Talos: attackers feed hostile text into 25+ legitimate platforms so their own order confirmations, welcome emails and bounce notices deliver the lure,
+    passing SPF, DKIM and DMARC'
+  sources:
+  - url: https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/
+    publisher: Cisco Talos
+    date: '2026-10-21'
+    role: primary
+  - url: https://www.helpnetsecurity.com/2026/10/22/legitimate-platforms-abused-phishing-emails/
+    publisher: Help Net Security
+    date: '2026-10-22'
+    role: corroborating
+  discovery_trace: 'first seen at: helpnetsecurity, URL https://www.helpnetsecurity.com/ (listing; item https://www.helpnetsecurity.com/2026/10/22/legitimate-platforms-abused-phishing-emails/,
+    2026-10-22) -> primary: Cisco Talos, URL https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/
+    (also on the Talos RSS feed, 2026-10-21T10:00Z)'
+  lookback: true
+  summary: 'Cisco Talos reports that over the past year attackers abused more than 25 legitimate platforms (collaboration, productivity, file-sharing, survey, payment
+    and AI services) by supplying hostile input and letting the platform''s own mail pipeline do the delivery, and describes three forms. (1) Order-notification abuse:
+    in two campaigns totalling about 1,400 messages, a fake support number was planted in the shipping and billing fields of high-value Staples and Dell order confirmations,
+    so the email comes from the retailer''s real order domain, passes DKIM alignment and DMARC and uses the real template, and the goal is a phone call to a ''helpline''
+    rather than a click, which moves the victim to voice for follow-on social engineering, payment manipulation, credential theft or remote-assistance fraud. (2)
+    List bombing used as a delivery vehicle: the attacker submits the victim''s address to registration or notification workflows whose name, company or title fields
+    are poorly validated, and the platform''s automatic welcome or confirmation email reflects a lure typed into that field, inside a high-reputation message that
+    can pass authentication; Talos calls this not yet a broad shift. (3) Bounce abuse: a delivery-status notification, from opportunistic backscatter to a forged
+    envelope sender or from an intentional failure triggered through an authenticated or compromised sending context, carries a lure in the returned or nested content;
+    Talos shows a WeTransfer-themed example in a mail-system notice. Talos''s point for defenders is that sender authentication is necessary but not sufficient: SPF,
+    DKIM and DMARC say where a message came from, not whether the rendered content is legitimate. It recommends that gateways inspect the fully rendered message,
+    including personalization fields and nested MIME, parse delivery-status containers recursively and apply normal phishing and URL analysis to the returned content,
+    and that transactional mail be evaluated against the workflow that produced it (an order notice with an unexpected support number, cancellation instructions or
+    urgency language is treated differently from a routine receipt). Platform owners are told to validate user-controlled values before storage and again before rendering.
+    The report gives no victim sectors or regions.'
+  region_nexus: global; no Swiss-specific case stated
+  primary_sector_nexus: 'direct for mail-security teams of any administration: authenticated brand mail and bounce notices are normally allow-listed'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1566
+  - T1566.004
+  - T1667
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Cisco Talos is first-hand (its own telemetry and samples); Help Net Security relays it. Message counts are Talos's.
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: Talos has since tracked a significant acceleration in this trend, observing abuse across more than 25 distinct legitimate platforms in the past year.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/
+  - quote: From a defensive perspective, sender authentication is necessary, but it is not sufficient.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/
+  - quote: Security gateways should inspect the fully rendered message, not only the sender or template.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/
+  - quote: A DSN’s administrative appearance does not validate the content inside it.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/parasitizing-trust-how-legitimate-infrastructure-becomes-a-delivery-pipeline-for-attackers/
+  extended_notes: 'Detection (telemetry class first): mail-gateway logs for authenticated messages from brand order or notification domains whose rendered body contains
+    a telephone number or cancellation instruction in an address or name field; helpdesk and telephony records of callbacks after such messages; for list bombing,
+    bursts of confirmation mail from many unrelated services to one mailbox within minutes, with an unusual text string in the name or company slot of the platform''s
+    greeting; for bounces, delivery-status messages whose nested content carries URLs or attachments, especially for mail the user never sent. Triage: a genuine retailer
+    notice has an order that matches an account or purchase the recipient recognises and fields that hold addresses; the discriminator is a phone number, support
+    or cancellation text in a field meant for a name or address, or a bounce for mail the recipient did not send. Hardening: content-aware inspection of rendered
+    and nested MIME content at the gateway; out-of-band callback verification procedures for ''order'' or ''helpline'' calls; for administrations that run their own
+    web forms or notification mailers, validate and encode reflected fields before they are written into outgoing mail (Talos''s platform-owner advice). Gap: no counts
+    of affected organisations or sectors are given.'
+- title: 'Arctic Wolf: over 400 Teams external-chat helpdesk-impersonation cases show a stable pattern, with ChatCreated as the earliest detection point and a Teams
+    federation allow-list as the lever'
+  sources:
+  - url: https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/
+    publisher: Arctic Wolf Labs
+    date: '2026-10-26'
+    role: primary
+  - url: https://thehackernews.com/2026/10/attackers-use-microsoft-teams-it.html
+    publisher: The Hacker News
+    date: '2026-10-26'
+    role: corroborating
+  discovery_trace: 'first seen at: WebSearch ("Arctic Wolf Microsoft Teams campaign October 2026") returned nothing; found via THN RSS, URL https://feeds.feedburner.com/TheHackersNews
+    (item https://thehackernews.com/2026/10/attackers-use-microsoft-teams-it.html, 2026-10-26T21:22Z) -> primary: Arctic Wolf Labs, URL https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/'
+  summary: 'Arctic Wolf Labs analysed more than 400 incidents from its customer base in which attackers used Microsoft Teams external chat (federation, on by default)
+    to impersonate IT support, and reports a stable pattern: the 1:1 chat comes from a newly created or acquired Microsoft 365 tenant, with IT-themed display names,
+    an appended "(Internal)" label that sits beside Teams'' own External tag, friendly first names, locale-specific wording and, increasingly, the target organization''s
+    own name; 30 to 40 percent of cases used default onmicrosoft.com tenants, and among paid domains about half used .top and about 40 percent .com. In a significant
+    number of cases the contact followed or accompanied an email-bombing flood that creates the pretext. The attacker''s goal is hands-on-keyboard access through
+    a legitimate remote-management tool, Quick Assist most often (built in, Microsoft-signed, needs only a six-digit code), then AnyDesk, ScreenConnect, TeamViewer,
+    Atera and others, with a second RMM such as Level installed through msiexec as an independent control channel that survives clean-up of the first. Attackers contact
+    several users within about five minutes, apparently by automation, and Arctic Wolf sees payload execution within 15 minutes of a victim engaging, in some cases
+    with Kerberoasting-type credential-access detections firing alongside the first Teams alert. Attackers generally avoid pasting a link into Teams, which would
+    trigger Safe Links, and navigate to the payload during the remote session instead, so endpoint and identity telemetry matter alongside message scanning. Arctic
+    Wolf describes one potentially novel chain: the user is told to run a PowerShell command (parent explorer.exe, ClickFix-like but not disguised as a CAPTCHA) that
+    downloads an MSI from Azure Blob Storage, which unpacks a PowerShell loader that decrypts an AES-encrypted stub and extracts a Python implant that runs under
+    pythonw.exe, issues LDAP queries for all computer and user objects through the adsisearcher shortcut and sends the output to a randomly chosen C2 endpoint. Arctic
+    Wolf says the activity exploits no Teams vulnerability, that it detects at the ChatCreated event before the victim has done anything, and that the lever is to
+    move Teams external access from allow-all to an allow-list of partner domains, block federation with trial-only tenants, block unmanaged and consumer accounts,
+    and restrict Quick Assist and unsanctioned RMM tools. Its counts and percentages are from Arctic Wolf''s own customer telemetry.'
+  region_nexus: global (locale-specific lures, including French and Spanish IT-support wording, are reported); no Swiss-specific case stated
+  primary_sector_nexus: 'direct: any administration whose Microsoft 365 tenant leaves Teams external access open to all domains'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1566.003
+  - T1566.004
+  - T1667
+  - T1219
+  - T1204.002
+  - T1059.001
+  - T1583.001
+  - T1585.003
+  - T1199
+  - T1105
+  affected_products:
+  - Microsoft Teams
+  - Microsoft Quick Assist
+  entity_keys:
+  - product:microsoft-teams
+  - product:microsoft-quick-assist
+  - actor:stac4749
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  verification_note: Arctic Wolf is first-hand; its domain-shift finding is consistent with Sophos's STAC4749 reporting, which Arctic Wolf cites and which is already
+    in the store; The Hacker News relays Arctic Wolf. The 400-incident aggregate and percentages are Arctic Wolf's alone.
+  confidence: MEDIUM
+  novelty: update-of:2026-07-29/stac4749-teams-vishing-certificate-pinned-golang-chaos
+  novelty_note: Four earlier entries cover Teams helpdesk-impersonation (2026-06-09 Unit 42, 2026-07-25 Microsoft email report, 2026-07-29 STAC4749, 2026-09-03 Node.js
+    implant); the delta is the 400-incident aggregate, the ChatCreated detection point, the Safe-Links-avoidance behaviour, the trial-tenant block and a new PowerShell/MSI/Python
+    chain. The main agent may prefer the 2026-09-03 entry as the carrier.
+  evidence:
+  - quote: Microsoft Teams ships with external access (federation) turned on by default, meaning any Teams user in another Microsoft 365 tenant can find, chat with,
+      and call an organization’s employees, provided both tenants allow external access.
+    attribution: Arctic Wolf Labs
+    source_url: https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/
+  - quote: This activity does not exploit any known Teams vulnerability; it abuses a legitimate, default-on collaboration capability.
+    attribution: Arctic Wolf Labs
+    source_url: https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/
+  - quote: Microsoft records this first contact as a ChatCreated event, which Arctic Wolf assesses to be the primary detection opportunity for defenders.
+    attribution: Arctic Wolf Labs
+    source_url: https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/
+  - quote: Attackers generally avoid pasting a URL directly into Teams, which would trigger Safe Links / ZAP scanning, and instead navigate to the payload themselves
+      during the remote session
+    attribution: Arctic Wolf Labs
+    source_url: https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/
+  - quote: 'Block federation with trial-only tenants, as attackers commonly prefer free or trial tenants for their minimal setup requirements:'
+    attribution: Arctic Wolf Labs
+    source_url: https://arcticwolf.com/resources/blog/threat-actors-abuse-microsoft-teams-external-chat-for-initial-access/
+  extended_notes: 'Detection (Arctic Wolf): Teams audit events for ChatCreated from external tenants (first contact), especially 1:1 chats from tenants new to the
+    organization with IT-support display names or an ''(Internal)'' suffix, correlated with an inbox flood in the same window (mail-flow telemetry), then Quick Assist
+    / RMM process creation not deployed by the IT team, followed by reconnaissance commands (user and group enumeration), LDAP enumeration from a script interpreter,
+    and msiexec installs of a second RMM. Triage: a legitimate partner chat comes from an allow-listed domain and an established tenant; the discriminators are a
+    first-seen tenant, a throwaway or IT-themed tenant or .top domain, an email flood minutes earlier, and a request to start Quick Assist or run a pasted command.
+    Hardening levers (Arctic Wolf, from Microsoft guidance): Teams admin centre external access set to specific domains; block trial-only tenants with the tenant
+    federation setting that blocks external access with trial tenants; Defender Tenant Allow/Block List for Teams domains; block or restrict Quick Assist and unsanctioned
+    RMM via endpoint protection or application control; out-of-band callback verification for any remote-access request; end-user reporting of suspicious Teams messages.
+    Gap: no victim sector or country breakdown is given; IOC lists in the report (tenant names, .top domains) are not for entries.'
+- title: 'A planted AGENTS.md in a customer''s Downloads folder made a coding agent try to install a malicious npm package: Forever Security''s in-the-wild catch
+    and its Codex and Claude Code reproductions'
+  sources:
+  - url: https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/
+    publisher: Forever Security
+    date: '2026-10-22'
+    role: primary
+  - url: https://www.darkreading.com/application-security/in-the-wild-attack-ai-agents-trust-markdown
+    publisher: Dark Reading
+    date: '2026-10-26'
+    role: corroborating
+  - url: https://thehackernews.com/2026/10/malicious-file-in-downloads-folder.html
+    publisher: The Hacker News
+    date: '2026-10-26'
+    role: corroborating
+  - url: https://checkmarx.com/zero-post/malfex-npm-malware-campaign-three-payloads-and-an-adversary-that-signs-their-work/
+    publisher: Checkmarx Zero
+    date: '2026-10-05'
+    role: corroborating
+  discovery_trace: 'first seen at: darkreading (RSS), URL https://www.darkreading.com/rss.xml (item https://www.darkreading.com/application-security/in-the-wild-attack-ai-agents-trust-markdown,
+    2026-10-26) -> primary: Forever Security, URL https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/ (linked from the Dark Reading article) ->
+    pivot: THN URL https://thehackernews.com/2026/10/malicious-file-in-downloads-folder.html (links the package research) -> Checkmarx Zero, URL https://checkmarx.com/zero-post/malfex-npm-malware-campaign-three-payloads-and-an-adversary-that-signs-their-work/'
+  summary: 'Forever Security says its endpoint product stopped a coding agent, mid-session on a real customer machine, from installing function-color, an npm package
+    from the MALFEX supply-chain campaign that Checkmarx Zero documented on 2026-10-05, and that the instruction came from a plain-text AGENTS.md, disguised as engineering
+    notes, sitting in the user''s ~/Downloads folder, the one folder a website can write to without a click; Forever could not determine how the file got there, and
+    no code ran. Forever''s reproduction on OpenAI Codex, run safely in an isolated VM with the attacker''s real file, has the agent append an MCP-server registration
+    to the machine-wide ~/.codex/config.toml whose start command uses launchctl to run npm install of the package outside Codex''s startup timeout, then run a child
+    codex exec with the approval and sandbox bypass flag so the payload completes in one session; Forever reports Codex ran the malware in more than 90% of attempts,
+    and that the machine-wide config means every later Codex session on the host loads the attacker''s server. Forever''s own Claude Code reproduction, not the in-the-wild
+    file, uses a planted CLAUDE.md to make the agent write a project .claude/settings.json that sets the Anthropic API base URL to an attacker-controlled server,
+    which leaks the OAuth token (account takeover with no code run) and lets that server answer as the model with tool calls that run code; Forever reports about
+    50% success, and the same-session variant about a fifth of the time. Prerequisites per Forever: an agent started in the Downloads directory (about half of its
+    customers do this, and about a quarter of agent sessions open a real browser) and, for Codex, a project the agent already trusts. Forever and Dark Reading both
+    say there is nothing for the agent vendors to patch because the agent is doing what it was built to do; Forever has found only this one in-the-wild example and
+    says it is looking for more. All success rates and the telemetry shares are Forever''s own, from a vendor that sells a product against this class of attack.'
+  region_nexus: global; no Swiss victim reported
+  primary_sector_nexus: 'indirect: developers and administrators in public-sector IT who run AI coding agents on workstations'
+  sector: technology
+  cves: []
+  techniques:
+  - T1059
+  - T1195.001
+  - T1528
+  affected_products:
+  - OpenAI Codex
+  - Anthropic Claude Code
+  entity_keys:
+  - product:openai-codex
+  - product:anthropic-claude-code
+  - product:npm
+  new_entities:
+  - key: campaign:malfex-npm
+    type: campaign
+    name: MALFEX
+    aliases: []
+    summary: Long-running npm supply-chain malware campaign linked by Checkmarx Zero to one adversary publishing since August 2023; delivers RATs, stealers or open
+      Node.js processes; its function-color package is the one the Forever Security in-the-wild agent attack tried to install (Checkmarx 2026-10-05; Forever Security
+      2026-10-22).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: The in-the-wild file and every success rate are Forever Security's claims; Dark Reading and The Hacker News relay it (Dark Reading interviews
+    the Forever researcher). Checkmarx independently documents the package as malicious, which does not corroborate the Downloads-folder delivery.
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: In our testing, Codex ran the malware in more than 90% of attempts.
+    attribution: Forever Security
+    source_url: https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/
+  - quote: In our testing, Claude followed through on this about 50% of the time.
+    attribution: Forever Security
+    source_url: https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/
+  - quote: There is nothing here for OpenAI or Anthropic to patch.
+    attribution: Forever Security
+    source_url: https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/
+  - quote: Leave approval gates and sandboxes enabled.
+    attribution: Forever Security
+    source_url: https://forever.security/blog/hijacking-ai-agents-via-downloads-folder/
+  - quote: It could not determine how the file got into the folder.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/malicious-file-in-downloads-folder.html
+  extended_notes: 'Detection (Forever, behavioural): instruction files nobody on the team wrote (AGENTS.md, CLAUDE.md) in Downloads or in a freshly cloned repository;
+    unexpected MCP-server blocks in the machine-wide Codex configuration or a changed base-URL setting; an agent-written project .claude/settings.json that sets an
+    API base URL or proxy; an agent invoking the approval-and-sandbox bypass flag in a child process; the npm package name above in any install log (treat the machine
+    as compromised). Telemetry class: endpoint file-write and process-creation events with agent-process parentage, plus package-manager logs. Hardening (Forever):
+    never start an agent in Downloads; keep approval gates and sandboxes on and treat any text telling the agent to bypass them as hostile; if a stray instruction
+    file is found, assume the agent''s tokens leaked and rotate. Gaps: delivery mechanism unknown (Forever says a malicious website could drop such a file but did
+    not observe it); the Claude Code chain is a lab reproduction with half the success rate; Forever''s note that Claude was much harder to fool than Codex is its
+    own testing. Does not apply to agents that never run in a web-writable directory. The package name is IOC-type; the composer decides whether to carry it.'
+- title: 'Huntress on the ConnectWise intrusion: the 2026-10-15 activity looks like scripted tooling steered by an operator, with a 55-second retry change; its detections
+    target vendor applications that assign themselves a directory role or add credentials'
+  sources:
+  - url: https://www.huntress.com/blog/connectwise-attack-ai
+    publisher: Huntress
+    date: '2026-10-26'
+    role: primary
+  discovery_trace: 'first seen at: huntress (RSS), URL https://www.huntress.com/blog/rss.xml (item https://www.huntress.com/blog/connectwise-attack-ai, 2026-10-26T19:00Z)
+    -> primary (no pivot needed); Huntress cites Microsoft''s 2026-10-21 report and its own 2026-10-16 post, both already in the store'
+  summary: 'Huntress, which first reported the ConnectWise Cloud Backup credential abuse on 2026-10-16, published an analysis on 2026-10-26 of who or what drove the
+    activity, using Entra sign-in and directory audit logs from tenants it monitors plus fleet-wide sweeps. It says its telemetry aligns with Microsoft''s Storm-0940/ARTEX
+    account but does not independently confirm it, and rates its confidence that an LLM was involved in the escalation tooling as low to medium on its own telemetry
+    and medium to high once Microsoft''s attribution is included. What it observed on 2026-10-15: the credential used against almost 1,000 tenants one after another
+    in ascending tenant-ID order, one to six minutes apart, with the same Python urllib user agent; about 100 identical failures against the first 100 tenants within
+    10 seconds (a thread pool), and a second run with another application''s key at 13 to 21 attempts per second, both using application secrets that belong to a
+    single tenant and so could not work elsewhere; Huntress infers a script run at least twice and rules out a model making each call at that speed. In the first
+    tenants the tooling changed in under a minute between runs: a secret added, removed and added again, a certificate upload that failed on a thumbprint mismatch,
+    and a run 55 seconds later that added a retry with doubling waits, then the Global Administrator role granted and removed twice, a different role granted to a
+    sibling principal when a removal was refused, and the original service principal deleted; the same sequence repeated in a second tenant 47 seconds later. For
+    22 minutes after that deletion requests using the deleted principal kept firing every four to eight seconds and were rejected each time, which Huntress cites
+    as the best evidence against a fully autonomous agent. A pilot-then-batch pattern (one tenant tried first, then batches) recurred three times across two tools;
+    first enumeration to completed credential changes took under three hours. Huntress states its limits: Microsoft Graph reads are not recorded in the Entra audit
+    log and no victim it knows of had Graph activity logging enabled, application-only audit events carry no source IP, and it cannot see the actor''s tooling or
+    any model provider behind it. Its behavioural table (pacing, response to errors, request variety, user agent) is labelled its own analyst heuristic, not an industry
+    standard, and it warns that cadence will stop being a reliable signal as tooling improves.'
+  region_nexus: global; public-sector Microsoft 365 tenants are in scope of any MSP/vendor app-credential abuse
+  primary_sector_nexus: direct for administrations that use an MSP or backup vendor with a multi-tenant Microsoft 365 application
+  sector: technology
+  cves: []
+  techniques:
+  - T1078.004
+  - T1199
+  - T1098.001
+  - T1098.003
+  - T1110.003
+  - T1087.004
+  - T1526
+  - T1588.007
+  affected_products:
+  - Microsoft Entra ID
+  - ConnectWise Cloud Backup
+  entity_keys:
+  - actor:storm-0940
+  - tool:artex
+  - incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10
+  - product:connectwise-cloud-backup
+  - product:microsoft-entra-id
+  new_entities: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Huntress is first-hand (its own telemetry) and states which parts Microsoft's report corroborates; this is a delta on a multi-source story already
+    in the store.
+  confidence: MEDIUM
+  novelty: update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  novelty_note: Also bears on 2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse (the incident entry); the main agent picks the entry to carry
+    the record, the delta is the agent-versus-script assessment and the detections.
+  evidence:
+  - quote: Our telemetry aligns with Microsoft's findings, but does not independently confirm them.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/connectwise-attack-ai
+  - quote: On our own telemetry alone, we put our confidence that an LLM was involved in the escalation tooling at low to medium. Taking Microsoft's attribution into
+      account, we put it at medium to high.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/connectwise-attack-ai
+  - quote: Microsoft Graph reads are not recorded in the Entra audit log, and no victim we know of had Graph activity logging enabled, so the scope and method of
+      any Graph access cannot be seen in the logs available to us.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/connectwise-attack-ai
+  - quote: Both runs used application secrets that belong to a single tenant, which cannot authenticate anywhere else, and the tool kept firing regardless.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/connectwise-attack-ai
+  - quote: Turn on Microsoft Graph activity logs where licensing allows, and keep raw user agent strings and sub-second timestamps.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/connectwise-attack-ai
+  extended_notes: 'Detection (Huntress, behavioural): Entra audit log, a service principal that assigns itself Global Administrator or Privileged Role Administrator,
+    deletes itself, or a vendor principal that grants a role to a sibling; credential additions to high-privilege applications from unexpected sources; a vendor application
+    behaving differently from its baseline (user agent for the ConnectWise applications is a .NET SDK client; a Python or curl user agent is the anomaly); cross-tenant
+    correlation, because a trickle in one tenant can be one campaign at thousands of attempts per minute across the estate. Gap to state: Graph activity logging must
+    have been on in advance to see Graph reads; without it a clean Entra audit log is not proof of no access (the ARTEX entry already says this). Huntress lists source
+    infrastructure and user agents (IOC-type; not for entries). Huntress''s own numbers cover only tenants it monitors; Microsoft counts more than 2,250 tenants.'
+- title: 'CYFIRMA: operators in a monitored I2P channel report a 216-host target set and low-and-slow PHP2Shell checks from 21 compromised nodes, assessed as Lazarus-ecosystem;
+    no confirmed compromise'
+  sources:
+  - url: https://www.cyfirma.com/research/cyfirma-threat-advisory-suspected-dprk-campaign-staging-php2shell-targeting-against-global-php-infrastructure/
+    publisher: CYFIRMA
+    date: '2026-10-25'
+    role: primary
+  - url: https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html
+    publisher: The Hacker News
+    date: '2026-10-25'
+    role: corroborating
+  discovery_trace: 'first seen at: THN RSS, URL https://feeds.feedburner.com/TheHackersNews (item https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html,
+    2026-10-25T22:49Z) -> primary: CYFIRMA, URL https://www.cyfirma.com/research/cyfirma-threat-advisory-suspected-dprk-campaign-staging-php2shell-targeting-against-global-php-infrastructure/'
+  summary: 'CYFIRMA reports from monitoring a closed I2P channel since 2026-10-22 that Korean-speaking operators it assesses as affiliated with the Lazarus Group
+    ecosystem said on 2026-10-24 they had a filtered target set of 216 hosts that still look unpatched or partly mitigated for PHP2Shell (CVE-2026-109618 and CVE-2026-109619)
+    and were running low-volume, paced PHP weakness checks against them from 21 compromised nodes, which the operators rotate and abandon at the first sign of blocking;
+    about a third of the set had been touched when CYFIRMA wrote. CYFIRMA says hosts bannering fixed versions or behind heavy filtering were dropped from the set,
+    so the remaining hosts still advertise older PHP; the stated sectors are government, financial institutions, logistics, airports and aviation, manufacturing and
+    online transaction platforms, in the US, Japan, South Korea, Thailand, Indonesia, Australia, Taiwan, India, Singapore, the UAE, Saudi Arabia and the EU. It says
+    the same 21 addresses were observed in the preceding eight hours attempting web-shell tooling and upload-progress session poisoning, that the entry route is crafted
+    multipart/form-data requests with highest success against Apache mod_php in prefork, and that no mass compromise is confirmed for this actor. CYFIRMA''s advice
+    that matters for hunting is that the low-volume pacing means rate-based alerts will miss it, so hunts should run across extended windows back to 2026-10-17, and
+    that a worker restart destroys the CVE-2026-109619 state, so evidence should be preserved before patching a suspect host. The attribution and the target list
+    rest on CYFIRMA''s own closed-source channel monitoring; the advisory states the Lazarus affiliation at both ''moderate'' and ''HIGH'' confidence in different
+    places, The Hacker News reports it as moderate, the target spreadsheet was not seen, no victim is named, and no other source corroborates the claim. Context already
+    in the store: Palo Alto Networks'' Unit 42 retracted on 2026-10-25 its link between a European government intrusion and these flaws.'
+  region_nexus: global; the EU is in the claimed target geography, Switzerland is not named
+  primary_sector_nexus: 'indirect: government is a stated target sector; unpatched PHP hosts of any administration are in scope of the generic exposure'
+  sector: government
+  cves:
+  - CVE-2026-109618
+  - CVE-2026-109619
+  techniques:
+  - T1595
+  - T1190
+  - T1505.003
+  affected_products:
+  - PHP
+  entity_keys:
+  - tool:php2shell
+  - actor:lazarus-group
+  new_entities: []
+  relation_suggestions:
+  - subject: actor:lazarus-group
+    object: tool:php2shell
+    basis: CYFIRMA assesses a Korean-speaking operator affiliated with the Lazarus Group ecosystem is staging PHP2Shell scanning against a 216-host target set (CYFIRMA,
+      2026-10-25; single-vendor claim from closed-channel monitoring)
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: CYFIRMA is the only source for the channel contents and the attribution; The Hacker News relays it. Treat as a claim by CYFIRMA, not as established
+    DPRK activity.
+  confidence: LOW
+  novelty: update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619
+  borderline: true
+  borderline_reason: single-vendor attribution from a closed-channel claim (internally inconsistent confidence wording); no Swiss named; useful mainly for the extended-window
+    hunt and evidence-preservation advice, which only holds if CYFIRMA is right
+  evidence:
+  - quote: The campaign has moved from reconnaissance into active, low-and-slow scanning of a filtered target set.
+    attribution: CYFIRMA
+    source_url: https://www.cyfirma.com/research/cyfirma-threat-advisory-suspected-dprk-campaign-staging-php2shell-targeting-against-global-php-infrastructure/
+  - quote: None confirmed for this actor, which holds the imminence index below 90.
+    attribution: CYFIRMA
+    source_url: https://www.cyfirma.com/research/cyfirma-threat-advisory-suspected-dprk-campaign-staging-php2shell-targeting-against-global-php-infrastructure/
+  - quote: Nodes are rotated and abandoned at the first sign of blocking or rate-limiting, so threshold-based alerting is unlikely to catch it.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html
+  - quote: We are unable to confirm that initial access is associated with the specific PHP2Shell CVEs.
+    attribution: The Hacker News
+    source_url: https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html
+  extended_notes: CYFIRMA's Part 1 / Part 2 structure carries versions 1 and 2 forward; the delta of version 3 is the 21 scan nodes and the 216-host set. IP lists
+    in the advisory are IOC-type and not for entries. Hunt window start 2026-10-17 matches the AWS-reported earliest attempt already in the store.
+- title: 'Symantec''s AI honeypot captured ''Skynet'' mode: an offensive agent that hijacks exposed LLM endpoints and stolen API keys, sends a jailbreak and 74 tool
+    definitions, and runs up to 100,000 unattended steps'
+  sources:
+  - url: https://www.security.com/threat-intelligence/ai-llmjacking-skynet
+    publisher: Symantec Threat Hunter Team
+    date: '2026-10-21'
+    role: primary
+  discovery_trace: 'first seen at: symantec-security-com listing, URL https://www.security.com/threat-intelligence (links /threat-intelligence/ai-llmjacking-skynet)
+    -> primary (no pivot needed): URL https://www.security.com/threat-intelligence/ai-llmjacking-skynet'
+  lookback: true
+  summary: 'Symantec''s Threat Hunter Team captured, through an AI honeypot that imitates an unprotected internet-facing model service, the full working prompt of
+    an autonomous offensive agent in summer 2026. The operators sent it to what they believed was a real model: a layered jailbreak (identity camouflage, a rewrite
+    of secret and .env access as routine development work, a companion persona, a ''rebuttal protocol'' that tells the model to dismiss its own safety messages),
+    74 callable tool definitions (internet-wide asset discovery through FOFA, exploit modules for VS Code servers, Django, Jupyter, Laravel, Supabase, Next.js and
+    Flask/Werkzeug including debugger-PIN derivation, SSRF through HTML-to-PDF generators aimed at cloud metadata, Prisma Studio database dumping, botnet command
+    and control) and a ''Skynet'' directive for up to 100,000 unattended steps that deploys a miner quietly in the background. A request the following day, from a
+    rotated address, sent a gzip-compressed shell script that installs XMRig with failover across four pools, hides it under a name made to look like a logging utility
+    in directories used by the go2rtc camera-streaming server, sets the immutable attribute on its own configuration and loops to delete a local service''s access
+    logs. The honeypot executed nothing. Symantec states that the individual techniques are not novel, and that the assembly into a self-directed agent is. The honeypot''s
+    telemetry, over 127,000 external requests from tens of thousands of addresses, was dominated by reconnaissance of model endpoints, spraying of stolen API keys
+    and probing for exposed configuration files. Two sets of victims follow: the owner of the exposed endpoint or stolen key pays for the inference, and the hosts
+    the agent breaks into lose data and credentials and are put to mining. Symantec''s recommendations: no unauthenticated LLM, self-hosted model or MCP endpoints
+    on the internet (authentication on every path, including model-listing and health-check paths, behind a gateway), treat AI API keys as high-value credentials
+    with spend monitoring, restrict outbound access from hosts that run tool-enabled agents, enforce IMDSv2 with a hop limit of one on cloud workloads, and run agents
+    at least privilege with human approval for sensitive actions.'
+  region_nexus: global; no Swiss victim reported
+  primary_sector_nexus: 'indirect: any public-sector body that exposes an LLM gateway, self-hosted model server or MCP endpoint, or holds model API keys in code or
+    configuration'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1595.002
+  - T1552.001
+  - T1552.005
+  - T1190
+  - T1059.006
+  - T1027
+  - T1036.005
+  - T1496
+  affected_products:
+  - LLM gateways and self-hosted model servers (OpenAI-compatible APIs)
+  - Model Context Protocol servers
+  entity_keys:
+  - product:model-context-protocol-mcp
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Symantec's honeypot capture is first-hand and is the only primary; the activity was not attributed to a named actor.
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: technique-level agent tradecraft is well sourced, but relevance to the constituency is indirect (only bodies that expose model endpoints or hold
+    model keys); lookback item, no actor, no named victim
+  evidence:
+  - quote: The agent was designed to run unattended for up to 100,000 steps, executing tools without waiting for human approval.
+    attribution: Symantec Threat Hunter Team
+    source_url: https://www.security.com/threat-intelligence/ai-llmjacking-skynet
+  - quote: None of the tool calls in the captured request were run by the honeypot.
+    attribution: Symantec Threat Hunter Team
+    source_url: https://www.security.com/threat-intelligence/ai-llmjacking-skynet
+  - quote: The individual techniques on display are not novel, but their assembly into a single, self-directed agent is what stands out.
+    attribution: Symantec Threat Hunter Team
+    source_url: https://www.security.com/threat-intelligence/ai-llmjacking-skynet
+  - quote: Do not expose LLM APIs, self-hosted model servers or MCP endpoints to the internet without authentication.
+    attribution: Symantec Threat Hunter Team
+    source_url: https://www.security.com/threat-intelligence/ai-llmjacking-skynet
+  extended_notes: 'Detection (Symantec): spend or inference-volume anomalies on model accounts; unauthenticated requests to model-listing and health-check paths;
+    outbound scanning or miner downloads from hosts that run agents; egress from AI-tool hosts. IOC-type items in the report are not for entries.'
+- title: 'Semperis: Prince of Persia returned after a three-month gap, moved C2 to shared hosting including a US provider for the first time in a decade, and keeps
+    exfiltrating from a low number of victims'
+  sources:
+  - url: https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/
+    publisher: Semperis Research
+    date: '2026-10-22'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/iranian-hacking-group-hosting-c2/
+    publisher: Infosecurity Magazine
+    date: '2026-10-22'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine (RSS), URL https://www.infosecurity-magazine.com/rss/news/ (item https://www.infosecurity-magazine.com/news/iranian-hacking-group-hosting-c2/,
+    2026-10-22) -> primary: Semperis Research, URL https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/'
+  lookback: true
+  summary: 'Semperis (Tomer Bar, formerly SafeBreach Labs, which published the group''s last public research in February 2026) reports that Prince of Persia, the
+    Iranian state-nexus actor active for about two decades against dissidents and public and private sector organisations in the US, Europe and the Middle East, went
+    dark publicly after that February research, then resumed: after its longest downtime in nearly two decades, a new exfiltration C2 appeared on 2026-05-27, from
+    which Semperis saw Tonnerre take more than 1,800 files from one victim in the first week, and the group has moved from VPS hosting to shared hosting and changed
+    its control-panel software. In August 2026 Semperis found the Tornado second-stage C2, which holds the file that gives a victim the Telegram bot API key, on shared
+    hosting from a US provider, the first US-hosted C2 from this actor in a decade; on 2026-08-24 the group began building a replacement behind Cloudflare, which
+    Semperis reads as the actor realising the server had been found. Tornado, per Semperis, arrives through one-day software vulnerabilities such as WinRAR exploits,
+    communicates over HTTPS and the Telegram API, uses a domain-generation algorithm and RSA signature checks on C2 requests to lock out researchers, and can take
+    C2 routing updates from blockchain transaction fields. Semperis says victim numbers remain low, which could mean targeted attacks or difficulty infecting new
+    victims, and that it masks victim details. Infosecurity Magazine reports Semperis''s advice: keep security controls and operating systems up to date and watch
+    for unusual Telegram traffic. The report is mostly infrastructure tracking; the transferable points are the delivery through patched-but-unapplied archive-tool
+    flaws and Telegram-API C2 from endpoints that have no business talking to it.'
+  region_nexus: Europe is a stated target region (public and private sector); no Swiss case stated
+  primary_sector_nexus: indirect
+  sector: government
+  cves: []
+  techniques:
+  - T1203
+  - T1071.001
+  - T1102.002
+  - T1568.002
+  - T1041
+  affected_products:
+  - WinRAR
+  entity_keys: []
+  new_entities:
+  - key: actor:prince-of-persia
+    type: actor
+    name: Prince of Persia
+    aliases:
+    - Infy
+    summary: Iranian state-nexus espionage actor active for about two decades against dissidents and public and private sector organisations in the US, Europe and
+      the Middle East; malware families Infy, Foudre, Tonnerre and Tornado; Semperis (2026-10-22) reports its resumed activity and a first US-hosted C2 in a decade.
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  verification_note: Semperis is first-hand; Infosecurity Magazine relays it (one source). Attribution to Iran rests on historical Unit 42 and academic work that
+    Semperis cites.
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: mostly C2 infrastructure tracking of a highly targeted actor; Europe named as target region but no Swiss nexus and few behaviours a Tier 2/3
+    team can act on without IOCs
+  evidence:
+  - quote: the Iranian threat actor decided to host its new C2 server on US soil
+    attribution: Semperis Research
+    source_url: https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/
+  - quote: The number of victims remains low, which could indicate either targeted attacks or difficulties infecting new victims.
+    attribution: Semperis Research
+    source_url: https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/
+  - quote: Dropped into target environments via one-day software vulnerabilities (e.g., WinRAR exploits), Tornado uses both HTTPS and the Telegram API as a covert
+      C2 channel, blending in with legitimate network traffic to bypass firewalls.
+    attribution: Semperis Research
+    source_url: https://www.semperis.com/blog/prince-of-persia-threat-group-hiding-in-plain-sight/
+  extended_notes: 'Detection angle (from the sources): outbound Telegram API traffic from endpoints with no business need; DGA-style domain churn. IOC lists in the
+    report are not for entries.'
+- title: 'CrowdStrike: four previously unreported actors ran Claude Code as an autonomous intrusion operator, compromising government entities among others'
+  sources:
+  - url: https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/
+    publisher: CrowdStrike Counter Adversary Operations
+    date: '2026-10-23'
+    role: primary
+  - url: https://thehackernews.com/2026/10/weekly-recap-this2shell-that2shell.html
+    publisher: The Hacker News (weekly recap)
+    date: '2026-10-26'
+    role: corroborating
+  discovery_trace: 'first seen at: THN weekly recap, URL https://thehackernews.com/2026/10/weekly-recap-this2shell-that2shell.html (2026-10-26, roll-up; discovery
+    only) -> primary: CrowdStrike, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/ (also seen on the CrowdStrike counter-adversary
+    listing)'
+  summary: CrowdStrike Counter Adversary Operations reports four previously unreported actors that left their offensive agent frameworks exposed in open directories,
+    documenting between May and August 2026 incidents in which AI agents made decisions and executed commands. Actor 1, Spanish/English-speaking, compromised at least
+    15 Argentina-based healthcare entities with a dual-agent harness (a Supervisor agent selecting the next task from an attack-stage state machine, an Executor agent
+    performing it), derived from the open-source PentestGPT project with added MCP servers and exploitation scripts. Actor 2, Chinese-speaking with 20+ named targets,
+    compromised government entities of two countries and private sector entities in Brazil and the US, reaching Claude models through a China-based AI proxy service,
+    with one deterministic harness that asks the model to choose among preset actions and one that lets Claude Code work as a single agent or delegate to specialist
+    agents. Actor 3, Indonesian-speaking and the least sophisticated, gives Claude Code 819 mostly public GitHub-sourced skills without orchestration and still compromised
+    several Indonesian government domains and a government domain of another country, intervening periodically to overcome model guardrails. Actor 4, Russian-speaking,
+    tasks Claude Code with a single slash command that runs a seven-step workflow from enumeration to exfiltration, and exfiltrated client data from a US CRM vendor
+    and compromised private-sector entities in Russia, Kyrgyzstan and the US plus one government domain of another country. CrowdStrike assesses, with moderate confidence,
+    that agentic AI commoditizes baseline offensive operations, that agentic intrusions will almost certainly increase and that some low-skill actors will reach effectiveness
+    previously limited to organized crime or state-nexus actors. Detailed case studies and defender guidance sit in a downloadable report that the blog links and
+    that this return did not read; the blog does not name victims, tooling versions or techniques beyond the above.
+  region_nexus: global; government victims named by country only as 'two countries', Indonesia and 'another country'; no Swiss nexus stated
+  primary_sector_nexus: 'indirect: government entities are among the victims, the technique (agent harness driving a commercial model) is relevant to any exposed
+    administration'
+  sector: government
+  cves: []
+  techniques:
+  - T1588.007
+  - T1059
+  affected_products:
+  - Anthropic Claude Code
+  entity_keys:
+  - product:anthropic-claude-code
+  - tool:artex
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: CrowdStrike is first-hand (exposed open directories it reports observing); The Hacker News recap is a roll-up of it. The full report was not
+    read.
+  confidence: MEDIUM
+  novelty: new
+  borderline: true
+  borderline_reason: published 2026-10-23, outside the 26 h window (resurfaced in a 2026-10-26 roll-up); not in the store; gives government-victim evidence for agentic
+    intrusion but no technique-level detail beyond harness architecture; the full report was not read
+  evidence:
+  - quote: Between May and August 2026, CrowdStrike Intelligence documented several incidents in which threat actors used AI not only to create tooling or artifacts,
+      but to conduct agentic campaigns in which AI agents make decisions and execute commands.
+    attribution: CrowdStrike Counter Adversary Operations
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/
+  - quote: They compromised government entities of two countries and targeted private sector entities in Brazil and the U.S.
+    attribution: CrowdStrike Counter Adversary Operations
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/
+  - quote: Agentic AI-supported intrusions will almost certainly increase
+    attribution: CrowdStrike Counter Adversary Operations
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/
+  extended_notes: 'Related store entries: ARTEX (2026-10-22/artex-storm-0940-...) cites CrowdStrike''s earlier ARTEX post of 2026-10-07; this is a distinct report
+    on Claude Code harnesses. The main agent may fold it into that entry as an update instead of a new entry.'
+candidate_sources:
+- id: arctic-wolf-labs
+  publisher: Arctic Wolf Labs (blog)
+  url: https://arcticwolf.com/resources/blog/
+  rss_url: https://arcticwolf.com/feed/
+  category: research
+  why: Primary telemetry from a large MDR customer base (400+ incident Teams external-chat dataset published 2026-10-26); the site-wide feed works (probed this run,
+    10 items) and mixes research with marketing, so a drill-down per post is needed.
+- id: forever-security
+  publisher: Forever Security (blog)
+  url: https://forever.security/blog
+  category: research
+  why: First-hand in-the-wild capture of an AI-coding-agent attack (2026-10-22); no feed (the site feed parses as malformed XML on both probes), read posts with extract;
+    vendor-interest caveat applies to its success-rate claims.
+coverage_gaps:
+- source_id: darkreading
+  reason: 'extract on article URLs is served by the metered reader (two articles this run); the RSS summary plus the cited primaries were enough. Recipe unchanged:
+    feed first, WebFetch for body when credit is short.'
+- source_id: helpnetsecurity
+  reason: extract returns the raw front-page HTML (served via direct-raw), not clean text as the 2026-10-22 note says; article hrefs and dates parse out with a regex,
+    and per-article extract is clean (trafilatura-direct).
+- source_id: microsoft security blog feed (msft-secblog recent)
+  reason: the structured feed stops at 2026-10-08 while the blog listing shows posts of 2026-10-16, 2026-10-19, 2026-10-21 and 2026-10-23; use extract on https://www.microsoft.com/en-us/security/blog/
+    for the latest posts.
+- source_id: rapid7-research
+  reason: feed https://www.rapid7.com/rss.xml exited with an error on the feed subcommand; `url https://www.rapid7.com/blog/` returned the listing with hrefs (bridge),
+    which was enough.
+- source_id: lumen-black-lotus-labs
+  reason: 'the URL in sources.json (https://www.lumen.com/en-us/security/black-lotus-labs.html) is a marketing landing page; `url` returned 195 KB with no post listing
+    or dates. Recipe gap: find the research-posts URL or feed for Black Lotus Labs; nothing from Lumen reached this run.'
+- source_id: mandiant-gtig
+  reason: feedburner feed lags the blog (last item 2026-10-15) but the blog listing agrees; no gap in coverage.
+source_ledger:
+- id: sygnia
+  tier: standard
+  attempted: true
+  transport: extract listing + url --direct re-check
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 22.09.2026; direct fetch confirms the extract listing is current
+- id: team-cymru
+  tier: standard
+  attempted: true
+  transport: extract (direct-raw listing) + per-post extract for dates
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 0
+  note: only the 2026-10-22 INTERPOL Serengeti commentary is in horizon (law-enforcement summary, no constituency nexus); LegionRelay is 2026-10-14
+- id: technadu
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 145
+  in_horizon_items: 4
+  returned: 0
+  note: Gheist item resolved to the Wiz primary and returned from there; rest are leaks/claims or non-CTI; extract on article URLs not used (reader-served per notes)
+- id: zimperium-zlabs
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 145
+  in_horizon_items: 3
+  returned: 0
+  note: 'newest 2026-10-26 (DHS DeepSeek order vetting, marketing); RatHat Android intrusion-log post 2026-10-22 read: mobile-forensics method, no constituency nexus'
+- id: symantec-security-com
+  tier: standard
+  attempted: true
+  transport: url listing (5 links) + extract per post
+  horizon_hours: 148
+  in_horizon_items: 3
+  returned: 1
+  note: Skynet LLMjacking (2026-10-21) returned borderline; PHP2Shell post 2026-10-22 and Swallowtail/APT28 2026-10-20 already covered; Warlock 2026-10-01 and Aoki
+    2026-10-15 out of horizon
+- id: swarmcha-se
+  tier: standard
+  attempted: true
+  transport: url --direct
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-14
+- id: citizen-lab
+  tier: standard
+  attempted: true
+  transport: feed + extract research listing
+  horizon_hours: 121
+  in_horizon_items: 2
+  returned: 0
+  note: 'in horizon: 2026-10-22 generative-AI transnational-repression analysis and 2026-10-23 lawful-access policy piece (no technical or constituency nexus); Pegasus/Serbia
+    note dated 2026-10-21 sits just outside and has no Swiss nexus'
+- id: csa-labs
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 121
+  in_horizon_items: 6
+  returned: 0
+  note: research notes are AI-generated re-reports (Brotli, x402, Phantom, LiteLLM, LLMjacking); used as leads only, primaries are older or covered
+- id: cyberscoop
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 121
+  in_horizon_items: 4
+  returned: 0
+  note: 'Brotli commentary 2026-10-27 read: no new fact beyond Wiz exposure statistics (2026-10-25) and a no-exploitation-observed statement, both on the Node2Shell
+    topic; CISA 2030 strategy is an S2 policy lead'
+- id: darkreading
+  tier: standard
+  attempted: true
+  transport: feed + extract (served by reader for two articles)
+  horizon_hours: 121
+  in_horizon_items: 6
+  returned: 2
+  note: Gheist and Forever Security AGENTS.md reached their primaries and are returned; Storm-0940/ConnectWise and PHP2Shell pieces already covered
+- id: gambit-security
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 121
+  in_horizon_items: 1
+  returned: 0
+  note: 2026-10-22 feature on PHP2Shell (Calif and Wiz used frontier AI models in the discovery), covered topic, no new technical fact
+- id: group-ib
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 121
+  in_horizon_items: 2
+  returned: 0
+  note: 'k0t (2026-10-21) already covered; SiriusQT RAT (2026-10-22) read and dropped: commodity MaaS RAT, targeting UK/DE/FR/ES/IT/NL, no Swiss nexus'
+- id: helpnetsecurity
+  tier: standard
+  attempted: true
+  transport: extract (raw HTML) + per-article extract
+  horizon_hours: 121
+  in_horizon_items: 8
+  returned: 1
+  note: Talos "Parasitizing trust" reached via the 2026-10-22 HNS article and returned (lookback); other items covered or vendor product news
+- id: infosec-magazine
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 121
+  in_horizon_items: 14
+  returned: 2
+  note: Gheist (via Wiz) and Semperis Prince of Persia returned; Linux skb zerocopy, token spraying, Siemens ClickFix, SafePay, Storm-0940 and PHP2Shell items already
+    covered
+dropped_leads:
+- lead: Elastic Security Labs, wesp.sys (2026-10-26)
+  why: Windows Insider preview internals of Microsoft's EDR-out-of-kernel platform; no current attack or defender action
+- lead: Sansec, Convertr Plausible-analytics skimmer (2026-10-26)
+  why: Brazilian Magecart supply chain, no constituency nexus; the suspected entry point is Plausible CE CVE-2026-8467 (fixed 2026-05-15, 3.2.1), an S1 vulnerability
+    lead only
+- lead: Group-IB SiriusQT RAT (2026-10-22)
+  why: commodity MaaS RAT, 30 licence buyers, no Swiss nexus, no technique a Tier 2/3 team can act on beyond generic RAT hunting
+- lead: GTIG 'AI threat update' blurb on the Google Cloud threat-intelligence listing (page date 2026-10-26)
+  why: is the pinned 2026-09-08 AI Threat Tracker, not a new report; no new GTIG post since 2026-10-15
+- lead: Karimi PHP2Shell honeypot RCE update (from S3 attempt 1)
+  why: two searches found no such report; unverifiable, dropped
+- lead: Microsoft LiteLLM 1.107.0 analysis (2026-10-23, Microsoft Security Blog listing)
+  why: outside the 72 h developing window; the LiteLLM entry already carries later updates
+- lead: Citizen Lab Pegasus/Serbia note (2026-10-21)
+  why: outside lookback by about a day, civil-society targets in Serbia, no constituency nexus
+- lead: Wiz Brotli/Broccoli2Shell exposure post (2026-10-25) and CyberScoop Brotli commentary (2026-10-27)
+  why: S1 topic already in the store; only new content is a Wiz cloud-exposure statistic and 'no exploitation observed' statements
+- lead: Rapid7 Q3 threat update (three-day exploitation window), Rapid7 NetScaler intrusion analysis (2026-10-19)
+  why: outside the 26 h window; not in an S3 slice record
+- lead: Arctic Wolf PHP2Shell posts (2026-10-21/22/26)
+  why: PHP2Shell is covered extensively; the 2026-10-26 post is a leadership-level piece
+- lead: ENISA SBOM advisory (TechNadu 2026-10-26), CISA 2030 strategy (CyberScoop/Infosecurity 2026-10-26)
+  why: policy items; left for S2

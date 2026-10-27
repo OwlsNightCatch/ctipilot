@@ -55,6 +55,10 @@ sources:
     publisher: "heise online"
     date: "2026-10-21"
     role: corroborating
+  - url: "https://www.huntress.com/blog/connectwise-attack-ai"
+    publisher: "Huntress (AI, Scripts, Operator: Inside the ConnectWise Attack)"
+    date: "2026-10-26"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "We recently identified unauthorized access to application identities within the ConnectWise Cloud Backup environment."
@@ -126,6 +130,12 @@ evidence:
   - quote: "These changes can remain active as a backdoor even after the original compromised application is mediated."
     publisher: "Microsoft Threat Intelligence"
     source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/21/storm-0940-uses-artex-agentic-ai-connectwise-supply-chain-compromise/"
+  - quote: "On our own telemetry alone, we put our confidence that an LLM was involved in the escalation tooling at low to medium."
+    publisher: "Huntress (AI, Scripts, Operator: Inside the ConnectWise Attack)"
+    source_url: "https://www.huntress.com/blog/connectwise-attack-ai"
+  - quote: "Alert when a service principal assigns itself"
+    publisher: "Huntress (AI, Scripts, Operator: Inside the ConnectWise Attack)"
+    source_url: "https://www.huntress.com/blog/connectwise-attack-ai"
 verification: multi-source
 sourcing_note: >
   ConnectWise is the first-party source for its own incident, and Huntress, Todyl and Sophos X-Ops each observed the
@@ -133,7 +143,7 @@ sourcing_note: >
   by Expel; ConnectWise says only that it appears a China state-aligned group was responsible, and Huntress has not tied its Global
   Administrator observation to the same operator. The Huntress figures are those of its update of 2026-10-19 13:30 ET, ConnectWise's
   advisory is cited as of 2026-10-19 01:15 UTC and, for 2026-10-21, as read from an archived copy, and Sophos saw no new secrets,
-  applications, consents or role assignments in the subset of tenants it reviewed, where Huntress saw role grants and added secrets.
+  applications, consents or role assignments in the subset of tenants it reviewed, where Huntress saw role grants and added secrets. Huntress's analysis of 2026-10-26 says its own telemetry alone supports only low to medium confidence that an LLM was involved in the escalation tooling and medium to high once Microsoft's attribution is included.
 confidence: high
 references: []
 deep_dive: false
@@ -188,6 +198,15 @@ updates:
       the separate 10 to 14 October password spray, not the rate of the ARTEX sign-ins to more than 2,250
       tenants.
     fields: [body, evidence]
+  - at: "2026-10-27T03:46:02Z"
+    run_id: 2026-10-27T0256Z-intel
+    type: improvement
+    summary: >
+      Huntress's analysis of 2026-10-26 reads the activity as scripted tooling steered by an operator,
+      rates LLM involvement low to medium on its own telemetry, adds a detection for service principals
+      that assign themselves or a sibling a directory role, and notes that Graph reads leave no Entra
+      audit record.
+    fields: [evidence, sources, sourcing_note]
 migrated_from: null
 ---
 
@@ -224,3 +243,7 @@ Microsoft warns that the application credential changes can remain active as a b
 ## Correction — 2026-10-25T13:43:07Z
 
 The update of 2026-10-22 attached a rate of 2,900 attempts a minute to the ARTEX sign-ins against more than 2,250 tenants. Microsoft gives no rate for those sign-ins: 2,900 a minute is the peak of failed logons in the separate password spray of 10 to 14 October, reached on 11 October ([Microsoft, 2026-10-21](https://www.microsoft.com/en-us/security/blog/2026/10/21/storm-0940-uses-artex-agentic-ai-connectwise-supply-chain-compromise/)). The figure now sits with the spray.
+
+## Improvement — 2026-10-27T03:46:02Z
+
+Huntress published its analysis of what drove the 2026-10-15 activity on 2026-10-26, working from Entra sign-in and directory audit logs in the tenants it monitors. It says its telemetry aligns with Microsoft's Storm-0940 and ARTEX account without independently confirming it, that it is highly confident an operator, a person or an LLM, adapted the tooling between runs, and that its confidence that an LLM was involved in the escalation tooling is low to medium on its own telemetry and medium to high once Microsoft's attribution is included ([Huntress, 2026-10-26](https://www.huntress.com/blog/connectwise-attack-ai)). Its evidence for adaptation: a certificate upload that failed on a thumbprint mismatch ended one run with no retry, and the next run 55 seconds later retried the same error with growing waits until it worked; in a second tenant that refused removal of the Global Administrator role, the actor granted a different role to a sibling principal and the original service principal was then deleted ([Huntress, 2026-10-26](https://www.huntress.com/blog/connectwise-attack-ai)). Microsoft Graph reads are not recorded in the Entra audit log and no victim Huntress knows of had Graph activity logging enabled, so a clean audit log does not show that no Graph access took place ([Huntress, 2026-10-26](https://www.huntress.com/blog/connectwise-attack-ai)). Huntress recommends alerting when a service principal assigns itself Global Administrator or Privileged Role Administrator, deletes itself, or when one vendor principal grants a role to a sibling, and turning on Graph activity logs where licensing allows ([Huntress, 2026-10-26](https://www.huntress.com/blog/connectwise-attack-ai)).

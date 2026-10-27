@@ -2,19 +2,20 @@
 schema: 1
 kind: vulnerability
 title: "CVE-2026-109618 / CVE-2026-109619, NetScaler ADC and Gateway: the PHP2Shell flaws reach the management GUI on the NSIP, management-enabled SNIPs and the cluster IP of every supported version, with fixes planned for 2026-10-27"
-headline: "NetScaler management GUI is affected by PHP2Shell on all supported versions; fixes 2026-10-27, restrict access now"
+headline: "NetScaler management GUI is affected by PHP2Shell, now on CISA KEV; fixes due 2026-10-27, restrict access now"
 summary: >
   NetScaler Product Security says the two PHP flaws CVE-2026-109618 and CVE-2026-109619 affect the NetScaler Management Portal,
   reached through the NSIP GUI, any SNIP that permits management access and the cluster IP GUI, on all supported software
   versions; NetScaler Console and SVM are not affected. Citrix plans fixes for all supported versions on 2026-10-27 and tells
-  customers to restrict management access to trusted networks now; its post does not say whether NetScaler has been attacked.
+  customers to restrict management access to trusted networks now; its post does not say whether NetScaler has been attacked,
+  and no source reports an attack on NetScaler, although CISA added both PHP flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26.
 discovered_at: "2026-10-23T03:38:00Z"
-updated_at: null
+updated_at: "2026-10-27T03:41:15Z"
 event_date: "2026-10-21"
 run_id: 2026-10-23T0256Z-intel
 priority: notable
 immediate_action: null
-tags: [vulnerabilities, rce, pre-auth, no-patch]
+tags: [vulnerabilities, rce, pre-auth, cisa-kev, no-patch]
 regions: [global]
 sectors: []
 entities: ["product:citrix-netscaler", "product:php"]
@@ -27,7 +28,7 @@ cves:
     type: memory-corruption
     vector: zero-click
     auth: pre-auth
-    status: [no-patch, mitigation-only]
+    status: [cisa-kev, no-patch, mitigation-only]
     affected: "NetScaler management interfaces (NSIP GUI, management-enabled SNIP, cluster IP GUI) on all supported software versions"
     fixed: "not yet released; Citrix plans fixes for all supported versions on 2026-10-27"
   - id: CVE-2026-109619
@@ -36,7 +37,7 @@ cves:
     type: memory-corruption
     vector: zero-click
     auth: pre-auth
-    status: [no-patch, mitigation-only]
+    status: [cisa-kev, no-patch, mitigation-only]
     affected: "NetScaler management interfaces (NSIP GUI, management-enabled SNIP, cluster IP GUI) on all supported software versions"
     fixed: "not yet released; Citrix plans fixes for all supported versions on 2026-10-27"
 sources:
@@ -44,8 +45,19 @@ sources:
     publisher: "NetScaler Product Security (Citrix Tech Zone)"
     date: "2026-10-21"
     role: primary
+  - url: "https://support.citrix.com/external/article/CTX697263"
+    publisher: "Citrix security bulletin CTX697263"
+    date: "2026-10-22"
+    role: primary
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA Known Exploited Vulnerabilities catalog (version 2026.10.26)"
+    date: "2026-10-26"
+    role: corroborating
 closed_sources: []
 evidence:
+  - quote: "Impacted. Please refer to the blog for more information and immediate mitigation guidance"
+    publisher: "Citrix security bulletin CTX697263"
+    source_url: "https://support.citrix.com/external/article/CTX697263"
   - quote: "All supported NetScaler software versions are impacted."
     publisher: "NetScaler Product Security (Citrix Tech Zone)"
     source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/protecting-netscaler-management-access-from-php-cve-2026-109618-cve-2026-109619-r1640/"
@@ -59,7 +71,7 @@ verification: single-source
 sourcing_note: >
   NetScaler Product Security's post is the first-party source for the product impact, the mitigation and the fix date; the two
   flaws themselves are in the PHP runtime and are covered by the entries listed under references. Citrix's post carries no
-  statement about exploitation of NetScaler, and no fix is listed in it as of 2026-10-22.
+  statement about exploitation of NetScaler, and no fix is listed in it as of 2026-10-22. The listing of both PHP flaws in CISA's Known Exploited Vulnerabilities catalog comes from the catalog itself.
 confidence: high
 references: ["2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619", "2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release", "2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev", "2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited", "2026-10-09/cve-2026-107406-citrix-netscaler-saml-idp-overflow"]
 deep_dive: false
@@ -80,6 +92,14 @@ updates:
       NetScaler Product Security published the Tech Zone post on 2026-10-21 (22:23 CEST) and last updated
       it on 2026-10-22; the source date, its inline labels and event_date now give the publication date.
     fields: [sources, event_date, body]
+  - at: "2026-10-27T03:41:15Z"
+    run_id: 2026-10-27T0256Z-intel
+    type: update
+    summary: >
+      CISA added both PHP flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26; no source
+      reports an attack on NetScaler, and Citrix's bulletin still names no fixed build, so restricting
+      management access remains the control.
+    fields: [cves, evidence, headline, sources, sourcing_note, summary, tags]
 migrated_from: null
 ---
 
@@ -92,3 +112,7 @@ Citrix plans to release fixes for all supported versions on 2026-10-27 and, unti
 **Detection:** connections to the management GUI and API from addresses that are not the administrative hosts, which is also the test of whether the ACLs hold; Citrix's post publishes no detection guidance and does not say whether NetScaler has been attacked ([NetScaler Product Security, 2026-10-21](https://community.citrix.com/techzone-blogs/110_security-updates/protecting-netscaler-management-access-from-php-cve-2026-109618-cve-2026-109619-r1640/)).
 
 **Defender takeaway:** apply the management ACLs now and keep a recovery path such as console access in case a rule blocks administration, then install the fixed builds on 2026-10-27; the PHP project's own fixed releases do not help an appliance owner until Citrix ships its package, and no fix is listed in Citrix's post as of 2026-10-22 ([NetScaler Product Security, 2026-10-21](https://community.citrix.com/techzone-blogs/110_security-updates/protecting-netscaler-management-access-from-php-cve-2026-109618-cve-2026-109619-r1640/)).
+
+## Update — 2026-10-27T03:41:15Z
+
+CISA added both PHP flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26, as flaws in PHP rather than as a NetScaler finding ([CISA KEV, 2026-10-26](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). No source reports an attack on NetScaler through them. Citrix's bulletin CTX697263, whose revision history ends on 2026-10-22, still lists NetScaler ADC and Gateway as impacted, points to the Tech Zone post for mitigation and names no fixed build ([Citrix, 2026-10-22](https://support.citrix.com/external/article/CTX697263)), so the management-interface restriction stays the control until Citrix lists a fixed build.
