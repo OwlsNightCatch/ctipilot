@@ -1,0 +1,71 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-10-28T04:47:34Z · ended_at=2026-10-28T05:18:09Z · duration_seconds=1835
+
+## Verification report — 2026-10-28T0256Z-intel (iteration 2)
+
+Scope: all 280 ledger claims walked (the 50 changed claims, every other claim of the thirteen entries, no sampling); 280/280 rows in `verification.iter2.claims.yaml` (258 ok, 9 findings-bearing F3/F4 rows, 13 unreadable). `python3 tools/claim_ledger.py 2026-10-28T0256Z-intel --coverage 2` reports 280/280 answered. Sources were re-fetched this iteration (Cisco, HPE CSAF, Palo Alto HTML and JSON, a Wayback copy of 2026-10-27 17:10 UTC, CISA alert and KEV JSON, Citrix CTX697263, CERT-FR, ELLIO, Tenable, Akamai, JFrog, MSRC API, NCSC hub post 13105, php.net archive, Balbooa, mySites.guru, IDC Frontier seventh report, Inside IT article JSON, watson.ch, SRF, Blick, Netzwoche, Hüttenberg, DeXpose, Report URI, iVerify, Manno PDF). Not readable this iteration: the Citrix Tech Zone post (403 on direct, trafilatura, jina, WebFetch, Wayback) and the ransomware.live record (timeouts on every transport).
+
+### Prior-iteration remediations (each checked against a source read this iteration)
+
+| Iter-1 finding | Holds? | Evidence |
+|---|---|---|
+| Cisco URWB/ISE footnote (F3) | Holds | Cisco table HTML: `<td>Ultra-Reliable Wireless Backhaul (URWB)<sup>1,2</sup><br>Unified Industrial Wireless Software</td>`; ISE Portal Builder row has no marker and reads "Offline for remediation"; footnote 1 is the administrator condition and 6.6. Body, both `cves[].affected` strings, sourcing_note and evidence label now agree. |
+| Cisco F14/F4/F8 (product count, ranges, Snort) | Holds | Entry names the product families; says the advisory gives no ranges; Snort 67359/67360 are "Action Links for This Advisory". Residual: Exposure line still says "below 15.5.21" (finding 11). |
+| HPE wording (F3) | Holds | CSAF workaround text: "until ClearPass instances have been upgraded to a version providing some level of mitigation. These versions are 6.14.1 and 6.11.16."; affected list is `>=6.14.0|<=6.14.1`; remediations[0] vendor_fix names the hotfix patches. Quote and inconsistency are stated as written. Residual: two clauses in Exposure and Defender takeaway (findings 9, 10). |
+| Palo Alto wording history (F9) | Holds for the wording | Wayback copy 20261027171028 reads "Very limited exploitation has been observed targeting the Palo Alto Networks management interface."; live page and JSON `exploits` read "Active exploitation has been observed targeting the Palo Alto Networks management interface exposed to the internet."; JSON timeline ends at 2026-10-27T16:40 "Severity Updated to Critical and Urgency updated as Highest". Neither wording is tied to the 16:40 entry. The run also flipped cites to the JSON URL, which introduced findings 1 to 3. |
+| IDC Frontier nippon.com / Ibaraki / Kodaira (F1) | Holds | No such source or clause remains. |
+| IDC Frontier "final report" (F14) | Holds | Page title 【第7報】; "本件に関する一連の調査が完了しました"; entry now says seventh report. |
+| IDC Frontier 206 (F11) / passwords (F8) | Partly | Passwords: "お客さまのログインパスワードが最大4件、不正に変更されていた" matches. The 206 clause is cited to the fifth report (finding 4). |
+| Camping.Care watson.ch (F5) | Holds | watson.ch (Keystone-SDA, 2026-10-26): "Betrüger konnten im Zusammenhang mit der internationalen Sicherheitslücke bei der Programmiersprache PHP ... entwenden, wie ein Sprecher des Touring Club Schweiz (TCS) am Montag auf Anfrage der Nachrichtenagentur Keystone-SDA bestätigte." Translation nit in finding 12. |
+| DeadTag splice (F3), European focus (F8), reference removal (F11) | Holds | Report URI: "When we investigated from data-centre IP addresses, or came back too often from residential IP addresses, the operators simply stopped answering."; iVerify: "DeadTag appears to be mostly focused on European domains versus .com". |
+| Node2Shell additions (F8) | Holds | Tenable table rows `Bun >= 1.0.21, < 1.4.4 | 1.4.4` and `Istio < 1.29.9, < 1.30.6, < 1.31.2`; ELLIO list: Ruby brotli gem 0.9.1, 0.9.2; Debian bookworm 1.0.9-2+deb12u1; Debian trixie 1.1.0-2+deb13u1; Alpine 1.2.1-r0 and 1.1.1-r0. Residual: finding 14. |
+| .NET exploited cite (F3) | Holds | Cite now CISA's alert ("based on evidence of active exploitation"). MSRC API: exploited No, Exploitation More Likely, last revised 2026-10-26. |
+| Balbooa ORDER BY attribution (F5) | Partly | ORDER BY now attributed to mySites.guru ("went into the ORDER BY part of the database query"); the method names are on Balbooa's page only (finding 7). |
+| Balbooa F7 (declined) | Ground holds narrowly | See finding 13. |
+| F11 headlines (Manno, ARA) / PAN tags / DeadTag reference / IDC 206 in takeaway | Holds | Both headlines name Inside IT; PAN tags carry actively-exploited and the record's fields list tags; DeadTag `references: []`; 206 added to main analysis and takeaway. |
+| F11 cross-references | Partly | See advisory finding 1. |
+| F18 DeadTag action | Holds | Narrowed to the third-party script inventory. |
+
+### Citation does not support the claim
+1. F3, `pan-os...` main analysis (claim 7565319983): "nine others carry estimated dates from 2026-10-27 to 2026-10-30; the same hotfix covers the PHP and the Brotli flaws, except 11.2.10-h16 ... ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618))". The JSON has no ETA dates and no Brotli text (0 matches for "brotli"; "h17" only inside CPE strings). The HTML advisory carries both ("No, the same hotfix covers both the PHP and brotli vulnerabilities. The only exception is 11.2.10-h16 which only includes the fix for PHP vulnerabilities; 11.2.10-h17 includes fixes for both vulnerabilities."; "(ETA: 10/29)"). git diff: HEAD cited the HTML URL. Cite the HTML URL.
+2. F3, `pan-os...` Defender takeaway (claim b4fd967fe6): "and the other trains' hotfixes as they ship by 2026-10-30 ([...](.../json/CVE-2026-109618))": ETAs are in the HTML table only; HEAD cited HTML.
+3. F3, `pan-os...` 2026-10-27 section (not in the ledger): the FAQ clause and "Palo Alto still says it is not aware of malicious exploitation of this issue against its products" were HTML cites in HEAD and are JSON cites now. The JSON has no FAQ, and its `exploits` field now says "Active exploitation has been observed ...", the opposite of "not aware". Restore the HTML cite for the FAQ clause; drop the live cite from the "not aware" clause or label it as the 05:15 UTC state.
+4. F3, `idc-frontier...` Defender takeaway (claim 4b41a73188): "206 by 2026-10-20 ([IDC Frontier, 2026-10-14](.../20261014001))". A fifth report dated 2026-10-14 cannot carry a 2026-10-20 count; the seventh report has "10月20日 206のお客さまのバックアップデータが取り出し可能であることが判明". Add the seventh-report cite (also for the uncited main-analysis sentence).
+5. F3 (low confidence), `cisco...` (claim e0a9f88d51): "For Expressway the PHP fix is 15.5.21, while ... CVE-2026-76466, is X15.5.20 ([Cisco PSIRT, 2026-10-21](cisco-sa-vcs-static-cred))": that page has X15.5.20, not 15.5.21.
+6. F3 (low confidence), `cisco...` Defender takeaway (claim df2e2012c9): "an Expressway already upgraded to X15.5.20 for the clustered-device flaw is not listed as fixed ... ([Cisco PSIRT ... php-october26])": the PHP advisory never mentions X15.5.20 or the clustered-device flaw; it is an inference across two advisories under one cite.
+7. F3 (low confidence), `cve-2026-102788...` (claim 44b6688477): "Balbooa added a strict allowlist validation in GridboxHelper::getBlogPosts(); mySites.guru says ... ([mySites.guru](...))": mySites.guru names no function (0 matches); Balbooa's page has "strict whitelist validation against getBlogPostsSortingList() for the sort-by URL parameter in GridboxHelper::getBlogPosts()".
+8. F3 (low confidence), `pan-os...` first sentence (claim d959ab9bc4): "Palo Alto Networks' advisory ... lists every release ... as affected ... ([PHP, 2026-10-21](php.net))": the PHP page cannot carry the PAN-OS list; the next sentence's PAN cite does not state it.
+9. F3 (low confidence), `hpe...` Exposure (claim a4dc448539): "guest portals are reachable by users by design" is not on HPE's page ("consider removing guest portals and all management interfaces from public access").
+10. F3 (low confidence), `hpe...` Defender takeaway (claim ed9ea8d723): "the guest portal is the first surface to take off public networks": HPE ranks nothing as first, and the clause repeats the previous clause.
+
+### Unsupported / hallucinated facts
+11. F4 (low confidence), `cisco...` Exposure (claim b171649f35): "every Expressway Series and Expressway Select unit below 15.5.21 and every Duo Access Gateway below 3.2.0; the advisory names no ... affected-version ranges": the table gives fixed releases only, and the same sentence admits no ranges.
+12. F4 (low confidence), `camping-care...` evidence[6]: English "... (TCS) confirmed" against an `original` that ends "(TCS)"; "confirmed" translates "am Montag auf Anfrage der Nachrichtenagentur Keystone-SDA bestätigte", which is not in the `original` string.
+
+### Drop (low relevance / off-audience / duplicate)
+13. F7 (low confidence), `cve-2026-102788-102789-balbooa...`: judging the declined F7. The cited ground holds narrowly. PD-11(b)'s "otherwise" limb names "sibling flaws in the same wave ... weaponised within days"; the July Gridbox flaws are a different wave three months earlier, and the entry says no exploitation is reported. The limb that does hold is "a fix diff that hands over the technique": mySites.guru found only two PHP files differ, one per fix. The entry never says which limb applies. The disclosure-stream rule ("distinct product ... ⇒ its own entry") points the other way for Gridbox: the product already has `2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave`, whose changelog absorbed the 2.20.2 batch (2026-07-31) and the 2.20.3.1 unauthenticated blind SQL injection (2026-09-29) that mySites.guru calls "the same mistake in the same public post listings". Fold this finding into that entry as an update record, or state the limb in one clause. The `references[]` declaration satisfies the gate; this is a judgement call, hence low confidence.
+
+### Needs more research
+14. F8 (low confidence), `cve-2026-111497-node2shell...`: `cves[].affected` omits Istio (Tenable: "< 1.29.9, < 1.30.6, < 1.31.2") while `fixed` lists Istio, Debian, Alpine and the Ruby gem.
+
+### Missed angles
+15. F10 (low confidence): CVE-2026-48356 (Adobe Commerce and Magento, KEV 2026-10-27, "based on evidence of active exploitation") was borderline-dropped for "no constituency nexus for an e-commerce platform", yet the store carries four Adobe Commerce or Magento entries (2026-06-04, 2026-08-16 high, 2026-09-08 critical, 2026-10-14 notable) and the run includes an unexploited Joomla extension flaw at notable. At least two sentences or an update on the 2026-10-14 Adobe entry. Search: "CVE-2026-48356 Adobe Commerce Magento exploitation Sansec".
+16. F10 (low confidence): returned slice items with no disposition: Moldova e-government breach (S4: unauthenticated service endpoints, about 750,000 people), Tailworm (S3: Tailscale and headscale, fixed in v1.104.4), Yoba (S3) and fourteen items the slices flagged borderline. PD-11 requires a `borderline-drop:` line per borderline drop; the record has one. Search: "Moldova e-Governance Agency data breach 750,000 IDNP"; "Tailscale SSH TS-2026-014 v1.104.4".
+
+### Editorial / less-is-more flags (advisory)
+17. F11: the sourcing_notes of the HPE, Balbooa and NetScaler entries still say "covered by the entry listed under references" (the iteration-1 F11 fix reached Cisco and the Detection lines only).
+18. F11: `php-critical...` main analysis is still about 1,950 words on a `deep_dive: false` entry (1974 before this run).
+19. F11 (low confidence): DeadTag: DarkSword is already named in 2026-09-30/star-blizzard-redflick-cosmicpulse-single-click-chain and 2026-09-13/gtg-20006-anthropic-russia-ai-orchestrated-espionage as a Russia-linked toolkit component; the DeadTag entry has `references: []`. The reuse looks benign (Report URI: "separate exploit kits that have been seen in different campaigns"), so not an F15, but add the link and one cited clause. `affected_products` is also empty although iOS 13 to 17.2.1 and 18.4 to 18.7 are the named exposed platform.
+20. F11: run-record notes still say "the final report names the cause" for IDC Frontier; the entries now say seventh report.
+
+### Unreadable claims (no finding raised; transport failure, not a defect)
+Citrix Tech Zone post (403 on every transport): claims 53969fcfe4, 43eb2a4c0f, 6ce25be121, 20ad588b07, 30225fc9f6, 68161c6c49, b79ed15de8, 7bcd510a17, plus the NetScaler summary and both `cves[]` records (83551bc3b0, 8ef83bc65a, 3675ec2254), whose surface and CVSS facts come from that post. ransomware.live (timeouts): 0539263429 and 40b14bc42a. All were verified in earlier runs and are unchanged by this run except the restructured sentences around them.
+
+### Other checks that passed
+Cisco, HPE, PAN-OS, NetScaler, Node2Shell, .NET, Manno, Camping.Care, IDC, Balbooa, ARA, DeadTag: every other cited fact read this iteration matches (KEV: PHP flaws added 2026-10-26 with forensicTriage Yes, Brotli 2026-10-27; HPE CVSS 9.8 both; Palo Alto 11 released and 9 ETA builds; CISA alert; ELLIO 23 MB body, 50 attempts, 400 Express attempts; Tenable "has not independently confirmed"; JFrog 23 MB ClickHouse; Akamai inflate option; NCSC 13105 interim measure; Manno PDF notice and Inside IT figures; IDC seventh report figures; DeXpose; Report URI and iVerify figures; Balbooa and mySites.guru statements). No em dash, no IOC, no priority miscalibration found (PAN-OS and Node2Shell high, PHP critical, others notable or routine are defensible). Updated-entry contract (4c): all eight records carry this run's id, `updated_at` mirrors `at`, sections match, supersession handled in the main analyses; the older dated sections keep their historical wording by design.
+
+### Verdict
+NEEDS_FIXES (truth: 12, editorial: 4, advisory: 4)
+
+### Findings summary (machine-readable)
+See `work/2026-10-28T0256Z-intel/verification.iter2.findings.yaml` (20 records).

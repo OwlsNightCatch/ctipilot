@@ -1,0 +1,371 @@
+# work/2026-10-28T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-28T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-28T02:58:29Z
+ended_at: 2026-10-28T03:29:30Z
+duration_seconds: 1861
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 19
+  bridge_fetches: 120
+items:
+
+  # ------------------------------------------------------------------ 1
+  - title: "CVE-2026-109618 / CVE-2026-109619, Palo Alto Networks PAN-OS and Panorama: the advisory now records active exploitation against internet-exposed management interfaces and re-rates the flaw Critical (CVSS-B 9.2), urgency Highest"
+    novelty: "update-of:2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release"
+    sources:
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-109618", publisher: "Palo Alto Networks PSIRT (advisory, revised 2026-10-27 16:40 UTC)", date: "2026-10-27", role: "primary" }
+      - { url: "https://security.paloaltonetworks.com/json/CVE-2026-109618", publisher: "Palo Alto Networks PSIRT (advisory JSON, exploits field and timeline)", date: "2026-10-27", role: "primary" }
+      - { url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/", publisher: "Unit 42 (threat brief, updated 2026-10-25)", date: "2026-10-25", role: "context" }
+    discovery_trace: "first seen at: paloalto-psirt, feed https://security.paloaltonetworks.com/rss.xml (CVE-2026-109618 item dated 2026-10-27T16:40:00Z) -> primary: PAN advisory https://security.paloaltonetworks.com/CVE-2026-109618 read with `url --direct` (extract drops the Timeline) -> same facts in the advisory JSON https://security.paloaltonetworks.com/json/CVE-2026-109618 (exploits field, CVSS metrics, timeline) -> context: Unit 42 brief https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/ (retraction of 2026-10-23 claim, hunting query). A WebSearch for third-party reporting of the change returned only pre-2026-10-27 coverage."
+    summary: |
+      Palo Alto Networks revised its PHP2Shell advisory at 2026-10-27 16:40 UTC: the timeline line reads "Severity Updated to Critical and Urgency updated as Highest", the Exploit Maturity field now reads Attacked, and the Exploitation Status says active exploitation has been observed targeting the PAN-OS management interface exposed to the internet. The previous revision, and the entry that covers it, said Palo Alto knew of no malicious exploitation and scored the PAN-OS impact as availability only (CVSS-B 8.7); the vendor vector is now CVSS 4.0 C:H/I:H/A:H, base 9.2 (attack complexity High) with the management interface reachable from the internet, and 7.7 (CVSS-BT 5.2) when it is reachable only from an adjacent network such as behind a jump box. The advisory names no actor, victim, count or post-exploitation behaviour, so what is known is the vendor's own statement; it is a separate vendor observation from Unit 42's 2026-10-25 retraction of an earlier claim that an attack on a European government agency was PHP2Shell. The affected surface is unchanged: the management web UI and XML API of PA-Series, VM-Series and Panorama on every release of PAN-OS 10.2, 11.1, 11.2, 12.1 and 12.2 (a dataplane interface only when a management profile is attached; GlobalProtect portal, gateway, Clientless VPN and the captive portal are not affected). The hotfix and ETA table is unchanged from the entry (eleven builds released, nine due 2026-10-27 to 2026-10-30), and the FAQ says one hotfix covers both the PHP and the Brotli flaw except 11.2.10-h16, which has only the PHP fix (11.2.10-h17 has both).
+    region_nexus: "global; PAN-OS / Panorama management planes exposed to the internet or to untrusted networks"
+    primary_sector_nexus: "indirect; widely deployed perimeter platform, exposure depends on management-plane reachability"
+    sector: "cross-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama"]
+    entity_keys: ["product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama", "product:php", "tool:php2shell"]
+    verification: "SINGLE-SOURCE"
+    confidence: HIGH
+    evidence:
+      - { quote: "Active exploitation has been observed targeting the Palo Alto Networks management interface", attribution: "Palo Alto Networks PSIRT (advisory, revised 2026-10-27 16:40 UTC)", source_url: "https://security.paloaltonetworks.com/CVE-2026-109618" }
+      - { quote: "Severity Updated to Critical and Urgency updated as Highest", attribution: "Palo Alto Networks PSIRT (advisory, revised 2026-10-27 16:40 UTC)", source_url: "https://security.paloaltonetworks.com/CVE-2026-109618" }
+      - { quote: "The risk is highest on PAN-OS when you allow access to the management interface from external IP addresses on the internet.", attribution: "Palo Alto Networks PSIRT (advisory, revised 2026-10-27 16:40 UTC)", source_url: "https://security.paloaltonetworks.com/CVE-2026-109618" }
+      - { quote: "Removed the ETAs for 12.1.7-h11 and 12.2.4-h1 as these versions are released.", attribution: "Palo Alto Networks PSIRT (advisory, revised 2026-10-27 16:40 UTC)", source_url: "https://security.paloaltonetworks.com/CVE-2026-109618" }
+    extended_notes: |
+      Delta vs entry: (1) exploitation status moves from "no malicious exploitation known" to vendor-observed active exploitation of internet-exposed management interfaces; (2) vendor severity moves to Critical, urgency Highest, CVSS-B from 8.7 (availability only) to 9.2 (C:H/I:H/A:H), E:A; (3) nothing else changed in the hotfix/ETA table. Candidate for a priority raise: an exploited pre-auth RCE on a perimeter firewall management plane, vendor-confirmed.
+      Exposure check (vendor): the risk is highest where the management interface is reachable from external IPs; restrict it to a jump box or trusted internal addresses. Threat Prevention coverage per the advisory (Threat IDs 543004, 97622-97625 and others from content versions 9162-9164) works only when MGT traffic is routed through a dataplane port, the management certificate is replaced, inbound traffic is decrypted and threat prevention is enabled on it.
+      Hunt (Unit 42, generic): NGFW threat-log filter for threat id 543004 or threat names matching php / multipart / upload.progress / longjmp / CVE-2026-10961x on traffic towards management-reachable zones from non-internal sources.
+      No source states a post-patch compromise check or any indicator for PAN-OS; the advisory gives none. Analyst inference only (not a vendor statement): a management interface that was internet-reachable before the hotfix should be treated as potentially exposed to the observed exploitation.
+      Related, not part of this record: PAN's advisory for the Brotli flaw (CVE-2026-111497) still says "not aware of any malicious exploitation" at its 2026-10-27 revision; that advisory was revised before CISA's KEV listing.
+
+  # ------------------------------------------------------------------ 2
+  - title: "CVE-2026-111497, Google Brotli decoder (Node2Shell / Brotli2Shell): CISA lists it as exploited, ELLIO records exploit traffic against Node.js 24.22.0, and JFrog shows reach through FFmpeg and ClickHouse"
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA (alert, KEV additions 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://ellio.tech/en/blog/node2shell-cve-2026-111497-rce-on-stock-nodejs-builds/", publisher: "ELLIO Threat Research Lab", date: "2026-10-26", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-108169", publisher: "ENISA EUVD", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://www.tenable.com/blog/brotli2shell-frequently-asked-questions-for-google-brotli-decoder-cve-2026-111497", publisher: "Tenable Research", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/", publisher: "JFrog Security Research", date: "2026-10-25", role: "corroborating" }
+      - { url: "https://www.akamai.com/blog/security-research/inside-node2shell-closer-look-cve-2026-111497", publisher: "Akamai Security Intelligence Group", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u", publisher: "Cisco PSIRT (advisory, Vulnerabilities in node.js Affecting Cisco Products)", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-111497", publisher: "Palo Alto Networks PSIRT (Brotli portfolio status)", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-111497", publisher: "Microsoft Security Update Guide (.NET record, rev 1.1)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://github.com/google/brotli/releases/tag/v1.2.1", publisher: "Google Brotli (release v1.2.1)", date: "2026-10-21", role: "primary" }
+    discovery_trace: "first seen at: work/2026-10-28T0256Z-intel/kev-window.txt (COVERED-STALE) and `cisa-kev` bridge, catalogVersion 2026.10.27 -> CISA alert https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog (WebFetch + extract) -> pivot: EUVD API https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-111497&size=3 (exploitedSince 2026-10-27) -> pivot: tenable-research feed https://feeds.feedburner.com/tenable/qaXL item https://www.tenable.com/blog/brotli2shell-frequently-asked-questions-for-google-brotli-decoder-cve-2026-111497 (names ELLIO as exploitation source) -> primary: https://ellio.tech/en/blog/node2shell-cve-2026-111497-rce-on-stock-nodejs-builds/ ; JFrog https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/ and Akamai linked from Tenable; Cisco advisory from cisco-psirt feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml; vendor status: PAN https://security.paloaltonetworks.com/CVE-2026-111497, MSRC `msrc cve CVE-2026-111497` (exploited: No)."
+    summary: |
+      CISA added CVE-2026-111497 to its Known Exploited Vulnerabilities catalog on 2026-10-27 "based on evidence of active exploitation" (remediation due 2026-11-10 under BOD 26-04); the alert names no actor, victim, product or date, and CISA's SSVC data on the CVE record carries Exploitation: active, as does ENISA's EUVD (exploitedSince 2026-10-27). The only first-hand attack telemetry found is ELLIO's: its sensors recorded a public exposure checker sending 20 Brotli-coded POST bodies to map which hosts decompress Brotli, then on 2026-10-26 (15:08 UTC) a single Brotli-coded request body of about 23 MB built against one binary, Node.js v24.22.0 on x86-64, whose delivery layer copies public proofs of concept and whose ROP chain is original; ELLIO assesses this as adoption by an operator focused on mass exploitation but, testing the chain against a pristine 24.22.0 target, got no shell in 50 attempts (a defective last stage), so a failed attempt is a worker crash. Tenable relays ELLIO's report and says it has not confirmed it independently. Vendors report differently: Palo Alto (revision of 2026-10-27, before the KEV listing) and Cisco PSIRT (2026-10-27, products still under investigation) say they know of no malicious use against their products, and Microsoft's .NET record still says Exploited: No. New scope since the entry: JFrog reproduced instruction-pointer control in FFmpeg through libjxl (JPEG XL "brob" metadata), a remote crash of ClickHouse with one crafted 23 MB Content-Encoding: br request (fix merged, no release at its writing), an Apache Arrow denial of service and a .NET native crash; Akamai's telemetry says 61% of networks run an affected Node.js. Fixed: Node.js 22.23.4, 24.22.1, 26.12.1 (20, 23 and 25 are end of life and get no fix), Brotli 1.0.10, 1.1.1, 1.2.1, Bun 1.4.4, PyPI Brotli 1.2.1 and brotlicffi 1.2.1.0, PHP Windows builds 8.5.12-1, 8.4.27-1, 8.3.36-1, 8.2.35-1; the CVE record also references release v1.2.7 of the Go port andybalholm/brotli ("Detect and report invalid stream earlier", a port of the upstream fix commit), so Go services that embed that port should update. Node.js cherry-picked the fix without bumping the bundled version string, so process.versions.brotli reads 1.2.0 on patched and unpatched builds (check the Node.js release version instead).
+    region_nexus: "global; any Node.js, Bun, Python, Envoy/Istio, .NET or media-processing service that decompresses Brotli from untrusted input"
+    primary_sector_nexus: "indirect; internet-facing Node.js web applications and API gateways are the exposed class"
+    sector: "cross-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190, T1203, T1499.004]
+    affected_products: ["Node.js", "Google Brotli", "Bun", "Python Brotli", "Python brotlicffi", "Envoy Proxy", "Istio", "Microsoft .NET", "PHP for Windows", "FFmpeg", "ClickHouse"]
+    entity_keys: ["tool:node2shell", "product:google-brotli", "product:node-js", "product:python-brotli-pypi", "product:brotlicffi-pypi"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - { quote: "based on evidence of active exploitation", attribution: "CISA (alert, KEV additions 2026-10-27)", source_url: "https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog" }
+      - { quote: "ELLIO sensors have recorded CVE-2026-111497 exploit traffic in the wild", attribution: "ELLIO Threat Research Lab", source_url: "https://ellio.tech/en/blog/node2shell-cve-2026-111497-rce-on-stock-nodejs-builds/" }
+      - { quote: "This is indicative of the RCE being adopted by an operator focused on mass exploitation.", attribution: "ELLIO Threat Research Lab", source_url: "https://ellio.tech/en/blog/node2shell-cve-2026-111497-rce-on-stock-nodejs-builds/" }
+      - { quote: "the attacker's chain scored zero hits in 50 attempts", attribution: "ELLIO Threat Research Lab", source_url: "https://ellio.tech/en/blog/node2shell-cve-2026-111497-rce-on-stock-nodejs-builds/" }
+      - { quote: "Tenable has not independently confirmed this activity.", attribution: "Tenable Research", source_url: "https://www.tenable.com/blog/brotli2shell-frequently-asked-questions-for-google-brotli-decoder-cve-2026-111497" }
+      - { quote: "The Cisco PSIRT is not aware of any malicious use of these vulnerabilities against any Cisco product.", attribution: "Cisco PSIRT (advisory, Vulnerabilities in node.js Affecting Cisco Products)", source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u" }
+      - { quote: "A single HTTP request containing a crafted 23 MB body crashed the tested ClickHouse server.", attribution: "JFrog Security Research", source_url: "https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/" }
+      - { quote: "Akamai telemetry shows that 61% of networks are running affected Node.js versions.", attribution: "Akamai Security Intelligence Group", source_url: "https://www.akamai.com/blog/security-research/inside-node2shell-closer-look-cve-2026-111497" }
+    extended_notes: |
+      Delta vs entry (its cves[] status is poc-public, patch-available and its text says no source reports exploitation outside Imperva's lab demo): status becomes exploited (cisa-kev; ELLIO sensor telemetry), with the caveats above (CISA gives no detail, ELLIO's chain failed in the lab, vendors report none against their products). The entry's statement "no source reports exploitation" is replaced.
+      Exposure (how to tell): Node.js: the application must hand attacker-controlled Brotli data to the decoder: inbound request bodies with Content-Encoding: br inflated by Express 5 / body-parser 2 (inflate defaults to true), Koa with @koa/bodyparser; outbound responses decoded by undici/fetch(), axios, got, SuperAgent (attacker-influenced URLs: link previews, webhooks, crawlers); direct node:zlib brotli calls. A bare node:http server does not inflate request bodies by itself. Python: installed Brotli or brotlicffi is used by urllib3, requests, httpx[brotli], aiohttp, Scrapy from the response Content-Encoding. Distro builds linking system libbrotli need the distro package (Debian bookworm 1.0.9-2+deb12u1, trixie 1.1.0-2+deb13u1, Alpine 1.2.1-r0 per ELLIO) and a restart; images pinned to node:24.22.0 stay vulnerable until the tag changes.
+      Detection (telemetry classes): web/app access logs: POSTs with Content-Encoding: br from a single source, from ~1 KB malformed probes and valid streams (sweep) up to a single ~23 MB body (exploit attempt); process/crash telemetry: Node worker segfaults and supervisor restart loops right after such a request (ELLIO: most of 400 lab attempts crashed the worker); core files where systemd-coredump is on (stock Ubuntu: /var/lib/systemd/coredump) can hold other visitors' session tokens and keys, so restrict who reads them; process-creation: /bin/sh spawned by the node process (parent node, shell child) after a crash pattern. Failed attempts against patched builds return HTTP 400 with ERR__ERROR_FORMAT_BLOCK_SWITCH.
+      Triage: ordinary Brotli-compressed responses are benign and common; the discriminator is Brotli-coded request bodies (rare for legitimate clients) or Brotli responses from attacker-influenced URLs, combined with worker crashes. ELLIO's checker identifies itself with its own user agent string; no IOCs recorded here.
+      Hardening: patch to the fixed releases above and rebuild images/lockfiles, move off Node.js 20/23/25 (no fix), drop Content-Encoding: br on inbound requests at the edge if the application does not need it (ELLIO), disable core dumps or restrict their readers; PAN-OS with Brotli inspection and TLS decryption: `set system setting brotli-encoding disable` (PAN) until the hotfix.
+      Registry: tool:node2shell should carry the aliases Brotli2Shell, HTTP2Shell and Broccoli2Shell (Tenable, JFrog, ELLIO).
+      Cisco's node.js advisory (v1.0, Interim, 2026-10-27) lists Catalyst SD-WAN Manager, ISE, IOS, IOS XE, IOS XR, NX-OS, ASA, FMC and FTD among priority products under investigation; none is confirmed affected. A second entry covers the .NET fix (2026-10-26/cve-2026-111497-microsoft-net-oob-update-brotli-sockets-fix): MSRC rev 1.1 (2026-10-26) still shows Exploited: No and Publicly Disclosed: Yes.
+
+  # ------------------------------------------------------------------ 3
+  - title: "CVE-2026-109618 / CVE-2026-109619, NetScaler ADC and Gateway: Citrix's bulletin now names the fixed builds (14.1-73.49, 13.1-64.32, 14.1-FIPS 14.1-73.49 FIPS, 13.1-FIPS and 13.1-NDcPP 13.1.37.286)"
+    novelty: "update-of:2026-10-23/netscaler-php2shell-management-gui-fixes-2026-10-27"
+    sources:
+      - { url: "https://support.citrix.com/external/article/CTX697263", publisher: "Citrix / Cloud Software Group (security advisory CTX697263, revised 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1394/", publisher: "CERT-FR (avis CERTFR-2026-AVI-1394)", date: "2026-10-27", role: "corroborating" }
+    discovery_trace: "first seen at: cert-fr avis-recent bridge (https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1394/, 'Multiples vulnérabilités dans Citrix NetScaler ADC et Gateway (27 octobre 2026)') -> primary: https://support.citrix.com/external/article/CTX697263 (extract; revision table line 2026-10-27 'Updated remediation versions'). The NetScaler community blog https://community.citrix.com/techzone-blogs/110_security-updates/protecting-netscaler-management-access-from-php-cve-2026-109618-cve-2026-109619-r1640/ answered 403 on extract, url, jina and WebFetch."
+    summary: |
+      Citrix revised CTX697263 on 2026-10-27 ("Updated remediation versions for Citrix NetScaler ADC and Citrix NetScaler Gateway"); the bulletin now urges customers to install NetScaler ADC and Gateway 14.1-73.49 and later, 13.1-64.32 and later releases of 13.1, ADC 14.1-FIPS 14.1-73.49 FIPS and later, and ADC 13.1-FIPS and 13.1-NDcPP 13.1.37.286 and later. The earlier state of the entry, that Citrix named no fixed build and planned fixes for 2026-10-27, is therefore superseded. CERT-FR's avis of 27 October lists the same thresholds as the first fixed builds (NetScaler ADC 13.1.x before 13.1-64.32, 14.1.x before 14.1-73.49, 14.1-FIPS before 14.1-73.49 FIPS, 13.1-FIPS before 13.1-NDcPP 13.1.37.286; Gateway 13.1.x before 13.1-64.32 and 14.1.x before 14.1-73.49) and dates the bulletin 26 October. NetScaler Console and the other Citrix on-prem products are listed Not Impacted, and Citrix-managed cloud services are already remediated. The readable bulletin carries no exploitation statement and names no fix for branches outside those listed; the NetScaler management-access guidance sits in the community blog, which could not be read this run.
+    region_nexus: "global; NetScaler management GUI reachable on NSIP, SNIP with management access, or the cluster IP"
+    primary_sector_nexus: "indirect; NetScaler ADC/Gateway is a common remote-access and load-balancing platform"
+    sector: "cross-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["product:citrix-netscaler", "product:php", "tool:php2shell"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - { quote: "Cloud Software Group strongly urges customers of NetScaler ADC and NetScaler Gateway to install the following updated versions as soon as possible", attribution: "Citrix / Cloud Software Group (security advisory CTX697263, revised 2026-10-27)", source_url: "https://support.citrix.com/external/article/CTX697263" }
+      - { quote: "Citrix NetScaler ADC and Citrix NetScaler Gateway 14.1-73.49 and later releases", attribution: "Citrix / Cloud Software Group (security advisory CTX697263, revised 2026-10-27)", source_url: "https://support.citrix.com/external/article/CTX697263" }
+      - { quote: "Updated remediation versions for Citrix NetScaler ADC and Citrix NetScaler Gateway", attribution: "Citrix / Cloud Software Group (security advisory CTX697263, revised 2026-10-27)", source_url: "https://support.citrix.com/external/article/CTX697263" }
+      - { quote: "NetScaler ADC versions 13.1.x antérieures à 13.1-64.32", attribution: "CERT-FR (avis CERTFR-2026-AVI-1394)", source_url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1394/" }
+    extended_notes: |
+      Delta vs entry: fixed builds now named (entry says Citrix's bulletin names none); the entry's "restricting management access remains the control" stays correct for unpatched appliances. CISA KEV (2026-10-26) status unchanged; still no source reports an attack on NetScaler. Date nuance: the vendor revision table says 2026-10-27, CERT-FR says the bulletin is of 26 October.
+
+  # ------------------------------------------------------------------ 4
+  - title: "CVE-2026-109618 / CVE-2026-109619, Cisco products: PHP2Shell advisory is final at version 1.8 and lists Expressway, Ultra-Reliable Wireless Backhaul, Duo Access Gateway and ISE Portal Builder as affected"
+    novelty: new
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq", publisher: "Cisco PSIRT (advisory cisco-sa-php-october26-Jj384Daq, v1.8)", date: "2026-10-27", role: "primary" }
+    discovery_trace: "first seen at: cisco-psirt feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (item 'Vulnerabilities in PHP Affecting Cisco Products: October 2026', 2026-10-27 20:49) -> primary: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq (extract for prose, `url --direct` for the vulnerable-products table and revision history). A WebSearch for Cisco PHP2Shell status (secondary coverage of 2026-10-21 to 2026-10-23) was superseded by the advisory."
+    summary: |
+      Cisco's PHP2Shell advisory reached Version 1.8, Final, on 2026-10-27 20:49 UTC after daily revisions since 2026-10-21. Affected: Ultra-Reliable Wireless Backhaul (URWB) / Unified Industrial Wireless Software (bug CSCwx37073, fixed release 27.1.1 listed as March 2027, a workaround exists), Expressway Series and Expressway Select Series (CSCwx37062, fixed release 15.5.21 listed without an estimated date, a workaround exists), Duo Access Gateway (fixed in 3.2.0) and ISE Portal Builder (taken offline for remediation; for this product an administrator login is needed, which lowers the CVSS 3.1 score to 6.6). The page gives no affected-version ranges and no workaround steps; both sit in the bug records. Cisco lists as not affected ISE, ASA, Secure Firewall Management Center and Threat Defense, Catalyst Center, Catalyst SD-WAN Manager and Controller, IOS, IOS XE, IOS XR, NX-OS, UCS software, Meeting Server, Email Security Appliance and others, says any product not listed is not affected, and states that PSIRT is not aware of any malicious use against a Cisco product although a public announcement exists (the CISA KEV listing of the PHP flaws is dated 2026-10-26). For Expressway, the fixed release 15.5.21 is later than 15.5.20, the first fixed release for the unauthenticated cluster root-command flaw CVE-2026-76466 covered by an existing entry, so on the face of the fixed-release column 15.5.20 does not carry the PHP2Shell fix (an inference from the table, not a Cisco statement).
+    region_nexus: "global; Expressway-C/E video-conferencing edge and URWB industrial wireless deployments"
+    primary_sector_nexus: "indirect; Expressway is a common collaboration edge platform in public-sector networks"
+    sector: "cross-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Cisco Expressway Series", "Cisco Expressway Select Series", "Cisco Ultra-Reliable Wireless Backhaul", "Cisco Unified Industrial Wireless Software", "Cisco Duo Access Gateway", "Cisco Identity Services Engine Portal Builder"]
+    entity_keys: ["product:cisco-expressway-series", "product:cisco-duo-access-gateway", "product:php", "tool:php2shell"]
+    verification: "SINGLE-SOURCE"
+    confidence: HIGH
+    references_hint: "must declare references to 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619 (CVE overlap) and 2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce (Expressway fixed-release interaction)"
+    evidence:
+      - { quote: "The Cisco PSIRT is not aware of any malicious use of these vulnerabilities against any Cisco product.", attribution: "Cisco PSIRT (advisory cisco-sa-php-october26-Jj384Daq, v1.8)", source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq" }
+      - { quote: "If a product is not listed within this advisory, Cisco's review indicates that the product is not affected by this vulnerability.", attribution: "Cisco PSIRT (advisory cisco-sa-php-october26-Jj384Daq, v1.8)", source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq" }
+      - { quote: "For this product, the attacker must be authenticated as an administrator to exploit this vulnerability.", attribution: "Cisco PSIRT (advisory cisco-sa-php-october26-Jj384Daq, v1.8)", source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq" }
+    extended_notes: |
+      Also an update-worthy cross-note for 2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce: the Expressway upgrade target for the PHP2Shell flaws is 15.5.21 (CSCwx37062), above the 15.5.20 that entry names; Cisco's Expressway hardening advisory was only re-versioned (1.1, 2026-10-27, CWE-787 description) with no change to fixed builds.
+      Cisco's October node.js advisory (cisco-sa-oct2026-node-js-Jj3SQ19u, v1.0 Interim 2026-10-27) is the Brotli counterpart: products under investigation, none confirmed.
+      Exposure: no vendor-documented version-check command on the page; use the bug IDs CSCwx37062 (Expressway) and CSCwx37073 (URWB) in the Cisco Bug Search Tool for the workaround and the affected-release detail. Cisco does not say which Expressway component runs the vulnerable PHP.
+      Splunk's companion advisory SVD-2026-1013 (revised 2026-10-26) lists every Splunk and AppDynamics product as Unaffected except Smartlook, shown as Remedied.
+
+  # ------------------------------------------------------------------ 5
+  - title: "CVE-2026-109618 / CVE-2026-109619, HPE Networking ClearPass Policy Manager: bulletin HPESBNW05171 lists 6.14.1 and 6.11.16 and below as affected, with hotfix patches"
+    novelty: new
+    lookback: true
+    sources:
+      - { url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05171.json", publisher: "HPE Networking (CSAF advisory HPESBNW05171, revision 2)", date: "2026-10-23", role: "primary" }
+    discovery_trace: "first seen at: hpe-networking-psirt, https://csaf.arubanetworking.hpe.com/changes.csv (HPESBNW05171 released 2026-10-23T16:00Z) -> primary: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05171.json (read with `url --direct`; revision history 2026-10-22 initial, 2026-10-23 'Revised to address Hotfix Releases and update Unaffected Products section')"
+    summary: |
+      HPE Networking's bulletin HPESBNW05171 (initial release 2026-10-22, revision 2 on 2026-10-23) lists ClearPass Policy Manager 6.14.1 (released 2026-09-29) and below on the 6.14 train and 6.11.16 and below on the 6.11 train as affected by the PHP2Shell flaws, scoring each CVE 9.8 (CVSS 3.1, network, no privileges, no interaction). The fix is a hotfix patch for 6.14.1 and one for 6.11.16, available from the HPE Networking Support Portal; versions past end of maintenance are presumed affected and not covered. HPE recommends confining the CLI and web management interfaces to a dedicated layer 2 segment or VLAN or firewall policy, and asks customers to consider removing guest portals and all management interfaces from public access until instances run the hotfixed versions. HPE Aruba Networking products not listed are not known to be affected; for Mist products it points to a Juniper reference advisory, which could not be read on any transport this run. The bulletin makes no statement about exploitation beyond noting the public GitHub advisories for the PHP flaws (CISA listed both flaws as exploited on 2026-10-26).
+    region_nexus: "global; network access control (RADIUS/TACACS+/guest captive portal) servers"
+    primary_sector_nexus: "indirect; ClearPass is a common network access control platform in campus and public-sector networks"
+    sector: "cross-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["HPE Networking ClearPass Policy Manager"]
+    entity_keys: ["product:php", "tool:php2shell"]
+    verification: "SINGLE-SOURCE"
+    confidence: HIGH
+    references_hint: "must declare references to 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619 (CVE overlap); a sibling HPE entry is 2026-10-23/hpesbnw05162-hpe-aruba-aos-8-aos-10-72-cves-19-unauth (different bulletin)"
+    evidence:
+      - { quote: "ClearPass 6.14.1 (released on Sep 29, 2026) and below", attribution: "HPE Networking (CSAF advisory HPESBNW05171, revision 2)", source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05171.json" }
+      - { quote: "ClearPass 6.14.1 Hotfix Patch to Address PHP Vulnerabilities CVE-2026-109618 and CVE-2026-109619", attribution: "HPE Networking (CSAF advisory HPESBNW05171, revision 2)", source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05171.json" }
+      - { quote: "customers are asked to consider removing guest portals and all management interfaces from public access", attribution: "HPE Networking (CSAF advisory HPESBNW05171, revision 2)", source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05171.json" }
+    extended_notes: |
+      Lookback item: published 2026-10-22/23, found through the hpe-networking-psirt record's 145 h lookback; no entry in the store mentions ClearPass.
+      Exposure: ClearPass guest portals are user-facing by design, and HPE names them next to the management interfaces as surfaces to take off public access; the version check is the ClearPass version (6.14.x up to 6.14.1, 6.11.x up to 6.11.16) before the hotfix patch.
+      No detection guidance, indicator or post-patch compromise check in the bulletin.
+
+  # ------------------------------------------------------------------ 6
+  - title: "CVE-2026-102788 / CVE-2026-102789, Balbooa Gridbox for Joomla: two unauthenticated SQL injection routes (CVSS 4.0 9.3) fixed in 2.20.4.2"
+    novelty: new
+    sources:
+      - { url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update", publisher: "Balbooa (Gridbox 2.20.4.2 security update)", date: "2026-10-27", role: "primary" }
+      - { url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/", publisher: "mySites.guru", date: "2026-10-27", role: "corroborating" }
+    discovery_trace: "first seen at: mysites-guru feed https://mysites.guru/rss.xml (item 'Gridbox 2.20.4.2 Fixes Two Unauthenticated SQL Injection Flaws', 2026-10-27 09:27 GMT) -> primary: https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update (extract) -> CNA records read through https://cveawg.mitre.org/api/cve/CVE-2026-102788 and .../CVE-2026-102789 (Joomla CNA text: component names, versions, CVSS 4.0 9.3, finder Artur Blazewicz)"
+    summary: |
+      Balbooa released Gridbox 2.20.4.2 on 2026-10-27 for two unauthenticated SQL injection routes in the Joomla page builder, rated Critical by the vendor and CVSS 4.0 9.3 by the Joomla CNA. CVE-2026-102788: on store and category post list pages the sort-by URL parameter is filtered as a string and passed to GridboxHelper::getBlogPosts(), which, when the value matches no known sort key, prefixes a table alias and inserts it into the ORDER BY clause without an allowlist. CVE-2026-102789: EditorController::getBlogPosts() reads the same order parameter but, unlike its sibling tasks, omits the GridboxHelper::checkUserEditLevel() permission check, a second anonymous route to the same query. Affected per the CNA records: com_gridbox 1.0.0 to 2.20.4.1; fixed 2.20.4.2 (mySites.guru found only two PHP files changed). Both are read-side: the Joomla user table with password hashes and every other table become readable. mySites.guru says about 95% of the Gridbox sites it monitors ran an affected version on the morning of the release and that sites on the Joomla 3 line end at Gridbox 2.17.0.2, which has no fix for any of this year's Gridbox flaws; no source reports exploitation of these two. Context: Gridbox already carried an exploited wave in July 2026 (cookie-forged Super User bypass and four exploited CVEs among eleven fixed in 2.20.2), and a further unauthenticated SQL injection was fixed in 2.20.3.1.
+    region_nexus: "global; Joomla sites, a CMS common on Swiss communal and regional websites"
+    primary_sector_nexus: "indirect; depends on whether communal or cantonal Joomla sites run Gridbox"
+    sector: "public-sector"
+    cves: [CVE-2026-102788, CVE-2026-102789]
+    techniques: [T1190]
+    affected_products: ["Balbooa Gridbox for Joomla"]
+    entity_keys: ["product:balbooa-gridbox-for-joomla", "product:joomla"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    references_hint: "context entry: 2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave (earlier Gridbox flaws, no CVE overlap)"
+    evidence:
+      - { quote: "Gridbox 2.20.4.1 and earlier", attribution: "Balbooa (Gridbox 2.20.4.2 security update)", source_url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update" }
+      - { quote: "Neither needs a login, and about 95% of the Gridbox sites we monitor were on an affected version on the morning of the release.", attribution: "mySites.guru", source_url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/" }
+      - { quote: "In 2.20.4.1 that task had no login or permission check, so an anonymous visitor could call it", attribution: "mySites.guru", source_url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/" }
+      - { quote: "Sites on the Joomla 3 line top out at Gridbox 2.17.0.2", attribution: "mySites.guru", source_url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/" }
+    extended_notes: |
+      Exposure: installed com_gridbox version (Joomla administrator extension manager) at or below 2.20.4.1; reachable to anonymous visitors on any front-end page that renders a Gridbox store or category post list, and through the editor task endpoint without a session.
+      Detection (telemetry class: web access logs + database query logs): requests to store/category list URLs carrying unusual sort-by values (time-delay, boolean or subquery fragments rather than known sort keys), repeated anonymous calls to the Gridbox editor getBlogPosts task, and slow-query bursts on the Joomla database from the web account. Because the flaws are read-only, a post-patch check is credential hygiene: password hashes and email addresses in the user table should be treated as read if the site was exposed and probed.
+      Hardening: update to 2.20.4.2; Joomla 3 sites have no fix and need a supported Joomla.
+      Fix verification by mySites.guru: only two PHP files differ between 2.20.4.1 and 2.20.4.2, each one of the two fixes (a strict allowlist for the sort value; a permission check that turns guests away before the query).
+
+  # ------------------------------------------------------------------ 7
+  - title: "CVE-2026-48356, Adobe Commerce and Magento Open Source: CISA lists the July file-upload flaw as exploited while Adobe's bulletin still says no exploits are known"
+    novelty: new
+    borderline: true
+    borderline_reason: "KEV-listed unrestricted upload (CVSS 9.3-9.6) with RCE potential, but an e-commerce platform with no evident Swiss public-sector nexus, a 3.5-month-old bulletin, and exploitation evidence that is CISA-only and undisclosed; the main agent decides"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA (alert, KEV additions 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.adobe.com/trust/security/products/commerce/apsb26-73.html", publisher: "Adobe (security bulletin APSB26-73, last updated 2026-08-11)", date: "2026-08-11", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-44420", publisher: "ENISA EUVD", date: "2026-10-27", role: "corroborating" }
+    discovery_trace: "first seen at: work/2026-10-28T0256Z-intel/kev-window.txt (NOT COVERED) and `cisa-kev` bridge, catalogVersion 2026.10.27 -> notes field names https://www.adobe.com/trust/security/products/commerce/apsb26-73.html (extract, url --direct for the vulnerability row, WebFetch for the table) -> CISA alert https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog -> EUVD API https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-48356&size=3 (exploitedSince 2026-10-27, EUVD-2026-44420) -> CNA record via https://cveawg.mitre.org/api/cve/CVE-2026-48356 (CISA-ADP SSVC Exploitation: active, 2026-10-27T19:53Z). Searched for a third-party exploitation report (WebSearch x3, Sansec research listing https://sansec.io/research): none names CVE-2026-48356."
+    summary: |
+      CISA added CVE-2026-48356, an Adobe Commerce and Magento Open Source unrestricted upload of a file with a dangerous type (CWE-434), to the KEV catalog on 2026-10-27 "based on evidence of active exploitation" (due 2026-11-10); the alert, the catalog entry and CISA's SSVC data on the CVE record (Exploitation: active, Automatable: no, Technical Impact: total) give no actor, campaign or victim, and no third-party report of exploitation was found (Sansec, the usual Magento reporter, does not mention it). Adobe disclosed and fixed the flaw on 2026-07-14 in APSB26-73 (last updated 2026-08-11) rated Critical, and that bulletin still says Adobe "is not aware of any exploits in the wild", so the exploitation claim comes from CISA alone. The CNA record, ENISA's EUVD and Adobe's bulletin describe code execution in the context of the current user that requires user interaction (a victim visits a crafted URL or interacts with a compromised page), scope changed; the CNA record scores 9.3 (vector C:H/I:H/A:N) while the bulletin prints 9.6 (A:L), a discrepancy between the two Adobe-originated sources. Affected: Adobe Commerce 2.4.9 and 2.4.8-p5, 2.4.7-p10, 2.4.6-p15, 2.4.5-p17, 2.4.4-p18 and earlier; Magento Open Source 2.4.9, 2.4.8-p5, 2.4.7-p10, 2.4.6-p15 and earlier; Adobe Commerce B2B 1.5.3 and 1.5.2-p5, 1.4.2-p10, 1.3.4-p17, 1.3.3-p18 and earlier; Adobe Commerce Events 1.6.0 to 1.20.0. Fixed: the 2026-jul builds (2.4.9-2026-jul to 2.4.4-2026-jul for Commerce, 2.4.9-2026-jul to 2.4.6-2026-jul for Magento Open Source, 1.5.3-2026-jul to 1.3.3-2026-jul for B2B) and Events 1.21.0; the bulletin does not say whether later monthly builds include the fix.
+    region_nexus: "global; Adobe Commerce / Magento storefronts"
+    primary_sector_nexus: "none evident; e-commerce platform"
+    sector: "cross-sector"
+    cves: [CVE-2026-48356]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Adobe Commerce", "Adobe Commerce B2B", "Magento Open Source", "Adobe Commerce Events"]
+    entity_keys: ["product:adobe-commerce", "product:adobe-commerce-b2b", "product:magento-open-source"]
+    verification: "SINGLE-SOURCE-NATIONAL-CERT"
+    confidence: MEDIUM
+    evidence:
+      - { quote: "based on evidence of active exploitation", attribution: "CISA (alert, KEV additions 2026-10-27)", source_url: "https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog" }
+      - { quote: "Adobe is not aware of any exploits in the wild for any of the issues addressed in these updates.", attribution: "Adobe (security bulletin APSB26-73, last updated 2026-08-11)", source_url: "https://www.adobe.com/trust/security/products/commerce/apsb26-73.html" }
+      - { quote: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:L", attribution: "Adobe (security bulletin APSB26-73, last updated 2026-08-11)", source_url: "https://www.adobe.com/trust/security/products/commerce/apsb26-73.html" }
+    extended_notes: |
+      Not in the store before (no entry carries CVE-2026-48356 or APSB26-73); the 2026-10-14 Adobe October entry covers a different Commerce flaw set (APSB26-153). KEV notes field cites the Adobe bulletin as the mitigation reference.
+      The sources name neither the upload endpoint nor the exploitation route, so no behavioural description is possible beyond the class: a file with an executable type reaches the web root or a web-served media path through an upload initiated from a victim's session. Hunt concept (class only): new PHP or other executable files in web-served upload/media directories, and upload requests to the admin or REST surface from a session whose user did not initiate them; post-patch, the web-shell check matters because the fix does not remove a dropped file.
+      Exposure: Commerce or Magento Open Source on a release line without a 2026-jul (or later documented) build; Composer installs keep the vulnerable base version unless the monthly release or an isolated patch is applied (Sansec, in the October Adobe entry).
+      EPSS 0.306 (percentile 0.982) on 2026-10-27.
+
+  # ------------------------------------------------------------------ 8
+  - title: "CVE-2026-42589, Gotenberg: VulnCheck canaries record 1,358 exploitation events from seven clusters, including a custom Go implant, against a flaw that CISA has not listed"
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "unauthenticated RCE (CVSS 9.8) with first-hand multi-cluster exploitation telemetry, but a PDF-conversion microservice that is usually internal, the flaw is five months old and PoeLLM (2026-10-11 entry) already names Gotenberg as an exploited target; mainly a research item for S3"
+    sources:
+      - { url: "https://vulncheck.com/blog/cache-me-if-you-can", publisher: "VulnCheck (blog, 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://github.com/gotenberg/gotenberg/security/advisories/GHSA-rqgh-gxv4-6657", publisher: "Gotenberg (GitHub security advisory GHSA-rqgh-gxv4-6657)", date: "2026-04-30", role: "primary" }
+    discovery_trace: "first seen at: vulncheck, WebFetch https://www.vulncheck.com/blog (listing; posts dated 2026-10-26 inside the record's 145 h lookback) -> primary: https://vulncheck.com/blog/cache-me-if-you-can (extract) -> vendor advisory https://github.com/gotenberg/gotenberg/security/advisories/GHSA-rqgh-gxv4-6657 (extract) and CNA record via https://cveawg.mitre.org/api/cve/CVE-2026-42589 (affected < 8.31.0, CVSS 3.1 9.8)"
+    summary: |
+      VulnCheck's canary network recorded 1,358 exploitation events from 128 source addresses over 30 days against Gotenberg's unauthenticated command execution CVE-2026-42589 (CVSS 3.1 9.8, affected before 8.31.0): the /forms/pdfengines/metadata/write endpoint passes JSON metadata keys to ExifTool, so a newline inside a key injects an argument line and the -if flag evaluates Perl, giving OS command execution in one request. VulnCheck separates at least seven clusters, from a Contabo-hosted scanner (364 events in 2026-10-19 to 2026-10-24) and XMRig cryptominers to a custom Go reverse shell, cache_base, delivered from three payload mirrors with a Node.js download fallback and tied to a GitHub repository holding Linux, Windows and MIPS builds, PHP web shells and WordPress and Joomla backdoor plugins. The flaw is in VulnCheck KEV since 2026-06-26 but, VulnCheck notes, not in CISA's catalog. Gotenberg is a Docker-based document-to-PDF service (headless Chromium, LibreOffice) used inside invoicing and document-management systems; exposure matters only where the API is reachable from untrusted networks.
+    region_nexus: "global"
+    primary_sector_nexus: "none evident; depends on document-generation services reachable from outside"
+    sector: "cross-sector"
+    cves: [CVE-2026-42589]
+    techniques: [T1190, T1059.004, T1505.003]
+    affected_products: ["Gotenberg"]
+    entity_keys: ["product:gotenberg"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    references_hint: "context entry: 2026-10-11/poellm-botnet-github-poem-c2-exposed-ai-and-gitea-servers (names Gotenberg as an exploited target; check whether it carries this CVE)"
+    evidence:
+      - { quote: "1,358 exploitation events from 128 unique source IPs", attribution: "VulnCheck (blog, 2026-10-26)", source_url: "https://vulncheck.com/blog/cache-me-if-you-can" }
+      - { quote: "is not listed in CISA's Known Exploited Vulnerabilities (KEV) catalog", attribution: "VulnCheck (blog, 2026-10-26)", source_url: "https://vulncheck.com/blog/cache-me-if-you-can" }
+    extended_notes: |
+      Exposure: Gotenberg 8.31.0 or later is fixed; check the container image tag and whether the API port is reachable beyond the application that calls it.
+      Detection (web/app access logs): POSTs to /forms/pdfengines/metadata/write whose JSON metadata keys contain newline or `-if` sequences; process telemetry: wget/curl/node child processes of the Gotenberg container writing and running a downloaded binary (cache_base lock file name and dynamic-DNS C2 are in VulnCheck's post; no IOCs recorded here). EPSS 0.030 on 2026-10-27.
+
+# ---------------------------------------------------------------------
+# S1 structured CVE table (never rendered as a table). epss = FIRST.org
+# probability read from https://api.first.org/data/v1/epss on 2026-10-27.
+cve_table:
+  - { cve: "CVE-2026-109618", product: "Palo Alto Networks PAN-OS / Panorama", cvss: "9.2 (CVSS-B 4.0, vendor, management interface internet-reachable; CVSS-BT 5.2 / CVSS-B 7.7 adjacent-only)", epss: 0.99999, kev: true, exploited: true, affected: "PAN-OS 10.2, 11.1, 11.2, 12.1, 12.2 (all releases below the fixed hotfixes) and Panorama; management web UI and XML API", fixed: "10.2.7-h39 (ETA 10/30), 10.2.10-h42 (ETA 10/29), 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; 11.1.4-h38, 11.1.6-h40, 11.1.7-h12 (ETA 10/30), 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 11.2.4-h23 (ETA 10/30), 11.2.7-h23 (ETA 10/29), 11.2.10-h16 (h17 adds Brotli), 11.2.13-h4 (ETA 10/27), 11.2.16-h1 (ETA 10/28); 12.1.4-h13 (ETA 10/29), 12.1.7-h11, 12.1.10-h3 (ETA 10/30); 12.2.4-h1", type: rce, vector: "network, management interface", auth: none, source: "https://security.paloaltonetworks.com/CVE-2026-109618" }
+  - { cve: "CVE-2026-109619", product: "Palo Alto Networks PAN-OS / Panorama", cvss: "9.2 (CVSS-B 4.0, vendor; same vector as CVE-2026-109618)", epss: 0.99999, kev: true, exploited: true, affected: "as CVE-2026-109618", fixed: "as CVE-2026-109618", type: rce, vector: "network, management interface", auth: none, source: "https://security.paloaltonetworks.com/CVE-2026-109618" }
+  - { cve: "CVE-2026-111497", product: "Google Brotli decoder (Node.js, Bun, PyPI Brotli/brotlicffi, Envoy/Istio, .NET, PHP for Windows, FFmpeg via libjxl, ClickHouse)", cvss: "9.2 (CVSS 4.0, Google CNA); 8.1 (CVSS 3.1, Microsoft, .NET)", epss: 0.55483, kev: true, exploited: true, affected: "Brotli 1.0.3 to 1.0.9, 1.1.0, 1.2.0; Node.js 22.x before 22.23.4, 24.x before 24.22.1, 26.x before 26.12.1 (20, 23, 25 end of life, unfixed); Bun before 1.4.4; PyPI Brotli and brotlicffi before 1.2.1 / 1.2.1.0; PAN-OS with Brotli inspection and TLS decryption", fixed: "Brotli 1.0.10, 1.1.1, 1.2.1; Node.js 22.23.4, 24.22.1, 26.12.1; Bun 1.4.4; Brotli 1.2.1; brotlicffi 1.2.1.0; Envoy 1.36.12, 1.37.8, 1.38.6, 1.39.3, 1.40.0; .NET 8.0.33, 9.0.22, 10.0.14; PHP Windows 8.2.35-1, 8.3.36-1, 8.4.27-1, 8.5.12-1", type: "memory-corruption (out-of-bounds write, CWE-787/CWE-252)", vector: "network, crafted Brotli stream", auth: none, source: "https://www.cisa.gov/news-events/alerts/2026/10/27/cisa-adds-two-known-exploited-vulnerabilities-catalog" }
+  - { cve: "CVE-2026-48356", product: "Adobe Commerce, Adobe Commerce B2B, Magento Open Source, Adobe Commerce Events", cvss: "9.3 (CVSS 3.1, CNA record, C:H/I:H/A:N) / 9.6 (APSB26-73 bulletin, A:L)", epss: 0.30582, kev: true, exploited: true, affected: "Commerce 2.4.9, 2.4.8-p5, 2.4.7-p10, 2.4.6-p15, 2.4.5-p17, 2.4.4-p18 and earlier; Magento Open Source 2.4.9, 2.4.8-p5, 2.4.7-p10, 2.4.6-p15 and earlier; B2B 1.5.3, 1.5.2-p5, 1.4.2-p10, 1.3.4-p17, 1.3.3-p18 and earlier; Events 1.6.0 to 1.20.0", fixed: "2.4.9-2026-jul, 2.4.8-2026-jul, 2.4.7-2026-jul, 2.4.6-2026-jul, 2.4.5-2026-jul, 2.4.4-2026-jul (Commerce; Magento Open Source 2.4.9 to 2.4.6 only); B2B 1.5.3-2026-jul to 1.3.3-2026-jul; Events 1.21.0", type: "unrestricted upload of dangerous file type (CWE-434)", vector: "network, user interaction required", auth: none, source: "https://www.adobe.com/trust/security/products/commerce/apsb26-73.html" }
+  - { cve: "CVE-2026-102788", product: "Balbooa Gridbox for Joomla", cvss: "9.3 (CVSS 4.0, Joomla CNA)", epss: 0.00386, kev: false, exploited: false, affected: "com_gridbox 1.0.0 to 2.20.4.1", fixed: "2.20.4.2", type: sqli, vector: "network, sort-by URL parameter", auth: none, source: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update" }
+  - { cve: "CVE-2026-102789", product: "Balbooa Gridbox for Joomla", cvss: "9.3 (CVSS 4.0, Joomla CNA)", epss: 0.00315, kev: false, exploited: false, affected: "com_gridbox 1.0.0 to 2.20.4.1", fixed: "2.20.4.2", type: "missing authorization (editor task) leading to sqli", vector: "network", auth: none, source: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update" }
+  - { cve: "CVE-2026-109618", product: "Cisco Expressway Series, Expressway Select Series, URWB / Unified Industrial Wireless Software, Duo Access Gateway, ISE Portal Builder", cvss: "9.8 class (CVSS 3.1 per PHP); ISE Portal Builder 6.6 (administrator authentication required)", epss: 0.99999, kev: true, exploited: false, affected: "Expressway Series and Select Series (releases before 15.5.21, bug CSCwx37062), URWB (before 27.1.1, CSCwx37073), Duo Access Gateway (before 3.2.0), ISE Portal Builder", fixed: "Expressway 15.5.21; URWB 27.1.1 (Mar 2027); Duo Access Gateway 3.2.0; ISE Portal Builder offline for remediation", type: rce, vector: network, auth: none, source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq" }
+  - { cve: "CVE-2026-109618", product: "HPE Networking ClearPass Policy Manager", cvss: "9.8 (CVSS 3.1, HPE)", epss: 0.99999, kev: true, exploited: false, affected: "ClearPass 6.14.0 to 6.14.1 and 6.11.0 to 6.11.16 (before the hotfix patches)", fixed: "ClearPass 6.14.1 Hotfix Patch and ClearPass 6.11.16 Hotfix Patch to Address PHP Vulnerabilities CVE-2026-109618 and CVE-2026-109619", type: rce, vector: network, auth: none, source: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05171.json" }
+  - { cve: "CVE-2026-109618", product: "Citrix NetScaler ADC / Gateway", cvss: null, epss: 0.99999, kev: true, exploited: false, affected: "NetScaler ADC and Gateway 13.1.x before 13.1-64.32, 14.1.x before 14.1-73.49; ADC 14.1-FIPS before 14.1-73.49 FIPS; ADC 13.1-FIPS and 13.1-NDcPP before 13.1.37.286", fixed: "14.1-73.49; 13.1-64.32; 14.1-FIPS 14.1-73.49 FIPS; 13.1-FIPS / 13.1-NDcPP 13.1.37.286 (and later)", type: rce, vector: "network, management GUI", auth: none, source: "https://support.citrix.com/external/article/CTX697263" }
+  - { cve: "CVE-2026-42589", product: "Gotenberg", cvss: "9.8 (CVSS 3.1, GitHub CNA)", epss: 0.03013, kev: false, exploited: true, affected: "Gotenberg before 8.31.0", fixed: "8.31.0", type: "command injection via ExifTool argument injection (CWE-78)", vector: "network, POST /forms/pdfengines/metadata/write", auth: none, source: "https://github.com/gotenberg/gotenberg/security/advisories/GHSA-rqgh-gxv4-6657" }
+
+# ---------------------------------------------------------------------
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no product watchlist; sweep is a no-op"
+
+# Dispositions for the task-3 completeness duty (scheduled multi-product
+# releases and revised advisories in the window). Every row is either
+# returned above or a conscious drop.
+completeness_dispositions:
+  - { item: "CISA KEV 2026-10-27, CVE-2026-111497", disposition: "returned (item 2, update-of Brotli entry; status moves to exploited)" }
+  - { item: "CISA KEV 2026-10-27, CVE-2026-48356", disposition: "returned (item 7, borderline)" }
+  - { item: "cisa-kev bridge re-run, catalogVersion 2026.10.27 released 2026-10-27T19:00:02Z", disposition: "no addition after the kev-window.txt snapshot; the two 2026-10-27 rows are the only in-window additions" }
+  - { item: "PAN-OS PHP2Shell advisory revision 2026-10-27 16:40Z", disposition: "returned (item 1, update-of)" }
+  - { item: "NetScaler CTX697263 revision 2026-10-27", disposition: "returned (item 3, update-of)" }
+  - { item: "NetScaler CTX697096 (CVE-2026-88771/88772) and CTX697174 (CVE-2026-88779)", disposition: "checked, revision tables end 2026-09-27 and 2026-10-03; no in-window revision" }
+  - { item: "Cisco PHP and node.js advisories 2026-10-27", disposition: "returned (item 4 new; node.js folded into item 2); Expressway hardening advisory re-versioned 1.1 (description only), Expressway cluster advisory cisco-sa-vcs-static-cred v1.0 unchanged" }
+  - { item: "HPESBNW05171 (ClearPass PHP2Shell, 2026-10-22/23)", disposition: "returned (item 5, lookback)" }
+  - { item: "HPESBNW05162 (Aruba AOS-8/AOS-10)", disposition: "checked, still revision 1 (2026-10-22); no change" }
+  - { item: "Oracle Security Alert for CVE-2026-109618, Rev 2 (2026-10-26)", disposition: "not returned: adds Oracle Secure Backup 19.1.0.0.0-19.1.0.1.0, eight Oracle Communications products and Solaris 11 (CVSS 3.1 9.8, unauthenticated, no exploitation statement); the OT-products entry already carries Oracle Secure Backup and Solaris 11; Oracle Communications rows are telecom signalling products with no evident constituency nexus (borderline-drop, mention only)" }
+  - { item: "Oracle Critical Security Patch Update October 2026 (cpuoct2026.html), Rev 2 of 2026-10-26 ('Updated Siebel CRM versions', credit changes) and Alert CVE-2026-114820 (2026-10-24)", disposition: "Rev 2 is not a fixed-build or exploitation change for any covered finding; Alert CVE-2026-114820 is covered by the eMudhra entry. COMPLETENESS LEAD (release landed 2026-10-20, outside this window): the structured risk matrices list 73 distinct rows with Remote Exploit without Auth = Yes and CVSS 3.1 base >= 9.0 (none flagged exploited); the existing entry 2026-10-21/oracle-october-2026-cpu-six-unauthenticated-cvss-10-rows carries 12 of them (CVE-2026-87337, -91231, -91216, -91221, -101809, -91299 at 10.0; -101767, -87251, -91408, -91323, -83399 at 9.8; -87302 at 9.1). Not in the entry, outside Oracle Communications: Oracle APEX CVE-2026-101521 (9.8, HTTPS); Database/RDBMS OpenSSL component CVE-2026-75803 (9.8, TLS); SOA Suite CVE-2026-91214, -91234, -91235, -91236, -91233 (9.8), -91230 (9.3), -91225 (9.1); Business Process Management Suite CVE-2026-91220, -47065 (9.8); Data Integrator CVE-2026-83397, -83396 (9.8); WebCenter Content CVE-2026-91495 and WebCenter Sites CVE-2026-101499 (9.8); Managed File Transfer CVE-2026-42779, -41635 (9.8); Identity Manager Connector LDAP Gateway CVE-2026-91491 (9.8), -91490 (9.1); Fusion Middleware Perl CVE-2026-4176 (9.8); Essbase CVE-2026-91665 (9.8), -91644 (9.3); Secure Backup CVE-2026-101484 (9.8); PeopleSoft PeopleTools Logstash CVE-2026-33466 (9.8); JD Edwards EnterpriseOne Tools CVE-2025-15467, CVE-2022-45378 (9.8), -91265, -91305 (9.1); MySQL Enterprise Backup CVE-2026-9547 (9.8); Siebel CRM Deployment CVE-2026-59083 (9.1); Agile PLM for Process CVE-2026-91622 (9.3), -91624 (9.1); Mobile Field Service CVE-2026-101634 and Product Workbench CVE-2026-101808 (9.1); Helidon CVE-2026-101590 and Outside In Technology CVE-2026-91341 (9.1); Solaris CVE-2026-60432, CVE-2026-101537 (9.8). A further 23 of the 73 sit in Oracle Communications products (Unified Assurance, Cloud Native Core, BRM). Derived from the extract of the Oracle page, not a transcription of CVSS from a roundup; verify per row on the Oracle page before using. The main agent or the audit decides whether to widen the entry" }
+  - { item: "Fortinet PSIRT feed (newest FG-IR-26-187 2026-10-26, FG-IR-26-186 2026-10-21)", disposition: "FG-IR-26-186 PHP2Shell lists FortiDDoS, FortiSOAR, FortiSOAR PaaS under investigation and 47 products not impacted (already cited by the PHP entry); FG-IR-26-187 Node.js CVEs: all products under investigation, nothing confirmed; no CVE advisory from the hardening release before 2026-11-10 appeared" }
+  - { item: "Ivanti Connect Secure CVE-2026-104935", disposition: "no in-window change; ivanti-psirt newest post 2026-10-13" }
+  - { item: "GitLab CVE-2026-110264 / CVE-2026-97229", disposition: "no in-window release or revision; newest security release 19.5.1 (2026-10-21); Ruby 4.0.9/3.4.12/3.3.13 note of 2026-10-23 already cited" }
+  - { item: "Microsoft Security Update Guide, revisions since 2026-10-26", disposition: "no exploited or publicly-disclosed change; .NET CVE-2026-70007, -96225, -70161 and Fast FAT CVE-2026-70277 revised 2026-10-27 for an acknowledgement only; four new Edge (Chromium) CVEs of 2026-10-27, none exploited; CVE-2026-111497 .NET record still Exploited: No" }
+  - { item: "Chrome 156.0.8078.73/.74 stable (2026-10-27)", disposition: "borderline-drop: 52 fixes, four rated Critical (CVE-2026-118306, -118331, -118348, -118344), no in-the-wild statement in the post" }
+  - { item: "Mozilla MFSA 2026-118 to 2026-122 (Firefox 159, ESR 153.6, ESR 115.44, Thunderbird 159 / 153.6; 2026-10-27)", disposition: "borderline-drop: highest impact High, no exploitation statement" }
+  - { item: "Apple iOS/iPadOS 27.2, 26.7.2, 18.7.11 and siblings (2026-10-26)", disposition: "borderline-drop: 162 CVEs, all researcher-credited, no exploitation statement; includes one remote WebContent sandbox escape (App Store component, CVE-2026-112690) without exploitation claim" }
+  - { item: "GLPI 11.0.9 / 10.0.27 (2026-10-26)", disposition: "borderline-drop: unauthenticated time-based SQL injection in the planning feature (GHSA-753w-2942-4pxm, CVSS 4.0 8.7, affects only >= 11.0.8, no CVE assigned yet) and an authenticated upload; below the 9.0 bar and not exploited" }
+  - { item: "Nextcloud advisories 2026-10-27 (six GHSAs)", disposition: "drop: highest severity high (unauthenticated persistent denial of service via federated share injection, CVE-2026-77167), others medium or low" }
+  - { item: "Mattermost MMSA-2026-00723, XenServer CTX697257, Moxa MPSA-261250 and -269510, VMware Tanzu bulletins 39354-39366, Tenable Network Monitor, CPython (CERT-FR avis 2026-10-26/27)", disposition: "drop: denial of service, authenticated or medium severity, or unspecified impact; none exploited" }
+  - { item: "mySites.guru Joomla extension releases 2026-10-26/27 (Quix 6.4.0, iCagenda 4.0.17, DJ-HelpfulArticles 1.3, Vik Booking 1.18.19, Phoca Download 6.1.6, StageIt 5.8.0/6.4.0)", disposition: "drop: access-control, XSS and CSRF fixes below the bar; Gridbox returned (item 6)" }
+  - { item: "Cisco Informational for Emergency Distrust of eMudhra Root and Intermediate CAs (revised 2026-10-27)", disposition: "not returned: vendor-status churn on a covered incident; the eMudhra entry already carries Cisco FMC, Duo Access Gateway, Duo Network Gateway, ThousandEyes and IOS XR rows; the revision lists remediation dates (for example IOS XR 26.4.1 on 2026-11-30, Cyber Vision 5.6.2 in Nov 2026) and ISE/IOS XE still under investigation, a candidate small update if the main agent revisits that entry" }
+  - { item: "ICS: CISA CSAF index", disposition: "newest release 2026-10-22 (ICSA-26-295-xx); nothing in window" }
+  - { item: "EUVD criticals list (Pie Register Premium CVE-2026-84999 WordPress upload, llama.cpp ggml-rpc CVE-2026-118375, OpenRemote CVE-2026-114661)", disposition: "drop: no exploitation, plugin or developer tooling without evident constituency nexus" }
+  - { item: "QNAP QSA-26-18, Synology SA_26_14, Belden PSIRT-10 (PHP2Shell)", disposition: "Synology rev 1 and Belden v1.0 unchanged; QNAP advisory could not be read (reader returned site navigation only), no in-window revision verified" }
+  - { item: "PHP2Shell: new named production exploitation", disposition: "none found in window beyond item 1 (PAN's vendor statement); Unit 42's 2026-10-25 retraction stands" }
+
+new_entities: []
+
+candidate_sources:
+  - id: ellio-threat-research
+    publisher: "ELLIO Threat Research Lab (ellio.tech blog)"
+    url: "https://ellio.tech/en/blog/"
+    category: research
+    why: "Internet-scale sensor telemetry on mass exploitation, first-hand: PHP2Shell day-one exploitation analysis and the first recorded exploit traffic for CVE-2026-111497 (2026-10-26). No RSS (feed and sitemap paths 404); the listing reads with `extract https://ellio.tech/en/blog/` (titles and teasers, no hrefs) and article bodies with `extract <post URL>`; WebFetch of the listing returns the hrefs."
+
+coverage_gaps:
+  - source_id: connectwise-trust-center
+    reason: "403 on every rung again (extract: direct 403 plus reader relayed block; url fallback; WebFetch 403). Fallbacks: status.connectwise.com reads with extract and shows only the 2026-10-16 Cloud Backup incident already covered; WebSearch found no ConnectWise advisory dated October 2026. Recipe unchanged: keep blocked."
+  - source_id: juniper-support-portal (not in slice; surfaced via HPE ClearPass bulletin)
+    reason: "supportportal.juniper.net PHP2Shell status advisory is a Salesforce Lightning shell on extract, WebFetch and the jina reader (Loading / CSS Error); Juniper and Mist product status for PHP2Shell is unread. Recipe gap for a Juniper PSIRT record (security advisories JSON feed on kb.juniper.net or the CSAF at supportportal.juniper.net may work)."
+  - source_id: citrix-netscaler-security-bulletins
+    reason: "community.citrix.com NetScaler blog on PHP2Shell (r1640) 403 on extract, url, jina and WebFetch; the support.citrix.com CTX bulletin reads with extract and carries the fixed builds. Management-access mitigation text of the blog could not be re-verified."
+  - source_id: qnap-security-advisories
+    reason: "extract of https://www.qnap.com/en/security-advisory/qsa-26-18 is served by the reader and returns only navigation menus, no advisory table; revision state of QSA-26-18 after 2026-10-27 unverified."
+  - source_id: msrc-update-guide
+    reason: "per-CVE human page is an SPA; data read through `msrc cve` and an OData latestRevisionDate filter via fs._msrc_fetch_strict_json (works, as the record's note says)."
+
+recipe_notes:
+  - "hpe-networking-psirt: https://csaf.arubanetworking.hpe.com/changes.csv (read with `url --direct`) lists every CSAF file with its release timestamp, so new bulletins can be enumerated without guessing IDs (2026-10-28: HPESBNW05171 released 2026-10-23T16:00Z, HPESBNW05162 2026-10-22). index.txt lists names only."
+  - "cisco-psirt: `feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml 25` returns dated items including Interim revisions; the advisory page reads with extract (prose) and `url --direct` (the vulnerable-products table without markup, revision history)."
+  - "paloalto-psirt: https://security.paloaltonetworks.com/json/CVE-2026-109618 returns the advisory as CVE JSON including `exploits`, `metrics` (CVSS 4.0 with E:A) and a timestamped `timeline`; cheaper than parsing HTML and keeps the revision log."
+  - "chrome-releases: the Blogger Atom URL guessed by `feed` answers 302; WebFetch of https://chromereleases.googleblog.com/ lists posts with hrefs and `extract <post URL>` reads the full CVE list."
+  - "EUVD human pages https://euvd.enisa.europa.eu/vulnerability/<EUVD-id> are an SPA shell (200 with no content); the per-CVE API search `url 'https://euvdservices.enisa.europa.eu/api/search?text=<CVE>&size=3'` gives exploitedSince and scores."
+  - "FIRST EPSS: `url 'https://api.first.org/data/v1/epss?cve=CVE-a,CVE-b'` works from the container and takes a comma list."
+  - "cve.org API: `url https://cveawg.mitre.org/api/cve/<CVE>` returns the CNA record and CISA-ADP SSVC block (Exploitation: active) in JSON; useful for the exploitation field the KEV flip sets."
+
+dead_ends:
+  - "No third-party (non-CISA) report of CVE-2026-48356 exploitation: WebSearch x3, Sansec research listing, CVE-2026-48356 absent from Sansec posts."
+  - "No fresh public reporting of PAN's 2026-10-27 exploitation statement beyond the advisory itself (WebSearch returned only pre-update coverage)."
+  - "VulnCheck 'What a Canary Sees That a KEV Entry Can't' (2026-10-26) is methodology and statistics (558 exploited CVEs seen, 61% not in CISA KEV); not an item."
+  - "Project Zero 'Fuzzers vs. AI: Comparing Fuzzilli and BigSleep on JavaScript Engines' (2026-10-27) is research, no vulnerability disclosure; left for S3."
+  - "Tenable 'adversary economy' PHP2Shell post (2026-10-22) is older than the developing-story horizon and adds nothing beyond covered entries."
+
+source_ledger:
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing (all.xml feed 403 per record note) + extract of the 2026-10-27 alert + `cisa csaf-recent`", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "two KEV alerts (10-26 covered, 10-27 both CVEs returned); no ICS advisory after 2026-10-22; no new AA-series advisory" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "catalogVersion 2026.10.27, released 2026-10-27T19:00:02Z; re-run after kev-window.txt shows no later addition" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent exploited / criticals + url API search per CVE", horizon_hours: 26, in_horizon_items: 4, returned: 2, note: "exploited list = CVE-2026-48356, CVE-2026-111497 (new, both exploitedSince 2026-10-27) and the two PHP flaws (covered); criticals list dropped (see dispositions)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed https://labs.watchtowr.com/rss/ + extract and WebFetch of https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-10-09; intelligence page newest 2026-10-21 (PHP2Shell rapid reaction and FAQ, already covered)" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed https://www.fortiguard.com/rss/ir.xml + extract FG-IR-26-186 and -187", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-187 (Node.js CVEs, 2026-10-26) under investigation only; nothing from the hardening release before 2026-11-10" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "SUG OData latestRevisionDate filter via fs._msrc_fetch_strict_json + `msrc cve`", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "four .NET/FAT revisions are acknowledgement-only; four Edge CVEs new 2026-10-27, none exploited" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed https://security.paloaltonetworks.com/rss.xml + url --direct + advisory JSON", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "PHP2Shell revision 16:40Z returned (item 1); Brotli advisory revised 2026-10-27 (ETA removals only) folded into item 2" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "extract, url, jina, WebFetch (all 403); status page + WebSearch fallback", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "still blocked on every transport (see coverage_gaps)" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed https://www.keycloak.org/rss.xml", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "Keycloak JS 26.2.5 (2026-10-27) release post has no security content; newest server release 26.8.1 (2026-10-13)" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "WebFetch of /blog listing + extract per post", horizon_hours: 145, in_horizon_items: 4, returned: 1, note: "Gotenberg canary analysis returned borderline (item 8); PHP2Shell post (10-21) covered; 'What a Canary Sees' and 'Risks and Impacts of AI' are not vulnerability items" }
+  - { id: ivanti-psirt, tier: standard, attempted: true, transport: "feed https://www.ivanti.com/blog/topics/security-advisory/rss", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-13 (October update), already covered" }
+  - { id: joomla-security-centre, tier: standard, attempted: true, transport: "feed https://developer.joomla.org/security-centre.feed?type=rss 10", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-09-25" }
+  - { id: hpe-networking-psirt, tier: standard, attempted: true, transport: "url --direct changes.csv + CSAF JSON", horizon_hours: 145, in_horizon_items: 2, returned: 1, note: "HPESBNW05171 returned (lookback); HPESBNW05162 unchanged" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "WebFetch https://www.microsoft.com/en-us/msrc/blog", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "one post, 'Using risk cohorts to prioritize security updates', a methodology post" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed https://mysites.guru/rss.xml + extract", horizon_hours: 121, in_horizon_items: 10, returned: 1, note: "Gridbox returned (item 6); nine other Joomla/WordPress items below the bar or about the PHP2Shell ModSecurity side effect (operational, not a vulnerability)" }
+  - { id: projectzero, tier: standard, attempted: true, transport: "feed https://projectzero.google/feed.xml 6", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "'Fuzzers vs. AI' (2026-10-27) is research without a disclosure; for S3" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed https://feeds.feedburner.com/tenable/qaXL 12", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "Brotli2Shell FAQ (10-26) used as corroboration and as the pointer to ELLIO inside item 2; PHP2Shell exposure post and SLED post are product/awareness posts" }

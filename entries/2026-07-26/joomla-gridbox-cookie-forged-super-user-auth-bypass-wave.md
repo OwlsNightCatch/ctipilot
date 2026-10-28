@@ -15,9 +15,9 @@ summary: >
   that user with no password and no existing session. A Joomla Super User can edit templates,
   which is PHP execution, so this is full site compromise from a single anonymous request. Fixed
   in Gridbox 2.20.1; the vulnerable code had shipped since October 2025. The same week added
-  unauthenticated SQL injection and order-forgery flaws in EasyStore, an invoice IDOR in Events Booking, and a critical unauthenticated upload in Membership Pro. A follow-up audit of Gridbox produced eleven more CVEs, fixed in 2.20.2, four of them exploited in the wild, and Gridbox 2.20.3.1 (21 September) fixes a further unauthenticated SQL injection present in every earlier build.
+  unauthenticated SQL injection and order-forgery flaws in EasyStore, an invoice IDOR in Events Booking, and a critical unauthenticated upload in Membership Pro. A follow-up audit of Gridbox produced eleven more CVEs, fixed in 2.20.2, four of them exploited in the wild, and Gridbox 2.20.3.1 (21 September) fixes a further unauthenticated SQL injection present in every earlier build. Gridbox 2.20.4.2 (27 October) fixes two more unauthenticated SQL injections, CVE-2026-102788 and CVE-2026-102789, with no exploitation reported.
 discovered_at: "2026-07-26T14:08:00Z"
-updated_at: "2026-09-29T23:37:59Z"
+updated_at: "2026-10-28T03:52:00Z"
 event_date: 2026-07-20
 run_id: 2026-07-26T1308Z-audit
 priority: high
@@ -151,6 +151,24 @@ cves:
     status: [exploited, patch-available]
     affected: "1.0.0-2.20.1"
     fixed: "2.20.2"
+  - id: CVE-2026-102788
+    cvss: "9.3 (CVSS 4.0, Joomla CNA)"
+    epss: null
+    type: sqli
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Gridbox 1.0.0 to 2.20.4.1"
+    fixed: "2.20.4.2; no fix for sites on the Joomla 3 line, which stops at Gridbox 2.17.0.2"
+  - id: CVE-2026-102789
+    cvss: "9.3 (CVSS 4.0, Joomla CNA)"
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Gridbox 1.0.0 to 2.20.4.1"
+    fixed: "2.20.4.2; no fix for sites on the Joomla 3 line, which stops at Gridbox 2.17.0.2"
 sources:
   - url: "https://mysites.guru/blog/gridbox-critical-authentication-bypass/"
     publisher: mySites.guru
@@ -180,6 +198,14 @@ sources:
     publisher: Balbooa
     date: 2026-07-29
     role: corroborating
+  - url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update"
+    publisher: "Balbooa (Gridbox 2.20.4.2 security update)"
+    date: 2026-10-27
+    role: corroborating
+  - url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/"
+    publisher: mySites.guru
+    date: 2026-10-27
+    role: primary
 closed_sources: []
 evidence:
   - quote: A critical unauthenticated authentication bypass in Gridbox let anyone become a Super User on a Joomla site by setting a single browser cookie
@@ -193,6 +219,15 @@ evidence:
     publisher: mySites.guru
   - quote: "We have the server access logs showing the exploitation requests arriving, and connected sites where the accounts are already planted. On one connected Joomla site our rogue admin check is holding 92 planted accounts right now"
     publisher: mySites.guru
+  - quote: "Gridbox 2.20.4.1 and earlier"
+    publisher: "Balbooa (Gridbox 2.20.4.2 security update)"
+    source_url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update"
+  - quote: "Neither needs a login, and about 95% of the Gridbox sites we monitor were on an affected version on the morning of the release."
+    publisher: mySites.guru
+    source_url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/"
+  - quote: "There is no public report of exploitation yet"
+    publisher: mySites.guru
+    source_url: "https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/"
 verification: multi-source
 sourcing_note: >
   mySites.guru is the discloser and the per-vulnerability authority for each of these CVEs; no
@@ -207,7 +242,10 @@ sourcing_note: >
   reports exploitation seen in server access logs and on compromised sites. That corroborated
   batch, which carries the exploitation, is why verification is recorded as multi-source. The
   2.20.3.1 SQL injection rests on mySites.guru's reading of the release diff and carries no CVE
-  yet.
+  yet. The 2.20.4.2 pair rests on Balbooa's notice for the affected and fixed versions and the two
+  fixes, and on mySites.guru for the Joomla CNA scores and records, the comparison of the two
+  packages and the share of affected sites, which are its own measurements; no source reports
+  exploitation of these two flaws.
 confidence: medium
 references: []
 deep_dive: false
@@ -218,7 +256,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Inventory Joomla sites for the Balbooa Gridbox page builder and update every one to 2.20.3.1, which also closes an unauthenticated blind SQL injection in the front-end blog author parameter present in every earlier build, 2.20.3 and 2.20.2.3 included. Anything below 2.20.2 is also exposed to the exploited follow-up batch, which 2.20.1 does not close, and the vulnerable code has shipped since the October 2025 release."
+  - "Inventory Joomla sites for the Balbooa Gridbox page builder and update every one to 2.20.4.2, which also closes two unauthenticated SQL injections, CVE-2026-102788 and CVE-2026-102789, and the unauthenticated blind SQL injection in the front-end blog author parameter fixed in 2.20.3.1, present in every earlier build, 2.20.3 and 2.20.2.3 included. Anything below 2.20.2 is also exposed to the exploited follow-up batch, which 2.20.1 does not close, and the vulnerable code has shipped since the October 2025 release."
   - "On any site that ran Gridbox 2.20.1 or earlier while internet-reachable, review the Super User list and administrator-group members, remove accounts that entered an admin group through self-registration rather than an explicit administrative action, and review template files and the web root for changes, with particular attention to files written since 27 July."
 updates:
   - at: "2026-07-31T04:09:14Z"
@@ -263,6 +301,16 @@ updates:
       and verification is recorded as multi-source now that the vendor's release notes are among the
       sources.
     fields: [evidence, cves, sourcing_note, summary, verification, actions, sources, body]
+  - at: "2026-10-28T03:52:00Z"
+    run_id: 2026-10-28T0256Z-intel
+    type: update
+    summary: >
+      Balbooa released Gridbox 2.20.4.2 on 2026-10-27, fixing two unauthenticated read-side SQL
+      injections, CVE-2026-102788 (the sort-by parameter of store and category post lists) and
+      CVE-2026-102789 (an editor task without a permission check), both scored CVSS 4.0 9.3 by the Joomla
+      CNA and affecting every release up to 2.20.4.1. No exploitation is reported, Joomla 3 sites have no
+      fix, and the action now points at 2.20.4.2.
+    fields: [actions, body, cves, evidence, sources, sourcing_note, summary]
 migrated_from: null
 ---
 
@@ -296,4 +344,14 @@ Getting to a fixed build took three attempts, which is itself operationally rele
 
 All eleven CVE records the Joomla CNA assigned to the Gridbox 2.20.2 batch have now published. Every one lists Gridbox 1.0.0 to 2.20.1 as affected, seven are rated Critical, and four carry the exploit maturity Attacked with an urgency of Red ([mySites.guru, revised since](https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/)). Two of the four are new to this entry and both are CVSS 4.0 10.0: CVE-2026-65887, a password-reset method that resets any account's password and logs the attacker in as that user, Super Users excepted, and CVE-2026-65888, a social-login method that logs the caller in as any user on the site. mySites.guru reports the exploitation as seen in server access logs and on compromised sites, and the Joomla Security Strike Team reported at least three of the issues exploited on 29 July. The fix for that exploited set is Gridbox 2.20.2. On a site that ran an earlier build while internet-facing, unexpected password resets and social-login sessions for existing accounts belong in the same review as the attacker-registered administrator accounts described above.
 
-Balbooa has shipped three releases since 2.20.2. Version 2.20.2.3 (10 August) is titled "Bug Fixes and Security Hardening" and touches the media manager's access controls, internal path validation and the password-recovery flow, with no CVE, severity or affected range. mySites.guru has not audited it and notes that three of those areas overlap flaws recorded as fixed in 2.20.2 ([mySites.guru, revised since](https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/)). Version 2.20.3.1 (21 September) fixes an unauthenticated time-based blind SQL injection in the front-end blog `author` parameter, which went into a database query without being cast to a number. Every build below 2.20.3.1 is affected, 2.20.3 and 2.20.2.3 included, and there is no CVE or CVSS score yet. The vendor filed it as security hardening, and the flaw was reported by Studio Przy Lesie and identified by CERT Polska ([mySites.guru, 2026-09-21](https://mysites.guru/blog/gridbox-author-sql-injection/)). No exploitation of it has been reported. The version to be on is therefore 2.20.3.1. In web-server access telemetry, requests to the Gridbox blog view whose `author` value is not a plain number are the signal, and by inference from the time-based technique, ones that take several seconds to answer are the likelier successful probes. A numeric author filter is normal browsing.
+Balbooa has shipped three releases since 2.20.2. Version 2.20.2.3 (10 August) is titled "Bug Fixes and Security Hardening" and touches the media manager's access controls, internal path validation and the password-recovery flow, with no CVE, severity or affected range. mySites.guru has not audited it and notes that three of those areas overlap flaws recorded as fixed in 2.20.2 ([mySites.guru, revised since](https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/)). Version 2.20.3.1 (21 September) fixes an unauthenticated time-based blind SQL injection in the front-end blog `author` parameter, which went into a database query without being cast to a number. Every build below 2.20.3.1 is affected, 2.20.3 and 2.20.2.3 included, and there is no CVE or CVSS score yet. The vendor filed it as security hardening, and the flaw was reported by Studio Przy Lesie and identified by CERT Polska ([mySites.guru, 2026-09-21](https://mysites.guru/blog/gridbox-author-sql-injection/)). No exploitation of it has been reported. The version to be on then was 2.20.3.1; the later update below moves it to 2.20.4.2. In web-server access telemetry, requests to the Gridbox blog view whose `author` value is not a plain number are the signal, and by inference from the time-based technique, ones that take several seconds to answer are the likelier successful probes. A numeric author filter is normal browsing.
+
+## Update — 2026-10-28T03:52:00Z
+
+Balbooa released Gridbox 2.20.4.2 on 2026-10-27 with two security fixes rated Critical, for the versions 2.20.4.1 and earlier ([Balbooa, 2026-10-27](https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update)). CVE-2026-102788 is in the sort-by URL parameter of store and category post lists and CVE-2026-102789 is a missing permission check on the editor task that loads blog posts ([mySites.guru, 2026-10-27](https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/)); Balbooa's fixes are a strict allowlist validation for the sort-by parameter and a user edit-level check on the editor task ([Balbooa, 2026-10-27](https://www.balbooa.com/blog/gridbox/gridbox-2-20-4-2-security-hardening-update)). mySites.guru says the sort value previously went into the ORDER BY part of the database query and reads the second flaw as a second anonymous route to the same query. mySites.guru reports that the Joomla CNA scores both CVSS 4.0 9.3 and lists every release from 1.0.0 to 2.20.4.1 as affected, and that only two PHP files differ between 2.20.4.1 and 2.20.4.2, one per fix ([mySites.guru, 2026-10-27](https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/)).
+
+Both flaws read data: an anonymous visitor can extract the Joomla user table, with its password hashes, and every other table the site's extensions created. mySites.guru says about 95% of the Gridbox sites it monitors ran an affected version on the morning of the release, that sites on the Joomla 3 line stop at Gridbox 2.17.0.2, which has no fix for this year's flaws, and that there is no public report of exploitation yet ([mySites.guru, 2026-10-27](https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/)). Nothing here is reported exploited, unlike the July batches above; the version to be on is now 2.20.4.2.
+
+**Detection:** in web access and database query logs, store or category list requests whose sort-by value is not one of the known sort keys, repeated anonymous calls to the Gridbox editor's blog-post task, and slow-query bursts from the web account; because the flaws only read, the post-patch check is credential hygiene on a site that was exposed, starting with administrator accounts nobody created, since the password hashes can be worked on offline.
+
+**Defender takeaway:** update to 2.20.4.2 now, communal and agency sites included, and move Joomla 3 sites to a supported Joomla ([mySites.guru, 2026-10-27](https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/)).

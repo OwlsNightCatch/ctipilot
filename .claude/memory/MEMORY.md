@@ -35,3 +35,4 @@ Conventions: one topic per file, kebab-case filename, YAML front block (`name`, 
 - [Changelog hygiene](changelog-hygiene.md) — version history only in prompts/CHANGELOG.md; no vN.M annotations in rules
 - [Whole-setup review 2026-09-29](setup-review-2026-09-29.md) — v4.17: verifier was a sampler (claim ledger), `high` graded on event size, stale main text after updates, backlog dump, lossy state merges
 - [Legacy corpus](legacy-corpus.md) — 478 v2-migrated entries were never verified and carry fabricated claims; repair queue, fold duplicates with tools/fold_entries.py (2026-09-30); 60/63 wrong on 2026-10-11, link from the compliant side
+- [KEV additions: read the CVE record](kev-additions-read-the-cve-record.md) — a detail-free KEV row hides its exploitation history in the CVE record's references (PolyShell, 2026-10-28); never cite cveawg/NVD/MITRE; restore earlier fires' sections after global replaces

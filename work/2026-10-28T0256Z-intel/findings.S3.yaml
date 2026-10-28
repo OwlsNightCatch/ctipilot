@@ -1,0 +1,1188 @@
+domain: S3
+run_id: 2026-10-28T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-10-28T02:58:29Z'
+ended_at: '2026-10-28T03:22:50Z'
+duration_seconds: 1461
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 18
+  bridge_fetches: 150
+items:
+- title: 'Tailworm: Cyberdione Labs'' 11 findings in Tailscale SSH, Serve and headscale, published before any fix; Tailscale v1.104.4
+    (2026-10-27) closes the root unix-socket forwarding flaws'
+  sources:
+  - url: https://tailworm.com/
+    publisher: Cyberdione Labs (Erica Windisch), Tailworm security assessment report
+    date: '2026-10-24'
+    role: primary
+  - url: https://tailscale.com/blog/tailscale-ssh-findings-fixes
+    publisher: Tailscale (Mike Shaver), Findings and fixes
+    date: '2026-10-28'
+    role: primary
+  - url: https://tailscale.com/security-bulletins
+    publisher: Tailscale security bulletins TS-2026-014 to TS-2026-017
+    date: '2026-10-27'
+    role: primary
+  - url: https://tailscale.com/ssh-investigation-update
+    publisher: Tailscale (SSH investigation and remediation update)
+    date: '2026-10-26'
+    role: corroborating
+  - url: https://www.securityweek.com/tailscale-rushes-patches-after-uncoordinated-disclosure-of-tailworm-flaws/
+    publisher: SecurityWeek
+    date: '2026-10-27'
+    role: corroborating
+  discovery_trace: 'first seen at: securityweek, rss https://www.securityweek.com/feed/ -> https://www.securityweek.com/tailscale-rushes-patches-after-uncoordinated-disclosure-of-tailworm-flaws/
+    -> pivot: researcher report https://tailworm.com/ -> pivot: vendor https://tailscale.com/ssh-investigation-update -> primary: https://tailscale.com/blog/tailscale-ssh-findings-fixes
+    and https://tailscale.com/security-bulletins (extract)'
+  summary: 'Cyberdione Labs (researcher Erica Windisch) published an unsolicited audit of Tailscale client 1.104.2 and headscale 0.29.5
+    on 2026-10-24, about two hours after sending it to Tailscale, with 11 findings reproduced in a lab between 2026-10-22 and 2026-10-24.
+    Tailscale shipped v1.104.4 on 2026-10-27 with four bulletins (TS-2026-014 to TS-2026-017) and says it was already investigating.
+    The central class: Tailscale SSH, built into the root-privileged tailscaled, validates unix-socket paths lexically but performs
+    forwarding (ssh -L and -R) as root, so an approved peer whose SSH policy rule allows forwarding can dial root-only sockets such
+    as the Docker socket or the tailscaled local API, unlink and replace root-owned sockets, and win a check-to-use rename race against
+    the path allowlist. Cyberdione reports root via Docker, intermittent root via the systemd private socket, capture of a node enrolment
+    key from the local API and enrolment of a rogue node in tailnets without Tailnet Lock, and measures lab propagation of under a second
+    per hop across every device the SSH policy permits, which it calls wormable; Tailscale disputes the worm framing, describes lateral
+    movement limited to connections the tailnet policy already allows, and stresses that an attacker needs a foothold on an authorized
+    peer with SSH explicitly permitted. The other fixed items are unbounded session memory in tailscaled SSH (TS-2026-015), tailscale
+    serve TCP forwards and a symlink race that reach the tailscaled local API (TS-2026-016) and capability-header bleed across HTTP/2
+    serve mounts (TS-2026-017). Per Cyberdione''s matrix of 2026-10-28, still open or partial are the headscale registration-cache eviction
+    (pre-auth onboarding lockout) and embedded-DERP memory growth, a funnel entitlement finding that Tailscale calls as designed (bypass
+    needs local admin) and the conn25 connector egress gap (open pull request); Tailscale says conn25 is pre-production and the stable
+    app connectors are not affected. Neither SecurityWeek nor the report mentions in-the-wild exploitation, and no CVE identifiers are
+    cited.'
+  region_nexus: global; no source states Swiss or European public-sector use; relevant wherever Tailscale or self-hosted headscale provides
+    administrative access to Linux servers
+  primary_sector_nexus: indirect
+  sector: technology
+  event_date: '2026-10-24'
+  cves: []
+  techniques:
+  - T1021.004
+  - T1068
+  - T1499
+  affected_products:
+  - Tailscale
+  - headscale
+  entity_keys: []
+  new_entities:
+  - key: product:tailscale
+    type: product
+    name: Tailscale
+    aliases: []
+    summary: WireGuard-based mesh VPN with a built-in SSH server (Tailscale SSH) and app connectors; subject of the Tailworm findings
+      fixed in v1.104.4 (Tailscale, 2026-10-27).
+  - key: product:headscale
+    type: product
+    name: headscale
+    aliases: []
+    summary: Open-source self-hosted Tailscale control server; Cyberdione Labs reports pre-auth resource-exhaustion findings in v0.29.5
+      still pending a fix as of 2026-10-28.
+  - key: report:tailworm
+    type: report
+    name: Tailworm
+    aliases:
+    - Tailworm security assessment report
+    summary: Cyberdione Labs report of 2026-10-24 with 11 findings in Tailscale 1.104.2 and headscale 0.29.5, published before any fix;
+      Tailscale fixed most in v1.104.4.
+  relation_suggestions:
+  - subject: report:tailworm
+    object: product:tailscale
+    basis: Cyberdione Labs' Tailworm report audits Tailscale 1.104.2 and headscale 0.29.5 (tailworm.com, 2026-10-24); Tailscale confirms
+      the SSH and Serve findings in bulletins TS-2026-014 to TS-2026-017
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  suggested_admiralty: B1
+  evidence:
+  - quote: Tailscale SSH performs no user-level authentication.
+    attribution: Cyberdione Labs
+    source_url: https://tailworm.com/
+  - quote: Exploitation requires an existing foothold on an authorized peer in the tailnet
+    attribution: Tailscale
+    source_url: https://tailscale.com/blog/tailscale-ssh-findings-fixes
+  - quote: This vulnerability is fixed in Tailscale version 1.104.4 or newer.
+    attribution: Tailscale
+    source_url: https://tailscale.com/security-bulletins
+  - quote: Neither Tailscale nor the Tailworm report mentions in-the-wild exploitation.
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/tailscale-rushes-patches-after-uncoordinated-disclosure-of-tailworm-flaws/
+  exposure: 'tailscaled below 1.104.4 on hosts that run Tailscale SSH and whose SSH policy rules allow local or remote forwarding (SaaS:
+    per-rule forwarding fields; Cyberdione says headscale v0.29.5 grants forwarding on every accepted SSH session); nodes using tailscale
+    serve with TCP forwards to unix sockets; internet-reachable self-hosted headscale 0.29.5 (pre-auth findings). Version check: tailscale
+    version on each node; SSH exposure: the tailnet policy file''s ssh rules and forwarding settings.'
+  detection: 'Cyberdione''s unpatched-state sensors: auditd (object-scoped) on unix-socket unlink, bind and chmod in /tmp, home directories
+    and /run/user and on the agent''s own socket paths; a socket at mode 0755 where 0600 is expected as a signature of a race-won bind;
+    inotify or audit rate alerts on sustained directory rename loops; alerts on auth-key issuance or use outside change windows and
+    on a node joining with a previously unseen key under a tagged identity; one network endpoint serving a second node identity. After
+    patching: look for rogue tailnet devices and rotate auth keys; Cyberdione says a node''s identity is key material in its state file,
+    so reimaging a rooted host does not revoke a stolen copy and the device must be deleted at the control plane (or its key expire).'
+  triage: Admins legitimately forward ports and sockets over Tailscale SSH. The discriminators the report gives are forwarding aimed
+    at root-owned unix sockets (Docker, systemd private socket, tailscaled local API) from an unprivileged account, sockets bound at
+    0755, and rename storms in the session's directory. These come from a lab write-up and are hunting leads, not validated field signatures.
+  defender_takeaway: 'Update tailscaled to 1.104.4 or later, rewrite SSH policy as per-pair grants rather than identity-wide or tag-wide
+    accept rules, disable SSH forwarding where unneeded (Tailscale: the TS_SSH_DISABLE_FORWARDING environment setting or the policy
+    flags) and consider SSH check mode for sensitive servers; treat every headscale 0.29.5 SSH grant as root-equivalent until fixed
+    (Cyberdione''s claim).'
+  extended_notes: 'Disclosure dispute worth carrying: Cyberdione published hours after notifying the vendor and argued rapid awareness
+    speeds remediation; Tailscale says it received the report on the morning of Saturday 2026-10-24 and was already working on related
+    fixes since concerns circulated on 2026-10-23. The ''worm'' label is the researcher''s lab measurement; Tailscale calls it policy-bounded
+    lateral movement. Both agree on prerequisites (foothold on an authorized peer).'
+- title: 'HMICFRS report on cybersecurity in police forces and fire and rescue services: supplier-held police data outside monitoring,
+    supplier contracts without ongoing assurance, weak backups, 13 recommendations'
+  sources:
+  - url: https://hmicfrs.justiceinspectorates.gov.uk/news/news-feed/police-and-fire-and-rescue-services-not-fully-prepared-for-growing-cyberattack-threat/
+    publisher: HMICFRS (press release)
+    date: '2026-10-27'
+    role: primary
+  - url: https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services
+    publisher: HMICFRS (full report, public version)
+    date: '2026-10-27'
+    role: primary
+  - url: https://therecord.media/uk-police-data-breached-from-suppliers-watchdog-report
+    publisher: The Record (Recorded Future News)
+    date: '2026-10-27'
+    role: corroborating
+  discovery_trace: 'first seen at: therecord, rss https://therecord.media/feed -> https://therecord.media/uk-police-data-breached-from-suppliers-watchdog-report
+    -> primary: https://hmicfrs.justiceinspectorates.gov.uk/news/news-feed/police-and-fire-and-rescue-services-not-fully-prepared-for-growing-cyberattack-threat/
+    -> full report https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services
+    (extract)'
+  summary: His Majesty's Inspectorate of Constabulary and Fire & Rescue Services (HMICFRS) published on 2026-10-27 the public version
+    of an inspection of three police forces and three fire and rescue services plus national bodies such as the Police Digital Service.
+    It reports that leaders in both sectors name legacy ICT as their highest strategic cyber risk; that third-party suppliers who hold
+    or manage sensitive police data (victims, safeguarding, intelligence, investigations) sit outside the force's protective monitoring;
+    that preparedness is underdeveloped, with unsatisfactory ICT backup and restoration arrangements; that some organisations have weak
+    joiner-mover-leaver controls, poor password management and no multi-factor authentication; and that monitoring coverage is often
+    insufficient, with fire and rescue services frequently dependent on local-authority ICT. Its 13 recommendations cover baseline standards,
+    external validation of self-assessments, procurement and contract management of third-party ICT suppliers (for fire and rescue,
+    a May 2027 deadline for chief fire officers to ensure new or renewed contracts meet Cyber Essentials and Secure by Design) and a
+    national monitoring capability for fire and rescue. The Record adds that most police supplier contracts included no ongoing cybersecurity
+    assurance, that supplier-held system logs were not routinely visible to in-house teams in several organisations, and that the Police
+    Digital Service recorded 252 incidents and 796 near misses in the first quarter of 2026; the report withholds which suppliers or
+    forces were hit and whether data was stolen.
+  region_nexus: UK (England and Wales); no Swiss obligation changes. Swiss cantonal police and communal fire and rescue services that
+    rely on external software suppliers face the same assurance and log-visibility gaps (S3 assessment), and the Swiss supplier incidents
+    already in the store (Publica / PK Softech) are of the kind the report describes
+  primary_sector_nexus: direct (police and fire/rescue sector, transferable lessons)
+  sector: public-sector
+  event_date: '2026-10-27'
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  kind_suggestion: policy
+  suggested_admiralty: A2
+  borderline: true
+  borderline_reason: UK regulator report, so it changes no Swiss obligation, but it is a primary inspection finding directly about police
+    and fire/rescue cyber posture with supplier-assurance, backup and log-visibility lessons that transfer to the Swiss emergency-services
+    constituency; main agent to decide whether policy-watch criteria are met
+  evidence:
+  - quote: The inspectorate raised concerns about cybersecurity risks linked to third-party ICT suppliers, particularly where suppliers
+      store or manage sensitive police data.
+    attribution: HMICFRS
+    source_url: https://hmicfrs.justiceinspectorates.gov.uk/news/news-feed/police-and-fire-and-rescue-services-not-fully-prepared-for-growing-cyberattack-threat/
+  - quote: Inspectors also said that preparedness and resilience arrangements are often underdeveloped, with unsatisfactory arrangements
+      for backing up and restoring ICT systems following a cyberattack.
+    attribution: HMICFRS
+    source_url: https://hmicfrs.justiceinspectorates.gov.uk/news/news-feed/police-and-fire-and-rescue-services-not-fully-prepared-for-growing-cyberattack-threat/
+  - quote: Inspectors found that most police supplier contracts included no ongoing cybersecurity assurance.
+    attribution: The Record
+    source_url: https://therecord.media/uk-police-data-breached-from-suppliers-watchdog-report
+  exposure: Applies to police and fire/rescue organisations that run legacy ICT or let suppliers or a parent authority host their data
+    and systems; the report's test is whether supplier-held systems and logs fall inside the organisation's own monitoring and incident-reporting
+    terms.
+  detection: 'The report''s relevant observation: supplier-held system logs are often not visible to in-house security teams, so supplier-side
+    compromise is detected late or by third parties; contract terms for prompt incident reporting and log access are the lever, not
+    an endpoint detection.'
+  defender_takeaway: Check each supplier that holds operational or victim data for ongoing (not one-off) cyber assurance, a prompt incident-reporting
+    duty and in-house visibility of its logs, and test restore from backups; HMICFRS ties both to its recommendations on procurement,
+    contract management and preparedness.
+  extended_notes: 'Source-quote caveat: The Record''s reading that the public report omits the supplier incidents'' details matches
+    HMICFRS''s own note that operational matters were removed from this version.'
+- title: 'Yoba: fake GitHub ''ChatGPT, Claude and Cursor desktop'' projects ship malware beside genuine signed OpenAI and Anthropic
+    binaries (DLL sideloading), a Telegram-picture DGA with DNS-over-HTTPS tasking and an XMRig miner over Tor'
+  sources:
+  - url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+    publisher: Check Point Research
+    date: '2026-10-27'
+    role: primary
+  discovery_trace: 'first seen at: checkpoint-research, rss https://research.checkpoint.com/feed/ (gap-fill sweep of research feeds,
+    not in the S3 slice) -> primary: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+    (extract); no independent corroboration found'
+  summary: 'Check Point Research (2026-10-27) tracks a two-month campaign it names Yoba: fake GitHub repositories and GitHub Pages sites
+    impersonating desktop apps such as ''GPT-5.6 Sol'', ''GPT-6 Astra'' and ''Claude Opus'', which rank in Google results (Check Point
+    assesses SEO poisoning; no fake stars or forks). Each unencrypted ZIP release holds a genuine signed OpenAI or Anthropic Setup.exe
+    next to a malicious winmm.dll that is sideloaded; the DLL (YobaDropper) checks that its host process name hashes to the expected
+    value (otherwise it sleeps about 12.7 days), skips systems with CIS-region keyboard layouts (Ukrainian excepted) and demands administrator
+    rights, then copies System32''s WMPDMC.exe into a WMProcess folder under ProgramData next to a dropped wmpdui.dll and persists through
+    a boot-time scheduled task as LocalSystem whose author is ''Microsoft Corporation'' and whose description reads ''Collects device
+    metadata for Windows Media Player''. The second stage (YobaLoader) reads a Telegram channel page, uses the last 50 bytes of the
+    channel''s profile picture to derive a word-list domain on a free dynamic-DNS service, asks Google''s DNS-over-HTTPS API for its
+    TXT record, verifies an Ed25519 signature and decrypts a pointer to a payload on a public file host plus one of three launch modes
+    (inject into svchost.exe, write an EXE to %TEMP% after stripping the Zone.Identifier stream, or run a hidden PowerShell script).
+    The observed payload was XMRig 6.26.0 injected into svchost.exe and reaching an onion mining endpoint through a bundled Tor client
+    with obfs4 bridges, but Check Point stresses the loader is generic and an operator can push any PE or PowerShell payload; an earlier
+    variant of June 2026 sideloaded through a Cursor.exe host. Check Point says indicators suggest Russian origins and a UTC-4 working
+    pattern (the latter from compilation timestamps); that is an assessment, not attribution to a named group.'
+  region_nexus: global; no Swiss or public-sector victim named
+  primary_sector_nexus: indirect (staff and developers downloading AI desktop clients from GitHub)
+  sector: technology
+  event_date: '2026-10-27'
+  cves: []
+  techniques:
+  - T1608.006
+  - T1204.002
+  - T1574.001
+  - T1036.004
+  - T1053.005
+  - T1497
+  - T1102.001
+  - T1568.002
+  - T1071.004
+  - T1090.003
+  - T1105
+  - T1553.005
+  - T1055
+  - T1496
+  affected_products:
+  - Windows
+  entity_keys: []
+  new_entities:
+  - key: malware:yoba
+    type: malware
+    name: Yoba
+    aliases:
+    - YobaDropper
+    - YobaLoader
+    summary: Check Point Research name (2026-10-27) for a Windows dropper and generic loader delivered through fake GitHub 'ChatGPT,
+      Claude, Cursor' desktop apps, sideloaded by signed vendor binaries, with Telegram-seeded DGA and DoH-TXT tasking; observed payload
+      XMRig.
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  suggested_admiralty: B3
+  evidence:
+  - quote: The malware is placed next to legitimate, signed executables from OpenAI and Anthropic so it can be loaded indirectly
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  - quote: the YobaLoader is a generic loader.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  - quote: Collects device metadata for Windows Media Player.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  exposure: Windows endpoints where a user (often with local admin rights) downloads an 'AI desktop client' ZIP from a GitHub release
+    or Pages site that is not the vendor's official distribution; developer and IT workstations are the typical population.
+  detection: 'Image-load and process telemetry: a signed vendor Setup.exe or Cursor.exe loading winmm.dll from its own extracted folder
+    instead of System32; creation of a WMProcess folder under ProgramData holding a copy of WMPDMC.exe plus an unexpected wmpdui.dll;
+    a boot-time scheduled task running as SYSTEM from that path with Author ''Microsoft Corporation'' but created by a non-Microsoft
+    process (Windows Security event 4698 or Task Scheduler operational event 106); non-browser processes fetching Telegram channel pages
+    and querying dns.google resolve for TXT records; svchost.exe with an injected miner, a local Tor SOCKS listener and obfs4 egress;
+    hidden PowerShell (-WindowStyle Hidden -ExecutionPolicy Bypass -File) from a randomly named %TEMP% folder. Source-grounded behaviours
+    only; the report also publishes YARA, which is not reproduced here.'
+  triage: WMPDMC.exe is a genuine Windows binary in System32; the discriminator the report gives is a copy under ProgramData with an
+    adjacent wmpdui.dll and a boot task created by a non-Microsoft process. Legitimate AI desktop clients are distributed from the vendor's
+    site or store, not from a GitHub release of an unrelated account.
+  defender_takeaway: Block or allow-list installers for AI desktop clients (obtain them only from the vendor's official site or the
+    software centre), alert on sideloading of system DLL names (winmm.dll) from user-writable folders next to signed binaries, and hunt
+    for the ProgramData scheduled-task and DoH/Telegram patterns above.
+  extended_notes: Check Point shows the actor reusing one DJB2 hashing scheme with different seeds per stage and an earlier June 2026
+    variant with a Startup-folder LNK under a misspelled 'Microsaft Difendir' folder; the final payload being a miner makes the immediate
+    impact modest, but the generic signed-tasking loader means a later wave could carry anything. Check Point publishes full indicators
+    (not reproduced).
+- title: 'DeadTag: expired analytics and ad-tag domains re-registered to funnel visitors, mostly of European sites, to the Coruna and
+    DarkSword iPhone exploit kits with no click required'
+  sources:
+  - url: https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/
+    publisher: Report URI (Scott Helme)
+    date: '2026-10-22'
+    role: primary
+  - url: https://www.iverify.com/blog/malvertising-coruna-darksword-iphone-exploits
+    publisher: iVerify Threat Intelligence Team (with Report URI)
+    date: '2026-10-21'
+    role: primary
+  discovery_trace: 'first seen at: iverify-blog, URL https://www.iverify.com/blog (url --direct listing; relative blog links) -> https://www.iverify.com/blog/malvertising-coruna-darksword-iphone-exploits
+    (extract, dated 2026-10-21) -> corroborating/primary for the web-delivery side: https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/
+    (found in rss https://blog.report-uri.com/rss/, dated 2026-10-22). Rotational lookback: the iVerify post is about four hours older
+    than that record''s horizon, Report URI''s post is inside it'
+  summary: 'iVerify (2026-10-21, device side) and Report URI (2026-10-22, web-delivery side) report independently that an operator they
+    call DeadTag buys the expired domains of defunct analytics, advertising and other third-party tag providers that thousands of sites
+    still load, so every page that carries the old tag now runs the operator''s script. The script is about 2 KB, does nothing for bots,
+    scanners or repeat data-centre visitors, asks the operator''s server per visitor and redirects selected visitors, apparently selling
+    the traffic: destinations include scam pages, fake VPN pop-ups and an iPhone exploit crew''s page that serves Coruna to iOS 13 to
+    17.2.1 and a modified ''P7'' DarkSword to iOS 18.4 to 18.7, both of which attack the browser itself, so opening the page is enough.
+    Report URI counts 660+ re-registered domains on thousands of sites and cautiously estimates 135 million visits a month, and iVerify
+    says DeadTag appears focused on European domains; the kits steal keychain secrets, crypto-wallet app data and device and account
+    information and send them to one server. iVerify separately caught P7 DarkSword through a malicious Instagram ad on an employee
+    phone at a customer, whose security team rotated credentials before they were sold, and its post, which presents the joint findings,
+    says a DarkSword loader was found on hundreds of PrestaShop stores hidden in a folder named like analytics code. Report URI says
+    DeadTag''s own origin is unknown, and the joint post describes the iPhone crew as at least Chinese-speaking from Chinese code comments
+    and wallet targeting, an inference rather than attribution; the vendors sell tag-monitoring and mobile-EDR products.'
+  region_nexus: global with a European skew per iVerify; Swiss sites or staff iPhones are not named
+  primary_sector_nexus: indirect (public websites that still load third-party tags; staff iPhones on old iOS)
+  sector: cross-sector
+  event_date: '2026-10-22'
+  cves: []
+  techniques:
+  - T1189
+  - T1583.001
+  - T1555.001
+  affected_products:
+  - Apple iOS
+  - PrestaShop
+  entity_keys: []
+  new_entities:
+  - key: campaign:deadtag
+    type: campaign
+    name: DeadTag
+    aliases: []
+    summary: Report URI/iVerify name (2026-10-22) for an operation that re-registers expired third-party tag domains and sells the resulting
+      website traffic, including to an iPhone exploit crew serving Coruna and DarkSword.
+  - key: tool:coruna
+    type: tool
+    name: Coruna
+    aliases: []
+    summary: iOS exploit kit that Report URI says targets iPhones on iOS 13 to 17.2.1 and steals keychain secrets and crypto-wallet
+      data (Report URI, iVerify, 2026-10).
+  - key: tool:darksword
+    type: tool
+    name: DarkSword
+    aliases:
+    - P7 DarkSword
+    - AKS40
+    summary: iOS exploit kit with a modified 'P7' variant that Report URI says targets iOS 18.4 to 18.7 through the browser (Report
+      URI, iVerify, 2026-10).
+  relation_suggestions:
+  - subject: campaign:deadtag
+    object: tool:darksword
+    basis: 'Report URI and iVerify: DeadTag''s redirected traffic reaches an exploit crew that serves DarkSword, and both kits report
+      to the same server (2026-10-22)'
+  - subject: campaign:deadtag
+    object: tool:coruna
+    basis: 'Report URI: the same fake Polymarket page serves Coruna or DarkSword depending on iOS version (2026-10-22)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  lookback: true
+  suggested_admiralty: B2
+  evidence:
+  - quote: Attackers are buying up the expired domains behind old analytics and advertising tags that thousands of websites still load,
+      and they're selling the visitors those tags bring in.
+    attribution: Report URI
+    source_url: https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/
+  - quote: Simply opening the page is enough for your device to be compromised.
+    attribution: Report URI
+    source_url: https://blog.report-uri.com/deadtag-how-forgotten-website-tags-became-a-delivery-network-for-iphone-spyware/
+  - quote: DeadTag appears to be mostly focused on European domains versus .com
+    attribution: iVerify
+    source_url: https://www.iverify.com/blog/malvertising-coruna-darksword-iphone-exploits
+  exposure: iPhones on iOS 13 to 17.2.1 (Coruna) or 18.4 to 18.7 (DarkSword P7) that load a page carrying a dead-provider tag or a malicious
+    ad; any public website that still includes script tags from analytics, advertising or widget providers that no longer operate (check
+    script hosts for domains whose registration changed hands).
+  detection: 'Web side: Content Security Policy report-only logs and script monitoring that show a new third-party script host, and
+    registration-date or registrant changes (RDAP) on domains your pages load scripts from; the operator cloaks, so a scanner from a
+    data-centre address often sees an empty response. Device side: mobile EDR or MDM alerts on Safari renderer crashes or exploit indicators,
+    and credential rotation for any user whose phone was exposed (iVerify''s customer did this in time).'
+  defender_takeaway: Keep managed iPhones off the targeted iOS ranges (iOS 18.4 to 18.7 and 17.2.1 and earlier) through MDM version
+    enforcement and consider Lockdown Mode for high-risk users; for public websites, inventory every third-party script, remove tags
+    of defunct providers and enforce a Content Security Policy with an allow-list.
+  extended_notes: Both research teams sell relevant products (Report URI tag monitoring, iVerify mobile EDR); the mechanism is documented
+    with decoded chains, so the finding stands, but the 135-million-visits figure is Report URI's cautious estimate. Citizen Lab's AdFection
+    report on targeted-ad delivery of Candiru (already in the store as 2026-10-16/adfection-candiru-spyware-zero-click-ad-delivery)
+    is the targeted counterpart that iVerify cites.
+- title: 'Kaspersky Securelist: managed-Kubernetes tenant isolation bypass chain, from a k0s Konnectivity DIAL_REQ SSRF to control-plane
+    D-Bus and a flat overlay network exposing other tenants'' databases, logs and Salt master'
+  sources:
+  - url: https://securelist.com/cloud-infrastructure-isolation-bypass/121609/
+    publisher: Kaspersky Security Services (Securelist)
+    date: '2026-10-27'
+    role: primary
+  - url: https://github.com/k0sproject/k0s/security/advisories/GHSA-3588-pcxv-rx45
+    publisher: k0s project (KLSA-00466, GHSA-3588-pcxv-rx45)
+    date: '2026-08-31'
+    role: primary
+  discovery_trace: 'first seen at: kaspersky-securelist, rss https://securelist.com/feed/ (gap-fill sweep of research feeds, not in
+    the S3 slice) -> primary: https://securelist.com/cloud-infrastructure-isolation-bypass/121609/ -> primary for the k0s component:
+    https://github.com/k0sproject/k0s/security/advisories/GHSA-3588-pcxv-rx45 (both extract)'
+  summary: 'Kaspersky Security Services (Matvey Bukhtoyarov; Securelist 2026-10-27, first presented at SAS on 2026-10-22) describes
+    an authorised bug-bounty penetration test of an anonymised major cloud provider that Kaspersky says is fully fixed. As an ordinary
+    tenant it created a privileged pod with host PID in the provider''s managed k0s cluster (v1.25.16+k0s.0), whose security policies
+    did not block it, and entered the worker host as root; a Konnectivity token on the worker then let it send a forged DIAL_REQ to
+    the control plane''s konnectivity-server, which dialled the attacker''s chosen protocol and address, including unix sockets, giving
+    an SSRF in the control-plane context. Through the control-plane D-Bus socket it enabled user lingering and started a transient systemd
+    unit for code execution, then used a known OverlayFS user-namespace bug for root. From there a flat overlay network exposed other
+    tenants'' assets: a VictoriaMetrics target list naming other customers'' control planes, VictoriaLogs holding cloud-init output
+    with root SSH private keys, managed Kafka hosts with an exposed JMX/RMI registry that allowed an MLet-loaded MBean, a redis exporter
+    whose scrape target parameter leaked the instance credentials, unauthenticated etcd that allowed a Patroni archive_command change
+    for PostgreSQL code execution, and a Salt master custom pillar with SQL injection. The k0s project''s advisory for the Konnectivity
+    part (affected k0s releases v1.21 to v1.27 that use its apiserver-network-proxy fork, CVSS 3 6.4, CVE not assigned) gives as remediation
+    migrating to the upstream kubernetes-sigs apiserver-network-proxy rather than a fixed k0s version.'
+  region_nexus: global; provider unnamed (the Russian Pentest Award entry), so no Swiss exposure can be stated
+  primary_sector_nexus: indirect (tenants of managed Kubernetes and database services; operators of self-managed k0s)
+  sector: technology
+  event_date: '2026-10-27'
+  cves: []
+  techniques:
+  - T1610
+  - T1611
+  - T1068
+  - T1210
+  - T1552.004
+  affected_products:
+  - k0s
+  - Kubernetes (managed)
+  - VictoriaMetrics
+  - VictoriaLogs
+  - Apache Kafka
+  - Redis exporter
+  - Patroni
+  - SaltStack
+  entity_keys: []
+  new_entities:
+  - key: product:k0s
+    type: product
+    name: k0s
+    aliases:
+    - k0sproject k0s
+    summary: Minimal Kubernetes distribution by Mirantis; its apiserver-network-proxy fork accepted agent-originated DIAL_REQ packets
+      (KLSA-00466, CVE not assigned), used in a Kaspersky tenant-isolation bypass (2026-10-27).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  suggested_admiralty: B2
+  borderline: true
+  borderline_reason: Substantive technique-level research on tenant-isolation failure in managed cloud, but the provider is anonymised
+    and fixed, there is no CVE or exploitation, and no Swiss exposure is established; value is the checklist for self-managed Kubernetes
+    and for judging provider controls
+  evidence:
+  - quote: This created an SSRF primitive in the control plane context, which made it possible to reach not only network resources but
+      also host UNIX sockets.
+    attribution: Kaspersky Security Services
+    source_url: https://securelist.com/cloud-infrastructure-isolation-bypass/121609/
+  - quote: all security issues we found were fixed in full
+    attribution: Kaspersky Security Services
+    source_url: https://securelist.com/cloud-infrastructure-isolation-bypass/121609/
+  - quote: 'CVE: not assigned'
+    attribution: k0s project (KLSA-00466)
+    source_url: https://github.com/k0sproject/k0s/security/advisories/GHSA-3588-pcxv-rx45
+  - quote: Migrate all affected versions k0s to https://github.com/kubernetes-sigs/apiserver-network-proxy
+    attribution: k0s project (KLSA-00466)
+    source_url: https://github.com/k0sproject/k0s/security/advisories/GHSA-3588-pcxv-rx45
+  exposure: Self-managed k0s clusters on the listed releases that use the project's apiserver-network-proxy fork (an attacker needs
+    a compromised worker or the konnectivity-agent token); managed Kubernetes or database services whose provider runs a flat overlay
+    between tenant control planes and shared management services (a provider-side property a tenant cannot inspect).
+  detection: 'On clusters you run: admission or audit logs showing pods created with privileged true, hostPID or host namespaces; konnectivity-server
+    logs with DIAL_REQ targets that are unix sockets or non-node addresses; unexpected D-Bus calls (SetUserLinger, StartTransientUnit)
+    from a service account''s process on a control-plane node; JMX/RMI, etcd, redis-exporter scrape and VictoriaLogs queries from tenant
+    address space.'
+  defender_takeaway: For self-managed Kubernetes, deny privileged pods and host namespaces by admission policy, keep control-plane services
+    off tenant-reachable networks, bind JMX/RMI stubs to loopback, require authentication on etcd and metrics/log back ends, and plan
+    the k0s move off the vulnerable proxy fork; for provider assessments, ask how tenant management networks are segmented.
+  extended_notes: Most of the chain is configuration and logic errors in the provider's management plane rather than a single CVE; only
+    the k0s Konnectivity part has a project advisory, and it has no fixed k0s release named.
+- title: 'EDK II pre-boot RCE CVE-2026-97631 (CVSS 9.5): Ars Technica reports a leaked AMI fix pulled disclosure forward; code runs
+    in the PXE ICMP handler before Secure Boot'
+  sources:
+  - url: https://arstechnica.com/security/2026/10/code-execution-flaw-in-uefi-firmware-threatens-most-servers-on-planet-earth/
+    publisher: Ars Technica (Dan Goodin)
+    date: '2026-10-27'
+    role: primary
+  - url: https://github.com/tianocore/edk2/security/advisories/GHSA-99cj-7hg9-mp4m
+    publisher: TianoCore EDK II (GitHub security advisory GHSA-99cj-7hg9-mp4m)
+    date: '2026-10-22'
+    role: primary
+  discovery_trace: 'first seen at: malware-news, rss https://malware.news/latest.rss (Eclypsium repost, 2026-10-27, gap-fill sweep)
+    -> https://eclypsium.com/news/ars-technica-code-execution-flaw-in-uefi-firmware-affects-most-servers-on-planet-earth/ -> https://arstechnica.com/security/2026/10/code-execution-flaw-in-uefi-firmware-threatens-most-servers-on-planet-earth/
+    -> primary: https://github.com/tianocore/edk2/security/advisories/GHSA-99cj-7hg9-mp4m (extract). The quality-audit run 2026-10-25T1308Z
+    had seen the GHSA via BSI WID-SEC-2026-4136 and dropped it as borderline pending a vendor advisory naming common server lines or
+    exploitation'
+  summary: The TianoCore project's advisory (published 2026-10-22) says that while a machine PXE-boots over IPv4 or IPv6, an unauthenticated
+    attacker who can deliver ICMP error messages to it can corrupt DXE-phase memory in the PXE Base Code driver (UefiPxeBcDxe) and,
+    knowing the firmware build, run code before the operating system loads and before Secure Boot or measured boot checks anything;
+    the copy loop writes messages longer than its fixed 504-byte field past it, and the exposure window is the duration of the PXE boot.
+    Ars Technica (2026-10-27) adds the CVE identifier, a severity of 9.5 out of 10, and that the finders, Alex Matrosov (Anthropic)
+    and Dan Holmes (Google), had planned coordinated disclosure for January until AMI published a pull request with the fix last month,
+    after which TianoCore published the advisory; Ars says the public patch makes working exploits trivial for skilled attackers, that
+    virtually all UEFI suppliers including AMI, Insyde and Phoenix use the EDK II reference code extensively and that Microsoft's Project
+    Mu used the code containing the vulnerable component. The fix is EDK II pull request 13302, but firmware reaches fleets only through
+    each vendor's firmware update, and no vendor advisory naming server product lines and no exploitation report was found.
+  region_nexus: global; data-centre and PC fleets that network-boot
+  primary_sector_nexus: indirect (government data centres, provisioning and imaging networks)
+  sector: technology
+  event_date: '2026-10-22'
+  cves:
+  - CVE-2026-97631
+  techniques:
+  - T1542
+  - T1210
+  affected_products:
+  - TianoCore EDK II (UefiPxeBcDxe)
+  - UEFI firmware built on EDK II
+  entity_keys: []
+  new_entities:
+  - key: product:tianocore-edk2
+    type: product
+    name: TianoCore EDK II
+    aliases:
+    - EDK2
+    summary: Open-source UEFI firmware reference codebase used by AMI, Insyde, Phoenix and Project Mu; its PXE Base Code driver has
+      the pre-boot ICMP overflow CVE-2026-97631 (TianoCore, 2026-10-22).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  suggested_admiralty: B2
+  borderline: true
+  borderline_reason: 'Reopens the 2026-10-25 audit drop: new Ars Technica reporting (CVSS 9.5, leaked public fix, vendor reach) is the
+    first independent coverage, but the reopen conditions the audit set (a vendor advisory naming common server or PC lines, or exploitation)
+    are still unmet, exposure is limited to the PXE-boot window with ICMP reachability, and the constituency has no named exposure;
+    S1 may also carry it'
+  evidence:
+  - quote: an unauthenticated network attacker who can deliver ICMP error messages to it can corrupt DXE-phase memory and execute arbitrary
+      code before the operating system loads
+    attribution: TianoCore EDK II
+    source_url: https://github.com/tianocore/edk2/security/advisories/GHSA-99cj-7hg9-mp4m
+  - quote: The vulnerability, with a severity rating of 9.5 out of 10
+    attribution: Ars Technica
+    source_url: https://arstechnica.com/security/2026/10/code-execution-flaw-in-uefi-firmware-threatens-most-servers-on-planet-earth/
+  - quote: With publicly available patch code, it will be trivial for advanced hackers to learn how the vulnerability is triggered and
+      to build working exploits.
+    attribution: Ars Technica
+    source_url: https://arstechnica.com/security/2026/10/code-execution-flaw-in-uefi-firmware-threatens-most-servers-on-planet-earth/
+  exposure: Machines whose EDK II-based firmware network-boots (PXE over IPv4 or IPv6) on a segment an attacker can send ICMP to; servers
+    and PCs that boot only from local disk with PXE disabled are outside the window. Which firmware builds carry the fix is vendor-specific
+    (OEM capsule updates); the project fix is EDK II pull request 13302.
+  detection: 'Network telemetry on provisioning and imaging VLANs: unicast ICMP error messages (destination unreachable and similar)
+    to clients during PXE boot, especially oversized ones or from hosts that are not the PXE or DHCP servers; PXE boot hangs (the source''s
+    deterministic crash case) on specific clients. No host-side detection exists before the OS loads; verify firmware level through
+    the OEM''s inventory tooling.'
+  defender_takeaway: Disable PXE where it is not needed, restrict ICMP to provisioning segments, and queue OEM firmware updates that
+    carry the EDK II fix as vendors publish them.
+  extended_notes: 'Two disclosure-process points for the brief: the fix was visible in an AMI pull request before the advisory, and
+    the Brotli flaw below also had its upstream fix committed months before disclosure; public fixes ahead of advisories are a recurring
+    pattern this week.'
+- title: 'Crime Stoppers tip-platform breach: CBC finds 1.5 million Canadian tips exposed at supplier Navigate360 (P3); Ontario police
+    services suspend partnerships and the Privacy Commissioner opens an investigation on 2026-10-27'
+  sources:
+  - url: https://www.priv.gc.ca/en/opc-news/news-and-announcements/2026/nr-c_261027/
+    publisher: Office of the Privacy Commissioner of Canada (news release)
+    date: '2026-10-27'
+    role: primary
+  - url: https://www.cbc.ca/news/investigates/canadian-crime-stoppers-tips-leaked-hack-investigation-9.7388820
+    publisher: CBC News (investigation)
+    date: '2026-10-21'
+    role: primary
+  - url: https://www.cbc.ca/news/investigates/toronto-crime-stoppers-pausing-program-data-leak-hack-9.7391157
+    publisher: CBC News
+    date: '2026-10-22'
+    role: corroborating
+  discovery_trace: 'first seen at: risky-biz-news, URL https://news.risky.biz/risky-bulletin-supply-chain-attack-lets-ransomware-group-inside-40-shipping-companies/
+    (2026-10-23, Toronto Crime Stoppers item) -> https://www.cbc.ca/news/investigates/toronto-crime-stoppers-pausing-program-data-leak-hack-9.7391157
+    -> CBC original https://www.cbc.ca/news/investigates/canadian-crime-stoppers-tips-leaked-hack-investigation-9.7388820; in-window
+    development found via malware-news rss https://malware.news/latest.rss (DataBreaches.net repost 2026-10-28) -> primary: https://www.priv.gc.ca/en/opc-news/news-and-announcements/2026/nr-c_261027/
+    (extract, served through the reader fallback)'
+  summary: CBC's analysis of a copy of data stolen from the P3 tip-management platform in March 2026 by a hacktivist collective calling
+    itself Internet Yiff Machine found more than 1.5 million Crime Stoppers tips from Canadian chapters exposed over 25 years, at least
+    half with personal information and more than 4,300 where tipsters gave their full name; CBC reports the RCMP said it was originally
+    told the leak held no Canadian data. Toronto Crime Stoppers says the supplier Navigate360, which runs P3 for Crime Stoppers internationally,
+    first said no Canadian data was affected, then some but not Toronto's, and only in July gave the IDs of more than 176,000 Toronto
+    tips without their text; Toronto Crime Stoppers paused its programme and CBC reports that other Ontario programmes and several Ontario
+    police services followed (CBC corrected its own counts in the article). On 2026-10-27 the Privacy Commissioner of Canada opened
+    an investigation into Navigate360's security safeguards at the time of the breach; Navigate360 has not answered CBC's questions.
+    The initial intrusion method is not described in the sources read; CBC's reporting rests on the leaked dataset rather than on the
+    supplier's account.
+  region_nexus: Canada; transferable to police forces that use external tip, case or report platforms (the Swiss PK Softech and Publica
+    supplier incident in the store is a comparable supplier-held-data case)
+  primary_sector_nexus: direct sector analogue (law-enforcement tip data held by a third-party supplier)
+  sector: public-sector
+  event_date: '2026-10-27'
+  cves: []
+  techniques: []
+  affected_products:
+  - P3 tip management platform (Navigate360)
+  entity_keys: []
+  new_entities:
+  - key: incident:navigate360-p3-crime-stoppers-tip-platform-breach
+    type: incident
+    name: Navigate360 P3 Crime Stoppers tip platform breach
+    aliases:
+    - P3 Global Intel breach
+    summary: March 2026 theft of data from the P3 tip-management platform run by Navigate360; CBC reports 1.5 million Canadian Crime
+      Stoppers tips exposed, police programmes paused and an OPC investigation opened on 2026-10-27.
+  - key: actor:internet-yiff-machine
+    type: actor
+    name: Internet Yiff Machine
+    aliases: []
+    summary: Hacktivist collective that, per CBC, stole the P3 platform data in March 2026 to disprove the supplier's claim that it
+      was anonymous and secure.
+  relation_suggestions:
+  - subject: actor:internet-yiff-machine
+    object: incident:navigate360-p3-crime-stoppers-tip-platform-breach
+    basis: 'CBC: the data was stolen last March by the hacktivist collective Internet Yiff Machine (2026-10-21)'
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  suggested_admiralty: B2
+  borderline: true
+  borderline_reason: Strong investigative reporting on a supplier-held police tip dataset with transferable supplier-governance lessons
+    (slow, shifting breach scoping; long retention; unredacted identifiers) and a fresh regulator action in-window, but Canadian, the
+    intrusion vector is unknown so no technique mapping is possible, and S4 may carry it as an incident
+  evidence:
+  - quote: more than 1.5 million tips sent to Canadian Crime Stoppers chapters were captured in a massive hack announced last March.
+    attribution: CBC News
+    source_url: https://www.cbc.ca/news/investigates/canadian-crime-stoppers-tips-leaked-hack-investigation-9.7388820
+  - quote: Navigate360 initially said the leak did not include any Canadian data.
+    attribution: CBC News
+    source_url: https://www.cbc.ca/news/investigates/toronto-crime-stoppers-pausing-program-data-leak-hack-9.7391157
+  - quote: The investigation will examine the security safeguards that Navigate360 had in place at the time of the breach
+    attribution: Office of the Privacy Commissioner of Canada
+    source_url: https://www.priv.gc.ca/en/opc-news/news-and-announcements/2026/nr-c_261027/
+  exposure: Police and emergency-service organisations that let a third party host tip, report or case data; the test is how long the
+    supplier retains records, whether free-text fields are redacted and what the contract says about breach scoping and notification.
+  detection: Not a detection case; the relevant control is contractual (supplier breach-notification timelines, data-retention limits,
+    redaction) and an independent inventory of what personal data sits at suppliers.
+  defender_takeaway: Ask each tip or case-management supplier what it retains and for how long, require full-scope breach notification
+    with a deadline, and prepare the communication path to the public if tip anonymity is compromised.
+  extended_notes: CBC withheld personal identifiers and says it intends to destroy its copy of the dataset; the entry should not reproduce
+    any tip content.
+- title: 'Popcorn Time (Time4Popcorn) forgotten updater: Eye Security sinkholed abandoned update domains used by millions of Windows
+    and macOS hosts, including government and military networks, that run any HTTP-delivered executable as SYSTEM or root (CVE-2026-30612)'
+  sources:
+  - url: https://labs.eye.security/operation-ixim-preventing-a-botnet-of-millions-of-popcorn-time-users/
+    publisher: Eye Security (Eye Research, Niels Teusink)
+    date: '2026-10-22'
+    role: primary
+  - url: https://www.securityweek.com/dead-popcorn-time-updater-put-millions-of-computers-at-risk-of-takeover/
+    publisher: SecurityWeek
+    date: '2026-10-27'
+    role: corroborating
+  discovery_trace: 'first seen at: securityweek, rss https://www.securityweek.com/feed/ -> https://www.securityweek.com/dead-popcorn-time-updater-put-millions-of-computers-at-risk-of-takeover/
+    -> primary: https://labs.eye.security/operation-ixim-preventing-a-botnet-of-millions-of-popcorn-time-users/ (extract; dated 2026-10-22,
+    presented at hack.lu the same day)'
+  summary: Eye Security's threat hunting found an Updater.exe from the abandoned Time4Popcorn fork of Popcorn Time beaconing to an unregistered
+    update domain; after registering it, Eye saw over 3.8 million hardware IDs over six months (about 2.5 to 3 million Windows and 250,000
+    to 350,000 macOS hosts per SecurityWeek's reading, under 200,000 Android). The updater runs at boot, requests updates over unencrypted
+    HTTP, does no code signing and downloads and executes any executable the answering domain returns with NT AUTHORITY\SYSTEM or root
+    privileges; the flaw is CVE-2026-30612, advised in June 2026. With no vendor left, Eye registered 15 unowned domains from November
+    2025 and pushed an update that only stops and disables the updater service on Windows and macOS (about 2 million systems by March
+    2026, a 98 percent drop in requests), and The Shadowserver Foundation took over the domains in late March; the Android updater needs
+    user action and was not disabled. Eye says clients connected from end-user ISPs and also from 'various government and military networks'
+    and corporate networks, and that the rest of the application, built on a 2014 Chrome without a sandbox, remains risky, so its advice
+    is to uninstall it.
+  region_nexus: global; government and military networks named without country
+  primary_sector_nexus: indirect (unmanaged consumer software on staff or corporate endpoints)
+  sector: cross-sector
+  event_date: '2026-10-22'
+  cves:
+  - CVE-2026-30612
+  techniques:
+  - T1195.002
+  - T1584.001
+  affected_products:
+  - Popcorn Time (Time4Popcorn fork)
+  entity_keys: []
+  new_entities:
+  - key: product:popcorn-time-time4popcorn
+    type: product
+    name: Popcorn Time (Time4Popcorn)
+    aliases:
+    - Time4Popcorn
+    summary: Abandoned fork of the Popcorn Time BitTorrent streaming client with an unsigned HTTP updater that runs any served executable
+      as SYSTEM or root (CVE-2026-30612, Eye Security, 2026-10-22).
+  - key: campaign:operation-ixim
+    type: campaign
+    name: Operation IXIM
+    aliases: []
+    summary: Eye Security's November 2025 to March 2026 operation that sinkholed Time4Popcorn update domains and pushed an update disabling
+      the vulnerable updater on Windows and macOS (Eye Research, 2026-10-22).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  suggested_admiralty: B2
+  borderline: true
+  borderline_reason: Real, now-sinkholed exposure on endpoints including government networks (per Eye), but no exploitation was reported,
+    the exposure is a forgotten consumer application and the main value is an endpoint hunt for an unsigned HTTP updater; the research
+    is dated 2026-10-22, with SecurityWeek's coverage inside the window
+  evidence:
+  - quote: There was no code signing and this process was all happening over HTTP.
+    attribution: Eye Security
+    source_url: https://labs.eye.security/operation-ixim-preventing-a-botnet-of-millions-of-popcorn-time-users/
+  - quote: we’re also seeing connections from various government and military networks around the world
+    attribution: Eye Security
+    source_url: https://labs.eye.security/operation-ixim-preventing-a-botnet-of-millions-of-popcorn-time-users/
+  - quote: The updater runs in the background at system boot, does not feature code signing, and downloads and runs any executable its
+      domain supplies.
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/dead-popcorn-time-updater-put-millions-of-computers-at-risk-of-takeover/
+  exposure: Windows or macOS endpoints with Popcorn Time (Time4Popcorn) installed, including forgotten installs; the Android app is
+    affected too. Find it by process and service inventory (an Updater.exe in the Popcorn Time folder, a Windows update service, a launch
+    daemon on macOS) and by DNS or proxy logs showing beacons to the sinkholed update domains, which the Shadowserver sinkhole can also
+    report.
+  detection: Process-creation and service inventory for the updater; HTTP (not HTTPS) update checks carrying app_id and hid parameters
+    from corporate address space; for devices that were exposed before the sinkhole, check for unexpected executables fetched and run
+    by the updater service between 2025 and March 2026.
+  defender_takeaway: Remove Popcorn Time from managed endpoints (Eye disabled only the updater, not the application), block BitTorrent
+    streaming clients by application control, and review proxy logs for the updater's plain-HTTP beacons.
+  extended_notes: Eye describes the ethics and legal basis of executing code on third-party systems at length; that debate is context,
+    not a defender action. The sinkholed domains stay with Shadowserver.
+- title: 'PHP2Shell: Bishop Fox responder guidance adds a lab reproduction with ASLR on, FPM yielding denial of service, and a per-setting
+    hardening assessment'
+  sources:
+  - url: https://bishopfox.com/blog/responder-guidance-for-php2shell
+    publisher: Bishop Fox (Jon Williams and Threat Enablement team)
+    date: '2026-10-27'
+    role: primary
+  discovery_trace: 'first seen at: bishopfox-blog, rss https://bishopfox.com/feeds/blog.rss -> primary: https://bishopfox.com/blog/responder-guidance-for-php2shell
+    (extract)'
+  summary: 'Bishop Fox (2026-10-27) says its team reproduced full unauthenticated remote code execution for the PHP2Shell flaws against
+    stock php:8.3, 8.4 and 8.5 Apache mod_php Docker images with ASLR on, over HTTP only and with no debugger, and that real application
+    images with opcache enabled forced the attacker to recalibrate. In its testing the direct out-of-memory path against PHP-FPM produced
+    denial of service rather than code execution, though it says an application-dependent RCE path on FPM exists and that the vendor
+    treats every SAPI as at risk. It assesses mitigations one by one, as partial only: session.upload_progress.enabled=0 set before
+    request parsing (not by ini_set or .user.ini) removes the confirmed CVE-2026-109619 session vector; memory_limit=-1 with enforcement
+    removes the attacker-tunable memory limit that drives the OOM; low post_max_size and request-shape caps (parts, headers, fields,
+    nesting) at the proxy remove the most reliable way to drive the exhaustion; display_errors off at request start denies the public
+    session-based chain the address leak it takes from error output; fatal_error_backtraces=0 on PHP 8.5 blocks one trigger; and it
+    advises patching to 8.5.12, 8.4.27, 8.3.36 or 8.2.35 or a vendor backport for 7.4, 8.0 and 8.1, then restarting every worker. The
+    store''s PHP entry already carries VulnCheck''s ASLR-bypass exploit, the honeypot confirmation and CISA''s KEV listing; Bishop Fox''s
+    addition is an independent reproduction and the per-setting reading.'
+  region_nexus: global
+  primary_sector_nexus: direct (PHP applications across cantonal, communal and federal sites are in scope per BACS in the existing entry)
+  sector: cross-sector
+  event_date: '2026-10-27'
+  cves:
+  - CVE-2026-109618
+  - CVE-2026-109619
+  techniques:
+  - T1190
+  affected_products:
+  - PHP
+  entity_keys:
+  - tool:php2shell
+  - product:php
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619
+  suggested_admiralty: B2
+  borderline: true
+  borderline_reason: Marginal delta on an entry that already carries a KEV listing, public exploit and hardening guidance; the new content
+    is an independent lab reproduction and a per-setting hardening assessment (FPM yields DoS, display_errors, memory_limit, request-shape
+    caps), best as an improvement record at most
+  evidence:
+  - quote: our research team has reproduced full unauthenticated RCE (ASLR on, HTTP only, no debugger)
+    attribution: Bishop Fox
+    source_url: https://bishopfox.com/blog/responder-guidance-for-php2shell
+  - quote: FPM, in our testing of the direct OOM path, produces denial of service rather than code execution.
+    attribution: Bishop Fox
+    source_url: https://bishopfox.com/blog/responder-guidance-for-php2shell
+  - quote: chains that fired reliably against a bare PHP image had to be re-tuned for real applications
+    attribution: Bishop Fox
+    source_url: https://bishopfox.com/blog/responder-guidance-for-php2shell
+  exposure: Unchanged from the existing entry; Bishop Fox adds that exploitability depends on SAPI (highest under mod_php), opcache,
+    display_errors, memory limits and architecture, so a vulnerable version marks a host to patch, not a measure of exploitability.
+  detection: Bishop Fox notes ARM brute-force re-tuning shows as crash-and-respawn bursts of workers; on x86-64 a quieter one-shot memory
+    leak is used. Existing entry detection (POST returning HTTP 500, memory exhaustion in Unknown on line 0, worker abort) remains the
+    log-side pattern.
+  defender_takeaway: Patch and restart every worker; where a host cannot be patched yet, layer the settings above in the order of Bishop
+    Fox's list and prioritise mod_php hosts, but none is a complete fix.
+  extended_notes: Bishop Fox is a reputable offensive-security firm; single vendor write-up with reproduction, no independent corroboration
+    of the per-setting claims.
+- title: 'Node2Shell / Brotli2Shell (CVE-2026-111497): JFrog reaches FFmpeg through JPEG XL, crashes ClickHouse and loops Apache Arrow;
+    Bun and Istio fixes, Akamai''s body-parser lever and a February upstream fix'
+  sources:
+  - url: https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/
+    publisher: JFrog Security Research
+    date: '2026-10-25'
+    role: primary
+  - url: https://www.akamai.com/blog/security-research/inside-node2shell-closer-look-cve-2026-111497
+    publisher: Akamai Security Intelligence Group
+    date: '2026-10-26'
+    role: primary
+  - url: https://www.tenable.com/blog/brotli2shell-frequently-asked-questions-for-google-brotli-decoder-cve-2026-111497
+    publisher: Tenable Research Special Operations
+    date: '2026-10-26'
+    role: corroborating
+  - url: https://github.com/oven-sh/bun/security/advisories/GHSA-663w-cv8g-jj2p
+    publisher: Bun project (GHSA-663w-cv8g-jj2p)
+    date: '2026-10-23'
+    role: primary
+  - url: https://istio.io/latest/news/security/istio-security-2026-007/
+    publisher: Istio (ISTIO-SECURITY-2026-007)
+    date: '2026-10-15'
+    role: corroborating
+  discovery_trace: 'first seen at: risky-biz-news, URL https://news.risky.biz/risky-bulletin-while-everyone-was-looking-at-php-another-rce-is-wrecking-whats-left-of-the-internet/
+    (2026-10-26; Brotli breadth) -> gap-fill rss sweep: tenable-research FAQ https://www.tenable.com/blog/brotli2shell-frequently-asked-questions-for-google-brotli-decoder-cve-2026-111497
+    -> pivots: JFrog https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/, Akamai https://www.akamai.com/blog/security-research/inside-node2shell-closer-look-cve-2026-111497,
+    Bun https://github.com/oven-sh/bun/security/advisories/GHSA-663w-cv8g-jj2p, Istio https://istio.io/latest/news/security/istio-security-2026-007/
+    (all extract)'
+  summary: 'JFrog Security Research (2026-10-25) shows the Brotli decoder flaw is reachable without HTTP: a crafted JPEG XL file reaches
+    it through FFmpeg''s libjxl (a Brotli-compressed brob metadata box) and gives instruction-pointer control in its proof of concept
+    without a demonstrated code execution; a single HTTP request with a crafted 23 MB body and Content-Encoding br crashed a tested
+    ClickHouse server (the fix is merged but no release had shipped); a 534-byte input sends Apache Arrow''s pyarrow into an infinite
+    loop (issue open); and a .NET runtime crash reproduced locally. JFrog also released a scanner for Brotli decoding paths and notes
+    that version-only scanners miss bundled copies. Akamai (2026-10-26) reports telemetry showing 61 percent of networks run affected
+    Node.js versions and gives a concrete lever: set the body-parser inflate option to false so Express 5 rejects compressed request
+    bodies with HTTP 415. Bun''s advisory (2026-10-23) fixes the bundled decoder in Bun 1.4.4, notes that executables built with bun
+    build --compile must be rebuilt, and lists decompress false on fetch as a per-request workaround; Tenable lists Istio 1.29.9, 1.30.6
+    and 1.31.2 as fixed and says Envoy and Istio had shipped fixes earlier in October without naming the flaw and that Google committed
+    the upstream fix to the Brotli source repository on February 27. The store''s entry names Node.js, PyPI, Envoy, .NET, PAN-OS, PHP
+    for Windows and Ubuntu and cites NCSC naming Bun, so Bun''s fixed release, Istio, the non-HTTP reach and the February upstream commit
+    are new; Tenable says some projects had not shipped a fixed release as of 2026-10-26, and no source reports exploitation outside
+    research demonstrations.'
+  region_nexus: global; NCSC Switzerland advisory 13105 already cited by the existing entry
+  primary_sector_nexus: direct (Node.js, Envoy and Istio estates in federal and cantonal platforms; media and data-processing pipelines)
+  sector: cross-sector
+  event_date: '2026-10-25'
+  cves:
+  - CVE-2026-111497
+  techniques:
+  - T1190
+  - T1499
+  affected_products:
+  - Google Brotli
+  - Node.js
+  - Bun
+  - Istio
+  - Envoy Proxy
+  - ClickHouse
+  - FFmpeg (libjxl)
+  - Apache Arrow (pyarrow)
+  entity_keys:
+  - tool:node2shell
+  - product:google-brotli
+  - product:node-js
+  - product:envoy-proxy
+  - product:microsoft-net
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi
+  suggested_admiralty: B2
+  evidence:
+  - quote: We developed a proof of concept that triggers the vulnerability and achieves instruction-pointer control
+    attribution: JFrog Security Research
+    source_url: https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/
+  - quote: A single HTTP request containing a crafted 23 MB body crashed the tested ClickHouse server.
+    attribution: JFrog Security Research
+    source_url: https://research.jfrog.com/post/brotli2shell-beyond-node2shell-and-http2shell/
+  - quote: If your application does not need to accept compressed request bodies, set the body-parser inflate option to false.
+    attribution: Akamai Security Intelligence Group
+    source_url: https://www.akamai.com/blog/security-research/inside-node2shell-closer-look-cve-2026-111497
+  - quote: Bun 1.4.4 updates brotli to 1.2.1, which contains the fix.
+    attribution: Bun project
+    source_url: https://github.com/oven-sh/bun/security/advisories/GHSA-663w-cv8g-jj2p
+  - quote: had already shipped fixed releases earlier in October without naming the flaw
+    attribution: Tenable Research Special Operations
+    source_url: https://www.tenable.com/blog/brotli2shell-frequently-asked-questions-for-google-brotli-decoder-cve-2026-111497
+  exposure: 'In addition to the existing entry: Bun below 1.4.4 (fetch, node:zlib and DecompressionStream decode Brotli; compiled executables
+    embed the runtime), Istio 1.29.0 to 1.29.8, 1.30.0 to 1.30.5 and 1.31.0 to 1.31.1 with Brotli decompression enabled (for example
+    through an EnvoyFilter), ClickHouse servers that accept Content-Encoding br (no fixed release at the time), FFmpeg builds with libjxl,
+    and pyarrow reading Brotli-compressed Parquet.'
+  detection: HTTP logs with Content-Encoding br request bodies to Express 5 or body-parser endpoints, ClickHouse HTTP interface crashes
+    after a large br body, and processes that decode untrusted JPEG XL or Parquet inputs crashing or spinning on CPU; JFrog's open-source
+    scanner and the Trail of Bits Brotli checker find decoding paths that inventory by version misses.
+  defender_takeaway: Where Node.js cannot be updated yet, set body-parser inflate to false (Akamai) or reject Content-Encoding br; rebuild
+    bun build --compile executables after moving to Bun 1.4.4; inventory bundled Brotli copies and non-HTTP decode paths rather than
+    versions only.
+  extended_notes: 'Meaning for the brief: the upstream Brotli fix was committed to the repository on 2026-02-27, about eight months
+    before disclosure, consistent with the silent-fix-then-disclose pattern also visible in the EDK II item above. Istio''s own advisory
+    is dated 2026-10-15 and predates the Node.js disclosure.'
+- title: 'Sysdig Threat Research: every public pickle defense for machine-learning model files, from PyTorch weights_only to picklescan,
+    has fallen to documented CVE bypasses'
+  sources:
+  - url: https://www.sysdig.com/blog/in-a-pickle-why-every-pickle-defense-in-machine-learning-is-bypassed-the-same-way
+    publisher: Sysdig Threat Research Team (Lydia Graslie)
+    date: '2026-10-27'
+    role: primary
+  discovery_trace: 'first seen at: sysdig, rss https://www.sysdig.com/blog/rss.xml (gap-fill sweep of research feeds, not in the S3
+    slice) -> primary: https://www.sysdig.com/blog/in-a-pickle-why-every-pickle-defense-in-machine-learning-is-bypassed-the-same-way
+    (extract)'
+  summary: Sysdig's Threat Research Team (2026-10-27) analysed every public bypass of the defenses built against malicious Python pickle
+    model files and says none of PyTorch's restricted loader (weights_only), Keras safe mode or model-file scanners held up against
+    six documented CVE bypasses, because pickle is a program for a stack-based virtual machine and a file that is invalid as a whole
+    can still execute in part. The post explains why torch.save and joblib are pickle, ranks model formats by danger, reports Sysdig's
+    measurement of malicious model loads against two detection engines and gives deployment and runtime-detection guidance; only the
+    framing and the headline claim were read in full here, so specifics of the ranked formats and detection results are not carried.
+  region_nexus: global
+  primary_sector_nexus: indirect (administrations adopting ML models and model hubs)
+  sector: technology
+  event_date: '2026-10-27'
+  cves: []
+  techniques:
+  - T1195.002
+  - T1059.006
+  affected_products:
+  - PyTorch
+  - Keras
+  - picklescan
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: LOW
+  novelty: new
+  suggested_admiralty: B3
+  borderline: true
+  borderline_reason: Good analysis for ML supply-chain hardening (treat pickle-based model files as code; prefer non-executable formats),
+    but vendor research with limited constituency relevance, no incident and only partly read here; likely a drop unless an AI-supply-chain
+    theme is wanted
+  evidence:
+  - quote: But none of them held up to six documented CVE bypasses.
+    attribution: Sysdig Threat Research Team
+    source_url: https://www.sysdig.com/blog/in-a-pickle-why-every-pickle-defense-in-machine-learning-is-bypassed-the-same-way
+  exposure: Environments that load third-party pickle-based model files (torch.save, joblib, Keras archives) from model hubs or shared
+    storage.
+  detection: 'Runtime telemetry on the process that loads a model: unexpected child processes, network connections or file writes at
+    model-load time; Sysdig describes runtime detection results but they were not read in full here.'
+  defender_takeaway: Treat pickle-format model files as executable code from untrusted sources and load them only in isolated environments,
+    preferring non-executable formats where possible.
+  extended_notes: Read only through the post's opening sections.
+developing_story_checks:
+- story: ARTEX / Storm-0940 / ConnectWise-SkyKick
+  entries:
+  - 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  - 2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse
+  result: no in-window delta found. Huntress 2026-10-26 is already in the ConnectWise entry (record of 2026-10-27); Expel and Wiz are
+    cited; Zscaler ThreatLabz posts on ARTEX against South Korean financial institutions (2026-10-14) are outside the window and the
+    entry already carries CrowdStrike, Recorded Future and BleepingComputer on the framework.
+- story: PHP2Shell
+  entries:
+  - 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619
+  result: one marginal delta returned as item 9 (Bishop Fox responder guidance, 2026-10-27, borderline). CVE-2026-115560 (third path),
+    KEV listing, the honeypot confirmation, VulnCheck, Sophos/Arctic Wolf Mirai attempts and ReliaQuest are already in the entry or
+    its records; Risky Bulletin of 2026-10-26 and 2026-10-23 add nothing new.
+- story: Brotli / Node2Shell (CVE-2026-111497)
+  entries:
+  - 2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi
+  result: 'genuine delta returned as item 10: JFrog (2026-10-25) FFmpeg via libjxl, ClickHouse crash, Arrow loop; Akamai (2026-10-26)
+    61 percent telemetry and body-parser inflate false; Bun 1.4.4; Istio fixed versions; upstream fix committed 2026-02-27 per Tenable.
+    Socket (2026-10-26) long-tail post is commentary only and was not carried.'
+- story: Gheist and other GitHub Actions / npm / PyPI waves (LiteLLM, GhostAction, OVHcloud CLI)
+  entries:
+  - 2026-10-27/gheist-stolen-github-tokens-secret-dumping-workflows
+  - 2026-10-22/litellm-1-107-0-pypi-docker-credential-stealer-lookalike
+  - 2026-10-10/ghostaction-fake-audit-workflow-git-history-credential-theft
+  - 2026-10-20/ovhcloud-cli-release-assets-replaced-secret-stealing-build
+  result: no in-window delta found. Wiz Gheist post (2026-10-25) is already the entry source; LiteLLM root-cause (2026-10-23) and Microsoft
+    (2026-10-23) are in the entry; OVHcloud postmortem and the GlassWorm tie are in the entry; OpenSourceMalware, Socket, Aikido and
+    StepSecurity listings show no new wave since 2026-10-23 (newest GhostAction items 2026-10-16, Tensorlake 2026-10-08, OpenCode breach
+    2026-10-18 are older).
+- story: Linux kernel ZDI reports (skb_zerocopy, ZDI-CAN-33367)
+  entries:
+  - 2026-10-25/zdi-linux-kernel-reports-public-skb-zerocopy-root-exploit
+  result: 'no in-window delta found: two WebSearch passes surfaced no merge, CVE or new exploit report after Sysdig (2026-10-24) and
+    TuxCare (2026-10-22), which the entry already cites.'
+- story: NTLM relay signing bypass (SpecterOps LDAP, Blackfield SMB)
+  entries:
+  - 2026-10-25/ntlm-relay-signing-bypass-reauthentication-ldap-smb
+  result: 'no in-window delta found: the SpecterOps and Blackfield feeds carry no newer post, and a search found no Microsoft CVE or
+    follow-up.'
+- story: Citrix NetScaler exploitation analyses
+  entries:
+  - 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev
+  - 2026-10-04/cve-2026-88779-citrix-netscaler-saml-overflow-exploited
+  result: no new exploitation analysis in the window; SecurityWeek (2026-10-27, Tod Beardsley) is an opinion piece on patch cadence
+    that notes a gap in published NetScaler CVE ids (88779 to 88787 at time of writing) and nothing operational; vendor and LevelBlue,
+    Zscaler, eSentire, Mandiant analyses date from 2026-09-29 to 2026-10-12.
+dropped_or_not_carried:
+- 'Risky Bulletin 2026-10-23: n0n ransomware group via maritime IT vendor CyberLogitec (CyDome analysis, leak-site claims, no Swiss
+  nexus); other incidents in that bulletin belong to S4.'
+- 'Citizen Lab 2026-10-27 Serbian prosecutor item: an In-the-Media repost of research dated 2026-10-20, no constituency nexus.'
+- 'Socket 2026-10-26 eMudhra/Brotli long-tail post: commentary on already-covered entries.'
+- 'Project Zero 2026-10-27 Fuzzers vs. AI (Fuzzilli vs BigSleep): vulnerability-research methodology, no defender action.'
+- 'Sophos 2026-10-26 breachpocalypse and Report URI 2026-10-26 PHP crisis post: commentary.'
+- 'Eclypsium 2026-10-20 fake Linux kernel threads: outside the window, not assessed in depth.'
+- 'iVerify 2026-10-08 P7 DarkSword variant and Morphisec 2026-10-19 VulcanRAT207.B: outside their records horizons.'
+- 'Novee Security posts (2026-10-21, 2026-10-23): product marketing and webinars; Push Security posts to 2026-10-15: buyer guides and
+  one adtech lure post (2026-10-09) outside the horizon.'
+candidate_sources:
+- id: eye-security-research
+  publisher: Eye Security Research (labs.eye.security)
+  url: https://labs.eye.security/
+  rss_url: https://labs.eye.security/feed/
+  category: research
+  why: Dutch MSSP threat-hunting lab with first-hand telemetry; primary for the Popcorn Time updater and CVE-2026-30612 advisory (2026-06)
+    and a PHP2Shell assessment (2026-10-22); WordPress feed reads directly with dated items.
+- id: jfrog-security-research
+  publisher: JFrog Security Research (research.jfrog.com)
+  url: https://research.jfrog.com/
+  rss_url: https://research.jfrog.com/rss.xml
+  category: research
+  why: Independent post-disclosure reach analysis with reproductions (Brotli2Shell reaching FFmpeg, ClickHouse, Arrow, .NET); the feed
+    carries dated items though some point to jfrog.com/blog rather than research.jfrog.com.
+- id: eclypsium-blog
+  publisher: Eclypsium
+  url: https://eclypsium.com/blog/
+  rss_url: https://eclypsium.com/feed/
+  category: research
+  why: Firmware and hardware-supply-chain research (UEFI, BMC, network appliances) that other sources in the list do not cover; feed
+    reads directly, but note it also reposts press coverage as news items.
+coverage_gaps:
+- source_id: resecurity
+  reason: 'extract of https://www.resecurity.com/blog returns an empty JS shell. Recipe that worked in this run: WebSearch with allowed_domains
+    ["resecurity.com"] lists article pages with printed dates; newest post is 2026-10-14, so nothing in the horizon. Still no in-container
+    reader for the listing.'
+- source_id: nau-ch
+  reason: homepage href scan via url --direct returns sports, politics and world headlines only; no cyber content in the 148 h horizon
+    and WebSearch returned only 2021 to 2023 items. Candidate has not contributed to S3; its Swiss-relay value is for S2.
+- source_id: novee-security
+  reason: WebFetch listing shows only product and webinar posts (2026-10-21, 2026-10-23); no threat research since the earlier verdict.
+    Candidate for demotion at the next audit (same verdict as 2026-10-18 and 2026-10-23).
+- source_id: push-security
+  reason: WebFetch with a title, date and href prompt returns dates (newest 2026-10-15); mostly buyer guides; nothing in horizon.
+- source_id: iverify-blog
+  reason: listing via url --direct has relative links with no dates (as the 2026-10-22 note says); per-post extract gives the date.
+    The DeadTag post dated 2026-10-21 fell about four hours outside the 145 h horizon and was returned as a lookback item because Report
+    URI published the web-side counterpart on 2026-10-22.
+- source_id: databreaches-net
+  reason: 'extract served https://databreaches.net/... through the jina reader (direct trafilatura failed), spending credit; fetching
+    the original OPC news release on priv.gc.ca also fell back to jina. Recipe for the next run: ask for the primary (priv.gc.ca) directly.'
+- source_id: arstechnica-extract
+  reason: extract of an Ars Technica article includes reader comments after the article body (a numbered list about PXE and ICMP read
+    like a comment, not the reporter). Quote only text above the first comment, and do not attribute comment text to the outlet.
+- source_id: websearch
+  reason: WebSearch (US-geolocated) returned nothing dated 2026-10-27 or later for six fresh-news queries; the direct feed sweep of
+    63 research feeds (about one minute with 8 parallel feed calls) was far more productive and surfaced Check Point, Securelist, JFrog
+    and the Ars/UEFI item the slice did not carry.
+self_evolution_notes:
+- A same-day sweep of every research-category record that has an rss_url (63 records, filtered to items newer than 24 to 36 h) is cheap
+  and would catch major labs whose rotation cursor is days away; it found four in-window items outside this S3 slice. Suggest a tools/
+  helper (feed_sweep) and a standing S3 step.
+- malware.news RSS (https://malware.news/latest.rss) is a fast same-day relay of Ars Technica, DataBreaches.net and vendor posts with
+  the original link in the body; useful as a discovery feed, never a source.
+- extract falls back to the jina reader for databreaches.net and priv.gc.ca; check the credit pool before leaning on those hosts.
+source_ledger:
+- id: resecurity
+  tier: standard
+  attempted: true
+  transport: extract (empty JS shell) + WebSearch allowed_domains
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-14; no readable listing transport
+- id: expel
+  tier: standard
+  attempted: true
+  transport: feed https://expel.com/blog/rss.xml
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 0
+  note: in-horizon item is a staff profile; the ARTEX and PHP2Shell posts of 2026-10-21 are outside the horizon and already covered
+    (Expel is a source of the ARTEX entry)
+- id: elttam-blog
+  tier: standard
+  attempted: true
+  transport: feed https://www.elttam.com/blog/rss.xml
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-09-23 (TACACS+ pre-auth RCE)
+- id: bishopfox-blog
+  tier: standard
+  attempted: true
+  transport: feed https://bishopfox.com/feeds/blog.rss + extract
+  horizon_hours: 145
+  in_horizon_items: 2
+  returned: 1
+  note: PHP2Shell responder guidance returned as an update-of borderline; the other post is AI-testing marketing
+- id: cloudsek-triad
+  tier: standard
+  attempted: true
+  transport: feed https://www.cloudsek.com/blog/rss.xml
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-08
+- id: iverify-blog
+  tier: standard
+  attempted: true
+  transport: url --direct listing + extract per post
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 1
+  note: DeadTag post (2026-10-21) is about four hours older than the horizon; returned as lookback item with the Report URI counterpart
+    of 2026-10-22
+- id: nau-ch
+  tier: standard
+  attempted: true
+  transport: url --direct homepage href scan + WebSearch
+  horizon_hours: 148
+  in_horizon_items: 0
+  returned: 0
+  note: no cyber items in the horizon
+- id: krebs
+  tier: standard
+  attempted: true
+  transport: feed https://krebsonsecurity.com/feed/
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-21 (PHP flaw outages)
+- id: morphisec
+  tier: standard
+  attempted: true
+  transport: url --direct listing + extract
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: newest research post 2026-10-19 (VulcanRAT207.B)
+- id: novee-security
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 121
+  in_horizon_items: 2
+  returned: 0
+  note: product marketing and a webinar only
+- id: push-security
+  tier: standard
+  attempted: true
+  transport: WebFetch (title, date, href prompt)
+  horizon_hours: 121
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-15
+- id: risky-biz-news
+  tier: standard
+  attempted: true
+  transport: feed https://news.risky.biz/rss/ + extract
+  horizon_hours: 121
+  in_horizon_items: 2
+  returned: 2
+  note: bulletins of 2026-10-23 and 2026-10-26 used as leads to the Crime Stoppers item and the Brotli delta; the primaries are cited
+- id: securityweek
+  tier: standard
+  attempted: true
+  transport: feed https://www.securityweek.com/feed/ (10 items) + extract
+  horizon_hours: 121
+  in_horizon_items: 10
+  returned: 2
+  note: Tailworm and the Popcorn Time updater returned; HPE, Denver Health, DreamHost, Apple, New Mexico hospital belong to S1 and S4;
+    the NetScaler piece is an opinion article
+- id: therecord
+  tier: standard
+  attempted: true
+  transport: feed https://therecord.media/feed (5 items) + extract
+  horizon_hours: 121
+  in_horizon_items: 5
+  returned: 1
+  note: HMICFRS report coverage returned; sentencing and scam-centre items are not in scope
+gap_fill_sweeps:
+- 'feed sweep of all 63 research-category records with an rss_url for items from 2026-10-26 onward (Check Point, Securelist, Project
+  Zero, Sysdig, Tenable, SANS ISC, malware.news and others); yields: Yoba, k0s isolation bypass, Sysdig pickle, EDK II via malware.news,
+  Brotli delta'
+- targeted WebSearch for developing stories (PHP2Shell, Gheist, NetScaler, npm, ZDI Linux, NTLM relay, OVHcloud, ARTEX, Zscaler ARTEX,
+  EDK II vendors, Swiss in-language incident queries)
