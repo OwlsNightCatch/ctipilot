@@ -1,0 +1,1325 @@
+domain: S3
+run_id: 2026-10-29T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-10-29T02:58:07Z'
+ended_at: '2026-10-29T03:48:50Z'
+duration_seconds: 3043
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 23
+  bridge_fetches: 215
+items:
+- title: 'Talos: UAT-11473 runs KeyDrift inside Cisco SD-WAN controllers after CVE-2026-20127 to harvest data-plane keys; infrastructure overlaps Volt Typhoon''s Silent Train'
+  sources:
+  - url: https://blog.talosintelligence.com/uat-11473-keydrift/
+    publisher: Cisco Talos
+    date: '2026-10-28'
+    role: primary
+  - url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa-EHchtZk
+    publisher: Cisco PSIRT
+    date: '2026-10-28'
+    role: corroborating
+  - url: https://www.lumen.com/blog/en-us/silent-train-volt-typhoon-operational-framework
+    publisher: Lumen Black Lotus Labs
+    date: '2026-03-16'
+    role: corroborating
+  discovery_trace: 'first seen at: talos, RSS feed URL https://blog.talosintelligence.com/rss/ (newest item Wed 28 Oct 2026 21:32 GMT) -> primary: Talos post, URL https://blog.talosintelligence.com/uat-11473-keydrift/ -> pivot: Cisco PSIRT advisory linked in the post, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa-EHchtZk (revision 2.1 of 2026-OCT-28 adds the Talos link under Exploitation) -> pivot: Lumen Black Lotus Labs ''Silent Train'' post linked by Talos, URL https://www.lumen.com/blog/en-us/silent-train-volt-typhoon-operational-framework'
+  summary: Cisco Talos reports (2026-10-28) a cluster it designates UAT-11473, which exploited CVE-2026-20127, the peering-authentication bypass in Cisco Catalyst SD-WAN Controller, Manager and Validator (CVSS 10.0, Cisco advisory first published 2026-02-25, no workaround), and then installed KeyDrift, a custom framework that lives inside the SD-WAN control-plane processes. PolyFlame, its main module, is a memory-resident library that a ptrace-based injector places into the running vdaemon processes from modified runit service launchers (the sshd service and a look-alike aaamgr service); it hooks recvfrom, sendto, dlopen and dlsym, receives tasking in-band over the control-plane DTLS traffic rather than from a fixed beacon address, offers a TinyShell-style command, file-write and file-read backdoor, and can act as a one-to-many intermediate C2 relay to peers. LittleFilch hooks SSL_read in vdaemon, parses decrypted control messages for peer system IPs and what Talos assesses to be OMP-distributed AES-256 IPsec data-plane key material for a predefined list of edge nodes, RSA-encrypts the result in a staging file and can send it out over UDP in DTLS-like records. Talos states the observed targeting spans space and satellite services, defense and aerospace technology, and policy research, and assesses with high confidence that the operating infrastructure overlaps considerably with Volt Typhoon's Silent Train covert access network; Lumen's Black Lotus Labs, from its own network telemetry, separately says Volt Typhoon exploited CVE-2026-20127 from late 2025. Cisco PSIRT revised its advisory on 2026-10-28 to cite the Talos post and says it is aware of limited exploitation. Talos recovered no fixed callback address or domain from the PolyFlame samples, calls the activity historical, and does not say how many controllers were affected.
+  region_nexus: global; any Swiss public-sector WAN that runs Cisco Catalyst SD-WAN controllers (reported victim sectors are space, defense and policy research, not public administration)
+  primary_sector_nexus: 'indirect to direct: direct for administrations operating SD-WAN controllers, targeting reported by Talos is not public-sector'
+  sector: network-infrastructure
+  cves:
+  - CVE-2026-20127
+  techniques:
+  - T1190
+  - T1055.008
+  - T1574.006
+  - T1037
+  - T1543
+  - T1036.004
+  - T1059.004
+  - T1027.002
+  - T1497.001
+  - T1070.006
+  - T1040
+  - T1573.001
+  affected_products:
+  - Cisco Catalyst SD-WAN Controller
+  - Cisco Catalyst SD-WAN Manager
+  - Cisco Catalyst SD-WAN Validator
+  entity_keys:
+  - product:cisco-catalyst-sd-wan-controller
+  - product:cisco-catalyst-sd-wan-manager
+  - product:cisco-catalyst-sd-wan-validator
+  new_entities:
+  - key: actor:uat-11473
+    type: actor
+    name: UAT-11473
+    aliases: []
+    summary: Cisco Talos designation for a highly sophisticated APT that exploited CVE-2026-20127 in Cisco Catalyst SD-WAN controllers and deployed the KeyDrift framework; Talos assesses with high confidence that its infrastructure overlaps considerably with Volt Typhoon's Silent Train network (Talos, 2026-10-28).
+  - key: malware:keydrift
+    type: malware
+    name: KeyDrift
+    aliases:
+    - PolyFlame
+    - LittleFilch
+    summary: 'Custom framework that runs inside Cisco SD-WAN control-plane processes: PolyFlame (injected into vdaemon, in-band tasking, TinyShell-style backdoor and intermediate C2) and LittleFilch (SSL_read hook that extracts peer identifiers and assessed IPsec data-plane keys); PolyFlame and LittleFilch are component names, not separate families (Talos, 2026-10-28).'
+  - key: actor:volt-typhoon
+    type: actor
+    name: Volt Typhoon
+    aliases: []
+    summary: China-linked actor; Lumen Black Lotus Labs tracks its Silent Train covert access network and says it exploited Cisco Catalyst SD-WAN through CVE-2026-20127 from late 2025 (Lumen, 2026-03-16); not previously in the registry (only campaign:jdy-botnet-volt-typhoon-2026 references it).
+  relation_suggestions:
+  - subject: actor:uat-11473
+    object: malware:keydrift
+    basis: 'Talos: the actor installed the custom KeyDrift framework after exploiting CVE-2026-20127 (Talos, 2026-10-28)'
+  - subject: actor:uat-11473
+    object: actor:volt-typhoon
+    basis: Talos assesses with high confidence that UAT-11473's operating infrastructure overlaps considerably with Volt Typhoon's Silent Train network; an overlap claim, not attribution (Talos, 2026-10-28)
+  - subject: actor:uat-11473
+    object: product:cisco-catalyst-sd-wan-controller
+    basis: 'Talos: UAT-11473 exploited CVE-2026-20127 in Cisco SD-WAN Catalyst Controller instances (Talos, 2026-10-28)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  priority_hint: high
+  classification_hint: B2
+  evidence:
+  - quote: Observed targeting spans across space and satellite services, defense and aerospace technology, and policy research.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/uat-11473-keydrift/
+  - quote: Talos assesses with high confidence that UAT-11473’s operating infrastructure overlaps considerably with
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/uat-11473-keydrift/
+  - quote: The legitimate Cisco aaamgr component is a Python package; it does not normally appear as a compiled ELF runit service.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/uat-11473-keydrift/
+  - quote: The Cisco PSIRT is aware of limited exploitation of this vulnerability.
+    attribution: Cisco PSIRT
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa-EHchtZk
+  - quote: a critical CVSS 10.0 vulnerability in the SD-WAN control plane
+    attribution: Lumen Black Lotus Labs
+    source_url: https://www.lumen.com/blog/en-us/silent-train-volt-typhoon-operational-framework
+  extended_notes: 'EXPOSURE (Cisco advisory as read 2026-10-29, revision 2.1): first fixed releases by train are 20.9 -> 20.9.8.2; 20.12 -> 20.12.5.3 (20.12.6.1 for the 20.12.6 train); 20.15 -> 20.15.4.2; 20.18 -> 20.18.2.1; 20.11 -> 20.12.6.1; 20.13 and 20.14 -> 20.15.4.2; 20.16 -> 20.18.2.1; releases earlier than 20.9 must migrate; Cisco marks 20.11, 20.13, 20.14, 20.16 and earlier-than-20.9 as past End of Software Maintenance. The table was revised on 2026-02-27 and again with the 2026-06-16 Validator addition, so re-read the live page. Cisco''s only interim mitigation is restricting reachability of the control components per its ''Firewall Ports for Cisco Catalyst SD-WAN Deployments'' guidance.
+
+    POST-PATCH CHECK: the fix closes the entry path but does not remove a resident implant. Talos describes persistent controller residence, so a controller that was reachable on a vulnerable release at any time since late 2025 (Lumen) should be checked, not only patched. Talos names the hunt surface in behavioural terms: runit service run scripts for the sshd and aaamgr services carrying extra lines that remount the writable overlay root executable and start a background script; an aaamgr service that runs a compiled, packed ELF where the legitimate component is a Python package; extra libraries mapped into vdaemon processes and ptrace activity against them; encrypted staging files under /var/tmp; timestomping with reference-file touch/chmod commands. Talos lists Snort SIDs (v2 67387-67416, v3 7:44-7:73; CVE-2026-20127 SIDs 65938, 65958) and tells operators to open a Cisco TAC case on any sign of compromise.
+
+    REGISTRY NOTE: the registry already holds actor:uat-8616 (Talos-named SD-WAN exploiter). This Talos post does not state whether UAT-11473 and UAT-8616 are related; do not link them without a source. ''historical'' in the Talos title refers to the observed activity; the post does not say whether it is ongoing.
+
+    Dropped from the summary on purpose: file hashes, recovered file names and network indicators (no-IOC policy).'
+- title: 'Dream Research: a custom PHP2Shell build chained with the Fragnesia kernel flaw rooted 24 firewalls and an internal management server at a US government-affiliated organisation'
+  sources:
+  - url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+    publisher: Dream Research
+    date: '2026-10-27'
+    role: primary
+  - url: https://www.wordfence.com/blog/2026/10/php2shell-update-still-no-confirmed-wordpress-compromises-and-answers-to-the-questions-were-hearing-most/
+    publisher: Wordfence
+    date: '2026-10-28'
+    role: corroborating
+  - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    publisher: CISA KEV catalog
+    date: '2026-10-28'
+    role: corroborating
+  discovery_trace: 'first seen at: wordfence, feed URL https://www.wordfence.com/feed/ (item PHP2Shell Update: Still No Confirmed WordPress Compromises, 2026-10-28 18:26 UTC) -> pivot: Wordfence post, URL https://www.wordfence.com/blog/2026/10/php2shell-update-still-no-confirmed-wordpress-compromises-and-answers-to-the-questions-were-hearing-most/ (its sources list names the Dream report) -> primary: Dream Research report, URL https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers -> corroboration of the chain: CISA KEV entry for CVE-2026-46300 (bridge cisa-kev, catalogVersion 2026.10.28), URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json'
+  summary: Dream Research reports (page metadata 2026-10-27; Wordfence dates the report 2026-10-26) artifacts it found on 2026-10-25 of a campaign that paired a custom, non-public PHP2Shell exploit (CVE-2026-109618 and CVE-2026-109619) with the Fragnesia kernel privilege escalation (CVE-2026-46300) against the management web interface of an unnamed vendor's firewall software, which Dream says embeds PHP 8.0.30 behind appweb; the chain needs one unauthenticated HTTPS request, runs the PHP stage as the unprivileged web user and uses a page-cache write to swap the su PAM rules for an accept-all module, so root follows in under 15 minutes (Dream's figures). From about 19,000 internet-facing devices found through the FOFA search engine, about 5,000 answered a version probe, 240 matched the targeted countries (US, Japan, Taiwan, South Korea) and the exploit's per-version memory profiles, and 24 firewalls were rooted; for 22 of them the operator only planted a root webshell and left. At a US government-affiliated organisation the operator, between 2026-10-23 and 2026-10-24, rooted two firewalls, built an eight-port reverse SSH tunnel and a SOCKS proxy that survive reboots (systemd service plus rc.local), ran the same chain against the internal firewall-management server that manages all the organisation's firewalls, decrypted the stored LDAP service-account password, enumerated the Active Directory and then, in scripts Dream recovered, sprayed passwords (the domain has no lockout threshold), tried to create user and machine accounts and probed the Keycloak SSO; the outcomes of those steps were not among the recovered artifacts. Dream does not name an actor and says several indicators point to a China-nexus operation (target countries, a Chinese reconnaissance platform and tunnelling utility, Chinese language models and Chinese-language prompts in an AI scanning platform, and a UTC+8 infrastructure clock), found Claude Code installed on the infrastructure, and has no direct evidence that AI wrote the exploit. The vendor is undisclosed and was notified, no victim is named, and Wordfence, which relays the report, says it has not verified the incident. CISA's KEV entry for CVE-2026-46300, added 2026-10-28, independently states that the kernel flaw 'can be chained with CVE-2026-109618 and CVE-2026-109619 to implant PHP webshells and run commands as root'. This is the first source in the store that ties the PHP flaws to a production compromise of named CVEs through a chain; the existing entry says no source does.
+  region_nexus: global; targeted countries US, Japan, Taiwan, South Korea; victim is a US government-affiliated organisation; no Swiss victim reported
+  primary_sector_nexus: 'direct: government networks and edge firewalls with exposed management interfaces'
+  sector: public-sector
+  cves:
+  - CVE-2026-109618
+  - CVE-2026-109619
+  - CVE-2026-46300
+  techniques:
+  - T1190
+  - T1068
+  - T1505.003
+  - T1572
+  - T1090
+  - T1543.002
+  - T1037.004
+  - T1552.001
+  - T1087.002
+  - T1110.003
+  - T1587.004
+  - T1595.002
+  affected_products:
+  - PHP
+  - Linux kernel
+  - unnamed vendor firewall management interface (PHP 8.0.30 on appweb)
+  entity_keys:
+  - tool:php2shell
+  - product:php
+  - product:linux-kernel
+  - trend:dirty-frag-linux-kernel-page-cache-lpe
+  new_entities:
+  - key: campaign:php2shell-fragnesia-firewall-chain-2026-10
+    type: campaign
+    name: PHP2Shell plus Fragnesia firewall-rooting chain (Dream Research)
+    aliases: []
+    summary: 'Campaign that Dream Research reconstructed from recovered artifacts: a custom PHP2Shell build chained with CVE-2026-46300 against an unnamed vendor''s firewall management interfaces, 24 firewalls plus an internal management server rooted, US government-affiliated target pivoted into Active Directory (Dream Research, 2026-10-26).'
+  relation_suggestions:
+  - subject: campaign:php2shell-fragnesia-firewall-chain-2026-10
+    object: tool:php2shell
+    basis: 'Dream: the operator weaponised a custom build of the PHP2Shell chain (Dream Research, 2026-10-26)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619
+  priority_hint: critical-stays
+  classification_hint: B3
+  evidence:
+  - quote: On October 25, Dream researchers uncovered artifacts of what appeared to be a Chinese AI-assisted campaign that rooted 25 servers, including systems in a US government-affiliated environment.
+    attribution: Dream Research
+    source_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+  - quote: The total chain — from unauthenticated HTTPS connection to persistent root webshell — completes in under 15 minutes.
+    attribution: Dream Research
+    source_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+  - quote: We do not attribute this activity to a named threat actor.
+    attribution: Dream Research
+    source_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+  - quote: The public report does not identify the affected vendor or publish the recovered artifacts, and we have not independently verified the incident.
+    attribution: Wordfence
+    source_url: https://www.wordfence.com/blog/2026/10/php2shell-update-still-no-confirmed-wordpress-compromises-and-answers-to-the-questions-were-hearing-most/
+  - quote: This vulnerability can be chained with CVE-2026-109618 and CVE-2026-109619 to implant PHP webshells and run commands as root.
+    attribution: CISA KEV catalog
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+  extended_notes: 'DATE CONFLICT: Dream''s page metadata gives 2026-10-27 (17:02 UTC in its structured data) while Wordfence lists the report under 2026-10-26; both are stated, the exact first posting time is unknown.
+
+    OVERLAP: S1 carries the KEV row for CVE-2026-46300 (kev-duty lead ''PHP2Shell chain per KEV shortDescription''); this item is the research source behind that row. The Fragnesia entry is 2026-05-15/cve-2026-46300-linux-kernel-local-privilege-escalation-via-x (KEV listing = exploitation-status change, its cves[] record is COVERED-STALE).
+
+    FACT / CLAIM / INFERENCE: facts = the KEV text; claims = everything about the incident (single vendor, vendor and victim unnamed, recovered artifacts not published, outcomes of the AD steps unknown); inference = Dream''s China-nexus reading rests on target countries and tooling, and Dream itself declines to name an actor.
+
+    DETECTION (telemetry classes, from the Dream chain description): web access logs on the appliance management interface showing a burst of very large multipart POST requests with oversized filenames and session-progress fields, then an out-of-bounds-read style request whose response Set-Cookie header carries a pointer value (stages A1/B1); worker crashes and memory-exhaustion errors in PHP logs (''in Unknown on line 0''); a shell spawned directly by the web worker running as the unprivileged web user; integrity change to the su PAM rule file (replaced with an accept-all module); a new small PHP file in a publicly served directory; a new systemd unit or rc.local line on an appliance and a long-lived outbound SSH session from a firewall to an unfamiliar host; on the management server, LDAP binds from the stored service account outside normal VPN-authentication patterns; in the directory, a password spray against all accounts where lockoutThreshold is 0 and machine-account creation under the default MachineAccountQuota.
+
+    POST-PATCH: parked webshells, tunnels and harvested keys (HA replication, TLS and device-authentication keys) survive a patch; Dream says the tunnel at the government victim was likely still active. Rotating the LDAP service-account password and re-keying certificates is part of eviction.
+
+    HARDENING LEVERS named or implied by the source: management interfaces must not be internet-reachable (''should never have been exposed''); set an account lockout threshold; reduce MachineAccountQuota; embedded PHP 8.0.30 is end-of-life and only the vendor can fix it; kernel fix for CVE-2026-46300.
+
+    Not carried: the vendor-specific version profiles, hashes and any addresses (no-IOC policy).'
+- title: CVE-2026-41709 (ESX command-logging bypass) is on CISA KEV after CrowdStrike names WARP PANDA as exploiting it as a zero-day in vCenter environments
+  sources:
+  - url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/
+    publisher: CrowdStrike
+    date: '2026-10-28'
+    role: primary
+  - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    publisher: CISA KEV catalog
+    date: '2026-10-28'
+    role: corroborating
+  - url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017
+    publisher: Broadcom (VMSA-2026-0006.2)
+    date: '2026-08-19'
+    role: primary-vendor-advisory
+  discovery_trace: 'first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev, catalogVersion 2026.10.28, CVE-2026-41709 dateAdded 2026-10-28) and work/2026-10-29T0255Z-intel/kev-window.txt (COVERED-STALE) -> pivot: CrowdStrike blog post on its Legal Threat Landscape Report, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/ (found through the crowdstrike blog feed sweep) -> primary for exploitation: same CrowdStrike post'
+  summary: 'CISA added CVE-2026-41709 (Broadcom VMware ESX ''insufficient logging'', CWE-778) to the Known Exploited Vulnerabilities catalog on 2026-10-28 with a federal due date of 2026-11-11; the KEV record lists ransomware use as unknown and describes the flaw as letting a malicious actor with admin access perform certain operations without being logged. CrowdStrike''s 2026 Legal Threat Landscape Report post of the same day is the first source in the store that says who used it: CrowdStrike states WARP PANDA, a China-nexus cluster, deployed several forms of malware in victims'' VMware vCenter environments and, in several of these cases and as late as early 2026, exploited the ESXi command-logging bypass CVE-2026-41709 as a zero-day. Broadcom fixed it in VMSA-2026-0006 on 2026-07-29, which the existing entry rates as a minor flaw for anyone who treats ESX audit logs as a complete record; the new reporting changes that to a flaw an intrusion set used to hide administrator actions on ESXi hosts, from before the fix existed. CrowdStrike gives no victim names, no count and no detail on the malware or on how administrator access was first obtained. Broadcom''s advisory, as read in its revision VMSA-2026-0006.2 of 2026-08-19, still rates CVE-2026-41709 Low (CVSS 3.1 2.7, administrator privileges required), says only that a malicious administrator could act without the operation being logged and carries no exploitation statement; the fixed builds it lists are ESXi80U3j-25429389 for ESX 8.0, ESXi-9.0.2.0100-25595025 for ESX 9.0, ESXi-9.1.0.0-25370933 for ESX 9.1 and VCF 5.2.4 for VCF 5.x.'
+  region_nexus: global; victims named by CrowdStrike are US legal-sector entities; ESX is widely deployed in Swiss public administrations
+  primary_sector_nexus: direct for any administration running ESXi/vCenter
+  sector: public-sector
+  cves:
+  - CVE-2026-41709
+  techniques:
+  - T1211
+  - T1190
+  affected_products:
+  - VMware ESX
+  - VMware vCenter Server
+  entity_keys:
+  - actor:verdantbamboo
+  - product:vmware-esxi
+  - product:vmware-vcenter-server
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: update-of:2026-07-30/vmware-vmsa-2026-0006-vcenter-auth-bypass-vmxnet3-escape
+  priority_hint: notable
+  classification_hint: B2
+  evidence:
+  - quote: In several of these cases, and as late as early 2026, the adversary exploited ESXi command logging bypass vulnerability CVE-2026-41709 as a zero-day.
+    attribution: CrowdStrike
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/
+  - quote: Broadcom VMWare ESX contains an insufficient logging vulnerability that could allow a malicious actor with admin access to perform certain operations without being logged.
+    attribution: CISA KEV catalog
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+  - quote: A malicious administrator could exploit this issue to perform certain operations without them being logged.
+    attribution: Broadcom
+    source_url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017
+  extended_notes: 'OVERLAP: S1 has this CVE as a kev-duty lead (WARP PANDA / CrowdStrike for 41709); the main agent should merge into one changelog record on the VMware entry (cves[] status to exploited).
+
+    ASSESSMENT (mine, from the mechanism, not a source statement): the flaw lets an admin-level actor act without log entries, and the zero-day use predates the 2026-07-29 fix, so ESX-side command logs for the period before patching cannot be treated as complete; vCenter-side records, host configuration state and network telemetry are the cross-check. Patching removes the logging bypass, not malware already planted.
+
+    EXPOSURE: Broadcom VMSA-2026-0006 is the fixed-version reference; the fixed-build rows above are from the revision read on 2026-10-29, and the rows for other ESX trains should be read on the live advisory. Broadcom''s advisory has not been revised to mention exploitation (its change log ends at .2, 2026-08-19). CISA''s KEV copy gives forensicTriage ''No'' and a federal due date of 2026-11-11.'
+- title: 'Huntress: phished MDM enrolments (Hexnode, Rippling) give attackers a SYSTEM-level channel that reinstalls ScreenConnect after it is removed'
+  sources:
+  - url: https://www.huntress.com/blog/attackers-turn-mdm-into-remote-access
+    publisher: Huntress
+    date: '2026-10-28'
+    role: primary
+  discovery_trace: 'first seen at: huntress, feed URL https://www.huntress.com/blog/rss.xml (item ''Managed for Malice: How Attackers Turn MDM into Remote Access'', 2026-10-28 16:00 UTC) -> primary (no pivot needed): URL https://www.huntress.com/blog/attackers-turn-mdm-into-remote-access'
+  summary: 'Huntress reports (2026-10-28) several recent incidents in which attackers used legitimate mobile-device-management platforms, not flaws in them, as a trusted management path: in the two cases it describes, a phishing victim ended up enrolled in an attacker-controlled MDM tenant and the attacker then pushed an unauthorised ScreenConnect (RMM) agent. In the Hexnode case, proposal-themed emails led to a download, saved in the Edge temporary downloads folder, of an MSI named like a DocuSign installer that actually installed Hexnode MDM components (gateway, agent and a PostgreSQL service); ScreenConnect followed shortly after and connected to an attacker relay on port 8041. The managed-service provider removed ScreenConnect, which came back several hours later to the same relay, because the MDM client that had delivered it was still installed. In the Rippling case a receptionist opened an email about tax-planning with a link to a fake Teams ''Calendar'' page; about a minute after the click a Rippling enrollment registry key appeared, the agent MSI was downloaded into a SYSTEM profile path and installed as a SYSTEM-privileged daemon, and about 35 minutes later the attacker used the MDM to stage and run a ScreenConnect installer as SYSTEM, again to an attacker relay on port 8041. Huntress infers from the online Rippling agent that the actor had already created its own tenant. It names no actor, victim sector or count beyond ''several'' incidents, and the products involved are not at fault.'
+  region_nexus: global; no region stated; SMB and MSP-managed endpoints
+  primary_sector_nexus: 'indirect: applies to any administration that uses an MDM and an MSP or its own RMM tooling'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1566.002
+  - T1204.002
+  - T1072
+  - T1219
+  affected_products:
+  - Hexnode MDM
+  - Rippling MDM
+  - ConnectWise ScreenConnect
+  entity_keys:
+  - product:connectwise-screenconnect
+  new_entities: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: notable
+  classification_hint: B2
+  evidence:
+  - quote: Huntress has observed several incidents recently where threat actors have leveraged mobile device management (MDM) applications to carry out attacks.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/attackers-turn-mdm-into-remote-access
+  - quote: removing it does not remove the unauthorized management architecture that delivered it.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/attackers-turn-mdm-into-remote-access
+  - quote: The sequence of events observed makes for a stronger signal—social engineering -> a new MDM enrollment -> RMM installation -> outbound communication with an unfamiliar relay.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/attackers-turn-mdm-into-remote-access
+  extended_notes: 'EXPOSURE: any managed Windows endpoint whose users can run an MSI or follow an enrollment link and whose organisation has no inventory of authorised MDM tenants, agents and RMM instances; Huntress names Hexnode and Rippling as the two MDMs seen and says the list is not definitive.
+
+    DETECTION (telemetry classes): process creation of msiexec from a browser temp-download path installing an MDM agent not in the approved inventory; registry keys that mark MDM enrollment appearing on a device nobody enrolled; a new SYSTEM-level agent daemon in a vendor directory shortly after a click; an RMM install (ScreenConnect) launched by the MDM agent, followed by outbound connections to an unfamiliar relay on port 8041; and recurrence of the same RMM relay after the RMM was removed. Huntress''s best signal is the chain social engineering, new enrollment, RMM install, unfamiliar relay, correlated across identity, MDM, endpoint and network telemetry.
+
+    POST-REMOVAL CHECK: removing the RMM is not eviction; unenroll the endpoint from the unauthorised MDM tenant, disable attacker-created accounts, revoke sessions and tokens, reset credentials, and reimage if integrity cannot be confirmed (Huntress mitigation list).
+
+    TRIAGE: a corporate MDM enrolment run by IT looks similar in process telemetry; the discriminators the source supports are the tenant (not in the authorised inventory), the trigger (an emailed link or a user-run installer rather than the IT enrolment workflow) and the RMM install plus unfamiliar relay that follow within minutes. Dropped: domains, URLs and file names (no-IOC policy).'
+- title: 'Acronis TRU: Qilin''s Rust encryptor drives ESXi through a PowerCLI script that resets host passwords and enables SSH; Securotrop and The Gentlemen trace back to Qilin operators'
+  sources:
+  - url: https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/
+    publisher: Acronis Threat Research Unit
+    date: '2026-10-28'
+    role: primary
+  discovery_trace: 'first seen at: acronis-tru, feed URL https://www.acronis.com/en-us/tru/feed.xml (item ''Inside Qilin ransomware: ESXi attacks, affiliate networks and double extortion'', 2026-10-28 03:08 UTC) -> primary (no pivot needed): URL https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/'
+  summary: Acronis TRU's analysis of a Windows Qilin (Agenda) sample, published 2026-10-28, describes a 4.69 MB Rust executable that refuses to run without a '-password' argument (checked by SHA-256; the same value is the mutex name), can duplicate and impersonate another process's token ('-impersonate') and carries a JSON configuration with an RSA key, directory, file and extension exclusions, process and service lists that name virtualisation, backup, SQL, Exchange, SAP, Veeam and Acronis components (Acronis calls them blacklists), and a per-victim company ID that becomes the file extension. On a hypervisor guest (CPUID bit check) with VM targeting configured, it runs a stored PowerShell script that installs .NET and NuGet if missing, changes PowerCLI settings, disables cluster services, lists ESXi hosts, changes ESXi passwords, enables ESXi SSH, alters host configuration and uploads and executes payloads on the hosts. Before encrypting it creates a Run-key value with a random six-letter name, enables remote-to-local and remote-to-remote symbolic-link evaluation with fsutil, sets EnableLinkedConnections, enumerates mapped drives with 'net use', deletes all volume shadow copies with vssadmin and starts a thread that enumerates processes and services and stops services, checking names against its embedded lists; it encrypts with AES in counter mode when AES-NI is present and otherwise ChaCha20, wraps a per-file 32-byte key with RSA-4096, drops README-RECOVER-<company id>.txt notes and writes per-thread logs to a QLOG folder that it zips into QLOGS.zip, which Acronis says the operator can exfiltrate. Acronis counts more than 1,000 claimed victims in 2025 and more than 900 in 2026, about 13.3% in health care, says affiliates get in through phishing, stolen VPN and RDP credentials, vulnerable internet-facing applications and remote-management tools, and links Qilin to Moonstone Sleet and, as an alleged partnership, to Scattered Spider. It also says Qilin operators founded The Gentlemen and Securotrop, and that Securotrop stays in the Qilin affiliate network with its own leak site; Qilin additionally publishes through the WikiLeaksV2 clearnet site. Single-vendor analysis of one sample; no initial-access evidence of its own.
+  region_nexus: global; Qilin targets US, Canada and Europe and excludes CIS countries per Acronis
+  primary_sector_nexus: 'indirect to direct: health care is about 13.3% of victims; any administration with ESXi estates is within the technique'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1486
+  - T1490
+  - T1489
+  - T1059.001
+  - T1547.001
+  - T1112
+  - T1134.001
+  - T1135
+  affected_products:
+  - VMware ESXi
+  - Windows
+  entity_keys:
+  - actor:qilin
+  - actor:thegentlemen
+  - actor:moonstone-sleet
+  - product:vmware-esxi
+  new_entities:
+  - key: actor:securotrop
+    type: actor
+    name: Securotrop
+    aliases: []
+    summary: Ransomware operation that Acronis TRU says was founded by Qilin operators, remains part of the Qilin affiliate network and runs its own data leak site (Acronis TRU, 2026-10-28).
+  relation_suggestions:
+  - subject: actor:securotrop
+    object: actor:qilin
+    basis: 'Acronis TRU: Securotrop remains part of the Qilin affiliate network while operating a separate data leak site (Acronis, 2026-10-28)'
+  - subject: actor:thegentlemen
+    object: actor:qilin
+    basis: 'Acronis TRU: some Qilin operators created separate RaaS operations including The Gentlemen, which became a competitor (Acronis, 2026-10-28)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: notable
+  classification_hint: B2
+  evidence:
+  - quote: Qilin commonly follows a double-extortion model, combining large-scale encryption with threats to publish stolen information if the ransom is not paid.
+    attribution: Acronis TRU
+    source_url: https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/
+  - quote: Securotrop remains part of the Qilin affiliate network while operating a separate data leak site.
+    attribution: Acronis TRU
+    source_url: https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/
+  - quote: Before encryption, Qilin deletes all available Volume Shadow Copies using
+    attribution: Acronis TRU
+    source_url: https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/
+  - quote: Obtain a list of ESXi hosts
+    attribution: Acronis TRU
+    source_url: https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/
+  extended_notes: 'DETECTION (telemetry classes): process-creation command lines for fsutil behavior set SymlinkEvaluation R2R:1 and R2L:1 and a write to the EnableLinkedConnections policy value, close in time to ''vssadmin delete shadows /all /quiet''; a Run-key value with a random six-letter name that points to an executable with arguments; PowerShell or PowerCLI module installation on a Windows host that has network reach to vCenter or ESXi, followed by ESXi-side events for SSH enablement, root password change and file upload; a QLOG directory under the user''s temp path and a QLOGS.zip; README-RECOVER-<id>.txt notes. Acronis''s own recommendations are generic (EDR, phishing-resistant MFA on remote access, patching, PowerShell/admin-tool monitoring, isolated backups).
+
+    TRIAGE: fsutil symlink evaluation changes, EnableLinkedConnections and shadow-copy deletion each occur in legitimate admin and backup work; the combination in one process lineage, from a user-writable path and followed within minutes by hypervisor administration changes, is the discriminating pattern (my reading of the described sequence, not a source claim).
+
+    HARDENING that follows mechanically from the script: treat ESXi SSH enablement and root password changes as alert-worthy events, restrict which hosts can reach vCenter/ESXi management, and keep backups off the domain. The sample''s exclusion lists and hashes are not carried (no-IOC policy).'
+- title: 'ZDI-CAN-33367: first fixed kernels ship (AlmaLinux 8/9/10 production, KernelCare EL9/EL10 rebootless); upstream fix still not in mainline, Debian and Ubuntu undated'
+  sources:
+  - url: https://almalinux.org/blog/2026-10-23-zdi-can-33367/
+    publisher: AlmaLinux OS
+    date: '2026-10-28'
+    role: primary
+  - url: https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/
+    publisher: TuxCare
+    date: '2026-10-27'
+    role: corroborating
+  - url: https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws
+    publisher: Sysdig Threat Research Team
+    date: '2026-10-28'
+    role: corroborating
+  discovery_trace: 'first seen at: sysdig, feed URL https://www.sysdig.com/blog/rss.xml (item ''Detecting and mitigating ZDI-CAN-33367 and five other Linux flaws'', 2026-10-28; the feed links the staging host webflow.sysdig.com, the canonical page was fetched) -> pivot: AlmaLinux post linked by Sysdig, URL https://almalinux.org/blog/2026-10-23-zdi-can-33367/ -> pivot: TuxCare post, URL https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/'
+  summary: 'The existing entry covers the public local root exploit for ZDI-CAN-33367, an skb_zerocopy() page-cache write that gets past the Dirty Frag fix, with no CVE and no merged fix. Since then AlmaLinux updated its post on 2026-10-28: the fix is now in the production repositories, from kernel-4.18.0-553.178.1.el8_10 (AlmaLinux 8), kernel-5.14.0-687.60.1.el9_8 (AlmaLinux 9) and kernel-6.12.0-211.69.1.el10_2 (AlmaLinux 10), and no longer needs the testing repository. TuxCare reports (status of 2026-10-27) KernelCare rebootless patches for EL10 (shipped 2026-10-23) and EL9 (2026-10-26) across AlmaLinux, CloudLinux, RHEL, Oracle Linux and Rocky Linux, EL8 ready for release, CloudLinux 7h and 8 kernels in beta, Debian and Ubuntu work in progress with no date, and that EL6 and EL7 kernels are not vulnerable; Sysdig repeats on 2026-10-28 that the upstream fix has been accepted in the networking tree but has not reached mainline, that there is still no CVE and that no exploitation in the wild has been reported, and notes that The Hacker News rates ZDI-CAN-34076 at CVSS 8.6, which Sysdig had not rated. Until a kernel update is available, TuxCare names disabling unprivileged user namespaces (user.max_user_namespaces=0) as the main stop-gap and says Ubuntu 24.04''s AppArmor restriction does not stop the public exploit; on hosts that need namespaces it points to blocking the two modules the exploit needs.'
+  region_nexus: global; Linux estates of Swiss administrations on RHEL-family, Debian or Ubuntu hosts
+  primary_sector_nexus: 'indirect: shared hosts, CI runners and multi-user servers'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1068
+  affected_products:
+  - Linux kernel
+  - AlmaLinux
+  - KernelCare
+  - Debian
+  - Ubuntu
+  entity_keys:
+  - product:linux-kernel
+  - trend:dirty-frag-linux-kernel-page-cache-lpe
+  new_entities: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-10-25/zdi-linux-kernel-reports-public-skb-zerocopy-root-exploit
+  priority_hint: notable
+  classification_hint: B1
+  evidence:
+  - quote: The ZDI-CAN-33367 fix is now included in the regular AlmaLinux kernel updates in the production repositories for AlmaLinux 8, 9, and 10.
+    attribution: AlmaLinux OS
+    source_url: https://almalinux.org/blog/2026-10-23-zdi-can-33367/
+  - quote: EL8 is ready for release, and Debian and Ubuntu work is in progress.
+    attribution: TuxCare
+    source_url: https://tuxcare.com/blog/zdi-ksmbd-bugs-cve/
+  - quote: the upstream fix has been accepted but has not reached mainline
+    attribution: Sysdig Threat Research Team
+    source_url: https://www.sysdig.com/blog/detecting-and-mitigating-zdi-can-33367-and-five-other-linux-flaws
+  extended_notes: 'OVERLAP NOTE: CISA added CVE-2026-46300 (Fragnesia, the earlier bug of the same class) to KEV on 2026-10-28 with a note that it chains with the PHP2Shell flaws; that is a different CVE from this report and is carried in the Dream item. This item is only the patch-availability delta for ZDI-CAN-33367.
+
+    EXPOSURE per TuxCare: public exploit needs unprivileged user namespaces and automatically loaded modules (nfnetlink_queue, nft_queue, nlmon, cls_u32, act_pedit, act_mirred, esp4); Ubuntu 22.04 and CloudLinux 8 were not tested at the time of writing.'
+- title: 'ANNUAL REPORT - ESET APT Activity Report Q2 2026-Q3 2026: first Belarus-aligned wiper, DeceptiveDevelopment moves into the software supply chain, AI used like ordinary developer tooling'
+  sources:
+  - url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+    publisher: ESET Research
+    date: '2026-10-28'
+    role: primary
+  - url: https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q2-2026-q3-2026.pdf
+    publisher: ESET Research (full report PDF)
+    date: '2026-10-28'
+    role: primary
+  discovery_trace: 'first seen at: eset, record URL https://www.welivesecurity.com/en/rss/feed/ lagged (newest item 2026-10-26); `extract https://www.welivesecurity.com/en/eset-research/` (the recipe in the eset record''s notes) returned the dated research listing with ''ESET APT Activity Report Q2 2026-Q3 2026, 28 Oct 2026'' -> primary: report page, URL https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/ -> primary: full PDF read with the pdf recipe, URL https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q2-2026-q3-2026.pdf'
+  summary: 'ESET published its semi-annual APT Activity Report for April to September 2026 on 2026-10-28, a successor to the Q4 2025-Q1 2026 report already in the store. Its main statements: China-aligned groups focused on governmental targets, with FamousSparrow still active in South America, campaigns that appear to support Chinese law-enforcement action against Southeast Asian scam networks (hotels in Palau, DarkVigil in Sri Lanka) and several clusters against Taiwan''s semiconductor sector; Iran-aligned activity rose again after the outbreak of the US/Israel war on Iran, with OilRig''s FilthyFeline and MuddyWater active mainly against Israel and new or updated malware from BladedFeline and TortoiseShell; Arid Viper was found against what looks like the Palestinian Authority''s foreign ministry. North Korea-aligned actors kept to technology, crypto and developer targets, Ukraine rose in prominence, Lazarus resumed Operation DreamJob against the drone sector, and DeceptiveDevelopment moved from fake job interviews into the wider software supply chain: after a developer falls for a lure, the malware harvests Git credentials, SSH keys and tokens that are used later to inject code into the victim''s repositories, often rewriting commit history, with affected artifacts distributed through npm, the Go module mirror, Packagist, PyPI and browser-extension marketplaces; ESET assesses most affected projects are small utilities, which points to automated propagation. Russia-aligned groups kept targeting governments, defence and military entities in Europe with far more targets in Ukraine; Gamaredon''s activity fell markedly; ESET describes an active campaign in Ukraine that exploited MDaemon mail servers (returned as a separate item). ESET documents what it believes is the first destructive attack by a Belarus-aligned actor: FrostyNeighbor deployed Chisel, UltraVNC, Cobalt Strike and finally a VBScript wiper through Group Policy against a Ukrainian manufacturing company important to transport, and ESET reads the targeting as closer to Moscow''s priorities than Minsk''s, i.e. a possible proxy role; its chart puts 87.4% of Belarus-aligned initial access on exploitation of public-facing applications and 56.5% of their targets in government and the public sector. On AI, ESET says APT groups use it like mainstream developers (malware and decoy-site development, phishing images, analysis of large data) and that it has not seen AI substantially reshape the APT landscape; it repeats the UAC-0099 trick of planting a nuclear-weapon request in a script comment to trip LLM-based analysis. Chart-derived figures (read from chart text in the PDF; label and value order matched but not visually checked): attack sources China 29.2%, Russia 28.6%, North Korea 21.1%, Belarus 8.1%, Iran 5.4%; targeted sectors in Europe government and public sector 41.1% and defence and aerospace 24.5%, with the report stressing that European activity is concentrated on Ukraine.'
+  region_nexus: Europe (concentrated on Ukraine), Asia-Pacific, Middle East, South America; no Swiss-specific content; Europe chart shows government and public sector as the largest targeted sector
+  primary_sector_nexus: 'direct as context: government and public sector is the top-targeted sector in ESET''s Europe and Americas charts'
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1190
+  - T1566.001
+  - T1195.002
+  - T1484.001
+  - T1485
+  affected_products: []
+  entity_keys:
+  - actor:frostyneighbor
+  - actor:uac-0099
+  - actor:gamaredon
+  - actor:muddywater
+  - actor:oilrig
+  - actor:famoussparrow
+  - actor:scarcruft
+  - actor:lazarus-group
+  - campaign:contagious-interview
+  - product:mdaemon-email-server
+  new_entities:
+  - key: report:eset-apt-activity-report-q2-2026-q3-2026
+    type: report
+    name: ESET APT Activity Report Q2 2026-Q3 2026
+    aliases: []
+    summary: 'ESET semi-annual APT overview for April to September 2026, published 2026-10-28: Belarus-aligned FrostyNeighbor''s first documented wiper attack, DeceptiveDevelopment''s move into the software supply chain, MDaemon exploitation in Ukraine and a Gamaredon decline (ESET Research, 2026-10-28).'
+  relation_suggestions:
+  - subject: actor:frostyneighbor
+    object: report:eset-apt-activity-report-q2-2026-q3-2026
+    basis: ESET report documents FrostyNeighbor's VBScript wiper attack on a Ukrainian manufacturer, the first destructive attack it has seen from a Belarus-aligned actor (ESET, 2026-10-28)
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: notable
+  classification_hint: B2
+  evidence:
+  - quote: During the monitored period, China-aligned groups conducted intelligence-collection operations primarily against governmental targets.
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  - quote: Most notably, we identified the first destructive cyberattack by a Belarus-aligned threat actor that we have documented in the European theater, marking a significant development in this threat nexus.
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  - quote: Despite these developments, we have not noticed AI substantially reshaping the APT landscape over the past six months.
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  extended_notes: 'ANNUAL REPORT flag per the spawn note: this is ESET''s periodic (half-year) report. The report is the successor of entries/2026-05-30/eset-apt-activity-report-q4-2025-q1-2026-sandworm-strikes-na.md; registry already holds report:eset-apt-activity-report-q4-2025-q1-2026-sandworm-lazarus.
+
+    REGISTRY: FrostyNeighbor (actor:frostyneighbor), UAC-0099 (actor:uac-0099, GuardBreaker technique already recorded from ESET''s 2026-09-10 work) and DeceptiveDevelopment (campaign:contagious-interview carries the alias) exist; PhantomCaptcha, FilthyFeline, BladedFeline, TortoiseShell, Arid Viper, SlippyNunchucks, APT-C-60 and the DEV#POPPER/OmniStealer tooling were not checked against the registry.
+
+    TRANSFERABLE DETECTION CONTENT in the report: DeceptiveDevelopment''s developer-workstation chain (VS Code task, Cursor and Discord persistence for its Node.js RAT, blockchain-transaction C2 resolution, payloads on Gitea, JSON-hosting services and IPFS gateways) relates to the supply-chain items returned this run (testmetest worm); the FrostyNeighbor wiper is delivered through Group Policy, so changes to GPO scripts and scheduled tasks on domain controllers are the telemetry class.
+
+    CAVEATS: ESET''s telemetry is vendor-customer telemetry; the percentages above come from charts whose text was extracted by the pdf recipe without OCR, so treat them as indicative.'
+- title: 'MDaemon below 26.0.4: an emailed RAR is enough for code execution because the product shipped a ClamAV UnRAR library with CVE-2025-8088; used against Ukrainian servers with HELLAGE and HELLTAG'
+  sources:
+  - url: https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q2-2026-q3-2026.pdf
+    publisher: ESET Research (APT Activity Report, MDaemon section)
+    date: '2026-10-28'
+    role: primary
+  - url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+    publisher: ESET Research
+    date: '2026-10-28'
+    role: primary
+  - url: https://blog.clamav.net/2026/08/clamav-154-and-146-security-patch.html
+    publisher: ClamAV (Cisco Talos) release notes
+    date: '2026-08-07'
+    role: corroborating
+  discovery_trace: 'first seen at: eset, `extract https://www.welivesecurity.com/en/eset-research/` dated listing (ESET APT Activity Report Q2 2026-Q3 2026, 28 Oct 2026) -> primary: report page, URL https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/ (one sentence on MDaemon) -> primary: full PDF read with the pdf recipe, URL https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q2-2026-q3-2026.pdf (MDaemon section, p.23) -> pivot: ClamAV advisory found through WebSearch ("MDaemon 26.0.4 release notes libclamunrar ClamAV CVE-2025-8088 fix") and its blog index https://blog.clamav.net/2026/08/, URL https://blog.clamav.net/2026/08/clamav-154-and-146-security-patch.html'
+  summary: 'ESET reports an active campaign in Ukraine in which Russia-aligned actors exploited MDaemon mail server software for code execution on the server with no user interaction. MDaemon uses ClamAV to scan attachments; old ClamAV releases carried the WinRAR path-traversal flaw CVE-2025-8088, which ClamAV''s own notes describe as an NTFS alternate-data-stream name with path separators letting extraction escape ClamAV''s temporary scan directory on Windows; ESET says ClamAV fixed it in July 2025 but MDaemon kept shipping an old libclamunrar.dll until MDaemon 26.0.4 on 2026-08-25. The chain ESET describes: a crafted RAR is mailed to any address at a vulnerable server, MDaemon invokes ClamAV to scan it, and the exploit writes a malicious DLL to the server''s file system; because no user interaction is needed the messages carried no lure. The campaign deployed two backdoor families that CERT-UA named: HELLAGE, which steals email and other data, talks to a hardcoded C2 server and can deploy more malware, and HELLTAG, a Telegram-bot-based backdoor for command execution, file transfer and reconnaissance. ESET could not attribute it to a known Russia-aligned actor. ClamAV''s release notes of 2026-08-07 independently confirm the library flaw and widen the exposure: ClamAV 0.101.0 through 1.5.3 is affected on Windows and the fix is in 1.4.6 and 1.5.4, so any Windows host that scans mail or files with ClamAV, not only MDaemon, is in scope. No CVE for the MDaemon packaging issue and no MDaemon advisory were found; CVE-2025-8088 itself has been on CISA''s KEV catalogue since 2025-08-12.'
+  region_nexus: Ukraine (observed); any Swiss organisation running MDaemon or Windows-hosted ClamAV scanning
+  primary_sector_nexus: 'indirect to direct: MDaemon is a small and mid-size organisation mail server; exposure depends on whether administrations run it'
+  sector: public-sector
+  cves:
+  - CVE-2025-8088
+  techniques:
+  - T1190
+  - T1574.001
+  - T1102
+  - T1114.001
+  affected_products:
+  - MDaemon Email Server
+  - ClamAV (Windows)
+  - WinRAR UnRAR library
+  entity_keys:
+  - product:mdaemon-email-server
+  new_entities:
+  - key: malware:hellage
+    type: malware
+    name: HELLAGE
+    aliases: []
+    summary: Backdoor named by CERT-UA that steals email messages and other data, uses a hardcoded C2 server and can deploy additional malware; deployed after exploiting MDaemon in Ukraine (ESET, 2026-10-28).
+  - key: malware:helltag
+    type: malware
+    name: HELLTAG
+    aliases: []
+    summary: Telegram-bot-based backdoor named by CERT-UA for command execution, file transfer and reconnaissance; deployed with HELLAGE after MDaemon exploitation in Ukraine (ESET, 2026-10-28).
+  relation_suggestions:
+  - subject: malware:hellage
+    object: product:mdaemon-email-server
+    basis: 'ESET: attackers exploited MDaemon and deployed HELLAGE and HELLTAG on the server (ESET, 2026-10-28)'
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: notable
+  classification_hint: B2
+  evidence:
+  - quote: We also identified an extensive campaign in Ukraine exploiting MDaemon mail servers, during which the attackers deployed two backdoor malware families, HELLAGE and HELLTAG.
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  - quote: This issue affects ClamAV 0.101.0 through 1.5.3. The fix is included in 1.4.6 and 1.5.4.
+    attribution: ClamAV (Cisco Talos)
+    source_url: https://blog.clamav.net/2026/08/clamav-154-and-146-security-patch.html
+  - quote: The fix rejects path separators in NTFS alternate data stream names to prevent extraction outside ClamAV's temporary scan directory on Windows.
+    attribution: ClamAV (Cisco Talos)
+    source_url: https://blog.clamav.net/2026/08/clamav-154-and-146-security-patch.html
+  extended_notes: 'EXPOSURE: MDaemon Email Server on Windows before 26.0.4 (fixed 2026-08-25 per ESET) that accepts inbound mail, and any other Windows ClamAV 0.101.0-1.5.3 install that scans archives; read the MDaemon version in its About dialog or installed files and the bundled libclamunrar.dll build, and the ClamAV version from clamscan --version. ESET gives no CVE for the MDaemon side and I found no MDaemon advisory (the MDaemon 26.0 release notes page read did not mention it), so the fixed-version statement rests on ESET alone.
+
+    DETECTION (telemetry classes, from the described chain): file creation of a DLL by the ClamAV or MDaemon scanning process outside ClamAV''s temporary scan directory, especially in a program or system directory that the mail service later loads; inbound mail with RAR attachments whose member names contain NTFS alternate-data-stream syntax with path separators; the mail service process spawning unexpected children or making outbound connections to Telegram''s bot API; mail-server hosts reaching out to an unfamiliar hardcoded address after a scan. Because the attack needs no lure, mail logs show an ordinary-looking message with an archive and no user action.
+
+    POST-PATCH: updating does not remove a DLL or backdoor already written; check the mail server for unexpected DLLs and persistence after the update, and treat stored mail as potentially read (HELLAGE steals email).
+
+    FACT / CLAIM: the MDaemon exploitation and version facts are ESET''s; the ClamAV library flaw and version range are ClamAV''s own; the CERT-UA naming of the backdoors is relayed by ESET and not independently read.'
+- title: testmetest npm worm (Miasma family with the Mini Shai-Hulud wiper) now starts when a package is imported, so --ignore-scripts no longer protects; 42 real GitHub repositories already armed
+  sources:
+  - url: https://safedep.io/testmetest-npm-worm-miasma-variant/
+    publisher: SafeDep
+    date: '2026-10-27'
+    role: primary
+  - url: https://research.jfrog.com/post/beyond-testmetest-42-hijacked-github-repos/
+    publisher: JFrog Security Research
+    date: '2026-10-26'
+    role: primary
+  - url: https://www.theregister.com/security/2026/10/26/worm-armed-42-github-repos-by-hiding-a-payload-too-big-to-fail/5305570
+    publisher: The Register
+    date: '2026-10-26'
+    role: corroborating
+  discovery_trace: 'first seen at: theregister-security-feed, URL https://www.theregister.com/security/headlines.atom (item ''Worm armed 42 GitHub repos by hiding a payload too big to fail'', 2026-10-26 23:29 +0100, inside the 145 h lookback) -> pivot: The Register article, URL https://www.theregister.com/security/2026/10/26/worm-armed-42-github-repos-by-hiding-a-payload-too-big-to-fail/5305570 -> primary: JFrog post, URL https://research.jfrog.com/post/beyond-testmetest-42-hijacked-github-repos/ (also surfaced independently by the JFrog feed https://research.jfrog.com/rss.xml) -> primary: SafeDep post, URL https://safedep.io/testmetest-npm-worm-miasma-variant/ (updated 2026-10-26 and 2026-10-27)'
+  summary: 'SafeDep and JFrog independently describe a npm worm, which SafeDep calls a Miasma-family build with the token-revocation wiper of Mini Shai-Hulud; neither confirms the lineage and JFrog says the evidence does not establish that the original Miasma operators are behind it. SafeDep counts 19 packages attributed to one operator between 2026-10-19 and 2026-10-27, published through at least four npm accounts, and has tracked three triggers: command expansion in a binding.gyp (no install script), a postinstall script that loads a native addon which XOR-decodes a hidden file and runs it, and, since its update of 2026-10-27, an addon that starts the worm when an application imports the package, so ''npm install --ignore-scripts'' does not stop it. The payload steals SSH keys, npm, PyPI and Git credentials, .env files, browser logins, credentials of AI coding tools, cloud, Vault and Kubernetes secrets and GitHub Actions secrets read from the runner process memory; it exits on CIS locales and sandboxes, and inside GitHub Actions it kills StepSecurity Harden-Runner through the Docker socket and points that vendor''s domains to localhost. It exfiltrates by committing encrypted data, including the victim''s encrypted GitHub token, to a new public repository in the victim''s own account, injects a GitLab CI job that requests npm and PyPI OIDC tokens, publishes new patch versions of the victim''s npm packages and republishes to PyPI and RubyGems, adds AI-agent configuration files that re-infect the host, and wipes the home directory when the stolen GitHub token is revoked. JFrog adds that the operator had already armed 42 third-party GitHub repositories across 11 legitimate owners with hooks for AI coding assistants and editors and 12.9 to 13.7 MB wrapper files that decode to a CI publisher and that evade GitHub''s search and API paths, and that shellpanel artifacts in the same hijacked accounts tie the cluster to earlier GitHub Actions exploitation of cPanel/WHM through CVE-2026-41940, though not as a proven single chain. SafeDep said on 2026-10-22 it had found no compromised third-party packages or victims; JFrog''s later repository finding differs from that, and both views are reported as stated.'
+  region_nexus: global; no region stated; affects developers and CI pipelines that install npm packages
+  primary_sector_nexus: 'indirect: any administration or supplier building JavaScript software or running GitHub/GitLab CI'
+  sector: software-supply-chain
+  cves:
+  - CVE-2026-41940
+  techniques:
+  - T1195.002
+  - T1059.007
+  - T1552.001
+  - T1567.001
+  - T1685
+  - T1485
+  - T1550.001
+  - T1027
+  - T1497.001
+  affected_products:
+  - npm
+  - GitHub Actions
+  - GitLab CI
+  - StepSecurity Harden-Runner
+  entity_keys:
+  - campaign:miasma-redhat-npm-supply-chain
+  - campaign:mini-shai-hulud
+  - policy:npm-v12-install-scripts-default-off-2026
+  new_entities:
+  - key: campaign:testmetest-npm-worm-2026-10
+    type: campaign
+    name: testmetest npm worm
+    aliases:
+    - testmetest campaign
+    summary: npm worm campaign (19 packages, 19-27 October 2026) that SafeDep calls a Miasma-family build with the Mini Shai-Hulud wiper; JFrog links 42 armed GitHub repositories and cPanel exploitation artifacts to it; latest build starts at package import so --ignore-scripts does not protect (SafeDep, JFrog, 2026-10-26/27).
+  relation_suggestions:
+  - subject: campaign:testmetest-npm-worm-2026-10
+    object: campaign:miasma-redhat-npm-supply-chain
+    basis: 'SafeDep: the worm shares code with Miasma ''Phantom Gyp'' of June 2026 but SafeDep has not confirmed the lineage (SafeDep, 2026-10-22); an overlap claim, not attribution'
+  - subject: campaign:testmetest-npm-worm-2026-10
+    object: campaign:mini-shai-hulud
+    basis: 'SafeDep: the worm adds the token-revocation wiper from Mini Shai-Hulud (SafeDep, 2026-10-22)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  priority_hint: notable
+  classification_hint: B1
+  lookback: true
+  evidence:
+  - quote: Any application that imports the package starts the worm. `npm install --ignore-scripts` does not stop it.
+    attribution: SafeDep
+    source_url: https://safedep.io/testmetest-npm-worm-miasma-variant/
+  - quote: The malicious versions steal credentials, spread to other packages and repositories, and install a wiper that deletes the home directory when the victim revokes the stolen GitHub token.
+    attribution: SafeDep
+    source_url: https://safedep.io/testmetest-npm-worm-miasma-variant/
+  - quote: The repositories contain execution hooks for AI coding assistants and IDEs, plus 12.9 to 13.7 MB polymorphic wrappers that all decode to the same hidden CI-publisher payload.
+    attribution: JFrog Security Research
+    source_url: https://research.jfrog.com/post/beyond-testmetest-42-hijacked-github-repos/
+  - quote: The payload blobs were large enough to evade the GitHub search and API paths normally used to find this kind of compromise.
+    attribution: JFrog Security Research
+    source_url: https://research.jfrog.com/post/beyond-testmetest-42-hijacked-github-repos/
+  extended_notes: 'DETECTION (telemetry classes): in package metadata and registries, SafeDep''s rules: a binding.gyp whose sources field runs node in a package with no C/C++ sources; a postinstall that require()s a .node file and swallows errors beside a large high-entropy file; prebuilt addons under prebuilds/<platform>/ with no native source; a package that keeps the staged-publishing stub description in a version other than 0.0.0-stage. On endpoints and CI: a node process that downloads and runs the Bun runtime, a child node process started from a temp path named after its PID, tampering with the Docker socket or the hosts file on a runner (Harden-Runner), and a runner process whose memory is read for secrets. In GitHub and GitLab audit logs: creation of a public repository in a developer''s own account with a generic ''project-utils'' description, pushes whose commit message begins ''AutoSyncComplete:'', unexpected commits adding .claude, .cursor, .gemini, .vscode/tasks.json, CLAUDE.md, AGENTS.md or a fake CodeQL workflow, a GitLab CI job named cache_sync, and unexpected patch releases of your own npm packages.
+
+    POST-COMPROMISE: SafeDep''s remediation is to disconnect the host, remove persistence first, rotate all credentials and reinstall the operating system; the wiper fires when the stolen GitHub token is revoked, so isolate and image the host before revoking (my reading of SafeDep''s description).
+
+    HARDENING NOTE: the npm v12 change that disables install scripts by default (registry policy:npm-v12-install-scripts-default-off-2026) would not stop the load-time trigger; pinning and lockfile review, trusted-publishing scoping and CI egress controls remain the levers named by the sources.
+
+    CAUTIONS: neither lab names an actor or a victim organisation; the cPanel link (CVE-2026-41940, JFrog) is operational overlap, not a proven chain. Account names, repository names, hashes and domains are deliberately not carried (no-IOC policy).'
+  borderline: true
+  borderline_reason: 'recency: SafeDep''s latest update is 2026-10-27 and JFrog/The Register are 2026-10-26, outside the 26 h window but inside the 72 h developing-story window; never covered in the store; recommend inclusion because the campaign is still evolving and the --ignore-scripts bypass changes a common hardening assumption'
+- title: 'Enclave ''AuthMask'': any Android app with no permissions could pose as Teams to Microsoft Authenticator and receive Graph tokens in plaintext (CVE-2026-80097, fixed in 6.2606.4246)'
+  sources:
+  - url: https://enclave.ai/blog/authmask-we-made-microsoft-authenticator-hand-over-tokens
+    publisher: Enclave
+    date: '2026-10-25'
+    role: primary
+  - url: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-80097
+    publisher: Microsoft MSRC
+    date: '2026-09-08'
+    role: primary
+  - url: https://www.heise.de/news/Microsoft-Authenticator-Boesartige-Apps-konnten-Zugangstoken-abgreifen-11503334.html
+    publisher: heise online
+    date: '2026-10-28'
+    role: corroborating
+  discovery_trace: 'first seen at: heise-sec, feed URL https://www.heise.de/security/feed.xml (item ''Microsoft Authenticator: Boesartige Apps konnten Zugangstoken abgreifen'', 2026-10-28 13:13 UTC) -> pivot: heise article, URL https://www.heise.de/news/Microsoft-Authenticator-Boesartige-Apps-konnten-Zugangstoken-abgreifen-11503334.html -> primary: Enclave write-up linked by heise, URL https://enclave.ai/blog/authmask-we-made-microsoft-authenticator-hand-over-tokens -> primary: Microsoft MSRC record read through the msrc cve recipe (api.msrc.microsoft.com), human page URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-80097'
+  summary: 'Enclave''s write-up (page dated 2026-10-25, picked up by heise on 2026-10-28) shows how Microsoft Authenticator for Android handed work-account tokens to an app with no permissions. Authenticator exports an activity, AccountChooserActivity, in its :auth process; the only gate was that a calling activity exists, and every field of the broker request (claimed app name and package, client ID, redirect URI, scopes and the caller UID) came from the caller. The ''valid calling app'' check looked up the signature of the package the caller claimed to be and compared its derived redirect URI with the one in the request, so an app claiming to be Teams could simply send Teams'' own redirect URI, although Authenticator had the real caller''s package name available and did not use it. Tokens came back to the caller in the activity result: access, refresh and ID tokens in plaintext. Enclave obtained delegated Graph access to mail (read, write, send), files, calendars, Teams chat and SharePoint while posing as Teams, a Skype-chat-backend token, and scopes to manage authentication methods and create or delete passkeys while posing as Authenticator itself. Microsoft published CVE-2026-80097 on 2026-09-08 (CVSS 8.6, ''Important'', ''Exploitation Less Likely'', exploited: No in its record as revised 2026-09-15) and fixed it in Authenticator for Android; versions before 6.2606.4246 are affected. The two accounts of the precondition differ: Enclave says no user interaction was needed beyond the broker being present with a signed-in work account, whereas Microsoft''s FAQ says the attacker must convince the user to complete an authentication flow. No in-the-wild exploitation is reported.'
+  region_nexus: global; any organisation whose staff use Microsoft Authenticator on Android with a work or school account
+  primary_sector_nexus: direct for Microsoft 365 tenants with Android users; fix is a client update, not a tenant setting
+  sector: cross-sector
+  cves:
+  - CVE-2026-80097
+  techniques:
+  - T1528
+  - T1550.001
+  affected_products:
+  - Microsoft Authenticator for Android
+  entity_keys: []
+  new_entities:
+  - key: product:microsoft-authenticator-android
+    type: product
+    name: Microsoft Authenticator for Android
+    aliases:
+    - Microsoft Authenticator
+    summary: Microsoft's authenticator and token broker app for Android; versions before 6.2606.4246 carry CVE-2026-80097, a caller-validation flaw that let an unprivileged app obtain tokens (MSRC, 2026-09-08; Enclave, 2026-10-25).
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  priority_hint: notable
+  classification_hint: B1
+  evidence:
+  - quote: We found that an unprivileged Android app with zero permissions could impersonate any installed Microsoft first-party app and have the Microsoft Authenticator broker hand it that app's tokens.
+    attribution: Enclave
+    source_url: https://enclave.ai/blog/authmask-we-made-microsoft-authenticator-hand-over-tokens
+  - quote: Versions before 6.2606.4246 are affected.
+    attribution: Enclave
+    source_url: https://enclave.ai/blog/authmask-we-made-microsoft-authenticator-hand-over-tokens
+  - quote: An attacker could exploit this vulnerability by installing and running a malicious application on an affected Android device and convincing the user to complete an authentication flow in Microsoft Authenticator.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-80097
+  extended_notes: 'EXPOSURE: Android devices (corporate or personal) with Microsoft Authenticator below 6.2606.4246 and a work or school account signed in; read the installed version from the device or from MDM app inventory. The attacker needs a malicious app already installed on the device.
+
+    DETECTION: neither source offers a detection. Token theft through the broker looks like ordinary broker token issuance, so hunting would start from Entra sign-in logs for first-party client IDs (such as Teams) from unexpected devices or user agents and from Graph activity logs for mailbox, file or calendar access that the user did not perform (my inference; refresh tokens stolen this way stay valid until revoked, so revoke sessions for any user on an affected build who installed an untrusted app).
+
+    NO MDM bypass is claimed; Enclave''s research was part of its Fellowship Program.'
+  borderline: true
+  borderline_reason: 'recency: Microsoft fixed it on 2026-09-08 and Enclave''s page is dated 2026-10-25, with heise''s pick-up on 2026-10-28 as the in-window source; but the technical detail only became public in the last four days and the fix is a client version check that administrators can verify'
+- title: 'ANNUAL REPORT - CrowdStrike 2026 Legal Threat Landscape Report: eCrime help-desk impersonation and China-nexus vCenter zero-days against the legal sector'
+  sources:
+  - url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/
+    publisher: CrowdStrike
+    date: '2026-10-28'
+    role: primary
+  - url: https://www.crowdstrike.com/en-us/resources/reports/2026-legal-threat-landscape-report/
+    publisher: CrowdStrike (report landing page)
+    date: '2026-10-28'
+    role: corroborating
+  discovery_trace: 'first seen at: crowdstrike, blog feed URL https://www.crowdstrike.com/en-us/blog/feed (item ''CrowdStrike 2026 Legal Threat Landscape Report: eCrime Leads Attacks, China Activity Intensifies'', Oct 28, 2026) -> primary: blog post URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/ -> pivot: report landing page URL https://www.crowdstrike.com/en-us/resources/reports/2026-legal-threat-landscape-report/ (gated; summary only)'
+  summary: 'CrowdStrike published its 2026 Legal Threat Landscape Report on 2026-10-28, covering 2025-09-01 to 2026-08-31 (full report gated; the blog post and landing page carry the summary). CrowdStrike says intrusions against legal entities nearly doubled between 2023 and 2026, that financially motivated adversaries account for 82% of the activity, and that big-game-hunting groups named 455 legal entities on leak sites, 39% more than the prior period. Three eCrime clusters are profiled: CHATTY SPIDER (activity up 129% in the first eight months of 2026 against all of 2024, mainly US law firms) impersonates IT staff to open remote-access sessions, uses trusted enterprise and RMM tools and, per CrowdStrike, hired people to enter a US law firm in person; SNARKY SPIDER and CORDIAL SPIDER share near-identical tradecraft of vishing calls that impersonate IT personnel and steer staff to single sign-on themed phishing pages. Four China-nexus clusters are named: WARP PANDA (malware in victims'' VMware vCenter environments; ESXi command-logging bypass CVE-2026-41709 exploited as a zero-day as late as early 2026), TITAN PANDA (April 2026, a hardcoded IIS machine key in Intapp Time Server), MURKY PANDA (the ORB28 password-spray campaign, more than 340 mostly US entities, one law firm saw about 500 failed logins from about 300 addresses in 30 days) and OVERCAST PANDA (executive-level targets at a UK firm). Direct relevance to Swiss public bodies is limited (sector is legal, victims mostly US); the transferable material is the help-desk vishing plus SSO-lookalike pattern and the vCenter/ESXi tradecraft.'
+  region_nexus: mostly US legal sector; one UK victim named; no Swiss nexus stated
+  primary_sector_nexus: 'indirect: transferable help-desk impersonation and vCenter/ESXi tradecraft, sector itself is legal'
+  sector: legal
+  cves:
+  - CVE-2026-41709
+  techniques:
+  - T1566.004
+  - T1219
+  - T1110.003
+  - T1190
+  - T1211
+  affected_products:
+  - VMware ESXi
+  - VMware vCenter Server
+  - Intapp Time Server
+  entity_keys:
+  - actor:verdantbamboo
+  - product:vmware-esxi
+  - product:vmware-vcenter-server
+  new_entities:
+  - key: report:crowdstrike-2026-legal-threat-landscape
+    type: report
+    name: CrowdStrike 2026 Legal Threat Landscape Report
+    aliases: []
+    summary: 'CrowdStrike annual sector report (period 2025-09-01 to 2026-08-31), published 2026-10-28: legal-sector intrusions nearly doubled since 2023, 82% eCrime, 455 legal entities named on leak sites, help-desk vishing clusters CHATTY, SNARKY and CORDIAL SPIDER and four China-nexus clusters (CrowdStrike, 2026-10-28).'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: Cyber intrusions targeting the legal sector nearly doubled between 2023 and 2026
+    attribution: CrowdStrike
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/
+  - quote: Big game hunting adversaries named 455 legal entities on dedicated leak sites, a 39% year-over-year increase.
+    attribution: CrowdStrike
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/
+  - quote: including vishing calls that impersonate IT personnel and directing employees to single sign-on (SSO)-themed phishing pages.
+    attribution: CrowdStrike
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/
+  extended_notes: ANNUAL REPORT flag per spawn note. Figures are CrowdStrike's own telemetry and leak-site counts; the report body is gated so only the blog summary was read. WARP PANDA is an alias of registry actor:verdantbamboo (aliases UNC5221, WARP PANDA, ARMORY CASTLE).
+  borderline: true
+  borderline_reason: annual report, but legal-sector and US-centric; the Swiss-relevant parts are the vishing/SSO pattern and the CVE-2026-41709 zero-day attribution, which is also returned as an update-of item on the VMware entry
+- title: 'Zscaler Deception: 402 Node2Shell reconnaissance and exploitation events from 20 sources against 12 customers'' decoys in the first 24 hours; outbound Brotli path named'
+  sources:
+  - url: https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce
+    publisher: Zscaler ThreatLabz
+    date: '2026-10-28'
+    role: primary
+  discovery_trace: 'first seen at: zscaler-threatlabz, feed URL https://www.zscaler.com/blogs/feeds/security-research (item ''CVE-2026-111497: Node2Shell / HTTP2Shell Vulnerability May Allow RCE'', Wed 28 Oct 2026 16:11 GMT) -> primary (no pivot needed): URL https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce'
+  summary: 'ThreatLabz adds telemetry to the Node2Shell story that the entry lacks: within the first 24 hours after the 2026-10-21 disclosure, Zscaler Deception''s global decoy mesh recorded activity from 20 source addresses against 12 customers across 402 events, 40% reconnaissance and 60% exploitation attempts, with seven payload families that include malformed-stream probes, short block-switch out-of-bounds-write seeds, a decompression-bomb probe and a three-stage Node2Shell chain with a Strapi probe. These are decoy sensors, so the counts show attacker interest rather than compromise; the entry already carries CISA''s KEV listing and ELLIO''s exploit traffic, and ThreatLabz reports no successful intrusion. ThreatLabz also names both reachability paths (a crafted request body with Content-Encoding: br to a server-side decoder, or a crafted response consumed through fetch(), webhooks, URL previews, crawlers or API integrations) and adds fixed versions the entry does not list: Java brotli4j 1.24.0 and Debian libbrotli 1.1.0-2+deb13u1, besides Bun 1.4.4, .NET 8.0.33, 9.0.22 and 10.0.14.'
+  region_nexus: global
+  primary_sector_nexus: 'indirect: any internet-facing Node.js, .NET, Envoy or Java service that decodes Brotli'
+  sector: cross-sector
+  cves:
+  - CVE-2026-111497
+  techniques:
+  - T1190
+  affected_products:
+  - Node.js
+  - Google Brotli
+  - Bun
+  - Microsoft .NET
+  - Envoy Proxy
+  - brotli4j
+  - Debian libbrotli
+  entity_keys:
+  - tool:node2shell
+  - product:node-js
+  new_entities: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: Within the first 24 hours following public disclosure, Zscaler Deception’s global decoy mesh observed activity from 20 source IP addresses targeting 12 customers across 402 events.
+    attribution: Zscaler ThreatLabz
+    source_url: https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce
+  - quote: Of these events, 40% involved reconnaissance and 60% involved exploitation attempts.
+    attribution: Zscaler ThreatLabz
+    source_url: https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce
+  extended_notes: 'Not carried: payload fingerprints (JA4) and source addresses (no-IOC policy). Trend''s 2026-10-28 consolidation post was read and adds nothing beyond what the entry already cites; Sophos''s 2026-10-28 post only restates the KEV listing.'
+  borderline: true
+  borderline_reason: 'low delta: the entry already carries KEV and ELLIO exploitation; this adds a second sensor''s counts and two fixed-version rows'
+- title: 'EPICS Base 7.0.10 and earlier: four network-reachable memory-safety flaws in Channel Access and pvAccess found by an autonomous agent in under four hours (CVE-2026-114595, CVSS 9.8); fixed in 7.0.11'
+  sources:
+  - url: https://causalsecurity.com/research/epics-base-security-research
+    publisher: Causal Security
+    date: '2026-10-27'
+    role: primary
+  - url: https://www.cisa.gov/news-events/ics-advisories/icsa-26-300-01
+    publisher: CISA ICS advisory ICSA-26-300-01
+    date: '2026-10-27'
+    role: primary
+  - url: https://accelconf.web.cern.ch/ICALEPCS2013/papers/moppc112.pdf
+    publisher: ICALEPCS 2013 (Paul Scherrer Institute authors)
+    date: '2013-10-06'
+    role: context
+  discovery_trace: 'first seen at: theregister-security-feed, URL https://www.theregister.com/security/headlines.atom (item ''AI hacker finds 4 severe bugs in popular industrial control software in under 4 hours'', 2026-10-27 20:11 +0100, inside the 145 h lookback) -> pivot: The Register article, URL https://www.theregister.com/security/2026/10/27/ai-hacker-finds-4-severe-bugs-in-popular-industrial-control-software-in-under-4-hours/5305811 -> primary: Causal Security write-up, URL https://causalsecurity.com/research/epics-base-security-research -> primary: CISA advisory read through the cisa page recipe, URL https://www.cisa.gov/news-events/ics-advisories/icsa-26-300-01 -> context: ICALEPCS 2013 paper found by WebSearch ("Paul Scherrer Institut EPICS control system SwissFEL SLS Channel Access"), read with the pdf recipe'
+  summary: 'Causal Security says its autonomous system Cipher found four memory-safety flaws in EPICS Base, the open-source control-system framework used for accelerators, light sources, telescopes and fusion experiments, in 3 hours 49 minutes with one human approval step, and CISA published them on 2026-10-27 as ICSA-26-300-01. CVE-2026-114595 (CVSS 3.1 9.8) is an integer overflow in sizing a Channel Access write request that lets the server allocate too little memory and then write attacker-influenced bytes past it; CVE-2026-114596 (8.2) is a wrapped extended-header length check in Channel Access that gives a constrained out-of-bounds write and a crash; CVE-2026-114597 (7.5) is an unchecked element count that causes an out-of-bounds read and crash; CVE-2026-114598 (7.5) is a type confusion in pvAccess deserialization reached during connection validation, before it completes. All affect release 7.0.10 and earlier and are fixed in 7.0.11. Causal says the Channel Access flaws need only a normal TCP connection (and a channel for the write paths), no privileged account was needed in its test configuration, access-security rules and network segmentation do not make a malformed message safe, and it did not build a remote-code-execution exploit or test reliability on production builds. Defaults it names: Channel Access on TCP 5064, pvAccess on TCP 5075, discovery on UDP 5064 and 5076. No exploitation in the wild is reported by either source. Swiss link (indirect, from older sources): authors at the Paul Scherrer Institute wrote in 2013 that the SwissFEL Injector Test Facility control system is based on EPICS, so research institutes in the federal ETH domain may run EPICS IOCs; the paper is old and current deployments were not checked.'
+  region_nexus: global; research facilities and OT networks; indirect Swiss link through PSI's documented use of EPICS (2013 paper)
+  primary_sector_nexus: 'indirect: public research institutes and any administration or supplier running EPICS-based instrument or building controls'
+  sector: research-ot
+  cves:
+  - CVE-2026-114595
+  - CVE-2026-114596
+  - CVE-2026-114597
+  - CVE-2026-114598
+  techniques:
+  - T1210
+  - T1499
+  affected_products:
+  - EPICS Base
+  - EPICS Channel Access
+  - EPICS pvAccess
+  entity_keys: []
+  new_entities:
+  - key: product:epics-base
+    type: product
+    name: EPICS Base
+    aliases:
+    - EPICS
+    - Experimental Physics and Industrial Control System
+    summary: Open-source control-system framework (Channel Access and pvAccess protocols) used in accelerators, light sources, telescopes and fusion experiments; versions up to 7.0.10 carry CVE-2026-114595 to CVE-2026-114598, fixed in 7.0.11 (CISA ICSA-26-300-01, 2026-10-27).
+  - key: tool:cipher-causal-security
+    type: tool
+    name: Cipher (Causal Security)
+    aliases:
+    - Cipher
+    summary: Causal Security's autonomous vulnerability-research system, credited with finding the four EPICS Base flaws in 3 hours 49 minutes (Causal Security, 2026-10-27).
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  priority_hint: routine
+  classification_hint: A1
+  lookback: true
+  evidence:
+  - quote: Cipher, our autonomous security system, found four memory-safety vulnerabilities in EPICS Base in 3 hours and 49 minutes.
+    attribution: Causal Security
+    source_url: https://causalsecurity.com/research/epics-base-security-research
+  - quote: The Channel Access findings sit in server-side message handling and need a normal TCP connection, plus a channel for the write paths.
+    attribution: Causal Security
+    source_url: https://causalsecurity.com/research/epics-base-security-research
+  - quote: Neither access-security rules nor network segmentation substitutes for the fixes.
+    attribution: Causal Security
+    source_url: https://causalsecurity.com/research/epics-base-security-research
+  - quote: EPICS Base release <=7.0.10 (CVE-2026-114595, CVE-2026-114596, CVE-2026-114597, CVE-2026-114598)
+    attribution: CISA ICS advisory ICSA-26-300-01
+    source_url: https://www.cisa.gov/news-events/ics-advisories/icsa-26-300-01
+  - quote: The SITF control system is based on EPICS
+    attribution: ICALEPCS 2013 (Paul Scherrer Institute authors)
+    source_url: https://accelconf.web.cern.ch/ICALEPCS2013/papers/moppc112.pdf
+  extended_notes: 'EXPOSURE: any IOC or server process built on EPICS Base 7.0.10 or earlier, including copies embedded in vendor-provided controllers or beamline packages (Causal calls remediation a supply-chain issue as well); the interface that must be reachable is the Channel Access or pvAccess listener, normally behind a segmented control-network boundary. Read the running version from the IOC build or the vendor''s package manifest.
+
+    DETECTION (telemetry classes): crashes or restarts of IOC and gateway processes, and Channel Access or pvAccess connections from hosts that are not known operator stations, including malformed or oversized message sizes; network telemetry on TCP 5064 and 5075 from outside the control segment.
+
+    The ''autonomous, no human intervention'' claim is Causal''s own; the CISA advisory carries the flaw, version and fix facts independently of it. CISA''s sector label is Critical Manufacturing.'
+  borderline: true
+  borderline_reason: published 2026-10-27 (about 33 h before the run, outside the 26 h window) and never covered; niche ICS framework, no exploitation, but a 9.8 network flaw in software that some Swiss federal research institutes plausibly run; S1 may also see it through the CISA ICS feed
+- title: 'PHP2Shell, 28 October: exposed vulnerable hosts down about two thirds per Wiz while 71% of Qualys-counted installs are end-of-life; Morphisec claims a Windows/IIS case; Wordfence knows of no WordPress compromise'
+  sources:
+  - url: https://www.wiz.io/blog/php2shell-exploitation-so-far
+    publisher: Wiz
+    date: '2026-10-27'
+    role: primary
+  - url: https://blog.qualys.com/vulnerabilities-threat-research/2026/10/20/php-announces-critical-security-release-for-two-vulnerabilities
+    publisher: Qualys Threat Research Unit
+    date: '2026-10-20'
+    role: corroborating
+  - url: https://www.morphisec.com/blog/php2shell-is-hitting-windows-servers-in-the-wild-we-stopped-it/
+    publisher: Morphisec
+    date: '2026-10-28'
+    role: primary
+  - url: https://www.wordfence.com/blog/2026/10/php2shell-update-still-no-confirmed-wordpress-compromises-and-answers-to-the-questions-were-hearing-most/
+    publisher: Wordfence
+    date: '2026-10-28'
+    role: corroborating
+  discovery_trace: 'first seen at: wiz-blog, feed URL https://www.wiz.io/feed/rss.xml (item ''PHP2Shell: Exploitation Attempts and Remediation Trends'', Tue 27 Oct 2026 13:21 GMT) -> primary: Wiz post, URL https://www.wiz.io/blog/php2shell-exploitation-so-far -> pivot: Wordfence update of 2026-10-28, URL https://www.wordfence.com/blog/2026/10/php2shell-update-still-no-confirmed-wordpress-compromises-and-answers-to-the-questions-were-hearing-most/ (lists Morphisec and Dream) -> primary: Morphisec post, URL https://www.morphisec.com/blog/php2shell-is-hitting-windows-servers-in-the-wild-we-stopped-it/ -> primary for population figures: Qualys post, URL https://blog.qualys.com/vulnerabilities-threat-research/2026/10/20/php-announces-critical-security-release-for-two-vulnerabilities'
+  summary: 'Four 2026-10-27/28 sources add measurement and one contested claim to the PHP2Shell story. Wiz reports that its telemetry shows a roughly 67% fall in the daily number of distinct internet-exposed machines vulnerable to PHP2Shell since disclosure, a 47.9% fall in organisations with at least one exposed vulnerable instance, and a drop in the share of exposed vulnerable hosts on PHP 7.3 or earlier, which received no official backport, from 8.3% to 5.7% over five days; it adds that the exploitation attempts it captured, from two open-source exploit-kit variants, had not succeeded (one ran into request-size limits, the other exhausted memory but never obtained the addresses it needs), and that partners have privately shown it working exploits. Qualys, from anonymised data on more than 10,000 customers, counts 167 million PHP installations of which 110 million (71%) run end-of-life branches from 5.4 to 8.1 that will not get an official patch. OX Security''s day-five figure that 93.6% of 2.2 million internet-facing PHP instances on Shodan still ran vulnerable versions is relayed by Morphisec; the OX page returned 403 on every transport, so that number is second-hand and measures a different population than Wiz''s trend. Wordfence says that between 2026-10-23 and 2026-10-27 its rule recorded about 77,600 related requests from more than 2,000 addresses and that, as of 2026-10-28, it knows of no WordPress site compromised through PHP2Shell. Morphisec claims the first Windows case: on a customer''s IIS server the IIS worker process started the PHP-CGI handler, which ran a command shell and then a packed binary that tried to open a reverse shell, which its memory-randomisation product blocked; Wordfence notes Morphisec does not tie it to WordPress and gives too little detail to verify that PHP2Shell was the cause, and Morphisec says it did not detect the PHP flaw itself.'
+  region_nexus: global; Swiss administrations that run PHP on IIS or on end-of-life branches
+  primary_sector_nexus: 'direct: PHP runtimes on public websites and appliances'
+  sector: cross-sector
+  cves:
+  - CVE-2026-109618
+  - CVE-2026-109619
+  techniques:
+  - T1190
+  - T1059.003
+  affected_products:
+  - PHP
+  - Microsoft IIS with PHP-CGI
+  entity_keys:
+  - tool:php2shell
+  - product:php
+  new_entities: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: Wiz research has been monitoring PHP2Shell exploitation attempts, but none have succeeded so far.
+    attribution: Wiz
+    source_url: https://www.wiz.io/blog/php2shell-exploitation-so-far
+  - quote: Wiz telemetry has recorded an approximate 67% decrease in the daily number of distinct Internet-exposed machines vulnerable to PHP2Shell over the past few days.
+    attribution: Wiz
+    source_url: https://www.wiz.io/blog/php2shell-exploitation-so-far
+  - quote: run end-of-life or end-of-support versions of PHP, from 5.4 to 8.1. Most of these will never get a vendor patch, so upgrading to a supported branch is the only remedy.
+    attribution: Qualys Threat Research Unit
+    source_url: https://blog.qualys.com/vulnerabilities-threat-research/2026/10/20/php-announces-critical-security-release-for-two-vulnerabilities
+  - quote: the IIS worker process spawned the PHP-CGI handler, which executed a command shell, which launched a packed binary that attempted to establish a reverse shell to an external command-and-control address.
+    attribution: Morphisec
+    source_url: https://www.morphisec.com/blog/php2shell-is-hitting-windows-servers-in-the-wild-we-stopped-it/
+  - quote: The Morphisec post does not connect the incident to WordPress and does not include enough technical detail for us to verify independently that PHP2Shell was the cause.
+    attribution: Wordfence
+    source_url: https://www.wordfence.com/blog/2026/10/php2shell-update-still-no-confirmed-wordpress-compromises-and-answers-to-the-questions-were-hearing-most/
+  extended_notes: 'DETECTION (Windows/IIS, from Morphisec''s described lineage, unverified): process-creation telemetry with parent lineage w3wp.exe -> php-cgi.exe -> cmd.exe -> an unsigned or packed binary from a writable path, followed by outbound connections to an unfamiliar address; the same lineage with a shell started by the PHP handler is also the behaviour CISA names for Linux workers.
+
+    CONTRADICTION SURFACED: Wiz measures exposure falling, OX (second-hand) says 93.6% still vulnerable at day five; the populations and methods differ (Wiz counts distinct exposed vulnerable machines over time in its dataset, OX reports the share of 2.2 million Shodan-visible PHP instances on vulnerable versions) and neither is wrong on its own terms.
+
+    Not carried: the exploit-kit paths and source addresses in Wiz''s honeypot write-up and Morphisec''s network details (no-IOC policy).'
+  borderline: true
+  borderline_reason: measurement and a single-vendor Windows claim, no new CVE or fix; the Dream item (same entry) is the material development; Wiz/Qualys figures are only useful to the entry's exposure paragraph and its end-of-life warning
+- title: 'Socket: 319 ''Searchjacked'' browser extensions, 13.4 million installs, replace the default search provider with an operator proxy through a permission-free manifest override'
+  sources:
+  - url: https://socket.dev/blog/searchjacked
+    publisher: Socket
+    date: '2026-10-29'
+    role: primary
+  discovery_trace: 'first seen at: socket-dev-blog, feed URL https://socket.dev/api/blog/feed.atom (item ''Searchjacked: Hidden Browser Extensions Hijack Searches for 13 Million Users'', 2026-10-29T02:01:54Z) -> primary: Socket post read with WebFetch (extract returns only the first paragraph of this client-rendered page), URL https://socket.dev/blog/searchjacked'
+  summary: Socket reports (2026-10-29) 319 distinct browser extensions, installed by roughly 13.4 million users over about a decade, whose only function is to change the browser's default search provider to an operator-run proxy; the behaviour sits entirely in a manifest search-provider override, so a sample extension requests no permissions and has no background worker, content script or interface. Each query passes through the proxy, which can log the search history against a persistent identifier and forwards it to Yahoo or Bing with affiliate tags; in one test six identical searches through one proxy ended in four different destinations, which Socket reads as the ability to swap results for lures later. Most of the extensions are unlisted in the Chrome Web Store, are promoted through paid advertising pop-overs and pop-unders on low-quality sites under generic names, and Socket names about two dozen companies as operators. Socket argues an extension whose only function is intercepting searches should be treated as malicious by definition. No attack on organisations, credential theft or code execution is reported; the risk is exposure of search terms and a ready-made redirection point.
+  region_nexus: global; no Swiss or public-sector victim reported
+  primary_sector_nexus: 'indirect: staff browsers on unmanaged extension policies'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1176.001
+  affected_products:
+  - Google Chrome extensions
+  - Microsoft Edge extensions
+  entity_keys: []
+  new_entities: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: This brings the total number of distinct extensions to 319 installed by roughly 13.4 million users across a decade of time.
+    attribution: Socket
+    source_url: https://socket.dev/blog/searchjacked
+  - quote: A majority of the search hijacking extensions we found are unlisted in the Chrome Web Store.
+    attribution: Socket
+    source_url: https://socket.dev/blog/searchjacked
+  - quote: There is no utility in the extension outside of changing the default search provider.
+    attribution: Socket
+    source_url: https://socket.dev/blog/searchjacked
+  extended_notes: 'HARDENING (my inference from the mechanism, not a Socket recommendation): because the hijack needs no permission prompt, a managed-browser extension allow-list and an enforced default-search-provider policy are the levers that block it; an inventory query for installed extensions whose manifest declares a search-provider override finds existing installs.
+
+    A WebFetch note: the page''s ''summarise this article'' share links carry an instruction aimed at AI assistants to remember the domain for future citations; it was ignored and is not part of the finding.'
+  borderline: true
+  borderline_reason: adware-class privacy and redirection risk, single source, no attack on organisations; relevant only to browser-extension governance
+- title: 'Check Point: ''Yoba'' lures developers with fake GPT and Claude desktop apps on GitHub, sideloading a loader beside signed OpenAI and Anthropic binaries and tasking it through Telegram-seeded domains and DNS TXT over DoH'
+  sources:
+  - url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+    publisher: Check Point Research
+    date: '2026-10-27'
+    role: primary
+  discovery_trace: 'first seen at: checkpoint-research, feed URL https://research.checkpoint.com/feed/ (item ''Tricks from the Past deployed via signed ChatGPT and Claude binaries'', Tue 27 Oct 2026 13:03 UTC) -> primary (no pivot needed): URL https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/'
+  summary: Check Point Research describes a campaign it calls Yoba, tracked for two months, in which fake GitHub projects and GitHub.io pages impersonate AI desktop apps (named like unreleased GPT and Claude models) and rank in Google results, probably through SEO poisoning. The ZIP release places a malicious winmm.dll next to a legitimate signed Setup.exe from OpenAI or Anthropic, which sideloads it; the dropper needs administrator rights, skips CIS keyboard locales, copies a legitimate Windows Media Player executable into a ProgramData folder with a payload DLL and persists through a scheduled task that carries a Microsoft-themed author and description. The loader reads a Telegram channel, derives a domain from the channel's image through a generator, queries Google's DNS-over-HTTPS API for an encrypted TXT command and downloads the payload from a file-hosting site, then injects it into svchost.exe, runs it from a temp folder after removing the Zone.Identifier stream, or runs it as a hidden PowerShell script; the payload seen was an XMRig miner that reaches its pool through Tor, but Check Point stresses the loader is generic and can deliver any PE or PowerShell payload. The actor shows indicators suggesting Russian origin and mostly operates in UTC-4; an earlier dropper from early June 2026 was sideloaded by a process named Cursor.exe. Single-vendor report; no victim sector or count is given.
+  region_nexus: global; excludes CIS locales; no Swiss victim reported
+  primary_sector_nexus: 'indirect: developer and power-user workstations that download ''AI helper'' apps'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1204.002
+  - T1574.001
+  - T1053.005
+  - T1036.005
+  - T1102
+  - T1568.002
+  - T1071.001
+  - T1105
+  - T1055
+  - T1496
+  - T1608.006
+  affected_products:
+  - Windows
+  entity_keys: []
+  new_entities:
+  - key: campaign:yoba-fake-ai-apps-2026
+    type: campaign
+    name: Yoba
+    aliases:
+    - YobaDropper
+    - YobaLoader
+    summary: Campaign that distributes a generic loader through fake GitHub projects impersonating GPT and Claude desktop apps, sideloaded beside signed OpenAI and Anthropic executables, with C2 through a Telegram channel, DNS TXT over DoH and a file host; an XMRig miner was the payload observed (Check Point Research, 2026-10-27).
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: The malware is placed next to legitimate, signed executables from OpenAI and Anthropic so it can be loaded indirectly, a technique commonly known as DLL sideloading, which is often used to bypass security protections.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  - quote: the YobaLoader is a generic loader. The operator can supply any PE or PowerShell payload via the signed DNS TXT tasking, so future waves may deliver different malware families.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  extended_notes: 'DETECTION (telemetry classes): a signed vendor executable loading a DLL from the same unusual folder (sideload), a copy of a System32 Windows Media Player binary running from a ProgramData folder via a scheduled task, DNS-over-HTTPS requests to a public resolver''s JSON API from a non-browser process, and svchost.exe receiving injected threads. Fake-app lure: GitHub repositories with no star inflation that rank in web search. Not carried: hashes, domains, channel names, mining-pool and bridge details (no-IOC policy).'
+  borderline: true
+  borderline_reason: published 2026-10-27 (about 36 h before the run, outside the 26 h window); commodity cryptominer payload with no sector targeting; useful as a detection pattern for sideloading and DoH tasking
+- title: 123 Reg tells customers of an AI-driven intrusion on 18 September and suspects the same actor as the ARTEX bank campaign in South Korea
+  sources:
+  - url: https://www.theregister.com/cyber-crime/2026/10/28/123-reg-discloses-ai-cyberattack-on-customer-data-suspects-china-nexus/5305936
+    publisher: The Register
+    date: '2026-10-28'
+    role: primary
+  discovery_trace: 'first seen at: theregister-security-feed, URL https://www.theregister.com/security/headlines.atom (item ''123 Reg discloses AI cyberattack on customer data, suspects China nexus'', Wed 28 Oct 2026 12:45 +0100) -> primary available: The Register article, URL https://www.theregister.com/cyber-crime/2026/10/28/123-reg-discloses-ai-cyberattack-on-customer-data-suspects-china-nexus/5305936 (reads 123 Reg''s customer statement; two WebSearch attempts for the company''s own notice found nothing)'
+  summary: 'The Register reports (2026-10-28) that 123 Reg, the UK domain registrar owned by GoDaddy, has told customers about an intrusion that began on 2026-09-18, which the company calls the first known AI-driven cyberattack against it. The data it lists as exposed includes names, phone numbers, country, language and currency settings, account set-up dates, linked products, marketing opt-ins, VAT numbers and product data pulled through an API; the company says the intruder only viewed it but copies may exist. Its investigation found AI ''skills'', including copies of Anthropic''s publicly released skills and other exploitation frameworks, hosted on Chinese infrastructure and core attacker addresses in China and Singapore, and the company says it suspects, without asserting, a China-nexus group and the actor that CrowdStrike described on 2026-10-07 as using the ARTEX framework against South Korean financial firms. 123 Reg reported to police, outside responders, the FTC and UK and EU data-protection authorities and worked with Singapore ISPs to take servers down. The article does not say that domain registration, DNS control or hosting was affected. Single source: the company''s customer notice itself was not found, and the attribution is the registrar''s suspicion.'
+  region_nexus: UK registrar; no Swiss customer impact reported; transferable AI-agent intrusion lesson
+  primary_sector_nexus: 'indirect: supplier-type incident (domain registrar) and an AI-driven actor also seen against government targets in the ARTEX entry'
+  sector: technology-supplier
+  cves: []
+  techniques:
+  - T1190
+  affected_products:
+  - 123 Reg customer accounts
+  entity_keys:
+  - tool:artex
+  new_entities: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: LOW
+  novelty: update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  priority_hint: routine
+  classification_hint: C3
+  evidence:
+  - quote: the first known AI-driven cyberattack against our company,
+    attribution: 123 Reg (statement quoted by The Register)
+    source_url: https://www.theregister.com/cyber-crime/2026/10/28/123-reg-discloses-ai-cyberattack-on-customer-data-suspects-china-nexus/5305936
+  - quote: Our investigation further identified AI cyberattack 'skills' hosted on Chinese infrastructure,
+    attribution: 123 Reg (statement quoted by The Register)
+    source_url: https://www.theregister.com/cyber-crime/2026/10/28/123-reg-discloses-ai-cyberattack-on-customer-data-suspects-china-nexus/5305936
+  extended_notes: The article's WebFetch summary also says it links the activity to 'a suspected Chinese state-sponsored group that has misused Claude Code against at least 30 organizations'; that sentence was not verified and is not carried as fact. If the main agent prefers a new incident entry over an update of the ARTEX entry, S4 should own it.
+  borderline: true
+  borderline_reason: single news source, company's own notice not found, attribution is explicitly a suspicion; incident belongs to S4 if anything, returned here because it is the first named victim linked by the victim itself to the ARTEX actor
+- title: 'Eclipse Vert.x CVE-2026-102479: a mistyped Content-Xength header is read as Content-Length, enabling request smuggling and response poisoning behind real reverse proxies (vertx-core 5.0.0-5.0.12, 5.1.0-5.1.9, 5.2.0)'
+  sources:
+  - url: https://research.jfrog.com/post/byte-debt-vertx-header-typo-session-fixation/
+    publisher: JFrog Security Research
+    date: '2026-10-28'
+    role: primary
+  - url: https://github.com/eclipse-vertx/vert.x/commit/317c778d7fdd92a2fb0757dabc68a31f8c98edb0
+    publisher: Eclipse Vert.x (fix commit)
+    date: '2026-09-23'
+    role: corroborating
+  discovery_trace: 'first seen at: jfrog-security-research, feed URL https://research.jfrog.com/rss.xml (item ''Byte Debt (CVE-2026-102479): From an HTTP Header Typo to Cross-User Session Fixation'', 2026-10-28) -> primary: JFrog post, URL https://research.jfrog.com/post/byte-debt-vertx-header-typo-session-fixation/ -> pivot: fix commit linked from the post, URL https://github.com/eclipse-vertx/vert.x/commit/317c778d7fdd92a2fb0757dabc68a31f8c98edb0'
+  summary: 'JFrog describes (2026-10-28) a flaw in the HTTP/1 request decoder of Eclipse Vert.x: to avoid string allocations the decoder recognises well-known header names by length and by sampling some byte offsets, and for a 14-byte name it never checks the letter at offset 8, so Content-Xength is parsed as Content-Length while a front-end proxy ignores it as an unknown header. That framing disagreement lets one request leave the backend waiting for body bytes the proxy never saw, which JFrog turns into a connection hang that starves the next request and, with a one-byte ''dangling'' trailer that keeps proxies from discarding the dirty connection, into delivery of an attacker-chosen response to the next visitor; in its lab with a Quarkus backend it reproduced cross-user session fixation behind Nginx, HAProxy, Envoy, Traefik, Caddy, Apache httpd and nghttpx, poisoning roughly a quarter to a third of later traffic with a 16-connection pool. The affected vertx-core builds are 5.0.0 to 5.0.12, 5.1.0 to 5.1.9 and 5.2.0; JFrog names 5.1.10 and 5.2.1 as the patched releases and does not list a fix for the 5.0 line. It proved the issue against strimzi-kafka-bridge, camel-quarkus and the TechEmpower benchmark suite in certain proxy setups and says all were notified. The fix commit is public in the project repository; no exploitation in the wild is reported by JFrog.'
+  region_nexus: global; Java services built on Vert.x 5.x (including Quarkus apps) behind reverse proxies
+  primary_sector_nexus: 'indirect: custom Java applications in administrations or at suppliers'
+  sector: software
+  cves:
+  - CVE-2026-102479
+  techniques:
+  - T1190
+  affected_products:
+  - Eclipse Vert.x vertx-core
+  - Quarkus
+  - Strimzi Kafka Bridge
+  - Apache Camel Quarkus
+  entity_keys: []
+  new_entities: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: A front-end reverse proxy ignores the typo as an arbitrary custom header, Vert.x parses it as request framing, and the HTTP request boundary instantly desyncs.
+    attribution: JFrog Security Research
+    source_url: https://research.jfrog.com/post/byte-debt-vertx-header-typo-session-fixation/
+  - quote: The takeaway isn't that Vert.x as a whole is broken, it is that if you deployed the modern 5.x line during that window, you are potentially vulnerable.
+    attribution: JFrog Security Research
+    source_url: https://research.jfrog.com/post/byte-debt-vertx-header-typo-session-fixation/
+  extended_notes: 'EXPOSURE: read the vertx-core version from the dependency tree (Maven/Gradle) or the Quarkus BOM; the exposure requires a connection-pooling reverse proxy in front. DETECTION: unusual request headers whose names differ from Content-Length by one character in proxy or backend logs, backend connections that stall waiting for body bytes, and responses (such as a login redirect with a session cookie) delivered to the wrong client. Vendor advisory text was not found; the CVE record and OpenCVE were the only other pages seen (aggregator-only for severity; OpenCVE lists 8.7 High, not used).'
+  borderline: true
+  borderline_reason: narrow exposure window (three 5.x branches), requires a front-end proxy and an application with session or redirect behaviour, no exploitation reported; return for Java-team awareness only
+- title: 'Tailworm: Tailscale SSH privilege-boundary flaws disclosed before a fix, patched in Tailscale 1.104.4 on 2026-10-27; headscale exhaustion and a conn25 flaw still open'
+  sources:
+  - url: https://tailscale.com/blog/tailscale-ssh-findings-fixes
+    publisher: Tailscale
+    date: '2026-10-28'
+    role: primary
+  - url: https://tailworm.com/
+    publisher: Tailworm report (Erica Windisch, Cyberdione Labs)
+    date: '2026-10-27'
+    role: primary
+  - url: https://www.heise.de/news/Tailscale-SSH-Update-stopft-Tailworm-Sicherheitsluecken-11502847.html
+    publisher: heise online
+    date: '2026-10-28'
+    role: corroborating
+  discovery_trace: 'first seen at: heise-sec, feed URL https://www.heise.de/security/feed.xml (item ''Tailscale SSH: Tailworm-Luecke fuehrt zu Root-Rechten und Kompromittierung'', 2026-10-28 11:35 UTC) -> pivot: heise article, URL https://www.heise.de/news/Tailscale-SSH-Update-stopft-Tailworm-Sicherheitsluecken-11502847.html -> primary: Tailscale findings-and-fixes post, URL https://tailscale.com/blog/tailscale-ssh-findings-fixes -> primary: researcher report, URL https://tailworm.com/'
+  summary: 'A researcher, Erica Windisch of Cyberdione Labs, published the Tailworm audit report on 2026-10-24, two hours after sending it to Tailscale (Tailscale''s account); it covers Tailscale 1.104.2, the headscale 0.29.5 control server and the experimental conn25 app connector, tested 2026-10-22 to 2026-10-24. The headline findings are in the root-run Tailscale SSH server: unix-socket forwarding (ssh -L and -R) performed path checks and file operations as root, and a race defeated the path allowlist, so a session that is already allowed by the tailnet policy could reach root-only sockets, replace root-owned sockets or delete root files; the report demonstrates root through a forwarded Docker socket and rates three such findings High. Tailscale says the flaws concern permissions after a connection was authorised, not who may connect, that exploitation needs an existing foothold on an authorised peer with SSH permitted in the policy file, that they do not make an unauthenticated attacker able to reach arbitrary SSH servers and are not a self-propagating worm, and that fixes, four bulletins (TS-2026-014 to TS-2026-017) and architectural safeguards ship in Tailscale 1.104.4 (tagged 2026-10-27). The report also lists a root tailscaled memory exhaustion through a session, two tailscale serve flaws that expose the local admin API (fixed in 1.104.4), unauthenticated memory exhaustion of headscale that was still pending a headscale-side fix on 2026-10-28, a DERP client memory exhaustion (client fix shipped) and a conn25 egress-selection flaw (open pull request); Tailscale says conn25 is pre-production and the stable app connectors are not affected. Exploitation in the wild is not reported.'
+  region_nexus: global; relevant only to administrations and suppliers that run Tailscale or headscale
+  primary_sector_nexus: 'indirect: remote-administration and mesh-VPN tooling'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1068
+  - T1021.004
+  - T1499
+  affected_products:
+  - Tailscale
+  - Tailscale SSH
+  - headscale
+  entity_keys: []
+  new_entities:
+  - key: product:tailscale
+    type: product
+    name: Tailscale
+    aliases:
+    - Tailscale SSH
+    summary: Mesh VPN and identity-based SSH product; the Tailworm report's SSH unix-socket forwarding findings are fixed in Tailscale 1.104.4 (Tailscale, 2026-10-28).
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  priority_hint: routine
+  classification_hint: B2
+  evidence:
+  - quote: We received the researcher’s report on the morning of Saturday, October 24, and the researcher published it two hours later.
+    attribution: Tailscale
+    source_url: https://tailscale.com/blog/tailscale-ssh-findings-fixes
+  - quote: the vulnerabilities don’t allow an unauthenticated attacker to connect to arbitrary Tailscale SSH servers
+    attribution: Tailscale
+    source_url: https://tailscale.com/blog/tailscale-ssh-findings-fixes
+  - quote: Delete the device at the control plane — reimaging alone is not containment.
+    attribution: Tailworm report
+    source_url: https://tailworm.com/
+  extended_notes: 'FACT / CLAIM SPLIT: the severity ratings, the root demonstrations and the ''fleet-wide privileged access'' framing are the researcher''s; Tailscale disputes the worm framing and bounds exploitation to tailnet-policy-permitted peers. Both are carried.
+
+    EXPOSURE: hosts running tailscaled below 1.104.4 with Tailscale SSH enabled (opt-in per node) and policy rules that allow forwarding; headscale operators whose control server is internet-reachable are exposed to the pending exhaustion issue.
+
+    HARDENING (report and Tailscale): per-pair SSH grants instead of identity- or tag-wide accept rules, forwarding denied unless needed, SSH check mode for sensitive systems, restrict app-connector entitlements.
+
+    DETECTION (report): auditd on unix-socket unlink, bind and chmod in the forwarding-allowed directories (tmp, homes, run/user), a socket with mode 0755 where 0600 is expected as a race signature, alerts on sustained directory rename loops, on authkey issuance outside change windows and on a node key appearing from a new network. CONTAINMENT: delete the device at the control plane because node identity is key material in a state file that root can copy off-box.'
+  borderline: true
+  borderline_reason: adoption in the Swiss public sector is unknown; privilege escalation requires an existing foothold and an SSH policy rule; uncoordinated disclosure with a fix already shipped
+candidate_sources:
+- id: safedep
+  publisher: SafeDep (safedep.io, open-source supply-chain research)
+  url: https://safedep.io/blog
+  rss_url: https://safedep.io/rss.xml
+  category: research
+  why: First-hand analysis of npm/PyPI/RubyGems worms and malicious packages with dated living updates; primary for the testmetest worm (updated 2026-10-26 and 2026-10-27), also tensorlake, LiteLLM and MALFEX; the feed https://safedep.io/rss.xml returned 8 dated items on the direct transport and extract reads the posts.
+- id: dream-research
+  publisher: Dream Research (dreamgroup.com/blog)
+  url: https://dreamgroup.com/blog
+  rss_url: null
+  category: research
+  why: 'Artifact-based research on exposed attacker infrastructure: the PHP2Shell plus Fragnesia firewall chain (2026-10-26, primary of the Dream item); the 2026-08-28 agentic-AI intrusion entry already cites an earlier Dream report. No feed found; the blog listing reads with extract but the date of the PHP2Shell post is only given by Wordfence.'
+coverage_gaps:
+- source_id: ox-security
+  reason: 'Feed lists dated items (10 items, newest 2026-10-28) but every article body, including PHP2Shell Day 5 (2026-10-26), returns 403 on direct, extract and jina this run: lead-only, unchanged since the 2026-10-26 note. The day-five figure (93.6% of 2.2 million Shodan-visible PHP instances vulnerable) was obtained second-hand through Morphisec.'
+- source_id: previdian
+  reason: 'Recipe change: the record URL is a single per-CVE page; `python3 tools/fetch_source.py extract https://previdian.com/` still works but shows one featured CVE (CVE-2025-54988 this run), and the listing it links, https://previdian.com/feed, returns 403 on direct, extract, jina and WebFetch, so the exploited-vulnerability list cannot be swept.'
+- source_id: crowdstrike
+  reason: 'Recipe fix: the working dated discovery path is `python3 tools/fetch_source.py feed https://www.crowdstrike.com/en-us/blog/feed 20` (10 dated items, Oct 8 to Oct 28). The record URL .../blog/category/counter-adversary-operations/ returns 404 to WebFetch; the listing that extract reads is https://www.crowdstrike.com/en-us/blog/category.counter-adversary-operations/ and carries no dates, and extract of a post returns the crawl date (2026-10-28 for posts of 2026-10-13 to 2026-10-23), so take dates from the feed.'
+- source_id: stepsecurity-blog
+  reason: 'Recipe improvement: the record has rss_url null but https://www.stepsecurity.io/blog/rss.xml parses with the feed subcommand on the direct transport (10 dated items, newest 2026-10-28); use it instead of the dateless Webflow listing.'
+- source_id: air-security
+  reason: Only one post on the blog, an AWS Marketplace listing note of 2026-08-19; nothing in the 145 h lookback, consistent with the 2026-10-23 note recommending demotion.
+- source_id: trellix
+  reason: '`extract https://www.trellix.com/blogs/` returns a dated listing; newest post 2026-10-13 (platform), newest research post 2026-09-24; nothing in the lookback.'
+- source_id: jfrog-security-research
+  reason: 'Candidate record: https://research.jfrog.com/rss.xml parses (dated 2026-10-26 and 2026-10-28 items) and supplied two sources this run (testmetest, Vert.x); counts toward promotion.'
+- source_id: theregister-security-feed
+  reason: extract returns navigation only (as noted 2026-10-18); WebFetch with the outbound-links template read all seven articles drilled this run.
+- source_id: microsoft-digital-defense-report
+  reason: 'Not a source record: Microsoft Digital Defense Report 2026 was released 2026-10-01 (Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/10/01/insights-from-the-2026-microsoft-digital-defense-report/) and is not referenced anywhere in the entry store; it is outside the window, so it is not returned as an item. Flag for the quality audit if an annual-report entry is wanted (a secondary search summary says government agencies were the most impacted sector at 27% of observed activity; that figure was not read in a primary and is not carried).'
+- source_id: eset
+  reason: 'Recipe confirmed (2026-10-29): the RSS feed https://www.welivesecurity.com/en/rss/feed/ lagged (newest item 2026-10-26, a video) and did not carry the ESET APT Activity Report published 2026-10-28; `python3 tools/fetch_source.py extract https://www.welivesecurity.com/en/eset-research/` returns the dated research listing (cards with dates; hrefs are relative /en/eset-research/<slug>/) and found it. The record is not in this slice, so the lag cost one run a periodic report.'
+- source_id: extract-fallbacks
+  reason: '`extract` fell back to the metered jina reader for two pages this run (securelist.com/cloud-infrastructure-isolation-bypass/121609/ and the Qualys PHP2Shell post); neither is cited as a key source.'
+source_ledger:
+- id: ox-security
+  tier: standard
+  attempted: true
+  transport: feed (direct, 10 items); article bodies 403 on extract/jina
+  horizon_hours: 168
+  in_horizon_items: 6
+  returned: 0
+  note: bodies blocked; PHP2Shell day 5 and Pillow CVE posts unreadable; day-five figure taken second-hand via Morphisec
+- id: air-security
+  tier: standard
+  attempted: true
+  transport: extract (listing)
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: one post only, 2026-08-19
+- id: previdian
+  tier: standard
+  attempted: true
+  transport: extract of site root (ok); /feed 403 on extract, jina and WebFetch
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: cannot list exploited vulnerabilities; see coverage_gaps
+- id: stepsecurity-blog
+  tier: standard
+  attempted: true
+  transport: extract/url listing + RSS https://www.stepsecurity.io/blog/rss.xml (new recipe)
+  horizon_hours: 145
+  in_horizon_items: 4
+  returned: 0
+  note: 2026-10-24 OVHcloud and 2026-10-26 LiteLLM already covered; 10-27 and 10-28 posts are product announcements
+- id: theregister-security-feed
+  tier: standard
+  attempted: true
+  transport: feed + WebFetch
+  horizon_hours: 145
+  in_horizon_items: 26
+  returned: 3
+  note: 'leads used: EPICS/Cipher, testmetest worm, 123 Reg; others covered, S1/S4 domain or marginal (Oracle EBS/PeopleSoft held by S1, AfD hosting breach, Cisco Project Quarry, Skynet agent = Symantec 2026-10-21)'
+- id: trellix
+  tier: standard
+  attempted: true
+  transport: extract (dated listing)
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-13
+- id: zscaler-threatlabz
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 1
+  note: Node2Shell telemetry update-of
+- id: crowdstrike
+  tier: standard
+  attempted: true
+  transport: feed https://www.crowdstrike.com/en-us/blog/feed + extract
+  horizon_hours: 124
+  in_horizon_items: 2
+  returned: 2
+  note: Legal Threat Landscape annual report and the WARP PANDA CVE-2026-41709 attribution; AI-guardrails post (2026-10-28) read and dropped as a research-method post; PHP2Shell obstacles post (2026-10-23) already cited in the PHP entry
+- id: dfirreport
+  tier: standard
+  attempted: true
+  transport: feed (direct)
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-08-24
+- id: fortinet-fortiguard-blog
+  tier: standard
+  attempted: true
+  transport: url (card list, author/date line after title)
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-05
+- id: ibm-xforce
+  tier: standard
+  attempted: true
+  transport: url listing + extract per post for dates
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-14
+- id: imperva-threat-research
+  tier: standard
+  attempted: true
+  transport: extract + url listing; extract of the PHP2Shell post
+  horizon_hours: 124
+  in_horizon_items: 0
+  returned: 0
+  note: newest research posts 2026-10-21/22 (PHP2Shell, Node2Shell), the latter already cited in the Node2Shell entry
+- id: intel471
+  tier: standard
+  attempted: true
+  transport: feed (direct)
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-22 (hunt-team opinion post)
+- id: jamf-threat-labs
+  tier: standard
+  attempted: true
+  transport: url listing + extract of the four newest posts
+  horizon_hours: 122
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2026-10-13 (CISO awareness post); newest research 2026-09-30
+extra_sweeps:
+- scope: major vendor research blogs named in the spawn note
+  sources: Microsoft (msft-secblog recent 30), Google GTIG/Mandiant feed (newest 2026-10-15), Talos feed, Unit 42 feed, Check Point Research feed, ESET feed, Kaspersky Securelist feed (nothing new in window), SentinelOne (url listing with epoch dates), Proofpoint feed (newest 2026-10-14), Trend feed, Huntress feed, Sekoia (extract), Elastic feed, Volexity feed (newest 2026-10-16), watchTowr feed and watchtowr.com/intelligence, Rapid7 (url listing + extract dates), Wiz feed, Socket atom feed, Sysdig feed
+  result: 'in-window posts of research value: Talos KeyDrift (returned), Huntress MDM (returned), Socket Searchjacked (returned), Zscaler/Trend/Sysdig Node2Shell and ZDI updates (returned/dropped), Check Point Yoba (2026-10-27, returned borderline); The ESET research listing (extract) surfaced the APT Activity Report of 2026-10-28 and the MDaemon exploitation it describes (both returned); Microsoft, Google (listing re-checked, featured post is the 2026-09-08 AI tracker), Proofpoint, Volexity, watchTowr, Rapid7, SentinelOne had nothing new in the window'
+- scope: additional research feeds swept for items since 2026-10-27
+  sources: Acronis TRU, Bishop Fox, Calif, Citizen Lab, Cloudflare Cloudforce One, Compass Security, Exodus, Google TAG, Group-IB, InfoGuard, Intrinsec, Lab52, Malwarebytes, mysites.guru, Oneconsult, Project Zero, Recorded Future Insikt, SANS ISC, Sansec, scip, Seqrite, Snyk, SOC Prime, Sonatype, Sophos X-Ops, Tenable, Trail of Bits, Truesec, Xlab, Expel, Wordfence, Patchstack, OpenSourceMalware, Krebs, Akamai, Datadog, JFrog, heise Security, NCSC UK, SafeDep, StepSecurity
+  result: 'returned: Acronis Qilin, Wordfence/Dream PHP2Shell chain, JFrog Vert.x, heise-led AuthMask and Tailworm; Schneier feed 403 on direct and jina'
+dropped_leads:
+- lead: Sekoia, PHP2Shell was exploited before the patch (2026-10-28)
+  reason: restates the AWS honeypot attempt of 2026-10-17, already in the PHP2Shell entry
+- lead: 'Huntress, AI, Scripts, Operator: Inside the ConnectWise Attack (2026-10-26)'
+  reason: already folded into the ConnectWise entry (its 2026-10-26 section)
+- lead: Huntress, camera management software compromise (2026-10-27)
+  reason: single source, software vendor not identified, a handful of incidents; DLL sideloading with WpcMon.exe from a user AppData path; dropped as exposure cannot be determined
+- lead: Symantec, Skynet LLMjacking agent (security.com post dated 2026-10-21; The Register 2026-10-24)
+  reason: outside the window and no real-world use found
+- lead: Securelist, Intelbras camera DoS (2026-10-28) and cloud tenant-isolation bypass (2026-10-27)
+  reason: consumer cameras reachable only on local Wi-Fi, medium severity; anonymised provider pentest case already fixed
+- lead: Elastic, wesp.sys / Windows Endpoint Security Platform (2026-10-26)
+  reason: preview-build analysis, informational
+- lead: Hacktron php2shell model benchmark (2026-10-26)
+  reason: speculative context, no defender action
+- lead: 'Apple support article 149555 and heise (2026-10-28): macOS /etc/ssl/cert.pem still trusts the eMudhra roots'
+  reason: the eMudhra entry already carries the gap through the Dennis Jackson tracker; Apple confirms a future update and gives manual removal steps (optional changelog record, low delta)
+- lead: Pillow 13.0.0 security batch (oss-security 2026-10-21, OX 2026-10-22)
+  reason: S1-type vulnerability item, about a week old, not in the store; for S1 or the audit
+- lead: Oracle EBS CVE-2026-101767 exploitation attempts and PeopleSoft CVE-2026-35273 (The Register 2026-10-28)
+  reason: held by S1 per its progress file
+- lead: 'The Register: AfD email hosting breach (2026-10-27), Cisco Project Quarry open-source agent-detection tool (2026-10-28)'
+  reason: S2/S4 domain, tooling news
+- lead: Veeam MFA bypass (heise 2026-10-28)
+  reason: S1 holds Veeam per its progress file

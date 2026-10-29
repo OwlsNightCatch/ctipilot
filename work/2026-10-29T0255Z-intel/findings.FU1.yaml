@@ -1,0 +1,405 @@
+# work/2026-10-29T0255Z-intel/findings.FU1.yaml
+# FU1: Phase 2 completeness follow-up (A PHP2Shell vendor gaps, B screening, C PeopleSoft, D Juniper SSR). No source slice, no source ledger.
+domain: FU1
+run_id: 2026-10-29T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-29T03:53:22Z
+ended_at: 2026-10-29T04:25:20Z
+duration_seconds: 1918
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 19
+  bridge_fetches: 95
+window_note: >
+  window_hours 26, developing-story window 72 h. Items 1 to 3 carry vendor pages published or revised on 2026-10-28 (in window).
+  Items 5 and 6 carry vendor updates of 2026-10-26 and 2026-10-27 (inside the 72 h developing window). Items 4 and 7 are store gaps whose vendor
+  pages date from 2026-10-21 to 2026-10-24 (outside both windows); they are returned because the FU1 task asked for PHP2Shell vendor gaps, and
+  item 7 is marked borderline.
+items:
+  # ------------------------------------------------------------------ 1. Check Point
+  - title: "Check Point firewalls and PHP2Shell: sk1000302 names Force, Spark and Cloud firewalls with a VPN or captive-portal feature enabled as affected; hotfixes exist since 2026-10-23 and the R81.20 hotfix was reissued on 2026-10-28"
+    sources:
+      - { url: "https://support.checkpoint.com/results/sk/sk1000302", publisher: "Check Point (sk1000302, created 2026-10-21, lastModified 2026-10-28)", date: "2026-10-28", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (row of 2026-10-22, stale on the fix)", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: NCSC-NL PHP2Shell software status list, URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url; row 'Check Point firewall web interfaces', 2026-10-22, listed as an index only) -> primary: Check Point sk1000302, URL https://support.checkpoint.com/results/sk/sk1000302 (a Next.js shell to a direct GET; body read from the site's data route https://support.checkpoint.com/_next/data/jyeWtlX3-gkWYUXATNR8Q/results/sk/sk1000302.json with the buildId read from the shell's _buildManifest.js reference, per the checkpoint-support source note). The store has no Check Point PHP2Shell entry (prior_coverage grep for Check Point returns nothing)."
+    summary: |
+      FACTS (Check Point sk1000302, vendor primary, lastModified 2026-10-28): under certain circumstances the PHP flaws CVE-2026-109618 and CVE-2026-109619 (CVSS 9.2 each) allow remote code execution through firewall web interfaces. Affected are Check Point Force Firewalls, Spark Firewalls and Cloud Firewalls that use one or more of: Mobile Access Portal (not Spark), Remote Access VPN with SSL Network Extender (not Spark), Remote Access VPN with SAML Realm authentication enabled, Identity Awareness Captive Portal, UserCheck Portal, Zero Phishing. Affected versions are R81.20, R82, R82.10 and R82.20 (R80 to R81.10 end of support, also affected), Spark R81.10.x and R82.00.x (Spark R77.20.x and R80.20.x end of support). Check Point Portal and SaaS services are already patched; Security Management and Log Servers are not impacted; Check Point products are not vulnerable to the third PHP issue CVE-2026-115560.
+      FIX: hotfix packages for R82.20 (also a 3900-appliance package), R82.10 (also 3900), R82 and R81.20, and Spark builds R82.00.11 (build 998002823) and R81.10.17 (build 996004992). Check Point states the hotfix "implements the PHP 7.4 published fix", is compatible with every Jumbo Hotfix Accumulator take, must be installed on each gateway, cluster member, security group member or standalone server, and needs a reboot. Revisions: 2026-10-23 18:30 GMT first hotfix; 2026-10-26 08:40 GMT R82, R82.10 and R82.20 packages reissued to allow standalone deployments (firewall and management on one appliance); 2026-10-28 11:50 GMT the R81.20 package reissued to fix a Mobile Access problem, it must sit on Jumbo Hotfix Accumulator take 166 or higher and is required where the Mobile Access Portal is used (without Mobile Access an installed earlier build needs no update). The fix is also planned for the Jumbo Hotfix Accumulators of 2026-11-11. NCSC-NL's row of 2026-10-22 still says the Jumbo fix is planned for 2026-11-11 and is stale.
+      INTERIM MITIGATION (Check Point, before the hotfix): append a "Require all denied" block to the gateway's cp-httpd.conf under $CPDIR/web/Apache/conf and restart the portals (mpclient commands differ per release; Spark has its own procedure); the hotfix procedure says to remove those lines before installing it. R82.20 gateways protect themselves through the "PHP Remote Code Execution" IPS signature even when IPS is not enabled and HTTPS Inspection is off.
+      ABSENCES: the sk text read carries no exploitation statement and no post-compromise check. CISA lists both CVEs as exploited (store entry 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619); nothing read ties an exploitation case to Check Point gateways.
+    region_nexus: "global; perimeter firewall and remote-access VPN gateway class; Swiss exposure depends on whether the listed portal or VPN features face the internet (no Swiss-specific reporting)"
+    primary_sector_nexus: "direct technology class (perimeter firewall, remote-access VPN gateway)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Check Point Force Firewalls", "Check Point Spark Firewalls", "Check Point Cloud Firewall"]
+    entity_keys: ["tool:php2shell", "product:php", "product:check-point-security-gateway"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Vendor first-party advisory for its own products (Admiralty source A); NCSC-NL row is a compile of the same vendor statement and is stale on the fix, so it is not independent corroboration."
+    classification_hint: "A2"
+    confidence: HIGH
+    novelty: new
+    suggested_priority: "high (internet-facing VPN and portal features by design, hotfix available, KEV-listed CVE pair)"
+    evidence:
+      - quote: "Under certain circumstances, PHP vulnerabilities may allow Remote Code Execution through firewall web interfaces."
+        attribution: "Check Point"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000302"
+      - quote: "Mobile Access Portal (not applicable to Spark Firewalls)"
+        attribution: "Check Point"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000302"
+      - quote: "Remote Access VPN with SAML Realm authentication enabled"
+        attribution: "Check Point"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000302"
+      - quote: "Check Point products are not vulnerable to CVE-2026-115560."
+        attribution: "Check Point"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000302"
+      - quote: "This Hotfix implements the PHP 7.4 published fix for CVE-2026-109618 and CVE-2026-109619."
+        attribution: "Check Point"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000302"
+      - quote: "Updated the R81.20 Hotfix package to address a problem with Mobile Access."
+        attribution: "Check Point"
+        source_url: "https://support.checkpoint.com/results/sk/sk1000302"
+    extended_notes: |
+      Exposure check per the vendor: the feature list is the discriminator; a gateway with none of the listed portals or VPN features enabled is outside the stated scope. Detection concept (class first): gateway web-daemon (cp-httpd) access logs for the portal paths, process-creation events on the gateway for the web daemon spawning shells, and outbound connections initiated by the gateway; the sk gives no indicator guidance, so none is claimed. Defender takeaway: install the hotfix for the release in use (R81.20 hosts that use Mobile Access need the 2026-10-28 package on top of take 166 or higher), remove the manual cp-httpd.conf mitigation first, reboot, and treat portals that faced the internet before the fix as needing a compromise check because the sk is silent on whether patching evicts an attacker.
+
+  # ------------------------------------------------------------------ 2. Trend Micro
+  - title: "Trend Micro Apex Central and Apex One on-premises server are affected by PHP2Shell and have no fix yet: critical patches are due 2026-11-11, Deep Discovery Inspector and Email Inspector 2026-10-30, TMWS cloud 2026-11-06"
+    sources:
+      - { url: "https://success.trendmicro.com/en-US/solution/KA-0024802", publisher: "Trend Micro / TrendAI (KA-0024802, last updated 2026-10-28)", date: "2026-10-28", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (rows of 2026-10-23)", date: "2026-10-23", role: "corroborating" }
+      - { url: "https://files.trendmicro.com/documentation/readme/CP/apexcentral_win_en_criticalpatch_b7328_Readme.html", publisher: "Trend Micro (Apex Central critical patch readme, 2026-10-06)", date: "2026-10-06", role: "context" }
+    discovery_trace: "first seen at: NCSC-NL PHP2Shell software status list, URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url; rows 'Trend Micro Apex Central' and 'Apex One', 2026-10-23, index only) -> primary: Trend Micro KA-0024802, URL https://success.trendmicro.com/en-US/solution/KA-0024802 (extract returns the prose but drops the status table; the table was read from the raw HTML returned by the bridge url subcommand). The store has no Trend Micro PHP2Shell entry (prior_coverage grep matches only an unrelated ZDI entry)."
+    summary: |
+      FACTS (Trend Micro customer advisory KA-0024802, last updated 2026-10-28, status table 'as of Oct. 28'): Apex Central is "Impacted - Critical Patch ETA: Nov. 11"; Apex One (on-premise server) is "Impacted - Critical Patch ETA: Nov. 11"; each row links an interim mitigation page that was not read. Trend Micro Web Security: the TWS Authentication Agent is impacted with a mitigation, TMWS Cloud "Patch ETA: Nov. 6". TrendAI Vision One Network Detection and Response: Deep Discovery Inspector and Email Inspector critical patches due Oct. 30, Deep Discovery Analyzer Nov. 12. Apex One as a Service was addressed through emergency maintenance on 2026-10-23. TippingPoint (TPS and SMS), Zero Trust Secure Access, Deep Security, Cloud App Security, ScanMail, InterScan Web Security Virtual Appliance and Email Security are listed as not impacted.
+      CLAIM (Trend Micro): it "has not seen any active instances or scenarios of successful exploitation of either of the vulnerabilities in our products or services". Vendor guidance until the patches ship: restrict access to the impacted management servers and consoles to trusted IP addresses; IPS virtual-patching rules and filters exist for TrendAI customers; Trend Micro published a PHP2Shell Exposure Checker for scanning external assets.
+      CONTEXT (Trend Micro readme of 2026-10-06, the page NCSC-NL links for Apex Central): critical patch b7328 lists its bundled third-party PHP as 8.2.33, below the fixed 8.2.35, so that patch carries a vulnerable runtime (an inference from the readme; it is not a Trend Micro statement about the current build).
+    region_nexus: "global; endpoint-security management servers (Apex Central, Apex One) sit on internal management networks in most deployments; Swiss exposure depends on whether the consoles are reachable from untrusted networks"
+    primary_sector_nexus: "direct technology class (endpoint-security management plane)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Trend Micro Apex Central", "Trend Micro Apex One (on-premise server)", "Trend Micro Web Security (TWS Authentication Agent, cloud)", "Trend Micro Deep Discovery Inspector", "Trend Micro Deep Discovery Email Inspector", "Trend Micro Deep Discovery Analyzer"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities:
+      - { key: "product:trend-micro-apex-central", type: product, name: "Trend Micro Apex Central", aliases: ["TrendAI Apex Central"], summary: "Central management console for Trend Micro endpoint and security products; listed by Trend Micro KA-0024802 as impacted by PHP2Shell with a critical patch due 2026-11-11." }
+      - { key: "product:trend-micro-apex-one", type: product, name: "Trend Micro Apex One", aliases: ["TrendAI Apex One"], summary: "Trend Micro endpoint security; the on-premise server is listed by KA-0024802 as impacted by PHP2Shell with a critical patch due 2026-11-11, Apex One as a Service was addressed on 2026-10-23." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Vendor first-party advisory for its own products (Admiralty source A); NCSC-NL rows compile the same page."
+    classification_hint: "A2"
+    confidence: HIGH
+    novelty: new
+    suggested_priority: "notable (no fix for two widely deployed management servers for about two weeks, no exploitation seen)"
+    evidence:
+      - quote: "At this time, TrendAI has not seen any active instances or scenarios of successful exploitation of either of the vulnerabilities in our products or services."
+        attribution: "Trend Micro / TrendAI"
+        source_url: "https://success.trendmicro.com/en-US/solution/KA-0024802"
+      - quote: "On-premise products that are impacted will have code fixes provided in the form of hotfixes and/or Critical Patches where applicable."
+        attribution: "Trend Micro / TrendAI"
+        source_url: "https://success.trendmicro.com/en-US/solution/KA-0024802"
+      - quote: "restricted access to trusted IP addressed (where applicable) to the impacted management servers and consoles"
+        attribution: "Trend Micro / TrendAI"
+        source_url: "https://success.trendmicro.com/en-US/solution/KA-0024802"
+      - quote: "Impacted - Critical Patch ETA: Nov. 11"
+        attribution: "Trend Micro / TrendAI (status table; present in the raw HTML only, extract drops the table)"
+        source_url: "https://success.trendmicro.com/en-US/solution/KA-0024802"
+    extended_notes: |
+      Defender takeaway: until 2026-11-11 the control is network reachability of the Apex Central and Apex One server consoles and web endpoints (restrict to administrator networks, no internet exposure) plus the vendor's interim mitigation page; check the Deep Discovery appliances on 2026-10-30. Page text of the advisory says the table is updated as the inventory continues, so re-read before relying on an ETA.
+
+  # ------------------------------------------------------------------ 3. Juniper SSR (task D)
+  - title: "Juniper Session Smart Router and Conductor: JSA112183 fixes at least 18 CVEs including two unauthenticated critical flaws (CVSS 9.8), root command execution through a crafted salt minion ID on the Conductor (CVE-2026-103406) and admin takeover of a Router before onboarding (CVE-2026-103409); fixed in 7.0.5, 7.1.7 and 7.2.3, no exploitation known"
+    sources:
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/juniper-networks-security-advisory-av26-1101", publisher: "Canadian Centre for Cyber Security (AV26-1101)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-103409", publisher: "Juniper SIRT as CVE Numbering Authority (CVE record CVE-2026-103409, advisory JSA112183)", date: "2026-10-28", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-103406", publisher: "Juniper SIRT as CVE Numbering Authority (CVE record CVE-2026-103406, advisory JSA112183)", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: cccs-alerts Atom feed, URL https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en (item 'Juniper Networks security advisory (AV26-1101)', 2026-10-28T19:30Z, bridge feed) -> CCCS advisory page https://cyber.gc.ca/en/alerts-advisories/juniper-networks-security-advisory-av26-1101 (extract lists Session Smart Conductor and Router before 7.0.5, 7.1.7, 7.2.3; the raw HTML (bridge url --direct) carries the link to Juniper's bulletin 'https://supportportal.juniper.net/s/article/2026-10-On-Demand-Security-Bulletin-Session-Smart-Router-and-Session-Smart-Conductor-Multiple-internally-discovered-vulnerabilities-resolved') -> Juniper bulletin page unreadable on every rung (extract returns the Salesforce shell, WebFetch returns a loading placeholder, jina returns nothing) -> pivot: NVD CVE API keyword search 'Session Smart' (publication window 2026-10-20 to 2026-10-29) returned 17 records with source sirt@juniper.net, all referencing https://supportportal.juniper.net/JSA112183; a check of the neighbouring ids in the CVE Services API added CVE-2026-103404 (Juniper, same advisory) -> primary: Juniper's own CVE records read from the CVE Services API for CVE-2026-103409 and CVE-2026-103406 (fields exploits, solutions, workarounds, metrics, source.advisory)."
+    summary: |
+      FACTS (Juniper SIRT CVE records, published 2026-10-28; advisory JSA112183, discovery marked INTERNAL, bulletin title per the CCCS link 'On-Demand Security Bulletin: Session Smart Router and Session Smart Conductor: Multiple internally discovered vulnerabilities resolved'): at least 18 CVEs: CVE-2026-103390 to -103394, -103400 to -103411 and -106079 (the bulletin page itself could not be read, so the list may be longer; the ids -103395 to -103399 belong to other vendors). Affected: Session Smart Router and Session Smart Conductor before 7.0.5, before 7.1.7 (7.1.0 to 7.1.6) and before 7.2.3 (7.2.0 to 7.2.2); fixed in 7.0.5, 7.1.7 and 7.2.3 "and all subsequent releases"; "There are no known workarounds" for CVE-2026-103409 and none for CVE-2026-103406. For both critical records Juniper's exploitation field says "Juniper SIRT is not aware of any malicious exploitation of this vulnerability."
+      The two unauthenticated criticals (CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N): CVE-2026-103409, Session Smart Router, missing authentication for a critical function: an unauthenticated network attacker obtains administrative privileges by passing crafted URL parameters to an insecure endpoint running as root; it can only be exploited before the device is onboarded to Mist or a Conductor and no longer once onboarded. CVE-2026-103406, Session Smart Conductor only, OS command injection in the AutomatedProvisioner: a remote attacker executes arbitrary commands as root through a specially crafted salt minion ID (the record title says the attack happens during key management; the sources read give no listener or port).
+      Other high rows (CVSS 3.1): CVE-2026-103401 (8.8) link following in the unauthenticated web-server handlers lets a local unprivileged user overwrite arbitrary files as root through unauthenticated API endpoints, exploitable on Mist-managed routers and on unmanaged routers not yet onboarded to a Conductor (Conductor-managed routers are not affected); CVE-2026-103402 (8.8) unverified cache files in PCLI; CVE-2026-103403 and CVE-2026-106079 (8.8) OS command injection in AccessManager for an authenticated or config-write user; CVE-2026-103407 (8.8) path traversal in ConfigDirector's certificate and private-key REST API for an authenticated REST user; CVE-2026-103408 (8.8) stack buffer overflow in the DHCP client giving remote code execution to an unauthenticated attacker on the local network through a malicious DHCP reply (adjacent); CVE-2026-103410 (7.5) integer overflow in the DPI certificate scanner, unauthenticated remote denial of service through a crafted TLS server certificate; CVE-2026-103411 (7.1) DHCP decoder underflow. CVE-2026-103404 (6.8) lets a local user read routing credentials on the Conductor through files that processes write to /tmp. The remainder are medium or low.
+      GAPS: the Juniper bulletin page itself could not be read, so its workaround and exposure text for the other 16 CVEs is not confirmed; scores for the others come from the CNA records via the NVD API and the CVE Services API (statuses 'Awaiting Analysis').
+    region_nexus: "global; SD-WAN and branch router class; Swiss exposure depends on Session Smart deployments (no Swiss-specific reporting)"
+    primary_sector_nexus: "direct technology class (SD-WAN edge router and its management Conductor)"
+    sector: "public-sector"
+    cves: [CVE-2026-103409, CVE-2026-103406, CVE-2026-103401, CVE-2026-103408, CVE-2026-103402, CVE-2026-103403, CVE-2026-106079, CVE-2026-103407, CVE-2026-103410, CVE-2026-103411]
+    techniques: [T1190, T1068]
+    affected_products: ["Juniper Session Smart Router", "Juniper Session Smart Conductor"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:juniper-session-smart-router", type: product, name: "Juniper Session Smart Router", aliases: ["SSR", "Session Smart Networking"], summary: "Juniper SD-WAN router software (former 128 Technology); JSA112183 of 2026-10-28 fixes at least 18 CVEs including an unauthenticated 9.8 admin takeover before onboarding (CVE-2026-103409), fixed in 7.0.5, 7.1.7 and 7.2.3." }
+      - { key: "product:juniper-session-smart-conductor", type: product, name: "Juniper Session Smart Conductor", aliases: ["SSR Conductor"], summary: "Management plane for Session Smart Routers; JSA112183 includes an unauthenticated 9.8 root command injection through a crafted salt minion ID (CVE-2026-103406), fixed in 7.0.5, 7.1.7 and 7.2.3." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Vendor first-party statements for its own products, read from Juniper SIRT's CVE Numbering Authority records because the support-portal bulletin is a JavaScript-only page; the CCCS advisory restates the affected versions from Juniper and is not independent."
+    classification_hint: "A2"
+    confidence: HIGH
+    novelty: new
+    suggested_priority: "high (two unauthenticated 9.8 flaws on SD-WAN edge and management plane; no exploitation known, no workaround, patch available)"
+    evidence:
+      - quote: "A Missing authentication for critical function vulnerability in Juniper Networks Session Smart Router allows an unauthenticated network-based attacker to obtain administrative privileges by passing crafted URL parameters to an insecure endpoint running as root."
+        attribution: "Juniper SIRT (CVE-2026-103409)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103409"
+      - quote: "Note that this vulnerability can only be exploited prior to the device being onboarded to Mist/Conductor."
+        attribution: "Juniper SIRT (CVE-2026-103409)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103409"
+      - quote: "Juniper SIRT is not aware of any malicious exploitation of this vulnerability."
+        attribution: "Juniper SIRT (CVE-2026-103409)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103409"
+      - quote: "There are no known workarounds for this issue."
+        attribution: "Juniper SIRT (CVE-2026-103409)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103409"
+      - quote: "allows a remote attacker to execute arbitrary commands as root via a specially crafted salt minion ID."
+        attribution: "Juniper SIRT (CVE-2026-103406)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103406"
+      - quote: "Juniper SIRT is not aware of any malicious exploitation of this vulnerability."
+        attribution: "Juniper SIRT (CVE-2026-103406)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-103406"
+      - quote: "As of October 28, 2026, Juniper Networks is affected by vulnerabilities in the following products:"
+        attribution: "Canadian Centre for Cyber Security"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/juniper-networks-security-advisory-av26-1101"
+    extended_notes: |
+      Exposure: CVE-2026-103409 matters for routers that have not yet been onboarded to Mist or a Conductor (new, staged, factory-reset or re-provisioned units) with the insecure endpoint reachable; CVE-2026-103406 matters for any Conductor reachable by a remote attacker. Version check: read the installed SSR or Conductor release against 7.0.5, 7.1.7, 7.2.3. The sources do not describe telemetry for these flaws; no detection guidance is claimed. Defender takeaway: schedule the upgrade of Conductors first (pre-auth root command execution on the management plane), then un-onboarded and Mist-managed routers; there is no workaround, so reachability of the Conductor and of un-onboarded routers is the only interim control.
+
+  # ------------------------------------------------------------------ 4. F5 BIG-IP (task A priority 1)
+  - title: "F5 BIG-IP and PHP2Shell: fixed in 17.1.3.7, 17.5.1.11 and 21.1.0.4 (cumulative PHP-only critical releases of 2026-10-24); the Configuration utility of every module and the APM and SSL Orchestrator access profiles are the exposed components"
+    sources:
+      - { url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-21-1-0-4.html", publisher: "F5 (BIG-IP 21.1.0.4 Fixes and Known Issues, updated 2026-10-24)", date: "2026-10-24", role: "primary" }
+      - { url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-17-5-1-11.html", publisher: "F5 (BIG-IP 17.5.1.11 Fixes and Known Issues, updated 2026-10-24)", date: "2026-10-24", role: "primary" }
+      - { url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-17-1-3-7.html", publisher: "F5 (BIG-IP 17.1.3.7 Fixes and Known Issues, updated 2026-10-24)", date: "2026-10-24", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (F5 rows of 2026-10-21, 10-23 and 10-26)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://community.f5.com/t/php2shell-is-bigip-vulnerable/77598", publisher: "F5 DevCentral forum thread (F5 staff and community members, 2026-10-21 to 2026-10-26)", date: "2026-10-26", role: "context" }
+    discovery_trace: "first seen at: S1 borderline item 14 (work/2026-10-29T0255Z-intel/findings.S1.yaml) pointing at NCSC-NL list URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url; F5 rows cite my.f5.com K000163821) -> F5 K000163821 https://my.f5.com/manage/s/article/K000163821 unreadable on every rung: extract returned the 722 kB myF5 portal shell, WebFetch and jina returned the 'Loading' placeholder, Vulners aggregator 403 on extract and WebFetch, WebSearch for the article text found only the Vulners listing and the F5 forum thread -> pivot: WebSearch ('F5 BIG-IP 17.1.3.7 17.5.1.11 21.1.0.4 PHP vulnerability fixed release') -> F5 techdocs release-note supplements, URLs above (extract), which list K000163821 as the fix reference for 'PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619' -> F5 DevCentral thread URL https://community.f5.com/t/php2shell-is-bigip-vulnerable/77598 (extract) for F5-staff statements. No CERT restatement found (CCCS, CERT-FR, BSI WID and NCSC-NL feeds carry no F5 item for K000163821)."
+    summary: |
+      FACTS (F5 release notes, primary): the supplements for BIG-IP 17.1.3.7 (bug 2693429-1), 21.1.0.4 (2693429-2) and 17.5.1.11 (2693429-3), each updated 10/24/2026, list K000163821 with the description "PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619" and the single fixed version of that train. Each states it "is critical release", that "The only new changes in this release are PHP vulnerability fixes", and that it is cumulative and includes earlier Hardened and Critical Releases.
+      FACTS as recorded by NCSC-NL from K000163821 (secondary; the F5 page was unreadable): vulnerable are BIG-IP 17.1.0 to 17.1.3, 17.5.0 to 17.5.1 and 21.1.0; the BIG-IP Configuration utility (control plane) is affected across all modules and, for APM and SSL Orchestrator, the access-profile data plane; earlier affected releases remain vulnerable until updated. NCSC-NL's row for 2026-10-23 had no fix; the row of 2026-10-26 added the three builds.
+      CLAIMS (F5 DevCentral forum, F5 staff): K000163821 is "the source of truth", is being updated as new information is tested and confirmed, and carries several mitigations. Community members in the same thread report: APM was added to the affected list on 2026-10-21 with mitigations for the Configuration utility (TMUI), APM and SSL Orchestrator; a php.ini.d mitigation for the APM/SSLO data plane and IP restrictions on TMUI are to be reapplied after upgrading; WAF signature sets of 2026-10-21 add PHP remote-code-execution signatures whose effect on PHP2Shell F5 support had not confirmed; a separate PHP issue is tracked in K000163878 (unread).
+      ABSENCES: F5's own wording on exploitation status, mitigation steps and whether BIG-IP exploitation was observed could not be read; nothing found reports PHP2Shell exploitation of BIG-IP. Branches other than 17.1, 17.5 and 21.1 are not named in anything read.
+    region_nexus: "global; BIG-IP is an application-delivery and remote-access gateway class; Swiss exposure depends on whether the Configuration utility or APM virtual servers face untrusted networks (no Swiss-specific reporting)"
+    primary_sector_nexus: "direct technology class (load balancer and remote-access gateway)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["F5 BIG-IP", "F5 BIG-IP Access Policy Manager (APM)", "F5 BIG-IP SSL Orchestrator"]
+    entity_keys: ["tool:php2shell", "product:php", "product:f5-big-ip", "product:f5-big-ip-access-policy-manager-apm"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Fixed builds come from F5's own release notes (vendor first-party, Admiralty source A); exposure scope is NCSC-NL's compile of K000163821 (national authority, secondary) because the F5 page is a JavaScript-only portal."
+    classification_hint: "A2"
+    confidence: MEDIUM
+    novelty: new
+    suggested_priority: "notable (store gap on a core edge product; vendor pages are older than the window; fold into one short entry or a PHP2Shell roundup)"
+    evidence:
+      - quote: "PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619 | 21.1.0.4"
+        attribution: "F5 (21.1.0.4 release notes)"
+        source_url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-21-1-0-4.html"
+      - quote: "PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619 | 17.5.1.11"
+        attribution: "F5 (17.5.1.11 release notes)"
+        source_url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-17-5-1-11.html"
+      - quote: "PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619 | 17.1.3.7"
+        attribution: "F5 (17.1.3.7 release notes)"
+        source_url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-17-1-3-7.html"
+      - quote: "The only new changes in this release are PHP vulnerability fixes."
+        attribution: "F5 (21.1.0.4 release notes)"
+        source_url: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-21-1-0-4.html"
+      - quote: "APM exposure concerns the data-plane access profile; all-module control-plane exposure concerns the Configuration utility."
+        attribution: "NCSC-NL (recording F5 K000163821)"
+        source_url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md"
+      - quote: "That is the source of truth and includes several mitigations: look for Security Advisory Recommended Actions."
+        attribution: "F5 DevCentral (staff reply)"
+        source_url: "https://community.f5.com/t/php2shell-is-bigip-vulnerable/77598"
+    extended_notes: |
+      Defender takeaway for the entry: read the installed BIG-IP release; 17.1.0 to 17.1.3, 17.5.0 to 17.5.1 and 21.1.0 need the matching 17.1.3.7, 17.5.1.11 or 21.1.0.4 (cumulative); until then restrict the Configuration utility to management networks and review APM/SSLO virtual servers with access policies; K000163821 stays the authoritative mitigation list and has to be read in a browser. Re-read the F5 article before composing, because the vendor says it is still changing.
+
+  # ------------------------------------------------------------------ 5. NetApp ONTAP
+  - title: "NetApp ONTAP 9 and PHP2Shell: only CVE-2026-109618 applies (unauthenticated www-user access inside the PHP jail on every ONTAP web service); hotfix builds 9.14.1P18HF1 to 9.19.1P3HF1 listed as of 2026-10-26, NetApp calls the flaw publicly discussed"
+    sources:
+      - { url: "https://security.netapp.com/advisory/NTAP-20261021-0021", publisher: "NetApp (NTAP-20261021-0021, version 9.0, updated 2026-10-26, status Interim)", date: "2026-10-26", role: "primary" }
+      - { url: "https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021", publisher: "NetApp advisory data feed behind the page (fix table, revision history)", date: "2026-10-26", role: "primary" }
+      - { url: "https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities", publisher: "NetApp Knowledge Base (ONTAP workaround article, 2026-10-23, update 2026-10-26)", date: "2026-10-26", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (ONTAP rows, version 7.0 of the advisory)", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: NCSC-NL PHP2Shell software status list, URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url; NetApp ONTAP 9 rows citing NTAP-20261021-0021) -> primary: NetApp advisory page https://security.netapp.com/advisory/NTAP-20261021-0021 (React SPA; extract fell to the jina reader and returned the summary, impact, scoring and exploitation text but not the tabs) -> the site's own data route https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021 (path read from the SPA bundle main.de335e73.js: '/adv_api/advisory/<id>'; bridge url --direct) returned the fix table, 158-entry unaffected list and revision history -> NetApp KB article (extract) for the affected ONTAP web services."
+    summary: |
+      FACTS (NetApp advisory NTAP-20261021-0021, version 9.0 of 2026-10-26, status Interim): ONTAP 9 is the only affected product and is "Affected only by CVE-2026-109618"; CVE-2026-109619 does not apply. NetApp's impact text: an unauthenticated attacker could potentially gain access as the www user but would be restricted to the PHP jail, limiting the scope. Both CVEs are scored CVSS 4.0 9.2 (AV:N/AC:H/AT:P/PR:N). Exploitation statement: "NetApp is aware of public discussion of this vulnerability" (the advisory's exploitation field reads Public); no exploitation is stated. Fixed builds listed: 9.14.1P18HF1 (added 2026-10-26), 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.18.1P8HF1 and 9.19.1P3HF1; revision history shows the first builds on 2026-10-24 and the rest on 2026-10-25 and 2026-10-26, and 2026-10-26 replaced the workaround text with a link to a KB article. About 158 other NetApp products are listed as not affected.
+      Exposed component per the NetApp KB article: all ONTAP web services, namely ONTAP System Manager, the SPI web portal, the REST API, the ONTAP API (ZAPI) and HTTP and HTTPS access. NetApp recommends upgrading to a fixed version rather than applying the workaround, and to undo the workaround after upgrading; the workaround steps sit behind a sign-in.
+      NCSC-NL's rows list only five builds (without 9.14.1P18HF1), so the NetApp page is newer than that index. The store carries no NetApp entry.
+    region_nexus: "global; ONTAP storage is common in public-sector data centres (no Swiss-specific reporting); the management web services are normally on management networks"
+    primary_sector_nexus: "direct technology class (enterprise storage management plane)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618]
+    techniques: [T1190]
+    affected_products: ["NetApp ONTAP 9"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities:
+      - { key: "product:netapp-ontap", type: product, name: "NetApp ONTAP", aliases: ["ONTAP 9"], summary: "NetApp storage operating system; NTAP-20261021-0021 lists ONTAP 9 as affected by the PHP2Shell flaw CVE-2026-109618 (www-user access inside the PHP jail) with hotfix builds 9.14.1P18HF1 to 9.19.1P3HF1." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Vendor first-party advisory for its own product (Admiralty source A); the KB article and data feed are the same vendor."
+    classification_hint: "A2"
+    confidence: HIGH
+    novelty: new
+    suggested_priority: "routine to notable (jail-restricted impact, management-plane exposure, hotfixes available, no exploitation stated)"
+    evidence:
+      - quote: "NetApp is aware of public discussion of this vulnerability."
+        attribution: "NetApp"
+        source_url: "https://security.netapp.com/advisory/NTAP-20261021-0021"
+      - quote: "Affected only by CVE-2026-109618. An unauthenticated attacker could potentially gain access as the www user but would be restricted to the PHP jail, limiting the scope of exploit."
+        attribution: "NetApp"
+        source_url: "https://security.netapp.com/advisory/NTAP-20261021-0021"
+      - quote: "ONTAP 9.14.1P18HF1 added to Software Versions and Fixes"
+        attribution: "NetApp (advisory data feed, revision 8.0 of 2026-10-26)"
+        source_url: "https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021"
+      - quote: "It is Recommended to upgrade to a fixed version"
+        attribution: "NetApp Knowledge Base"
+        source_url: "https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities"
+    extended_notes: |
+      Defender takeaway: compare each ONTAP 9 cluster's release with the six hotfix builds, keep System Manager, the SPI portal, REST and ZAPI endpoints off untrusted networks, and treat the workaround as temporary. Jail confinement lowers the impact but the advisory does not describe what the jail allows.
+
+  # ------------------------------------------------------------------ 6. Quest KACE
+  - title: "Quest KACE SMA and SDA are affected by PHP2Shell in all versions: SMA 15.0 CU5 (15.0.378) and 15.1 CU2 (15.1.177) fix it since 2026-10-23, the SDA 9.3 hotfix (9.3.312) followed on 2026-10-27; unpatched appliances should block ports 80, 443 and 52230"
+    sources:
+      - { url: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell", publisher: "Quest Software (KB 4385046, timeline to 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (KACE SMA row of 2026-10-26; no SDA row)", date: "2026-10-26", role: "corroborating" }
+    discovery_trace: "first seen at: NCSC-NL PHP2Shell software status list, URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url; row 'Quest Software KACE Systems Management Appliance', 2026-10-26, index only) -> primary: Quest KB 4385046, URL https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell (extract fell to the jina reader and returned the full KB text). The store has no Quest KACE entry."
+    summary: |
+      FACTS (Quest KB 4385046): the KACE Systems Management Appliance (SMA) and Systems Deployment Appliance (SDA), all versions, are confirmed affected by CVE-2026-109618 and CVE-2026-109619; Quest confirms the third PHP issue CVE-2026-115560 does not affect them. Fixes: SMA 15.0 CU5 (15.0.378) and 15.1 CU2 (15.1.177) with PHP 8.4.27, published 2026-10-23 and advertised to 15.0 and 15.1 systems under Settings, Appliance Updates; SMA 15.0 Patch 4 and 15.1 Patch 1 do not contain the fix; older SMA versions must upgrade to the latest 15.0 or 15.1. SDA 9.3 hotfix 9.3.312 (PHP 8.3.36) was published 2026-10-27 at 15:00 UTC; the NCSC-NL list carries the SMA fix only.
+      Interim guidance for unpatched appliances (Quest): block all public internet access, consider limiting access to trusted internal networks and administrators; because a potentially exploitable communication path remains after the agent tunnel on port 52230 is established, block inbound web traffic including ports 80, 443 and 52230 until the update is applied.
+      ABSENCES: no exploitation statement in the KB; no post-compromise check.
+    region_nexus: "global; endpoint-management and OS-deployment appliances on internal networks; exposure depends on internet reachability of the appliance web ports and the agent port 52230"
+    primary_sector_nexus: "direct technology class (endpoint management plane)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Quest KACE Systems Management Appliance (SMA)", "Quest KACE Systems Deployment Appliance (SDA)"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities:
+      - { key: "product:quest-kace-sma", type: product, name: "Quest KACE Systems Management Appliance", aliases: ["KACE SMA"], summary: "Quest endpoint systems-management appliance; KB 4385046 lists all versions as affected by the PHP2Shell flaws and names 15.0 CU5 (15.0.378) and 15.1 CU2 (15.1.177) as the fixes." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Vendor first-party KB for its own products (Admiralty source A); NCSC-NL row compiles the same KB."
+    classification_hint: "A2"
+    confidence: HIGH
+    novelty: new
+    suggested_priority: "notable (management appliance, fix available, no exploitation stated)"
+    evidence:
+      - quote: "products (all versions) have been confirmed to be affected by"
+        attribution: "Quest Software"
+        source_url: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell"
+      - quote: "Recently released KACE SMA cumulative updates (15.0 Patch 4 and 15.1 Patch 1) do not contain fixes for this as they were released prior to the announcement of these CVEs."
+        attribution: "Quest Software"
+        source_url: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell"
+      - quote: "KACE SDA 9.3 hotfix (9.3.312) addressing the PHP2Shell vulnerabilities"
+        attribution: "Quest Software"
+        source_url: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell"
+      - quote: "Block all public Internet access to the KACE SMA and SDA systems."
+        attribution: "Quest Software"
+        source_url: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell"
+      - quote: "a potentially exploitable communication path remains available after the agent tunnel is established."
+        attribution: "Quest Software"
+        source_url: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell"
+    extended_notes: |
+      Defender takeaway: check the SMA build (15.0.378 or 15.1.177 or later) and the SDA hotfix level; until patched, the appliance's web ports and port 52230 should not be reachable from outside the management network.
+
+  # ------------------------------------------------------------------ 7. pfSense and OPNsense (borderline)
+  - title: "pfSense and OPNsense ship PHP2Shell fixes (pfSense Plus 26.07 and 26.03.1, CE 2.9.0 and 2.8.1; OPNsense Community 26.7.7 and 26.1.11, Business 26.4.2p4); pfSense needs a command-line package update, OPNsense captive portals need a restart"
+    sources:
+      - { url: "https://www.netgate.com/blog/critical-php-security-update", publisher: "Netgate (pfSense, 2026-10-21)", date: "2026-10-21", role: "primary" }
+      - { url: "https://forum.opnsense.org/index.php?topic=53191.msg276103", publisher: "OPNsense team announcement (2026-10-21)", date: "2026-10-21", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (rows of 2026-10-22)", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: NCSC-NL PHP2Shell software status list, URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url; rows 'Netgate / pfSense' and 'OPNsense / Deciso', 2026-10-22) -> primaries: Netgate blog https://www.netgate.com/blog/critical-php-security-update (extract) and OPNsense forum announcement https://forum.opnsense.org/index.php?topic=53191.msg276103 (extract, raw HTML text)."
+    summary: |
+      FACTS (Netgate, 2026-10-21): pfSense is only a concern if the PHP GUI or the Captive Portal service is exposed to potential attackers; by default the GUI is reachable from the LAN only and Captive Portal is off. New PHP packages: pfSense Plus 26.07 and 26.03.1 and CE 2.9.0 carry PHP 8.5.12, CE 2.8.1 carries PHP 8.3.36. The binary package updates cannot be performed through the GUI or the Nexus GUI and must be run at a command line. FACTS (OPNsense team, 2026-10-21): a hotfix for Community Edition 26.7.7 (PHP 8.5.12) and 26.1.11 (PHP 8.3.36) and Business Edition 26.4.2p4 (PHP 8.3.36); captive-portal users must restart the service after installing. NCSC-NL's OPNsense row names Business 26.4.2p3 and omits 26.1.11, so the vendor announcement is the more complete statement.
+    region_nexus: "global; open-source firewall distributions used at branch and small-site perimeters (no Swiss-specific reporting)"
+    primary_sector_nexus: "indirect (small-site perimeter firewalls)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Netgate pfSense Plus", "Netgate pfSense CE", "OPNsense Community Edition", "OPNsense Business Edition"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Both vendor posts date from 2026-10-21 (outside the window and the 72 h developing window), fixes shipped the day PHP released, exposure needs the GUI or captive portal reachable from untrusted networks; a store gap on an edge product class rather than a new development. A drop or a one-line mention in a PHP2Shell roundup is defensible."
+    evidence:
+      - quote: "These issues are only a cause for concern if the pfSense software PHP GUI or Captive Portal service are exposed to potential attackers."
+        attribution: "Netgate"
+        source_url: "https://www.netgate.com/blog/critical-php-security-update"
+      - quote: "These binary package updates cannot be performed using the pfSense software PHP GUI or the Nexus GUI, they must be performed at a command line."
+        attribution: "Netgate"
+        source_url: "https://www.netgate.com/blog/critical-php-security-update"
+      - quote: "We have just released a hotfix for the OPNsense Community Edition (26.7.7, 26.1.11) and Business Edition (26.4.2p4), addressing two recently disclosed critical PHP vulnerabilities."
+        attribution: "OPNsense team"
+        source_url: "https://forum.opnsense.org/index.php?topic=53191.msg276103"
+
+cve_table:
+  - { cve: CVE-2026-103409, product: "Juniper Session Smart Router", cvss: "9.8 (3.1, Juniper)", epss: null, kev: false, exploited: false, affected: "before 7.0.5; 7.1.0 to before 7.1.7; 7.2.0 to before 7.2.3", fixed: "7.0.5, 7.1.7, 7.2.3 and all subsequent releases", type: "missing authentication for critical function (admin takeover)", vector: "network", auth: "pre-auth (only before onboarding to Mist/Conductor)", source: "https://cveawg.mitre.org/api/cve/CVE-2026-103409" }
+  - { cve: CVE-2026-103406, product: "Juniper Session Smart Conductor", cvss: "9.8 (3.1, Juniper)", epss: null, kev: false, exploited: false, affected: "before 7.0.5; 7.1.0 to before 7.1.7; 7.2.0 to before 7.2.3", fixed: "7.0.5, 7.1.7, 7.2.3 and all subsequent releases", type: "OS command injection in AutomatedProvisioner (root, crafted salt minion ID)", vector: "network", auth: "pre-auth", source: "https://cveawg.mitre.org/api/cve/CVE-2026-103406" }
+  - { cve: CVE-2026-109618, product: "NetApp ONTAP 9", cvss: "9.2 (4.0, NetApp)", epss: null, kev: true, exploited: "KEV-listed generally; NetApp says publicly discussed, no exploitation stated", affected: "ONTAP 9 (releases not enumerated)", fixed: "9.14.1P18HF1, 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.18.1P8HF1, 9.19.1P3HF1", type: "PHP out-of-memory corruption RCE (jail-restricted www user)", vector: "network", auth: "pre-auth", source: "https://security.netapp.com/advisory/NTAP-20261021-0021" }
+  - { cve: CVE-2026-109618, product: "Check Point Force, Spark and Cloud firewalls (portal or VPN features enabled)", cvss: "9.2 (4.0)", epss: null, kev: true, exploited: "KEV-listed generally; Check Point states no exploitation", affected: "R81.20, R82, R82.10, R82.20 (EoS R80 to R81.10); Spark R81.10.x, R82.00.x", fixed: "hotfix per release (R81.20 reissued 2026-10-28); Spark R82.00.11 build 998002823, R81.10.17 build 996004992; Jumbo accumulators 2026-11-11", type: "PHP RCE through firewall web interfaces", vector: "network", auth: "pre-auth", source: "https://support.checkpoint.com/results/sk/sk1000302" }
+  - { cve: CVE-2026-109618, product: "F5 BIG-IP", cvss: "9.2 (4.0)", epss: null, kev: true, exploited: "KEV-listed generally; F5 statement unread", affected: "17.1.0 to 17.1.3, 17.5.0 to 17.5.1, 21.1.0 (NCSC-NL record of K000163821)", fixed: "17.1.3.7, 17.5.1.11, 21.1.0.4", type: "PHP RCE through Configuration utility and APM/SSLO access profiles", vector: "network", auth: "pre-auth", source: "https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-21-1-0-4.html" }
+  - { cve: CVE-2026-109618, product: "Trend Micro Apex Central and Apex One on-premise server", cvss: "9.2 (4.0)", epss: null, kev: true, exploited: "KEV-listed generally; Trend Micro has seen no successful exploitation", affected: "versions not specified by the vendor", fixed: "none yet; critical patches ETA 2026-11-11", type: "PHP RCE", vector: "network", auth: "pre-auth", source: "https://success.trendmicro.com/en-US/solution/KA-0024802" }
+  - { cve: CVE-2026-109618, product: "Quest KACE SMA and SDA", cvss: "9.2 (4.0)", epss: null, kev: true, exploited: "KEV-listed generally; no vendor statement", affected: "all versions", fixed: "SMA 15.0 CU5 (15.0.378), 15.1 CU2 (15.1.177); SDA 9.3 hotfix 9.3.312", type: "PHP RCE", vector: "network", auth: "pre-auth", source: "https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell" }
+
+candidate_sources:
+  - id: checkpoint-support
+    publisher: "Check Point support sk articles"
+    url: "https://support.checkpoint.com/results/sk/sk1000302"
+    category: vendor-psirt
+    why: "Already a tracked source (checkpoint-support); recipe re-confirmed 2026-10-29: the buildId rotated to jyeWtlX3-gkWYUXATNR8Q and the data route https://support.checkpoint.com/_next/data/<buildId>/results/sk/<skid>.json returned the full sk1000302 body (symptoms, solution, dates). Not a new candidate; listed so the main agent can append the dated note."
+  - id: netapp-security-advisories
+    publisher: "NetApp Product Security advisories (security.netapp.com)"
+    url: "https://security.netapp.com/advisory"
+    category: vendor-psirt
+    why: "First-party advisories for storage; the site is a React SPA whose data route https://security.netapp.com/adv_api/advisory/<NTAP-id> (bridge url --direct) returns fix tables, affected and unaffected lists, exploitation field and revision history as JSON; extract alone returns only the summary text."
+  - id: juniper-cna-records
+    publisher: "Juniper SIRT CVE records (CVE Services API)"
+    url: "https://cveawg.mitre.org/api/cve/CVE-2026-103409"
+    category: vendor-psirt
+    why: "Juniper's support-portal bulletins (supportportal.juniper.net) are Salesforce JavaScript shells on every transport; Juniper SIRT's own CVE records carry affected, fixed, workaround, exploitation and CVSS fields. Pivot: NVD API keywordSearch with a publication window lists the sirt@juniper.net records, then cveawg.mitre.org/api/cve/<id> gives the vendor text."
+
+coverage_gaps:
+  - { source_id: "f5-my-f5-com", reason: "K000163821 (my.f5.com/manage/s/article/...) is a Salesforce-style JavaScript portal: extract returns a 722 kB shell with only the title 'myF5', WebFetch and jina return a 'Loading' placeholder, Vulners aggregator answers 403 on extract and WebFetch. Working substitute for fixed versions: F5 techdocs release-note supplements https://techdocs.f5.com/kb/en-us/products/big-ip_ltm/releasenotes/related/relnote-supplement-bigip-<version>.html via extract (list K000163821 per fixed build). F5's exposure, mitigation and exploitation wording remains unread." }
+  - { source_id: "juniper-supportportal", reason: "supportportal.juniper.net articles (JSA112681 PHP2Shell reference advisory, JSA112183 Session Smart bulletin) are JavaScript shells on extract, WebFetch and jina. Substitute: Juniper SIRT CVE records via cveawg.mitre.org/api/cve/<id>; for JSA112681 (no CVE record of its own) only NCSC-NL's rows are available." }
+  - { source_id: "broadcom-support-portal", reason: "Umbrella PHP2Shell advisory 39404 reads with extract (affected: Carbon Black App Control Server, Symantec Endpoint Protection Manager, CloudSOC SpanVA Appliance; under investigation: CASMA). The product pages 39411, 39421 and 39429 return the Broadcom sign-in page (login required), so SEPM and App Control fixed builds are known only through NCSC-NL (SEPM 14.3.27716.10000 and 14.4.494.0000 reported by a community issue and not independently verified)." }
+  - { source_id: "trendmicro-success", reason: "extract of KA-0024802 returns the prose but drops the product status table (the part that carries the ETAs); the table is in the raw HTML returned by the bridge url subcommand. Recipe: url <URL>, then strip tags around 'TrendAI Products/Services Impacted'." }
+
+dispositions:
+  # ----------------------------------------------------------------- Task A, vendors without an item
+  - { task: A, lead: "Juniper JSA112681 (Junos J-Web on EX and SRX, PHP2Shell)", disposition: "no item: vendor page unreadable on every rung (Salesforce shell). Best secondary: NCSC-NL list row of 2026-10-28, which records that Juniper JSA112681, updated 2026-10-27, states Junos OS is vulnerable to CVE-2026-109618 but not exploitable (reachable out-of-memory issue described as harmless), is not affected by CVE-2026-109619, and that SRX no longer uses PHP from 25.2R1 (the EX boundary is not given). Role: national-authority compile of a vendor statement, not a primary. Not exploited, not an exploitable critical per Juniper." }
+  - { task: A, lead: "Broadcom: Symantec Endpoint Protection Manager, Carbon Black App Control Server, CloudSOC SpanVA Appliance, CASMA (advisory 39404)", disposition: "no item: umbrella advisory 39404 read (affected: App Control Server, SEPM, SpanVA; under investigation: CASMA; not vulnerable: about 30 products including CAS, ASG, CloudSOC CASB, DLP, SES agent); the per-product pages with versions and fixes are login-gated, so fixed builds are secondary only (NCSC-NL: SEPM 14.3.27716.10000 and 14.4.494.0000 from a community report, not verified). Re-check when Broadcom's pages are readable." }
+  - { task: A, lead: "Splunk (SVD-2026-1013, PHP2Shell on Splunk products, last updated 2026-10-26)", disposition: "no item: Splunk Enterprise, Enterprise Security, ITSI, SOAR, UBA, Universal Forwarder, Cloud Platform and the Cisco products listed are Unaffected; only Smartlook was affected and is remedied with no evidence of exploitation." }
+  - { task: A, lead: "Sophos (sophos-sa-20261021-php2shell, version 4, updated 2026-10-22)", disposition: "no item: 'No Sophos products are affected'; only the hosted MyUTM licensing portal for end-of-life SG UTM ran affected PHP, was taken offline on 2026-10-21 and is being updated; no evidence of exploitation found so far; Sophos Firewall and Endpoint IPS signatures of 2026-10-22 detect attempts. No customer action." }
+  - { task: A, lead: "N-able (N-sight, Passportal, Mail Assure, Take Control session routing)", disposition: "no item: vendor-hosted; N-able states all relevant products were secured at 2026-10-22 18:30 EDT and it has detected no exploitation in its suite (Take Control standalone patching was 'nearly complete')." }
+  - { task: A, lead: "Securepoint Resellerportal, Cleo Streem Print, Checkmk Appliance 1.7.25, Ubiquiti UISP CRM 3.1.70, TerraMaster TOS 6, Synology PHP 7.3, Tenable Security Center and Enclave, Siemens RUGGEDCOM APE1808, Fortinet FG-IR-26-186 products", disposition: "no item: Securepoint (reseller portal, patched before 2026-10-22, no public build), Cleo (fix by mail, niche print module), Checkmk (fixed by bundled PHP 8.2.35 in appliance 1.7.25), Ubiquiti (fixed in UISP Application 3.1.70) and TerraMaster (TOS 5/6 affected, migrate to TOS 7; NAS class already covered by the QNAP/Synology entry) are niche or low-exposure; Tenable, Siemens and Fortinet are already in the PHP2Shell entry of 2026-10-21. Read only through NCSC-NL rows." }
+  - { task: A, lead: "SonicWall, Ivanti, Dell, Veeam, Zyxel, VMware (named in the task)", disposition: "no item: none of them has a row in the NCSC-NL list, and two targeted WebSearch passes found no vendor statement naming them for PHP2Shell. Not read further." }
+  - { task: A, lead: "Fortinet FG-IR-26-186", disposition: "no item: store entry already carries it; the NCSC-NL list shows FortiDDoS, FortiSOAR and FortiSOAR PaaS still under investigation (2026-10-22) and FortiClient Cloud forensics endpoints remediated; S1 re-read the advisory on 2026-10-29 and found no newer revision." }
+  # ----------------------------------------------------------------- Task B
+  - { task: B, lead: "CERT-PL Wing FTP Server CVE-2026-105420", disposition: "no item: Wing FTP Server before 8.2.6; CVSS 4.0 9.4 but the attack needs administrator privileges (PR:H): an admin can add user directories through scripts that escape the base folder and write files, giving code execution as the process owner, root if installed with sudo as the install guide says. Fixed in 8.2.6. Not in KEV (kev-window.txt lists only CVE-2026-41709 and CVE-2026-46300); no exploitation stated by CERT Polska." }
+  - { task: B, lead: "CERT-FR AVI-1397 CPython (PSF-2026-47, CVE-2026-103995)", disposition: "no item: security-policy bypass in CPython, no score or exploitation read; developer runtime." }
+  - { task: B, lead: "CERT-FR AVI-1398 Google Chrome 156.0.8078.73/.74 (2026-10-27)", disposition: "no item: 52 fixes, four rated Critical (CVE-2026-118306, -118331, -118348, -118344: memory corruption, input validation, use after free); the release post carries no in-the-wild statement; browser, not edge or identity infrastructure." }
+  - { task: B, lead: "CERT-FR AVI-1400 Samba CVE-2026-109411", disposition: "no item: Samba before 4.25.1; access-control bypass limited to shares using the vfs_ceph_rgw module (S1 read the vendor page); no exploitation." }
+  - { task: B, lead: "CERT-FR AVI-1401 Docker Desktop before 4.97.0 (CVE-2026-114409, CVE-2026-99999)", disposition: "no item: Docker's announcement for 4.97.0 describes credential-bearing logs and a second issue on developer workstations; no pre-auth critical, no exploitation." }
+  - { task: B, lead: "CERT-FR AVI-1402 Palo Alto Networks PAN-OS (CVE-2026-109618, -109619, -115560)", disposition: "no item: covered by store entry 2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release; the bulletin repeats Palo Alto's active-exploitation statement and the six builds still awaiting hotfixes (12.1.4-h13, 12.1.10-h3, 11.2.4-h23, 11.1.7-h12, 10.2.7-h39, 10.2.10-h42), the same state S1 read at 03:36Z." }
+  - { task: B, lead: "CERT-FR AVI-1403 Metabase (GHSA-v44v-x8x4-mvcw)", disposition: "no item: 'Metabase 64 security update', a hardening and LTS release with a batch of fixes, no CVE or score published; self-hosted Metabase before 0.64.3.4 (OSS) or 1.64.3.4 (Pro and Enterprise) should upgrade; no pre-auth critical or exploitation stated." }
+  - { task: B, lead: "CERT-FR AVI-1404 Mitel OpenScape Endpoint Management (MISA-2026-0009)", disposition: "no item: V1 R2.4.0 and earlier; MTLVULN-1788 Node-RED authentication bypass needs user interaction (CVSS 3.1 8.8, PR:N/UI:R), MTLVULN-1789 admin-only privilege escalation 7.2; fixed in V1R2.5.1; no CVE assigned yet, no exploitation stated." }
+  - { task: B, lead: "CERT-FR AVI-1405 Microsoft Edge, AVI-1406 Mozilla (mfsa2026-118 to -121)", disposition: "no item: routine Chromium and Firefox/Thunderbird release advisories (Edge before 149.0.4022.62; Firefox before 159, ESR 153.6 and 115.44); no exploitation statement in the Mozilla advisory read." }
+  - { task: B, lead: "CERT-FR AVI-1407 Belden (PSIRT-9, ICX35-HWC)", disposition: "no item: login-lockout bypass by deleting cookies, CVSS 3.1 5.2, fixed in 1.14.158." }
+  - { task: B, lead: "CERT-FR AVI-1408 Axis Camera Station Pro (CVE-2026-63286)", disposition: "no item: database backups open to offline attack, CVSS 3.1 7.1, fixed in Camera Station Pro 6.20; Axis is not aware of exploitation; old backups stay vulnerable and credentials stored in the product should be changed (vendor advice)." }
+  - { task: B, lead: "NCSC-NL NCSC-2026-0455 Apple macOS (Golden Gate 27.2, Tahoe 26.7.2, Sequoia 15.8.2, Monterey 12.7.6)", disposition: "no item: about 299 CVE rows, the only 9.8 in the CSAF (CVE-2026-64767) is the Sequoia-only afpfs buffer overflow, which Apple describes as a remote attacker able to cause system termination or corrupt kernel memory (an AFP client path, not server infrastructure); none of the three macOS notes read (149521 to 149523) carries an exploitation statement." }
+  - { task: B, lead: "NCSC-NL NCSC-2026-0457 Splunk Enterprise (SVD-2026-1007, -1008 of 2026-10-21)", disposition: "no item (borderline mention only): fixed in 10.4.4, 10.2.8, 10.0.11 and 9.4.16. SVD-2026-1007 tops out at 8.8 with authentication; the unauthenticated rows are denial of service at 7.5 (CVE-2026-76288 JavaScript logger, CVE-2026-76290 Edge Processor download). SVD-2026-1008 is a 'security hardening' release of internally found issues grouped by CWE with Splunk scores up to 9.9 (CVE-2026-76299, -76302; low-privilege network attacker in NCSC-NL's CSAF vectors); Splunk scores CVE-2026-76301 at 7.6 while the CISA-ADP record scores that aggregate 9.8 PR:N, a scoring artefact of the grouped CVE. No exploitation statement. Published 2026-10-21, NCSC-NL relayed it 2026-10-28; a PHP2Shell check in SVD-2026-1013 shows Splunk Enterprise unaffected." }
+  # ----------------------------------------------------------------- Task C
+  - { task: C, lead: "Oracle PeopleSoft CVE-2026-35273 (The Register 2026-10-28, ZDI 2026-10-20, THN 2026-10-28)", disposition: "no update-of item. The 'renewed mass exploitation' note is Mandiant's report of 2026-09-25, which the store already carries (entry 2026-06-11/shinyhunters-oracle-peoplesoft-campaign-gadget-chain-access, Mandiant/GTIG 2026-09-25), and The Register and The Hacker News only relay it. ZDI's blog of 2026-10-20 (outside the window) adds technical decomposition and no exploitation, victim, fix or status change: ZDI reported three distinct bugs across two components (PSIGW HttpListeningConnector SSRF, ZDI-CAN-31816, with the HttpTargetConnector forwarding to a caller-chosen URL and body; PSEMHUB validateClient trusts the loopback entry that ships in /envmetadata/config/allowedhosts.properties; PSEMHUB ExecuteProcessActivityCommand log-write with attacker-chosen path and contents, and an XMLDecoder deserialization of a malicious XML file read at the next service start that needs no web shell), Oracle patched all under the single CVE-2026-35273, and ZDI is coordinating separate CVE ids per bug (none assigned as of 2026-10-28 per THN). Not in the store (grep for allowedhosts, XMLDecoder, HttpListeningConnector, PSIGW finds nothing). Candidate for an `improvement` record on the 2026-06-11 entry (detection-relevant: loopback-trusted internal hub, restart-triggered XML payload leaves no web shell); watch for the new CVE ids." }
+  # ----------------------------------------------------------------- Task D
+  - { task: D, lead: "Juniper Session Smart Router / Conductor, CCCS AV26-1101", disposition: "returned as item 3: Juniper's advisory is JSA112183 (bulletin 'On-Demand Security Bulletin: Session Smart Router and Session Smart Conductor: Multiple internally discovered vulnerabilities resolved'); at least 18 CVEs, two unauthenticated 9.8, fixed in 7.0.5, 7.1.7, 7.2.3, no known exploitation, no workaround." }
+
+side_checks:
+  - "The Register's sidebar link 'Microsoft patches failed to fix on-prem SharePoint, which is now under zero-day attack' resolves to a 2025-07-21 article (href /security/2025/07/21/...), not a new story; no new SharePoint exploitation found."
+  - "CVE-2026-115560 (third PHP path, PHP informational advisory 2026-10-23): Check Point and Quest state their products are not affected; F5's K000163878 (separate PHP issue per the F5 forum) is unread."
+
+source_ledger_note: "FU1 has no source slice; per-task dispositions above replace the ledger."

@@ -1,17 +1,17 @@
 ---
 schema: 1
 kind: vulnerability
-title: "CVE-2026-109618 / CVE-2026-109619, Palo Alto Networks PAN-OS and Panorama: the PHP2Shell flaws affect every release through the management web interface, and Palo Alto reports active exploitation against internet-exposed management interfaces; fourteen hotfixes are out and six are due by 2026-10-30"
-headline: "Palo Alto reports active exploitation of PAN-OS management interfaces via PHP2Shell; 14 hotfixes out, 6 due by 30 Oct"
+title: "CVE-2026-109618 / CVE-2026-109619, Palo Alto Networks PAN-OS and Panorama: the PHP2Shell flaws affect every release through the management web interface, and Palo Alto reports active exploitation against internet-exposed management interfaces; nineteen of twenty hotfixes are out and the last is due 2026-10-30"
+headline: "Palo Alto reports active exploitation of PAN-OS management interfaces via PHP2Shell; 19 of 20 hotfixes out"
 summary: >
   Palo Alto Networks' advisory of 2026-10-21 now says, as read on 2026-10-28, that active exploitation has been observed targeting the
   PAN-OS management interface exposed to the internet, after a copy of 2026-10-27 said very limited exploitation, rates the flaw Critical with
   urgency Highest (CVSS-B 9.2) and lists every release of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama as affected by the PHP flaws
-  CVE-2026-109618 and CVE-2026-109619 through the management web interface (the HTTPS web UI and the XML API service). Fourteen hotfixes are
-  released (12.2.4-h1, 12.1.7-h11, 11.2.7-h23, 11.2.10-h16, 11.2.13-h4, 11.2.16-h1, 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4, 10.2.13-h27, 10.2.16-h12 and 10.2.18-h13) and six others carry estimated dates of 2026-10-29 or 2026-10-30; the advisory names no actor or victim, and GlobalProtect and the
+  CVE-2026-109618 and CVE-2026-109619 through the management web interface (the HTTPS web UI and the XML API service). Nineteen of twenty hotfixes are
+  released (one for each maintenance line from 10.2.7 to 12.2.4, as read on 2026-10-29) and 11.1.7-h12 carries an estimated date of 2026-10-30; the advisory names no actor or victim, and GlobalProtect and the
   captive portal are not affected. CISA added both PHP flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26.
 discovered_at: "2026-10-22T03:41:00Z"
-updated_at: "2026-10-28T03:38:43Z"
+updated_at: "2026-10-29T07:04:32Z"
 event_date: "2026-10-21"
 run_id: 2026-10-22T0256Z-intel
 priority: high
@@ -31,7 +31,7 @@ cves:
     auth: pre-auth
     status: [exploited, cisa-kev, patch-available, mitigation-only]
     affected: "PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 (all releases); Panorama (PAN-OS software on virtual and M-Series appliances; the advisory table has no separate Panorama row); WildFire Appliance WF-500 and WF-500-B are listed as unaffected after the correction of 2026-10-23"
-    fixed: "Released per the advisory as read on 2026-10-28: 12.2.4-h1; 12.1.7-h11; 11.2.7-h23, 11.2.10-h16 (11.2.10-h17 adds the Brotli fix), 11.2.13-h4, 11.2.16-h1; 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; estimated dates: 12.1.4-h13 (10/29), 12.1.10-h3 (10/30); 11.2.4-h23 (10/30); 11.1.7-h12 (10/30); 10.2.7-h39 (10/30), 10.2.10-h42 (10/29); Panorama: the table no longer distinguishes it from the PAN-OS trains"
+    fixed: "Released per the advisory as read on 2026-10-29: 12.2.4-h1; 12.1.4-h13, 12.1.7-h11, 12.1.10-h3; 11.2.4-h23, 11.2.7-h23, 11.2.10-h16 (11.2.10-h17 adds the Brotli fix), 11.2.13-h4, 11.2.16-h1; 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 10.2.7-h39, 10.2.10-h42, 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; estimated date: 11.1.7-h12 (10/30); Panorama: the table no longer distinguishes it from the PAN-OS trains"
   - id: CVE-2026-109619
     cvss: "9.2 (CVSS-B 4.0, Palo Alto's rating of the PAN-OS impact with management reachable from the internet; 7.7 where it is reachable only from an adjacent network)"
     epss: null
@@ -40,7 +40,7 @@ cves:
     auth: pre-auth
     status: [exploited, cisa-kev, patch-available, mitigation-only]
     affected: "PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 (all releases); Panorama (PAN-OS software on virtual and M-Series appliances; the advisory table has no separate Panorama row); WildFire Appliance WF-500 and WF-500-B are listed as unaffected after the correction of 2026-10-23"
-    fixed: "Released per the advisory as read on 2026-10-28: 12.2.4-h1; 12.1.7-h11; 11.2.7-h23, 11.2.10-h16 (11.2.10-h17 adds the Brotli fix), 11.2.13-h4, 11.2.16-h1; 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; estimated dates: 12.1.4-h13 (10/29), 12.1.10-h3 (10/30); 11.2.4-h23 (10/30); 11.1.7-h12 (10/30); 10.2.7-h39 (10/30), 10.2.10-h42 (10/29); Panorama: the table no longer distinguishes it from the PAN-OS trains"
+    fixed: "Released per the advisory as read on 2026-10-29: 12.2.4-h1; 12.1.4-h13, 12.1.7-h11, 12.1.10-h3; 11.2.4-h23, 11.2.7-h23, 11.2.10-h16 (11.2.10-h17 adds the Brotli fix), 11.2.13-h4, 11.2.16-h1; 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 10.2.7-h39, 10.2.10-h42, 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; estimated date: 11.1.7-h12 (10/30); Panorama: the table no longer distinguishes it from the PAN-OS trains"
 sources:
   - url: "https://security.paloaltonetworks.com/CVE-2026-109618"
     publisher: "Palo Alto Networks PSIRT (advisory, Impact of Critical Vulnerabilities in PHP on Palo Alto Networks Products)"
@@ -97,6 +97,14 @@ sources:
   - url: "https://security.paloaltonetworks.com/json/CVE-2026-109618"
     publisher: "Palo Alto Networks PSIRT (advisory record with revision history, as read on 2026-10-28)"
     date: "2026-10-28"
+    role: corroborating
+  - url: "https://security.paloaltonetworks.com/CVE-2026-109618"
+    publisher: "Palo Alto Networks PSIRT (advisory, as read on 2026-10-29)"
+    date: "2026-10-29"
+    role: primary
+  - url: "https://security.paloaltonetworks.com/json/CVE-2026-109618"
+    publisher: "Palo Alto Networks PSIRT (advisory record with revision history, as read on 2026-10-29)"
+    date: "2026-10-29"
     role: corroborating
 closed_sources: []
 evidence:
@@ -164,7 +172,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Take the management interface of every PA-Series and VM-Series firewall and Panorama off the internet now by restricting it to a jump box or trusted internal addresses, because Palo Alto reports active exploitation against internet-exposed management interfaces, and install the hotfix for your maintenance release: 10.2.13-h27, 10.2.16-h12, 10.2.18-h13, 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4, 11.2.7-h23, 11.2.10-h16, 11.2.13-h4, 11.2.16-h1, 12.1.7-h11 or 12.2.4-h1 (11.2.10-h17 adds the Brotli fix); the other trains' hotfixes are due 2026-10-29 or 2026-10-30."
+  - "Take the management interface of every PA-Series and VM-Series firewall and Panorama off the internet now by restricting it to a jump box or trusted internal addresses, because Palo Alto reports active exploitation against internet-exposed management interfaces, and install the hotfix for your maintenance release, which Palo Alto's table lists for every line from 10.2.7 to 12.2.4 (11.1.7-h12 is due 2026-10-30, and 11.2.10-h17 adds the Brotli fix)."
 updates:
   - at: "2026-10-23T03:42:16Z"
     run_id: 2026-10-23T0256Z-intel
@@ -219,18 +227,27 @@ updates:
       2026-10-27 said very limited exploitation; severity is Critical with urgency Highest (CVSS-B 9.2, up
       from 8.7 for availability impact only), and the priority moves from notable to high.
     fields: [title, headline, summary, priority, cves, evidence, sourcing_note, actions, body, tags, sources]
+  - at: "2026-10-29T07:04:32Z"
+    run_id: 2026-10-29T0255Z-intel
+    type: update
+    summary: >
+      Palo Alto's advisory as read on 2026-10-29 shows nineteen of the twenty PAN-OS hotfixes released,
+      the ETAs of 10.2.7-h39, 10.2.10-h42, 11.2.4-h23, 12.1.4-h13 and 12.1.10-h3 having been removed, with
+      only 11.1.7-h12 still carrying an estimated date of 2026-10-30. The title, headline, summary,
+      fixed-release strings, the first action and the hotfix sentences in the text are updated to match.
+    fields: [title, headline, summary, updated_at, cves, actions, sources, body]
 migrated_from: null
 ---
 
 Palo Alto Networks' advisory of 2026-10-21 lists every release of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama as affected by CVE-2026-109618 and CVE-2026-109619 ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)); these are the unauthenticated remote-code-execution bugs in the PHP runtime that the PHP project fixed in its releases of the same day ([PHP, 2026-10-21](https://www.php.net/archive/2026.php#2026-10-21-5)). Palo Alto says no special configuration is required to be affected and that the issue strictly affects the management web interface, which includes the HTTPS web UI and the XML API service; a dataplane interface is affected only where a management profile is attached to it, and the GlobalProtect portal and gateway and the captive portal are not ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
-The advisory now states that active exploitation has been observed targeting the management interface exposed to the internet ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)); a copy of the page taken on 2026-10-27 at 17:10 UTC said that very limited exploitation had been observed ([Palo Alto Networks, 2026-10-27](https://web.archive.org/web/20261027171028/https://security.paloaltonetworks.com/CVE-2026-109618)), and the vendor timeline's three entries of that day are two removals of hotfix estimated dates and the 16:40 UTC change that raised severity to Critical and urgency to Highest, none of which mentions exploitation ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The vendor score is CVSS-B 9.2, with high impact on confidentiality, integrity and availability, and 7.7 where management is reachable only from an adjacent network such as a jump box ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The advisory names no actor, victim or post-exploitation behaviour. Fourteen hotfixes are released (12.2.4-h1, 12.1.7-h11, 11.2.7-h23, 11.2.10-h16, 11.2.13-h4, 11.2.16-h1, 11.1.4-h38, 11.1.6-h40, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4, 10.2.13-h27, 10.2.16-h12 and 10.2.18-h13) and six others carry estimated dates of 2026-10-29 or 2026-10-30 ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)); the same hotfix covers the PHP and the Brotli flaws, except 11.2.10-h16, which has only the PHP fix, while 11.2.10-h17 has both ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)). Until a build is installed, Palo Alto recommends restricting management access to a jump box or trusted internal addresses and offers Threat Prevention coverage (Threat IDs 543004 and 97622 to 97625 and further IDs from 97643) that applies only when management traffic is routed through a dataplane interface, the certificate for inbound management traffic has been replaced, inbound management traffic is decrypted and threat prevention is enabled on it ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)).
+The advisory now states that active exploitation has been observed targeting the management interface exposed to the internet ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)); a copy of the page taken on 2026-10-27 at 17:10 UTC said that very limited exploitation had been observed ([Palo Alto Networks, 2026-10-27](https://web.archive.org/web/20261027171028/https://security.paloaltonetworks.com/CVE-2026-109618)), and the vendor timeline's three entries of that day are two removals of hotfix estimated dates and the 16:40 UTC change that raised severity to Critical and urgency to Highest, none of which mentions exploitation ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The vendor score is CVSS-B 9.2, with high impact on confidentiality, integrity and availability, and 7.7 where management is reachable only from an adjacent network such as a jump box ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The advisory names no actor, victim or post-exploitation behaviour. Nineteen of the twenty hotfixes are released and 11.1.7-h12 carries an estimated date of 2026-10-30 ([Palo Alto Networks, 2026-10-29](https://security.paloaltonetworks.com/CVE-2026-109618)); the same hotfix covers the PHP and the Brotli flaws, except 11.2.10-h16, which has only the PHP fix, while 11.2.10-h17 has both ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)). Until a build is installed, Palo Alto recommends restricting management access to a jump box or trusted internal addresses and offers Threat Prevention coverage (Threat IDs 543004 and 97622 to 97625 and further IDs from 97643) that applies only when management traffic is routed through a dataplane interface, the certificate for inbound management traffic has been replaced, inbound management traffic is decrypted and threat prevention is enabled on it ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)).
 
 **Exposure:** every PAN-OS firewall and Panorama appliance below its train's hotfix, whatever the configuration, through its management web interface; the service is reachable from the internet where the management port, or a dataplane interface carrying a management profile, answers HTTPS or XML API requests from outside the administrator range, and that is the exposure Palo Alto says is being attacked ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
 **Detection:** in management-plane access and system logs, any request from an address outside the administrator range, though Palo Alto does not say which logs record request bodies; in threat logs, hits on the Threat IDs above where the signatures are active and the four conditions hold. Palo Alto publishes no indicator for the observed attacks and defines no post-compromise check, while CISA flags both PHP flaws in its catalog with forensic triage requirements under its directive BOD 26-04 ([CISA KEV, 2026-10-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)).
 
-**Defender takeaway:** move management access behind a jump box or trusted internal addresses now, on Panorama as on PAN-OS, and remove management profiles from dataplane interfaces that face untrusted networks; Palo Alto lists no workaround beyond that restriction and the Threat Prevention coverage. Install the hotfix released for your maintenance line (10.2.13, 10.2.16, 10.2.18, 11.1.4, 11.1.6, 11.1.10, 11.1.13, 11.1.16, 11.2.7, 11.2.10, 11.2.13, 11.2.16, 12.1.7 or 12.2.4) and the other trains' hotfixes as they ship by 2026-10-30 ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)).
+**Defender takeaway:** move management access behind a jump box or trusted internal addresses now, on Panorama as on PAN-OS, and remove management profiles from dataplane interfaces that face untrusted networks; Palo Alto lists no workaround beyond that restriction and the Threat Prevention coverage. Install the hotfix for your maintenance line, which the advisory table now lists for every line except 11.1.7, due 2026-10-30 ([Palo Alto Networks, 2026-10-29](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
 ## Update — 2026-10-23T03:42:16Z
 
@@ -255,3 +272,7 @@ Palo Alto Networks' advisory now records eleven PAN-OS hotfixes as released: 10.
 ## Update — 2026-10-28T03:38:43Z
 
 Palo Alto Networks' advisory now states that active exploitation has been observed targeting the Palo Alto Networks management interface exposed to the internet ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)). A copy of the page taken on 2026-10-27 at 17:10 UTC said instead that very limited exploitation had been observed ([Palo Alto Networks, 2026-10-27](https://web.archive.org/web/20261027171028/https://security.paloaltonetworks.com/CVE-2026-109618)); the vendor timeline records no change of wording, and its entries of 2026-10-27 are two removals of hotfix estimated dates and the 16:40 UTC change that raised the severity to Critical and the urgency to Highest ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The vendor score is now CVSS-B 9.2 with high impact on confidentiality, integrity and availability when management is reachable from the internet, and 7.7 when it is reachable only from an adjacent network; the earlier text scored availability impact only (8.7) and knew of no exploitation. The advisory names no actor, victim or post-exploitation behaviour. CISA's catalog flags both PHP flaws with forensic triage requirements ([CISA KEV, 2026-10-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). The hotfix table has moved on since the previous record: as read on 2026-10-28, fourteen builds are released and six are due by 2026-10-30 ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)).
+
+## Update — 2026-10-29T07:04:32Z
+
+Palo Alto Networks' advisory timeline of 2026-10-29 removes the estimated dates of 10.2.7-h39, 10.2.10-h42, 11.2.4-h23, 12.1.4-h13 and 12.1.10-h3 because those builds are released ([Palo Alto Networks, 2026-10-29](https://security.paloaltonetworks.com/json/CVE-2026-109618)). Nineteen of the twenty hotfixes are now available, and the advisory table gives only 11.1.7-h12 an estimated date, 2026-10-30 ([Palo Alto Networks, 2026-10-29](https://security.paloaltonetworks.com/CVE-2026-109618)). Its exploitation statement is unchanged.

@@ -1,0 +1,674 @@
+# work/2026-10-29T0255Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-10-29T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-29T02:58:06Z
+ended_at: 2026-10-29T03:40:19Z
+duration_seconds: 2533
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 33
+  bridge_fetches: 150
+window_notes: >
+  window_hours 26 (since 2026-10-28T00:55Z), developing-story window 72 h (since 2026-10-26T02:55Z). KEV catalogue 2026.10.28
+  (released 2026-10-28T19:00Z) was the newest at fetch time; the only additions inside the window are the two on 2026-10-28
+  (CVE-2026-41709, CVE-2026-46300). Re-checked at the end of the run (see kev_recheck).
+items:
+  # ------------------------------------------------------------------ 1. kernel entry update
+  - title: "CVE-2026-46300 (Fragnesia), Linux kernel: CISA lists it as exploited and as chained with the PHP2Shell flaws to implant PHP webshells and get root; Dream recovered a working chain used against firewall appliances"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog (JSON feed, catalogVersion 2026.10.28)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/28/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA alert", date: "2026-10-28", role: "primary" }
+      - { url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers", publisher: "Dream Research", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.securityweek.com/china-linked-hackers-exploit-php2shell-to-root-firewalls/", publisher: "SecurityWeek", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/php2shell-attack-roots-25-servers.html", publisher: "The Hacker News", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://api.first.org/data/v1/epss?cve=CVE-2026-46300", publisher: "FIRST.org EPSS API", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev, feed https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json): the CVE-2026-46300 row's shortDescription says it 'can be chained with CVE-2026-109618 and CVE-2026-109619 to implant PHP webshells and run commands as root' -> WebSearch (\"CISA warns Linux kernel flaw exploited chained PHP2Shell root webshells KEV CVE-2026-46300\") -> pivot: SecurityWeek, URL https://www.securityweek.com/china-linked-hackers-exploit-php2shell-to-root-firewalls/ -> pivot: The Hacker News, URL https://thehackernews.com/2026/10/php2shell-attack-roots-25-servers.html -> primary: Dream Research, URL https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers; CISA alert fetched via WebFetch, URL https://www.cisa.gov/news-events/alerts/2026/10/28/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+    summary: |
+      FACTS. CISA added CVE-2026-46300 to the KEV catalogue on 2026-10-28 (federal due date 2026-10-31, three days; the KEV row's forensic-triage field is Yes, known-ransomware use Unknown) "based on evidence of active exploitation" and its KEV description states that the flaw "can be chained with CVE-2026-109618 and CVE-2026-109619 to implant PHP webshells and run commands as root", i.e. with the two PHP2Shell flaws. The CISA alert names no actor and no victim. ENISA's EUVD carries exploitedSince 2026-10-28; FIRST EPSS is 0.1019 (percentile 0.957) as of 2026-10-28 and the CVSS 3.1 score is 7.8.
+      CLAIM (Dream Research, 2026-10-27, first-hand artifacts recovered by its threat-hunting product): an attacker used a custom, non-public PHP2Shell build, written for one large vendor's firewall management web server (which runs PHP 8.0.30 with a high memory limit), chained in the same single HTTP request with a Fragnesia exploit. The PHP stage gives command execution as the unprivileged web account; Dream says SELinux confines the web domain from touching system files, so the Fragnesia stage uses a page-cache write to replace the authentication rules in /etc/pam.d/su with pam_permit.so, after which `su root` succeeds without a password. This is a variant of the public exploit, which overwrites /usr/bin/su in the page cache. The chain, from one unauthenticated HTTPS connection to a persistent root webshell, took under 15 minutes in Dream's data. The attacker found about 19,000 internet-facing firewalls with exposed management interfaces through the FOFA search engine, fingerprinted about 5,000 live ones, filtered to 240 in the US, Japan, Taiwan and South Korea on PHP 8.0.30 builds, and rooted 24 (plus one internal management server later, 25 in total), planting a 103-byte PHP root webshell in a publicly reachable directory and checking root with `id`. Twenty-two stayed parked with webshells and no further activity. On two firewalls of a US government-affiliated organization the attacker set up an 8-port reverse SSH tunnel (systemd service plus an rc.local boot hook) into the internal network, rooted the organization's internal firewall management server with the same chain through the tunnel, decrypted the LDAP service-account password with the root-held master key, enumerated users and groups, sprayed organization-themed passwords against every account (the domain had no lockout threshold), tried to create user and machine accounts, and tried to extract SAML signing keys from the Keycloak configuration. Whether any of that succeeded is unknown to Dream. The vendor is not named ("the vendor has been notified").
+      INFERENCE (Dream, not attributed to a named actor): "multiple indicators point to a Chinese-nexus operation" (FOFA keys, Chinese LLM keys, target countries); AI-assisted development is suggested by Claude Code being installed, an offensive platform configured with DeepSeek and Kimi, and the code style, but Dream has "no direct evidence" the tools wrote the exploit.
+      DELTA FOR THE COVERED ENTRY. The entry's sourcing note says EPSS was consistent with no confirmed in-the-wild exploitation; that is superseded (KEV 2026-10-28). Its CVE record must move to exploited and KEV-listed. Its analysis ("a post-compromise root primitive rather than an entry point", `su` overwrite) stays correct but gains the observed pairing with a pre-auth web RCE, and the overwritten file can be /etc/pam.d/su rather than the su binary.
+    region_nexus: "global; Dream's target set was US, Japan, Taiwan and South Korea; any Swiss internet-facing management interface or Linux web host on an unpatched PHP and kernel is the same shape"
+    primary_sector_nexus: "indirect; the pivot target was a US government-affiliated network (identity infrastructure behind a firewall management server); Swiss public-sector management planes and Linux web hosts face the same chain"
+    sector: "public-sector"
+    cves: [CVE-2026-46300, CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190, T1068, T1505.003, T1572, T1543.002, T1037.004, T1110.003, T1087.002, T1552.004]
+    affected_products: ["Linux kernel", "PHP"]
+    entity_keys: ["trend:dirty-frag-linux-kernel-page-cache-lpe", "tool:php2shell", "product:linux-kernel", "product:php"]
+    new_entities:
+      - { key: "campaign:php2shell-fragnesia-firewall-chain-dream-2026-10", type: campaign, name: "PHP2Shell plus Fragnesia firewall-rooting chain (Dream)", aliases: [], summary: "Dream Research (2026-10-27): custom PHP2Shell and Fragnesia (CVE-2026-46300) exploit chain used on 23-24 October 2026 to root 24 firewalls of one unnamed vendor in the US, Japan, Taiwan and South Korea and a US government-affiliated firewall management server, followed by an Active Directory attack; not attributed to a named actor (Dream, 2026-10-27)." }
+    relation_suggestions:
+      - { subject: "campaign:php2shell-fragnesia-firewall-chain-dream-2026-10", object: "trend:dirty-frag-linux-kernel-page-cache-lpe", basis: "Dream: the attacker chained a Fragnesia (CVE-2026-46300) page-cache exploit as the root stage (Dream, 2026-10-27); CISA's KEV row for CVE-2026-46300 states the same chaining (CISA, 2026-10-28)" }
+      - { subject: "campaign:php2shell-fragnesia-firewall-chain-dream-2026-10", object: "tool:php2shell", basis: "Dream: the first stage is a custom, non-public build of the PHP2Shell concept (CVE-2026-109618/109619) tailored to the firewall platform (Dream, 2026-10-27)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-05-15/cve-2026-46300-linux-kernel-local-privilege-escalation-via-x"
+    evidence:
+      - quote: "This vulnerability can be chained with CVE-2026-109618 and CVE-2026-109619 to implant PHP webshells and run commands as root."
+        attribution: "CISA Known Exploited Vulnerabilities catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "On October 25, Dream researchers uncovered artifacts of what appeared to be a Chinese AI-assisted campaign that rooted 25 servers, including systems in a US government-affiliated environment."
+        attribution: "Dream Research"
+        source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+      - quote: "The total chain — from unauthenticated HTTPS connection to persistent root webshell — completes in under 15 minutes."
+        attribution: "Dream Research"
+        source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+      - quote: "We do not attribute this activity to a named threat actor."
+        attribution: "Dream Research"
+        source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+    extended_notes: |
+      Detection and hunt concepts (all derived from the sources' stated mechanics, no indicators):
+      - Telemetry class: Linux process, syscall and file-event telemetry (auditd or an EDR Linux sensor). A web-server worker (nobody, www-data, apache) that spawns a shell and then runs `su` with success and no authentication step; an unprivileged process that creates user and network namespaces (unshare CLONE_NEWUSER|CLONE_NEWNET), installs an ESP security association over NETLINK_XFRM, splices file data into a TCP socket and enables the espintcp upper-layer protocol (Qualys ThreatPROTECT, 2026-05-15, describes this sequence for the public exploit).
+      - The overwrite is page-cache only, so the on-disk /etc/pam.d/su and /usr/bin/su never change and a file-integrity check on disk stays clean; dropping the page cache (or comparing in-memory reads with disk) reveals it. A new small PHP file in a web-reachable directory on an appliance or web host, and an outbound SSH session from a firewall or management server to an external host kept up by a systemd unit or an rc.local entry, are the persistence artifacts Dream describes.
+      - Post-patch compromise check (kernel and PHP patching do not evict an attacker already in): webshell files, tunnel units and boot hooks, rooted-device credentials (private keys, HA replication keys, LDAP service-account password, SAML IdP configuration) treated as exposed and rotated; domain controllers checked for password-spray bursts across all users and for new user or machine accounts.
+      - Benign lookalikes: user namespaces and IPsec are routine on rootless-container and VPN hosts (the covered entry's Triage line); the discriminator is a web-worker uid doing the namespace and XFRM work, or su succeeding for a web-worker lineage.
+      Fixed kernel versions per the CNA (kernel.org) CVE record, read but not cited because the NVD/MITRE/cve.org record is a blocked citation class: vulnerable since 3.9; fixed in stable 5.10.257, 5.15.208, 6.1.174, 6.6.141, 6.12.91, 6.18.33, 7.0.10 and mainline 7.1; distributions backport, so compare the vendor package version, not uname -r.
+      The Fragnesia code path is still 'local only'; what changed is the observed pairing. Vendor of the firewall appliances is undisclosed; do not infer one. This item pairs with the PHP entry update below (same finding, two covered entries).
+      Suggested classification: reliability B (Dream first-hand artifacts) for the chain details, credibility 2; the KEV status itself is A1.
+    borderline: false
+
+  # ------------------------------------------------------------------ 2. VMware ESX
+  - title: "CVE-2026-41709, VMware ESX insufficient logging: CrowdStrike says WARP PANDA used it as a zero-day in vCenter intrusions through early 2026; CISA lists it as exploited"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog (JSON feed, catalogVersion 2026.10.28)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/28/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA alert", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017", publisher: "Broadcom (VMSA-2026-0006.2)", date: "2026-08-19", role: "primary" }
+      - { url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/tree/main/security-advisories/vmsa-2026-0006", publisher: "Broadcom VMSA-2026-0006 FAQ (GitHub)", date: "2026-10-29", role: "corroborating" }
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx", publisher: "CrowdStrike (related ESX shell-obfuscation research, page date 2026-10-28)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://api.first.org/data/v1/epss?cve=CVE-2026-41709", publisher: "FIRST.org EPSS API", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json) row CVE-2026-41709, added 2026-10-28, notes link Broadcom VMSA-2026-0006 -> Broadcom advisory, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017 (no exploitation statement; reporter credited as Ian Barton of CrowdStrike) -> WebSearch (\"CISA KEV Fragnesia VMware ESX CVE-2026-41709 added catalog federal agencies November 11 deadline\", extended) -> pivot: hol.org campaign page, URL https://hol.org/guard/security/campaigns/cve-2026-41709-vmware-esxi-logging-bypass-cisa-kev (aggregator, lead only, not cited) -> primary: CrowdStrike, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/"
+    summary: |
+      FACTS. Broadcom's VMSA-2026-0006 (2026-07-29, revised to .2 on 2026-08-19) lists CVE-2026-41709 as an ESX "insufficient logging vulnerability": "A malicious administrator could exploit this issue to perform certain operations without them being logged" (CVSS 3.1 2.7, Low; no workaround; reporter credited as Ian Barton of CrowdStrike). Fixed builds: ESXi-9.1.0.0-25370933, ESXi-9.0.2.0100-25595025, ESXi80U3j-25429389, VMware Cloud Foundation 5.x ESX 5.2.4, and per KB449886 for Telco Cloud Platform 5.0.x and 5.1.x; vSphere 7.0 is not in this CVE's matrix. CISA added it to the KEV catalogue on 2026-10-28 (due 2026-11-11, forensic-triage field No, ransomware use Unknown) on "evidence of active exploitation" and names no actor. ENISA EUVD shows exploitedSince 2026-10-28; EPSS is 0.0030 (percentile 0.22).
+      CLAIM (CrowdStrike Intelligence, 2026-10-28, in its 2026 Legal Threat Landscape Report post): "WARP PANDA deployed several forms of malware in victims' VMware vCenter environments. In several of these cases, and as late as early 2026, the adversary exploited ESXi command logging bypass vulnerability CVE-2026-41709 as a zero-day." The intrusions were at US-based entities including the legal sector. CrowdStrike is both the original reporter of the flaw and the holder of the intrusion telemetry. It gives no indicators, no description of what goes unlogged, and no first-exploitation date beyond "as late as early 2026".
+      INFERENCE. No source explains the mechanism. Broadcom, CrowdStrike and CISA all leave open which ESX operations escape logging; treat local ESX logs from any period before the patch as possibly incomplete on hosts an attacker reached with administrator rights.
+      VENDOR LAG. Broadcom's VMSA-2026-0006 FAQ, as read on 2026-10-29, still says "Broadcom has no information to suggest that exploitation of these issues has occurred in the wild", although CVE-2026-59310 (same advisory) has been KEV-listed since 2026-08-18 and this CVE since 2026-10-28; do not take the vendor FAQ as current.
+      DO NOT CONFLATE. CrowdStrike's separate ESX research on shell-command obfuscation (21 techniques on ESX 7.0.3; the shell log records a command "during the parsing stage, before expansions occur") describes a logging gap too, but it names no CVE, says nothing about this flaw and describes lab research ("before adversaries make it necessary"); no source ties it to CVE-2026-41709.
+      DELTA FOR THE COVERED ENTRY (2026-07-30/vmware-vmsa-2026-0006-...): the CVE-2026-41709 record moves from patch-available to exploited and KEV-listed; the entry's sourcing note ("none of the three national CERTs reported any") predates this; the logging implication belongs in its Detection line.
+    region_nexus: "global; CrowdStrike names US entities including the legal sector; WARP PANDA is described as a China-nexus actor"
+    primary_sector_nexus: "indirect; hypervisor management planes of public-sector virtualization estates are the target class (vCenter and ESX)"
+    sector: "public-sector"
+    cves: [CVE-2026-41709]
+    techniques: [T1685, T1078]
+    affected_products: ["VMware ESX", "VMware Cloud Foundation", "VMware vSphere Foundation", "VMware Telco Cloud Platform"]
+    entity_keys: ["actor:verdantbamboo", "product:vmware-esxi", "product:vmware-cloud-foundation"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "actor:verdantbamboo", object: "product:vmware-esxi", basis: "CrowdStrike: WARP PANDA exploited the ESXi command-logging bypass CVE-2026-41709 as a zero-day in several vCenter-environment intrusions, as late as early 2026 (CrowdStrike, 2026-10-28); the registry lists WARP PANDA as an alias of actor:verdantbamboo" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-30/vmware-vmsa-2026-0006-vcenter-auth-bypass-vmxnet3-escape"
+    evidence:
+      - quote: "In several of these cases, and as late as early 2026, the adversary exploited ESXi command logging bypass vulnerability CVE-2026-41709 as a zero-day."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/"
+      - quote: "WARP PANDA deployed several forms of malware in victims’ VMware vCenter environments."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/"
+      - quote: "A malicious administrator could exploit this issue to perform certain operations without them being logged."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+      - quote: "Broadcom has no information to suggest that exploitation of these issues has occurred in the wild."
+        attribution: "Broadcom (VMSA-2026-0006 FAQ)"
+        source_url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/tree/main/security-advisories/vmsa-2026-0006"
+    extended_notes: |
+      Exposure: ESX 9.1.x, 9.0.x, 8.0 and VCF 5.x hosts below the fixed builds; it needs administrator rights on the host, so it is an anti-forensics and defence-evasion primitive after a vCenter or host compromise, not an entry point (CVSS vector AV:N/AC:L/PR:H). CrowdStrike does not say how WARP PANDA reached administrator level or whether the same advisory's vCenter flaws (CVE-2026-59309/59310, covered as exploited since August) were involved, so do not link them.
+      Detection (telemetry class first): rely on records an administrator on the host cannot suppress: vCenter task and event logs, authentication records on the identity provider, ESX syslog already forwarded off-host before the compromise, and network telemetry for outbound connections from ESX management interfaces and the vCenter appliance. A gap or oddity in ESX shell/hostd logs during a period of known administrator access is not reassuring. Post-patch compromise check: patching closes the logging bypass but does not reveal what was done while it was open; review administrator sessions and changes (accounts, SSH enablement, scheduled tasks, VIB/ configuration changes) through vCenter and off-host copies.
+      Hardening: patch to the fixed builds; forward ESX and vCenter syslog off-host; keep the management plane on a segmented network (NCSC-NL's guidance in the covered entry).
+      Suggested classification: CrowdStrike B2 on the zero-day claim (single telemetry holder, named actor), KEV listing A1 on exploitation status. Priority: the entry is already `high` because of CVE-2026-59310; this addition does not by itself change that.
+    borderline: false
+
+  # ------------------------------------------------------------------ 3. PHP entry update (Dream chain on appliances)
+  - title: "PHP2Shell on a firewall management plane: Dream recovered a custom, non-public build that gave unauthenticated root on 24 appliances of one unnamed vendor and an Active Directory attack from a US government-affiliated management server"
+    sources:
+      - { url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers", publisher: "Dream Research", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.securityweek.com/china-linked-hackers-exploit-php2shell-to-root-firewalls/", publisher: "SecurityWeek", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/php2shell-attack-roots-25-servers.html", publisher: "The Hacker News", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog (CVE-2026-46300 row)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: same chain as the CVE-2026-46300 item (cisa-kev bridge row for CVE-2026-46300 naming the PHP2Shell chain -> WebSearch -> SecurityWeek URL https://www.securityweek.com/china-linked-hackers-exploit-php2shell-to-root-firewalls/ -> The Hacker News URL https://thehackernews.com/2026/10/php2shell-attack-roots-25-servers.html -> primary: Dream Research URL https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)"
+    summary: |
+      PAIRS WITH the CVE-2026-46300 item; one finding, two covered entries. This record is the delta for the PHP2Shell entry, whose text does not mention it (grep of the store for Dream or Fragnesia finds nothing).
+      CLAIM (Dream Research, 2026-10-27, first-hand artifacts): the first publicly described attack that turns PHP2Shell (CVE-2026-109618/109619) into root on appliances rather than a web-worker shell. The attacker's PHP stage is a custom build tailored to an unnamed vendor's firewall management web server, which Dream says runs PHP 8.0.30 with a high memory limit that enables the memory-corruption stages; Dream describes four stages (memory exhaustion, a leak through the Set-Cookie response header that reveals the libphp.so base, a second out-of-memory round that leaves a stale session reference, then a forged hash-table destructor that calls zif_system), each tuned per firmware build with offsets taken from the vendor's own libphp.so. Eleven per-version profiles were found; nine firmware versions were exploitable. Code runs as the `nobody` user and the Fragnesia stage (see the CVE-2026-46300 item) lifts it to root. The unauthenticated request must reach the management web server, which Dream calls "an exposed management interface" that "should never have been exposed to the internet".
+      The campaign funnel and post-exploitation (24 of 240 targets rooted, 22 parked, a US government-affiliated organization's two firewalls and its firewall management server rooted, reverse SSH tunnel, LDAP service-account password decrypted, password spray, attempted account creation) are in the CVE-2026-46300 item. Dream does not name the vendor, versions or an actor, and cannot say whether the Active Directory attacks succeeded.
+      WHY IT MATTERS FOR THE COVERED ENTRY: it contradicts the notion, voiced by an underground forum member quoted in The Hacker News, that PHP2Shell is "unexploitable" against real targets because libphp offsets differ per build; this attacker obtained the vendor firmware, extracted libphp and built per-build profiles. It also shows the PHP flaw reached an appliance image that carries PHP 8.0.30 (outside the upstream-fixed 8.2 to 8.5 lines; PHP 8.1 and older have no upstream fix), so appliance vendors' own advisories, not distribution PHP packages, are the patch path.
+    region_nexus: "global; target set US, Japan, Taiwan, South Korea; Swiss exposure depends on whether management interfaces of firewall or network appliances with embedded PHP face the internet"
+    primary_sector_nexus: "indirect; government-affiliated victim; same appliance class and management-plane exposure as Swiss public-sector perimeters"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619, CVE-2026-46300]
+    techniques: [T1190, T1068, T1505.003, T1572, T1110.003]
+    affected_products: ["PHP", "Linux kernel"]
+    entity_keys: ["tool:php2shell", "product:php", "trend:dirty-frag-linux-kernel-page-cache-lpe"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    evidence:
+      - quote: "The affected devices run specific versions of a large vendor’s firewall software."
+        attribution: "Dream Research"
+        source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+      - quote: "The firewall OS uses PHP 8.0.30 with a high memory limit that enables the memory corruption stages of the attack."
+        attribution: "Dream Research"
+        source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+      - quote: "The 22 other rooted firewalls remain parked with active webshells."
+        attribution: "Dream Research"
+        source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+    extended_notes: |
+      Single first-hand source (Dream) for everything beyond the KEV statement; SecurityWeek and The Hacker News rewrite Dream. The KEV row for CVE-2026-46300 (CISA) independently states the chaining but gives no victim or date. The Hacker News says 'observed on October 25'; Dream dates the rootings 2026-10-23 18:14 UTC and 2026-10-24 10:09 UTC and its discovery of the artifacts 2026-10-25; SecurityWeek says two government servers, Dream and The Hacker News say three (two firewalls plus the internal management server).
+      Defender takeaway for the entry: inventory appliances (firewalls, NAC, wireless controllers, backup and management consoles) whose management web server is PHP-based and check each vendor's PHP2Shell advisory; the management plane must not face the internet; after patching, look for webshells in web-reachable directories, long-lived outbound SSH from the appliance and its management server, and password-spray bursts against Active Directory from the management server's address.
+    borderline: false
+
+  # ------------------------------------------------------------------ 4. WatchGuard Fireware batch (new)
+  - title: "WatchGuard Fireware OS 2026.4, 12.12.4 and 12.5.22 fix 18 CVEs, seven at 9.0 or higher, among them pre-authentication RCE paths in the Access Portal, the SIP proxy and the FireCluster sync daemon; WatchGuard knows of no exploitation"
+    sources:
+      - { url: "https://psirt.watchguard.com/", publisher: "WatchGuard PSIRT (advisory listing)", date: "2026-10-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-93866/", publisher: "WatchGuard PSIRT", date: "2026-10-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-93865/", publisher: "WatchGuard PSIRT", date: "2026-10-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-93857/", publisher: "WatchGuard PSIRT", date: "2026-10-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-112710/", publisher: "WatchGuard PSIRT", date: "2026-10-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-103594/", publisher: "WatchGuard PSIRT", date: "2026-10-27", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-103593/", publisher: "WatchGuard PSIRT", date: "2026-10-27", role: "primary" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/watchguard-security-advisory-av26-1094", publisher: "Canadian Centre for Cyber Security (AV26-1094)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: cccs-alerts feed, URL https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en (item 'WatchGuard security advisory (AV26-1094)', 2026-10-28T14:41Z) -> primary: watchguard-psirt listing, URL https://psirt.watchguard.com/ (extract), then each CVE page (dates, configuration, exploitation status, fixed releases) -> corroboration: CCCS AV26-1094 page, URL https://cyber.gc.ca/en/alerts-advisories/watchguard-security-advisory-av26-1094"
+    summary: |
+      FACTS (WatchGuard PSIRT, all 18 advisories dated 2026-10-27; the listing's severity figures are WatchGuard's scores, CVSS version not shown on the listing). Fixed in Fireware OS 2026.4, 12.12.4 and, for T15/T35 models, 12.5.22; every Fireware advisory reads "WatchGuard is not aware of any exploitation of this vulnerability in the wild". Affected ranges for most rows: Fireware OS Default >= 2025.1 and < 2026.4, and >= 12.0 and < 12.12.4; T15/T35 >= 12.0 and < 12.5.22. The Canadian Cyber Centre's AV26-1094 (2026-10-28) independently lists Fireware OS (multiple versions) and Mobile VPN with SSL Client (before 2026.4 and before 12.0) as affected.
+      The seven rows at 9.0 or higher (CVE-2026-103594, 93866, 93857, 93865, 112709, 112710 and 103593), each with the configuration WatchGuard says is required for exposure:
+      - CVE-2026-103594 (9.5): stack buffer overflow in WireGuard configuration processing, code execution by a man-in-the-middle with TLS-decrypted access between the Firebox and WatchGuard Cloud who tampers with a FireCloud Gateway configuration payload; only Firebox configured as a FireCloud Gateway; affected >= 2026.2 and < 2026.4, >= 12.12 and < 12.12.4 (not T15/T35).
+      - CVE-2026-93866 (9.2): pre-authentication integer overflow in the WebSocket connection handling of the Access Portal, out-of-bounds heap write by a remote unauthenticated attacker; only with the Access Portal enabled.
+      - CVE-2026-93857 (9.2): pre-authentication stack buffer overflow in the SIP proxy, remote code execution by a request sent through a policy that uses the SIP proxy; only with a SIP proxy configured.
+      - CVE-2026-93865 (9.2): missing authentication in the FireCluster synchronization daemon, a remote unauthenticated attacker invokes privileged system-level administrative actions through a crafted request to the FireCluster management IP; only Firebox appliances that are FireCluster members. Sibling rows: CVE-2026-90465 (8.7, privilege escalation), CVE-2026-93862 (7.2, denial of service), CVE-2026-104381 (6.0, BOVPN tunnel denial of service).
+      - CVE-2026-112709 and CVE-2026-112710 (9.2 each): heap buffer overflows in the authentication service, denial of service and potential code execution by an attacker who controls or intercepts traffic to the configured Active Directory server and returns a crafted response; only Firebox with an Active Directory authentication server.
+      - CVE-2026-103593 (9.1): stack buffer overflow in the logging service, root code execution by a network-adjacent attacker who impersonates or intercepts traffic to the log server with a crafted certificate; only Firebox in FIPS mode with an external log server.
+      Other rows worth knowing: CVE-2026-93434 (8.7) XPath injection in SSH authentication allows blind extraction of configuration secrets (needs network access to the management SSH interface); CVE-2026-90442 (8.6) authenticated certd stack overflow (denial of service); CVE-2026-111107 (8.7) unauthenticated management-interface denial of service; CVE-2026-90464 (7.2) authenticated file modification as root; CVE-2026-93864 (7.1) local link-following file overwrite as root; CVE-2026-82332 (5.6) AuthPoint MFA verification session hijacking; CVE-2026-113881 (6.1) VPN network-access-enforcement stack overflow; CVE-2026-115495 (5.7) Mobile VPN with SSL Client for Windows sends VPN credentials in cleartext over a local management socket (fixed in Mobile VPN with SSL Client 2026.4).
+      CLAIM (credits on the advisories): the rows for CVE-2026-112709/112710, 93865, 103594 and 103593 credit "WatchGuard AI Security Research"; CVE-2026-93857 and 93866 credit Laurent Gaffie (secorizon.com). No source reports public exploit code or attacks.
+    region_nexus: "global; Firebox appliances are common at small and mid-size sites, including communal and cantonal offices; no Swiss-specific reporting"
+    primary_sector_nexus: "direct technology class (perimeter firewalls and VPN gateways); no public-sector victim reported"
+    sector: "public-sector"
+    cves: [CVE-2026-103594, CVE-2026-93866, CVE-2026-93857, CVE-2026-93865, CVE-2026-112709, CVE-2026-112710, CVE-2026-103593, CVE-2026-93434, CVE-2026-90465, CVE-2026-111107, CVE-2026-90442, CVE-2026-90464, CVE-2026-93864, CVE-2026-93862, CVE-2026-104381, CVE-2026-82332, CVE-2026-113881, CVE-2026-115495]
+    techniques: [T1190, T1557]
+    affected_products: ["WatchGuard Fireware OS", "WatchGuard Mobile VPN with SSL Client"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:watchguard-fireware-os", type: product, name: "WatchGuard Fireware OS", aliases: ["Firebox", "Fireware"], summary: "Operating system of WatchGuard Firebox firewall and VPN appliances; PSIRT batches on 2026-09-29 and 2026-10-27 fix dozens of flaws, the October batch with seven rows at 9.0 or higher (WatchGuard PSIRT, 2026-10-27)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "WatchGuard is not aware of any exploitation of this vulnerability in the wild."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-112710/"
+      - quote: "allows a remote, unauthenticated attacker to write beyond the bounds of a heap buffer by sending a specially crafted request while the Access Portal feature is enabled."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-93866/"
+      - quote: "allows a remote, unauthenticated attacker to invoke privileged system-level administrative actions by sending a specially crafted request to the FireCluster management IP when the clustering feature is enabled."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-93865/"
+      - quote: "The exploit for this vulnerability requires a SIP proxy configured on the Firebox."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-93857/"
+    extended_notes: |
+      Exposure: read the running Fireware version in the Firebox web UI or WatchGuard System Manager and compare with the ranges above; then check each required configuration (Access Portal enabled, SIP proxy policy present, FireCluster membership, Active Directory authentication server, FireCloud Gateway role, FIPS mode with external log server, management SSH reachable). Rows that need a man-in-the-middle position (CVE-2026-112709/112710, 103594, 103593) are lower practical risk than the Access Portal, SIP and FireCluster rows, which are reachable by any host that can reach those listeners.
+      Detection (no indicators in the sources): perimeter-appliance logs and process-crash records on the Firebox (daemon restarts of the authentication, SIP-proxy or portal services are what failed exploitation of memory-corruption flaws typically leaves); inbound connections to the FireCluster management IP from addresses that are not cluster members; WebSocket upgrade requests to the Access Portal from unexpected sources; outbound connections from the Firebox to hosts that are not WatchGuard Cloud, the AD server or the log server. These are derived from the stated mechanisms, not from a vendor hunt guide.
+      Hardening: upgrade; where an upgrade must wait, disable the Access Portal and SIP proxy if not used and keep the FireCluster management interface off every untrusted segment (mechanical consequences of the stated required configurations; WatchGuard publishes no workaround on these pages).
+      Context: WatchGuard fixed a pre-authentication IKE RCE in July and August (store entries 2026-07-03 and 2026-08-31) and a batch on 2026-09-29 (Fireware 2026.3.2 and 12.12.3, including spamd and samld RCE rows); this is the third monthly batch. Credits to a vendor-run "AI Security Research" team mean many rows are found by the vendor, so public patch-diffing is the main route to exploits.
+      Suggested classification: WatchGuard PSIRT A, credibility 2 (first-party advisory corroborated by a national cyber centre's product list but no independent exploitation evidence); no exploitation, so priority notable rather than high unless the main agent weighs the three pre-auth 9.2 rows (Access Portal, SIP proxy, FireCluster sync).
+    borderline: false
+
+  # ------------------------------------------------------------------ 5. Veeam (new)
+  - title: "Veeam Backup & Replication 13.1.2 and 13.0.3 fix an unauthenticated CDP Coordinator Service authorization bypass (CVSS 4.0 9.1); Backup for Microsoft 365 8.6 fixes a SQL injection to RCE (9.0) and Veeam ONE 13.1 P1 an MFA bypass (8.5); no exploitation reported"
+    sources:
+      - { url: "https://www.veeam.com/kb4948", publisher: "Veeam KB4948 (Backup & Replication 13.1.2 and Agent for Linux)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.veeam.com/kb4957", publisher: "Veeam KB4957 (Backup for Microsoft 365 8.6)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.veeam.com/kb4951", publisher: "Veeam KB4951 (Veeam ONE 13.1 Patch 1)", date: "2026-10-27", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13109", publisher: "NCSC Switzerland (security hub post 13109)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1399/", publisher: "CERT-FR (CERTFR-2026-AVI-1399)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/veeam-security-advisory-av26-1096", publisher: "Canadian Centre for Cyber Security (AV26-1096)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: cccs-alerts feed, URL https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en (item 'Veeam security advisory (AV26-1096)', 2026-10-28T15:28Z) -> primary: Veeam KB articles linked from the CCCS page, URLs https://www.veeam.com/kb4948, https://www.veeam.com/kb4957, https://www.veeam.com/kb4951 (CVE ids and fixed builds read from the raw HTML, extract drops them) -> corroboration: ncsc-csh bridge post 13109 (URL https://security-hub.ncsc.admin.ch/#/posts/13109), CERT-FR cert-fr avis-recent (CERTFR-2026-AVI-1399)"
+    summary: |
+      FACTS (Veeam KBs, published 2026-10-27; scores are CVSS 4.0; Veeam gives no exploitation statement, NCSC.ch lists status UNKNOWN and "the vendor reports no evidence of active exploitation").
+      Backup & Replication (KB4948): CVE-2026-108142 (9.1, Critical) lets an unauthenticated attacker bypass authorization on the CDP Coordinator Service of Windows-based Veeam Backup & Replication and the Veeam Software Appliance (vector AV:N/AC:L/AT:P/PR:N, so exploitation needs a precondition Veeam does not describe). Affected: 13.1.1.18 and all earlier 13.1 builds, 13.0.2.29 and all earlier 13.0 builds; "Older versions (e.g., 12.x) are not affected". Fixed in 13.1.2 (build 13.1.2.57) and 13.0.3 (build 13.0.3.63). Siblings: CVE-2026-108140 and CVE-2026-108141 (5.9 each, path traversal arbitrary file write by a Restore Operator who controls a backed-up NAS share's contents); CVE-2026-105477 (7.3, local privilege escalation in Veeam Agent for Linux managed by a Backup & Replication server, fixed in 13.1.2 build 13.1.2.11).
+      Backup for Microsoft 365 (KB4957): CVE-2026-106076 (9.0, Critical): an authenticated organization-transfer peer injects SQL into the source server's configuration database, with cross-tenant read and write of configuration data and remote code execution as the PostgreSQL service account; fixed in 8.6 (build 8.6.0.1102), affected 8.5.0.1014 and earlier version 8 builds. CVE-2026-106077 (8.3, Administrator role reads arbitrary files as LocalSystem) fixed in 8.6; CVE-2026-106078 (6.9, unauthenticated REST API authentication bypass with a forged federation token, reaches only endpoints that do not call the backup service) and CVE-2025-64394 (4.3, installer local file write as SYSTEM) fixed in 8.6 Patch 1 (build 8.6.0.5011); these two affect 8.6.0.1102 too.
+      Veeam ONE (KB4951): CVE-2026-107671 (8.5, High): an attacker with valid Administrator credentials disables MFA globally before completing MFA verification; affects 13.1.0.7233 and earlier 13.1 builds, fixed in 13.1 P1 (build 13.1.0.7940); 13.0.x and 12.x not affected.
+      CERT-FR (AVI-1399) says some of the flaws allow remote code execution, privilege escalation and loss of confidentiality; CCCS AV26-1096 lists the same product and version ranges.
+    region_nexus: "global; Veeam is widely used in Swiss public-sector backup estates (no Swiss-specific reporting)"
+    primary_sector_nexus: "direct technology class (backup infrastructure, the ransomware actors' preferred target before encryption)"
+    sector: "public-sector"
+    cves: [CVE-2026-108142, CVE-2026-106076, CVE-2026-107671, CVE-2026-106077, CVE-2026-106078, CVE-2026-105477, CVE-2026-108140, CVE-2026-108141, CVE-2025-64394]
+    techniques: [T1190, T1078]
+    affected_products: ["Veeam Backup & Replication", "Veeam Software Appliance", "Veeam Backup for Microsoft 365", "Veeam ONE", "Veeam Agent for Linux"]
+    entity_keys: ["product:veeam-backup-replication", "product:veeam-one"]
+    new_entities:
+      - { key: "product:veeam-backup-for-microsoft-365", type: product, name: "Veeam Backup for Microsoft 365", aliases: ["VB365"], summary: "Veeam's backup product for Microsoft 365 tenant data; KB4957 (2026-10-27) fixes a SQL injection to RCE (CVE-2026-106076, CVSS 4.0 9.0) in version 8.6 (Veeam, 2026-10-27)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability allowing an unauthenticated attacker to bypass authorization on the CDP Coordinator Service."
+        attribution: "Veeam"
+        source_url: "https://www.veeam.com/kb4948"
+      - quote: "leading to cross-tenant read and write of configuration data and remote code execution as the PostgreSQL service account."
+        attribution: "Veeam"
+        source_url: "https://www.veeam.com/kb4957"
+      - quote: "Current exploitation status**: UNKNOWN (the vendor reports no evidence of active exploitation)"
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13109"
+    extended_notes: |
+      Exposure: read the Backup & Replication build in the console (Help, About) or on the appliance; 13.x only (12.x unaffected). The CDP Coordinator Service is part of Veeam's vSphere continuous-data-protection feature; Veeam does not say whether it is reachable only from the backup network, so treat the backup server's management and CDP ports as in scope for segmentation. Backup servers should never be internet-facing; where one is, patch first.
+      Detection: authentication and process-creation logs on the backup server (Windows event logs or the appliance's logs) for unexpected sessions or service-account use around the CDP Coordinator Service; for VB365, PostgreSQL service-account process creation on the VB365 server and tenant-transfer (organization-transfer) activity from an unexpected peer; for Veeam ONE, an MFA setting changed to disabled followed by an Administrator sign-in. Post-patch compromise check: an authorization bypass leaves no persistence by itself, so review new backup jobs, repositories, credentials and restore operators, and Veeam's configuration backups, for changes you did not make.
+      Prior art in the store: CVE-2024-40711 (Veeam) appears in the SafePay joint advisory entry (2026-10-21/aa26-293a-...) as an edge-and-backup flaw used before backup deletion; Veeam's NCSC.ch status here is UNKNOWN, not exploited.
+      Veeam's KB RSS feed (https://www.veeam.com/services/open/kb/rss-feed) lists these three KBs by title and works with the bridge feed subcommand: proposed as a candidate source.
+      Suggested classification: Veeam A, credibility 2 (first-party, corroborated by NCSC.ch, CERT-FR and CCCS product lists). Priority notable (unauthenticated 9.1 on backup infrastructure, no exploitation).
+    borderline: false
+
+  # ------------------------------------------------------------------ 6. Oracle EBS exploitation attempts
+  - title: "Oracle EBS CVE-2026-101767: Defused's decoys logged exploratory exploit attempts on 2026-10-27, one week after the October CPU; no compromise reported and not in KEV"
+    sources:
+      - { url: "https://www.securityweek.com/hackers-start-probing-fresh-oracle-ebs-vulnerability/", publisher: "SecurityWeek (reporting Defused)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-now-scanning-systems-for-recently-patched-oracle-flaw/", publisher: "BleepingComputer (reporting Defused)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/10/hackers-target-critical-oracle-e.html", publisher: "The Hacker News (reporting Defused)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://horizon3.ai/attack-research/vulnerabilities/cve-2026-101767/", publisher: "Horizon3.ai", date: "2026-10-20", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Oracle E-Business Suite fresh vulnerability probing exploitation attempts October 2026 SecurityWeek\" after a SecurityWeek related-link on https://www.securityweek.com/china-linked-hackers-exploit-php2shell-to-root-firewalls/) -> pivot: SecurityWeek, URL https://www.securityweek.com/hackers-start-probing-fresh-oracle-ebs-vulnerability/ -> pivot: BleepingComputer URL https://www.bleepingcomputer.com/news/security/hackers-now-scanning-systems-for-recently-patched-oracle-flaw/ and The Hacker News URL https://thehackernews.com/2026/10/hackers-target-critical-oracle-e.html (both quote Defused's X post, which is not citable) -> primary technical write-up: Horizon3.ai, URL https://horizon3.ai/attack-research/vulnerabilities/cve-2026-101767/ (horizon3-ai slice record)"
+    summary: |
+      FACTS. Oracle fixed CVE-2026-101767 (CVSS 3.1 9.8; Application Object Library, Core component; EBS 12.2.3 through 12.2.15) in the October 2026 Critical Patch Update of 2026-10-20; Horizon3.ai reported it on 2026-07-24 and published the chain on release day: an unauthenticated SQL injection in the Thin Client Framework servlet at /OA_HTML/AppsTCFServer, allowed by the default EBS URL firewall configuration, gives SQL execution as the APPS database user and then operating-system commands as the EBS application account. The store's Oracle CPU entry already carries all of that.
+      CLAIM (Defused, relayed by SecurityWeek, BleepingComputer and The Hacker News, 2026-10-28; Defused's own post is on X and is not cited): "Our Oracle E-Business Suite decoys recorded exploratory exploits against CVE-2026-101767 ... this morning, Oct 27." BleepingComputer adds that Oracle has not tagged the flaw as exploited and that Shadowserver tracks over 670 Internet-exposed EBS instances (it cannot say how many are honeypots or patched). The three outlets trace to one first-hand observation (Defused decoys); no victim, actor, successful compromise or KEV listing is reported (the KEV catalogue 2026.10.28 does not list it).
+      DELTA FOR THE COVERED ENTRY (2026-10-21/oracle-october-2026-cpu-six-unauthenticated-cvss-10-rows): its text says none of the rows is reported exploited; for CVE-2026-101767 that is now "exploit attempts against decoys reported (Defused, 2026-10-27), no compromise reported". FIRST EPSS is 0.0061 (percentile 0.49) as of 2026-10-28, i.e. not yet modelled as likely.
+    region_nexus: "global; EBS is common in government and large-enterprise finance, HR and procurement estates; no Swiss-specific reporting"
+    primary_sector_nexus: "direct technology class (ERP web tier of public-sector and large-enterprise estates); Oracle EBS was the target of the 2025 Cl0p mass-extortion campaign (BleepingComputer)"
+    sector: "public-sector"
+    cves: [CVE-2026-101767]
+    techniques: [T1190, T1059.004]
+    affected_products: ["Oracle E-Business Suite"]
+    entity_keys: ["product:oracle-e-business-suite"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-21/oracle-october-2026-cpu-six-unauthenticated-cvss-10-rows"
+    evidence:
+      - quote: "According to Defused, the first exploitation attempts targeting CVE-2026-101767 were observed on October 27."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/hackers-start-probing-fresh-oracle-ebs-vulnerability/"
+      - quote: "While Oracle has not yet tagged CVE-2026-101767 as exploited in the wild, threat intelligence company Defused said on Tuesday that it already spotted threat actors scanning the Internet for vulnerable systems."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-now-scanning-systems-for-recently-patched-oracle-flaw/"
+      - quote: "Oracle addressed CVE-2026-101767 in its **October 2026 Critical Patch Update**, released on **October 20, 2026**."
+        attribution: "Horizon3.ai"
+        source_url: "https://horizon3.ai/attack-research/vulnerabilities/cve-2026-101767/"
+    extended_notes: |
+      Exposure and detection already in the covered entry (Horizon3 indicators: unauthenticated POST requests to /OA_HTML/AppsTCFServer that instantiate the Gantt data-server class, SQL reconnaissance after unauthenticated web requests, the oracle account spawning a shell via the Concurrent Manager). What this adds: the hunt window for those indicators now starts 2026-10-27 at the latest for internet-facing EBS web tiers, and the URL-firewall mitigation (remove the TCF servlet from the allowlist) is no longer only precautionary.
+      Single first-hand source: Defused is a honeypot operator; 'exploratory' means probing of decoys, not victim compromise. Suggested classification B3 (credible telemetry operator, uncorroborated by a second sensor).
+    borderline: false
+
+  # ------------------------------------------------------------------ 7. Node2Shell / Brotli developing story
+  - title: "Node2Shell (CVE-2026-111497): Broadcom adds VCF SDDC Manager (critical 9.8 on 9.1.1, patch pending, workarounds only), Previdian logs live exploit attempts from 27 October, Palo Alto publishes its fix table (PAN-OS 11.1 and 10.2 need no action); Splunk and Fortinet still investigating"
+    sources:
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39445", publisher: "Broadcom (VMSA-2026-0008.1)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.securityweek.com/cisa-warns-of-node2shell-exploitation-as-honeypots-log-attack-attempts/", publisher: "SecurityWeek", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://previdian.com/CVE-2026-111497", publisher: "Previdian", date: "2026-10-29", role: "corroborating" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-111497", publisher: "Palo Alto Networks PSIRT", date: "2026-10-28", role: "primary" }
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1015", publisher: "Splunk SVD-2026-1015", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187", publisher: "Fortinet PSIRT (FG-IR-26-187)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/al26-027-critical-vulnerability-impacting-google-brotli-cve-2026-111497", publisher: "Canadian Centre for Cyber Security (AL26-027)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: SecurityWeek, URL https://www.securityweek.com/cisa-warns-of-node2shell-exploitation-as-honeypots-log-attack-attempts/ (found through the SecurityWeek feed, https://www.securityweek.com/feed/) -> primary: Broadcom VMSA-2026-0008, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39445 -> pivots to Previdian (https://previdian.com/CVE-2026-111497), Palo Alto PSIRT JSON (recipe: https://security.paloaltonetworks.com/json/CVE-2026-111497) and page, Splunk (advisory.splunk.com listing, then SVD-2026-1015), Fortinet (fortiguard RSS, then FG-IR-26-187), CCCS (cccs-alerts feed)"
+    summary: |
+      Developments since the covered entries (2026-10-24 Node2Shell entry, 2026-10-26 .NET entry) last changed on 2026-10-28T03:40Z. CISA's KEV listing (2026-10-27, due 2026-11-10) and ELLIO's broken-exploit capture are already in the store.
+      FACTS (Broadcom VMSA-2026-0008, issued 2026-10-27, revised .1 on 2026-10-28 "to clarify the impacted products in the Response Matrix"): VMware Cloud Foundation's SDDC Manager is affected by CVE-2026-111497 because it uses Node.js; "A malicious actor with network access to SDDC Manager may exploit this issue to execute arbitrary code." Broadcom rates it Critical (CVSS 3.1 9.8, AV:N/AC:L/PR:N) for SDDC Manager 9.1.1.x only ("older releases are not critically impacted") and Important (7.5, AV:A/AC:H) for 9.0.x, 9.1.0 and 5.2.x. Every row says "Patch pending"; workarounds are KB460732 (9.1.1) and KB460734 (9.0.x, 9.1.0, 5.2.x). The advisory does not mention exploitation. This is a new vendor surface on the pre-existing exploited CVE: a management-plane component of private-cloud estates.
+      CLAIMS (honeypot telemetry): Previdian's per-CVE page rates exploitation attempts "confirmed", first observed 2026-10-27 and last observed 2026-10-29 with EPSS 88%; SecurityWeek relays one attempt on 2026-10-27 from a US-based address and says Previdian's confidence "does not mean the attempt succeeded". ELLIO's earlier capture (in the store) came from an address that had also targeted PHP2Shell and probed Palo Alto and Fortinet VPN devices.
+      FACTS (Palo Alto PSIRT, advisory revised through 2026-10-28T18:50Z): the portfolio page still says "Palo Alto Networks is not aware of any malicious exploitation of this issue", now carries a solution table (PAN-OS 12.2: 12.2.4-h1; 12.1: 12.1.4-h13, 12.1.7-h11 or 12.1.10 / 12.1.10-h3; 11.2: 11.2.4-h23 or 11.2.16-h1, 11.2.7-h23, 11.2.10-h17, 11.2.13-h4; PAN-OS 11.1 and 10.2: "No action needed") and lists a Prisma Cloud Application Security Transporter Client fix (0.2.9). On the PHP2Shell advisory (CVE-2026-109618) the last revision is 2026-10-28T05:15Z (ETAs removed for 11.2.7-h23, 11.2.13-h4, 11.2.16-h1); no further ETA removals are logged, so the hotfixes dated 2026-10-29 (12.1.4-h13, 10.2.10-h42) and 2026-10-30 (12.1.10-h3, 11.2.4-h23, 11.1.7-h12, 10.2.7-h39) had not been marked released when read at about 03:10Z on 2026-10-29.
+      FACTS (others): Splunk SVD-2026-1015 (2026-10-28) covers four Node.js CVEs and lists every Splunk product as "Under Investigation" (it publishes no fixed versions yet); Fortinet's FG-IR-26-187 (2026-10-26) lists ten Node.js CVEs including CVE-2026-111497 and puts FortiOS and many other products "under investigation"; the Canadian Cyber Centre's AL26-027 (2026-10-28) names Node.js, Microsoft .NET, PowerShell, Bun, Envoy, Istio and the Python Brotli and brotlicffi packages as affected technologies.
+    region_nexus: "global; SDDC Manager is the lifecycle manager of VMware Cloud Foundation estates; no Swiss-specific reporting"
+    primary_sector_nexus: "direct technology class (virtualization management plane, firewalls, observability/SIEM stack)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190]
+    affected_products: ["VMware Cloud Foundation SDDC Manager", "Node.js", "Palo Alto Networks PAN-OS", "Splunk Enterprise", "Fortinet FortiOS"]
+    entity_keys: ["tool:node2shell", "product:google-brotli", "product:node-js", "product:vmware-cloud-foundation"]
+    new_entities:
+      - { key: "product:vmware-sddc-manager", type: product, name: "VMware Cloud Foundation SDDC Manager", aliases: ["SDDC Manager"], summary: "Lifecycle-management appliance of VMware Cloud Foundation; Broadcom VMSA-2026-0008 (2026-10-27) rates it critically affected (9.8) by the Node.js Brotli flaw CVE-2026-111497 on 9.1.1.x, patch pending (Broadcom, 2026-10-28)." }
+    relation_suggestions:
+      - { subject: "product:vmware-sddc-manager", object: "tool:node2shell", basis: "Broadcom VMSA-2026-0008: SDDC Manager contains the Node.js Brotli decoder flaw CVE-2026-111497, which Imperva named Node2Shell (Broadcom, 2026-10-27)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    evidence:
+      - quote: "A malicious actor with network access to SDDC Manager may exploit this issue to execute arbitrary code."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39445"
+      - quote: "Note that this critical score applies only to SDDC Manager 9.1.1.x; older releases are not critically impacted by this vulnerability."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39445"
+      - quote: "Patches are pending for all affected versions, and Broadcom has published workarounds in two knowledge base articles."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/cisa-warns-of-node2shell-exploitation-as-honeypots-log-attack-attempts/"
+    extended_notes: |
+      Exposure: SDDC Manager 9.1.1.x is the exposed-to-the-network row (Broadcom's vector has no attack-adjacency requirement); the other versions need adjacent-network access and a harder attack. Reachability is the lever: SDDC Manager's HTTPS interface belongs on the management network only. Until patches ship, apply the KB460732/KB460734 workarounds (their content was not read: Broadcom KB pages were not fetched).
+      Detection: process-creation and crash records of the SDDC Manager's Node.js services (unexpected crashes are what failed exploitation leaves, per ELLIO and the Cyber Centre), outbound connections from the appliance, and web access logs for large or malformed Brotli-encoded request bodies.
+      Suggested classification: Broadcom A, credibility 2; Previdian C, honeypot telemetry. The entry's priority is already `high`; the SDDC Manager addition is a vendor-surface delta, not a change of status.
+    borderline: false
+
+  # ------------------------------------------------------------------ 8. Cisco advisory revision
+  - title: "Cisco's PHP2Shell advisory revised to 1.9 on 2026-10-28: the fix for Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software (27.1.1) now moves to November 2026"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq", publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.9)", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: developing-story check of the Cisco advisory cited by the store entry 2026-10-28/cisco-php2shell-expressway-urwb-duo-access-gateway-fixes, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq -> primary (no pivot needed)"
+    summary: |
+      FACT (Cisco PSIRT, revision history): version 1.9, dated 2026-OCT-28, status Final: "Update fix availability date for Ultra-Reliable Wireless Backhaul (URWB) and Unified Industrial Wireless Software." The vulnerable-products table now reads "27.1.1 (Nov 2026)" for CSCwx37073. The covered entry (written on version 1.8, 2026-10-27) states the fixed release 27.1.1 as "March 2027"; that date is superseded. Other rows are unchanged: Expressway Series and Expressway Select Series 15.5.21 (workaround in the bug record, CSCwx37062), Duo Access Gateway 3.2.0, ISE Portal Builder offline for remediation; Cisco PSIRT "is not aware of any malicious use of these vulnerabilities against any Cisco product".
+    region_nexus: "global; industrial and campus wireless backhaul deployments"
+    primary_sector_nexus: "indirect; URWB and Unified Industrial Wireless Software serve rail, ports, mining and smart-city sites; no public-sector exposure data"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Cisco Ultra-Reliable Wireless Backhaul", "Cisco Unified Industrial Wireless Software"]
+    entity_keys: ["product:cisco-ultra-reliable-wireless-backhaul", "product:cisco-unified-industrial-wireless-software", "tool:php2shell"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-28/cisco-php2shell-expressway-urwb-duo-access-gateway-fixes"
+    evidence:
+      - quote: "Update fix availability date for Ultra-Reliable Wireless Backhaul (URWB) and Unified Industrial Wireless Software."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq"
+      - quote: "27.1.1 (Nov 2026)"
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq"
+    extended_notes: |
+      Single first-party source (a vendor PSIRT for its own advisory; carve-out applies, Admiralty A). Small but concrete: the entry's fix date for the wireless-backhaul products is wrong by about four months now. The page was read as extract (trafilatura) and the revision table is in the page text; the workaround for these products sits in the bug record CSCwx37073, which was not fetched.
+    borderline: false
+
+  # ------------------------------------------------------------------ 9. ConnectWise restoration
+  - title: "ConnectWise begins phased Cloud Backup restoration on 2026-10-28: partners must re-authorize each Microsoft 365 tenant with the new app \"ConnectWise Cloud Backup for M365\""
+    sources:
+      - { url: "https://status.connectwise.com/", publisher: "ConnectWise status page (incident update of 2026-10-28 17:09 UTC)", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: connectwise-trust-center slice record (rotation-priority; https://www.connectwise.com/company/trust/advisories returns 403 on every transport) -> fallback named in the record's note: ConnectWise status page, URL https://status.connectwise.com/ (extract) -> primary (no pivot needed); the Trust Center page the update points to was not readable"
+    summary: |
+      FACT (ConnectWise, status page, 2026-10-28 17:09 UTC, titled "Cloud Backup phased restoration begins — partner action required"): "We are beginning phased restoration, starting with Microsoft 365 backups and restores through a new, security-hardened application. Other features will return in phases over the coming days." And: "Partners must re-authorize each Microsoft 365 tenant using the new application, “ConnectWise Cloud Backup for M365,” to resume backup and restore operations." Detailed instructions are on the Trust Center advisory page (403 to every transport used here). The earlier updates of 2026-10-26 and 2026-10-27 say existing backup archives "remain encrypted, isolated and preserved, with no indication of compromise", that "Previously published findings and partner guidance remain current", and "Keep affected application connections disabled until ConnectWise provides instructions that apply to your service." The status page shows Cloud Backup as "Partial Service Disruption" and no other ConnectWise product affected.
+      DELTA FOR THE COVERED ENTRY (2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse): its first action tells readers to keep the seven old application identities disabled until ConnectWise gives restoration instructions; the instructions now exist and consist of consenting a new, different application per tenant. Two consequences stated by nobody but following from the facts: the old applications stay disabled and should not be re-enabled, and a tenant admin consenting to the "new app" should take the application's identifiers only from ConnectWise's Trust Center, because a restoration campaign is an obvious consent-phishing lure (that second point is this analyst's inference, not a source claim).
+    region_nexus: "global; MSP-managed Microsoft 365 tenants, including Swiss ones served by MSPs using SkyKick"
+    primary_sector_nexus: "indirect; managed-service-provider supply chain into customer Entra tenants"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199, T1078.004, T1098.001]
+    affected_products: ["ConnectWise Cloud Backup (formerly SkyKick)"]
+    entity_keys: ["product:connectwise-cloud-backup", "actor:storm-0940"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse"
+    evidence:
+      - quote: "Partners must re-authorize each Microsoft 365 tenant using the new application, “ConnectWise Cloud Backup for M365,” to resume backup and restore operations."
+        attribution: "ConnectWise"
+        source_url: "https://status.connectwise.com/"
+      - quote: "We are beginning phased restoration, starting with Microsoft 365 backups and restores through a new, security-hardened application."
+        attribution: "ConnectWise"
+        source_url: "https://status.connectwise.com/"
+    extended_notes: |
+      Single first-party source (vendor status page, Admiralty A; carve-out applies to a vendor's own incident). The consent step itself is an Entra admin-consent operation, so the audit trail is the Entra audit log ("Consent to application", "Add service principal") for the new app and Conditional Access exclusions created for it. The Trust Center page that carries the application identifiers could not be read from this environment (403 on direct, extract and the reader), so the new app's client id is unknown here; another run reading it through a browser should add it.
+    borderline: false
+
+  # ------------------------------------------------------------------ 10. Tailscale (borderline)
+  - title: "Tailscale 1.104.4 fixes the Tailworm SSH findings (root-socket access through SSH forwarding, serve-to-privileged-socket); details were public before the fix and researchers call the SSH chain wormable; no exploitation reported"
+    sources:
+      - { url: "https://tailscale.com/security-bulletins", publisher: "Tailscale security bulletins (TS-2026-014 to TS-2026-017)", date: "2026-10-27", role: "primary" }
+      - { url: "https://tailscale.com/ssh-investigation-update", publisher: "Tailscale (SSH investigation update, revised 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://tailworm.com/", publisher: "Cyberdione Labs (Tailworm report, updated 2026-10-27)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.securityweek.com/tailscale-rushes-patches-after-uncoordinated-disclosure-of-tailworm-flaws/", publisher: "SecurityWeek", date: "2026-10-27", role: "corroborating" }
+    discovery_trace: "first seen at: SecurityWeek related-link on https://www.securityweek.com/china-linked-hackers-exploit-php2shell-to-root-firewalls/ (item 'Tailscale Rushes Patches After Uncoordinated Disclosure of Tailworm Flaws') -> primary: Tailscale bulletins, URL https://tailscale.com/security-bulletins, Tailscale investigation page URL https://tailscale.com/ssh-investigation-update, researchers' report URL https://tailworm.com/"
+    summary: |
+      FACTS (Tailscale bulletins, version 1.104.4 tagged 2026-10-27): TS-2026-014: Tailscale SSH performs Unix-socket forwarding as root and validated paths only lexically, so authenticated peers with forwarding access to a node can reach root-only sockets such as the Docker socket or the tailscaled local API; affects nodes with Tailscale SSH enabled and local or remote forwarding allowed in the access policy; mitigation: set TS_SSH_DISABLE_FORWARDING=1 in the tailscaled environment and restart. TS-2026-015: memory exhaustion denial of service in the SSH server by an authenticated peer. TS-2026-016: `tailscale serve` Unix backends could reach privileged sockets including the tailscaled local API, "full node takeover", where a local operator can write serve configurations. TS-2026-017: HTTP/2 shared serve context could leak capability headers across mounts. All fixed in 1.104.4 or newer. Tailscale says it does not recommend that everyone disable Tailscale SSH.
+      CLAIMS (Cyberdione Labs, report published before any patch, lab-tested on Tailscale 1.104.2 and headscale 0.29.5, 11 findings, six high): the Tailscale SSH flaws are wormable, chaining from node to node at under a second per hop with no user interaction wherever the access rule allows forwarding, giving root and theft of keys that add rogue devices. Tailscale's own assessment: most issues concern what happens after someone is authorized to connect; not an unauthenticated attacker reaching arbitrary machines. No exploitation in the wild is reported by any source. The report's findings on the self-hosted control server headscale (0.29.5) and on an experimental app-connector feature are not covered by Tailscale's bulletins.
+    region_nexus: "global; mesh-VPN use in Swiss public-sector networks is not documented in the sources"
+    primary_sector_nexus: "indirect; VPN and remote-access class"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1021.004, T1068, T1570]
+    affected_products: ["Tailscale client", "Tailscale SSH", "headscale"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:tailscale", type: product, name: "Tailscale", aliases: ["tailscaled", "Tailscale SSH"], summary: "Mesh VPN built on WireGuard; client 1.104.4 (2026-10-27) fixes the Tailscale SSH and serve flaws published as Tailworm (Tailscale, 2026-10-27)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "This vulnerability is fixed in Tailscale version 1.104.4 or newer."
+        attribution: "Tailscale"
+        source_url: "https://tailscale.com/security-bulletins"
+      - quote: "you can disable SSH forwarding by setting `TS_SSH_DISABLE_FORWARDING=1` in the `tailscaled` service environment and restarting the service."
+        attribution: "Tailscale"
+        source_url: "https://tailscale.com/security-bulletins"
+    extended_notes: |
+      Detection: Linux process and socket-access telemetry on Tailscale SSH hosts: tailscaled (root) opening the Docker socket or its own local-API socket on behalf of an SSH session; new devices appearing in the tailnet admin log. Hardening: update to 1.104.4, disable SSH forwarding where not needed, narrow SSH access rules.
+    borderline: true
+    borderline_reason: "Details public before the fix and a 'wormable' claim, but exploitation needs an authorized peer or a compromised tailnet node, no CVE ids are published in the bulletins read, and use in Swiss public-sector networks is not evidenced; relevance gate (PD-11) leaves it to the main agent."
+
+  # ------------------------------------------------------------------ 11. TeamViewer (borderline)
+  - title: "TeamViewer 15.83 fixes a client-side out-of-bounds write that gives code execution when a Linux or macOS viewer processes crafted screen data or a session recording (CVSS 8.8), plus a macOS root escalation and six Remote Management local privilege escalations; no exploitation"
+    sources:
+      - { url: "https://www.teamviewer.com/en/resources/trust-center/security-bulletins/tv-2026-1011/", publisher: "TeamViewer (TV-2026-1011)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.teamviewer.com/en/resources/trust-center/security-bulletins/tv-2026-1012/", publisher: "TeamViewer (TV-2026-1012)", date: "2026-10-28", role: "primary" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/teamviewer-security-advisory-av26-1093", publisher: "Canadian Centre for Cyber Security (AV26-1093)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: cccs-alerts feed, URL https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en (item 'TeamViewer security advisory (AV26-1093)', 2026-10-28T14:38Z) -> primary: TeamViewer bulletin index URL https://www.teamviewer.com/en/resources/trust-center/security-bulletins/ -> bulletins TV-2026-1011 and TV-2026-1012"
+    summary: |
+      FACTS (TeamViewer bulletins listed 2026-10-27, pages dated 2026-10-28): TV-2026-1011: (I) macOS Full Client and Host before 15.83: TOCTOU plus symlink handling in the privileged helper lets a low-privileged local user install a malicious package and reach root (CVSS 3.1 7.8); (II) Full Client for Linux and macOS before 15.83: out-of-bounds write in the screen-image decoder gives remote code execution when crafted screen-image data arrives in a remote-control session or the user opens a crafted .tvs session recording (8.8, needs user interaction); (III) integer overflow in screen decompression, Full Client, Portable and the Android Remote Control app before 15.83, heap overflow with possible code execution in the viewer process when the user connects to an attacker-controlled or compromised host (8.8). TV-2026-1012: six local privilege escalations in Remote Management Monitoring (before 26.10.1), Patch Management (before 26.9.1) and Advanced Asset Management installer paths (7.3 to 7.8). Fixed versions 15.83 (and legacy 15.64.10, 14.7.48868, 13.2.x). Both bulletins say "TeamViewer is not aware of any active exploitation in the wild".
+    region_nexus: "global"
+    primary_sector_nexus: "indirect; remote-access tool class used by IT support and by attackers for persistence"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1068, T1219]
+    affected_products: ["TeamViewer Full Client", "TeamViewer Host", "TeamViewer Remote Management"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "At the time of publication, TeamViewer is not aware of any active exploitation in the wild."
+        attribution: "TeamViewer"
+        source_url: "https://www.teamviewer.com/en/resources/trust-center/security-bulletins/tv-2026-1011/"
+    extended_notes: "The extract of both bulletins drops the CVE ids (CVE-2026-92372, -92374, -111585 for TV-2026-1011 and -92375, -92376, -92377, -111582, -111583, -111584 for TV-2026-1012 per the bulletin index page), so a CVE-to-finding mapping was not read."
+    borderline: true
+    borderline_reason: "High but not critical, viewer-side RCE needs the user to connect to a hostile host or open a crafted recording, no exploitation reported; relevant only as a remote-access tool patch."
+
+  # ------------------------------------------------------------------ 12. CCCS vishing alert (borderline, cross-domain)
+  - title: "Canadian Cyber Centre AL26-028: ongoing help-desk voice phishing with real-time-relay sign-in pages that defeat conventional MFA; caller poses as IT and pushes an urgent passkey migration or MFA enrolment"
+    sources:
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/al26-028-ongoing-help-desk-voice-phishing-campaign-targeting-canadian-organizations", publisher: "Canadian Centre for Cyber Security (AL26-028)", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: cccs-alerts feed, URL https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en (item 'AL26-028 - Ongoing Help Desk Voice Phishing Campaign Targeting Canadian Organizations', 2026-10-28T18:49Z) -> primary (no pivot needed)"
+    summary: |
+      CROSS-DOMAIN LEAD (not a vulnerability item; for the S2/S3/S4 sub-agents or the main agent's call). FACT (Cyber Centre, a national authority for its own jurisdiction): an ongoing vishing campaign targets Canadian organizations, concentrated on the legal sector in October and on finance and legal since July; callers impersonate internal IT or help desk and "claim an urgent passkey migration, MFA enrolment or password change is required", by mobile, office phone or Microsoft Teams, directing staff to organization-branded adversary-in-the-middle sign-in pages (organization name as a subdomain of a generic root domain, or a new look-alike domain) that relay credentials and MFA responses to the real identity provider. Post-compromise the Cyber Centre says the actor "has been reported to" register attacker MFA methods, delete reset and security notifications, use scripts and Microsoft Graph to take SharePoint and OneDrive data, and send extortion demands. The Cyber Centre attributes the tradecraft only to "a financially motivated threat actor" through footnoted public reports and names no group. Recommendations: phishing-resistant MFA (FIDO2 keys, device-bound passkeys), conditional access on managed devices, stronger verification for MFA resets and device enrolment, restrict external Teams communication.
+    region_nexus: "Canada; the same tradecraft is reported against US law firms (CrowdStrike, 2026-10-28, in the legal-sector report: SNARKY SPIDER and CORDIAL SPIDER)"
+    primary_sector_nexus: "indirect; identity-provider help-desk workflows of any administration"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.004, T1557, T1111, T1098.005, T1530]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Callers impersonate internal IT or help desk staff and claim an urgent passkey migration, MFA enrolment or password change is required."
+        attribution: "Canadian Centre for Cyber Security"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/al26-028-ongoing-help-desk-voice-phishing-campaign-targeting-canadian-organizations"
+    extended_notes: "Related, not fetched in full: CrowdStrike's legal-sector report post (2026-10-28) says SNARKY SPIDER and CORDIAL SPIDER 'share nearly identical tactics' including vishing calls that impersonate IT and direct employees to SSO-themed pages. Check the store for existing help-desk-vishing coverage before drafting."
+    borderline: true
+    borderline_reason: "Not S1 (no vulnerability); returned because the Cyber Centre alert is first-party and in-window; the main agent should dedupe against S2/S3/S4 returns and prior coverage."
+
+  # ------------------------------------------------------------------ 13. Cisco ASA/FTD/FMC hardening (borderline: late relay)
+  - title: "Cisco Secure Firewall ASA, Threat Defense and Management Center hardening release (CVE-2026-20329 to -20336, four at 9.0 or higher): NCSC-NL relays it on 2026-10-28, six weeks after Cisco's 2026-09-16 publication; not in the store by CVE"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0458", publisher: "NCSC-NL (NCSC-2026-0458)", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-asaftdfmc-uvpPROhN", publisher: "Cisco PSIRT (cisco-sa-hardening-asaftdfmc-uvpPROhN, version 1.1)", date: "2026-09-18", role: "primary" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, ncsc-nl recent 20 (NCSC-2026-0458, 2026-10-28T10:28Z), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0458 -> primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-asaftdfmc-uvpPROhN (revision history: 1.0 on 2026-09-16, 1.1 on 2026-09-18, nothing newer)"
+    summary: |
+      FACTS (Cisco PSIRT, published 2026-09-16, v1.1 2026-09-18): software hardening releases for Secure Firewall ASA, Secure FTD and Secure FMC fix internally found vulnerabilities (found with "frontier AI models"), grouped by weakness class into eight CVEs with the maximum CVSS 3.1 of the worst underlying issue per group: CVE-2026-20329 9.9 (CWE-703 exceptional conditions), CVE-2026-20330 9.9 (CWE-707), CVE-2026-20331 9.6 (CWE-693), CVE-2026-20332 9.0 (CWE-284 access control), CVE-2026-20333 8.8, CVE-2026-20334 8.4, CVE-2026-20335 8.1, CVE-2026-20336 7.5; no workarounds. Two flaws in the access-control group are "known to be actively exploited": the already-published FMC static-credential and FMC authentication-bypass flaws (store entries 2026-07-30 and 2026-08-04). First fixed releases: ASA 9.16.4.103, 9.18.4.94, 9.20.4.49, 9.22.3.26, 9.23.1.47, 9.24.1.26; FTD and FMC 7.0.10, 7.2.12, 7.4.8, 7.6.6, 7.7.13, 10.0.2, 10.1.0 (hot-fix trains must move to the first fixed release). The group's worst score has PR:L (low-privilege authentication), so these are not stated as pre-authentication.
+      NCSC-NL (advisory 0458, 2026-10-28) relays the release with priority normal; its prose says CVE-2026-20332 is 9.0 while its CVE list shows 9.9, a discrepancy inside NCSC-NL's page. Why NCSC-NL published six weeks late is not stated.
+    region_nexus: "global; ASA and FTD are the edge firewalls of many administrations"
+    primary_sector_nexus: "direct technology class (perimeter firewalls and their management centre)"
+    sector: "public-sector"
+    cves: [CVE-2026-20329, CVE-2026-20330, CVE-2026-20331, CVE-2026-20332, CVE-2026-20333, CVE-2026-20334, CVE-2026-20335, CVE-2026-20336]
+    techniques: [T1190]
+    affected_products: ["Cisco Secure Firewall ASA", "Cisco Secure Firewall Threat Defense", "Cisco Secure Firewall Management Center"]
+    entity_keys: ["product:cisco-secure-firewall-adaptive-security-appliance-asa", "product:cisco-secure-firewall-threat-defense-ftd", "product:cisco-secure-firewall-management-center"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Cisco meldt dat twee kwetsbaarheden binnen de categorie toegangscontrole actief worden misbruikt."
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0458"
+    extended_notes: "Fixed-release table and CVSS values were read from the Cisco page via extract; the per-CVE scores are group maxima, not per-flaw scores. A 2026-09-20 audit worked this bundle (work/2026-09-20T1308Z-audit/findings.G1.yaml) but no store entry carries CVE-2026-20329 to -20336 or the advisory URL; entries exist for the same bundle's ISE and Secure Email Gateway advisories (2026-09-15, 2026-09-17) and for the two exploited FMC flaws the hardening advisory points to (2026-07-30, 2026-08-04)."
+    borderline: true
+    borderline_reason: "Vendor primary is six weeks old (outside the 26 h window and the 72 h developing window); in-window only because NCSC-NL relayed it on 2026-10-28. Raised because ASA/FTD/FMC are edge firewalls, four rows are at 9.0 or higher and the store has no entry by CVE; a drop is defensible under the recency rule."
+
+  # ------------------------------------------------------------------ 14. F5 BIG-IP PHP2Shell (borderline: store gap, primary unreadable)
+  - title: "F5 BIG-IP and PHP2Shell: K000163821 says the Configuration utility (all modules) and APM access profiles are affected; fixes 17.1.3.7, 17.5.1.11 and 21.1.0.4 (updated 2026-10-24); not in the store"
+    sources:
+      - { url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md", publisher: "NCSC-NL PHP2Shell software status list (changelog)", date: "2026-10-26", role: "primary" }
+      - { url: "https://github.com/NCSC-NL/php2shell/wiki", publisher: "NCSC-NL PHP2Shell repository (operational information, updated 2026-10-28)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: NCSC-NL PHP2Shell repository wiki, URL https://github.com/NCSC-NL/php2shell/wiki (WebFetch, developing-story check for vendor advisories) -> pivot: software status changelog, URL https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md (bridge url) -> F5 primary https://my.f5.com/manage/s/article/K000163821 is a JS-only portal page: extract returned the portal shell and WebFetch returned a loading placeholder, so F5's own wording was NOT read"
+    summary: |
+      FACTS as recorded by NCSC-NL (a national authority compiling vendor statements; F5's page itself was unreadable here): F5 K000163821, first recorded 2026-10-23, says BIG-IP releases 17.1.0 to 17.1.3, 17.5.0 to 17.5.1 and 21.1.0 are vulnerable to both PHP2Shell CVEs through the BIG-IP Configuration utility control plane (all modules) and, for APM and SSLO, through the data-plane access profiles ("APM/SSLO access-profile data-plane exposure"); F5 "lists fixes in 17.1.3.7, 17.5.1.11 and 21.1.0.4 for both CVEs" as of 2026-10-24, and earlier affected releases remain vulnerable. NCSC-NL's rows are dated 2026-10-23 (vulnerable, no fix) and 2026-10-26 (fix).
+      The store's PHP2Shell entries cover PAN-OS, NetScaler, Cisco, HPE ClearPass, QNAP and OT vendors but not F5 BIG-IP (a grep of entries for BIG-IP and K000163821 in October finds nothing). Whether the APM data-plane exposure is reachable pre-authentication from the internet is not stated in what was read, and F5's mitigations (access restriction for the Configuration utility, APM-specific guidance) were not read. No source reports exploitation of BIG-IP through PHP2Shell.
+    region_nexus: "global; BIG-IP is a core ADC and access gateway in many Swiss public-sector estates (no Swiss-specific reporting)"
+    primary_sector_nexus: "direct technology class (load balancer and remote-access gateway)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["F5 BIG-IP TMOS", "F5 BIG-IP APM", "F5 BIG-IP SSLO"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "F5 K000163821, updated 2026-10-24, lists fixes in 17.1.3.7, 17.5.1.11 and 21.1.0.4 for both CVEs."
+        attribution: "NCSC-NL"
+        source_url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md"
+      - quote: "F5 confirms the BIG-IP Configuration utility control plane is affected across all modules in the listed releases."
+        attribution: "NCSC-NL"
+        source_url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md"
+    extended_notes: |
+      Gap, not a delta of this run: F5's advisory is five days old and the fix is dated 2026-10-24, so under the recency rule this is outside the window; it is raised because BIG-IP is a core edge product and the PHP2Shell pair is KEV-listed. Needs the F5 primary read through a browser or a vendor feed before an entry is written (the NCSC-NL repository's per-vendor rows carry the same text as secondary evidence). The same NCSC-NL list also records, among others: Juniper JSA112681 (Junos J-Web on EX vulnerable to CVE-2026-109618 but 'not exploitable' per Juniper, SRX no longer uses PHP from 25.2R1), NetApp ONTAP 9 fixes (NTAP-20261021-0021; CVE-2026-109618 only), Broadcom ESG advisory 39404 (CloudSOC SpanVA Appliance vulnerable), TerraMaster TOS 6 (vulnerable, migration to TOS 7 required) and Synology PHP 7.3 (end of life, no fix).
+    borderline: true
+    borderline_reason: "Store gap on a core edge product, but the vendor primary is outside the window and unreadable here, and exploitation is not reported; the main agent can either fold a short note into the PHP2Shell entry once the F5 page is read or drop it."
+
+kev_recheck:
+  checked_at: "2026-10-29T03:36Z"
+  catalogVersion: "2026.10.28 (dateReleased 2026-10-28T19:00:04Z)"
+  additions_in_window: ["CVE-2026-41709 (Broadcom VMware ESX, due 2026-11-11)", "CVE-2026-46300 (Linux kernel, due 2026-10-31)"]
+  note: "No further KEV additions after the two of 2026-10-28; the 2026-10-26 and 2026-10-27 additions (PHP2Shell pair, Node2Shell/Brotli, PolyShell) are covered by their entries. ENISA EUVD exploited list (4 records) matches: exploitedSince 2026-10-28 for both."
+  dispositions:
+    - { cve: "CVE-2026-46300", disposition: "update record on 2026-05-15/cve-2026-46300-linux-kernel-local-privilege-escalation-via-x (items 1 and 3 of this return): status exploited and KEV-listed; chain with PHP2Shell per CISA and Dream; sourcing_note's EPSS reasoning superseded" }
+    - { cve: "CVE-2026-41709", disposition: "update record on 2026-07-30/vmware-vmsa-2026-0006-vcenter-auth-bypass-vmxnet3-escape (item 2): status exploited and KEV-listed, exploitation claim is CrowdStrike's (WARP PANDA, zero-day, as late as early 2026); Broadcom's own advisory and FAQ still carry no exploitation statement" }
+
+cve_table:
+  - { cve: "CVE-2026-46300", product: "Linux kernel (net/core/skbuff.c, XFRM ESP-in-TCP, 'Fragnesia')", cvss: "7.8 (CVSS 3.1 AV:L/AC:L/PR:L)", epss: 0.1019, kev: true, exploited: "yes; CISA KEV 2026-10-28 (chained with CVE-2026-109618/109619 per KEV) and Dream's recovered chain on firewall appliances, 2026-10-23/24", affected: "kernels from 3.9 without the May 2026 fix", fixed: "stable 5.10.257, 5.15.208, 6.1.174, 6.6.141, 6.12.91, 6.18.33, 7.0.10; mainline 7.1 (CNA record); distributions backport, compare vendor package versions", type: "lpe", vector: "local", auth: "post-auth (unprivileged local code execution, e.g. a web worker)", source: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json" }
+  - { cve: "CVE-2026-41709", product: "VMware ESX (VCF, vSphere Foundation, Telco Cloud Platform)", cvss: "2.7 (CVSS 3.1 AV:N/AC:L/PR:H)", epss: 0.0030, kev: true, exploited: "yes; CISA KEV 2026-10-28; CrowdStrike: WARP PANDA exploited it as a zero-day, as late as early 2026", affected: "ESX 9.1.x.x before ESXi-9.1.0.0-25370933; 9.0.x.x before ESXi-9.0.2.0100-25595025; 8.0 before ESXi80U3j-25429389; VCF 5.x ESX before 5.2.4; Telco Cloud Platform 5.0.x and 5.1.x", fixed: "ESXi-9.1.0.0-25370933, ESXi-9.0.2.0100-25595025, ESXi80U3j-25429389, VCF 5.2.4, Telco Cloud Platform per KB449886", type: "logic-flaw (insufficient logging, CWE-778)", vector: "network (administrator session)", auth: "admin-required", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-103594", product: "WatchGuard Fireware OS (FireCloud Gateway role)", cvss: "9.5 (WatchGuard score, version not shown)", epss: 0.0043, kev: false, exploited: "no (WatchGuard: not aware of exploitation)", affected: ">= 2026.2 and < 2026.4; >= 12.12 and < 12.12.4", fixed: "Fireware OS 2026.4, 12.12.4", type: "rce (stack buffer overflow, WireGuard configuration)", vector: "network (MitM of the Firebox to WatchGuard Cloud TLS channel)", auth: "none (position required)", source: "https://psirt.watchguard.com/CVE-2026-103594/" }
+  - { cve: "CVE-2026-93866", product: "WatchGuard Fireware OS (Access Portal)", cvss: "9.2", epss: 0.0045, kev: false, exploited: "no (WatchGuard)", affected: ">= 2025.1 and < 2026.4; >= 12.0 and < 12.12.4; T15/T35 >= 12.0 and < 12.5.22", fixed: "Fireware OS 2026.4, 12.12.4, 12.5.22 (T15/T35)", type: "memory-corruption (pre-auth integer overflow in WebSocket handling, heap OOB write)", vector: "network", auth: "pre-auth", source: "https://psirt.watchguard.com/CVE-2026-93866/" }
+  - { cve: "CVE-2026-93857", product: "WatchGuard Fireware OS (SIP proxy)", cvss: "9.2", epss: 0.0047, kev: false, exploited: "no (WatchGuard)", affected: "same ranges; only with a SIP proxy policy", fixed: "Fireware OS 2026.4, 12.12.4, 12.5.22 (T15/T35)", type: "rce (pre-auth stack buffer overflow)", vector: "network (through a policy using the SIP proxy)", auth: "pre-auth", source: "https://psirt.watchguard.com/CVE-2026-93857/" }
+  - { cve: "CVE-2026-93865", product: "WatchGuard Fireware OS (FireCluster sync daemon)", cvss: "9.2", epss: 0.0046, kev: false, exploited: "no (WatchGuard)", affected: "same ranges; only FireCluster members", fixed: "Fireware OS 2026.4, 12.12.4, 12.5.22 (T15/T35)", type: "auth-bypass (missing authentication, privileged action injection)", vector: "network (FireCluster management IP)", auth: "pre-auth", source: "https://psirt.watchguard.com/CVE-2026-93865/" }
+  - { cve: "CVE-2026-112710", product: "WatchGuard Fireware OS (AD authentication service)", cvss: "9.2", epss: 0.0042, kev: false, exploited: "no (WatchGuard)", affected: "same ranges; only with an Active Directory authentication server", fixed: "Fireware OS 2026.4, 12.12.4, 12.5.22 (T15/T35)", type: "rce (heap buffer overflow in response parsing)", vector: "network (attacker who controls or intercepts traffic to the AD server)", auth: "none (position required)", source: "https://psirt.watchguard.com/CVE-2026-112710/" }
+  - { cve: "CVE-2026-112709", product: "WatchGuard Fireware OS (AD authentication service)", cvss: "9.2", epss: 0.0042, kev: false, exploited: "no (WatchGuard)", affected: "same as CVE-2026-112710", fixed: "same as CVE-2026-112710", type: "rce (heap buffer overflow)", vector: "network (AD server position)", auth: "none (position required)", source: "https://psirt.watchguard.com/CVE-2026-112709/" }
+  - { cve: "CVE-2026-103593", product: "WatchGuard Fireware OS (logging service, FIPS mode)", cvss: "9.1", epss: 0.0010, kev: false, exploited: "no (WatchGuard)", affected: "same ranges; only FIPS mode with an external log server", fixed: "Fireware OS 2026.4, 12.12.4, 12.5.22 (T15/T35)", type: "rce (stack buffer overflow via crafted certificate, root)", vector: "network-adjacent (impersonating the log server)", auth: "none (position required)", source: "https://psirt.watchguard.com/CVE-2026-103593/" }
+  - { cve: "CVE-2026-108142", product: "Veeam Backup & Replication (CDP Coordinator Service), Windows and Veeam Software Appliance", cvss: "9.1 (CVSS 4.0 AV:N/AC:L/AT:P/PR:N)", epss: 0.0040, kev: false, exploited: "no (Veeam gives no exploitation statement; NCSC.ch: UNKNOWN, vendor reports no evidence)", affected: "13.1.1.18 and earlier 13.1 builds; 13.0.2.29 and earlier 13.0 builds; 12.x not affected", fixed: "13.1.2 (13.1.2.57); 13.0.3 (13.0.3.63)", type: "auth-bypass (authorization bypass)", vector: "network", auth: "pre-auth", source: "https://www.veeam.com/kb4948" }
+  - { cve: "CVE-2026-106076", product: "Veeam Backup for Microsoft 365", cvss: "9.0 (CVSS 4.0 AV:N/AC:L/AT:P/PR:L)", epss: 0.0037, kev: false, exploited: "no (not reported)", affected: "8.5.0.1014 and earlier version 8 builds (unsupported versions likely affected)", fixed: "8.6 (8.6.0.1102)", type: "rce (SQL injection to RCE as the PostgreSQL service account, cross-tenant)", vector: "network", auth: "authenticated (organization-transfer peer)", source: "https://www.veeam.com/kb4957" }
+  - { cve: "CVE-2026-101767", product: "Oracle E-Business Suite (Application Object Library, Thin Client Framework servlet)", cvss: "9.8 (CVSS 3.1)", epss: 0.0061, kev: false, exploited: "probing only: Defused decoys logged exploratory exploits on 2026-10-27 (relayed by SecurityWeek, BleepingComputer, The Hacker News); no compromise reported", affected: "EBS 12.2.3 through 12.2.15", fixed: "Oracle October 2026 CPU patches (MOS Note KA923)", type: "sqli-to-rce", vector: "network (HTTP/HTTPS to /OA_HTML/AppsTCFServer)", auth: "pre-auth", source: "https://horizon3.ai/attack-research/vulnerabilities/cve-2026-101767/" }
+  - { cve: "CVE-2026-111497", product: "VMware Cloud Foundation SDDC Manager (Node.js Brotli decoder)", cvss: "9.8 for 9.1.1.x (AV:N/AC:L/PR:N); 7.5 for 9.0.x, 9.1.0, 5.2.x (AV:A/AC:H)", epss: 0.8799, kev: true, exploited: "yes for the CVE (KEV 2026-10-27, honeypot attempts); Broadcom does not mention exploitation of SDDC Manager", affected: "SDDC Manager 9.1.1.x, 9.1.0, 9.0.x, 5.2.x", fixed: "patch pending; workarounds KB460732 (9.1.1) and KB460734 (others)", type: "rce (out-of-bounds write)", vector: "network", auth: "pre-auth", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39445" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty; sweep is a no-op"
+
+candidate_sources:
+  - id: veeam-kb-security
+    publisher: "Veeam Knowledge Base (security bulletins, 'Vulnerabilities Resolved in ...')"
+    url: "https://www.veeam.com/knowledge-base.html?type=security"
+    rss_url: "https://www.veeam.com/services/open/kb/rss-feed"
+    category: vendor-psirt
+    why: "First-party PSIRT for backup infrastructure; the KB RSS feed (works with `fetch_source.py feed`, 2026-10-29) lists KB4948, KB4951 and KB4957 by title on the day of publication; `extract` reads each KB but drops the CVE headings, so read the CVE ids and fixed builds with the raw `url` subcommand."
+  - id: dream-research
+    publisher: "Dream Research (dreamgroup.com/blog)"
+    url: "https://dreamgroup.com/blog"
+    category: research
+    why: "Primary for the PHP2Shell plus Fragnesia chain against firewall appliances (2026-10-27) with recovered-artifact detail; the blog index reads with `extract`."
+  - id: tailscale-security-bulletins
+    publisher: "Tailscale security bulletins"
+    url: "https://tailscale.com/security-bulletins"
+    category: vendor-psirt
+    why: "First-party bulletins TS-2026-014 to -017 (2026-10-27) read cleanly with `extract`; only useful if mesh VPNs are in the constituency, so low priority."
+
+coverage_gaps:
+  - { source_id: "connectwise-trust-center", reason: "Still 403 on direct, extract and reader (jina) as of 2026-10-29; the status page https://status.connectwise.com/ reads with extract and carried the 2026-10-28 17:09 UTC restoration update, but the new application's identifiers on the Trust Center page (https://www.connectwise.com/company/trust/advisories#cloudbackup) are unreadable here." }
+  - { source_id: "fortinet-psirt", reason: "Recipe note confirmed: first call to `feed https://www.fortiguard.com/rss/ir.xml 30` reset the connection, retry after about 20 s worked. Newest advisories: FG-IR-26-187 (2026-10-26, Node.js CVEs, products under investigation) and FG-IR-26-186 (2026-10-21, PHP2Shell: FortiDDoS, FortiSOAR and FortiSOAR PaaS under investigation, FortiOS and 28 other products not impacted). No Fortinet CVE advisories earlier than the withheld 2026-11-10 set." }
+  - { source_id: "juniper (not in slice)", reason: "CCCS AV26-1101 (2026-10-28) lists Juniper Session Smart Conductor and Router before 7.0.5, 7.1.7 and 7.2.3 as affected; no Juniper primary (support portal) was reachable or found by search, so severity is unknown. Worth a targeted fetch by a later run." }
+  - { source_id: "cisa.gov alerts listing", reason: "WebFetch of https://www.cisa.gov/news-events/alerts returns 404; the dated alert URL pattern https://www.cisa.gov/news-events/alerts/YYYY/MM/DD/<slug> read fine via WebFetch (the slug is taken from the KEV row notes or the previous alert)." }
+  - { source_id: "chromereleases.googleblog.com feed", reason: "feed subcommand fails (upstream 302); `url https://chromereleases.googleblog.com/search/label/Stable%20updates` lists the posts and `extract` reads each post." }
+  - { source_id: "broadcom vmware advisory listing", reason: "https://www.broadcom.com/support/vmware-security-advisories is an SPA (extract returns the shell); individual advisory pages https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/<id> read cleanly with extract; no listing recipe found (VMSA-2026-0008 was found through SecurityWeek)." }
+  - { source_id: "MSRC update guide", reason: "Not a failure: no exploited Microsoft CVE moved in the window; the revision filter (latestRevisionDate) shows only Edge/Chromium CVEs of 2026-10-26/27 and a 2026-10-28T07:00Z metadata touch on older Windows CVEs, none flagged exploited. CVE-2026-96951 (Windows Shell, exploited since Patch Tuesday) was last revised 2026-10-26." }
+
+dropped_leads:
+  - { lead: "Apple iOS 27.2, 26.7.2, 18.7.11, macOS and Safari 27.2 (2026-10-26)", reason: "Apple's security content (support.apple.com/en-us/149230, about 164 CVE lines) carries no statement of exploitation; the exploited CoreGraphics fix backport to iOS 18.7.11 is already covered by 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev." }
+  - { lead: "Chrome 156.0.8078.73/.74 (2026-10-27, 52 fixes, four Critical) and Firefox 159 / ESR 153.6, 115.44 (167 fixes)", reason: "neither vendor states exploitation (Chrome release post and SecurityWeek); routine patch cycle." }
+  - { lead: "CYFIRMA: suspected DPRK-linked operators scanning 216 PHP2Shell targets (reported 2026-10-24 to 26)", reason: "outside the 26 h window; single-vendor, moderate-confidence attribution with no compromise confirmed (CYFIRMA itself, via Security Affairs); the PHP2Shell entry already covers mass scanning and exploitation." }
+  - { lead: "Unit 42 retraction of its PHP2Shell European-government claim (2026-10-25)", reason: "already in the store (PHP2Shell entry, 'Unit 42's retraction of 2026-10-25 stands')." }
+  - { lead: "Samba CVE-2026-109411 (2026-10-23; CERT-FR AVI-1400 2026-10-28)", reason: "access-control bypass only on shares using the vfs_ceph_rgw module; niche, no exploitation." }
+  - { lead: "Microsoft Authenticator for Android CVE-2026-80097 (Enclave write-up 2026-10-23, THN 2026-10-27)", reason: "fixed in September Patch Tuesday, Microsoft rates exploitation less likely and reports no attacks; outside window." }
+  - { lead: "EDK II PXE overflow CVE-2026-97631 (TianoCore 2026-10-22, 9.5)", reason: "needs an adjacent-network attacker during a network boot, exploit must be built per firmware build, no patched release exists; no exploitation." }
+  - { lead: "GoAhead TLS flaws CVE-2026-115881 and -115884 (FoxIO, advisories 2026-10-12)", reason: "configuration-dependent, embedded-device class, no exploitation; fixed since 6.1.1 (2026-08-02)." }
+  - { lead: "Splunk SVD-2026-1015 (Node.js on Splunk products, 2026-10-28) and SVD-2026-1014", reason: "all products 'Under Investigation', no fixed versions yet; folded into the Node2Shell item as corroboration." }
+  - { lead: "Progress advisory AV26-1098 (Telerik Document Processing, CVE-2026-118035), Craft CMS AV26-1086, HashiCorp AV26-1087, Esri AV26-1088, MongoDB AV26-1078, IBM AV26-1082, Red Hat AV26-1084, Tanium AV26-1097, Mitel OpenScape Endpoint Management (CERT-FR AVI-1404), Adobe Campaign Classic (THN 2026-10-28)", reason: "product lists or low-severity / authenticated issues without exploitation, or no readable primary in this run; none clears the relevance gate." }
+  - { lead: "Citrix NetScaler, Ivanti Connect Secure, BeyondTrust Remote Support, Atlassian CVE-2026-21589, Magento PolyShell, HPE Aruba (developing-story checks)", reason: "vendor pages re-read this run show no revision after the store's last record: Citrix CTX697263 last row 2026-10-27 (already in the entry), BeyondTrust BT26-05 updated 2026-10-15, Ivanti blog 2026-10-13, Atlassian bulletin 2026-10-05, Adobe APSB26-73 last updated 2026-08-11, Sansec research index unchanged, HPE bulletin covered by 2026-10-23 entry." }
+  - { lead: "Palo Alto PAN-OS PHP2Shell hotfixes due 2026-10-29 and 2026-10-30", reason: "no change: advisory JSON timeline's last entry is 2026-10-28T05:15Z; none of the six remaining hotfixes (12.1.4-h13, 10.2.10-h42 due 10-29; 12.1.10-h3, 11.2.4-h23, 11.1.7-h12, 10.2.7-h39 due 10-30) is marked released at 2026-10-29T03:36Z. Re-read at the next fire." }
+  - { lead: "Fortinet withheld advisories (CVEs 2026-11-10)", reason: "no earlier CVE publication; Fortinet's feed has no advisory newer than FG-IR-26-187 (2026-10-26)." }
+
+cross_domain_leads:
+  - { lead: "Volt Typhoon 'Silent Train' (Lumen Black Lotus Labs; BleepingComputer and The Hacker News 2026-10-28): four zero-day campaigns incl. Versa Director CVE-2024-39717, N-able N-central CVE-2025-8875/8876, Cisco Catalyst SD-WAN Controller CVE-2026-20127 and Arista VeloCloud Orchestrator CVE-2026-16812; Lumen's page metadata shows 2026-03-16", owner: "S3", note: "attribution of two store-covered zero-days to Volt Typhoon; Lumen page date conflicts with the Hacker News framing, verify before use" }
+  - { lead: "Huntress: compromised camera-management software (CMS.exe) as initial access, Help Net Security 2026-10-28", owner: "S3/S4", note: "application unidentified by Huntress" }
+  - { lead: "CCCS AL26-028 help-desk vishing campaign", owner: "S2/S3", note: "returned as borderline item 12" }
+  - { lead: "ZDI analysis of PeopleSoft CVE-2026-35273 as three chained flaws (ZDI 2026-10-20, THN 2026-10-28)", owner: "S1/S3", note: "CVE and exploitation (ShinyHunters, KEV) are covered by 2026-06-11 and later entries; ZDI says separate CVE ids per flaw are pending, so a later run should watch for new PeopleSoft CVE ids" }
+
+recipe_notes:
+  - "KEV: the KEV row's shortDescription and notes fields carry information the CISA alert page omits (CVE-2026-46300's row names the PHP2Shell chain); read the row, not only the alert."
+  - "CVE-2026-41709 exploitation sat in a CrowdStrike sector-report blog post (2026-10-28), not in a vulnerability write-up; searching vendor + CVE id in an extended WebSearch surfaced an aggregator (hol.org) whose own source list pointed at it. Per .claude/memory/kev-additions-read-the-cve-record.md the CVE record's references were empty for this CVE (CISA-ADP only), so the CNA reporter credit (Ian Barton of CrowdStrike) was the pivot."
+  - "extract of Veeam KB pages drops the CVE headings; `url` (raw HTML) and a text strip recover CVE ids and fixed builds."
+  - "WatchGuard PSIRT: `extract https://psirt.watchguard.com/` lists all advisories without dates; each CVE page carries date, required configuration, exploitation status, credits and fixed releases."
+  - "NCSC-NL advisory pages read via extract only through the reader fallback this run (credit spent), prefer `ncsc-nl csaf <id>` when the exact JSON is needed."
+
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev + WebFetch (alert page)", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "items 1 and 2; rechecked at 03:36Z" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd.recent exploited and criticals", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "exploitedSince 2026-10-28 for both KEV CVEs; criticals list shows nothing exploited beyond KEV; used as corroboration, not cited" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract of https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest labs post 2026-10-09; intelligence page lists only PHP2Shell, BeyondTrust, Ivanti, Atlassian, Citrix and FortiMail FAQs from earlier days" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (https://www.fortiguard.com/rss/ir.xml, retry once) + extract FG-IR-26-186/187", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-187 (2026-10-26); folded into item 7 as corroboration" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "api (fs._msrc_fetch_strict_json, latestRevisionDate and releaseDate filters)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no exploited or newly released Microsoft security CVE other than Edge/Chromium" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + /json/CVE-<id> + extract of page", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "CVE-2026-111497 (revised 2026-10-28T18:50Z) used in item 7; CVE-2026-109618 last revised 2026-10-28T05:15Z, no new hotfix" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "extract/url/jina all 403; status.connectwise.com via extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "item 9" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "WebFetch (listing)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-14; recipe in the record (extract returns an empty shell) still holds, WebFetch lists dated posts" }
+  - { id: arista-security-advisories, tier: standard, attempted: true, transport: "extract of listing", horizon_hours: 148, in_horizon_items: 0, returned: 0, note: "newest Security Advisory 0201 and 0200 (2026-10-23, eMudhra and PHP), 0199 (VCO CVE-2026-114625, 2026-10-22) all covered; NCSC-NL relayed 0199 as NCSC-2026-0459 on 2026-10-28" }
+  - { id: cccs-alerts, tier: standard, attempted: true, transport: "feed (50 items back to 2026-10-23) + extract of advisory pages", horizon_hours: 145, in_horizon_items: 45, returned: 4, note: "WatchGuard AV26-1094 corroboration (item 4), Veeam AV26-1096 (item 5), TeamViewer AV26-1093 (item 11), AL26-028 (item 12); AL26-027 Brotli folded into item 7; Juniper AV26-1101 unresolved" }
+  - { id: citrix-netscaler-security-bulletins, tier: standard, attempted: true, transport: "feed + extract of CTX697263 and CTX697174", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest security post 2026-10-22 (WAF signatures v186); CTX697263 last revised 2026-10-27, already in the NetScaler PHP2Shell entry" }
+  - { id: splunk-advisories, tier: standard, attempted: true, transport: "extract of advisories archive + SVD-2026-1015", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "SVD-2026-1015 (Node.js) and -1014 (eMudhra) 'Under Investigation'; used as corroboration in item 7" }
+  - { id: trustwave-spiderlabs, tier: standard, attempted: true, transport: "WebFetch (listing)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "in-window posts are the Q3 TTP briefing (2026-10-28, S3) and PHP2Shell (2026-10-22, covered)" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract of listing + 7 CVE pages + scan of 30 rows", horizon_hours: 145, in_horizon_items: 20, returned: 1, note: "item 4 (18 Fireware rows plus Mobile VPN, Dimension and Agent rows dated 2026-10-22/27)" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-21 (CVE-2026-49179 micropatch), outside 122 h" }
+  - { id: calif-codex, tier: standard, attempted: true, transport: "feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16" }
+  - { id: flatt-security, tier: standard, attempted: true, transport: "extract of listing (raw HTML, regex on dates)", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 (already covered LiteLLM)" }
+  - { id: horizon3-ai, tier: standard, attempted: true, transport: "WebFetch listing + extract of CVE-2026-101767 page", horizon_hours: 124, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22 (PHP2Shell exposure); CVE-2026-101767 page (2026-10-20) used as primary in item 6" }
+  - { id: ibm-support-security-bulletins, tier: standard, attempted: true, transport: "no listing transport; NCSC-NL feed and CCCS AV26-1082 checked", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "no IBM item in NCSC-NL's last 20 advisories; CCCS AV26-1082 (2026-10-26) is a product list (QRadar, Guardium, App Connect)" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "bridge url NEWESTa7.stable (reader fallback) + 7.25 CHANGELOG", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "RouterOS 7.25 stable released 2026-10-22 (outside 122 h); changelog mentions only earlier CVE-2026-31431 and CVE-2026-67280" }

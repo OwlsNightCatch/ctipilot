@@ -4,13 +4,13 @@ kind: vulnerability
 title: "CVE-2026-109618 / CVE-2026-109619, Cisco Expressway, Ultra-Reliable Wireless Backhaul, Duo Access Gateway and ISE Portal Builder: Cisco's final PHP2Shell advisory names Expressway 15.5.21 and Duo Access Gateway 3.2.0 as the fixes and knows of no malicious use against its products"
 headline: "Cisco's final PHP2Shell advisory: Expressway needs 15.5.21, Duo Access Gateway 3.2.0; Cisco knows of no malicious use"
 summary: >
-  Cisco's advisory cisco-sa-php-october26-Jj384Daq, final at version 1.8 on 2026-10-27, lists Expressway Series and Expressway Select Series
+  Cisco's advisory cisco-sa-php-october26-Jj384Daq, final at version 1.9 on 2026-10-28, lists Expressway Series and Expressway Select Series
   (fixed release 15.5.21, workaround in the bug record), Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software (fixed
-  release 27.1.1, listed for March 2027, workaround in the bug record), Duo Access Gateway (3.2.0) and ISE Portal Builder (offline for
+  release 27.1.1, listed for November 2026, workaround in the bug record), Duo Access Gateway (3.2.0) and ISE Portal Builder (offline for
   remediation) as affected by the PHP flaws CVE-2026-109618 and CVE-2026-109619. Cisco knows of no malicious use against a Cisco product,
   although CISA added both flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26.
 discovered_at: "2026-10-28T03:50:00Z"
-updated_at: null
+updated_at: "2026-10-29T04:58:00Z"
 event_date: "2026-10-27"
 run_id: 2026-10-28T0256Z-intel
 priority: notable
@@ -30,7 +30,7 @@ cves:
     auth: pre-auth
     status: [cisa-kev, patch-available]
     affected: "Expressway Series and Expressway Select Series, Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software, Duo Access Gateway and Identity Services Engine Portal Builder; the advisory gives no version ranges (its bug records CSCwx37062 and CSCwx37073 carry platform-specific information)"
-    fixed: "Expressway 15.5.21; Ultra-Reliable Wireless Backhaul 27.1.1 (March 2027); Duo Access Gateway 3.2.0; ISE Portal Builder offline for remediation"
+    fixed: "Expressway 15.5.21; Ultra-Reliable Wireless Backhaul 27.1.1 (November 2026); Duo Access Gateway 3.2.0; ISE Portal Builder offline for remediation"
   - id: CVE-2026-109619
     cvss: "n/a"
     epss: null
@@ -39,11 +39,11 @@ cves:
     auth: pre-auth
     status: [cisa-kev, patch-available]
     affected: "Expressway Series and Expressway Select Series, Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software, Duo Access Gateway and Identity Services Engine Portal Builder; the advisory gives no version ranges (its bug records CSCwx37062 and CSCwx37073 carry platform-specific information)"
-    fixed: "Expressway 15.5.21; Ultra-Reliable Wireless Backhaul 27.1.1 (March 2027); Duo Access Gateway 3.2.0; ISE Portal Builder offline for remediation"
+    fixed: "Expressway 15.5.21; Ultra-Reliable Wireless Backhaul 27.1.1 (November 2026); Duo Access Gateway 3.2.0; ISE Portal Builder offline for remediation"
 sources:
   - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq"
-    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.8)"
-    date: "2026-10-27"
+    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.9)"
+    date: "2026-10-28"
     role: primary
   - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t"
     publisher: "Cisco PSIRT (cisco-sa-vcs-static-cred-hr7EWZ8t, Expressway Series Remote Code Execution Vulnerability)"
@@ -60,13 +60,13 @@ sources:
 closed_sources: []
 evidence:
   - quote: "The Cisco PSIRT is not aware of any malicious use of these vulnerabilities against any Cisco product."
-    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.8)"
+    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.9)"
     source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq"
   - quote: "If a product is not listed within this advisory, Cisco's review indicates that the product is not affected by this vulnerability."
-    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.8)"
+    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.9)"
     source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq"
   - quote: "For this product, the attacker must be authenticated as an administrator to exploit this vulnerability."
-    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.8)"
+    publisher: "Cisco PSIRT (cisco-sa-php-october26-Jj384Daq, version 1.9)"
     source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq"
 verification: single-source
 sourcing_note: >
@@ -86,16 +86,27 @@ classification:
 watchlist_hit: false
 actions:
   - "Upgrade every Cisco Expressway-C, Expressway-E and Expressway Select unit to 15.5.21, including units already moved to X15.5.20 for CVE-2026-76466, which Cisco's table does not name as the PHP2Shell fix, and until then apply the workaround in bug CSCwx37062; take any Duo Access Gateway to 3.2.0."
-updates: []
+updates:
+  - at: "2026-10-29T04:58:00Z"
+    run_id: 2026-10-29T0255Z-intel
+    type: update
+    summary: >
+      Cisco revised the advisory to version 1.9 on 2026-10-28 and moved the fixed-release date for Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software 27.1.1 from March 2027 to
+      November 2026; the earlier statement that there is no fixed release before March 2027 is replaced.
+    fields: [summary, updated_at, cves, sources, evidence, body]
 migrated_from: null
 ---
 
-Cisco's advisory cisco-sa-php-october26-Jj384Daq, published on 2026-10-21 and final at version 1.8 on 2026-10-27, lists Expressway, Ultra-Reliable Wireless Backhaul, Duo Access Gateway and ISE Portal Builder as affected by CVE-2026-109618 and CVE-2026-109619, the PHP flaws behind PHP2Shell ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). Expressway Series and Expressway Select Series (bug CSCwx37062) have fixed release 15.5.21 and a workaround described in the bug record; Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software (bug CSCwx37073) have 27.1.1, listed for March 2027, and a workaround, and there the attacker must be authenticated as an administrator, which lowers the CVSS 3.1 score to 6.6; Duo Access Gateway is fixed in 3.2.0; and ISE Portal Builder is offline for remediation ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). The advisory gives no affected-version ranges and no workaround steps; its bug records carry platform-specific information, workarounds and fixed releases, and a product it does not list is, in Cisco's review, not affected ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)).
+Cisco's advisory cisco-sa-php-october26-Jj384Daq, published on 2026-10-21 and final at version 1.9 on 2026-10-28, lists Expressway, Ultra-Reliable Wireless Backhaul, Duo Access Gateway and ISE Portal Builder as affected by CVE-2026-109618 and CVE-2026-109619, the PHP flaws behind PHP2Shell ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). Expressway Series and Expressway Select Series (bug CSCwx37062) have fixed release 15.5.21 and a workaround described in the bug record; Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software (bug CSCwx37073) have 27.1.1, listed for November 2026, and a workaround, and there the attacker must be authenticated as an administrator, which lowers the CVSS 3.1 score to 6.6; Duo Access Gateway is fixed in 3.2.0; and ISE Portal Builder is offline for remediation ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). The advisory gives no affected-version ranges and no workaround steps; its bug records carry platform-specific information, workarounds and fixed releases, and a product it does not list is, in Cisco's review, not affected ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)).
 
-Cisco says it is aware that a public announcement is available and knows of no malicious use of the flaws against any Cisco product ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)); CISA added both flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26 ([CISA KEV, 2026-10-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). For Expressway the PHP fix is 15.5.21 ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)), while the release Cisco names for the unauthenticated root command execution on clustered units, CVE-2026-76466, is X15.5.20 ([Cisco PSIRT, 2026-10-21](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t)).
+Cisco says it is aware that a public announcement is available and knows of no malicious use of the flaws against any Cisco product ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)); CISA added both flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26 ([CISA KEV, 2026-10-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). For Expressway the PHP fix is 15.5.21 ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)), while the release Cisco names for the unauthenticated root command execution on clustered units, CVE-2026-76466, is X15.5.20 ([Cisco PSIRT, 2026-10-21](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t)).
 
-**Exposure:** every Expressway Series and Expressway Select unit and every Duo Access Gateway not on a release Cisco lists as fixed (15.5.21 and 3.2.0), since Cisco gives no affected-version ranges; the advisory names no version-check command and no component that runs the PHP; its bug records CSCwx37062 and CSCwx37073 carry platform-specific information ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)).
+**Exposure:** every Expressway Series and Expressway Select unit and every Duo Access Gateway not on a release Cisco lists as fixed (15.5.21 and 3.2.0), since Cisco gives no affected-version ranges; the advisory names no version-check command and no component that runs the PHP; its bug records CSCwx37062 and CSCwx37073 carry platform-specific information ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)).
 
-**Detection:** Cisco publishes no indicator and reports no attack on its products, but lists Snort rules 67359 and 67360 as action links for the advisory ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)); beyond that, CISA's PHP alert advises monitoring for PHP worker processes launching shells or downloading tools ([CISA, 2026-10-21](https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching)), which on these products would be processes started by the web worker account (an inference, since Cisco does not describe how they run PHP).
+**Detection:** Cisco publishes no indicator and reports no attack on its products, but lists Snort rules 67359 and 67360 as action links for the advisory ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)); beyond that, CISA's PHP alert advises monitoring for PHP worker processes launching shells or downloading tools ([CISA, 2026-10-21](https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching)), which on these products would be processes started by the web worker account (an inference, since Cisco does not describe how they run PHP).
 
-**Defender takeaway:** move Expressway to 15.5.21 and Duo Access Gateway to 3.2.0, the fixed releases the table names ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)); an Expressway already upgraded to X15.5.20 for the clustered-device flaw ([Cisco PSIRT, 2026-10-21](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t)) is not named as fixed in the PHP table, which lists only 15.5.21 (an inference from the table, not a Cisco statement), so apply the bug record's workaround until 15.5.21 is installed ([Cisco PSIRT, 2026-10-27](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). Ultra-Reliable Wireless Backhaul has no fixed release before March 2027, so its workaround is the control until then.
+**Defender takeaway:** move Expressway to 15.5.21 and Duo Access Gateway to 3.2.0, the fixed releases the table names ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)); an Expressway already upgraded to X15.5.20 for the clustered-device flaw ([Cisco PSIRT, 2026-10-21](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t)) is not named as fixed in the PHP table, which lists only 15.5.21 (an inference from the table, not a Cisco statement), so apply the bug record's workaround until 15.5.21 is installed ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). Ultra-Reliable Wireless Backhaul has no fixed release before November 2026, so its workaround is the control until then.
+
+## Update — 2026-10-29T04:58:00Z
+
+Cisco published version 1.9 of the advisory on 2026-10-28 to update the fix availability date for Ultra-Reliable Wireless Backhaul and Unified Industrial Wireless Software: release 27.1.1 is now listed for November 2026 instead of March 2027, and the workaround in bug CSCwx37073 remains the control until it ships ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)). The other rows are unchanged, and Cisco still knows of no malicious use against its products ([Cisco PSIRT, 2026-10-28](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-php-october26-Jj384Daq)).
