@@ -175,12 +175,11 @@ TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
     # the reader; the legacy www.censys.io/blog/rss.xml is 404. Re-probe each
     # run and drop it from this set the moment the origin relaxes.
     "censys-blog",
-    # ec-digital-strategy-newsroom (2026-10-24): HTTP 403 (CloudFront) on the
-    # direct transport, `extract` (served through the reader) and WebFetch on
-    # 2026-10-22, 2026-10-23 and 2026-10-24 (S2 and the health probe). NIS2 and
-    # CRA developments reach the pipeline through ENISA, CERT-EU and the national
-    # authorities. Re-probe each run and drop it the moment the origin relaxes.
-    "ec-digital-strategy-newsroom",
+    # sygnia (2026-10-31): www.sygnia.co answers 403 on the direct fetch, the
+    # feed (/feed/) and /sitemap.xml, trafilatura finds no body and the reader
+    # relays the upstream challenge; WebFetch was refused on 2026-10-29. Re-probe
+    # each run and drop it from this set the moment a transport reads it again.
+    "sygnia",
     # ssd-disclosure (2026-09-30): SiteGround's sgcaptcha answers HTTP 202 with
     # a challenge page to the direct fetch, the bridge, the funded jina reader
     # (8 of 8 tries with 10 live keys) and, after one cached read, the

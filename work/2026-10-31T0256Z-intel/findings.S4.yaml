@@ -1,0 +1,506 @@
+# work/2026-10-31T0256Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-10-31T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-31T02:57:59Z
+ended_at: 2026-10-31T03:23:31Z
+duration_seconds: 1532
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 21
+  bridge_fetches: 90
+items:
+  - title: "Binance: about $6.3 billion taken from exchange hot wallets in the largest crypto theft on record; Binance's preliminary finding is a compromised DevOps engineer's laptop, TRM Labs and Chainalysis attribute it to North Korea's TraderTraitor"
+    sources:
+      - { url: "https://www.binance.com/en/support/announcement/detail/c5a8729a97ac486d963784d96c5642d7", publisher: "Binance (Security Incident Update, published 2026-10-30 02:23 UTC, updated 11:36 UTC)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history", publisher: "TRM Labs (independent on-chain tracing and attribution)", date: "2026-10-30", role: "primary" }
+      - { url: "https://blockaid.io/blog/binance-55b-hack-using-advanced-ai-models-blockaid-detects-the-biggest-theft-in-crypto-history", publisher: "Blockaid (independent on-chain analysis; vendor of a signing-policy product)", date: "2026-10-29", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/", publisher: "BleepingComputer (relays Binance's and Chainalysis's statements on X)", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://piyolog.hatenadiary.jp/entry/2026/10/30/230303", publisher: "Piyolog (Japanese timeline aggregating Binance, TRM, Blockaid, issuers)", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/hacker-klauen-6%2C3-milliarden-dollar-bei-binance-20261030", publisher: "Inside IT (Swiss trade press)", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://www.srf.ch/news/wirtschaft/weltgroesste-kryptoboerse-wie-konnten-die-taeter-den-binance-raub-durchfuehren", publisher: "SRF (Swiss public broadcaster)", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (feed fetch 2026-10-31, item https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/) → pivot: piyolog, URL https://piyolog.hatenadiary.jp/entry/2026/10/30/230303 (timeline with every primary link) → primary: Binance announcement, URL https://www.binance.com/en/support/announcement/detail/c5a8729a97ac486d963784d96c5642d7 (extract hit a CAPTCHA; read with WebFetch) → primary: TRM Labs, URL https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history → corroborating: Blockaid, URL https://blockaid.io/blog/binance-55b-hack-using-advanced-ai-models-blockaid-detects-the-biggest-theft-in-crypto-history → Swiss press: Inside IT and SRF (from the Inside IT RSS https://www.inside-it.ch/rss.xml and the SRF RSS https://www.srf.ch/news/bnf/rss/1646)"
+    summary: |
+      Binance, the largest crypto exchange by volume, lost about $6.3 billion from hot wallets on ten blockchains on 2026-10-29, most of it within about 20 minutes from 20:05 UTC (TRM Labs: $6.36 billion at the time of theft, about four times the $1.5 billion Bybit theft of February 2025). Facts from Binance's own announcement (published 2026-10-30, updated the same day): its initial investigation suggests a compromised DevOps engineer's laptop, that the attacker reached a service container and submitted unauthorized withdrawal transactions, that it has found no evidence of a wallet private-key leak, that the estimated impact is about $6.3 billion with about $3 billion frozen on-chain, that withdrawals are suspended while security checks finish (the announcement's update says deposits are unaffected; BleepingComputer's earlier wording says deposits and withdrawals), that the affected address authorisation was revoked, that losses will be covered from its SAFU fund and company funds, and that a technical post-mortem follows once facts are verified. Binance's co-CEO said (per BleepingComputer) the attacker did not simply use one engineer's permissions and that the attack was more complex than a single action, and Binance said it "uncovered additional points of breach" (X posts, relayed by BleepingComputer and Inside IT; not fetched directly). This goes beyond what the 2026-10-30 fire held: that run dropped the item as a preliminary 'laptop' finding with no attribution.
+
+      Independent on-chain analysis (TRM Labs, Blockaid) describes the mechanics. On Ethereum the attacker submitted one transaction carrying 50 EIP-7702 authorizations signed by a Binance hot wallet's key at consecutive transaction counts, so that one was valid when executed; the wallet was thereby delegated to an attacker-written sweeper contract, which drained it about three and a half minutes later and kept draining new deposits for hours because the delegation stayed in place. On the other nine chains, Binance wallets of different key types sent funds to the attacker through ordinary signed transfers inside the same half hour. TRM assesses (assessment, not a Binance statement) that the most likely explanation is that the attacker could make Binance's hot-wallet signing system sign transactions of its choosing across chains. Preparation began at least 36 hours earlier: a Tornado Cash-funded operator wallet, code tested and rehearsed on attacker-owned wallets. Tether, Circle, Ripple, World Liberty Financial and the Arbitrum Security Council froze about $2.7 billion; TRM says the attacker still controls about $2.4 billion in assets no issuer can freeze.
+
+      Attribution is a third-party assessment: TRM Labs attributes the theft to North Korea's TraderTraitor with high confidence, citing on- and off-chain intelligence and similarities to the Bybit and KelpDAO thefts (small mixer withdrawals funding the operator wallet, early staging, signatures prepared in advance); BleepingComputer reports Chainalysis stating the same with a high degree of confidence. Binance has not attributed the theft and says it is working with law enforcement; SRF notes the identity is unconfirmed. The initial-access technique against the engineer's laptop is not described by any source. PD-11 basis: (a) global scale, the largest crypto theft on record, with Swiss trade press and SRF covering it, and (b) a stated access path, an engineer endpoint with reach into a service that can request privileged signatures, transferable to any organization whose engineers' endpoints can reach payment, signing or deployment services. The store already carries the Bitget theft of September 2026 (same TraderTraitor/Jade Sleet alias set) as a precedent for a crypto-exchange theft entry.
+    region_nexus: "global; no Swiss victim named by any source; Swiss trade press and public broadcaster cover it"
+    primary_sector_nexus: "indirect: transferable access path (engineer endpoint to a service container able to request privileged signatures); actor family TraderTraitor is the one already tracked in the store for Bitget"
+    sector: "finance / crypto-asset exchange"
+    cves: []
+    techniques: [T1657]
+    affected_products: []
+    entity_keys: ["actor:jade-sleet"]
+    new_entities:
+      - { key: "incident:binance-exchange-theft-2026-10", type: incident, name: "Binance exchange theft (October 2026)", aliases: ["Binance hot wallet hack", "Binance security incident of 2026-10-29"], summary: "Theft of about $6.3 billion (TRM Labs: $6.36 billion) from Binance hot wallets on ten blockchains on 2026-10-29; Binance's preliminary finding is a compromised DevOps engineer's laptop that gave access to a service container able to submit withdrawals, with no evidence of a private-key leak; TRM Labs and Chainalysis attribute it to TraderTraitor, Binance has not (Binance, TRM Labs, 2026-10-30)." }
+    relation_suggestions:
+      - { subject: "incident:binance-exchange-theft-2026-10", object: "actor:jade-sleet", basis: "TRM Labs attributes the theft to North Korea's TraderTraitor with high confidence and BleepingComputer reports Chainalysis stating the same; Binance itself has not attributed it (TRM Labs and BleepingComputer, 2026-10-30). The registry carries TraderTraitor as an alias of actor:jade-sleet." }
+    verification: MULTI-SOURCE
+    sourcing_note: "Binance's announcement is the victim's own statement for amount, containment and the preliminary access path (read with WebFetch and, for literal quotes, from the page's public CMS JSON at https://www.binance.com/bapi/composite/v1/public/cms/article/detail/query?articleCode=c5a8729a97ac486d963784d96c5642d7, because the HTML page serves a CAPTCHA to extract); TRM Labs and Blockaid are independent on-chain analyses; attribution rests on blockchain-intelligence firms (TRM Labs, Chainalysis), not on Binance or a government."
+    confidence: HIGH
+    classification_hint: { reliability: B, credibility: 2 }
+    priority_hint: notable
+    novelty: new
+    evidence:
+      - quote: "Binance, the world's largest crypto exchange, has linked the theft of about $6.3 billion in cryptocurrency to a DevOps engineer's compromised laptop."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/"
+      - quote: "The crypto exchange said the access let attackers submit unauthorized withdrawal transactions after they accessed a service container, and it hasn't yet found evidence of a leaked wallet private key."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/"
+      - quote: "the attacker did not simply use one engineer's permissions, and this was not a single 'one-click' action. It involved a more complex attack process."
+        attribution: "BleepingComputer (quoting Binance Co-CEO Richard Teng)"
+        source_url: "https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/"
+      - quote: "In TRM's assessment, this points to a compromise of Binance's hot wallet signing infrastructure."
+        attribution: "TRM Labs"
+        source_url: "https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history"
+      - quote: "TRM attributes this attack to TraderTraitor, North Korea’s premier hacking unit."
+        attribution: "TRM Labs"
+        source_url: "https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history"
+      - quote: "Binance's initial investigation suggests that the security incident may involve a compromised DevOps engineer’s laptop, which allowed an attacker to gain access to a service container and submit unauthorized withdrawal transactions."
+        attribution: "Binance (Security Incident Update; text read from the page's public CMS JSON because extract hits a CAPTCHA)"
+        source_url: "https://www.binance.com/en/support/announcement/detail/c5a8729a97ac486d963784d96c5642d7"
+      - quote: "We have found no evidence of any wallet private key leak."
+        attribution: "Binance (Security Incident Update)"
+        source_url: "https://www.binance.com/en/support/announcement/detail/c5a8729a97ac486d963784d96c5642d7"
+      - quote: "The estimated total impact sits at around $6.3B."
+        attribution: "Binance (Security Incident Update)"
+        source_url: "https://www.binance.com/en/support/announcement/detail/c5a8729a97ac486d963784d96c5642d7"
+    exposure: "None stated for the constituency. The access path is relevant to any organization where an engineer's endpoint can reach a service that acts on keys, payments or deployments; for custody operators, EVM hot wallets that are plain key-controlled accounts and can be delegated through EIP-7702."
+    detection: "Telemetry class: signing and payment service request logs checked against a policy outside the service (destination allowlists, value caps), and wallet-code monitoring (an address that should hold no code turning into a delegation pointer; Blockaid says the delegation was visible on-chain for 3 minutes 24 seconds before the sweep and that its engine classified the delegation transaction as malicious; TRM advises alerting on any unexpected EIP-7702 delegation and treating a request for many authorizations over a range of transaction counts as an indicator). On the engineering side: EDR telemetry from engineer laptops plus audit logs of sessions into service containers from engineer identities. Post-incident check stated by Blockaid: clear a delegation (a new authorization pointing at the zero address) before rotating keys, because the delegation belongs to the address and survives key rotation."
+    defender_takeaway: "Source-grounded (TRM): separate signing infrastructure and approval paths by chain and wallet tier, reject EIP-7702 authorizations unless expected, keep a tested revocation path. Analyst reading: engineer endpoints that can reach services which act on keys belong in the privileged tier, and a signature check inside the same trust domain as the signer does not bound the loss."
+    extended_notes: |
+      Re-check for Binance's promised technical post-mortem (it will say how the laptop was compromised and what the additional points of breach are) and for any government attribution (FBI named TraderTraitor for Bybit). The loss figure moved from $5.7 billion to $6.3 billion within a day and TRM's $6.36 billion is valued at theft time. The previous fire's reopen trigger (post-mortem names the vector) is not met, but the new facts (attribution by two blockchain-intelligence firms, 'additional points of breach', independent signing-infrastructure analysis, Swiss press coverage) change the PD-11 picture. The Bitget entry of 2026-09-29 (actor:jade-sleet, north-korea-nexus) is the closest precedent in the store.
+
+  - title: "Berlin Landesnetz: the attack-detection licences covered only 5 percent of devices, and neither the entry endpoint nor the servers data left from were among them (rbb24)"
+    sources:
+      - { url: "https://www.rbb24.de/politik/beitrag/2026/10/berlin-hackerangriff-verwaltung-darknet-rhysida-daten-senatorin-bonde.html", publisher: "rbb24 Recherche (Rundfunk Berlin-Brandenburg)", date: "2026-10-21", role: "primary" }
+      - { url: "https://www.presseportal.de/pm/51580/6374775", publisher: "rbb (press release, same findings)", date: "2026-10-21", role: "corroborating" }
+      - { url: "https://borncity.com/blog/2026/10/31/neue-erkenntnisse-im-cybervorfall-auf-senatsverwaltung-berlins/", publisher: "Borns IT- und Windows-Blog (fresh in-window relay of the rbb24 findings)", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: borncity, URL https://borncity.com/blog/2026/10/31/neue-erkenntnisse-im-cybervorfall-auf-senatsverwaltung-berlins/ (RSS https://borncity.com/blog/feed/) → primary: rbb24 Recherche, URL https://www.rbb24.de/politik/beitrag/2026/10/berlin-hackerangriff-verwaltung-darknet-rhysida-daten-senatorin-bonde.html → primary mirror: rbb press release, URL https://www.presseportal.de/pm/51580/6374775"
+    summary: |
+      rbb24 Recherche (2026-10-21), citing replies from the Senate Department for Urban Development, reports that the attack-detection system introduced in 2026 was licensed for only five percent of all devices, that extending it was 'not possible for financial reasons', and that neither the endpoint identified as the criminals' entry point nor the servers from which data later left were covered by it. rbb24 also reports that IT-security funding was only partly available in 2024 although the state's information-security guideline has required adequate staffing and funds since 2017, that Berlin planned in 2023 to expand detection and containment, and that the departments' own affected data included unstructured files from shared and personal directories, among them identity-card copies of employees and the transport senator (department-confirmed). BSI had warned of ClickFix at least since March 2025, publicly and in daily situation reports that also went to the states; rbb24 says it remains unanswered whether those warnings reached the two departments, because Berlin-CERT (at the state IT service centre) informs agency security officers and each agency implements measures itself. The Borns blog repeats these findings on 2026-10-30 with the same numbers; it adds nothing of its own.
+
+      Delta against the existing entry: the entry records the phishing-click vector, the BSI confirmation and the leak contents, but not the control gap (detection licensed for 5 percent, the compromised endpoint and exfiltration servers outside it), the split of responsibility between a central CERT and agencies, or the data-hygiene finding (identity documents in shared directories). Contradiction to hold: the store records BSI's own confirmation (Mastodon post and BITS advisory, reported by heise) that TerminalFix was the vector, while rbb24 writes that BSI did not confirm to it whether the Berlin attack followed that pattern. Recency: the rbb24 primary is 10 days old; only the Borns relay is inside the window.
+    region_nexus: "Germany (DACH); federated state administration with shared network, transferable to Swiss cantonal and communal administrations"
+    primary_sector_nexus: "direct analogue: public administration with distributed responsibility between a central CERT and individual agencies"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.004, T1566]
+    affected_products: []
+    entity_keys: ["incident:berlin-landesnetz-compromise-2026-08", "actor:rhysida", "campaign:terminalfix-clickfix-reverse-tunnel-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    sourcing_note: "The facts come from rbb24 Recherche quoting the Senate Department's own written replies (victim-side statements); the press release is the same reporting, and the Borns blog relays it, so this is one reporting line plus the department's statements, not three independent sources."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    priority_hint: routine
+    novelty: "update-of:2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector"
+    borderline: true
+    borderline_reason: "Genuine delta with a transferable control-gap lesson for federated public administrations, but the primary (rbb24, 2026-10-21) is 10 days outside the window and only the Borns relay is fresh; also contains a nuance that conflicts with the entry's 'BSI confirmed TerminalFix' statement. Main agent decides; if shipped, an update record on the existing entry."
+    evidence:
+      - quote: "Die vorhandenen Lizenzen reichten lediglich für fünf Prozent aller Geräte, teilte die Senatsverwaltung für Stadtentwicklung dem rbb mit."
+        attribution: "rbb24 Recherche"
+        source_url: "https://www.rbb24.de/politik/beitrag/2026/10/berlin-hackerangriff-verwaltung-darknet-rhysida-daten-senatorin-bonde.html"
+      - quote: "Auch die konkret vom Angriff betroffenen Systeme gehörten nicht zu diesen fünf Prozent: Weder das als Einstiegspunkt für Kriminelle identifizierte und untersuchte Endgerät noch die Server, von denen später Daten abflossen, waren von der Angriffserkennung erfasst."
+        attribution: "rbb24 Recherche"
+        source_url: "https://www.rbb24.de/politik/beitrag/2026/10/berlin-hackerangriff-verwaltung-darknet-rhysida-daten-senatorin-bonde.html"
+      - quote: "Nach Angaben des BSI gab es solche Warnungen wiederholt mindestens seit März 2025"
+        attribution: "rbb24 Recherche"
+        source_url: "https://www.rbb24.de/politik/beitrag/2026/10/berlin-hackerangriff-verwaltung-darknet-rhysida-daten-senatorin-bonde.html"
+    exposure: "Any public administration that licenses endpoint detection for a subset of devices or leaves servers outside it; the Berlin facts say the entry endpoint and the exfiltration servers were both outside the licensed 5 percent."
+    detection: "Coverage telemetry first: a maintained map of which endpoints and servers report to the detection platform, compared against the asset inventory, with servers holding shared and personal file directories prioritised; the sources give no detection of the intrusion itself (the IT provider noticed large data transfers, per the Borns blog's earlier reporting)."
+    defender_takeaway: "Analyst reading: licence count is not coverage; decide which hosts must be covered by risk (entry-prone user endpoints and file servers that hold unstructured personal data) and measure it, and make sure warnings that reach a central CERT have a named path to every agency that must act."
+    extended_notes: |
+      Berlin's August incident is also covered in the registry (incident:berlin-landesnetz-compromise-2026-08). rbb24's reporting date and the Borns post both exist on the same day-level story; the Borns post also links a CCC talk on the Berlin hack (not fetched).
+
+  - title: "Booking-platform suppliers RMS Cloud and feratel Deskline: attackers pulled guest booking data in the same week and phished guests over WhatsApp, SMS and email; feratel says stolen interface-partner credentials were used"
+    sources:
+      - { url: "https://rmscloud.statuspage.io/", publisher: "RMS Cloud (status page incident updates, 2026-10-28 to 2026-10-30)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.abc.net.au/news/2026-10-27/rms-holiday-booking-software-hacked/107315194", publisher: "ABC News Australia", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://www.cyberdaily.au/security/14364-aussie-holiday-park-operators-compromised-by-rms-cloud-third-party-breach", publisher: "Cyber Daily", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://borncity.com/blog/2026/10/29/cybervorfall-im-umfeld-der-tiroler-plattform-feratel-whatsapp-phishing-bei-reisebuchungen/", publisher: "Borns IT- und Windows-Blog (relays feratel's customer notice and the Tourismusverband Tirol notice, forwarded by a reader)", date: "2026-10-29", role: "primary" }
+      - { url: "https://support.clock-software.com/en/support/solutions/articles/9000171707", publisher: "Clock Software support centre (Deskline 3.0 tourist-tax interface: country selectable Austria, Germany, Switzerland, Liechtenstein)", date: "2026-08-24", role: "background" }
+      - { url: "https://www.tageskarte.io/hotellerie/detail/maritim-informiert-gaeste-ueber-datendiebstahl-bei-ihotelier.html", publisher: "Tageskarte (Maritim / Amadeus iHotelier, 2026-09-11 discovery)", date: "2026-09-23", role: "background" }
+    discovery_trace: "first seen at: cyberdaily-au, URL https://www.cyberdaily.au/security (extract; item https://www.cyberdaily.au/security/14364-aussie-holiday-park-operators-compromised-by-rms-cloud-third-party-breach) and borncity, URL https://borncity.com/blog/feed/ (item https://borncity.com/blog/2026/10/29/cybervorfall-im-umfeld-der-tiroler-plattform-feratel-whatsapp-phishing-bei-reisebuchungen/) → primary: RMS Cloud status page, URL https://rmscloud.statuspage.io/ → corroborating: ABC, URL https://www.abc.net.au/news/2026-10-27/rms-holiday-booking-software-hacked/107315194 → pivot (Swiss use of the Deskline interface): WebSearch ('feratel Deskline Schweiz Datenabfluss Buchungsdaten WhatsApp Betrug Schnittstellenzugangsdaten') → Clock Software, URL https://support.clock-software.com/en/support/solutions/articles/9000171707 → background: Tageskarte, URL https://www.tageskarte.io/hotellerie/detail/maritim-informiert-gaeste-ueber-datendiebstahl-bei-ihotelier.html (from WebSearch 'Amadeus Zugriff Reservierungsdaten Lufthansa Swiss Austrian Passagiere Datenvorfall Oktober 2026')"
+    summary: |
+      Two accommodation-software suppliers disclosed intrusions within days of each other, both followed by phishing of guests that quotes genuine booking details. RMS Cloud (property-management and booking software for more than 6,000 hotels, holiday parks and apartments worldwide, per ABC) says on its status page that on Monday 2026-10-26 it identified unauthorised access to a limited part of its environment, that a subset of guest reservation information (contact information and reservation details) is involved, that credit-card and payment details are not, and that unknown actors are sending phishing by email, SMS and WhatsApp that quotes reservation data and asks guests to confirm payment details; Cyber Daily adds that RMS began issuing new credentials to its integration partners on 2026-10-28, and the status page (2026-10-30) says it notified the Australian Cyber Security Centre, the Australian Information Commissioner and the National Office of Cyber Security.
+
+      For feratel (Tyrol, operator of the Deskline destination and booking platform), the only source is a customer notice relayed by the Borns blog, so this part is single-source: feratel says there is no indication of a break-in into its own systems, that an attacker obtained the Deskline interface access credentials of an interface partner through a third-party system and misused them to pull booking data, that the retrieval ran from 2026-10-25 23:00 to 2026-10-26 01:15, that the data covers bookings with future arrival entered through selected sales channels (name, address, phone, e-mail, travel dates, booked property, price, payment status; no card data), and that the fraud messages seen so far concern the 'Internet' sales channel. Feratel offers MFA for its WebClient and ExpertClient portals as a measure it says is unrelated to the incident; the Tyrolean tourism association reset all passwords in the feratel web client and removed the telephone-number field from the portal. Which interface partner lost the credentials, and through which third-party system, is not stated.
+
+      Pattern, as an assessment: bulk pulls of booking data through supplier or integration-partner access followed by payment-confirmation lures over WhatsApp now appear at several booking platforms in 2026: Amadeus iHotelier (unusual API activity found 2026-09-11, Maritim notified 8,716 guests), Camping.Care (already in the store as the TCS camping entry), RMS Cloud and feratel Deskline. No source ties the incidents to one actor. Swiss exposure: Clock Software's Deskline 3.0 connector lets operators choose Switzerland as the country, and Swiss trade press documented the WhatsApp fraud with real booking data from May 2026 (search results, not fetched); no Swiss destination or RMS customer is named for these two incidents.
+    region_nexus: "Austria and Australia as named victims, global customer bases; Switzerland plausible through Deskline users and the booking-data fraud wave already seen at TCS campsites, but no Swiss customer is named"
+    primary_sector_nexus: "indirect: communal tourism offices and public campgrounds use such platforms; Born describes Deskline as digitising guest registration and tourist-levy settlement for operators and municipalities"
+    sector: "hospitality / tourism (supplier compromise)"
+    cves: []
+    techniques: [T1078, T1199, T1213, T1566, T1684.001]
+    affected_products: ["RMS Cloud", "feratel Deskline"]
+    entity_keys: ["incident:camping-care-tcs-camping-data-theft-2026-10", "product:camping-care"]
+    new_entities:
+      - { key: "incident:rms-cloud-booking-data-phishing-2026-10", type: incident, name: "RMS Cloud booking-data incident (October 2026)", aliases: ["RMS global incident"], summary: "Unauthorised access to a limited part of the RMS Cloud environment identified on 2026-10-26, involving guest contact and reservation data and followed by WhatsApp, SMS and email phishing quoting genuine bookings; integration-partner credentials were reissued (RMS Cloud status page, Cyber Daily, 2026-10-28 to 2026-10-30)." }
+      - { key: "incident:feratel-deskline-interface-credentials-2026-10", type: incident, name: "feratel Deskline interface-credential abuse (October 2026)", aliases: ["feratel Datenvorfall"], summary: "feratel says an attacker obtained an interface partner's Deskline access credentials via a third-party system and pulled booking data between 2026-10-25 23:00 and 2026-10-26 01:15, followed by WhatsApp phishing of guests (feratel customer notice, relayed by the Borns blog, 2026-10-29)." }
+      - { key: "product:rms-cloud", type: product, name: "RMS Cloud", aliases: [], summary: "Cloud property-management and booking software used by more than 6,000 hotels, holiday parks and apartments worldwide (ABC News Australia, 2026-10-27)." }
+      - { key: "product:feratel-deskline", type: product, name: "feratel Deskline", aliases: ["Deskline 3.0"], summary: "Destination management, booking and tourist-levy platform of the Tyrolean supplier feratel media technologies, with an interface for property-management systems that lists Austria, Germany, Switzerland and Liechtenstein (Clock Software support centre)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    sourcing_note: "RMS Cloud side: vendor status page plus two independent news reports. feratel side: single source (customer notice relayed by a blog, not independently confirmed by feratel's own site, which was not found); stated as feratel's account."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 3 }
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "Supplier-credential abuse across two booking platforms in one week with a Swiss precedent already in the store (TCS / Camping.Care), but no Swiss customer is named at either vendor and the feratel half is single-source via a blog; main agent decides between a short cluster entry, a changelog record on the Camping.Care entry, or a drop."
+    evidence:
+      - quote: "On Monday, 26 October 2026, RMS identified unauthorised access to a limited part of its environment."
+        attribution: "RMS Cloud"
+        source_url: "https://rmscloud.statuspage.io/"
+      - quote: "Credit card and payment details are not involved."
+        attribution: "RMS Cloud"
+        source_url: "https://rmscloud.statuspage.io/"
+      - quote: "The next day, RMS Cloud began issuing new credentials to its integration partners, as well as providing assistance to complete the process."
+        attribution: "Cyber Daily"
+        source_url: "https://www.cyberdaily.au/security/14364-aussie-holiday-park-operators-compromised-by-rms-cloud-third-party-breach"
+      - quote: "Ein Angreifer hat über ein Drittsystem die Deskline-Schnittstellenzugangsdaten eines Schnittstellenpartners erlangt und diese missbräuchlich zum Abruf von Buchungsdaten verwendet."
+        attribution: "feratel (customer notice, via Borns IT- und Windows-Blog)"
+        source_url: "https://borncity.com/blog/2026/10/29/cybervorfall-im-umfeld-der-tiroler-plattform-feratel-whatsapp-phishing-bei-reisebuchungen/"
+      - quote: "Der bislang festgestellte Datenabruf erfolgte zwischen dem 25. Oktober 2026, 23:00 Uhr, und dem 26. Oktober 2026, 01:15 Uhr."
+        attribution: "feratel (customer notice, via Borns IT- und Windows-Blog)"
+        source_url: "https://borncity.com/blog/2026/10/29/cybervorfall-im-umfeld-der-tiroler-plattform-feratel-whatsapp-phishing-bei-reisebuchungen/"
+    exposure: "Operators, municipalities and tourism bodies whose guest or booking data sits in RMS Cloud or in a feratel Deskline instance reachable by interface partners (property-management systems, channel managers); guests with future stays are the phishing targets."
+    detection: "Telemetry class: supplier and integration API access logs for bulk reservation-list pulls by one integration credential outside its usual pattern (feratel's pull was a window of about two hours overnight), plus a guest-side signal: unsolicited WhatsApp, SMS or e-mail that quotes a genuine booking and asks to confirm payment. Post-incident check: the credentials of every integration partner, not only user passwords, were reissued by RMS; feratel and the tourism association reset portal passwords."
+    triage: "A guest message that quotes the real property, dates and price is not proof of a compromise at the property itself; the discriminators in the sources are the payment-confirmation request over WhatsApp, SMS or e-mail and a link to a payment page, whereas a property's own channel would not ask for card data over a messenger (RMS: 'RMS will never ask you or your guests for card details or payment through WhatsApp')."
+    defender_takeaway: "Analyst reading: inventory which booking and registration platforms hold guest data for your facilities (campgrounds, event or tourism offices) and which integration partners hold API access to them, ask the vendor for per-credential access logs, rotate integration credentials, enable MFA where the platform offers it, and keep a short guest-warning template ready."
+    extended_notes: |
+      Related and already covered: incident:camping-care-tcs-camping-data-theft-2026-10 (Camping.Care, TCS). Context outside the window: Amadeus iHotelier (2026-09-11) and Booking.com (April 2026, per search results, not fetched). The Amadeus reservation-data access at Korean Air, Asiana, JAL and ANA (airline PSS, supplier account credential) is a separate case already dropped by two fires; still no European carrier statement found today.
+
+  - title: "Cursor's marketplace served a trojanised Claude Code extension for about 11 hours on 29 October: it plants an SSH key, a reverse tunnel and persistence on Windows and macOS"
+    sources:
+      - { url: "https://cursor.com/blog/claude-code-extension-security-notice", publisher: "Cursor (security notice, updated 2026-10-30 11:30 PT)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/malicious-claude-code-extension-on-cursor-planted-ssh-backdoors/", publisher: "BleepingComputer", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (feed fetch 2026-10-31, item https://www.bleepingcomputer.com/news/security/malicious-claude-code-extension-on-cursor-planted-ssh-backdoors/) → primary: Cursor security notice, URL https://cursor.com/blog/claude-code-extension-security-notice (linked from the BleepingComputer article). The two research posts the article cites (phorion.io and opensourcemalware.com) returned no body through extract and are not cited."
+    summary: |
+      Cursor, the AI code editor, says that between about 02:27 and 13:35 Pacific time on 2026-10-29 a maliciously modified version of Anthropic's Claude Code extension (versions 2.1.312 and 2.1.313 for Windows and macOS) was available in the Cursor VS Code extension marketplace; the versions were not developed by Anthropic. BleepingComputer reports up to 5,000 developers exposed, a malicious JavaScript loader placed at the start of the extension's main script by researchers' findings (Phorion and OpenSourceMalware, not fetched), and that the extension was the only distribution channel (initial claims about npm, Open VSX and the Microsoft marketplace were wrong).
+
+      Behaviour per Cursor: on load, with no user action, it collects hostname, user name, OS, architecture, home path, environment-variable names, working directories, Git e-mail and public IP; tries to append an attacker-controlled SSH public key (labelled as a telemetry service account) to the user's authorized keys, enable the local SSH service and open a reverse SSH tunnel to the attacker's server; and tries to make the tunnel persistent through a macOS LaunchAgent or a Windows scheduled task that attempts to run as SYSTEM with a Startup-script fallback, retrying about every 60 seconds. Cursor says errors in the malicious code mean the SSH-enable step fails except where the editor ran with administrator privileges, so the tunnel gave no login on most hosts, but the key, the persistence and the reconnaissance POST still happened. Cursor shut down the marketplace, audited it, rotated its keys and had the hosting provider take the attacker server offline. Uninstalling the extension may not be enough, because the payload drops standalone persistence scripts. How the attacker published under Anthropic's name, and whether Cursor's or Anthropic's systems were breached, is not explained (BleepingComputer).
+    region_nexus: "global; developers worldwide; no Swiss or public-sector victim named"
+    primary_sector_nexus: "indirect: developer endpoints in government IT teams and suppliers that use Cursor with the Claude Code extension"
+    sector: "technology / developer tooling (supply chain)"
+    cves: []
+    techniques: [T1195.002, T1059.007, T1082, T1098.004, T1572, T1543.001, T1053.005]
+    affected_products: ["Cursor", "Anthropic Claude Code extension for VS Code (versions 2.1.312 and 2.1.313 in the Cursor marketplace)"]
+    entity_keys: ["product:cursor", "product:anthropic-claude-code"]
+    new_entities:
+      - { key: "incident:cursor-marketplace-trojanised-claude-code-extension-2026-10", type: incident, name: "Trojanised Claude Code extension in the Cursor marketplace (October 2026)", aliases: [], summary: "A maliciously modified Anthropic Claude Code extension (2.1.312 and 2.1.313 for Windows and macOS) was served from Cursor's extension marketplace for about 11 hours on 2026-10-29 and tried to plant an SSH key, a reverse tunnel and persistence (Cursor, BleepingComputer, 2026-10-29 and 2026-10-30)." }
+    relation_suggestions:
+      - { subject: "incident:cursor-marketplace-trojanised-claude-code-extension-2026-10", object: "product:cursor", basis: "Cursor states the malicious versions were distributed through its own VS Code extension marketplace (Cursor security notice, 2026-10-29)" }
+    verification: MULTI-SOURCE
+    sourcing_note: "Vendor security notice (Cursor, first-party) plus BleepingComputer; the research posts by Phorion and OpenSourceMalware were not readable and are not relied on."
+    confidence: HIGH
+    classification_hint: { reliability: A, credibility: 1 }
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "Out-of-nexus supply-chain incident, vendor-disclosed with a closed exposure window; qualifies only under PD-11(b)/(d) as a transferable developer-endpoint lesson. It may overlap an S1 or S3 item on the same extension; main agent to dedupe or drop."
+    evidence:
+      - quote: "The extension runs malicious code that attempts to install a persistent SSH backdoor."
+        attribution: "Cursor"
+        source_url: "https://cursor.com/blog/claude-code-extension-security-notice"
+      - quote: "Uninstalling the extension may not be sufficient — the payload drops standalone persistence scripts that keep running."
+        attribution: "Cursor"
+        source_url: "https://cursor.com/blog/claude-code-extension-security-notice"
+      - quote: "The malicious extension appends the attacker's public key, labeled `svc-telemetry`, to your SSH authorized keys."
+        attribution: "Cursor"
+        source_url: "https://cursor.com/blog/claude-code-extension-security-notice"
+      - quote: "A malicious version of Anthropic's Claude Code VS Code extension was distributed through Cursor's extension marketplace for approximately 11 hours on October 29, exposing up to 5,000 developers to malware designed to install persistent SSH backdoors."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/malicious-claude-code-extension-on-cursor-planted-ssh-backdoors/"
+    exposure: "Developers who installed or updated the Claude Code extension at version 2.1.312 or 2.1.313 from the Cursor marketplace on macOS or Windows between 02:27 and 13:35 Pacific on 2026-10-29. Vendor check: look for the telemetry-labelled key in the user's authorized-keys file (and, on Windows, the administrators authorized-keys file)."
+    detection: "Telemetry class: endpoint file-write events to the SSH authorized-keys files from an editor or extension host process; process-creation events for ssh with reverse port forwarding or autossh with an editor as ancestor; LaunchAgent plist writes and scheduled-task creation by the editor's child processes; extension-installation telemetry for the two versions inside the window; egress to the attacker host (Cursor lists it). Post-patch compromise check: removing the extension does not remove the key, the persistence objects or running tunnel processes; Cursor provides remediation scripts and says to rotate credentials and sessions reachable from affected hosts, from a trusted system, and to consider a rebuild."
+    triage: "Legitimate reverse SSH tunnels and autossh exist among administrators; the discriminators in the source are that the key is appended by an editor extension process, carries a telemetry-service-style comment, and that persistence objects are named to resemble system-monitoring components and retry about every 60 seconds."
+    defender_takeaway: "Analyst reading: treat editor extension marketplaces as a software supply-chain channel: pin or allowlist extensions and versions on developer endpoints, and add authorized-keys and tunnel-process monitoring to the developer-endpoint detections."
+    extended_notes: |
+      Not an IOC list on purpose: the Cursor notice carries hashes, an attacker address, a key fingerprint and persistence names, which are in the source for responders who need them.
+
+  - title: "Swiss sports federations' member portals: SIHF confirms a third party read MySIHF data with a user's credentials and offered it for sale; a different actor claims 52,000 Swiss Basketball licence records including AHV numbers"
+    sources:
+      - { url: "https://www.sihf.ch/fr/news/allgemein/202627/informations-destinees-aux-utilisateurs-de-mysihf/", publisher: "Swiss Ice Hockey Federation (user notice)", date: "2026-10-26", role: "primary" }
+      - { url: "https://www.ictjournal.ch/news/2026-10-30/en-bref-le-hockey-suisse-face-a-une-fuite-nvidia-investit-dans-meta-google-devoile", publisher: "ICTjournal (Swiss trade press, brief)", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://frenchbreaches.com/alertes/fuite-donnees-federation-suisse-hockey-glace-sihf-87000-personnes-mvovz4lyan9qc7wovbi", publisher: "FrenchBreaches (analysis of the seller's sample; claim figures)", date: "2026-10-26", role: "corroborating" }
+      - { url: "https://frenchbreaches.com/alertes/federation-suisse-basketball-piratage-donnees-52000-licencies-mineurs-mvuxxch97tc2qxlgrdy", publisher: "FrenchBreaches (Swiss Basketball claim)", date: "2026-10-30", role: "primary" }
+    discovery_trace: "first seen at: frenchbreaches, URL https://frenchbreaches.com/feed.xml (feed fetch 2026-10-31; items Fédération suisse de basketball and SIHF) → primary: FrenchBreaches alert, URL https://frenchbreaches.com/alertes/federation-suisse-basketball-piratage-donnees-52000-licencies-mineurs-mvuxxch97tc2qxlgrdy → pivot: ictjournal, URL https://www.ictjournal.ch/news/2026-10-30/en-bref-le-hockey-suisse-face-a-une-fuite-nvidia-investit-dans-meta-google-devoile (RSS https://www.ictjournal.ch/rss.xml) → primary: SIHF notice, URL https://www.sihf.ch/fr/news/allgemein/202627/informations-destinees-aux-utilisateurs-de-mysihf/"
+    summary: |
+      Two Swiss national sports federations are linked to data theft from member portals in the same fortnight. SIHF's own notice (2026-10-26) says an unauthorised person logged in to MySIHF with a user's credentials and viewed personal data accessible through that account between 17 and 19 October, that the federation learned on 26 October that MySIHF data was offered for sale on an internet forum, that it blocked the abused access and fixed the security gap on 26 October, informed the Federal Data Protection and Information Commissioner and filed a police complaint, and that passwords were not accessed and no sign of changes to MySIHF servers or programmes was found. Data that may be affected: name, birth date, postal and e-mail address, phone number, club or team membership, role as player, coach or referee, profile photo and, for a small number of users, IBAN. FrenchBreaches (not independent confirmation, a claim analysis) reports the seller 'weykofa' claims 87,226 people, 540,287 rows and about 6.9 GB, and that the sample contains emergency contacts and technical access data.
+
+      Swiss Basketball: FrenchBreaches reports that a forum user called 'Venus1337' claims to have compromised an extranet of the federation and exported 52,344 licensee records, 5,696 coach and 1,523 referee records and 36,689 accounting rows, with names, addresses, birth dates, phones, e-mails and AHV numbers, and that 21,648 of 32,709 interpreted birth dates fall under 18; it found no password or card data, could not determine how access was obtained, and found no official confirmation by the federation. The two claims come from different forum handles; nothing links them to one actor or one software platform. Swiss relevance beyond the sport: the AHV number is the federal social-insurance identifier, and a credentialed account that can read this much data is the kind of over-broad portal role the SIHF notice implies (inference).
+    region_nexus: "Switzerland (national federations, FDPIC notified by SIHF)"
+    primary_sector_nexus: "indirect: private associations, not public bodies; AHV numbers and minors' data; sports federations intersect with cantonal and federal youth-sport programmes"
+    sector: "sport associations (private)"
+    cves: []
+    techniques: [T1078, T1213]
+    affected_products: ["MySIHF"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:sihf-mysihf-portal-data-theft-2026-10", type: incident, name: "SIHF MySIHF portal data theft (October 2026)", aliases: ["MySIHF data leak"], summary: "A third party used a user's credentials to read personal data in the Swiss Ice Hockey Federation's MySIHF portal between 2026-10-17 and 2026-10-19; data was offered for sale on a forum and the federation fixed the gap on 2026-10-26 (SIHF, 2026-10-26)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    sourcing_note: "SIHF is the victim's own statement for the access method and dates; the sale figures and the Swiss Basketball claim come from FrenchBreaches (Admiralty C), analysing samples from the sellers; Swiss Basketball has not confirmed."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "The 2026-10-30 fire dropped SIHF as a private federation with no public-sector or supplier nexus; that reasoning still holds. New facts: a second federation, AHV numbers and minors' data, and an ICTjournal brief inside the window. Swiss-region and personal-data stakes, but no public-sector victim and the basketball claim is unconfirmed; main agent decides."
+    evidence:
+      - quote: "Une personne non autorisée s’est connectée à MySIHF à l’aide des identifiants d’un utilisateur."
+        attribution: "SIHF"
+        source_url: "https://www.sihf.ch/fr/news/allgemein/202627/informations-destinees-aux-utilisateurs-de-mysihf/"
+      - quote: "Nous avons corrigé, le 26 octobre 2026, la faille de sécurité ayant permis l’accès aux données."
+        attribution: "SIHF"
+        source_url: "https://www.sihf.ch/fr/news/allgemein/202627/informations-destinees-aux-utilisateurs-de-mysihf/"
+      - quote: "Sur un forum de pirates, un utilisateur connu sous le pseudonyme **« Venus1337 »** affirme avoir compromis un extranet de la **Fédération suisse de basketball** et exporté les informations auxquelles il avait accès."
+        attribution: "FrenchBreaches"
+        source_url: "https://frenchbreaches.com/alertes/federation-suisse-basketball-piratage-donnees-52000-licencies-mineurs-mvuxxch97tc2qxlgrdy"
+      - quote: "À ce stade, aucune confirmation officielle de la Fédération suisse de basketball concernant cette revendication ne figure parmi les éléments examinés."
+        attribution: "FrenchBreaches"
+        source_url: "https://frenchbreaches.com/alertes/federation-suisse-basketball-piratage-donnees-52000-licencies-mineurs-mvuxxch97tc2qxlgrdy"
+    exposure: "Members, coaches and referees registered in the two federations' portals (names, contact data, birth dates, AHV numbers in the basketball claim, IBAN for a few SIHF users); minors are included in both."
+    detection: "Telemetry class for portal operators: authentication and session logs of club or user accounts reading records outside their own club or role, with bulk-read volumes; SIHF's account of one user's credentials reading broadly across three days is the pattern to look for. Guest-side signal: phishing or payment lures that cite the federation, a club or a licence renewal."
+    defender_takeaway: "Analyst reading: for public bodies that run member or applicant portals keyed to the AHV number, check that a single credentialed account cannot read beyond its role, alert on bulk reads, and prepare victim-notification text that names the phishing risk."
+    extended_notes: |
+      FrenchBreaches also lists the Swiss Basketball claim only on its own site; fuitesinfos.fr had no Swiss entries. Reopen if Swiss Basketball confirms, if a shared platform vendor for Swiss federations is named, or if the AHV-number data is described as reaching a public-sector body.
+
+  - title: "Fehmarnbelt tunnel contractor FLC confirms an October intrusion; the 'Barracuda' extortion group claims an EDR bypass, access since 17 September, encrypted vCenter virtual machines and 2.44 TB of data"
+    sources:
+      - { url: "https://femernlinkcontractors.com/update-on-the-cyber-incident/", publisher: "Femern Link Contractors (FLC statement)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.heise.de/news/Cyberangriff-auf-Fehmarnbelt-Tunnel-Gesellschaft-Cybergang-meldet-sich-11504853.html", publisher: "heise online (reports the group's leak-site text; does not verify it)", date: "2026-10-29", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (feed fetch 2026-10-31, item https://www.heise.de/news/Cyberangriff-auf-Fehmarnbelt-Tunnel-Gesellschaft-Cybergang-meldet-sich-11504853.html; heise-sec is outside this slice, read as part of the Swiss/German press sweep) → primary: FLC statement, URL https://femernlinkcontractors.com/update-on-the-cyber-incident/ (linked from the heise article)"
+    summary: |
+      Femern Link Contractors (FLC), the consortium building the Fehmarnbelt tunnel between Germany and Denmark (a state-backed public infrastructure project), states that it discovered a cyber incident on 11 October, immediately activated incident response, isolated affected servers, engaged external specialists, confirms that systems containing personal data were affected, has notified potentially affected people and set up a legal hotline for employees; the investigation is ongoing (statement dated 2026-10-27). heise reports that parts of the construction work were temporarily halted and have resumed, and that a leak site of a group calling itself 'Barracuda' (unrelated to the vendor Barracuda Networks, per heise) now claims the attack and offers the data for US$500,000, individually or as a whole.
+
+      Claims by the group, per heise from the leak-site text (unverified; FLC has not responded to the publication threat): the attackers bypassed the EDR system, had full access to all confidential FLC data from 17 September, then encrypted all VMware vCenter virtual machines, which brought the infrastructure down; the data amounts to 2.44 TB (contracts, correspondence, insurance documents, tunnel-construction photographs, bank accounts and employee information); a deal was blocked, the group says, by Danish police involvement, so it will publish. heise notes the page carries details only the real attackers would know, which FLC could check quickly.
+
+      Why it is here: it is a read-across to the held ARX Group claim (Aurora leak site, Swiss engineering consultancy for tunnel and SBB/USTRA projects), because both are suppliers on public infrastructure projects that hold project documentation and employee data. Out-of-window and out-of-nexus: heise's article is about 12 hours before the window and no Swiss entity is involved.
+    region_nexus: "Germany and Denmark (Fehmarnbelt link); no Swiss entity; sector analogue of the ARX Group hold item"
+    primary_sector_nexus: "indirect: contractors and engineering suppliers on public infrastructure projects"
+    sector: "construction / critical-infrastructure project supplier"
+    cves: []
+    techniques: [T1685, T1486, T1657]
+    affected_products: ["VMware vCenter"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:femern-link-contractors-cyberattack-2026-10", type: incident, name: "Femern Link Contractors cyberattack (October 2026)", aliases: ["Fehmarnbelt tunnel contractor cyberattack"], summary: "Cyber incident at the Fehmarnbelt tunnel construction consortium discovered 2026-10-11; FLC confirms personal-data systems were affected, and the 'Barracuda' group claims 2.44 TB of data, an EDR bypass and encrypted vCenter virtual machines (FLC statement 2026-10-27; heise online 2026-10-29)." }
+      - { key: "actor:barracuda-extortion-group", type: actor, name: "Barracuda (extortion group)", aliases: [], summary: "Extortion group with a leak site that claims the Femern Link Contractors intrusion; heise states it has nothing to do with the security vendor Barracuda Networks (heise online, 2026-10-29)." }
+    relation_suggestions:
+      - { subject: "actor:barracuda-extortion-group", object: "incident:femern-link-contractors-cyberattack-2026-10", basis: "heise reports the group's leak site claims the intrusion; FLC confirms an attack but not the group's technical claims (heise online, 2026-10-29)" }
+    verification: MULTI-SOURCE
+    sourcing_note: "FLC's statement confirms the incident, the date and the personal-data impact; every technical detail (EDR bypass, 17 September access, vCenter encryption, 2.44 TB, price) is the group's claim relayed by heise."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "Victim-confirmed incident, but outside the 26 h window (heise 2026-10-29 12:41 UTC), no Swiss entity, and the technical details are leak-site claims; value is as sector context for the ARX hold. Main agent: drop unless pairing it with the ARX claim is wanted."
+    evidence:
+      - quote: "We confirm that systems containing personal data were affected by the cyber incident."
+        attribution: "Femern Link Contractors"
+        source_url: "https://femernlinkcontractors.com/update-on-the-cyber-incident/"
+      - quote: "Upon discovery of the cyber incident on 11 October, FLC immediately activated its incident response procedures, isolated affected servers and engaged external cybersecurity specialists."
+        attribution: "Femern Link Contractors"
+        source_url: "https://femernlinkcontractors.com/update-on-the-cyber-incident/"
+      - quote: "Demnach haben die Angreifer das EDR-System umgangen und konnten die Infrastruktur infiltrieren."
+        attribution: "heise online (reporting the group's leak-site text)"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Fehmarnbelt-Tunnel-Gesellschaft-Cybergang-meldet-sich-11504853.html"
+      - quote: "Im Anschluss habe die Tätervereinigung sämtliche VMware-vCenter-VMs verschlüsselt, wodurch die Infrastruktur zusammengebrochen sei."
+        attribution: "heise online (reporting the group's leak-site text)"
+        source_url: "https://www.heise.de/news/Cyberangriff-auf-Fehmarnbelt-Tunnel-Gesellschaft-Cybergang-meldet-sich-11504853.html"
+    exposure: "Organizations that run virtualisation management (vCenter) on a flat network with endpoint detection that an intruder can disable; supplier consortia that hold project documentation and employee data for public projects."
+    detection: "Telemetry class: EDR agent health and tamper alerts (agent stopped or removed on servers), vCenter and hypervisor administrative audit logs for mass VM power-off or encryption activity, and large outbound transfers from file and project servers; the sources give no detection that fired, and the group's EDR-bypass statement is a claim."
+    defender_takeaway: "Analyst reading: for construction and engineering suppliers on public projects, put hypervisor management and backups behind separate administrative credentials and monitor EDR tamper events as a first-order alert; the group's own claim of weeks of access before encryption (17 September to 11 October) is a reason to hunt back-dated."
+    extended_notes: |
+      Not a Swiss incident. See backlog_checks for ARX Group. heise's earlier article on construction resuming (https://www.heise.de/news/Belttunnel-Arbeiten-laufen-nach-Cyberangriff-wieder-an-11491544.html) was linked from the article but not fetched.
+
+  - title: "German public institutions: Leipzig University offline since 28 October and a Charité web-server breach; neither names a vector or an actor"
+    sources:
+      - { url: "https://www.heise.de/news/Nach-Cyberangriff-Uni-Leipzig-weiterhin-offline-11506014.html", publisher: "heise online", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.uni-leipzig.de/it-systeme-weiterhin-offline/", publisher: "Universität Leipzig (notice)", date: "2026-10-29", role: "primary" }
+      - { url: "https://www.charite.de/die_charite/themen/cyberangriff_auf_charite_webserver/", publisher: "Charité – Universitätsmedizin Berlin (statement)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.rbb24.de/panorama/beitrag/2026/10/kreisverwaltung-oberspreewald-lausitz-it-vorfall-weiter-offline.html", publisher: "rbb24 (Kreisverwaltung Oberspreewald-Lausitz, context)", date: "2026-10-29", role: "background" }
+    discovery_trace: "first seen at: borncity, URL https://borncity.com/blog/2026/10/30/sicherheits-meldungen-schwachstellen-und-angriffe-30-10-2026/ (roundup, linked from the RSS https://borncity.com/blog/feed/) and heise-sec, URL https://www.heise.de/security/feed.xml → primary: Universität Leipzig notice, URL https://www.uni-leipzig.de/it-systeme-weiterhin-offline/ and Charité statement, URL https://www.charite.de/die_charite/themen/cyberangriff_auf_charite_webserver/"
+    summary: |
+      Leipzig University set up a crisis team after an incident became known on 2026-10-28 and, as damage limitation, kept all IT services and websites offline on 29 October; e-mail and several digital platforms are affected, an external IT emergency provider and the authorities are involved, a possible data leak is not confirmed, no restoration date is given, and no actor, ransomware family or access route is named (university notice; heise 2026-10-30). Charité – Universitätsmedizin Berlin states (2026-10-30) that its web server, which also hosts its website, was attacked, that personal contact data of employees, students and external contacts who used the web contact form was taken, that patient care was not affected and that the cause was analysed and protections strengthened; Charité says the attack is not connected to the PHP vulnerability for which it had briefly taken the website offline the week before. Context: the Kreisverwaltung Oberspreewald-Lausitz was still offline on 2026-10-29 after shutting its IT down on 20 October following a state interior-ministry security notice, with the state criminal police investigating; the cause is not stated.
+    region_nexus: "Germany; comparable public institutions to Swiss cantonal universities, hospitals and district administrations; no Swiss entity"
+    primary_sector_nexus: "indirect: public university, university hospital and district administration"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    sourcing_note: "Each institution's own notice is the primary; heise corroborates Leipzig. No source describes the attacker's behaviour, so no technique is mapped."
+    confidence: MEDIUM
+    classification_hint: { reliability: A, credibility: 2 }
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "Incident floor: no vector, no actor, no data-theft indication for Leipzig; Charité gives no mechanism beyond 'web server' and rules out the PHP flaw. Returned as the audit trail for three German public-sector incidents; main agent drops unless a vector or actor is disclosed."
+    evidence:
+      - quote: "Heute (29.10.2026) werden weiterhin alle IT-Dienste und Webseiten der Universitäten offline bleiben."
+        attribution: "Universität Leipzig"
+        source_url: "https://www.uni-leipzig.de/it-systeme-weiterhin-offline/"
+    extended_notes: |
+      Reopen Leipzig if the university or the state criminal police names a vector, an actor or a data-leak finding.
+
+  - title: "Ruag MRO publishes its law-firm investigation: years of insider fraud, and a former employee sent technical drawings of Leopard 2 parts to private mailboxes and to third parties in Germany"
+    sources:
+      - { url: "https://www.srf.ch/news/schweiz/millionenbetrug-bei-ruag-pfister-spricht-von-schwerwiegenden-verfehlungen-bei-der-ruag", publisher: "SRF (Swiss public broadcaster)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.srf.ch/news/schweiz/millionenbetrug-bei-der-ruag-bundesrat-pfister-mich-schockiert-die-kriminelle-energie", publisher: "SRF (interview with Federal Councillor Martin Pfister)", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: srf-news, URL https://www.srf.ch/news/bnf/rss/1646 (feed fetch 2026-10-31, item https://www.srf.ch/news/schweiz/millionenbetrug-bei-der-ruag-bundesrat-pfister-mich-schockiert-die-kriminelle-energie) → primary: SRF, URL https://www.srf.ch/news/schweiz/millionenbetrug-bei-ruag-pfister-spricht-von-schwerwiegenden-verfehlungen-bei-der-ruag. The investigation report itself was not located or fetched."
+    summary: |
+      Per SRF (2026-10-30), the federally owned defence company Ruag MRO published a law-firm investigation covering deals since 2002, including Leopard 1 and 2 tanks and spare parts, which reports serious compliance violations, structural control weaknesses and a 'business first' culture, with whistleblower tips not adequately pursued. Ruag has filed several criminal complaints (breach of trust, forgery, violation of manufacturing or trade secrets) and proceedings run in Switzerland and Germany against former staff; Ruag seeks EUR 51 million in damages from ten people. SRF reports a EUR 4.5 million purchase of Leopard spare parts from the Dutch state in 2020 that an employee passed on to a related German firm, with Ruag claiming EUR 46.9 million damage, and under-market sales of at least 22 Leopard 2 gearboxes between 2017 and 2022.
+
+      Security-relevant slice: a former employee is alleged to have sent technical drawings to private e-mail addresses and to third parties in Germany, so there is a suspicion that approval-required Leopard 2 components were made by unapproved manufacturers and that parts may have entered Ruag stores and workshops or Swiss Army tanks; Ruag's board chair says the articles reviewed are not safety-relevant and there is no known security risk, and the Defence Department (VBS) had the corresponding spare parts blocked. Material from stores that Ruag runs for Armasuisse for the Swiss Army is also alleged to have been used for third-party deals. The Defence Minister says the full report is still being reviewed and that the owner's own role is under examination. No source describes a cyber intrusion.
+    region_nexus: "Switzerland; federally owned Armed Forces supplier"
+    primary_sector_nexus: "direct entity (federal-owned defence supplier to the Armed Forces) but the matter is insider fraud and compliance, not a cyber incident"
+    sector: "defence / public-sector supplier"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "SRF reports the company's published investigation; the report was not fetched. Allegations are those of the investigation and the criminal complaints; the persons concerned are presumed innocent (SRF)."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "Not a cyber intrusion: insider fraud and compliance affair at a federal-owned supplier. Only the insider exfiltration of technical drawings through private mailboxes and the parts-integrity concern touch a defender's remit; main agent to drop unless a supplier-integrity or insider-risk item is wanted."
+    evidence:
+      - quote: "Ein früherer Mitarbeiter soll technische Zeichnungen an private Mail-Adressen und an Dritte in Deutschland geschickt haben."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/millionenbetrug-bei-ruag-pfister-spricht-von-schwerwiegenden-verfehlungen-bei-der-ruag"
+      - quote: "Das VBS liess entsprechende Ersatzteile sperren."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/millionenbetrug-bei-ruag-pfister-spricht-von-schwerwiegenden-verfehlungen-bei-der-ruag"
+    extended_notes: |
+      The registry already carries a different Ruag matter (RUAG LLC Akira incident and the VBS ownership review); this is a separate affair and should not be merged into it.
+
+  - title: "FortiBleed 2.0: Hudson Rock analyses 1,703 more FortiGate configuration reports (dated February 2026) holding 40,573 cleartext secrets and 975 domain labels absent from the first dataset"
+    lookback: true
+    sources:
+      - { url: "https://www.infostealers.com/article/fortibleed-2-0-975-new-domains-40573-exposed-secrets-claim-your-ethical-disclosure/", publisher: "InfoStealers (Hudson Rock)", date: "2026-10-27", role: "primary" }
+    discovery_trace: "first seen at: infostealers-hudson-rock, URL https://www.infostealers.com/feed/ (feed fetch 2026-10-31, item https://www.infostealers.com/article/fortibleed-2-0-975-new-domains-40573-exposed-secrets-claim-your-ethical-disclosure/) → primary (no pivot needed)"
+    summary: |
+      Hudson Rock (InfoStealers) reports a second dataset of FortiGate configuration reports obtained from criminal sources: 1,703 files for 1,689 host identifiers, report timestamps almost all on 2026-02-20 (report dates, it stresses, not compromise dates), holding 101,419 credential and account records of which 40,573 carry cleartext secrets, including 37,076 local-user records and 1,576 Active Directory LDAP bind records, plus administrator, SMTP and HA-cluster secrets. It says 924 of the 1,689 host identifiers and 975 of 1,453 domain labels are not in its first 'FortiBleed' dataset (73,932 login rows), and that on the 765 overlapping hosts 524 of 766 administrator login rows match the earlier dataset's username and cleartext password, a match of recorded credentials that, it cautions, does not establish continuous access or reuse. It notes that configurations using FortiOS's default private-data-encryption key can permit offline recovery of stored secrets, that Fortinet supports per-device keys, and that 7,437 of the 37,076 cleartext local-user records are marked disabled. It places the data in the context of the k0t edge-device campaign (Group-IB/NyxLab) and says victim overlap with Qilin and The Gentlemen is described but a direct affiliation is unconfirmed.
+
+      Delta against the store: the FortiBleed 1.0 entry and the k0t entry already carry the exposure and the private-data-encryption lever; this adds a second, smaller dataset with account-level depth and no new vector. No source states a Swiss or public-sector slice.
+    region_nexus: "global; no Swiss or public-sector slice stated"
+    primary_sector_nexus: "indirect: FortiGate perimeter devices are widespread in public administrations; the post offers a domain-lookup portal"
+    sector: "cross-sector (network edge)"
+    cves: []
+    techniques: [T1078, T1552]
+    affected_products: ["Fortinet FortiGate (FortiOS)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "One vendor analysis (Hudson Rock) of datasets it describes as obtained from criminal sources; counts are its own, not independently reproduced."
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 3 }
+    priority_hint: routine
+    novelty: "update-of:2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed"
+    borderline: true
+    borderline_reason: "Incremental dataset from a vendor analysis of criminal-held data, no new vector, no Swiss or public-sector slice, and the hardening message is already in the k0t entry; ship only as an update record if the dataset-size delta is wanted. Source is outside 26 h and returned through the record's 168 h lookback."
+    evidence:
+      - quote: "Newly obtained FortiGate configuration reports reveal **40,573 records containing cleartext secrets**"
+        attribution: "InfoStealers (Hudson Rock)"
+        source_url: "https://www.infostealers.com/article/fortibleed-2-0-975-new-domains-40573-exposed-secrets-claim-your-ethical-disclosure/"
+    extended_notes: |
+      Related store entries: 2026-10-22/k0t-fortiweb-fortigate-globalprotect-edge-device-campaign and 2026-06-18/fortibleed-73-932-internet-facing-fortigate-devices-exposed.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Watchlist: suppliers checked=0, hits=0; the profile configures no supplier watchlist, so the sweep is a no-op. General supplier-side incidents (RMS Cloud, feratel, Cursor marketplace, FLC) are returned on their own merits."
+
+backlog_checks:
+  - row: "ARX Group SA (Aurora leak-site claim, ransomware.live id QVJYIEdyb3VwIFNBQGF1cm9yYQ, 2026-10-23; hold expires 2026-11-07)"
+    condition_met: false
+    result: "Hold condition NOT met as of 2026-10-31T03:30Z; the claim stays an unconfirmed leak-site claim (PD-6). (1) ransomware.live still lists it (discovered 2026-10-23 17:57 UTC, group aurora, 'press' null in api.ransomware.live/v2/searchvictims, no victim or press link) and the description still names 8 GB of Ceneri Base Tunnel documentation, 9,510 project fee structures and 881,205 time entries; (2) Breachsense (page dated 2026-10-26) still shows only the claim, 'Leak Size: Unknown', unattributed 'ARX Group was breached' wording and unrelated infostealer logins; (3) the company site arx.ing (fetched, Next.js page) carries no incident or security notice in its text; (4) seven WebSearch queries in EN, DE and IT (ARX Group with Cyberangriff, Aurora/Aur0ra, Ceneri, SBB, USTRA/ASTRA, Ticino place names) returned no report by ARX, SBB, USTRA or any Swiss outlet; (5) the Inside IT sitemap (sitemap-72, newest 2026-10-30) has no ARX, Ceneri, Aurora or engineering-firm URL, and the Inside IT, Netzwoche, ICTjournal, SRF, Blick, RTS and NZZ feeds inside the window carry no ARX item; (6) ransomware.live's group page lists Aurora as still active (57 victims, last seen 2026-10-30). Analogue worth knowing: the Fehmarnbelt contractor FLC (see items) is a victim-confirmed ransomware case at a tunnel-construction supplier, but a different actor and country. Recommendation: keep the row held to 2026-11-07 and strike it then if still unconfirmed."
+    sources_checked:
+      - "https://www.ransomware.live/id/QVJYIEdyb3VwIFNBQGF1cm9yYQ"
+      - "https://api.ransomware.live/v2/countryvictims/CH"
+      - "https://www.breachsense.com/breaches/arx-group-data-breach/"
+      - "https://www.inside-it.ch/sitemaps/sitemap-72.xml"
+
+dropped_leads:
+  - "Polymarket / DebugBear script compromise (Hudson Rock analysis 2026-10-29 re-read; BleepingComputer, Next, Borns): no new fact since the 2026-10-30 fire dropped it. A WebSearch for DebugBear's root-cause statement found none (results were about Polymarket's separate June 2026 incident); the reopen trigger (DebugBear names scope or root cause) is not met. Repeat."
+  - "Amadeus reservation-data access (Korean Air and Asiana notified 2026-10-23, JAL 2026-10-28, ANA 2026-10-29): searches in English and German for Lufthansa Group, Swiss or Austrian statements found none; reopen trigger unchanged. Context only: the iHotelier incident of September 2026 is used as background in the booking-platform item."
+  - "Revolve Group (US fashion retailer) 8-K Item 8.01 of 2026-10-29 (SEC filing and The Record): unauthorized access, 'automated means', saved payment card number and expiry for some customers; no vector detail, no actor, out of nexus. SEC EDGAR sweep 2026-10-29 to 2026-10-31: the Item 1.05 query returned one filing (Koil Energy Solutions) whose items are 1.01, 3.02, 8.01 and 9.01, i.e. not an Item 1.05 cyber filing; no cyber-incident 8-K besides Revolve in the full-text supplement."
+  - "Moldova National Social Insurance House (CNAS) services disrupted 'after maintenance and checks initiated by the Public Services Agency following a cyberattack on information systems' (Logos Press, 2026-10-30): collateral effect of the Moldova e-government incident already in the store (entries/2026-10-29/moldova-egovernment-mass-extraction-unauthenticated); no new technical fact."
+  - "Trezor / CryptoBilis suspected hardware implant (BleepingComputer 2026-10-30): reseller-channel hardware tampering in Southeast Asia, device not yet examined; out of nexus."
+  - "NRW Landtag outage (2026-10-25 to 27): per n-tv/dpa via the Borns blog, a software error in central storage, backup system activated; not an attack. Trauco building-materials group (Germany, Qilin claim on ransomware.live 2026-10-30): private firm, no vector. Brandenburg Internetwache offline: PHP2Shell precaution, covered by the PHP2Shell entries."
+  - "Italian Chamber of Deputies (three mailboxes including the Prime Minister's deputy address, reported 2026-10-27 by Reuters, ANSA, Open and others; searched, not fetched): outside the window, no actor, access itself disputed by the Chamber; Borns relays it on 2026-10-30. Reopen if an actor, vector or confirmed mailbox access is published."
+  - "123 Reg (UK registrar owned by GoDaddy), The Register 2026-10-28: intrusion of 2026-09-18 on customer contact and account data, the company calls it its first AI-driven cyberattack and, from IP addresses in China and Singapore and attacker-side tooling, suspects a Chinese state-sponsored group and the ARTEX actor behind South Korean financial-sector intrusions (CrowdStrike CSA-261162). Victim's own attribution, out of window, no Swiss link; possible `update-of` on the ARTEX entries (2026-10-30/vapor-panda-artex-agentic-campaign-foreign-ministries) if the main agent wants the registrar victim class, source https://www.theregister.com/cyber-crime/2026/10/28/123-reg-discloses-ai-cyberattack-on-customer-data-suspects-china-nexus/5305936"
+  - "Autorité des marchés financiers (AMF, France) forum claim of 11,173 records (FrenchBreaches, 2026-10-30): FrenchBreaches itself says much of the sample is normally public and does not show an intrusion. Communauté de communes des Portes du Berry (France): cyberattack detected 2026-10-12, theft 'neither confirmed nor excluded', no vector. Both out of nexus and below the incident floor."
+  - "Already handled by earlier fires and unchanged: Sony So-net (2.5 million records), Navigate360 / Crime Stoppers, DHS personnel leak, Florida Department of Education, Frontline Education, Bithumb, GMO, Times Car, RIZAP; CNIL FNAC cookie sanction. Ransomware.live (countryvictims/CH, recentvictims, recentcyberattacks): no new Swiss claim since ECOM (Qilin, 2026-10-25); public-sector rows in the window are US police and city claims without victim confirmation (PD-6)."
+  - "Publica / PK Softech (13 records in the store): the newest developments found today are the FDPIC opening of the formal investigation on 2026-10-22 (Inside IT 2026-10-26) and the 2026-10-26 press; nothing newer than the store's 2026-10-30 correction, so no update returned. A figure of more than 100,000 affected people is a media estimate not confirmed by the FDPIC, per the FDPIC-centred reporting."
+
+candidate_sources:
+  - id: rbb24-recherche
+    publisher: "rbb24 Recherche (Rundfunk Berlin-Brandenburg)"
+    url: "https://www.rbb24.de/politik/"
+    category: news
+    why: "The investigative desk behind the Berlin Landesnetz findings (detection licensed for 5 percent of devices, warnings that may not have reached the departments); first-hand reporting from the department's written replies on a public-sector incident store entry. Feed URL not probed."
+  - id: trm-labs-blog
+    publisher: "TRM Labs blog"
+    url: "https://www.trmlabs.com/resources/blog"
+    category: research
+    why: "Primary on-chain tracing and North Korea attribution for exchange thefts (Binance, Bitget, Bybit); article pages read cleanly with extract. Feed URL not probed."
+  - id: tageskarte-io
+    publisher: "Tageskarte (DACH hospitality trade press)"
+    url: "https://www.tageskarte.io/hotellerie"
+    category: news
+    why: "Reports booking-platform incidents (Maritim / Amadeus iHotelier) with the supplier's own spokesperson statements; relevant to the WhatsApp booking-data fraud wave reaching Swiss tourism. Article pages read with extract; feed not probed."
+
+coverage_gaps:
+  - source_id: binance (not a slice record)
+    reason: "`extract` of the Binance announcement page returns a human-verification CAPTCHA (405, jina fallback included); `WebFetch` reads it, and the page's public CMS JSON `url --direct 'https://www.binance.com/bapi/composite/v1/public/cms/article/detail/query?articleCode=<code>'` returns the full announcement body (JSON node tree, text nodes carry the verbatim text). Recipe: use the CMS JSON for binance.com/en/support/announcement pages."
+  - source_id: theregister-security-feed (not a slice record)
+    reason: "`extract` of a The Register article returned only navigation chrome without the article body; `WebFetch` returned the article summary. Recipe: WebFetch for theregister.com articles."
+  - source_id: phorion.io and opensourcemalware.com (cited by BleepingComputer, not slice records)
+    reason: "`extract` returned 0 bytes for both Claude Code extension research posts; covered anyway by the Cursor security notice and BleepingComputer, so not logged as failures."
+  - source_id: cyberinsider
+    reason: "Recipe change: `WebFetch https://cyberinsider.com` now returns the 15 newest articles with explicit dates (2026-10-26 to 2026-10-30), unlike the 2026-10-25 note that listing items were undated. WebFetch with the outbound-links template works as the listing read."
+  - source_id: fuitesinfos
+    reason: "Recipe detail: `url https://fuitesinfos.fr/articles` returns 303 KB of HTML in which the article slugs are found with a regex over /article/YYYY-MM-DD-slug (not as plain href attributes); 171 slugs, newest 2026-10-31; no Swiss entry."
+  - source_id: sec-disclosures-edgar
+    reason: "Recipe nuance: `fetch_source.py sec-edgar 8k <start> <end> 1.05` returned a filing (Koil Energy) whose items field is 1.01, 3.02, 8.01, 9.01, so the item filter matches loosely; check each hit's items list for 1.05 before treating it as a cyber filing. The full-text supplement `url --direct 'https://efts.sec.gov/LATEST/search-index?q=...&forms=8-K&dateRange=custom&startdt=...&enddt=...'` works."
+  - source_id: ransomware-live
+    reason: "Recipe confirmed: api.ransomware.live/v2 recentvictims, countryvictims/CH, countrycyberattacks/CH, recentcyberattacks and searchvictims/<term> work through `url --direct`; the human page /id/<base64> reads with `extract` (padding '==' optional). Swiss list newest row 2026-10-25."
+  - source_id: cnil-fr
+    reason: "Read with WebFetch (the 12-item listing with dates and hrefs came back complete); no `extract` attempt was needed this run."
+
+source_ledger:
+  - { id: infostealers-hudson-rock, tier: standard, attempted: true, transport: "feed https://www.infostealers.com/feed/ 15 + extract", horizon_hours: 168, in_horizon_items: 4, returned: 1, note: "FortiBleed 2.0 returned as a borderline update (lookback); Polymarket re-read, no new fact; Wagyu and the weekly report out of nexus" }
+  - { id: borncity, tier: standard, attempted: true, transport: "feed https://borncity.com/blog/feed/ 25 + extract", horizon_hours: 74, in_horizon_items: 3, returned: 3, note: "Berlin EDR update, feratel (booking-platform item) and the 2026-10-30 roundup (Leipzig, Charité); the 2026-10-28 roundup read for NRW Landtag, Brandenburg Internetwache and Trauco, all dropped" }
+  - { id: cyberdaily-au, tier: standard, attempted: true, transport: "extract https://www.cyberdaily.au/security + extract per article", horizon_hours: 74, in_horizon_items: 10, returned: 1, note: "RMS Cloud (as part of the booking-platform item); Binance and DHS leak already handled; Oracle EBS scanning belongs to S1" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "feed https://frenchbreaches.com/feed.xml 40 + extract", horizon_hours: 74, in_horizon_items: 24, returned: 1, note: "Fédération suisse de basketball claim returned (Swiss sports federations item); AMF and Portes du Berry dropped; SIHF alert of 2026-10-26 is outside the horizon but read for the same item" }
+  - { id: fuitesinfos, tier: standard, attempted: true, transport: "url https://fuitesinfos.fr/articles (regex over slugs)", horizon_hours: 74, in_horizon_items: 12, returned: 0, note: "171 slugs listed, newest 2026-10-31, all French private or political victims; no Swiss entry" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed https://next.ink/feed 30", horizon_hours: 74, in_horizon_items: 28, returned: 0, note: "security items (Polymarket, Binance, DHS leak, Cursor extension, Starlink zero-click) all sourced elsewhere or already handled; remaining items general tech news" }
+  - { id: bitdefender-threat-debrief, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "only the 2026-10-29 Gartner MDR marketing post in the horizon" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "url listing + extract per entry", horizon_hours: 50, in_horizon_items: 3, returned: 1, note: "the Binance timeline is cited as a corroborating source of the Binance item; the Linux CVE-2026-98432 and AGENTS.md hijack entries belong to S1/S3" }
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "extract https://ransom-isac.org/blog/", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-26 (Silent Ransom Group leak analysis), outside the horizon" }
+  - { id: venarix, tier: standard, attempted: true, transport: "extract https://venarix.com/blog", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "listing shows August 2026 posts only" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed https://www.bleepingcomputer.com/feed/ 30 + extract", horizon_hours: 26, in_horizon_items: 8, returned: 2, note: "Binance and the Cursor extension returned; GitLab KEV, Drupal Commerce, Linux MPTCP belong to S1; Trezor implant dropped" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-29 (FNAC cookie sanction), outside the horizon; no breach or security enforcement" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "Trezor implant and Reddit login, neither in nexus; Binance of 2026-10-29 covered by BleepingComputer's item" }

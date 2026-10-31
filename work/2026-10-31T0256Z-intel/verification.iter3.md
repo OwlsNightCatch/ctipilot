@@ -1,0 +1,39 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-10-31T05:03:55Z · ended_at=2026-10-31T05:23:10Z · duration_seconds=1155
+
+## Verification report — 2026-10-31T0256Z-intel (iteration 3)
+
+Scope: post-fix pass. All 11 entries (6 new, 5 updated) and the run record read end to end; 238/238 ledger claims answered in `verification.iter3.claims.yaml` (`tools/claim_ledger.py --coverage 3`: 0 missing), which covers the 7 changed claims, every claim of the seven remediated entries, and in fact every claim of the Linux, Cursor, BeyondTrust and Cisco entries as well (not a sample). Every cited page was fetched this iteration (extract / raw `url` / `ncsc-csh post` / `cisa-kev`; WebFetch for cisa.gov and drupal.org). `tools/check_run.py` shows 59 pass, 0 warn, 3 fail; the 3 fails are the run-record verification bookkeeping (residual count, completed stamp) that the main agent closes after the loop.
+
+### Prior-iteration deltas (8 findings) — each checked against the source
+1. Broadcom KB 459982: raw HTML JSON-LD `"datePublished":"10-22-2026 09:31"`; `sources[]` date, inline label and publisher line now say 2026-10-22; the run note ("placeholder date 2026-01-01 in the extracted text; structured data gives 2026-10-22") is correct. Article text (8.12.2 / 8.13.2, "exclusively contain PHP-related changes", 8.13 must take 8.13.2) matches. OK.
+2. NetApp 9.19.1P4: advisory data `kb_rev_history` version 10.0, `20261029`, "ONTAP 9.19.1P4 added to Software Versions and Fixes"; the clause now ends `[NetApp, 2026-10-26](advisory page); [NetApp, 2026-10-29](adv_api)`. The first label matches the revision that added the other six builds (versions 4.0 to 8.0, 2026-10-24 to 2026-10-26). OK.
+3. Drupal: wording now "the effect it names"; NCSC post 13124 reads "manipulate order-related data, potentially causing financial losses for online store vendors". Supported, but see F11 #3 (awkward phrase).
+4. WS_FTP Detection: now "Web Admin console"; EUVD-2026-113024 names "the Web Admin console"; the sentence carries "(an inference from the described flaw)". OK.
+5. QNAP h5.3.x: QSA-26-18 table row "QuTS hero h5.3.x Resolved QuTS hero h6.0.2.3656 build 20261023" is now in `cves[].affected`, `cves[].fixed`, body and `actions[0]`; V1.1 (2026-10-24) is the "QTS, QuTS hero and QuTScloud Resolved Published" revision. OK.
+6. Teams: the sentence now reads "...began with an external Teams contact (across the broader activity Microsoft saw organisation-themed tenant names and support-style display names) who persuaded a user to open Quick Assist and read out the connection code". Microsoft: "persuaded a user to establish an attacker-controlled remote session, primarily by guiding the user to open Quick Assist and provide the connection code. Across the broader activity, organization-themed onmicrosoft.com tenant names and support-oriented display names were used". OK.
+7. Ivanti evidence: the superseded Volexity "working on a fix" quote is gone; the evidence list now carries the 2026-10-29 patch quote (verbatim on the Volexity page). OK.
+8. Run note now says "Rapid7 reports a Metasploit module on 2026-10-30"; Rapid7: "A Metasploit module now implements the chain with PHP and Unix Command targets." OK.
+
+### Citation does not support the claim
+- #1 (F3) 2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor, summary: "Coding errors made the SSH step fail on most standard-user hosts, so Cursor and Microsoft say the attacker could not log in there". Microsoft's analysis: "Cursor reports that errors and administrator-permission requirements blocked SSH access on most macOS and Windows hosts" and "A running SSH process does not necessarily mean the attacker gained access"; it relays Cursor and also says "Successful remote access depends on host privileges, SSH configuration, and the attacker's server configuration". Cursor ("the attacker could not have logged in through the tunnel") and Sophos ("Due to coding errors, SSH enablement fails on most macOS and Windows hosts") state it. Fix: name Cursor and Sophos, or Cursor with Microsoft relaying.
+
+### Quantifier without source
+- #2 (F14, low confidence) 2026-10-31/teams-help-desk-impersonation-quick-assist-ad-cs-esc1-esc8, body paragraph 2: "DCSync began within seconds of the first certificate." Microsoft: "Within seconds of obtaining one privileged certificate, the attacker authenticated to a domain controller and performed DCSync while containment was taking effect." No source says "first". Fix: "within seconds of obtaining one privileged certificate".
+
+### Editorial / less-is-more flags (advisory)
+- #3 (F11) 2026-10-31/cve-2026-118539-drupal-commerce-core-access-bypass-exploited, body: "NCSC Switzerland's advisory of 2026-10-30 states the effect it names, unauthenticated manipulation of order-related data..." is accurate but circular. Say "describes the impact as".
+- #4 (F11, low confidence) 2026-10-31/teams-help-desk-impersonation-quick-assist-ad-cs-esc1-esc8: `references: []` although the store carries Microsoft's earlier Teams help-desk-impersonation entry `2026-09-03/teams-helpdesk-impersonation-nodejs-implant-winrm-dc-pivot` and the sourcing note says the entry pattern "is reported elsewhere". The finding is distinct; link it.
+- #5 (F11, low confidence) 2026-10-31/php2shell-broadcom-sepm-carbon-black-app-control-casma: `affected_products` lists SEPM and App Control Server only; advisory 39404 (and the entry's own title and body) also name CloudSOC SpanVA Appliance and CASMA as affected. Optional.
+
+### Coverage / missed angles
+No gap I can evidence. NCSC Switzerland hub, last 15 posts read: Linux CVE-2026-98432 (13120), Drupal (13124), Cursor extension (13121) are covered; WatchGuard (13122) is covered by `2026-10-29/watchguard-fireware-2026-4-three-preauth-rows-at-9-2` (CVE-2026-93866, -93857, -93865, -103593); TeamViewer (13123) is a documented borderline-drop. KEV catalogVersion 2026.10.30 additions are the two Ivanti flaws, both handled. The run record's Veeam KB4961 borderline-drop reads true (unauthenticated RCE CVSS 4.0 9.3, no fix for 9.x, move to 13.1.0.334); Broadcom 39421 and 39411 are login-gated as the record says.
+
+### Verified without findings
+Ivanti (Volexity incl. update banner, Cyber Centre Update 2, CISA alert text via WebFetch, CISA 2026-10-30 alert, KEV JSON for CVE-2026-111357 and -118527, CVE record for -111357 CVSS 3.1 7.0 and 22.8R2.4 only, no record for -118527, CERT-FR, GHSA, Rapid7 table, Ivanti blog, EUVD-2026-98816). BeyondTrust (BT26-05 advisory and blog, GTIG, Rapid7 root-cause analysis). QNAP and Synology (QSA-26-18 table, QSA-26-19, statement, SA-26:14). Cisco (v1.10 table, revision history, Snort links, vcs-static-cred X15.5.20, CISA PHP alert). Trend Micro (status table as of Oct. 30), Quest KB (9.3.313), NetApp advisory data and KB. Drupal (SA-CONTRIB-2026-254, SecurityWeek, The Hacker News, NCSC 13124). Linux (kernel CVE announcement, CIQ, Anthropic, Go, Debian, Ubuntu, Red Hat, BleepingComputer, NCSC-NL). Broadcom (39404, KB 459982, NCSC-NL list). Cursor (Cursor, Microsoft, Sophos, heise, Phorion, NCSC 13121). Teams/AD CS (Microsoft). WS_FTP (EUVD-2026-113016/113022/113024, CSIRT Italia, KEV). Changelog contract (4c): `entry_record.py diff` field lists match each record's `fields`; `updated_at` mirrors each non-internal `update`; sections and records agree. Headlines 102 to 117 characters; main analyses 356 to 550 words; no em dash outside quotes; no IOCs; no workflow vocabulary in reader text; registry keys resolve; no CVE overlap with other entries. Classification and priority: no defect (BeyondTrust and Ivanti critical on exploited zero-day with a new action; the rest notable).
+
+### Verdict
+NEEDS_FIXES (truth: 2, editorial: 0, advisory: 3)
+
+### Findings summary (machine-readable)
+See `work/2026-10-31T0256Z-intel/verification.iter3.findings.yaml`.

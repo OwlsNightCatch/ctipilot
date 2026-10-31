@@ -1,0 +1,460 @@
+# work/2026-10-31T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-10-31T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-10-31T02:57:59Z
+ended_at: 2026-10-31T03:20:30Z
+duration_seconds: 1351
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 7
+  bridge_fetches: 120
+window: "window_hours=26 (in-window = published on or after 2026-10-30T00:56Z); rotational lookbacks per slice record"
+items:
+
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-98432, Linux kernel IPv4 TCP: a SYN-handling use-after-free present since 4.4, with an Anthropic-built remote root exploit against MPTCP listeners; Go services listen with MPTCP by default and Ubuntu and RHEL kernels are still unfixed"
+    suggested_kind: vulnerability
+    suggested_priority: high
+    sources:
+      - { url: "https://lists.openwall.net/linux-cve-announce/2026/10/15/1", publisher: "Linux kernel CVE team (linux-cve-announce)", date: "2026-10-15", role: "primary" }
+      - { url: "https://www.anthropic.com/research/discovering-vulnerabilities-with-claude", publisher: "Anthropic Frontier Red Team (discoverer)", date: "2026-10-27", role: "primary" }
+      - { url: "https://groups.google.com/g/golang-announce/c/PCoQcdxoScw/m/aD-MgXEvAAAJ", publisher: "Go team (golang-announce)", date: "2026-10-29", role: "primary" }
+      - { url: "https://kb.ciq.com/article/security-advisories/cve-2026-98432-mitigation", publisher: "CIQ (Rocky Linux) mitigation article", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://ubuntu.com/security/CVE-2026-98432", publisher: "Canonical Ubuntu security tracker (last updated 2026-10-30)", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-98432", publisher: "Debian Security Tracker (live page read 2026-10-31)", date: "2026-10-31", role: "corroborating" }
+      - { url: "https://access.redhat.com/security/cve/cve-2026-98432", publisher: "Red Hat CVE page (live page read 2026-10-31)", date: "2026-10-31", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Erneut-kritischer-Bug-in-Linux-TCP-IP-aufgedeckt-Updates-in-Arbeit-11506050.html", publisher: "heise security", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/critical-linux-kernel-flaw-allows-remote-root-attacks-on-mptcp-servers/", publisher: "BleepingComputer", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://isc.sans.edu/podcastdetail/10158", publisher: "SANS Internet Storm Center StormCast", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'Erneut kritischer Bug in Linux TCP/IP aufgedeckt', https://www.heise.de/news/Erneut-kritischer-Bug-in-Linux-TCP-IP-aufgedeckt-Updates-in-Arbeit-11506050.html) -> corroborated by sans-newsbites, URL https://www.sans.org/newsletters/newsbites/xxviii-81 (StormCast item) -> pivot: Anthropic research post, URL https://www.anthropic.com/research/discovering-vulnerabilities-with-claude -> pivot: Linux kernel CVE team announce, URL https://lists.openwall.net/linux-cve-announce/2026/10/15/1 -> pivot: Go team announcement, URL https://groups.google.com/g/golang-announce/c/PCoQcdxoScw/m/aD-MgXEvAAAJ (linked from heise) -> distro status: https://ubuntu.com/security/CVE-2026-98432, https://security-tracker.debian.org/tracker/CVE-2026-98432, https://access.redhat.com/security/cve/cve-2026-98432 -> mitigation: https://kb.ciq.com/article/security-advisories/cve-2026-98432-mitigation (linked from BleepingComputer https://www.bleepingcomputer.com/news/security/critical-linux-kernel-flaw-allows-remote-root-attacks-on-mptcp-servers/, found on the bleepingcomputer feed)"
+    summary: |
+      FACTS (kernel CVE team, 2026-10-15): CVE-2026-98432 is a use-after-free in the Linux kernel's IPv4 TCP connection setup path (net/ipv4/af_inet.c, net/ipv4/tcp_ipv4.c). tcp_v4_syn_recv_sock() hands ownership of ireq->ireq_opt to the child socket without copying it, and a retransmitted SYN for the same request socket processed on another CPU builds a SYNACK from the options that inet_sock_destruct() and tcp_v4_reqsk_destructor() free with a plain kfree() instead of after an RCU grace period (ip_options_build() reads opt->optlen twice). A second path exists through request-socket migration (net.ipv4.tcp_migrate_req=1 or a BPF_SK_REUSEPORT_SELECT_OR_MIGRATE program). The bug entered with commit 079096f103fa in Linux 4.4 and is fixed upstream in 6.12.113, 6.18.56, 7.2.10 and 7.3-rc7; IPv6 is not affected by the first issue, and an IPv6 migration variant (ipv6_opt, set only by CALIPSO) is left to a separate patch. The CNA scores it CVSS 9.8.
+      CLAIMS (Anthropic, 2026-10-27, discoverer): its Frontier Red Team had an unreleased Claude model write an exploit that lets a remote, unauthenticated attacker send packets to a Linux server with a multipath TCP (MPTCP) listener and run arbitrary commands as root; stage one defeats KASLR by making the race drive the kernel to copy an attacker-controlled number of extra bytes back in a reply, stage two overwrites a callback pointer; a lost race only fails the handshake, so the attacker retries, and the proof of concept needed 48 minutes to leak a kernel pointer plus five to reach command execution. The exploit is not public. The Go team (2026-10-29) states the demonstrated exploit needs an MPTCP listener but the bug is not MPTCP-specific, so systems with no MPTCP listener may be exposed to similar attacks; since Go 1.24 Go programs enable MPTCP by default on Linux listen sockets (GODEBUG=multipathtcp=0 or a go.mod directive turns it off), which means Go-built network services can carry an MPTCP listener nobody configured. Go calls per-program disabling fragile and recommends only a patched kernel; CIQ's testing found that setting net.mptcp.enabled=0 alone leaves the plain-TCP path reachable.
+      PATCH STATE as read 2026-10-30/31: Debian 12 (6.1.190-1, DLA-4841-1) and Debian 13 (6.12.113-1, DSA-6568-1) fixed; Ubuntu 22.04, 24.04, 26.04 and 26.10 listed 'Vulnerable work in progress' and 20.04, 18.04 and 16.04 vulnerable (Canonical, updated 2026-10-30); Red Hat lists RHEL 8, 9 and 10 as affected (RHEL 6 and 7 not affected per CIQ/BleepingComputer); CIQ had no patched Rocky/RLC kernel on 2026-10-30. Severity statements disagree between sources: the CNA 9.8; the Red Hat page read on 2026-10-31 shows 9.8 and 'Critical' for RHEL while BleepingComputer on 2026-10-30 reported a Red Hat score of 5.9 (DoS-oriented); CIQ cites 8.1 upstream. No source reports exploitation in the wild.
+      INFERENCE (mine, mechanical from the stated trigger): CIQ states an unauthenticated peer starts the flaw by sending TCP SYN packets that carry IPv4 options, so inbound SYNs with IP options (IHL above 5) on listening ports are a rare, hunt-able telemetry class, and repeated handshake failures or retransmitted-SYN bursts from one source match the retryable race; a kernel crash or unexplained reboot is the DoS-side signal Red Hat describes.
+    region_nexus: "global; any Swiss public-sector Linux server estate (Ubuntu LTS, RHEL/Rocky, Debian) and any Go-built internet-facing service on Linux"
+    primary_sector_nexus: "direct (server infrastructure of federal, cantonal and communal IT)"
+    sector: "public-sector"
+    cves: [CVE-2026-98432]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Linux kernel", "Ubuntu Linux", "Red Hat Enterprise Linux", "Rocky Linux", "Go (Golang)"]
+    entity_keys: ["product:linux-kernel", "product:anthropic-claude"]
+    new_entities:
+      - { key: "product:go-programming-language", type: product, name: "Go (Golang)", aliases: ["Go", "Golang"], summary: "Google's Go language and runtime; since Go 1.24 programs enable MPTCP by default on Linux listen sockets, which widens the exposure to CVE-2026-98432 (Go team, 2026-10-29)." }
+    relation_suggestions:
+      - { subject: "product:go-programming-language", object: "product:linux-kernel", basis: "Go team states Go 1.24+ programs enable MPTCP listeners by default on Linux, the listener type the Anthropic exploit for CVE-2026-98432 needs (Go team, golang-announce, 2026-10-29)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 1 }
+    novelty: new
+    evidence:
+      - quote: "Issue introduced in 4.4 with commit 079096f103faca2dd87342cca6f23d4b34da8871 and fixed in 6.12.113 with commit 11a03ce3c4a62d84c10ccdfe47f8075006498568"
+        attribution: "Linux kernel CVE team (linux-cve-announce)"
+        source_url: "https://lists.openwall.net/linux-cve-announce/2026/10/15/1"
+      - quote: "allows a remote attacker to send packets to Linux servers with a multipath TCP listener to run arbitrary commands as root, without any credentials or user interaction"
+        attribution: "Anthropic Frontier Red Team"
+        source_url: "https://www.anthropic.com/research/discovering-vulnerabilities-with-claude"
+      - quote: "While the demonstrated exploit requires the target system to expose an MPTCP listener, the underlying bug is not specific to MPTCP."
+        attribution: "Go team"
+        source_url: "https://groups.google.com/g/golang-announce/c/PCoQcdxoScw/m/aD-MgXEvAAAJ"
+      - quote: "An unauthenticated network peer can start the flaw by sending TCP SYN packets that carry IPv4 options."
+        attribution: "CIQ"
+        source_url: "https://kb.ciq.com/article/security-advisories/cve-2026-98432-mitigation"
+    extended_notes: |
+      Exposure check for the reader: kernel build via uname -r against the fixed lines above and the distro tracker for the backported package version (Ubuntu and RHEL fixes were not out on 2026-10-30); hosts that expose an MPTCP listener at all (the sources do not name an inventory command); Go binaries built with Go 1.24 or later and not pinned to multipathtcp=0. Interim mitigation published by CIQ is a firewall rule dropping IPv4 TCP packets that carry IP options before the TCP stack, validated on firewalld/nftables hosts; it is a stopgap, not a fix. Compromise check after patching: none stated (no ITW reports), so the post-patch check is a review of kernel logs and crashes plus inbound SYN-with-IP-options flow records since 2026-10-15. Anthropic's post also reports 62 Chrome CVEs patched in Chrome 156 and a Windows kernel QUIC out-of-bounds read (CVE-2026-33096) from the same programme; not assessed here. Primary page date for the Anthropic post is 2026-10-27 (outside the 26 h window); the in-window delta is the Go team guidance, distro-lag status and press pickup of 2026-10-29/30. S1 may surface the same CVE.
+
+  # ---------------------------------------------------------------------------
+  - title: "Cursor marketplace: a tampered Claude Code extension (versions 2.1.312 and 2.1.313, macOS and Windows) planted an SSH key, a reverse tunnel and persistence for about eleven hours on 2026-10-29"
+    suggested_kind: threat
+    suggested_priority: notable
+    sources:
+      - { url: "https://cursor.com/blog/claude-code-extension-security-notice", publisher: "Cursor (marketplace operator, security notice)", date: "2026-10-29", role: "primary" }
+      - { url: "https://phorion.io/blog/offical-claude-code-vsx-compromise/", publisher: "Phorion (discoverer)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/inside-malicious-claude-code-branded-cursor-extension-persistent-ssh-backdoor/", publisher: "Microsoft Security Blog (Microsoft Threat Intelligence)", date: "2026-10-31", role: "primary" }
+      - { url: "https://www.sophos.com/en-us/blog/malicious-claude-code-extension-distributed-through-cursor-marketplace", publisher: "Sophos X-Ops", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Claude-Code-Erweiterung-im-Cursor-Marktplatz-mit-Malware-infiziert-11506368.html", publisher: "heise security", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'Claude-Code-Erweiterung im Cursor-Marktplatz mit Malware infiziert', https://www.heise.de/news/Claude-Code-Erweiterung-im-Cursor-Marktplatz-mit-Malware-infiziert-11506368.html) and ox-security feed, URL https://www.ox.security/feed/ (OX body 403 on every transport, lead only) -> pivot: Phorion analysis, URL https://phorion.io/blog/offical-claude-code-vsx-compromise/ -> pivot: Cursor security notice, URL https://cursor.com/blog/claude-code-extension-security-notice -> pivot: Sophos feed, URL https://www.sophos.com/en-us/blog/malicious-claude-code-extension-distributed-through-cursor-marketplace -> Microsoft msft-secblog recent, URL https://www.microsoft.com/en-us/security/blog/2026/10/30/inside-malicious-claude-code-branded-cursor-extension-persistent-ssh-backdoor/"
+    summary: |
+      FACTS (Cursor, first-hand): between about 09:27 and 20:35 UTC on 2026-10-29 (2:27 am to 1:35 pm PT) a modified copy of Anthropic's Claude Code extension, versions 2.1.312 and 2.1.313 for macOS and Windows, was served from the Cursor VS Code extension marketplace; Cursor removed it, shut the marketplace down briefly, rotated its keys, rebuilt it, and had the hosting provider take the attacker server offline. Microsoft Threat Intelligence confirms the packages were never published to the Visual Studio Marketplace or npm, and states that Anthropic told it its systems were not compromised and it did not build the package. How the attacker was able to publish under the Anthropic identity is not disclosed by any source I read (my reading: Cursor's key rotation implies a marketplace-side fault, but no source says so).
+      BEHAVIOUR (Phorion and Microsoft, consistent code analysis): a function prepended to the minified extension.js runs the moment Node loads the module, before activate(), with no interaction. It collects host and user data (hostname, user, OS, architecture, home and working directory, global git email, up to forty environment-variable names containing KEY, TOKEN, SECRET, PASS, AWS or GCP; names, not values), appends an attacker Ed25519 public key to ~/.ssh/authorized_keys (de-duplication is by a comment string, not the key), tries to enable the SSH service, opens a reverse tunnel with an embedded private key (outbound ssh or autossh with remote forwarding of the workstation's port 22, retried every sixty seconds) and writes persistence outside the extension directory: a user LaunchAgent with KeepAlive on macOS, an @reboot crontab entry on Linux, a scheduled task requesting SYSTEM with a Startup-folder batch fallback on Windows, all named after monitoring components. Because of coding errors the SSH-enable step fails on a standard-user macOS or Windows host (on macOS, systemsetup -getremotelogin run without admin rights prints an error and exits 0 instead of 'Off', so the enable branch is skipped), so Cursor and Phorion assess the attacker could not log in on most hosts; the key, the persistence and the host-details report still happened. The number of affected users is Cursor's estimate of up to 5,000 (relayed by Sophos). No actor attribution is made by any source.
+    region_nexus: "global; any developer workstation in Swiss public-sector IT or in a supplier that runs Cursor with auto-updating extensions"
+    primary_sector_nexus: "indirect (software-development endpoints)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.002, T1059.007, T1098.004, T1572, T1543.001, T1053.003, T1053.005, T1547.001, T1082, T1036.005]
+    affected_products: ["Cursor", "Anthropic Claude Code extension for VS Code (Cursor marketplace builds 2.1.312 and 2.1.313)"]
+    entity_keys: ["product:cursor", "product:anthropic-claude-code", "product:visual-studio-code"]
+    new_entities:
+      - { key: "incident:cursor-claude-code-extension-compromise-2026-10", type: incident, name: "Cursor marketplace Claude Code extension compromise (October 2026)", aliases: ["Official Claude Code Extension Compromise", "anthropic.claude-code 2.1.313 backdoor"], summary: "Tampered Anthropic.claude-code extension versions 2.1.312 and 2.1.313 served from the Cursor marketplace on 2026-10-29 for about eleven hours, installing an SSH key, reverse-tunnel persistence and a host-details beacon (Cursor, Phorion, Microsoft, 2026-10-29/31)." }
+    relation_suggestions:
+      - { subject: "incident:cursor-claude-code-extension-compromise-2026-10", object: "product:cursor", basis: "Cursor's own notice says the malicious versions were served from the Cursor VS Code Extension Marketplace (Cursor, 2026-10-29)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 1 }
+    novelty: new
+    evidence:
+      - quote: "Between about 2:27am PT and 1:35pm PT today, a maliciously modified version of Anthropic’s Claude Code extension was made available in the Cursor VS Code Extension Marketplace."
+        attribution: "Cursor"
+        source_url: "https://cursor.com/blog/claude-code-extension-security-notice"
+      - quote: "Uninstalling the extension may not be sufficient — the payload drops standalone persistence scripts that keep running."
+        attribution: "Cursor"
+        source_url: "https://cursor.com/blog/claude-code-extension-security-notice"
+      - quote: "Anthropic confirmed to Microsoft that their systems were not compromised and they did not develop the malicious package posted in Cursor marketplace."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/inside-malicious-claude-code-branded-cursor-extension-persistent-ssh-backdoor/"
+      - quote: "A running SSH process does not necessarily mean the attacker gained access."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/inside-malicious-claude-code-branded-cursor-extension-persistent-ssh-backdoor/"
+    extended_notes: |
+      Exposure: hosts where Cursor installed or auto-updated the Anthropic Claude Code extension between 09:27 and 20:35 UTC on 2026-10-29; Phorion's 2026-10-31 update widened the version guidance from 2.1.313 to 2.1.312 and 2.1.313 after Cursor's notice. Cursor and Phorion publish a check for the attacker key comment in authorized_keys; Phorion advises matching the key fingerprint, not the comment. Detection (telemetry classes): process-creation events where a Node/Electron extension-host parent spawns ssh or autossh with remote port forwarding and no command; file-write events to ~/.ssh/authorized_keys by an IDE process; creation of a LaunchAgent, user crontab @reboot entry or scheduled task named after monitoring components shortly after an extension update; dot-prefixed script and key files under ~/.config; extension-install telemetry for the two version numbers. Post-removal check: uninstalling does not remove the persistence; kill tunnel processes, remove the key and persistence, rotate credentials reachable from the host (Cursor step 5). Triage lookalike: administrators legitimately run autossh tunnels; the discriminator is the IDE-extension parent process and a user-writable persistence script, not a systemd or configuration-managed unit. OX Security also published on this (body unreadable). No IOCs recorded here by design.
+
+  # ---------------------------------------------------------------------------
+  - title: "Teams help-desk impersonation to domain-controller identity: Microsoft traces two human-operated intrusions from a Quick Assist session through portable Bun and Java runtimes to AD CS ESC1 certificates with DCSync, and PetitPotam relayed to ESC8 Web Enrollment"
+    suggested_kind: threat
+    suggested_priority: high
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/help-desk-impersonation-ad-cs-abuse-investigating-esc1-esc8-intrusion-paths/", publisher: "Microsoft Security Blog (Microsoft Threat Intelligence)", date: "2026-10-30", role: "primary" }
+    discovery_trace: "first seen at: msft-secblog recent (python3 tools/fetch_source.py msft-secblog recent 12), feed URL https://www.microsoft.com/en-us/security/blog/feed/ -> primary (no pivot needed): https://www.microsoft.com/en-us/security/blog/2026/10/30/help-desk-impersonation-ad-cs-abuse-investigating-esc1-esc8-intrusion-paths/"
+    summary: |
+      FACTS (Microsoft Threat Intelligence, first-hand investigation, activity not attributed to any actor): in two human-operated intrusions an external Teams contact (messages and calls, organisation-themed onmicrosoft.com tenant names, support-themed display names) persuaded a user to open Quick Assist and read out the code, giving hands-on-keyboard access with no malware attachment and no Teams vulnerability. In the session the operator dropped an archive in Downloads, extracted it into a newly created KB-prefixed folder under the user profile (AppData\Roaming) and started a staged payload with a portable Python, Bun (a renamed executable that still carried Bun version metadata) or Java runtime, which ran host and network discovery and connected to domain infrastructure over LDAPS and SMB while assessing AD CS. Case 1 (ESC1): a certificate template that accepts requester-supplied identity and broad enrollment produced certificates for three privileged accounts in a first wave (three users targeted, one workstation), and about 90 minutes later for eight more in a second wave (16 users targeted); DCSync began within seconds of the first certificate. Defender automated attack disruption restricted the covered identities and blocked more than 1,000 SMB attempts, but one privileged account excluded from automated response stayed usable, reached a file server and ran a renamed Rclone (as SearchApp.exe) copying recursively to an external SFTP destination with 20 concurrent transfers, files up to three years old, excluding executables, databases, virtual disks, media, temp and log types. Case 2 (ESC8): PetitPotam (EFSRPC) coerced a domain controller's machine account to authenticate to the attacker host, which relayed that NTLM authentication to an AD CS Web Enrollment endpoint without relay protection (/certsrv), obtained a Domain Controller-template certificate and used it for PKINIT to get a TGT for the DC account; Defender raised ESC8 alerts, the customer isolated the workstation, and no further progression was seen.
+      WHY IT MATTERS (Microsoft's framing, consistent with the mechanics): an issued certificate is an authentication path independent of the first compromised password; resetting the user or reimaging the first workstation does not revoke the certificate or invalidate Kerberos tickets already issued, and revoking a certificate does not retroactively invalidate TGTs or service tickets. Hardening named by Microsoft: HTTPS plus Extended Protection for Authentication on every enrollment web endpoint, remove unneeded Web Enrollment and Certificate Enrollment Web Service endpoints, disable NTLM on enrollment services where feasible, review authentication-capable templates (requester-supplied subject, broad enrollment, weak issuance) and require approval, enable the Certification Services audit subcategory and the CA audit filter, limit Teams external access and federation, allow-list remote-support tools and alert when an approved remote-support process extracts archives or launches interpreters from user-writable paths, and treat containment exclusions as incident decisions with a compensating manual action. This sits next to the entry the store already carries on NTLM relay past signing (SpecterOps/Blackfield) and Talos's Q3 help-desk-vishing finding, but those do not cover AD CS certificate issuance as the privilege step.
+    region_nexus: "global; any Swiss public-sector Windows/Active Directory estate with AD CS and external Teams access enabled"
+    primary_sector_nexus: "direct (administrations run AD CS and Teams; help-desk social engineering is sector-agnostic)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.003, T1566.004, T1219, T1059.007, T1036, T1082, T1016, T1057, T1187, T1557, T1649, T1003.006, T1078.002, T1048]
+    affected_products: ["Microsoft Teams", "Microsoft Quick Assist", "Microsoft Active Directory Certificate Services (AD CS)", "Microsoft Defender XDR"]
+    entity_keys: ["product:microsoft-teams", "product:microsoft-quick-assist"]
+    new_entities:
+      - { key: "product:microsoft-ad-cs", type: product, name: "Microsoft Active Directory Certificate Services", aliases: ["AD CS", "Active Directory Certificate Services", "AD CS Web Enrollment"], summary: "Windows PKI role whose enrollment templates and Web Enrollment endpoints are abused for certificate-based privilege escalation (ESC1, ESC8); Microsoft documents two intrusions using both (Microsoft Security Blog, 2026-10-30)." }
+      - { key: "tool:petitpotam", type: tool, name: "PetitPotam", aliases: ["EFSRPC coercion"], summary: "Technique and tool that coerces a Windows server (here a domain controller) to authenticate to an attacker-controlled host over EFSRPC so the authentication can be relayed, e.g. to AD CS Web Enrollment (Microsoft, 2026-10-30)." }
+      - { key: "tool:rclone", type: tool, name: "Rclone", aliases: ["rclone"], summary: "Legitimate cloud-sync utility repeatedly renamed and used for bulk exfiltration, here as SearchApp.exe copying a file share to an external SFTP server (Microsoft, 2026-10-30)." }
+    relation_suggestions:
+      - { subject: "tool:petitpotam", object: "product:microsoft-ad-cs", basis: "Microsoft's Case 2: PetitPotam-coerced domain-controller NTLM authentication was relayed to AD CS Web Enrollment (ESC8) (Microsoft, 2026-10-30)" }
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "The activity described here is not attributed to a specific threat actor."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/help-desk-impersonation-ad-cs-abuse-investigating-esc1-esc8-intrusion-paths/"
+      - quote: "Resetting the user’s password or reimaging the first workstation does not revoke an issued certificate or invalidate Kerberos tickets that have already been issued."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/help-desk-impersonation-ad-cs-abuse-investigating-esc1-esc8-intrusion-paths/"
+      - quote: "One privileged account was excluded from automated response, so containment did not apply to that identity."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/30/help-desk-impersonation-ad-cs-abuse-investigating-esc1-esc8-intrusion-paths/"
+    extended_notes: |
+      Single-source: Microsoft is first-hand on both cases; the Teams-to-remote-support entry pattern is independently documented elsewhere (Talos IR Q3 trends already in the store; CrowdStrike's legal-sector report describes the same IT-impersonation to remote-tool pattern) but the AD CS branch is Microsoft-only. Exposure: AD forests with an enterprise CA, enrolment templates that allow requester-supplied subject with broad enrolment, Web Enrollment/CES over HTTP or without EPA, Teams tenants allowing external chat and calls, and Quick Assist not restricted. How to tell: Defender for Identity's AD CS posture assessments (Microsoft's pointer) or an inventory of /certsrv endpoints and template ACLs. Detection (telemetry classes): Teams external-chat creation and impersonation-signal audit events; process-creation and network events for bun.exe/java.exe/python started from a KB-numbered folder under AppData\Roaming, then connections on 80, 445, 636 and 88; CA request and issuance records (requester, SAN, template) correlated with the first PKINIT logon using the issued certificate; a domain-controller machine account authenticating to the CA from a device that is not that DC (Microsoft calls the identity-to-source mismatch the strongest pivot); EFSRPC traffic aimed at a DC; DCSync-type replication from a non-DC. Post-incident: revoke the certificates, publish revocation, and separately assess issued Kerberos tickets; password reset and reimage are not enough. Triage lookalike: legitimate help-desk Quick Assist sessions; discriminators are an external-tenant initiator with no ticket, and a Python/Bun/Java runtime launched from a freshly created user-writable folder rather than a managed install path.
+
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-102764, BeyondTrust Remote Support: Rapid7 publishes the root-cause analysis and a Metasploit module for the unauthenticated file-write to code-execution chain"
+    suggested_kind: vulnerability
+    suggested_priority: critical
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ra-rapid7-analysis-unauthenticated-file-upload-to-rce-in-beyondtrust-remote-support-cve-2026-102764/", publisher: "Rapid7 (Jack Heysel, Rapid7 Analysis)", date: "2026-10-30", role: "primary" }
+    discovery_trace: "first seen at: rapid7 blog index, URL https://www.rapid7.com/blog/ (fetched via python3 tools/fetch_source.py url, hrefs under /blog/post/) -> primary (no pivot needed): https://www.rapid7.com/blog/post/ra-rapid7-analysis-unauthenticated-file-upload-to-rce-in-beyondtrust-remote-support-cve-2026-102764/ ; the watchTowr intelligence page https://watchtowr.com/intelligence/ lists its own BeyondTrust FAQ (not fetched, undated listing)"
+    summary: |
+      DELTA on the existing critical entry (BeyondTrust patched CVE-2026-102764 under BT26-05 on 2026-10-15 after GTIG found ARMORY CASTLE exploiting it as a zero-day; GTIG warned of widespread exploitation once the flaw was public). On 2026-10-30 Rapid7 published a full reverse-engineering write-up and states that a Metasploit module now implements the chain (PHP and Unix Command targets). FACTS (Rapid7, own lab reproduction on Remote Support 24.1.2 build 1524046 with public issue-menu session starts and thin chat enabled, the defaults): the flaw is an origin-validation gap between the appliance's internal message router (brain) and the customer-side thin-scc worker. An anonymous customer session (POST to /api/start_session, then a /nw WebSocket) lets the attacker put the reserved local router ID 1 in the source address of a message; the router's anti-spoofing check compares only against the real router ID, the local-address predicate accepts router 1, and the worker treats the message as local, exposing the internal LocalFileTransfer service with its native filesystem provider. The attacker controls file contents and destination path (limited by the worker's filesystem permissions), the same forgery reaches file-send (Rapid7 read /proc/self/environ to learn the install path), and a PHP file written into the site's public directory runs as the site's operating-system user. Rapid7 states other affected releases and fixed builds were not established by its test; the BeyondTrust advisory (already in the entry) remains the source for affected and fixed versions.
+      DETECTION DETAIL (Rapid7, what it observed on its exploited lab appliance, with a rejected negative-control request for comparison): the successful request is an extensionless URL that executes the uploaded PHP file, while the same path with .php fails, so rules that only match requests ending in .php miss it; the module's PHP deleted itself afterwards (final 404); an interrupted transfer can leave a temporary file ending .php.n$t (that suffix also belongs to the normal transfer code); thin-scc.log and thin-scc-errors.log under the appliance log directory record the file-service requests, and a successful exploit need not leave a 'DISCARDING NONLOCAL MESSAGE' line because the forged local source passes that check; the HTTP access log shows the public session creation and the request to the uploaded endpoint but not the forged router ID; brain.log gives client addresses and timestamps; debug logging is off by default, so detailed message payloads are not captured.
+      WHY IT CHANGES PRIORITY: a public exploit module and a root-cause write-up lower the barrier for opportunistic scanning of internet-exposed self-hosted appliances that have not applied BT26-05; the prior entry's persistence and rebuild guidance for appliances exposed since late August is unchanged.
+    region_nexus: "global; BeyondTrust Remote Support is common in public-sector IT support and vendor-access setups"
+    primary_sector_nexus: "direct where self-hosted appliances are internet-reachable"
+    sector: "public-sector"
+    cves: [CVE-2026-102764]
+    techniques: [T1190, T1505.003]
+    affected_products: ["BeyondTrust Remote Support"]
+    entity_keys: ["product:beyondtrust-remote-support", "actor:verdantbamboo"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-10-16/cve-2026-102764-beyondtrust-remote-support-zero-day"
+    evidence:
+      - quote: "A Metasploit module now implements the chain with PHP and Unix Command targets."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-rapid7-analysis-unauthenticated-file-upload-to-rce-in-beyondtrust-remote-support-cve-2026-102764/"
+      - quote: "Other affected releases and fixed builds have not been established."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-rapid7-analysis-unauthenticated-file-upload-to-rce-in-beyondtrust-remote-support-cve-2026-102764/"
+      - quote: "Detection that only searches for requests ending in .php would miss the successful request in this example."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-rapid7-analysis-unauthenticated-file-upload-to-rce-in-beyondtrust-remote-support-cve-2026-102764/"
+    extended_notes: |
+      Single public source for the delta (Rapid7 first-hand lab work and its own module); the discovery and exploitation facts stay with the existing entry's GTIG and BeyondTrust sources. Rapid7's test build 24.1.2 is older than the 24.3.1 floor in the BeyondTrust advisory, which is consistent with the advisory telling those builds to upgrade first. watchTowr also lists a BeyondTrust arbitrary-file-upload FAQ on its intelligence page (undated listing, not read). The entry's updated_at should float on this because exploit availability is a status change for a critical-priority exposure.
+
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-58882, Android telephony ('SMS of Death'): a single malformed WAP Push SMS crashes com.android.phone, drops calls including emergency calls and loops the phone into recovery; public PoC, fixed in the October update for Android 14 to 17 only"
+    suggested_kind: vulnerability
+    suggested_priority: notable
+    sources:
+      - { url: "https://smsofdeath.com/", publisher: "Mark B (reporter, SMS of Death write-up)", date: "2026-10-29", role: "primary" }
+      - { url: "https://android.googlesource.com/platform/frameworks/opt/telephony/+/735d9672603fa206c4b43cb668c1aa273db70b97%5E%21/", publisher: "Android Open Source Project (fix commit)", date: "2026-06-15", role: "primary" }
+      - { url: "https://www.heise.de/news/SMS-des-Todes-Sicherheitsluecke-laesst-Android-Smartphones-abstuerzen-11506526.html", publisher: "heise security", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'SMS des Todes', https://www.heise.de/news/SMS-des-Todes-Sicherheitsluecke-laesst-Android-Smartphones-abstuerzen-11506526.html) -> pivot: researcher page, URL https://smsofdeath.com/ -> pivot: AOSP commit, URL https://android.googlesource.com/platform/frameworks/opt/telephony/+/735d9672603fa206c4b43cb668c1aa273db70b97%5E%21/ (linked from heise). The Android Security Bulletin pages for 2026-10 and 2026-11 could not be read (the paths I tried 404), so the bulletin status is heise's claim only."
+    summary: |
+      FACTS (researcher write-up plus the AOSP commit): WapPushOverSms.decodeWapPdu() reads the WSP header length as a uintvar into a long, casts it to int with no range check and allocates a byte array of that size; a 5-byte uintvar that decodes to 0x80000000 becomes -2147483648 and the uncaught NegativeArraySizeException kills com.android.phone. The message arrives as a data SMS (WAP Push, port 2948), is never shown in the inbox, and the attacker needs only the victim's number. Effects reported on a Pixel 9 and several Samsung Galaxy models at 100% reproduction: 1-2 seconds of no service per message, active calls dropped including emergency calls, carrier redelivery re-crashing the phone for up to a week from one message, and the poison message retried at every boot, which pushes the device into a recovery wipe-data prompt roughly every 90 seconds; recovery without a factory reset needs a PC and ADB. The reporter filed it with Google on 2026-05-05 (initially closed 'Will Not Fix', per heise), Google's AOSP fix was authored 2026-06-15 and merged 2026-08-05, and the October 2026 Android update carries it for Android 14 to 17; Android 12 and 13 are out of support and unfixed. A working proof-of-concept app is published on GitHub by the reporter. CLAIMS: the researcher says the fix catches RuntimeException and deletes the poison message rather than adding the bounds check he proposed (consistent with the commit message 'Fix remote DoS in decodeWapPdu'); heise reports Google lists the flaw as critical in the coming November bulletin and that it is absent from the October bulletin (I could not verify either on a Google page). GrapheneOS statements cited by heise are X posts and are not used.
+    region_nexus: "global; Swiss emergency services and administrations with Android handsets on pre-October patch levels or on Android 12/13"
+    primary_sector_nexus: "direct for emergency services (police, fire, EMS, civil protection) whose staff rely on Android phones for voice"
+    sector: "public-sector"
+    cves: [CVE-2026-58882]
+    techniques: [T1499.004]
+    affected_products: ["Android (telephony framework, Android 12 to 17)", "Google Pixel", "Samsung Galaxy"]
+    entity_keys: ["product:google-pixel"]
+    new_entities:
+      - { key: "tool:sms-of-death", type: tool, name: "SMS of Death", aliases: ["smsofdeath", "CVE-2026-58882 PoC"], summary: "Public proof-of-concept Android app that sends a malformed WAP Push PDU as a data SMS to crash com.android.phone remotely (reporter Mark B, published 2026-10-29)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "DoS-only impact, but it is remote, zero-click, has a public PoC and interrupts emergency calls, which matters to the emergency-service constituency; the bulletin status could not be verified on a Google page."
+    evidence:
+      - quote: "Devices updated to the October 2026 patch level or later are protected; devices on earlier patch levels remain vulnerable."
+        attribution: "Mark B (smsofdeath.com)"
+        source_url: "https://smsofdeath.com/"
+      - quote: "Tested across multiple makes and models (Pixel 9 on April 2026 firmware, various Samsung Galaxy and A-series) with a 100% reproduction rate."
+        attribution: "Mark B (smsofdeath.com)"
+        source_url: "https://smsofdeath.com/"
+      - quote: "RESTRICT AUTOMERGE: Fix remote DoS in decodeWapPdu (b/517376969)"
+        attribution: "Android Open Source Project"
+        source_url: "https://android.googlesource.com/platform/frameworks/opt/telephony/+/735d9672603fa206c4b43cb668c1aa273db70b97%5E%21/"
+    extended_notes: |
+      Exposure: check the Android security patch level (Settings > About phone) for 2026-10-01 or later on Android 14 to 17 handsets, and inventory any Android 12 or 13 devices in the fleet (no fix expected). An MDM inventory of patch levels is the practical control; the sources name no carrier-side or device-side filter for WAP Push. Detection: telephony-process crash and restart loops in device logs, repeated 'service lost' events, and users reporting dropped calls or a recovery-mode prompt after receiving no visible message; benign lookalike is an ordinary OOM or modem reset, whose discriminator is the repeat on every boot and the recovery wipe-data prompt. Do not choose 'Wipe data' in the recovery prompt (reporter's advice). Post-patch check: none needed beyond patch level, since the flaw is DoS.
+
+  # ---------------------------------------------------------------------------
+  - title: "Victim-matched residential proxies defeat location-based identity alerts: ReliaQuest sees vishing-led SaaS compromises reach data theft within six minutes, with file access but no download events in the logs"
+    suggested_kind: threat
+    suggested_priority: notable
+    lookback: true
+    sources:
+      - { url: "https://reliaquest.com/blog/threat-spotlight-residential-proxies-mask-social-engineering-attacks/", publisher: "ReliaQuest Threat Research (Daniel Wroblewski)", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: reliaquest sitemap, URL https://reliaquest.com/sitemap.xml (filtered to /blog/ paths, lastmod 2026-10-29) -> primary (no pivot needed): https://reliaquest.com/blog/threat-spotlight-residential-proxies-mask-social-engineering-attacks/ ; corroboration of the general vishing-to-SaaS pattern attempted via WebSearch ('ShinyHunters vishing residential proxy victim location Okta passkey enrollment phishing domains device registration 2026'): Okta and Obsidian reporting exists for the vishing and passkey-enrollment pattern but nothing found on victim-matched residential proxies, so that specific claim stays single-source"
+    summary: |
+      CLAIMS (ReliaQuest, from its own incident telemetry; the page date in the page metadata is 2026-10-28): attackers combine help-desk, HR or legal impersonation by phone, SMS or external collaboration requests with fake identity, passkey, SSO or enrolment pages, then route sign-in and device registration through residential proxies chosen to sit near the victim's expected location, so impossible-travel, unexpected-country and ASN-reputation signals stay quiet. Actions on objectives began about six minutes after initial access in one incident and about 15 minutes in another. Data theft ran through built-in SaaS APIs rather than malware: in SharePoint cases Microsoft Graph clients generated tens of thousands of file-access events across hundreds of sites, and in one database case an attacker scanned more than 23 billion rows and extracted roughly 136 GB in a 14-hour automated session. ReliaQuest says that in several incidents telemetry showed file access without a matching download event, yet the files later appeared on leak sites, so a download event must not be required before escalating; one compromised identity also reached SharePoint, mail, Salesforce and analytics through SSO, and disabling the user in one application did not revoke the others. It reports blocking more than 350 related impersonation domains since March 2026, with monthly counts rising from 5 in March to almost 100 in the first three weeks of October, many weaponised within hours of registration and themed on passkey, SSO, Okta or enrolment, and says groups like ShinyHunters and related clusters can run the same playbook against many organisations at once (ReliaQuest's association; it gives no attribution evidence for these incidents). ReliaQuest assesses generative-AI templating of the domains as possible but unconfirmed. Mitigations it names: phishing-resistant MFA and managed-device (Conditional Access) policy for sensitive SaaS, and prioritising identity-to-SaaS correlation (new authentication method or device registration followed by Graph or bulk file access) over isolated geography alerts.
+    region_nexus: "global; transferable to any Swiss public body with Microsoft 365 or SSO-fronted SaaS and a help desk reachable by phone"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.004, T1078.004, T1090.002, T1098.005, T1213.002, T1530]
+    affected_products: ["Microsoft 365 (SharePoint, Microsoft Graph)", "Okta", "Salesforce"]
+    entity_keys: ["actor:shinyhunters"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 3 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Single vendor source with product-marketing framing; the delta over Huntress (M365 token replay) and Talos (help-desk vishing) already in the store is the victim-matched residential proxy detail, the six-minute time-to-exfiltration and the access-without-download telemetry gap. Actor attribution to ShinyHunters is ReliaQuest's loose association."
+    evidence:
+      - quote: "Actions on objectives can begin within six minutes of initial access."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-residential-proxies-mask-social-engineering-attacks/"
+      - quote: "Monthly totals rose from 5 in March to almost 100 during the first three weeks of October."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-residential-proxies-mask-social-engineering-attacks/"
+      - quote: "Defenders should therefore avoid requiring a conventional download event before escalating suspected data theft."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-residential-proxies-mask-social-engineering-attacks/"
+    extended_notes: |
+      Detection (telemetry classes): identity-provider logs for password reset, MFA or passkey enrolment, authentication-method change and device registration that follow an inbound call or an external collaboration request, correlated with SaaS audit records of Graph API clients, cross-site file enumeration or bulk reads; treat file-access spikes as potential exfiltration even without download events. Triage lookalike: a user enrolling a new phone; discriminators are an enrolment that follows an unsolicited call, a sign-in from a residential IP with no history for the account and an automated API client reading hundreds of sites within minutes. A separate ReliaQuest post on AI agents driving an intrusion through an exposed job-submission endpoint carries a page date of 2026-10-07 (sitemap lastmod 2026-10-28) and was dropped as out of horizon.
+
+  # ---------------------------------------------------------------------------
+  - title: "TeamViewer 15.83: a malicious or compromised host can run code on the support technician's viewer (CVE-2026-111585, CVSS 8.8, Remedio exploit to code execution), plus a Linux/macOS decoder overflow reachable through a .tvs recording and a macOS helper escalation"
+    suggested_kind: vulnerability
+    suggested_priority: notable
+    sources:
+      - { url: "https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/", publisher: "TeamViewer (bulletin TV-2026-1011)", date: "2026-10-28", role: "primary" }
+      - { url: "https://remedio.io/research/vulnerability-disclosures/remote-code-execution-in-teamviewer/", publisher: "Remedio research (discoverer of CVE-2026-111585)", date: "2026-10-29", role: "primary" }
+      - { url: "https://www.securityweek.com/teamviewer-flaw-could-let-malicious-hosts-take-over-support-technicians-machines/", publisher: "SecurityWeek", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://www.heise.de/news/TeamViewer-stopft-Codeschmuggel-Luecke-11506072.html", publisher: "heise security", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'TeamViewer stopft Codeschmuggel-Lücke', https://www.heise.de/news/TeamViewer-stopft-Codeschmuggel-Luecke-11506072.html) -> corroborating: securityweek feed, URL https://www.securityweek.com/feed/ -> pivot: TeamViewer bulletin, URL https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/ -> pivot: Remedio write-up, URL https://remedio.io/research/vulnerability-disclosures/remote-code-execution-in-teamviewer/ (both linked from heise and SecurityWeek)"
+    summary: |
+      FACTS (TeamViewer bulletin TV-2026-1011, 2026-10-28; no exploitation known to the vendor at publication): three CVEs are fixed in version 15.83 for Full Client, Host, Portable and the Android Remote Control app, with listed legacy builds (Windows 15.64.10 for Windows 7 and 8, 14.7.48868, 13.2.36231; Linux 14.7.48868 and 13.2.154008; macOS 14.7.48868 and 13.2.154007). CVE-2026-111585 (CVSS 3.1 8.8): an integer overflow in remote-control screen decompression lets a malicious or compromised remote host cause denial of service or, depending on platform, code execution with the viewer process's privileges; exploitation needs the user to establish a remote-control session to that host. CVE-2026-92372 (8.8): an out-of-bounds write in the screen-image decoder of Full Client for Linux and macOS, reachable through crafted screen data in a session or by opening a crafted .tvs session recording, needs user interaction. CVE-2026-92374 (7.8): a TOCTOU and symlink flaw in the privileged helper of Full Client and Host for macOS bypasses installer-package verification for local privilege escalation to root.
+      CLAIMS (Remedio, discoverer): the viewer sizes its decode surface from the host-announced screen dimensions with 32-bit arithmetic that wraps (a 32768 by 32768 surface at 32 bits per pixel allocates about 4 MB for a surface that reports itself as roughly 33,000 rows), the host can steer the viewer onto this bitmap path by refusing hardware video codec negotiation, and Remedio reports a crash on stock Windows and, on a fully updated client with default protections, redirection of a later call through an overwritten object pointer to WinExec. Remedio states the surface is reachable in the default configuration and that accepting the session is all it takes (a reverse of the usual direction: the technician is the victim).
+    region_nexus: "global; TeamViewer is widely used by public-sector help desks and for vendor remote access"
+    primary_sector_nexus: "indirect to direct where help desks use TeamViewer to connect to untrusted user machines"
+    sector: "public-sector"
+    cves: [CVE-2026-111585, CVE-2026-92372, CVE-2026-92374]
+    techniques: [T1203, T1068]
+    affected_products: ["TeamViewer Full Client", "TeamViewer Host", "TeamViewer Portable", "TeamViewer Remote Control (Android)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:teamviewer", type: product, name: "TeamViewer", aliases: ["TeamViewer Full Client", "TeamViewer Host"], summary: "Commercial remote-access and remote-support software; version 15.83 (2026-10-28) fixes three vulnerabilities including a viewer-side code-execution flaw triggered by a malicious host (TeamViewer bulletin TV-2026-1011)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "High-severity but user-interaction-bound, no exploitation reported; vendor bulletin dated 2026-10-28 and Remedio 2026-10-29 sit just outside the 26 h window (press pickup 2026-10-30). Relevant to public-sector help desks that connect to untrusted machines, which also ties to the Microsoft help-desk intrusion item."
+    evidence:
+      - quote: "Exploitation requires a user to establish a remote-control session to an attacker-controlled or compromised host."
+        attribution: "TeamViewer"
+        source_url: "https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/"
+      - quote: "At the time of publication, TeamViewer is not aware of any active exploitation in the wild."
+        attribution: "TeamViewer"
+        source_url: "https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/"
+    extended_notes: |
+      Exposure: any technician workstation running TeamViewer Full Client or Portable before 15.83 (or a listed legacy build before its fixed number), especially where technicians connect to unmanaged or user-owned machines; the Android Remote Control app is also in scope. Version check via the client's About dialog or software inventory. Detection: TeamViewer client crash-and-restart loops during a session, unexpected child processes of the TeamViewer viewer process, and (for the macOS helper flaw) installer-package activity by the privileged helper. Post-patch compromise check: none stated by the sources. This is not the first TeamViewer fix in October (heise links an earlier high-severity release), so the patching cadence for this tool deserves a standing owner.
+
+  # ---------------------------------------------------------------------------
+  - title: "ANNUAL REPORT — CrowdStrike 2026 Legal Threat Landscape Report: IT-impersonation vishing into remote-support tools, a hired person walking into a law firm, a legal-billing zero-day and ESXi zero-day use by China-nexus actors"
+    suggested_kind: annual-report
+    suggested_priority: notable
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/resources/reports/2026-legal-threat-landscape-report/", publisher: "CrowdStrike (report landing page, key insights)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/", publisher: "CrowdStrike blog (Inside the 2026 Legal Threat Landscape Report)", date: "2026-10-30", role: "primary" }
+      - { url: "https://thenextweb.com/news/crowdstrike-attacks-on-law-firms-chatty-spider-intapp", publisher: "The Next Web", date: "2026-10-28", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Report-Cyberkriminelle-nehmen-Rechtssektor-ins-Visier-11505789.html", publisher: "heise security (dpa)", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'Report: Cyberkriminelle nehmen Rechtssektor ins Visier', https://www.heise.de/news/Report-Cyberkriminelle-nehmen-Rechtssektor-ins-Visier-11505789.html) -> pivot: WebSearch ('CrowdStrike 2026 legal sector threat landscape report law firms 455 organizations leak sites') -> pivot: The Next Web, URL https://thenextweb.com/news/crowdstrike-attacks-on-law-firms-chatty-spider-intapp -> primary: CrowdStrike report page, URL https://www.crowdstrike.com/en-us/resources/reports/2026-legal-threat-landscape-report/ and blog, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/ (the full report is gated; only the landing page and blog were read)"
+    summary: |
+      CLAIMS (CrowdStrike Intelligence, reporting period 2025-09-01 to 2026-08-31, based on its own telemetry; the full report was not read): intrusions targeting legal entities in 2026 have nearly doubled from the 2023 baseline; financially motivated actors account for 82% of observed activity and big-game-hunting groups named 455 legal entities on leak sites (up 39% year on year), state-nexus actors about 18%, mostly China-nexus (nearly twice as many China-nexus adversaries as in 2023). CHATTY SPIDER's activity against legal entities rose 129% in the first eight months of 2026 over all of 2024, with law firms nearly 90% of its victims; its tactics moved from callback phishing to vishing that impersonates IT staff to set up remote-support sessions and exfiltrate within minutes (The Next Web and heise relay one 2025 intrusion with an exfiltration attempt four minutes after entry) and, in November 2025, to hiring a Russian national who posed as internal IT at a US law firm, was given an onsite workstation to deploy remote-management tools and attempt cloud-storage exfiltration, and was detained on a second visit; CrowdStrike cites public reporting that US-based individuals did several physical intrusions in 2026. SNARKY SPIDER (emerged October 2025) and CORDIAL SPIDER (November 2025) share near-identical TTPs, including vishing that impersonates IT and directs staff to SSO-themed phishing pages. China-nexus specifics: WARP PANDA exploited ESXi command-logging bypass CVE-2026-41709 as a zero-day in vCenter intrusions as late as early 2026; TITAN PANDA in April 2026 exploited a hardcoded IIS machine key in Intapp Time Server, the first observed targeting of legal-sector software; MURKY PANDA's ORB28 password-spraying campaign affected more than 340 mostly US entities across sectors (one law firm saw nearly 500 failed logins to as many accounts from about 300 IP addresses in 30 days); OVERCAST PANDA targeted executive staff of a UK law firm. The Next Web states the FBI links CHATTY SPIDER to the Silent Ransom Group (store already holds the FBI flash on that group); I did not verify that link on an FBI page.
+    region_nexus: "global (US-centred, Germany named among the most attacked countries per heise/dpa); Swiss relevance is indirect: prosecutorial and legal departments of administrations, and the generic help-desk impersonation pattern"
+    primary_sector_nexus: "indirect"
+    sector: "legal"
+    cves: [CVE-2026-41709]
+    techniques: [T1566.004, T1219, T1110.003, T1190, T1078]
+    affected_products: ["Intapp Time Server", "VMware ESXi", "Microsoft 365"]
+    entity_keys: ["actor:verdantbamboo"]
+    new_entities:
+      - { key: "report:crowdstrike-legal-threat-landscape-2026", type: report, name: "CrowdStrike 2026 Legal Threat Landscape Report", aliases: [], summary: "CrowdStrike Intelligence report (2026-10-28) covering 2025-09-01 to 2026-08-31 on eCrime and China-nexus targeting of the legal sector." }
+      - { key: "actor:chatty-spider", type: actor, name: "CHATTY SPIDER", aliases: [], summary: "CrowdStrike eCrime adversary running IT-impersonation vishing, remote-tool abuse, data theft and extortion almost exclusively against US law firms, with documented physical intrusions; The Next Web reports the FBI links it to the Silent Ransom Group (CrowdStrike, 2026-10-28/30)." }
+    relation_suggestions:
+      - { subject: "actor:chatty-spider", object: "campaign:fbi-flash-csa-260526-silent-ransom-group-physical-usb-attacks-us-law-firms", basis: "The Next Web: CHATTY SPIDER is 'linked by the FBI to the Silent Ransom Group' (The Next Web, 2026-10-28; unverified on an FBI page by me); use overlaps-with at most" }
+      - { subject: "report:crowdstrike-legal-threat-landscape-2026", object: "actor:chatty-spider", basis: "CrowdStrike's report names CHATTY SPIDER the dominant threat to legal entities (CrowdStrike blog, 2026-10-30)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Periodic vendor report on a sector outside the constituency; only the landing page and blog could be read (full report gated); primary dated 2026-10-28 (blog metadata 2026-10-30), heise dpa relay 2026-10-30. Value for the constituency is the confirmation of IT-impersonation vishing into remote-support tools and the ESXi zero-day timeline, both partly already in the store."
+    evidence:
+      - quote: "Big game hunting (BGH) adversaries named 455 legal entities on dedicated leak sites from September 2025 to August 2026, a 39% increase from the prior reporting period."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/resources/reports/2026-legal-threat-landscape-report/"
+      - quote: "In November 2025, CHATTY SPIDER hired a Russian national to physically access a U.S.-based law firm."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/"
+      - quote: "Financially motivated adversaries accounted for 82% of observed activity against the legal sector."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-legal-threat-landscape-report/"
+    extended_notes: |
+      Flagged ANNUAL REPORT because it is a periodic vendor sector report. CrowdStrike's recommendations (as relayed): stronger MFA, tighter control of remote-access tools, review of default and hardcoded settings, monitoring for newly added MFA devices on accounts. Reliability caveat: vendor-telemetry statistics (doubling since 2023, 455 leak-site names) are CrowdStrike's own and not independently checked.
+
+  # ---------------------------------------------------------------------------
+  - title: "Binance: about USD 6.36 billion drained on 2026-10-29 in the largest crypto theft on record; Binance links it to a compromised DevOps engineer's laptop and a service container, TRM attributes it to TraderTraitor"
+    suggested_kind: incident
+    suggested_priority: notable
+    sources:
+      - { url: "https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history", publisher: "TRM Labs (on-chain analysis and attribution)", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.securityweek.com/6-billion-binance-hack-bears-hallmarks-of-north-koreas-tradertraitor/", publisher: "SecurityWeek", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/", publisher: "BleepingComputer", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: blick-ch news sitemap, URL https://www.blick.ch/news.xml (Swiss press titles 'Mega-Hack erschüttert die Krypto-Welt', 2026-10-29, and 'Das musst du zum grössten Krypto-Raub aller Zeiten wissen', 2026-10-30) and bleepingcomputer feed, URL https://www.bleepingcomputer.com/feed/ -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop/ -> pivot: TRM Labs, URL https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history -> corroborating: SecurityWeek, URL https://www.securityweek.com/6-billion-binance-hack-bears-hallmarks-of-north-koreas-tradertraitor/ (Binance's own statements are X posts and are only used as quoted by these outlets)"
+    summary: |
+      FACTS (TRM Labs on-chain tracing): on 2026-10-29 an attacker moved about USD 6.36 billion out of Binance wallets on ten blockchains, most of it within about 20 minutes from 20:05 UTC, with a second wave around 23:05 UTC; stablecoin issuers and Arbitrum's Security Council froze about USD 2.7 billion, leaving roughly USD 2.4 billion in the attacker's hands. Preparation started at least 36 hours earlier (small Tornado Cash withdrawals funding an operator wallet, code tested on other wallets). On Ethereum the attacker used EIP-7702 to make a Binance hot wallet delegate to a sweeper contract, with 50 pre-signed authorisations covering consecutive nonces so one would match; on the other nine chains Binance wallets sent funds through ordinary valid signatures. CLAIMS AND ASSESSMENTS: Binance (as quoted by SecurityWeek and BleepingComputer) says its initial investigation suggests a compromised DevOps engineer's laptop gave access to a service container used to submit unauthorised withdrawals, found no evidence of a wallet private-key leak, and that the attack was not a single-permission 'one-click' action; TRM assesses the most likely explanation is that the attacker gained the ability to make Binance's hot-wallet signing system sign transactions of its choosing across chains. TRM attributes the theft to TraderTraitor (DPRK) with high confidence on on- and off-chain intelligence and prior-heist similarities (Bybit 2025, KelpDAO 2026); BleepingComputer reports Chainalysis agreeing with a high degree of confidence (an X post, not independently read). Binance itself has not attributed responsibility.
+    region_nexus: "global; Swiss press coverage (Blick); no stated Swiss public-sector exposure"
+    primary_sector_nexus: "none direct; transferable lesson is privileged DevOps-endpoint compromise reaching a signing or secrets-bearing service container"
+    sector: "financial"
+    cves: []
+    techniques: [T1657, T1078]
+    affected_products: ["Binance (exchange hot-wallet signing infrastructure)"]
+    entity_keys: ["actor:jade-sleet"]
+    new_entities:
+      - { key: "incident:binance-hot-wallet-signing-compromise-2026-10", type: incident, name: "Binance hot-wallet theft (October 2026)", aliases: ["Binance USD 6.3 billion hack"], summary: "About USD 6.36 billion drained from Binance wallets on ten chains on 2026-10-29; Binance points to a compromised DevOps engineer's laptop and a service container; TRM attributes it to TraderTraitor (TRM Labs, 2026-10-30)." }
+    relation_suggestions:
+      - { subject: "incident:binance-hot-wallet-signing-compromise-2026-10", object: "actor:jade-sleet", basis: "TRM Labs attributes the theft to TraderTraitor (registry alias of actor:jade-sleet) with high confidence; Binance has not attributed it (TRM, 2026-10-30)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Qualifies only under the global-scale filter (largest crypto theft on record, DPRK attribution by a telemetry-holding analyst); no Swiss public-sector nexus; S4 will likely carry the same incident, main agent should dedupe against S4. Binance's own statements are X-only."
+    evidence:
+      - quote: "On October 29, 2026, an attacker moved approximately USD 6.36 billion out of Binance wallets on ten blockchains, most of it in about 20 minutes starting at 20:05 UTC."
+        attribution: "TRM Labs"
+        source_url: "https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history"
+      - quote: "TRM attributes this attack to TraderTraitor, North Korea’s premier hacking unit."
+        attribution: "TRM Labs"
+        source_url: "https://www.trmlabs.com/resources/blog/north-korea-steals-usd-6-36-billion-from-binance-in-the-largest-hack-in-history"
+      - quote: "Binance’s initial investigation suggests that the security incident may involve a compromised DevOps engineer’s laptop, which allowed an attacker to gain access to a service container and submit unauthorized withdrawal transactions."
+        attribution: "Binance, as quoted by SecurityWeek"
+        source_url: "https://www.securityweek.com/6-billion-binance-hack-bears-hallmarks-of-north-koreas-tradertraitor/"
+
+# -----------------------------------------------------------------------------
+# Structured CVE rows for items above (S3 supplies these because the CVEs are new to the store; S1 may carry duplicates).
+cve_table:
+  - { cve: CVE-2026-98432, product: "Linux kernel (IPv4 TCP, net/ipv4/af_inet.c and tcp_ipv4.c)", cvss: "9.8 (kernel CNA); Red Hat page read 2026-10-31 shows 9.8 and Critical; BleepingComputer reported a Red Hat 5.9 on 2026-10-30; CIQ cites 8.1", epss: null, kev: false, exploited: false, affected: "Linux 4.4 onward, IPv4 only; RHEL 8/9/10 (6 and 7 not affected), Ubuntu 16.04 to 26.10 (14.04 not affected), Rocky/RLC 8/9/10", fixed: "upstream 6.12.113, 6.18.56, 7.2.10, 7.3-rc7; Debian 12 6.1.190-1 (DLA-4841-1) and Debian 13 6.12.113-1 (DSA-6568-1); Ubuntu, RHEL and CIQ kernels not yet released on 2026-10-30", type: use-after-free-race, vector: network, auth: pre-auth, source: "https://lists.openwall.net/linux-cve-announce/2026/10/15/1" }
+  - { cve: CVE-2026-58882, product: "Android telephony framework (WapPushOverSms.decodeWapPdu)", cvss: null, epss: null, kev: false, exploited: false, affected: "Android 12 to 17 (per reporter; reproduced on Android 12 to 16)", fixed: "October 2026 Android update for Android 14 to 17 (reporter, heise); Android 12 and 13 unfixed; Google bulletin status unverified", type: remote-dos-negative-array-size, vector: zero-click, auth: pre-auth, source: "https://smsofdeath.com/" }
+  - { cve: CVE-2026-111585, product: "TeamViewer Full Client, Portable, Remote Control (Android)", cvss: "8.8", epss: null, kev: false, exploited: false, affected: "before 15.83; legacy 15.64 before 15.64.10 (Windows), 14.7 before 14.7.48868, 13.2 before 13.2.36231 (Windows), 13.2.154008 (Linux), 13.2.154007 (macOS)", fixed: "15.83 and the listed legacy builds", type: integer-overflow-heap-overflow, vector: network-session, auth: user-interaction, source: "https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/" }
+  - { cve: CVE-2026-92372, product: "TeamViewer Full Client and Host for Linux and macOS", cvss: "8.8", epss: null, kev: false, exploited: false, affected: "before 15.83; legacy 14.7 and 13.2 branches", fixed: "15.83 and the listed legacy builds", type: out-of-bounds-write, vector: network-session-or-tvs-file, auth: user-interaction, source: "https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/" }
+  - { cve: CVE-2026-92374, product: "TeamViewer Full Client and Host for macOS (privileged helper)", cvss: "7.8", epss: null, kev: false, exploited: false, affected: "before 15.83; legacy 14.7 and 13.2 (macOS)", fixed: "15.83, 14.7.48868, 13.2.154007", type: toctou-symlink-lpe, vector: local, auth: low-privilege, source: "https://www.teamviewer.com/en-us/resources/trust-center/security-bulletins/tv-2026-1011/" }
+
+candidate_sources:
+  - id: phorion
+    publisher: "Phorion (macOS EDR vendor research blog)"
+    url: "https://phorion.io/blog/offical-claude-code-vsx-compromise/"
+    category: research
+    why: "Discovered and published the first technical analysis of the Cursor marketplace Claude Code extension compromise; macOS endpoint tradecraft. No feed found (the two feed paths I probed 404'd), so listing path unverified; revisit before registering."
+  - id: remedio-research
+    publisher: "Remedio research (vulnerability disclosures)"
+    url: "https://remedio.io/research/vulnerability-disclosures/remote-code-execution-in-teamviewer/"
+    category: research
+    why: "Primary exploit write-up for TeamViewer CVE-2026-111585 (viewer-side RCE reaching WinExec); detailed root cause and heap-layout analysis. Listing path unverified; one article read."
+
+coverage_gaps:
+  - { source_id: schneier, reason: "Atom feed https://www.schneier.com/feed/atom/ 403 on direct and the reader. Working recipe: python3 tools/fetch_source.py extract https://www.schneier.com/blog/ (served via jina, dated posts). Nothing relevant in lookback." }
+  - { source_id: ox-security, reason: "Feed lists dated items; article body still 403 on direct, extract and jina on 2026-10-31 (https://www.ox.security/blog/malicious-claude-code-extension-cursor-ssh-backdoor/). Lead-only; its 2026-10-30 Cursor post was corroborated by Cursor, Phorion, Microsoft and Sophos." }
+  - { source_id: blick-ch, reason: "RSS holds about 12 h (31 items), so the 145 h lookback cannot be served from it; python3 tools/fetch_source.py url --direct https://www.blick.ch/news.xml (news sitemap) gave 296 dated, titled URLs over about 48 h and no Swiss public-sector cyber item (only Binance coverage). Older lookback not served." }
+  - { source_id: rapid7-research, reason: "Feed https://www.rapid7.com/rss.xml is not well-formed XML (invalid token at line 384) on direct and jina. Working recipe: python3 tools/fetch_source.py url https://www.rapid7.com/blog/ then regex /blog/post/ hrefs, then extract per post (the extract carries the page date). This yielded the 2026-10-30 BeyondTrust analysis." }
+  - { source_id: gtig-and-proofpoint-indexes, reason: "https://cloud.google.com/blog/topics/threat-intelligence and https://www.proofpoint.com/us/blog/threat-insight are JS-driven (no post hrefs via url); their RSS feeds' newest items are 2026-10-15 (GTIG, feedburner) and 2026-10-14 (Proofpoint), consistent with a quiet period but not independently confirmed." }
+  - { source_id: crowdstrike, reason: "Full 2026 Legal Threat Landscape Report is gated; landing page and blog read via extract; blog listing https://www.crowdstrike.com/en-us/blog/ read via WebFetch (listing with dates works)." }
+  - { source_id: android-security-bulletin, reason: "https://source.android.com/docs/security/bulletin/2026-10-01 and 2026-11-01 returned 404 (paths guessed from the naming scheme, not cited); the claim that CVE-2026-58882 is absent from the October bulletin and due in November rests on heise only." }
+
+source_ledger:
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed (https://www.heise.de/security/feed.xml) + extract", horizon_hours: 26, in_horizon_items: 10, returned: 5, note: "Cursor extension, Linux TCP/IP CVE-2026-98432, SMS of Death, TeamViewer, CrowdStrike legal report; Ruby/GitLab regex story and WordPress/Cisco/GitLab items already covered in the store" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed (https://www.inside-it.ch/rss.xml)", horizon_hours: 26, in_horizon_items: 10, returned: 0, note: "10 items on 2026-10-30, none security or incident (Binance hack headline only); no Swiss public-sector cyber item in the 26 h horizon" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed (https://labs.watchtowr.com/rss/) + extract https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-10-09; the /intelligence/ listing is undated and shows a BeyondTrust arbitrary-file-upload FAQ and PHP2Shell FAQs already covered" }
+  - { id: golem-security, tier: standard, attempted: true, transport: "feed (https://rss.golem.de/rss.php?tp=sec&feed=RSS2.0)", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "Alpine Linux GitLab rebuild after the Ruby regex flaw is already covered by the CVE-2026-97229 entry; the Pentagon AI-agent access leak is S4-scope and article bodies sit behind the consent wall; rotation_priority fetch gap closed (feed works)" }
+  - { id: ox-security, tier: standard, attempted: true, transport: "feed (https://www.ox.security/feed/); body extract/jina 403", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "2026-10-30 Cursor extension post is lead-only (body 403 on all transports); covered through Cursor, Phorion, Microsoft, Sophos" }
+  - { id: blackfield-ch, tier: standard, attempted: true, transport: "feed (https://blackfield.ch/feed.xml)", horizon_hours: 148, in_horizon_items: 0, returned: 0, note: "single post 2026-10-21 (SMB signing), already covered by the NTLM-relay entry" }
+  - { id: blick-ch, tier: standard, attempted: true, transport: "feed + url --direct news sitemap", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "lookback not fully servable (RSS 12 h; sitemap about 48 h); no Swiss public-sector cyber item; Binance hack coverage only (used as a Swiss-press pointer)" }
+  - { id: forescout-research, tier: standard, attempted: true, transport: "url (raw hrefs) + per-post extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22 (cold-chain refrigeration exposure), before the lookback; recipe note confirmed" }
+  - { id: netcraft, tier: standard, attempted: true, transport: "url https://www.netcraft.com/resources/blog + per-post extract", horizon_hours: 145, in_horizon_items: 6, returned: 0, note: "six posts all dated 2026-10-28; the ICS calendar-invite lure post repeats the covered 2026-10-19 entry, the PHP2Shell post reports 50,000 NCSC UK proactive notifications (marginal delta on a heavily covered topic), the rest are commercial; the date extraction gives the same date for all six, so it may be the listing date" }
+  - { id: offseq, tier: standard, attempted: true, transport: "feed (https://offseq.com/en/research/rss.xml)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22 (PHP2Shell honeypot first 48 hours), before the lookback" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed (https://www.zscaler.com/blogs/feeds/cybersecurity-best-practices)", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-10-29 PHP2Shell layered-response playbook on a heavily covered topic" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "url sitemap (filtered to /blog/) + extract", horizon_hours: 145, in_horizon_items: 2, returned: 1, note: "residential-proxy social engineering kept (lookback true); the AI-agent server-takeover post has a page date of 2026-10-07 and was dropped" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract (https://www.sans.org/newsletters/newsbites/xxviii-80 and xxviii-81)", horizon_hours: 145, in_horizon_items: 2, returned: 1, note: "issue 81 StormCast item led to the CVE-2026-98432 entry; the other items (Oracle EBS exploitation attempts, EPICS ICS advisory, Firefox/Chrome, DHS Okta leak, Japan Airlines/Amadeus breach) are covered or S1/S4 scope" }
+  - { id: schneier, tier: standard, attempted: true, transport: "feed 403; extract of https://www.schneier.com/blog/ (served via jina)", horizon_hours: 145, in_horizon_items: 3, returned: 0, note: "posts of 2026-10-30 (squid, aftermarket car-head-unit bloatware, hiding capabilities in AI models) not relevant" }
+  - { id: specterops, tier: standard, attempted: true, transport: "feed (https://specterops.io/feed/)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-10-23 LDAP signing bypass, already carried by the 2026-10-25 NTLM-relay entry" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed (https://www.sysdig.com/blog/rss.xml) + extract on canonical www.sysdig.com/blog", horizon_hours: 148, in_horizon_items: 6, returned: 0, note: "ZDI-CAN-33367 and five other Linux flaws, Node2Shell and PHP2Shell detection posts are covered topics; the pickle-defence bypass research (six CVE bypasses of PyTorch weights_only, Keras safe_mode, picklescan) is low relevance to the constituency; commentary posts dropped" }
+  - { id: xlab-qianxin, tier: standard, attempted: true, transport: "feed (https://blog.xlab.qianxin.com/rss/)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-07-29, consistent with the recorded bursty cadence" }
+
+majors_sweep:
+  note: "Feeds or indexes read for in-window posts (26 h): Talos, Unit 42, Check Point Research, ESET, Securelist, Proofpoint, Trend Micro, Huntress, Elastic, Wiz, GTIG/Mandiant, Sophos X-Ops, Volexity, DFIR Report, Google Security, Datadog, Group-IB, Recorded Future, Krebs, Rapid7 (index), SentinelLabs and CrowdStrike (WebFetch listings), Microsoft Security Blog (msft-secblog), SecurityWeek, The Hacker News, BleepingComputer, The Record, SANS ISC. In-window research outside the slice that produced items: Microsoft (Teams help-desk to AD CS; Cursor extension), Sophos (Cursor extension), Rapid7 (BeyondTrust), CrowdStrike (legal report)."
+
+dropped_leads:
+  - { lead: "heise 2026-10-30: Ruby regex-engine (Onigmo) bugs behind the GitLab CVEs", reason: "covered: entries 2026-10-13/cve-2026-97229 and 2026-10-22/cve-2026-110264 already carry the Ruby 3.3.13/3.4.12/4.0.9 fixes, KEV listing and the no-Ruby-CVE point; heise's only extra is that Regexp.timeout does not help and that CVE scanners will not flag old Ruby (sources: https://www.heise.de/news/Ruby-behebt-drei-kritische-Luecken-vor-denen-CVE-Scanner-nicht-warnen-11505663.html, fetched)" }
+  - { lead: "Oracle EBS CVE-2026-101767 exploit attempts (SANS NewsBites 81, heise 2026-10-29)", reason: "covered: the 2026-10-21 Oracle CPU entry was updated 2026-10-29 with the Defused decoy attempts and Horizon3 detail" }
+  - { lead: "Microsoft Authenticator for Android token hand-over CVE-2026-80097 (Enclave 'AuthMask', heise 2026-10-28)", reason: "outside the 26 h window and not yet in the store (no entry mentions the CVE); heise says Microsoft fixed it in September (Android app 6.2606.4246 or later); listed so the audit can decide" }
+  - { lead: "EDK II PXE-boot flaw CVE-2026-97631 (CVSS 4.0 9.5, Golem 2026-10-28, SecurityWeek 'UEFI flaw hits most servers' 2026-10-30)", reason: "first reports 2026-10-26 to 2026-10-28, outside the window; not in the store; only seen through a WebSearch summary (t3n, Techzine, TNW), never fetched as a primary, so not verified; likely S1 scope" }
+  - { lead: "Talos NIK C2 (2026-10-29), Securelist NetamLoader (2026-10-29), Group-IB MadApe device-code phishing kit (2026-10-29), Check Point 'Tricks from the Past ... signed ChatGPT and Claude binaries' (2026-10-27), Pluto Security Hugging Face miner campaign (BleepingComputer 2026-10-29)", reason: "published before the 26 h window and not in the store; seen only by feed title, not read; previous fire's window covered them" }
+  - { lead: "DHS employee-record leak attributed by the leakers to its Okta login system (WIRED via SANS NewsBites 81); Japan Airlines customer data via an Amadeus IT Group breach (Aug 2023 to Sep 2026); Uni Leipzig offline after cyberattack (heise); Fehmarnbelt tunnel company cyber-gang claim (heise title only); Drupal Commerce Core authorization bypass exploited (BleepingComputer, SecurityWeek, THN 2026-10-30); WordPress core RCE attempts (covered)", reason: "S4/S1 scope leads handed over by pointer only; not pursued as S3" }
+  - { lead: "Sysdig 'In a pickle' ML model-deserialisation bypass research (2026-10-27)", reason: "analytic substance but low relevance to the constituency; returned as no item" }
+  - { lead: "Netcraft 'Netcraft Supports Response to PHP2Shell' (2026-10-28): 50,000+ proactive notifications with the UK NCSC", reason: "marginal delta on a heavily covered topic; S2 may want the NCSC UK proactive-notification service as a policy pointer (https://www.netcraft.com/blog/php2shell-netcraft-supports-u.k.-response, fetched)" }
+
+bridge_uses:
+  - { id: msft-secblog, method: "bridge:msft-secblog.recent", outcome: ok }
+  - { id: rapid7-research, method: "bridge:url + extract", outcome: ok }
+  - { id: schneier, method: "bridge:extract (jina)", outcome: ok }
+  - { id: reliaquest, method: "bridge:url sitemap + extract", outcome: ok }
+  - { id: forescout-research, method: "bridge:url + extract", outcome: ok }
+  - { id: netcraft, method: "bridge:url + extract", outcome: ok }
+  - { id: blick-ch, method: "bridge:feed + url --direct news.xml", outcome: ok }
+fetch_failures: []
