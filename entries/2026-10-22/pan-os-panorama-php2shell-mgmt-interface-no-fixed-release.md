@@ -1,17 +1,18 @@
 ---
 schema: 1
 kind: vulnerability
-title: "CVE-2026-109618 / CVE-2026-109619, Palo Alto Networks PAN-OS and Panorama: the PHP2Shell flaws affect every release through the management web interface, and Palo Alto reports active exploitation against internet-exposed management interfaces; all twenty hotfixes are out"
-headline: "Palo Alto reports active exploitation of PAN-OS management interfaces via PHP2Shell; all 20 hotfixes now out"
+title: "CVE-2026-109618 / CVE-2026-109619, Palo Alto Networks PAN-OS and Panorama: the PHP2Shell flaws affect every release below its train's hotfix through the management web interface, and Palo Alto reports active exploitation against internet-exposed management interfaces; all twenty hotfixes are out"
+headline: "PAN-OS management interfaces were rooted in the wild via PHP2Shell and a kernel flaw: hotfix, then check for compromise"
 summary: >
-  Palo Alto Networks' advisory of 2026-10-21 now says, as read on 2026-10-28, that active exploitation has been observed targeting the
-  PAN-OS management interface exposed to the internet, after a copy of 2026-10-27 said very limited exploitation, rates the flaw Critical with
-  urgency Highest (CVSS-B 9.2) and lists every release of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama as affected by the PHP flaws
-  CVE-2026-109618 and CVE-2026-109619 through the management web interface (the HTTPS web UI and the XML API service). All twenty hotfixes are
-  released (one for each maintenance line from 10.2.7 to 12.2.4, as read on 2026-10-30); the advisory names no actor or victim, and GlobalProtect and the
-  captive portal are not affected. CISA added both PHP flaws to its Known Exploited Vulnerabilities catalog on 2026-10-26.
+  Palo Alto Networks' advisory of 2026-10-21 says active exploitation has been observed against PAN-OS management interfaces exposed to the
+  internet, and Dream Research, with Unit 42's verification, reports a custom PHP2Shell build chained with a Linux kernel flaw that rooted 25 PAN-OS
+  firewall and management servers in the United States, Japan, Taiwan and South Korea and went on to attack a US government-affiliated Active
+  Directory. The advisory lists every release below the hotfix for its train, of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama, as affected through the management web
+  interface by CVE-2026-109618 and CVE-2026-109619 (CVSS-B 9.2); all twenty hotfixes are released, and GlobalProtect and the captive portal are not
+  affected. A device that was exposed and unpatched needs a compromise check as well as the hotfix, and CISA added both PHP flaws to its Known
+  Exploited Vulnerabilities catalog on 2026-10-26.
 discovered_at: "2026-10-22T03:41:00Z"
-updated_at: "2026-10-30T03:52:50Z"
+updated_at: "2026-11-01T03:27:57Z"
 event_date: "2026-10-21"
 run_id: 2026-10-22T0256Z-intel
 priority: high
@@ -19,8 +20,8 @@ immediate_action: null
 tags: [vulnerabilities, rce, pre-auth, actively-exploited, cisa-kev, patch-available]
 regions: [global]
 sectors: []
-entities: ["product:php", "product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama"]
-techniques: [T1190]
+entities: ["product:php", "product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama", "tool:php2shell", "trend:dirty-frag-linux-kernel-page-cache-lpe", "actor:cl-unk-1280", "campaign:php2shell-pan-os-fragnesia-rooting-2026-10"]
+techniques: [T1190, T1068, T1505.003, T1572, T1090, T1543.002, T1037.004, T1110.003, T1087.002, T1552.004]
 affected_products: ["Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama"]
 cves:
   - id: CVE-2026-109618
@@ -30,7 +31,7 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [exploited, cisa-kev, patch-available]
-    affected: "PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 (all releases); Panorama (PAN-OS software on virtual and M-Series appliances; the advisory table has no separate Panorama row); WildFire Appliance WF-500 and WF-500-B are listed as unaffected after the correction of 2026-10-23"
+    affected: "PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 (every release below the hotfix for its train); Panorama (PAN-OS software on virtual and M-Series appliances; the advisory table has no separate Panorama row); WildFire Appliance WF-500 and WF-500-B are listed as unaffected after the correction of 2026-10-23"
     fixed: "Released per the advisory as read on 2026-10-30: 12.2.4-h1; 12.1.4-h13, 12.1.7-h11, 12.1.10-h3; 11.2.4-h23, 11.2.7-h23, 11.2.10-h16 (11.2.10-h17 adds the Brotli fix), 11.2.13-h4, 11.2.16-h1; 11.1.4-h38, 11.1.6-h40, 11.1.7-h12, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 10.2.7-h39, 10.2.10-h42, 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; Panorama: the table no longer distinguishes it from the PAN-OS trains"
   - id: CVE-2026-109619
     cvss: "9.2 (CVSS-B 4.0, Palo Alto's rating of the PAN-OS impact with management reachable from the internet; 7.7 where it is reachable only from an adjacent network)"
@@ -39,7 +40,7 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [exploited, cisa-kev, patch-available]
-    affected: "PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 (all releases); Panorama (PAN-OS software on virtual and M-Series appliances; the advisory table has no separate Panorama row); WildFire Appliance WF-500 and WF-500-B are listed as unaffected after the correction of 2026-10-23"
+    affected: "PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 (every release below the hotfix for its train); Panorama (PAN-OS software on virtual and M-Series appliances; the advisory table has no separate Panorama row); WildFire Appliance WF-500 and WF-500-B are listed as unaffected after the correction of 2026-10-23"
     fixed: "Released per the advisory as read on 2026-10-30: 12.2.4-h1; 12.1.4-h13, 12.1.7-h11, 12.1.10-h3; 11.2.4-h23, 11.2.7-h23, 11.2.10-h16 (11.2.10-h17 adds the Brotli fix), 11.2.13-h4, 11.2.16-h1; 11.1.4-h38, 11.1.6-h40, 11.1.7-h12, 11.1.10-h36, 11.1.13-h16, 11.1.16-h4; 10.2.7-h39, 10.2.10-h42, 10.2.13-h27, 10.2.16-h12, 10.2.18-h13; Panorama: the table no longer distinguishes it from the PAN-OS trains"
 sources:
   - url: "https://security.paloaltonetworks.com/CVE-2026-109618"
@@ -114,6 +115,14 @@ sources:
     publisher: "Palo Alto Networks PSIRT (advisory record with revision history, as read on 2026-10-30)"
     date: "2026-10-30"
     role: corroborating
+  - url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+    publisher: "Dream Research (report on the chained PHP2Shell and Fragnesia exploit against PAN-OS, updated 2026-10-29)"
+    date: "2026-10-29"
+    role: primary
+  - url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+    publisher: "Palo Alto Networks Unit 42 (threat brief, updated 2026-10-29)"
+    date: "2026-10-29"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "Current analysis shows no impact of CVE-2026-115560 on PAN-OS (NGFW and Panorama)."
@@ -161,18 +170,33 @@ evidence:
   - quote: "Removed ETAs for 11.1.7-h12 as the version is released."
     publisher: "Palo Alto Networks PSIRT (advisory record with revision history, as read on 2026-10-30)"
     source_url: "https://security.paloaltonetworks.com/json/CVE-2026-109618"
-verification: single-source
+  - quote: "The affected devices run specific versions of Palo Alto Networks PAN-OS."
+    publisher: "Dream Research"
+    source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+  - quote: "For 22 of the 24 rooted firewalls, the attacker did nothing beyond planting the webshell."
+    publisher: "Dream Research"
+    source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+  - quote: "Palo Alto Networks’ Unit 42 tracks this activity as CL-UNK-1280 and attributes it to a Chinese-speaking attacker in the UTC+8 time zone."
+    publisher: "Dream Research"
+    source_url: "https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers"
+  - quote: "Unit 42 has independently verified the same attacker’s tooling and confirmed the reported results."
+    publisher: "Palo Alto Networks Unit 42"
+    source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+  - quote: "Customers who have applied the available patches are not affected."
+    publisher: "Palo Alto Networks Unit 42"
+    source_url: "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/"
+verification: multi-source
 sourcing_note: >
-  Palo Alto Networks' advisory is the first-party record for its own products and the only source for the PAN-OS and Panorama
-  impact. The two flaws themselves are described by the PHP project. On 2026-10-25 the
-  advisory's revision history calls 10.2.18-h13, 11.1.16-h4 and 11.2.10-h16 released while its unrevised solution text still
-  speaks of upcoming releases. The statement that exploitation has been observed is Palo Alto's own: an Internet Archive copy of 2026-10-27 17:10 UTC says very limited
-  exploitation, and the page read on 2026-10-28 says active exploitation against the management interface exposed to the internet, with no
-  matching entry in the vendor timeline; no third-party report of an attack on PAN-OS was found. The listing of both PHP flaws in CISA's Known Exploited Vulnerabilities catalog
-  comes from the catalog itself.
+  Palo Alto Networks' advisory is the first-party record for its own products and the only source for the PAN-OS and Panorama impact and for
+  the statement that exploitation has been observed; an Internet Archive copy of 2026-10-27 17:10 UTC says very limited exploitation, and the page
+  read on 2026-10-28 says active exploitation, with no matching change recorded in the vendor timeline. The chain, the 25 rooted servers and the attack on the
+  Active Directory are Dream Research's account of artifacts it recovered, which Unit 42 says it independently verified; Dream worked with Palo Alto
+  Networks, so the two are not fully independent. The CL-UNK-1280 designation comes only from Dream's page. The two PHP flaws are
+  described by the PHP project, and the listing of both in CISA's Known Exploited Vulnerabilities catalog comes from the catalog itself.
 confidence: high
 references:
   - "2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+  - "2026-05-15/cve-2026-46300-linux-kernel-local-privilege-escalation-via-x"
   - "2026-10-15/cve-2026-0322-pan-os-management-interface-code-injection"
   - "2026-05-30/cve-2026-0257-palo-alto-pan-os-globalprotect-pre-auth-authen"
 deep_dive: false
@@ -184,6 +208,7 @@ classification:
 watchlist_hit: false
 actions:
   - "Take the management interface of every PA-Series and VM-Series firewall and Panorama off the internet now by restricting it to a jump box or trusted internal addresses, because Palo Alto reports active exploitation against internet-exposed management interfaces, and install the hotfix for your maintenance release, which Palo Alto's table lists for every line from 10.2.7 to 12.2.4 (11.2.10-h17 adds the Brotli fix)."
+  - "Rotate the directory bind account, HA replication keys, certificate private keys and device authentication keys of every PAN-OS firewall and Panorama that was reachable from the internet while unpatched and shows a PHP web shell or a tunnel, because the chain Dream Research recovered harvested exactly those from rooted firewalls, and the hotfix does not remove a web shell or tunnel already in place."
 updates:
   - at: "2026-10-23T03:42:16Z"
     run_id: 2026-10-23T0256Z-intel
@@ -256,18 +281,32 @@ updates:
       remains; the exploitation statement is unchanged. The title, headline, summary, fixed-release
       strings, the action and the hotfix sentences in the text are updated to match.
     fields: [actions, body, cves, evidence, headline, sources, summary, title]
+  - at: "2026-11-01T03:27:57Z"
+    run_id: 2026-11-01T0256Z-intel
+    type: update
+    summary: >
+      Dream Research's report, updated 2026-10-29, names Palo Alto Networks PAN-OS as the product behind
+      the chain it had first described with an unnamed vendor: a custom PHP2Shell build chained with a
+      Linux kernel flaw rooted 25 PAN-OS firewall and management servers and was followed by an attack on
+      a US government-affiliated Active Directory, and Unit 42 says it independently verified the tooling
+      and results. The advisory's exploitation statement is unchanged; a device that was exposed and
+      unpatched needs a compromise check as well as the hotfix, and Dream says the affected web server
+      also fronts the GlobalProtect portal, which Palo Alto's advisory lists as not affected.
+    fields: [headline, summary, entities, techniques, sources, evidence, verification, sourcing_note, references, actions, body, cves, title]
 migrated_from: null
 ---
 
-Palo Alto Networks' advisory of 2026-10-21 lists every release of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama as affected by CVE-2026-109618 and CVE-2026-109619 ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)); these are the unauthenticated remote-code-execution bugs in the PHP runtime that the PHP project fixed in its releases of the same day ([PHP, 2026-10-21](https://www.php.net/archive/2026.php#2026-10-21-5)). Palo Alto says no special configuration is required to be affected and that the issue strictly affects the management web interface, which includes the HTTPS web UI and the XML API service; a dataplane interface is affected only where a management profile is attached to it, and the GlobalProtect portal and gateway and the captive portal are not ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)).
+Palo Alto Networks' advisory of 2026-10-21 lists PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and Panorama as affected by CVE-2026-109618 and CVE-2026-109619, the unauthenticated PHP remote-code-execution flaws ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)) ([PHP, 2026-10-21](https://www.php.net/archive/2026.php#2026-10-21-5)). Only the management web interface is affected; the GlobalProtect portal and gateway and the captive portal are not ([Palo Alto Networks, 2026-10-21](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
-The advisory now states that active exploitation has been observed targeting the management interface exposed to the internet ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)); a copy of the page taken on 2026-10-27 at 17:10 UTC said that very limited exploitation had been observed ([Palo Alto Networks, 2026-10-27](https://web.archive.org/web/20261027171028/https://security.paloaltonetworks.com/CVE-2026-109618)), and the vendor timeline's three entries of that day are two removals of hotfix estimated dates and the 16:40 UTC change that raised severity to Critical and urgency to Highest, none of which mentions exploitation ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The vendor score is CVSS-B 9.2, with high impact on confidentiality, integrity and availability, and 7.7 where management is reachable only from an adjacent network such as a jump box ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)). The advisory names no actor, victim or post-exploitation behaviour. All twenty hotfixes are released, the last of them, 11.1.7-h12, according to the advisory timeline of 2026-10-29 23:54 UTC ([Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/json/CVE-2026-109618)); the same hotfix covers the PHP and the Brotli flaws, except 11.2.10-h16, which has only the PHP fix, while 11.2.10-h17 has both ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)). Until a build is installed, Palo Alto recommends restricting management access to a jump box or trusted internal addresses and offers Threat Prevention coverage (Threat IDs 543004 and 97622 to 97625 and further IDs from 97643) that applies only when management traffic is routed through a dataplane interface, the certificate for inbound management traffic has been replaced, inbound management traffic is decrypted and threat prevention is enabled on it ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)).
+The advisory says active exploitation has been observed against the management interface exposed to the internet ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)). Dream Research reports that a custom PHP2Shell build for the PAN-OS management web server, chained with the Linux kernel flaw CVE-2026-46300 to turn the web server's unprivileged context into root in one unauthenticated HTTPS request, rooted 25 PAN-OS firewall and management servers in the United States, Japan, Taiwan and South Korea ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)). On the second of two firewalls of a US government-affiliated organization (the first crashed) it added a reboot-persistent reverse SSH tunnel and, through it, ran the same chain against the organization's internal firewall management server, decrypted the directory service account's password from the device configuration, enumerated the Active Directory and attempted a password spray and backdoor accounts, which Dream cannot say succeeded ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)). Unit 42 says it independently verified the attacker's tooling and results and that customers who applied the available patches are not affected ([Unit 42, 2026-10-29](https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/)); Dream relays that Unit 42 tracks it as CL-UNK-1280, a Chinese-speaking attacker in UTC+8, while Dream names none ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)).
 
-**Exposure:** every PAN-OS firewall and Panorama appliance below its train's hotfix, whatever the configuration, through its management web interface; the service is reachable from the internet where the management port, or a dataplane interface carrying a management profile, answers HTTPS or XML API requests from outside the administrator range, and that is the exposure Palo Alto says is being attacked ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)).
+All twenty hotfixes are released ([Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/json/CVE-2026-109618)); its Threat Prevention coverage (Threat IDs 543004, 97622 to 97625 and twenty further IDs between 97643 and 97678) applies only where inbound management traffic is decrypted on a dataplane interface with the certificate replaced and threat prevention enabled ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)).
 
-**Detection:** in management-plane access and system logs, any request from an address outside the administrator range, though Palo Alto does not say which logs record request bodies; in threat logs, hits on the Threat IDs above where the signatures are active and the four conditions hold. Palo Alto publishes no indicator for the observed attacks and defines no post-compromise check, while CISA flags both PHP flaws in its catalog with forensic triage requirements under its directive BOD 26-04 ([CISA KEV, 2026-10-27](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)).
+**Exposure:** every PAN-OS firewall and Panorama appliance below its train's hotfix through its management web interface; it is reachable from the internet where the management port, or a dataplane interface with a management profile, answers from outside the administrator range, which Palo Alto says is what is being attacked ([Palo Alto Networks, 2026-10-28](https://security.paloaltonetworks.com/CVE-2026-109618)); Dream found attacker profiles for PAN-OS 12.1, 12.2 and 11.1 only and says the web server also fronts the GlobalProtect portal, which Palo Alto's advisory says is not affected ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers); [Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/CVE-2026-109618)).
 
-**Defender takeaway:** move management access behind a jump box or trusted internal addresses now, on Panorama as on PAN-OS, and remove management profiles from dataplane interfaces that face untrusted networks; Palo Alto lists no workaround beyond that restriction and the Threat Prevention coverage. Install the hotfix for your maintenance line, which the advisory table now lists for every line ([Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/CVE-2026-109618)).
+**Detection:** in management-plane web access logs, very large multipart POST requests from outside the administrator range ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)). A hotfix does not remove an attacker already in: on an interface that was internet-reachable and unpatched, look for a PHP file nobody deployed in a web-reachable directory of the management web server, a systemd service or rc.local entry that starts scripts from a hidden directory under /usr/local/lib, and outbound SSH from the management plane; in directory logs, bulk LDAP enumeration and password-spray bursts against all users, launched from the firewall management server ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)).
+
+**Defender takeaway:** move management access behind a jump box or trusted internal addresses, as Palo Alto recommends ([Palo Alto Networks, 2026-10-27](https://security.paloaltonetworks.com/json/CVE-2026-109618)), and install the hotfix for your maintenance line. An interface that was internet-reachable and unpatched is a possible root compromise until those checks are clean; where a web shell or tunnel turns up, rotate what the device held: the directory bind account, HA replication keys, certificate private keys and device authentication keys ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)).
 
 ## Update — 2026-10-23T03:42:16Z
 
@@ -300,3 +339,7 @@ Palo Alto Networks' advisory timeline of 2026-10-29 removes the estimated dates 
 ## Update — 2026-10-30T03:52:50Z
 
 Palo Alto Networks' advisory timeline of 2026-10-29 at 23:54 UTC removes the estimated date of 11.1.7-h12 "as the version is released" ([Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/json/CVE-2026-109618)). With it, all twenty PAN-OS hotfixes are available and the advisory table gives no estimated date for any build ([Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/CVE-2026-109618)). The exploitation statement is unchanged.
+
+## Update — 2026-11-01T03:27:57Z
+
+Dream Research updated its report on 2026-10-29 to say that the affected devices run Palo Alto Networks PAN-OS; the operation it had described with an unnamed vendor rooted 25 PAN-OS firewall and management servers, and Unit 42 says it independently verified the attacker's tooling and confirmed the reported results ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers); [Unit 42, 2026-10-29](https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/)). Dream's recovered artifacts show web shells left on 24 firewalls, 22 of them parked with nothing further done, and a boot-persistent tunnel into the internal network of a US government-affiliated organization that it assesses is likely still active ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers)). Unit 42 says customers who applied the available patches are not affected and that the management interface is not exposed to the internet by default ([Unit 42, 2026-10-29](https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/)). Dream also says the management web server fronts the GlobalProtect portal, which Palo Alto's advisory lists as not affected ([Dream Research, 2026-10-29](https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers); [Palo Alto Networks, 2026-10-30](https://security.paloaltonetworks.com/CVE-2026-109618)). A device that was exposed and unpatched therefore needs the compromise checks in the Detection line, not only the hotfix.

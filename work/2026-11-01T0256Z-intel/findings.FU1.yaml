@@ -1,0 +1,265 @@
+# work/2026-11-01T0256Z-intel/findings.FU1.yaml
+# Scoped follow-up FU1: GreyNoise PHP2Shell tracker + Hunt.io "PHP2Shell One Week Later".
+domain: FU1
+run_id: 2026-11-01T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-01T03:58:17Z
+ended_at: 2026-11-01T04:07:52Z
+duration_seconds: 575
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 4
+  bridge_fetches: 11
+items:
+  # ------------------------------------------------------------------
+  - title: "GreyNoise PHP2Shell tracker: sensors record attacker shells spawned by the Apache worker from 2026-10-28, then interactive post-exploitation (reverse shells, SSH key setup, cloud-metadata and secret hunting, a staged SSH daemon)"
+    angle: 1
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    material_development: >
+      YES. No entry in the store cites GreyNoise on PHP2Shell (grep of entries/ and prior_coverage.json: zero hits).
+      The target entry's exploitation paragraphs end at "no source tied a named CVE to a production compromise" and rest on
+      the single Karimi honeypot report (35 shells, 2026-10-24), watchTowr, VulnCheck, Cloudflare and AWS-via-Inside-IT attempts.
+      GreyNoise adds (a) a second, continuously running sensor dataset with confirmed code execution after the CISA KEV listing
+      (first on 2026-10-28), (b) the first source in the store that shows what an attacker does after code execution as the web
+      worker account on an ordinary Apache/PHP host (the Dream/Unit 42 PAN-OS chain is a different, appliance-specific path),
+      and (c) evidence of at least three distinct operator waves (2026-10-28 canary-style validation; 2026-10-29 19:55 UTC and
+      2026-10-31 00:22 UTC interactive intrusions). Secondary candidate: the PAN-OS entry is NOT affected (GreyNoise sensors are ordinary Apache hosts).
+    sources:
+      - { url: "https://php.events.greynoise.io/", publisher: "GreyNoise (PHP2SHELL Activity 2026, live tracker)", date: "2026-11-01", role: "primary" }
+    page_date_note: >
+      Live, self-refreshing page. Raw HTML shows "Last updated 01 November 2026, 03:48 UTC" (fetched 2026-11-01 ~04:00 UTC);
+      the trafilatura metadata date is 2026-11-01. Individual panel timestamps run to 2026-11-01 03:44 UTC (latest event) and the
+      earliest tag definitions date 2026-10-27 21:49 UTC. Counts below are as of that snapshot and WILL change, so a later
+      verbatim check of the count sentence may fail; the stable quotes are marked in the evidence list. There is NO GreyNoise
+      blog post on PHP2Shell: the blog RSS (25 items fetched, newest 2026-10-15) carries none and https://www.greynoise.io/blog/php2shell
+      returns "Not Found". The tracker is the only GreyNoise artefact.
+    discovery_trace: >
+      first seen at: WebSearch ("GreyNoise PHP2Shell tracker exploitation observed") returned no GreyNoise page; the tracker host
+      php.events.greynoise.io was named in the Hunt.io report (https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls)
+      → primary: https://php.events.greynoise.io/ fetched with tools/fetch_source.py extract (trafilatura-direct, 950 KB) and
+      tools/fetch_source.py url --direct (raw HTML, for panel text and absolute timestamps the extract drops).
+    summary: |
+      GreyNoise publishes a live tracker for CVE-2026-109618 and CVE-2026-109619 built from its own deliberately vulnerable sensors. At the snapshot
+      (updated 2026-11-01 03:48 UTC) it reports 509 tracked IPs, 245,049 sessions since 2026-10-21 (213,331 classed as exploitation attempts, 31,718
+      as reconnaissance; benign sources excluded) and "1,177 confirmed successful exploitations" from 5 attacker IPs, defining a confirmed
+      exploitation as a session in which the web server ran operating-system commands. Its own timeline: CVE IDs reserved 2026-10-12 21:03:58 UTC;
+      earliest related activity 2026-10-21 08:36:46 UTC (a scanner, 5 h 12 min before CVE.org publication at 13:48:34 UTC); CISA KEV 2026-10-26; first
+      successful exploitation on its sensors 2026-10-28 05:14:01 UTC, when the Apache worker spawned sh, which ran a curl to an integer-encoded
+      address (the sender's own) and then sleep 5. Reading the 1,177-row table (our analysis, not a GreyNoise statement): the headline counts shell-process
+      events, not 1,177 compromised hosts. Only 13 rows are a direct child of the web worker (apache2 to sh, apache2 or setsid); the other 1,164 are
+      commands run by those shells (sh, bash, timeout children) and logins through an SSH daemon the attacker installed on the sensor.
+      Three waves are visible. Wave 1 (2026-10-28 to 10-31, one address, 7 sessions of 6 GET and 2-3 multipart POST, 3.6 to 6.2 MB each, to the site root and an upload endpoint)
+      is validation only: curl to a bare integer-encoded IP and port, then sleep 5. Wave 2 (exploit sessions 2026-10-29 19:55 to 20:00 UTC, one address, 186 attributed events, 188 table rows that day, plus a return visit at 2026-10-30 02:24 UTC that repeats the .ssh setup and beacon)
+      is an interactive intrusion: repeated bash reverse shells over /dev/tcp started with setsid, a beacon script run with nohup from /tmp and a sleep 60 retry loop,
+      creation of /var/www/.ssh and chmod 600 on authorized_keys, write tests in /var/www and a chmod on the web root, host fingerprinting (id, uname, os-release,
+      CPU, memory, disk, DMI virtualisation files), account files and sudoers reads, cron directory and setuid file searches, a look at /root/.ssh and /home/*/.ssh
+      including ssh config, a docker.sock check, queries to the link-local cloud metadata address (86 events), linPEAS and gitleaks downloaded from GitHub into a hidden
+      /tmp directory and run over /var/www/html, /usr/local/etc and /etc, and a PHP CLI loot script written to /tmp, run and deleted. Wave 3 (exploit sessions 2026-10-31 00:22 to 01:36 UTC, three addresses; 980 table rows on 2026-10-31, of which 364 attributed to exploit sessions and 616 unattributed because they arrive through the installed SSH daemon) repeats the reverse shell guarded by a /tmp marker file so it fires once, then stages a Dropbear SSH server fetched from an
+      attacker HTTP file server into a hidden directory under /var/log/apache2, with a watchdog script that restarts it every 30 s, and returns through that
+      sshd to run more recon (apache2 and php.ini checks incl. upload_tmp_dir and auto_prepend_file, cron, a write probe in the web root, secret scanning). The reverse-shell target of wave 2
+      is the address that sends the exploit and serves the toolkit in wave 3 (mechanical observation; GreyNoise's attribution column groups them). No recorded command touches a kernel
+      exploit or the PAM files; the log shows enumeration, not privilege escalation. The page does not state the uid; /var/www/.ssh and a getent lookup of www-data imply the web worker account (our inference).
+      Caveat that matters for the entry: these are sensors, not victims. GreyNoise's tracker is the only sensor-side dataset after Karimi's; the three waves show that interactive intrusions
+      of exposed PHP hosts are happening against a default-style Apache/PHP stack, in contrast to Wiz, CrowdStrike and Sophos reporting no success.
+    behaviours_as_telemetry:
+      - "web access logs: short bursts of multi-megabyte multipart/form-data POSTs (3.5 to 8.5 MB per exploit session), preceded by GETs, to the site root and to an upload endpoint, from one source; boundary strings are fixed repeated-character or short literals; scanner User-Agents that literally contain 'php2shell' (198 distinct User-Agents tracked, most generic Go and python-requests)"
+      - "process creation: the Apache worker (apache2) or PHP worker is the PARENT of sh; sh then runs curl against a bare integer-encoded IPv4 and port, followed by sleep 5 (wave 1 validation callback); child shells run bash -i with redirection to /dev/tcp, launched via setsid, nohup, sleep 60 retry loops and a /tmp marker-file guard"
+      - "egress: Apache or PHP worker (or its shell children) connecting out to a raw IP with no SNI/hostname, an HTTP file server on a non-standard port serving tools, and the link-local metadata endpoint (169.254.169.254) queried by a shell child of the web server"
+      - "file and persistence artefacts: creation of .ssh under the web user home (/var/www/.ssh) and chmod 600 on authorized_keys; hidden dot-directories under /tmp and under /var/log/apache2; a Dropbear (dropbear, dropbearkey, dbclient) binary set chmod +x'd; a watchdog script that loops pgrep every 30 s; PHP CLI scripts named like a loot file in /tmp executed then deleted with rm -f; write probes (touch) in /var/www and /var/www/html; chmod on the web root"
+      - "authentication/session logs: sshd or dropbear sessions whose child is bash and whose command stream is recon (id, hostname, ls of /var/log/apache2, php.ini greps), arriving after the web exploit with no matching admin change ticket"
+      - "tooling downloads by a web-worker shell: linPEAS and gitleaks fetched from GitHub release URLs; secret scanning of /var/www/html, /usr/local/etc and /etc"
+      - "benign lookalikes (our mechanical inference, not source-stated): PHP applications that legitimately call exec/system/mail() or convert tools can show apache2 to sh; the discriminators are a shell child that opens /dev/tcp, curls a bare integer IP, touches ~/.ssh, writes hidden dot-dirs, or runs enumeration (setuid find, /etc/shadow, sudoers, docker.sock, metadata endpoint) within seconds of a large multipart POST"
+    region_nexus: "global (sensor locations not stated); no Swiss-specific data; relevant to Swiss PHP/Apache estates (cantonal, communal sites) as an observable-behaviour reference"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190, T1059.004, T1095, T1105, T1098.004, T1021.004, T1082, T1033, T1087.001, T1083, T1613, T1552.001, T1552.005, T1564.001, T1070.004]
+    affected_products: ["PHP", "Apache HTTP Server (mod_php, sensor stack)"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "First-party live sensor telemetry from a high-reliability telemetry vendor; the first five shells (2026-10-28/29) are independently relayed by Hunt.io ('GreyNoise logged 5 shells'), but that relay is not independent evidence and undercounts the live page."
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "GreyNoise is monitoring exploitation attempts against PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619, colloquially known as 'php2shell'."
+        attribution: "GreyNoise"
+        source_url: "https://php.events.greynoise.io/"
+        note: "stable; verbatim in the trafilatura extract; in the raw HTML the straight apostrophes are the entity &#x27; (so a raw-HTML substring check needs html.unescape)"
+      - quote: "exploited a vulnerable GreyNoise sensor: apache2 spawned sh, which ran curl"
+        attribution: "GreyNoise"
+        source_url: "https://php.events.greynoise.io/"
+        note: "stable timeline entry (first successful exploitation, 2026-10-28 05:14:01 UTC in the raw datetime attribute); present in extract and raw"
+      - quote: "We have confirmed 1,177 successful exploitations, from 5 attacker IPs, against our vulnerable sensors."
+        attribution: "GreyNoise"
+        source_url: "https://php.events.greynoise.io/"
+        note: "VOLATILE count: true at the 2026-11-01 03:48 UTC snapshot, will drift upward on later page fetches; in extract and raw"
+      - quote: "mkdir -p /var/www/.ssh"
+        attribution: "GreyNoise (command column of the Successful Exploitation table, process chain bash to bash, 2026-10-29 19:56:46 UTC)"
+        source_url: "https://php.events.greynoise.io/"
+        note: "stable row; in extract and raw. The adjacent row 'chmod 600 /var/www/.ssh/authorized_keys' is verbatim in the raw HTML and appears as 'authorized\\_keys' (markdown-escaped) in the extract"
+      - quote: "A confirmed exploitation is a session on a vulnerable GreyNoise sensor in which the web server ran operating-system commands."
+        attribution: "GreyNoise"
+        source_url: "https://php.events.greynoise.io/"
+        note: "definition panel; RAW HTML ONLY (the trafilatura extract drops it); use url --direct or WebFetch to re-check"
+    caveats:
+      - "Sensors, not victim organisations; GreyNoise states 'our vulnerable sensors'. Nothing here is a production compromise."
+      - "'1,177 successful exploitations' counts table rows (shell-process events); only 13 rows are direct web-worker spawns (our count). Do not write '1,177 compromised servers'."
+      - "Attribution column shows 'Not attributed' for 621 rows (logins through the attacker-installed SSH daemon); GreyNoise states no actor name or nexus. Clusters on the page are labelled 'automatically generated investigative leads, not attribution'."
+      - "Authorized_keys: the log shows directory creation and chmod 600 of the file, not the key material being written; do not write 'attacker keys were planted' beyond 'prepared/permissioned'."
+      - "Command capture is by process arguments: file contents, binaries and downloads are not captured."
+    recommendation: >
+      INCLUDE as an `update` record on 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619 (reader-facing delta: confirmed sensor-side exploitation
+      beyond the Karimi honeypots, three waves, post-exploitation behaviours as observable telemetry, plus the Detection line: shell child of the web worker with /dev/tcp,
+      integer-IP curl, ~/.ssh and hidden dot-dirs). It moves the entry's statement 'what remains documented is scanning and attempts ... no source tied a named CVE to a production compromise'
+      only in part: the new facts are sensor-side, not production. Cite with the stable quotes; phrase the 1,177 as 'shell events recorded on GreyNoise sensors, from five attacker IPs'.
+  # ------------------------------------------------------------------
+  - title: "Hunt.io 'PHP2Shell One Week Later': 616 open-directory files, shared lab-proven kit, hand-picked government and bank targets staged, PAN-OS-targeted PoC exposed; production rooting rests on Dream/Unit 42"
+    angle: 2
+    novelty: "update-of:2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release"
+    also_touches: "2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619 (exploitation-landscape paragraph; Detection line)"
+    material_development: >
+      PARTLY. The store holds the Dream Research and Unit 42 PAN-OS chain in full (25 rooted servers, 19,000/5,000/240 funnel in the main PHP entry, CL-UNK-1280 relay).
+      Hunt.io is NOT an independent vantage on the rooting: its 'first confirmed production compromises' sentence relays Dream and Unit 42, and its own capture is an exposed open
+      directory with a PAN-OS-targeted PoC, not a victim. What is new to the store: (1) a toolkit-staging ecosystem (616 matching files, cloned PoCs, one ASLR-bypass kit byte-identical across four hosts
+      with lab logs showing a shell as www-data, one operator with a hand-written heap exploit and a utmp/wtmp log cleaner); (2) staged hand-picked targets (government finance ministry, national bank,
+      e-invoicing platform, telecom, universities), explicitly 'not confirmed compromised by php2shell'; (3) a failed attempt against a national government (OOM crash, session files outside the webroot prevented
+      execution, operator then used a different bug), a transferable hardening datum; (4) the claim, uncorroborated elsewhere, that an exposed directory also held the aiscan/LLM tooling that Dream describes;
+      (5) detection pointers not in the store (see behaviours). The Hunt.io page is a lead on the store's coverage, not new evidence for the rooting.
+    sources:
+      - { url: "https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls", publisher: "Hunt.io (Hunt Intelligence)", date: "2026-10-30", role: "primary" }
+    page_date_note: >
+      Three dates disagree: the visible byline in the HTML reads "Published on Oct 30, 2026"; the trafilatura/page metadata date is 2026-10-28 (matching the Framer site release stamp
+      2026-10-28T17:59:09Z and the 'One Week Later' framing); the body says "This is the public reporting available as of October 30" and cites Dream's 2026-10-29 update and Unit 42's verification.
+      Treat 2026-10-30 as the page date (the run record already uses it) and note that the first publication may have been 2026-10-28 and edited afterwards.
+      The article mentions a 'detection section above' and 'behavioral signatures above' that is not on the page (no such heading in the extract or the raw HTML); the only detection content is the Recommendations list.
+      Hunt dates Dream's report 'published on October 26 and updated October 29'; Dream's own page shows only 'Updated: October 29, 2026' and says Dream found the artefacts 'On October 25'.
+    discovery_trace: >
+      first seen at: the cold verifier's note (work/2026-11-01T0256Z-intel/verification.iter1.md, F10/F15) naming https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls
+      → primary: same URL fetched with python3 tools/fetch_source.py extract (trafilatura-direct, 75.9 KB) and tools/fetch_source.py url --direct (raw HTML for the visible byline and the full text).
+    summary: |
+      Hunt.io's AttackCapture open-directory data, read against public exploitation reporting up to 2026-10-30, finds 616 PHP2Shell-related files across exposed directories: cloned public PoCs, scanners,
+      post-exploitation staging and one exploit-development tree (about 4,768 files, last updated 2026-10-28) whose logs reach the address-leak step. A shared ASLR-bypass kit is byte-identical across four hosts
+      captured 2026-10-22 to 2026-10-27, with the operators' logs showing a shell as www-data on PHP 8.2.34 and 8.4.26 in a lab; Hunt says this shared kit has not been seen landing on a live victim. Another
+      operator carries a hand-written heap exploit with hardcoded offsets for one PHP 8.4.26 Apache build and a utmp/wtmp log cleaner (suggesting interactive shells are expected). Staged target lists name a government finance ministry,
+      a national bank, a government e-invoicing platform, telecom and university systems; Hunt states these were not confirmed compromised. In one capture an operator ran the full chain against an Eastern European national
+      government and got only crashes and memory exhaustion because session files lay outside the webroot, then gained access with an unrelated server-side bug. Hunt's headline claim, 'php2shell has been used to root internet-facing
+      PAN-OS firewalls, the first confirmed production compromises', is attributed to Dream Research and Unit 42's verification, not to Hunt's own telemetry; Hunt adds that an exposed directory hosts a PAN-OS-targeted adaptation
+      (two PoC files) and that 'the same directory held aiscan', the LLM-driven scanner Dream describes, with Claude Code also present. Hunt treats honeypot shells (watchTowr 2026-10-21, 0x4D31 2026-10-24, GreyNoise 2026-10-28/29) as the only
+      other confirmations and cites Wiz (2026-10-27) and CrowdStrike (2026-10-23) as seeing none.
+      Points where Hunt.io conflicts with, or overreaches, Dream Research (read from both pages): (a) Hunt says PAN-OS 'runs one uniform PHP 8.0.30 build across every unpatched box'; Dream's table lists PAN-OS 11.1 on PHP 7.4.33 (lab RCE as nobody, chain not calibrated)
+      and 12.1/12.2 on PHP 8.0.30 (one profile calibrated, eight provisional), so the stack is not uniform and only one profile was fully validated. (b) Hunt says the exploit 'reliably roots' PAN-OS; Dream's own funnel is 240 filtered targets
+      attempted and 24 rooted, a 10 per cent success rate, with the first government-affiliated firewall crashing, which Dream says was likely from about 900 MB of exploit traffic. (c) Hunt does not say how the PAN-OS directory relates to Dream's artefacts beyond the aiscan sentence; neither source states how Dream obtained its artefacts,
+      so identity of the operator behind Hunt's open directory and Dream's operator is an inference, not a stated link. (d) Hunt gives Dream's publication as 2026-10-26; Dream's page carries only the 2026-10-29 update stamp. (e) Hunt reports GreyNoise as 5 shells from one address on 2026-10-28/29; GreyNoise's live tracker now lists 5 attacker addresses and the 2026-10-29 interactive wave (see item 1), so Hunt's account is outdated for GreyNoise.
+      Hunt and Dream agree on: custom non-public PAN-OS build, version-specific offsets, 19,000 / 5,000 / 240 funnel, 24 plus 1 rooted, reverse SSH tunnel, DeepSeek and Kimi in aiscan, FOFA discovery, Fragnesia as the escalation step.
+    behaviours_as_telemetry:
+      - "web access/WAF logs: multipart POSTs with no User-Agent, a multipart boundary under roughly twelve characters, and an oversized PHPSESSID cookie (Hunt's recommendation); more than three multipart POSTs to the same PHP endpoint from one source within 60 seconds (Hunt's SIEM suggestion); the ten-character multipart field-name length seen in a successful leak log is the same 'tell' Hunt says it flags"
+      - "process creation: apache2 or php-fpm worker spawning /bin/sh (auditd/EDR rule recommended by Hunt)"
+      - "egress: Apache or php-fpm making outbound connections to a raw IP address with no SNI; post-exploitation staging that beacons to an integer-encoded form of its own address (observed in an open directory)"
+      - "file artefacts on the web server: scanner/kit marker strings in temp and upload directories (Hunt recommends a YARA hunt for three kit markers; not reproduced here as they are indicators of the kit)"
+      - "session handling: a failed chain against a government target 'Session files remained outside the webroot, preventing execution'; the session-poisoning plus local-file-inclusion variant needs session.upload_progress on, cleanup on, an existing LFI, and a session directory reachable by an include"
+      - "PAN-OS: management web interface (appweb) requests from untrusted sources; Hunt gives no PAN-OS-specific telemetry beyond Dream's"
+    region_nexus: "global; named staged targets are in Africa, Europe (microstate and Eastern Europe), East Asia, Southeast Asia and the Caucasus; no Swiss nexus"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619, CVE-2026-46300]
+    techniques: [T1190, T1068, T1587.004, T1588.005]
+    affected_products: ["PHP", "Palo Alto Networks PAN-OS"]
+    entity_keys: ["tool:php2shell", "product:php", "product:palo-alto-networks-pan-os", "campaign:php2shell-pan-os-fragnesia-rooting-2026-10", "actor:cl-unk-1280"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    verification_note: "Hunt's open-directory observations are first-party and single-source; every rooting claim traces to Dream/Unit 42 (already in the store). Corroboration of the shared-kit and www-data lab claims exists nowhere else in the store."
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 3 }
+    evidence:
+      - quote: "Shells have been confirmed only on honeypots and sensors by watchTowr, 0x4D31, and GreyNoise. Wiz and CrowdStrike found none."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls"
+      - quote: "Operators stage these kits against hand-picked, high-value targets: a government finance ministry, a national bank, a government e-invoicing platform, telecom, and university systems."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls"
+      - quote: "This shared kit has not been observed landing on a live victim; the confirmed PAN-OS compromises trace to a separate operator."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls"
+      - quote: "Palo Alto PAN-OS management is the exception, because it runs one uniform PHP 8.0.30 build across every unpatched box, which turns the unreliable heap chain into a calibratable, repeatable exploit."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls"
+        note: "the claim that conflicts with Dream's version table (11.1 on PHP 7.4.33; only one calibrated 12.x profile)"
+    extra_quotes_verified:
+      - "In one capture, an operator ran php2shell against a national government, got only a crash, and then broke in with a different bug."
+      - "Session files remained outside the webroot, preventing execution."
+      - "Add a host rule, auditd or EDR, alerting whenever an apache2 or php-fpm worker process spawns /bin/sh."
+      - "Add an egress rule flagging Apache or php-fpm making outbound connections to a raw IP address with no SNI."
+      - "This is the first confirmed real-world php2shell compromise we can point to, and subsequent research by Dream Research"
+      - "The logs we reviewed reach a working leak, not confirmed command execution on a live production host, and the target it is aimed at is not one we can confirm from the capture."
+    caveats:
+      - "Page text says 'Shells have been confirmed only on honeypots ... Wiz and CrowdStrike found none' as of 2026-10-30; it does not know the 2026-10-29 and 2026-10-31 GreyNoise interactive waves."
+      - "IPs, hashes and the YARA marker strings in the page are indicators and are deliberately not carried."
+      - "Hunt's own PAN-OS evidence is an exposed PoC directory; not a victim; do not cite Hunt as a second, independent source for the 25 rooted servers."
+    recommendation: >
+      INCLUDE, but narrowly and as an `update` on the main PHP entry (exploitation-landscape paragraph: staging ecosystem, lab-proven shared kit, hand-picked government/bank targets not confirmed compromised,
+      the failed national-government attempt and its hardening cause) with at most one sentence on the PAN-OS entry noting the PAN-OS-targeted PoC exposure and the aiscan co-location claim. Do NOT use Hunt to lift the PAN-OS entry's
+      credibility to 1 (its rooting claim is a relay of Dream/Unit 42); do repeat the two Hunt-versus-Dream discrepancies (uniform PHP 8.0.30 vs Dream's 7.4.33 on 11.1; 'reliably' vs 24 of 240) only if the entry wants to caveat the Hunt relay.
+      Drop the staged-target geography and tool-lineage names (not actionable for Swiss defenders).
+  # ------------------------------------------------------------------
+  - title: "Wiz 'PHP2Shell: Exploitation Attempts and Remediation Trends' (2026-10-27): no end-to-end success in Wiz telemetry; exposure down about 67 per cent; honeypot attempts fail at the address leak"
+    angle: extra (not requested; surfaced while chasing Hunt.io's citation list)
+    novelty: "update-of:2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619"
+    borderline: true
+    borderline_reason: "Not part of FU1's two angles. The store cites CrowdStrike, Sophos and Wordfence as 'no successful exploitation' but never Wiz (grep of entries/ for wiz.io/blog/php2shell: zero); it is a primary-source counterweight that also names the reason attempts fail (worker pinning, build-specific heap layout) and an exposure-remediation trend. Main agent decides; low priority."
+    material_development: "MODEST. Adds a telemetry-holding vendor that saw attempts but no success, and names an inference about why CISA listed the flaws; also the only exposure-reduction metric in the store."
+    sources:
+      - { url: "https://www.wiz.io/blog/php2shell-exploitation-so-far", publisher: "Wiz Research (Yaara Shriki, Shahar Dorfman, Alma Blachsan, Yaron Samuel)", date: "2026-10-27", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"GreyNoise PHP2Shell tracker exploitation observed\") listing → primary: https://www.wiz.io/blog/php2shell-exploitation-so-far fetched with python3 tools/fetch_source.py extract (trafilatura-direct); also named in the Hunt.io report."
+    summary: |
+      Wiz Research, in a post dated 2026-10-27 that it says it will update, reports a limited number of exploitation attempts in its telemetry and no publicly available proof of concept for complete general end-to-end exploitation of an
+      arbitrary target, while partners have privately disclosed working exploits to it. It captured two variants of an open-source kit on a PHP-CGI honeypot and a Roundcube honeypot: the older chain failed on request-size limits, the newer chain consistently
+      exhausted PHP memory (HTTP 500 plus an allowed-memory-size fatal error) but failed at the memory-leak stage in every captured run, with no source sending the final stage. One source opened about 400 stalled connections to occupy other Apache workers before sending exploit stages.
+      Wiz notes that the kit's leak layout was calculated for one official Docker php:8.4.26-apache image with a 128 MB limit, and says two scanners that failed against its honeypots did successfully exploit Adel Karimi's honeypot, which it calls a likely contributing factor in CISA's KEV decision. Separately, PHP2Shell-branded tools that only used session poisoning plus an application LFI sink were not exploiting the two CVEs. Wiz telemetry records an approximate 67 per cent fall in the daily number of distinct exposed vulnerable machines since 2026-10-21 and a 47.9 per cent fall in significantly affected organisations.
+      Wiz (2026-10-27) predates GreyNoise's 2026-10-28 first successful exploitation, so its 'none have succeeded' is a point-in-time statement for Wiz telemetry only.
+    behaviours_as_telemetry:
+      - "web logs: stalled HTTP POST connections declaring a large Content-Length and sending one byte (worker occupation), followed by chunked multipart POSTs with null-byte PHPSESSID, many empty file parts and large padding fields; HTTP 500 plus 'Allowed memory size ... exhausted' fatal errors in PHP logs"
+      - "session poisoning plus include: a GET to a local-file-include endpoint passing a session-file path under /tmp (sess_*)"
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["PHP"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "Wiz research has been monitoring PHP2Shell exploitation attempts, but none have succeeded so far."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/php2shell-exploitation-so-far"
+      - quote: "Wiz telemetry has recorded an approximate 67% decrease in the daily number of distinct Internet-exposed machines vulnerable to PHP2Shell over the past few days."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/php2shell-exploitation-so-far"
+      - quote: "We observed two variants of an open source exploit kit targeting PHP-based software. Neither completed the exploit chain in the attempts we captured."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/php2shell-exploitation-so-far"
+    recommendation: "OPTIONAL include as a one-sentence addition to the 'other vendors report no successful exploitation' paragraph; drop if the main agent holds the line at the two requested angles."
+candidate_sources:
+  - id: greynoise-php-events
+    publisher: "GreyNoise live event trackers (php.events.greynoise.io)"
+    url: "https://php.events.greynoise.io/"
+    category: telemetry
+    why: "Self-refreshing, per-event GreyNoise exploitation tracker for a named flaw family (process chains, commands run on sensors, timeline with absolute timestamps); GreyNoise ran the same pattern before for its other 'Global Event' pages. Worth a per-fire check while a flaw is in KEV; extract reads it (950 KB), raw HTML (url --direct) carries stats and absolute timestamps the extract drops."
+coverage_gaps:
+  - source_id: greynoise (blog)
+    reason: "No PHP2Shell blog post exists: RSS (25 items, newest 2026-10-15) and /blog/php2shell (Not Found) confirm it. The tracker is the only GreyNoise artefact. Working recipe: python3 tools/fetch_source.py extract https://php.events.greynoise.io/ (readable) plus url --direct for the stat panel and datetime attributes."
+  - source_id: hunt-io
+    reason: "Page references a 'detection section above' that does not exist on the page; date shows 2026-10-28 in metadata and 2026-10-30 in the visible byline."
+source_ledger:
+  - { id: php.events.greynoise.io, tier: followup, attempted: true, transport: "extract + url --direct", horizon_hours: 96, in_horizon_items: 1, returned: 1 }
+  - { id: greynoise-blog-rss, tier: followup, attempted: true, transport: "feed https://www.greynoise.io/blog/rss.xml 25", horizon_hours: 96, in_horizon_items: 0, returned: 0, note: "no PHP2Shell post; newest item 2026-10-15" }
+  - { id: hunt.io, tier: followup, attempted: true, transport: "extract + url --direct", horizon_hours: 96, in_horizon_items: 1, returned: 1 }
+  - { id: wiz-blog, tier: followup, attempted: true, transport: "extract", horizon_hours: 96, in_horizon_items: 1, returned: 1, note: "extra, borderline" }
+  - { id: dream-research, tier: followup, attempted: true, transport: "Read work/2026-11-01T0256Z-intel/bodies/dream.md (already fetched by the main run)", horizon_hours: 96, in_horizon_items: 1, returned: 0, note: "used for conflict analysis only" }

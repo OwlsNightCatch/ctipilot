@@ -1,0 +1,684 @@
+# work/2026-11-01T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-01T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-01T02:58:00Z'
+ended_at: '2026-11-01T03:14:09Z'
+duration_seconds: 969
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 4
+  bridge_fetches: 66
+items:
+- title: 'PHP2Shell on PAN-OS: Dream Research names Palo Alto PAN-OS as the ''one unnamed vendor'' whose firewalls a custom PHP2Shell plus Fragnesia chain rooted in the wild, Unit 42 verifies it (CL-UNK-1280), and the operator went on to attack a US government-affiliated Active Directory'
+  sources:
+  - url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+    publisher: Dream Research
+    date: '2026-10-29'
+    role: primary
+  - url: https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+    publisher: Palo Alto Networks Unit 42
+    date: '2026-10-29'
+    role: primary
+  - url: https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls
+    publisher: Hunt.io
+    date: '2026-10-30'
+    role: corroborating
+  discovery_trace: 'first seen at: hunt-io, URL https://hunt.io/blog (WebFetch listing, 2026-11-01) -> drill: https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls (extract) -> pivot (Hunt.io''s own cited primary): Dream Research, URL https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers (extract) -> pivot (vendor verification cited by Dream): Palo Alto Networks Unit 42 threat brief, URL https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/ (extract, section ''Update October 29, 2026'')'
+  summary: 'FACTS (Dream Research, updated 2026-10-29, vendor-verified): on 2026-10-25 Dream researchers recovered the artefacts of an operation that rooted 25 PAN-OS firewall and management servers in the United States, Japan, Taiwan and South Korea. The exploit is a custom, non-public PHP2Shell build (CVE-2026-109618 / CVE-2026-109619) for the PAN-OS management web server (appweb), driven through PHP session.upload_progress, chained with the Linux kernel flaw Fragnesia (CVE-2026-46300) to turn the unprivileged web-server context (user nobody, SELinux-confined) into root; Dream describes four orchestrated request stages (memory exhaustion, pointer leak, stale-reference setup, code execution), both exploits running in the final request, and the whole chain from an unauthenticated HTTPS connection to a persistent root web shell completing in under 15 minutes. It needs per-build memory offsets: Dream recovered 11 version profiles, only one (PAN-OS 12.1/12.2 base build, PHP 8.0.30) lab-calibrated
+    and the rest provisional including 11.1 (PHP 7.4.33); Hunt.io states PAN-OS runs one uniform PHP 8.0.30 build across every unpatched box, which it gives as the reason the unreliable heap chain became repeatable on appliances while open-internet shells mostly died in memory exhaustion (Dream''s table is more granular, 8.0.30 on 12.1/12.2 and 7.4.33 on 11.1, so ''uniform'' is Hunt.io''s simplification). Operator funnel (Dream): about 19,000 internet-facing PAN-OS management interfaces found through the Chinese FOFA search engine, about 5,000 responsive, 240 matching the country and version filter, 24 rooted in an automated batch, a 25th (the internal firewall management server) reached through a tunnel; 22 of the 24 were only parked behind a PHP root web shell. Two firewalls of a US government-affiliated organisation (CAC authentication in the configuration) were then used for an 8-port reverse SSH tunnel plus SOCKS5 proxy persisting through a systemd unit and an rc.local hook, the same
+    chain was run against the firewall management server reachable only through that tunnel, and an Active Directory campaign followed from that server: LDAP service-account password decrypted from the device configuration with the root-held master key, full user and group enumeration, password spraying against every user (the domain had lockoutThreshold=0), attempted backdoor user and machine accounts, ACL path analysis, attempted SAML signing-key extraction from Keycloak. Dream could not recover the results of the spray, account creation or key extraction, so the extent of the domain compromise is unknown. Dream confirms the attacker holds private keys taken from the compromised devices'' file systems (HA replication keys, SSL/TLS certificate keys, device authentication keys). VENDOR: Unit 42 states it independently verified the same attacker''s tooling and confirmed the reported results; says patches interrupt the observed chain and patched customers are not affected; says only about
+    0.02% of Palo Alto''s installed base had an internet-facing management interface and was impacted and that each such customer was individually contacted. CLAIMS / ASSESSMENT: Dream does not attribute to a named actor, notes Unit 42 tracks the activity as CL-UNK-1280 and attributes it to a Chinese-speaking attacker in UTC+8, and lists Chinese-nexus indicators (target countries, FOFA, iox tunnelling tool, DeepSeek and Kimi models in an ''aiscan'' framework, Chinese-language prompts, UTC+8 clock); Dream finds no direct evidence AI wrote the exploit. Hunt.io (separate open-directory capture of a PAN-OS-focused PoC and the same aiscan setup) assesses AI ran the operation around a hand-calibrated exploit rather than building it. DELTA vs the store: the PHP and PAN-OS entries still call the vendor ''unnamed'' and give no Unit 42 verification, no CL-UNK-1280 designation, no installed-base statement and no post-patch credential/key scope; this is the first named, vendor-verified production compromise
+    through the PHP2Shell chain.'
+  region_nexus: 'global; victims reported in US, Japan, Taiwan, South Korea; no Swiss victim reported. Any PAN-OS management interface reachable from the internet is in the exposed population (Unit 42: not exposed by default).'
+  primary_sector_nexus: 'direct: the operator prioritised a US government-affiliated environment and, per Hunt.io, staged kits against a government finance ministry, a national bank, a government e-invoicing platform and telecom/university targets; PAN-OS firewalls and Panorama are common perimeter products for public administrations (not stated by the sources).'
+  sector: public-sector
+  cves:
+  - CVE-2026-109618
+  - CVE-2026-109619
+  - CVE-2026-46300
+  techniques:
+  - T1190
+  - T1068
+  - T1505.003
+  - T1572
+  - T1543.002
+  - T1037.004
+  - T1110.003
+  - T1087.002
+  - T1552.004
+  - T1596.005
+  affected_products:
+  - Palo Alto Networks PAN-OS
+  - Palo Alto Networks Panorama
+  - PHP
+  - Linux kernel
+  entity_keys:
+  - product:palo-alto-networks-pan-os
+  - product:palo-alto-networks-panorama
+  - product:php
+  - tool:php2shell
+  - trend:dirty-frag-linux-kernel-page-cache-lpe
+  - tool:artex
+  new_entities:
+  - key: actor:cl-unk-1280
+    type: actor
+    name: CL-UNK-1280
+    aliases: []
+    summary: Unit 42 designation, as relayed by Dream Research (2026-10-29), for the Chinese-speaking, UTC+8 operator that chained a custom PHP2Shell build with Fragnesia to root 25 PAN-OS firewall and management servers and attacked a US government-affiliated Active Directory (Dream Research; Unit 42).
+  - key: campaign:php2shell-pan-os-fragnesia-rooting-2026-10
+    type: campaign
+    name: PHP2Shell plus Fragnesia rooting of PAN-OS management interfaces (October 2026)
+    aliases: []
+    summary: In-the-wild chain of a custom PHP2Shell exploit for the PAN-OS management web server with the Fragnesia kernel flaw, rooting 25 PAN-OS servers in the US, Japan, Taiwan and South Korea from 2026-10-23, verified by Unit 42 (Dream Research, 2026-10-29).
+  relation_suggestions:
+  - subject: campaign:php2shell-pan-os-fragnesia-rooting-2026-10
+    object: actor:cl-unk-1280
+    basis: Dream Research relays that Unit 42 tracks this activity as CL-UNK-1280 and attributes it to a Chinese-speaking attacker in UTC+8 (Dream does not attribute to a named actor itself)
+  - subject: campaign:php2shell-pan-os-fragnesia-rooting-2026-10
+    object: product:palo-alto-networks-pan-os
+    basis: 'Dream Research: ''The affected devices run specific versions of Palo Alto Networks PAN-OS''; Unit 42 verified the tooling and results'
+  - subject: campaign:php2shell-pan-os-fragnesia-rooting-2026-10
+    object: trend:dirty-frag-linux-kernel-page-cache-lpe
+    basis: 'Dream Research: the chain pairs PHP2Shell with Fragnesia (CVE-2026-46300) for root'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  classification_suggestion:
+    reliability: B
+    credibility: 1
+    why: Dream Research artefact recovery (first-hand) plus Unit 42 independent verification and Palo Alto's own advisory statement of active exploitation against the management interface (already in the store); Dream collaborated with Palo Alto, so the two are not fully independent, but Hunt.io's separate open-directory capture adds a third vantage.
+  novelty: update-of:2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release
+  novelty_note: Also touches 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619, whose text still says 'one unnamed vendor' (its 2026-10-29 07:03Z record predates Dream's 2026-10-29 naming update and Unit 42's 2026-10-29 18:00Z verification). Fold into the PAN-OS entry as the primary home; the PHP entry only needs the vendor-name correction.
+  lookback: true
+  evidence:
+  - quote: The affected devices run specific versions of Palo Alto Networks PAN-OS.
+    attribution: Dream Research
+    source_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+  - quote: Palo Alto Networks’ Unit 42 tracks this activity as CL-UNK-1280 and attributes it to a Chinese-speaking attacker in the UTC+8 time zone.
+    attribution: Dream Research
+    source_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+  - quote: We do not attribute this activity to a named threat actor.
+    attribution: Dream Research
+    source_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+  - quote: Unit 42 has independently verified the same attacker’s tooling and confirmed the reported results.
+    attribution: Palo Alto Networks Unit 42
+    source_url: https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+  - quote: Only a small fraction of a percent (approximately .02%) of our global installed base has internet-facing management interfaces configured and were impacted.
+    attribution: Palo Alto Networks Unit 42
+    source_url: https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+  - quote: Palo Alto PAN-OS management is the exception, because it runs one uniform PHP 8.0.30 build across every unpatched box
+    attribution: Hunt.io
+    source_url: https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls
+  extended_notes: 'Exposure: the exposed surface is the PAN-OS management web interface (HTTPS web UI / appweb, which Dream says also fronts the GlobalProtect portal), reachable from the internet; Unit 42: ''By default the management interface is not exposed to the internet''. Dream''s calibrated profile covers the 12.1/12.2 base build; the vendor advisory (already in the store) lists every release as affected, so treat all branches as exposed until the hotfix is on. Post-patch compromise check (all Dream): patching does not evict an attacker already in. On any management interface that was internet-reachable and unpatched since about 2026-10-21, look for a small PHP root web shell in a web-reachable directory of the management web server, an unexpected systemd service or rc.local entry launching scripts from a hidden directory under /usr/local/lib (Dream: reverse SSH tunnel with SOCKS5), outbound SSH from the firewall management plane to unfamiliar hosts, and management-plane crashes or
+    reboots (the first rooted firewall crashed after about 900 MB of exploit traffic). Treat as exposed and rotate: the LDAP bind account used by the firewall/management server (stored recoverably in the device config), HA replication keys, SSL/TLS certificate keys and device authentication keys. On the Active Directory side look for LDAP binds by the firewall service account from unexpected sources, bulk LDAP enumeration, sprays against all users, attempted computer-account creation (default MachineAccountQuota), and reads of SAML IdP signing configuration. Detection telemetry classes: web/access logs of the management web server (very large multipart POSTs with oversized filenames and session-progress data, memory-exhaustion bursts of roughly 383 MB and 500 MB per stage per Dream), appliance crash/restart events, outbound connections from the management plane, directory authentication and LDAP query logs. Triage: legitimate management-plane traffic is small and comes from admin source
+    addresses; the exploit traffic is large, repetitive multipart uploads from internet sources, and a host that rebooted unexpectedly after one is a strong signal. Unit 42''s earlier 2026-10-23 claim of an AI-agent post-exploitation case at a European government entity was retracted on 2026-10-25 (already in the store) and is unrelated to this chain. Source inconsistency to watch: Hunt.io''s page metadata says 2026-10-28 while its listing shows Oct 30 and the text says ''as of October 30''; Dream''s first post was 2026-10-26 (per Hunt.io) and updated 2026-10-29. Hunt.io promises a dedicated PAN-OS campaign write-up not yet seen. Attacker file paths, hostnames and addresses are deliberately omitted (IOC policy).'
+  actions_hint: Take every PAN-OS and Panorama management interface off the internet and install the hotfix; on any interface that was exposed and unpatched, treat the device as compromised until a web-shell, persistence and credential/key rotation check is done.
+- title: 'ARTEX and friends: Google Threat Intelligence Group and Mandiant report agentic pentest frameworks (ARTEX, PentAGI, CAIRN) running parts of real intrusions in incident-response cases since late August, with machine-speed behaviour and a five-layer defence model'
+  sources:
+  - url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+    publisher: Google Threat Intelligence Group / Mandiant
+    date: '2026-10-31'
+    role: primary
+  - url: https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/
+    publisher: Microsoft Threat Intelligence
+    date: '2026-10-29'
+    role: corroborating
+  discovery_trace: 'first seen at: mandiant-gtig, feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (newest item 2026-10-15; the 2026-10-31 post is NOT in the feed) -> WebFetch of the landing page https://cloud.google.com/blog/topics/threat-intelligence listed ''ARTEX and Friends'' -> primary: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks (extract; metadata date 2026-10-31). Microsoft NK-adoption sentence: msft-ti via `msft-secblog recent 30`, URL https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/'
+  summary: 'FACTS / GTIG claims (Mandiant incident-response telemetry plus research telemetry): since late August 2026 GTIG and Mandiant have seen threat actors operate the open-source multi-agent pentest frameworks ARTEX, PentAGI and CAIRN, and possibly custom harnesses, inside IR engagements, with agents doing significant parts of the lifecycle (lateral movement, database exploitation, exfiltration preparation). ARTEX is a Go multi-agent platform with six sub-agents and an embedded Next.js console; its author took the original repository down in October 2026 because of abuse, but forks (including ScopeWeaver and a commercial ''ARTEX PRO'') keep it spreading. GTIG tracks the Wiz-observed ARTEX campaign as UNC7228, which it says overlaps Microsoft''s Storm-0940; Wiz''s picture now dates to at least August 2026 and covers entities in the US and Europe in enterprise software, industrial automation, semiconductors and telecommunications, typically from first compromised account to deep access
+    in about four hours and once in 15 minutes. Other ARTEX users in GTIG cases are financially motivated extortion groups and further suspected PRC-nexus clusters, impacting organisations in government, technology, chemicals and materials and manufacturing in the US. In several cases the adversaries handed the framework compromised credentials for the target and told it to run the later stages. Behaviour that separates the agent from a human operator (GTIG): execution bursts of roughly 2 to 25 seconds (27 events in 23 seconds probing AWS permissions), error-driven retries (a ''script too large'' failure fixed by trimming and relaunching), forensic noise (240 log events against one external-facing web server, sub-agents overwriting each other), and one case where the framework used an application''s SQL API to set the MySQL general-log file to a .jsp path and enable logging so that later SELECT statements wrote JSP web shells, with incrementing throw-away file names; probe files named artex-probe
+    plus a five-digit number and incrementing numeric markers in dropped file names, created account names, passwords and e-mail subjects. ASSESSMENTS (GTIG): frameworks like ARTEX trade stealth for speed; criminal adoption will continue with high confidence; near-term (1 to 3 months) forensically noisy, multi-agent attacks with no human in the loop, medium-term stealthier ones. Mandiant''s defensive model: protect the control plane (admin interfaces, cloud management, firewall/hypervisor/backup consoles off the internet, privileged workstations), restrict identities and keys (short-lived credentials, managed identities, no long-lived storage keys), harden configurations and attack paths (segment internet-facing workloads from Kerberos, NTLM, LDAP, SMB and RDP into the core; AD CS template hygiene; Credential Guard, SMB and LDAP signing and channel binding), put rate and recipient limits on high-impact business APIs, and detect behavioural and volumetric change (new authentication origin,
+    control-plane call velocity, bulk object reads, east-west traffic from DMZ hosts, egress from servers to webhook, out-of-band-testing, tunnelling and external AI platforms). Microsoft (2026-10-29) adds that since late October 2026 the North Korean clusters Onyx Sleet and Pearl Sleet use ARTEX, so the framework is now documented in Chinese-nexus, criminal and North Korean use. DELTA vs the store: the ARTEX entry (Storm-0940, criminal extortion) and the VAPOR PANDA entry carry no Mandiant IR evidence, no UNC7228 mapping, no author takedown or fork information, no PentAGI/CAIRN adoption, no behavioural fingerprints and no North Korean adoption.'
+  region_nexus: global; Wiz/GTIG name entities in the US and Europe; GTIG IR cases in the US; no Swiss victim named
+  primary_sector_nexus: 'direct: government is among the sectors GTIG lists as impacted in its IR cases; the control-plane, AD-segmentation and credential-lifetime levers apply to every public administration'
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1190
+  - T1505.003
+  - T1078
+  - T1087.002
+  - T1580
+  affected_products:
+  - ARTEX
+  - PentAGI
+  - CAIRN
+  entity_keys:
+  - tool:artex
+  - actor:storm-0940
+  - tool:cairn-exploitation-engine
+  - actor:vapor-panda
+  new_entities:
+  - key: actor:unc7228
+    type: actor
+    name: UNC7228
+    aliases: []
+    summary: Google Threat Intelligence Group designation for the ARTEX campaign Wiz Research has tracked, which GTIG says overlaps Microsoft's Storm-0940 (GTIG, 2026-10-31).
+  - key: tool:pentagi
+    type: tool
+    name: PentAGI
+    aliases:
+    - Penetration Testing Artificial General Intelligence
+    summary: Open-source (and commercial) autonomous multi-agent pentest framework by VXControl; GTIG observed abuse in the wild, mostly asset mapping and vulnerability scanning with some progression to intrusions and a custom orchestration platform used against Asian system integrators and telecoms (GTIG, 2026-10-31).
+  relation_suggestions:
+  - subject: actor:unc7228
+    object: actor:storm-0940
+    basis: 'GTIG: the campaign it tracks as UNC7228 ''overlaps with activity tracked by Microsoft as the PRC-nexus actor STORM-0940'' (an overlap claim, not an equivalence)'
+  - subject: actor:unc7228
+    object: tool:artex
+    basis: 'GTIG: the Wiz-tracked campaign associated with ARTEX is tracked by GTIG as UNC7228'
+  - subject: tool:artex
+    object: tool:pentagi
+    basis: GTIG lists ARTEX, PentAGI and CAIRN together as open-source agentic pentest frameworks seen in IR cases (co-occurrence in one report; do not store as a typed edge beyond related-to)
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  classification_suggestion:
+    reliability: B
+    credibility: 2
+    why: GTIG/Mandiant first-hand IR telemetry; ARTEX use in the wild is independently documented by Microsoft, CrowdStrike, Wiz and Expel (already in the store), but the specific IR behaviours and the UNC7228-Storm-0940 overlap rest on GTIG alone.
+  novelty: update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  novelty_note: 'Could instead be a standalone `research` entry (framework-level IR evidence + defence model) cross-referenced from the ARTEX threat entry and 2026-10-30/vapor-panda-artex-agentic-campaign-foreign-ministries; the store''s one-finding-one-entry rule favours the changelog route. Source-internal inconsistency: GTIG''s introduction lists ''ARTEX, Hexstrike and CAIRN'' while its observations section and PentAGI subsection say ''ARTEX, PentAGI, CAIRN''; Hexstrike is not discussed further, so carry PentAGI and attribute the Hexstrike mention to the introduction only.'
+  evidence:
+  - quote: Since late August 2026, we have observed threat actors actively operating popular open-source multi-agent pentesting platforms like ARTEX, PentAGI, CAIRN and other potentially custom harnesses within Mandiant incident response engagements
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+  - quote: Although the original repository was taken down by its creator in October 2026 due to widespread threat actor abuse, the framework continues to proliferate globally via community forks
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+  - quote: individual ARTEX execution sequences ran in compressed bursts of roughly 2 to 25 seconds
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+  - quote: Frameworks such as ARTEX compress attack timelines to machine speed; however, they currently trade stealth for velocity.
+    attribution: Google Threat Intelligence Group / Mandiant
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+  - quote: Since late October 2026, Microsoft Threat Intelligence has identified Onyx Sleet and Pearl Sleet leveraging open-source agentic AI penetration testing ARTEX in operations
+    attribution: Microsoft Threat Intelligence
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/
+  extended_notes: 'Detection concepts (all source-supported): identity/control-plane logs showing bursts of API calls over 2 to 25 seconds from one credential (permission probing, storage-key retrieval); web or application logs with many near-identical failing requests followed by a corrected variant (error-driven retry); database audit showing SET GLOBAL general_log_file pointing into a web-served directory followed by SELECT statements carrying server-side script tags; file creation with an incrementing numeric suffix. Hardening levers named by GTIG: control-plane exposure, short-lived credentials, DMZ-to-core segmentation, AD CS template hygiene (remove ENROLLEE_SUPPLIES_SUBJECT where not needed), SMB/LDAP signing, rate limits on messaging APIs. Triage: agent activity looks like scripted automation with adaptive retries; a human operator pauses and varies, an agent bursts and repeats with small variations (Huntress, already cited in the store, describes the same heuristics for Entra logs).
+    This item''s value for the constituency is the speed model: the time from one compromised credential or exposed management plane to deep access is minutes to hours, so exposure reduction and credential lifetime matter more than alert speed.'
+  lookback: false
+- title: 'ANNUAL REPORT — ESET APT Activity Report Q2 2026 to Q3 2026 (April to September 2026): Russia-aligned operations against European governments, a first destructive Belarus-aligned attack, Gamaredon-Turla collaboration, and LLM use by APT groups'
+  sources:
+  - url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+    publisher: ESET Research
+    date: '2026-10-28'
+    role: primary
+  - url: https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q2-2026-q3-2026.pdf
+    publisher: ESET Research (full PDF report, read through the pdf transport)
+    date: '2026-10-28'
+    role: primary
+  discovery_trace: 'first seen at: eset, feed https://www.welivesecurity.com/en/rss/feed/ (lists the report, 2026-10-28) -> primary: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/ (extract) -> PDF https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q2-2026-q3-2026.pdf (fetch_source pdf; 28 pages decoded)'
+  summary: 'ESET''s periodic report summarises APT activity its researchers documented from April to September 2026 (a subset of its customer-only APT intelligence). For European defenders: Russia-aligned groups (Gamaredon, Sednit, TA488 account for most activity) kept targeting governments, the defence sector and military entities in Europe, with far more targets in Ukraine; ESET records several cases of operational collaboration between Gamaredon and Turla, and Gamaredon activity fell sharply from mid-May to September while it added PteroPSDoor and deployed Turla''s Rezzuar VBScript. ESET reports the first destructive attack by a Belarus-aligned actor it has documented in Europe (FrostyNeighbor against a Ukrainian manufacturer in the transport supply chain) and says Belarus-aligned and Russia-aligned campaigns are becoming operationally closer. Lazarus resumed recruitment-lure targeting of the drone sector, with European defence and aerospace firms attractive targets; DeceptiveDevelopment
+    moved from fake job interviews to software supply-chain compromises of public and private source repositories. On AI, ESET assesses APT groups use LLMs like mainstream developers (malware development, decoy sites, AI-generated lure images) without substantially reshaping the landscape and still shows hands-on-keyboard activity; in one case UAC-0099 planted a decoy request for nuclear-weapon instructions in a script comment, apparently to trip LLM-based analysis guardrails. The MDaemon/ClamAV UnRAR campaign in the report is already covered by 2026-10-29/mdaemon-clamav-unrar-cve-2025-8088-exploited-in-ukraine; MythicRatatoskr (ESET, 2026-10-22) by 2026-10-23/mythicratatoskr-yggdrasil-mesh-c2-uac-0099-sandworm-wiper. No Swiss or Swiss-sector victim or targeting statement was found in the report text read.'
+  region_nexus: Europe-wide strategic picture; Ukraine dominant; no Swiss mention found in the report text read
+  primary_sector_nexus: 'indirect: governments, defence and municipalities in Europe are the Russia-aligned target set; no direct Swiss-public-sector statement'
+  sector: public-sector
+  cves:
+  - CVE-2025-8088
+  techniques:
+  - T1190
+  - T1102
+  affected_products:
+  - MDaemon Email Server
+  - ClamAV
+  entity_keys:
+  - actor:gamaredon
+  - actor:uac-0099
+  - actor:frostyneighbor
+  - malware:hellage
+  - malware:helltag
+  - report:eset-apt-activity-report-q4-2025-q1-2026-sandworm-lazarus
+  new_entities:
+  - key: report:eset-apt-activity-report-q2-2026-q3-2026
+    type: report
+    name: ESET APT Activity Report Q2 2026–Q3 2026
+    aliases:
+    - ESET APT Activity Report April 2026 - September 2026
+    summary: ESET Research's periodic APT summary for April to September 2026 published 2026-10-28; covers China-, Middle East-, North Korea- and Russia-aligned groups, the first Belarus-aligned destructive attack documented in Europe and APT use of LLMs (ESET, 2026-10-28).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_suggestion:
+    reliability: B
+    credibility: 2
+    why: ESET first-hand telemetry; periodic summary, not independently re-observed; the specific findings largely duplicate ESET posts already covered.
+  novelty: new
+  novelty_note: 'The store has a standalone entry for the previous edition (2026-05-30/eset-apt-activity-report-q4-2025-q1-2026-sandworm-strikes-na); this edition has only the MDaemon spin-off. The 2026-10-29 fire read this page for MDaemon but carried no report-level entry. Source note: the page headline says ''Q2 2026–Q2 2026'' in its first sentence (typo) while the title and PDF say Q2-Q3.'
+  lookback: true
+  borderline: true
+  borderline_reason: periodic APT summary with no Swiss nexus and most findings already covered; worth one short report-level entry only if the store keeps one per ESET edition
+  evidence:
+  - quote: Most notably, we identified the first destructive cyberattack by a Belarus-aligned threat actor that we have documented in the European theater
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  - quote: Russia-aligned activity continued to support its war objectives, targeting governments, the defense sector, and military entities in Europe
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  - quote: In one notable case, Russia-aligned UAC-0099 inserted a decoy request for instructions on building a nuclear weapon into a script comment
+    attribution: ESET Research
+    source_url: https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/
+  extended_notes: PD-9 periodic report flag. ESET's AI conclusion (APT groups use AI 'much like mainstream software developers') is a useful counterweight to GTIG/Microsoft framing in the same window.
+- title: 'Talos on AI-integrated implants: VOLTA stealer sends a stolen-data dossier to an LLM (OpenRouter) to rank the victim''s assets, and NIK C2 embeds an OpenAI API client that falls back to the victim''s own OPENAI_API_KEY'
+  sources:
+  - url: https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/
+    publisher: Cisco Talos
+    date: '2026-10-31'
+    role: primary
+  - url: https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/
+    publisher: Cisco Talos
+    date: '2026-10-29'
+    role: primary
+  discovery_trace: 'first seen at: extra-slice sweep of Talos feed https://blog.talosintelligence.com/rss/ (not in the S3 slice; run on 2026-11-01 to close the gap) -> primary: https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/ (extract) -> related Talos primary: https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/ (extract)'
+  summary: 'Talos (2026-10-31, from its CAIRN AI-malware tracking effort) analyses VOLTA, a self-deleting Windows infostealer sold as a builder (six swappable configuration slots) that, after the usual haul of browser passwords, cookies, cards, wallet seeds, Discord/Telegram/Steam/Roblox sessions, Microsoft OAuth tokens, SSH and cloud keys and Wi-Fi profiles, enriches the data with the victim''s own sessions (Gmail receipts to confirm a home address, delivery-app history) and POSTs a structured evidence bundle, including employer and employer domain, to OpenRouter under a ''forensic intelligence analyst'' prompt that returns a ranked ''what they are worth'' and ''their opsec'' assessment; a three-model fallback chain (Claude, Kimi, Gemini) handles model refusals. Talos says all observed endpoints are third-party-controlled with no actor-owned infrastructure. Talos says much of the token theft relies on bypassing Chrome App-Bound Encryption and names application control over which processes
+    may launch Chrome with --headless as the lever. Talos (2026-10-29) separately describes NIK C2, a Go 64-bit Windows RAT with a C2 panel observed in the wild (TLS WebSocket on 443 plus an HTTP fallback poll every 250 ms, AES-256-GCM, three C2 tiers, 52+ commands: credential and cookie theft, keylogger, screen/camera/audio capture, clipboard replacement, HVNC, SOCKS5 proxy and reverse tunnels, RDP session hijacking, AMSI patching, UAC bypass, process hollowing, masquerade as svchost.exe or simvol.exe, Run-key and COM-hijack persistence, MBR backup by raw disk read, bootkit-staging reconnaissance, and a mshta-based screen-lock ''ransomware'' that encrypts nothing). Its ''ai_generate'' command routes operator prompts to OpenAI''s Chat Completions endpoint from the victim machine, and if the operator supplies no API key it reads OPENAI_API_KEY from the environment, so the victim''s account pays for and logs the actor''s inference. Talos frames both as effort displacement (a model replaces
+    the operator''s triage or analysis step) rather than speed or scale, and expects refusal-resilience to become standard design.'
+  region_nexus: global; no Swiss or European-government targeting reported; victims are individuals and whoever employs them
+  primary_sector_nexus: 'indirect: stolen sessions and employer-domain profiling hit public-sector staff who mix personal and work browser profiles; developer and admin machines holding LLM API keys in environment variables are the NIK C2 exposure'
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1555.003
+  - T1539
+  - T1528
+  - T1552.004
+  - T1567
+  - T1056.001
+  - T1113
+  - T1115
+  - T1055.012
+  - T1685
+  - T1547.001
+  - T1036.005
+  - T1071.001
+  - T1090
+  affected_products:
+  - Windows
+  - Google Chrome
+  - OpenAI API
+  - OpenRouter
+  entity_keys:
+  - tool:cairn-talos
+  - malware:closedquorum
+  new_entities:
+  - key: malware:volta-autodoxer
+    type: malware
+    name: VOLTA
+    aliases:
+    - VOLTA-AUTODOXER
+    summary: Self-deleting Windows infostealer sold as a builder that sends a stolen-data dossier to an LLM through OpenRouter to rank the victim's assets, with a Claude-Kimi-Gemini refusal-fallback chain (Cisco Talos, 2026-10-31).
+  - key: tool:nik-c2
+    type: tool
+    name: NIK C2
+    aliases:
+    - nik_panel
+    summary: AI-integrated command-and-control framework with a Go Windows implant that routes operator prompts to the OpenAI Chat Completions API from the victim machine, falling back to the victim's OPENAI_API_KEY, and includes a screen-lock ransomware module (Cisco Talos, 2026-10-29).
+  relation_suggestions:
+  - subject: malware:volta-autodoxer
+    object: tool:cairn-talos
+    basis: 'Talos: VOLTA ''surfaced through the CAIRN research effort'' (a documented-in relationship between a sample and Talos''s tracking effort)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_suggestion:
+    reliability: B
+    credibility: 2
+    why: Cisco Talos first-hand malware analysis; no independent corroboration fetched; both implants analysed from samples.
+  novelty: new
+  novelty_note: 'NIK C2 (published 2026-10-29 10:00 UTC) is outside the 26 h window and the Talos source is not in the S3 slice; VOLTA (2026-10-31 12:00 UTC) is in-window. Returned together because Talos frames them as one pattern; the main agent may keep only VOLTA or drop NIK C2 on recency. Related entries already in the store: 2026-09-24/closedquorum-llm-orchestrated-c2-implant and 2026-10-09/talos-ai-analysis-evasion-instructions-aimed-at-llm-triage.'
+  lookback: false
+  borderline: true
+  borderline_reason: consumer-skewed stealer (gaming and delivery-app targets) and a RAT with no named victims; the transferable hooks are egress to LLM API endpoints from non-sanctioned processes, API keys in environment variables, and headless-Chrome launches by non-developer processes
+  evidence:
+  - quote: VOLTA is a mature stealer implant with an optional AI-integration layer.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/
+  - quote: An application control policy that restricts which processes may launch Chrome with `--headless` would block the ABE decryption path entirely.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/
+  - quote: All the observed endpoints for this malware are third-party controlled. There is no actor-owned infrastructure.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/
+  - quote: Cisco Talos observed a new AI-integrated command-and-control (C2) framework in the wild called “NIK C2.”
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/
+  - quote: If the victim has configured an OpenAI account on their machine, that account's API key will be used to fund the actor's AI inference.
+    attribution: Cisco Talos
+    source_url: https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/
+  extended_notes: 'Detection concepts (Talos-supported): egress telemetry (proxy/DNS/EDR network events) showing a non-browser, non-sanctioned process connecting to LLM API hosts (api.openai.com, openrouter.ai); processes reading OPENAI_API_KEY; Chrome started with --headless by a parent that is not a known developer tool; for NIK C2, a Go binary named svchost.exe or simvol.exe running from a user-profile Microsoft\Network path, a Run value named like a system lock launching a looping batch that opens mshta on a local HTML file, and PowerShell reading \\.\PhysicalDrive0 to a temp file. Post-compromise: preserve the stealer''s harvest log if present, revoke sessions and tokens, rotate API keys, SSH keys and cloud credentials found on the host. Note for the main agent: no IOCs carried (hashes, IPs, domains, wallet strings omitted).'
+- title: 'NetamLoader: Kaspersky finds an unattributed APT framework that abuses a Microsoft-signed .NET configuration gadget (AppDomainManager injection) inside a third-party patch-management tool''s update directory to load layered XAML payloads on a government-only Windows build in Asia'
+  sources:
+  - url: https://securelist.com/netamloader/121676/
+    publisher: Kaspersky GReAT (Securelist)
+    date: '2026-10-29'
+    role: primary
+  discovery_trace: 'first seen at: kaspersky-securelist, feed https://securelist.com/feed/ (item dated 2026-10-29) -> primary: https://securelist.com/netamloader/121676/ (extract)'
+  summary: 'Kaspersky GReAT reports a single victim in Asia and infers Asian government entities were the target, because the malware was built for a customised Windows build used only by government entities; Kaspersky says this strongly indicates a supply-chain attack and that no attribution to a known APT group has been established. A KSN alert flagged a .config file using AppDomainManager injection inside a CAB placed in the Windows Update download folder; the CAB held Patch My PC components (the third-party patch-management tool) and Microsoft-signed .NET assemblies, and the process seen running was PatchMyPC-ScriptRunner.exe with an update-package argument (Kaspersky did not see how the CAB was delivered). The chain: the executable''s .config makes the runtime load a Microsoft-signed configuration class that reads a crafted fabric.config; Kaspersky says a design flaw in DataCacheFactoryConfiguration lets it load arbitrary types, which parses a Resources.resx carrying a BinaryFormatter-serialised
+    object and multiple encoded, compressed or encrypted layers (XAML files, .NET assemblies, JSON configuration). The final loader runs payloads from C2 in an isolated AppDomain, polls with long jitter (20 to 40 minutes before first contact, 22 to 28 hours if the server does not answer), uses AES-128-CBC with HMAC for traffic, and its C2 sits behind Cloudflare. Transferable lesson for detection engineers: legitimate signed binaries plus a planted .config in a writable directory give code execution with no unsigned DLL on disk.'
+  region_nexus: Asia (single victim); no European or Swiss victim reported
+  primary_sector_nexus: 'indirect: government-targeted, but a sovereign-OS supply-chain scenario outside the constituency; the technique and the patch-tool host are the transferable parts'
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1574.014
+  - T1027
+  - T1497.003
+  - T1071.001
+  - T1573.001
+  affected_products:
+  - Patch My PC
+  - .NET Framework
+  - Windows
+  entity_keys: []
+  new_entities:
+  - key: malware:netamloader
+    type: malware
+    name: NetamLoader
+    aliases: []
+    summary: Complex .NET assembly-loading framework built on XAML markup that Kaspersky found loaded through AppDomainManager injection against a government-only customised Windows build in Asia; no attribution to a known APT (Kaspersky GReAT, 2026-10-29).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_suggestion:
+    reliability: B
+    credibility: 3
+    why: Kaspersky GReAT first-hand analysis of one victim's samples; delivery vector and attribution unknown; the 'supply-chain' and 'government victim' statements are Kaspersky's inference.
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: no Swiss or European nexus and a single Asian victim; kept for the AppDomainManager/.config gadget technique and the patch-tool host-process hunt hook, which a detection engineer can apply anywhere Patch My PC or similar updaters run
+  evidence:
+  - quote: which strongly indicates a supply-chain attack targeting a custom Windows build used exclusively by government entities in Asia
+    attribution: Kaspersky GReAT
+    source_url: https://securelist.com/netamloader/121676/
+  - quote: at present, no attribution to any known APT group has been established
+    attribution: Kaspersky GReAT
+    source_url: https://securelist.com/netamloader/121676/
+  - quote: we identified a single victim in Asia
+    attribution: Kaspersky GReAT
+    source_url: https://securelist.com/netamloader/121676/
+  - quote: The `DataCacheFactoryConfiguration` class has a design flaw that can be abused to load arbitrary assemblies.
+    attribution: Kaspersky GReAT
+    source_url: https://securelist.com/netamloader/121676/
+  extended_notes: 'Detection concepts: process-creation events for an updater/script-runner executable launched from the Windows Update download/Install directory with a sibling .config naming an appDomainManagerType; image loads of .NET assemblies from a directory where they do not normally live; registry/file writes consistent with the malware''s exception-state markers are described in the post but omitted here. Hashes, paths of attacker files and C2 omitted (IOC policy).'
+- title: 'Yoba: Check Point Research tracks fake GitHub ''ChatGPT, Claude and Cursor desktop apps'' that sideload a loader next to genuine signed vendor binaries, fetch tasking from a DoH TXT record located through a Telegram profile picture, and currently drop an XMRig miner'
+  sources:
+  - url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+    publisher: Check Point Research
+    date: '2026-10-27'
+    role: primary
+  discovery_trace: 'first seen at: checkpoint-research, feed https://research.checkpoint.com/feed/ (item dated 2026-10-27) -> primary: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/ (extract)'
+  summary: 'Check Point Research has tracked for two months a campaign it calls Yoba: fake GitHub repositories and GitHub Pages sites impersonating desktop apps ''GPT-5.6 Sol'', ''GPT-6 Astra'' and ''Claude Opus'' (no fake stars or forks; visibility most likely from SEO poisoning of Google results), whose ZIP releases carry a genuine signed OpenAI or Anthropic Setup.exe next to a malicious winmm.dll that it loads by DLL sideloading. The YobaDropper (anti-sandbox check that the host process is named as expected, a keyboard-layout test excluding CIS countries except Ukraine, an administrator check) copies the legitimate WMPDMC.exe from System32 into a ProgramData folder, drops the decrypted YobaLoader as a DLL beside it and persists through a SYSTEM scheduled task given Microsoft as author, a 3-minute boot delay and a Windows Media Player description. The YobaLoader reads a Telegram channel''s profile image, derives a dedyn.io domain from the image''s last 50 bytes through a dictionary-word
+    DGA, asks Google DNS-over-HTTPS for a TXT record, verifies an Ed25519 signature and AES-decrypts a payload URL on a file-hosting service, then injects into svchost.exe, runs an executable (after stripping Zone.Identifier) or runs a hidden PowerShell script. The observed payload is an XMRig miner reaching an onion pool through a bundled Tor and obfs4 bridges, but Check Point stresses the loader is generic, so later waves may deliver other families; an early variant (June 2026) sideloaded through a process named Cursor.exe. Check Point says indicators suggest Russian origin and a UTC-4 working pattern (the repository metadata also shows UTC+3, UTC+4 and UTC-4).'
+  region_nexus: global; no Swiss or European-government nexus reported
+  primary_sector_nexus: 'indirect: affects staff and developers who download AI desktop tools from search results; commodity cryptominer payload so far'
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1574.001
+  - T1053.005
+  - T1568.002
+  - T1102
+  - T1071.004
+  - T1055
+  - T1496
+  - T1608.006
+  - T1204.002
+  - T1036.005
+  affected_products:
+  - Windows
+  - GitHub
+  entity_keys:
+  - product:cursor
+  - product:anthropic-claude-code
+  new_entities:
+  - key: malware:yoba
+    type: malware
+    name: Yoba
+    aliases:
+    - YobaDropper
+    - YobaLoader
+    summary: Dropper and generic loader chain (YobaDropper, YobaLoader) spread through fake GitHub 'AI desktop app' projects, sideloaded next to genuine signed OpenAI, Anthropic or Cursor binaries, with Telegram-plus-DoH-TXT tasking and an XMRig miner as the observed payload (Check Point Research, 2026-10-27).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_suggestion:
+    reliability: B
+    credibility: 2
+    why: Check Point Research first-hand sample analysis over two months; no independent corroboration; origin and time-zone statements are Check Point's assessment.
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: commodity cryptominer payload and consumer-style lure; kept because the signed-vendor-binary sideload, the SYSTEM task disguised as Microsoft and the DoH TXT tasking give concrete hunt hooks, and AI-tool lures follow the Cursor/Claude Code supply-chain entry already in the store
+  evidence:
+  - quote: creating fake GitHub projects that pretend to be desktop applications like *GPT-5.6 Sol*, *GPT-6 Astra*, and *Claude Opus*.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  - quote: Although we observed an XMRig cryptominer as the final payload in this campaign, the YobaLoader is a generic loader.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  - quote: The actor behind the campaign shows indicators that suggest Russian origins and appears to operate primarily in the UTC-4 time zone.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/
+  extended_notes: 'Detection concepts: a non-browser process requesting dns.google/resolve TXT records; a legitimate vendor installer launched from a ZIP-extracted folder that also holds a winmm.dll; WMPDMC.exe running from a ProgramData path rather than System32; scheduled tasks authored ''Microsoft Corporation'' that point outside System32; Zone.Identifier removal before execution from a temp folder; unexpected Tor or obfs4 traffic from endpoints. Hardening: application control for DLL loads from user-writable and ProgramData paths; download AI tools only from vendor sites. IOCs (hashes, Telegram handle, domains, bridge addresses, pool token) intentionally omitted.'
+- title: 'Huntress: attackers who compromised camera management software (CMS.exe) used it as the entry point into several environments, then sideloaded beacon DLLs through a genuine Windows parental-control binary dropped into user AppData'
+  sources:
+  - url: https://www.huntress.com/blog/camera-management-software-compromise-malware
+    publisher: Huntress
+    date: '2026-10-27'
+    role: primary
+  discovery_trace: 'first seen at: huntress, feed https://www.huntress.com/blog/rss.xml (item dated 2026-10-27) -> primary: https://www.huntress.com/blog/camera-management-software-compromise-malware (extract)'
+  summary: 'In September and October Huntress saw a handful of incidents in its customer base that began at camera management software (CMS.exe under Program Files (x86)) and assessed that in every case a threat actor had compromised that legitimate camera management system as initial access. Huntress could not determine the product''s vendor or version (the executable has no version resource; strings point at a Korean company''s domain and a software download page, which Huntress presents only as a possible source) and found no application logs, so how the software was compromised is unknown. After compromise the actor dropped a remote-control executable (rs.win32.exe) into the user''s AppData Roaming CMS folder and ran it with a remote address, port 8000 and an admin credential, which Huntress reads as a reverse shell, then dropped the genuine Windows Parental Control Monitor binary WpcMon.exe into AppData Local Microsoft and sideloaded two modified zlib DLLs (IPHLPAPI.DLL and samcli.dll)
+    that beacon to one C2 address, with persistence through a user Run key referencing the relocated binary. Huntress''s lesson: treat cameras and their management platforms as entry points, inventory and restrict the software, and investigate the sequence CMS.exe, rs.win32.exe, abnormal WpcMon.exe and unapproved outbound connections.'
+  region_nexus: not stated; incidents in Huntress's customer base (no country named)
+  primary_sector_nexus: 'indirect: police, municipal and building video-management software on Windows hosts is the analogous exposure; no public-sector victim named'
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1574.001
+  - T1547.001
+  - T1071
+  - T1036.005
+  affected_products:
+  - Camera management software (CMS.exe, vendor unconfirmed)
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: LOW
+  classification_suggestion:
+    reliability: B
+    credibility: 3
+    why: Huntress first-hand telemetry; vendor, vulnerability and initial-access mechanism unknown; single source.
+  novelty: new
+  lookback: true
+  borderline: true
+  borderline_reason: vendor and exploit unknown, no named public-sector victim; kept for the process-lineage and sideload hunt hook on video-management hosts and the 'cameras are entry points' lesson relevant to police and municipal CCTV estates
+  evidence:
+  - quote: In September and October, Huntress observed a handful of incidents originating from camera management software (`CMS.exe`).
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/camera-management-software-compromise-malware
+  - quote: Huntress analysts were unable to determine the full name or creator/vendor of the software
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/camera-management-software-compromise-malware
+  - quote: we can't definitively say that the files were downloaded from this website
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/camera-management-software-compromise-malware
+  extended_notes: 'Detection concepts: process lineage with the camera-management executable as parent of an unsigned executable in AppData Roaming; WpcMon.exe running from a user profile rather than System32; Run-key value pointing at the relocated binary; DLLs named like system libraries loaded from AppData. Hardening named by Huntress: application control for executables and DLLs in user-writable paths, inventory and restriction of camera platforms, egress monitoring. IOCs omitted.'
+dropped_leads:
+- lead: 'Acronis TRU ''Inside Qilin ransomware: ESXi attacks, affiliate networks and double extortion'' (2026-10-28)'
+  url: https://www.acronis.com/en/tru/posts/inside-qilin-ransomware-esxi-attacks-affiliate-networks-and-double-extortion/
+  reason: Rust-build analysis of a long-tracked RaaS (actor:qilin exists; PAN-OS GlobalProtect, k0t and AA26-293A entries already cover its access paths). Detection-relevant details exist (PowerCLI script that changes ESXi passwords and enables SSH, fsutil symlink-evaluation changes, vssadmin shadow deletion, QLOG folder, run key with six random letters, -password argument gate, links to Moonstone Sleet, Scattered Spider, The Gentlemen and Securotrop) but no new access vector, no Swiss nexus. Reinstate as a short research entry only if the store lacks a Qilin build analysis.
+- lead: 'Elastic Security Labs ''Kernel eviction notice: What wesp.sys reveals about the Windows Endpoint Security Platform'' (2026-10-26)'
+  url: https://www.elastic.co/security-labs/blog/windows-endpoint-security-platform-wesp
+  reason: Analysis of an Insider-preview Microsoft EDR-in-user-mode platform; no attack, no defender action today.
+- lead: 'ESET ''Amatera: How the prolific infostealer works and spreads'' (2026-10-29)'
+  url: https://www.welivesecurity.com/en/malware/amatera-how-prolific-infostealer-works-spreads/
+  reason: Overview of a MaaS stealer (tool:amatera already tracked); repackages Microsoft and Straiker findings, LATAM detection statistics; no new technique.
+- lead: Socket / Malwarebytes 'Searchjacked' 319 Chrome extensions, 13.4 million installs (2026-10-29/30)
+  url: https://socket.dev/blog/searchjacked
+  reason: Consumer search-referral monetisation; Socket found no evidence of malware redirection; no public-sector hook beyond generic extension allow-listing.
+- lead: Microsoft Threat Intelligence 'Tracking AI adoption in North Korean threat actor tradecraft' (2026-10-29)
+  url: https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/
+  reason: 'Folded into the ARTEX item (Onyx Sleet and Pearl Sleet using ARTEX since late October). Remainder: four-stage AI-adoption assessment of NK clusters, Jade Sleet three front companies in a week, Onyx Sleet 100+ AI-generated PDF lures, Coral Sleet trojanising private GitHub repos since April, Sapphire Sleet likely AI-assisted August Rust supply-chain compromise, Jasper Sleet remote-IT-worker vetting guidance. Registry has actor:jade-sleet, actor:sapphire-sleet and actor:purpledelta (Jasper Sleet alias); Onyx, Pearl, Coral, Diamond and Emerald Sleet are not registered. Reinstate as a research entry if the main agent wants the IT-worker hiring guidance.'
+- lead: Sophos CTU 'AI used in Aur0ra ransomware testing and execution' (2026-10-29), GOLD OGRE
+  url: https://www.sophos.com/en-us/blog/ai-used-in-aur0ra-ransomware-testing-and-execution
+  reason: Outside the 26 h window and Sophos is not a slice record; the Aur0ra/Cursor story was published by Gambit (2026-08-30, https://gambit.security/blog-posts/aurora-ransomware-targets-esxi-abuses-cursor-agent-for-exploitation) and CloudSEK (2026-08-27, https://www.cloudsek.com/blog/aurora-ransomware-affiliate-ai-attack-planning-crypto-payments) and has no entry in the store. Sophos adds GOLD OGRE attribution (high confidence), multiple operators on shared C2, agents running password spraying, Kerberoasting, NTLM coercion and relay (PetitPotam), Certipy, BloodHound and SharpShares, exfiltration to an S3-compatible bucket, three victims later on the leak site, and guardrail bypass by framing intrusions as authorised red-team work. Strong research; reinstate if the main agent judges the AD-attack-path angle (backups, NAS, virtualisation enumeration) worth a store entry.
+- lead: 'Group-IB ''MadApe: The Code That Opens the Door'' (2026-10-29)'
+  url: https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/
+  reason: Outside the window and not a slice record; a previously undocumented Microsoft device-code phishing kit (PDF lures including German-language SharePoint-themed templates, 155 root domains, 97 with device-code components); the store already carries several device-code kit entries (Kali365, Tycoon 2FA, ForgM365) and the lever (block device-code flow in Conditional Access) is unchanged.
+- lead: Intel 471 'Planning for Russia's escalating hybrid war' (2026-10-29); Cloudflare 'DDoS Threat Report 2026 Q3' (2026-10-29, periodic)
+  url: https://www.intel471.com/blog/planning-for-russias-escalating-hybrid-war
+  reason: Strategic geopolitical assessment (NoName057(16) Q3 targets Estonia, France, Germany and Poland, no Switzerland; mentions Half-Click webmail exploits and a RedFlick chain without detail) and a global DDoS statistics report (https://blog.cloudflare.com/ddos-threat-report-2026-q3/; no Swiss figures read). Neither changes a defender action.
+- lead: 'Kaspersky ''Millions of security cameras at risk: DoS vulnerability in Intelbras devices'' (2026-10-28) and ''cloud infrastructure isolation bypass'' pentest write-up (2026-10-27)'
+  url: https://securelist.com/intelbras-camera-vulnerability/121131/
+  reason: Brazilian consumer IP-camera unauthenticated firmware-upgrade DoS on local Wi-Fi (CAN pending); and an anonymised managed-Kubernetes (k0s Konnectivity) tenant-isolation chain from a bug-bounty pentest (https://securelist.com/cloud-infrastructure-isolation-bypass/121609/); no constituency exposure identified.
+- lead: 'Check Point ''Cohere''s Qwen Story'' (2026-10-29), Akamai posts (2026-10-26 to 10-30), Huntress ''AI, Scripts, Operator: Inside the ConnectWise Attack'' (2026-10-26), OX Security and Phorion Claude Code extension posts (2026-10-30)'
+  url: https://research.checkpoint.com/2026/coheres-qwen-story-looks-more-like-model-jaggedness/
+  reason: AI-model behaviour commentary; Akamai posts are marketing/product or already cited (Node2Shell is cited in 2026-10-24/cve-2026-111497-node2shell...); the Huntress ConnectWise post is already cited in 2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse; the Cursor/Claude Code extension incident is covered by 2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor (OX body unreadable, see coverage gaps).
+- lead: Leads for S4/S2 seen only as headlines on Malwarebytes and the Check Point weekly bulletin (not verified, not mine to chase)
+  url: https://research.checkpoint.com/2026/26th-october-threat-intelligence-report/
+  reason: 'Malwarebytes 2026-10-30: ''Hackers steal and publish data on 41,000 Homeland Security workers'' and ''Binance hit by largest-ever crypto theft''; Check Point weekly 2026-10-26: Onamae Desktop Cloud (Japan, 26,000+ servers), SBI customer data leak, Unit 42 AI-assisted cybercrime analysis, SOCRadar INC/Gentlemen AI-agent campaign (62 organisations). Headline-level only; passed on as possible S4 leads.'
+periodic_reports_seen:
+- name: ANNUAL REPORT — ESET APT Activity Report Q2 2026–Q3 2026
+  date: '2026-10-28'
+  returned_as_item: true
+- name: Cloudflare DDoS Threat Report 2026 Q3
+  date: '2026-10-29'
+  returned_as_item: false
+  reason: no Swiss figures; DDoS landscape only
+- name: Cisco Talos IR trends Q3 2026
+  date: '2026-10-29'
+  returned_as_item: false
+  reason: already covered by 2026-10-30/cisco-talos-ir-trends-q3-2026-public-administration
+- name: Acronis Cyberthreats Update, October 2026
+  date: '2026-10-13'
+  returned_as_item: false
+  reason: outside window
+extra_sweeps:
+  note: 'Beyond the slice, one batched feed sweep (feed <rss> 12) of 18 research publishers to close the gap, filtered to items since 2026-10-29: unit42, talos, proofpoint, volexity, google-tag, sophos-xops, zscaler-threatlabz, dfirreport, recordedfuture, group-ib, cloudflare-cf1, sysdig, socket-dev-blog, intel471, infoguard, oneconsult, jfrog, trendmicro-research. Hits worth a look: talos (VOLTA 10-31, NIK C2 10-29), sophos (Aur0ra 10-29), group-ib (MadApe 10-29), intel471, cloudflare. Nothing newer than 2026-10-29 on unit42, volexity, proofpoint, zscaler, google-tag, dfirreport, sysdig, infoguard, oneconsult, jfrog, trendmicro-research.'
+candidate_sources: []
+coverage_gaps:
+- source_id: ox-security
+  reason: 'Feed reads (newest 2026-10-30) but every article body returns HTTP 403 on direct, extract, jina and WebFetch (re-tested 2026-11-01 on the Cursor-extension post: extract ''all transports failed'', WebFetch 403). Recipe unchanged: feed titles/dates are leads only.'
+- source_id: mandiant-gtig
+  reason: 'RECIPE CHANGE: the FeedBurner feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v lags (newest 2026-10-15) and missed the 2026-10-31 ''ARTEX and Friends'' post. Working recipe: WebFetch https://cloud.google.com/blog/topics/threat-intelligence (titles + hrefs, no dates) to spot unseen titles, then `python3 tools/fetch_source.py extract <post-url>`, whose metadata `date:` carries the publication date (2026-10-31 here).'
+- source_id: phorion
+  reason: 'RECIPE CONFIRMED: `python3 tools/fetch_source.py extract https://phorion.io/blog/` returns the dated listing (7 cards with dates and hrefs); no feed needed. Candidate still contributes nothing new this run (only the already-covered 2026-10-30 advisory in horizon).'
+- source_id: akamai-sirt
+  reason: '`extract` of akamai.com post URLs returned 1-1.3 KB fragments (author bio only) for three posts on 2026-11-01; the 2026-10-17 note said extract worked on one post. Use WebFetch for Akamai bodies; none were needed this run.'
+- source_id: eset
+  reason: 'RECIPE CONFIRMED: the main feed lists the 2026-10-28 APT report but not the eset-research listing''s other cards; `extract https://www.welivesecurity.com/en/eset-research/` returned raw HTML (65 KB, nine cards with dates and relative hrefs) rather than clean markdown, so parse the ''articles-card-grid'' cards; nothing newer than 2026-10-28.'
+- source_id: checkpoint-research
+  reason: '`extract` of the weekly bulletin https://research.checkpoint.com/2026/26th-october-threat-intelligence-report/ was served by the jina reader (metered credit spent once); the direct transport did not read it, though other research.checkpoint.com posts read direct.'
+source_ledger:
+- id: ox-security
+  tier: standard
+  attempted: true
+  transport: 'feed (direct); article body: extract, WebFetch and jina all 403/blocked'
+  horizon_hours: 74
+  in_horizon_items: 1
+  returned: 0
+  note: only in-horizon post is the 2026-10-30 Claude Code/Cursor extension write-up, already covered by entries/2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor; article body unreadable on every transport, lead-only as the 2026-10-26 note says
+- id: phorion
+  tier: standard
+  attempted: true
+  transport: extract (listing parses; 7 dated cards)
+  horizon_hours: 168
+  in_horizon_items: 1
+  returned: 0
+  note: only in-horizon card is the 2026-10-30 Claude Code extension advisory, already covered; listing path https://phorion.io/blog/ now verified readable with extract
+- id: acronis-tru
+  tier: standard
+  attempted: true
+  transport: feed (direct, 12 dated items)
+  horizon_hours: 145
+  in_horizon_items: 2
+  returned: 0
+  note: Qilin analysis (10-28) dropped with reason; 'Configured to protect' (10-29) is a product how-to
+- id: akamai-sirt
+  tier: standard
+  attempted: true
+  transport: feed (FeedBurner, direct); post bodies via extract returned 1 KB fragments
+  horizon_hours: 145
+  in_horizon_items: 8
+  returned: 0
+  note: only /blog/security-research/ post is Node2Shell (already cited in the store); other 7 are marketing, partner, cloud or sustainability posts
+- id: checkpoint-research
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 145
+  in_horizon_items: 3
+  returned: 1
+  note: Yoba returned (borderline); Qwen model-behaviour post and weekly bulletin not returned
+- id: elastic-seclabs
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 0
+  note: 'wesp.sys analysis (10-26, date has no time) dropped: preview platform, no defender action'
+- id: eset
+  tier: standard
+  attempted: true
+  transport: feed + extract; research listing via extract (raw HTML, 9 dated cards) to cross-check the lagging feed
+  horizon_hours: 145
+  in_horizon_items: 5
+  returned: 1
+  note: APT Activity Report returned (borderline, periodic report); Amatera overview dropped; the eset-research listing shows nothing newer than 2026-10-28
+- id: hunt-io
+  tier: standard
+  attempted: true
+  transport: WebFetch (listing, 15 posts with dates and hrefs) + extract (post)
+  horizon_hours: 145
+  in_horizon_items: 2
+  returned: 1
+  note: PHP2Shell one-week-later post (10-30) returned as update-of item 1 with Dream and Unit 42 primaries; Philippine agency open-directory post (10-28) out of scope
+- id: huntress
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 145
+  in_horizon_items: 5
+  returned: 1
+  note: camera-management compromise returned (borderline); MDM post and ConnectWise AI post already covered; SIEM and neighbourhood-watch posts are product/community
+- id: kaspersky-securelist
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 145
+  in_horizon_items: 5
+  returned: 1
+  note: NetamLoader returned (borderline); Intelbras DoS, cloud-isolation pentest, AI-agent product post and filter-generation post dropped
+- id: malwarebytes
+  tier: standard
+  attempted: true
+  transport: feed (20 dated items)
+  horizon_hours: 145
+  in_horizon_items: 17
+  returned: 0
+  note: consumer and news posts; Searchjacked traced to Socket primary and dropped; DHS and Binance headlines passed on as S4 leads
+- id: mandiant-gtig
+  tier: standard
+  attempted: true
+  transport: feed (FeedBurner, newest item 2026-10-15) + WebFetch of the landing page + extract of the post
+  horizon_hours: 145
+  in_horizon_items: 1
+  returned: 1
+  note: the FeedBurner feed omits the 2026-10-31 ARTEX and Friends post that the landing page lists; found via landing page, returned as update-of item 2
+- id: msft-ti
+  tier: standard
+  attempted: true
+  transport: msft-secblog recent 30 + extract
+  horizon_hours: 145
+  in_horizon_items: 5
+  returned: 0
+  note: Cursor extension and ESC1/ESC8 posts already covered; NK AI-adoption post folded into item 2 and listed in dropped_leads
+- id: project-discovery
+  tier: standard
+  attempted: true
+  transport: url (raw listing, dated cards)
+  horizon_hours: 145
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-08-16; nothing in horizon
