@@ -72,7 +72,7 @@ evidence:
     source_url: "https://raw.githubusercontent.com/NCSC-NL/php2shell/main/software/changelog_software_list.md"
 verification: single-source
 sourcing_note: >
-  Broadcom is the disclosing party for its own products, and its advisory and knowledge article are the only first-party sources; the umbrella advisory states no versions, fixes or workarounds. Broadcom's SEPM advisory (39421) is not readable without a login, so the SEPM fix builds come from NCSC-NL's tracker, whose maintainer accepted a community report that cites it and did not verify it, and that reading carries reduced confidence. Product statuses on the umbrella page have moved between investigation and affected, CASMA most recently on 2026-10-30, so the page should be read again before relying on a status.
+  Broadcom is the disclosing party for its own products, and its advisory and knowledge article are the only first-party sources; the umbrella advisory states no versions, fixes or workarounds. Broadcom's per-product advisories (39411, 39421, 39429 and 39475) are not readable without a login, so the SEPM fix builds come from NCSC-NL's tracker, whose maintainer accepted a community report that cites it and did not verify it, and that reading carries reduced confidence. Product statuses on the umbrella page have moved between investigation and affected, CASMA most recently on 2026-10-30, so the page should be read again before relying on a status.
 confidence: medium
 references: ["2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619", "2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release", "2026-10-23/netscaler-php2shell-management-gui-fixes-2026-10-27", "2026-10-25/qnap-synology-php2shell-qts-quts-hero-fixed-others-unfixed", "2026-10-27/php2shell-ot-products-netmodule-nrsw-no-fix-macmon-schneider", "2026-10-28/cisco-php2shell-expressway-urwb-duo-access-gateway-fixes", "2026-10-28/hpe-clearpass-php2shell-hotfixes-hpesbnw05171", "2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways", "2026-10-29/f5-big-ip-php2shell-k000163821-critical-releases", "2026-10-29/php2shell-trend-micro-apex-quest-kace-netapp-ontap", "2026-05-15/cve-2026-46300-linux-kernel-local-privilege-escalation-via-x", "2026-10-27/camping-care-tcs-camping-data-theft-php-flaw-whatsapp-fraud"]
 deep_dive: false
@@ -84,7 +84,15 @@ classification:
 watchlist_hit: false
 actions:
   - "Install Carbon Black App Control Server 8.12.2 or 8.13.2 (8.13.2 where the server already runs 8.13), confirm the SEPM fix build against Broadcom's login-gated advisory 39421 before treating 14.3.27716.10000 or 14.4.494.0000 as the target, and until each server is fixed limit the management console of every SEPM, App Control Server, CloudSOC SpanVA appliance and CASMA to administrator networks."
-updates: []
+updates:
+  - at: "2026-11-01T14:05:02Z"
+    run_id: 2026-11-01T1312Z-audit
+    type: correction
+    summary: >
+      The takeaway said CloudSOC SpanVA and CASMA have no fix; Broadcom's umbrella advisory lists none as
+      of 2026-10-30, but their own advisories need a login, so the statement now says what the umbrella
+      page shows.
+    fields: [body, sourcing_note]
 migrated_from: null
 ---
 
@@ -96,4 +104,8 @@ Broadcom's article 459982 says the App Control Server is affected in all support
 
 **Detection:** Broadcom publishes no indicator. For a server that was reachable before its fix, review shells and downloads started by the console's web service and outbound connections the server initiates; this is an inference, since the pages do not describe how these products run PHP.
 
-**Defender takeaway:** put these consoles on administrator networks now and on fixed builds as soon as they exist: App Control Server has its fix, SEPM's rests on an unverified reading, and CloudSOC SpanVA and CASMA have none. Re-read Broadcom's advisory 39404 before relying on a status, because CASMA changed on 2026-10-30.
+**Defender takeaway:** put these consoles on administrator networks now and on fixed builds as soon as they exist: App Control Server has its fix, SEPM's rests on an unverified reading, and Broadcom's advisory 39404 listed no fix for CloudSOC SpanVA or CASMA as of 2026-10-30. Re-read Broadcom's advisory 39404 before relying on a status, because CASMA changed on 2026-10-30.
+
+## Correction — 2026-11-01T14:05:02Z
+
+The takeaway said CloudSOC SpanVA and CASMA have no fix. Broadcom's umbrella advisory 39404, last revised on 2026-10-30, lists both as affected and states no fix or workaround, while their own product advisories, 39429 and 39475, need a Broadcom login, so the absence of a fix is what the umbrella page shows, not a confirmed state ([Broadcom, 2026-10-30](https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39404)).

@@ -1,11 +1,11 @@
 ---
 schema: 1
 kind: policy
-title: "privatim revises its cloud guidance for Swiss public bodies (Merkblatt v3.02, 2 October 2026): sensitive data stays under the body's own keys, standard SaaS from Microsoft, Google, AWS and SAP is in most cases inadmissible for secrecy-bound data, and top management signs the residual risk"
+title: "privatim revises its cloud guidance for Swiss public bodies (Merkblatt v3.02, 2 October 2026): sensitive data stays under the body's own keys, SaaS from Microsoft, Google, AWS and SAP is in most cases inadmissible for secrecy-bound data, and top management signs the residual risk"
 headline: "privatim cloud guidance v3.02: public bodies keep their own keys for sensitive data; big-vendor SaaS mostly out"
 summary: >
   privatim, the conference of the Swiss data-protection authorities, revised its guidance on cloud-specific risks for public bodies on 2026-10-02 (version 3.02, replacing the version of 3 February 2022).
-  For particularly sensitive personal data the public body must encrypt with keys only it can use, outsourcing such data or data under a statutory duty of confidentiality to standard SaaS from large international providers is in most cases inadmissible,
+  For particularly sensitive personal data the public body must encrypt with keys only it can use, outsourcing such data or data under a statutory duty of confidentiality to SaaS solutions of large international providers is in most cases inadmissible,
   and the body's top management is to confirm the residual risk in writing.
 discovered_at: "2026-10-30T03:52:00Z"
 updated_at: null
@@ -48,7 +48,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-11-01T13:54:27Z"
+    run_id: 2026-11-01T1312Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The title, summary and takeaway qualified the SaaS rule as covering standard SaaS; privatim's
+      Merkblatt speaks of SaaS solutions of large international providers without that qualifier, which
+      only a secondary article adds, so the word is removed.
+    fields: [body, summary, title]
 migrated_from: null
 ---
 
@@ -56,4 +65,4 @@ privatim, the conference of the Swiss data-protection authorities, dates version
 
 The body, or its top management, is to confirm in writing that it has understood the risks and accepts the residual risk, and data the cloud services generate about their users, such as telemetry and logging data, is to be treated with the same care and contract terms as the content data ([privatim, 2026-10-02](https://www.privatim.ch/wp-content/uploads/2026/10/privatim_Cloud-Merkblatt_v3_02_20261002_def_DE.pdf)). The five risk areas are contract design, places of processing including foreign authority access, confidentiality with encryption and key management, user data, and sub-processors ([privatim, 2026-10-02](https://www.privatim.ch/wp-content/uploads/2026/10/privatim_Cloud-Merkblatt_v3_02_20261002_def_DE.pdf)).
 
-**Defender takeaway:** the guidance addresses public bodies subject to Swiss data-protection law; a body that runs or plans standard SaaS from the named providers for sensitive or secrecy-bound data is advised to keep its own encryption keys, to have top management sign the residual risk, and to hold provider telemetry and logs about its users to the same contract terms.
+**Defender takeaway:** the guidance addresses public bodies subject to Swiss data-protection law; a body that runs or plans SaaS from the named providers for sensitive or secrecy-bound data is advised to keep its own encryption keys, to have top management sign the residual risk, and to hold provider telemetry and logs about its users to the same contract terms.

@@ -1,7 +1,7 @@
 ---
 schema: 1
 kind: vulnerability
-title: "CVE-2026-109618 / CVE-2026-109619, PHP2Shell in management servers and storage: Trend Micro Apex Central and Apex One server have no fix until 2026-11-11, Quest KACE SMA and SDA have fixes and should block ports 80, 443 and 52230 until patched, and NetApp ONTAP 9 is affected by CVE-2026-109618 only, inside the PHP jail"
+title: "CVE-2026-109618 / CVE-2026-109619, PHP2Shell in management servers and storage: Trend Micro Apex Central and Apex One server have no released fix, with patches expected on 2026-11-11, Quest KACE SMA and SDA have fixes and should block ports 80, 443 and 52230 until patched, and NetApp ONTAP 9 is affected by CVE-2026-109618 only, inside the PHP jail"
 headline: "PHP2Shell: Trend Micro Apex Central and Apex One await patches to 11 Nov; Quest KACE and NetApp ONTAP have fixes"
 summary: >
   Trend Micro's advisory, last updated 2026-10-30, lists Apex Central and the on-premises Apex One server as impacted by the PHP flaws with critical patches due on 2026-11-11 and interim mitigations, shows critical patches for Deep Discovery Inspector and Email Inspector, and adds Mobile Security for Enterprise as impacted with a patch due on 2026-11-17; Quest says all KACE SMA and SDA versions
@@ -122,6 +122,15 @@ updates:
       on 2026-11-17; the Apex Central and Apex One server patches stay due on 2026-11-11. Quest published
       KACE SDA hotfix 9.3.313 and NetApp added ONTAP 9.19.1P4 to its fixed builds, both on 2026-10-29.
     fields: [summary, affected_products, cves, sources, evidence, sourcing_note, actions, body, entities]
+  - at: "2026-11-01T14:05:02Z"
+    run_id: 2026-11-01T1312Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The title turned Trend Micro's patch ETA of 2026-11-11 into a firm date; it now says the patches are
+      expected then. The Exposure line's Trend Micro citation is dated to the 2026-10-30 status table that
+      lists Mobile Security for Enterprise.
+    fields: [body, title]
 migrated_from: null
 ---
 
@@ -131,7 +140,7 @@ Quest's knowledge-base article says all versions of the KACE Systems Management 
 
 NetApp's advisory lists ONTAP 9 as affected only by CVE-2026-109618, scored CVSS 4.0 9.2, where an unauthenticated attacker could potentially gain access as the www user but would be restricted to the PHP jail, and lists the hotfix builds 9.14.1P18HF1, 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.18.1P8HF1, 9.19.1P3HF1 and, since revision 10.0 of 2026-10-29, 9.19.1P4 ([NetApp, 2026-10-26](https://security.netapp.com/advisory/NTAP-20261021-0021); [NetApp, 2026-10-29](https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021)). NetApp's knowledge-base article names all ONTAP web services as affected, System Manager, the SPI web portal, the REST API, ZAPI and HTTP and HTTPS access, and recommends upgrading to a fixed version and undoing any workaround afterwards ([NetApp Knowledge Base, 2026-10-26](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities)). CISA lists both PHP flaws as exploited since 2026-10-26, although none of the three vendors reports an exploited case ([CISA KEV, 2026-10-28](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)).
 
-**Exposure:** a Trend Micro Apex Central, Apex One or Mobile Security for Enterprise server whose console or web endpoints a hostile network can reach; any KACE SMA or SDA, whose web ports and agent port 52230 are named; any ONTAP 9 cluster whose web services are reachable and that runs a release other than the fixed builds ([Trend Micro, 2026-10-28](https://success.trendmicro.com/en-US/solution/KA-0024802); [Quest Software, 2026-10-28](https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell); [NetApp Knowledge Base, 2026-10-26](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities)).
+**Exposure:** a Trend Micro Apex Central, Apex One or Mobile Security for Enterprise server whose console or web endpoints a hostile network can reach; any KACE SMA or SDA, whose web ports and agent port 52230 are named; any ONTAP 9 cluster whose web services are reachable and that runs a release other than the fixed builds ([Trend Micro, 2026-10-30](https://success.trendmicro.com/en-US/solution/KA-0024802); [Quest Software, 2026-10-28](https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell); [NetApp Knowledge Base, 2026-10-26](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities)).
 
 **Detection:** none of the three vendors publishes an indicator. For a management server or appliance that was reachable before its fix, the telemetry to review is shells and downloads started by its web service and outbound connections the server initiates; this is an inference, since the pages do not describe the attack.
 

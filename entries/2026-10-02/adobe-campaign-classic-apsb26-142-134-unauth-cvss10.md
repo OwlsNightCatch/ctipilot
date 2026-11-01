@@ -1,16 +1,17 @@
 ---
 schema: 1
 kind: vulnerability
-title: "Adobe Campaign Classic: eight unauthenticated CVSS 10.0 flaws in APSB26-142 and three more in APSB26-134, with build 9402 as the fix"
-headline: "Adobe's 22 September revision grew one Campaign Classic CVE into eighteen, ten unauthenticated; build 9402 closes them"
+title: "Adobe Campaign Classic: eight unauthenticated CVSS 10.0 flaws in APSB26-142 and three more in APSB26-134, with build 9403 as the fix after APSB26-162"
+headline: "Adobe Campaign Classic build 9402 is now affected: APSB26-162 adds a pre-auth CVSS 9.8 SQL injection; update to 9403"
 summary: >
   Adobe's Priority 1 bulletin APSB26-142 for on-premise Adobe Campaign Classic v7 was published on 2026-09-08 with one CVE
   and revised on 2026-09-22 to eighteen Critical CVEs, ten needing no privileges, eight of them CVSS 10.0; builds 9401 and
   earlier are affected and build 9402 is the fix. The earlier bulletin APSB26-134 (build 9401, 2026-08-25) fixed three more
-  unauthenticated CVSS 10.0 flaws. Adobe is not aware of exploitation and none of the CVEs is in
-  CISA KEV.
+  unauthenticated CVSS 10.0 flaws. On 2026-10-27 the Priority 2 bulletin APSB26-162 fixed eight further Critical flaws in
+  build 9402 and earlier, one needing neither privileges nor user interaction (CVE-2026-105781, SQL injection, 9.8), so build 9403 is now the fix.
+  Adobe is not aware of exploitation of any of these flaws, and none of the CVEs was in CISA KEV as of its 2026-10-30 catalog.
 discovered_at: "2026-10-02T05:00:00Z"
-updated_at: null
+updated_at: "2026-11-01T13:51:27Z"
 event_date: "2026-09-22"
 run_id: 2026-10-02T0404Z-intel
 priority: notable
@@ -139,6 +140,78 @@ cves:
     status: [patch-available]
     affected: "Adobe Campaign Classic v7 7.4.4 build 9400 and earlier"
     fixed: "ACC v7 7.4.4 build 9401 (build 9402 also carries it)"
+  - id: CVE-2026-105781
+    cvss: "9.8"
+    epss: null
+    type: sqli
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-104351
+    cvss: "9.9"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: post-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-104353
+    cvss: "9.9"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: post-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-105780
+    cvss: "9.9"
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: post-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-105489
+    cvss: "9.9"
+    epss: null
+    type: sqli
+    vector: zero-click
+    auth: post-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-104350
+    cvss: "9.3"
+    epss: null
+    type: xss
+    vector: user-interaction
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-104354
+    cvss: "9.1"
+    epss: null
+    type: sqli
+    vector: zero-click
+    auth: admin-required
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
+  - id: CVE-2026-105779
+    cvss: "9.1"
+    epss: null
+    type: sqli
+    vector: zero-click
+    auth: post-auth
+    status: [patch-available]
+    affected: "Adobe Campaign Classic v7 7.4.4 build 9402 and earlier"
+    fixed: "ACC v7 7.4.4 build 9403"
 sources:
   - url: "https://www.adobe.com/trust/security/products/campaign/apsb26-142.html"
     publisher: "Adobe PSIRT (APSB26-142)"
@@ -148,9 +221,17 @@ sources:
     publisher: "Adobe PSIRT (APSB26-134)"
     date: "2026-08-25"
     role: primary
+  - url: "https://www.adobe.com/trust/security/products/campaign/apsb26-162.html"
+    publisher: "Adobe PSIRT (APSB26-162)"
+    date: "2026-10-27"
+    role: primary
   - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     publisher: "CISA Known Exploited Vulnerabilities catalog"
     date: "2026-10-01"
+    role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA Known Exploited Vulnerabilities catalog (catalog 2026.10.30)"
+    date: "2026-10-30"
     role: corroborating
 closed_sources: []
 evidence:
@@ -182,17 +263,29 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Update every on-premise Adobe Campaign Classic v7 server, and the on-premise components of any hybrid deployment, to build 9402; build 9401 fixes only APSB26-134's three flaws, and an Adobe-hosted instance that still reports 9401 is not evidence of exposure."
-updates: []
+  - "Update every on-premise Adobe Campaign Classic v7 server, and the on-premise components of any hybrid deployment, to build 9403; build 9402 is affected by APSB26-162, including a SQL injection that needs no privileges, build 9401 fixes only APSB26-134's three flaws, and an Adobe-hosted instance that still reports 9401 is not evidence of exposure."
+updates:
+  - at: "2026-11-01T13:51:27Z"
+    run_id: 2026-11-01T1312Z-audit
+    type: update
+    summary: >
+      Adobe's APSB26-162 of 2026-10-27 fixes eight further Critical Campaign Classic flaws in build 9402
+      and earlier, one of them a SQL injection that needs no privileges (CVE-2026-105781, CVSS 9.8), so
+      build 9403 replaces 9402 as the update target. Adobe reports no exploitation.
+    fields: [actions, body, cves, headline, sources, summary, title]
 migrated_from: null
 ---
 
 Adobe's Priority 1 bulletin APSB26-142 covers Adobe Campaign Classic v7 7.4.4 build 9401 and earlier on Windows and Linux and names build 9402 as the fix; it was published on 2026-09-08 with one CVE and revised on 2026-09-22 to add seventeen more, for eighteen, all rated Critical ([Adobe PSIRT, 2026-09-22](https://www.adobe.com/trust/security/products/campaign/apsb26-142.html)). Ten of the eighteen need no privileges: eight are CVSS 10.0 with the vector AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H (CVE-2026-82004, an OS command injection; six code-injection flaws, CVE-2026-73369, -84412, -89275, -75699, -75703 and -75721; and CVE-2026-75723, an incorrect-authorization flaw), plus CVE-2026-83660 (SSRF, 9.9) and CVE-2026-75728 (incorrect authorization, 9.1) ([Adobe PSIRT, 2026-09-22](https://www.adobe.com/trust/security/products/campaign/apsb26-142.html)). The remaining eight require low or high privileges. The earlier bulletin APSB26-134 (Priority 1, 2026-08-25) fixed three more unauthenticated CVSS 10.0 flaws in build 9401, CVE-2026-76197 and CVE-2026-76195 (OS command injection) and CVE-2026-76193 (SSRF) ([Adobe PSIRT, 2026-08-25](https://helpx.adobe.com/security/products/campaign/apsb26-134.html)).
 
-Adobe states it is not aware of exploitation of any issue in APSB26-142, and none of these CVEs is in CISA's KEV catalog as of the 2026-10-01 version ([Adobe PSIRT, 2026-09-22](https://www.adobe.com/trust/security/products/campaign/apsb26-142.html); [CISA KEV, 2026-10-01](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). The bulletin applies to fully on-premise deployments and the on-premise components of hybrid deployments; Adobe-hosted instances are already remediated, and because the hosted fixes did not increment the customer-visible build number, some hosted instances still report build 9401 ([Adobe PSIRT, 2026-09-22](https://www.adobe.com/trust/security/products/campaign/apsb26-142.html)). Adobe's table names build 9402 for all eighteen, so estates that moved to it for the single CVE visible on 2026-09-08 already hold every fix; estates that stopped at build 9401 or earlier carry the ten unauthenticated flaws.
+Adobe states it is not aware of exploitation of any issue in APSB26-142, and none of these CVEs is in CISA's KEV catalog as of the 2026-10-01 version ([Adobe PSIRT, 2026-09-22](https://www.adobe.com/trust/security/products/campaign/apsb26-142.html); [CISA KEV, 2026-10-01](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). The bulletin applies to fully on-premise deployments and the on-premise components of hybrid deployments; Adobe-hosted instances are already remediated, and because the hosted fixes did not increment the customer-visible build number, some hosted instances still report build 9401 ([Adobe PSIRT, 2026-09-22](https://www.adobe.com/trust/security/products/campaign/apsb26-142.html)). Adobe's table names build 9402 for all eighteen; estates that stopped at build 9401 or earlier carry the ten unauthenticated flaws, and build 9402 itself is affected by APSB26-162, fixed in build 9403 ([Adobe PSIRT, 2026-10-27](https://www.adobe.com/trust/security/products/campaign/apsb26-162.html)).
 
-**Exposure:** on-premise Campaign Classic v7 servers, and the on-premise tier of hybrid deployments, running build 9401 or earlier; the flaw classes (OS command injection, code injection, incorrect authorization and SSRF) are all network-reachable, so reachability of the Campaign endpoints from outside decides how urgent the update is.
+**Exposure:** on-premise Campaign Classic v7 servers, and the on-premise tier of hybrid deployments, running build 9402 or earlier; the flaw classes (OS command injection, code injection, incorrect authorization, SQL injection and SSRF) are network-reachable, so reachability of the Campaign endpoints from outside decides how urgent the update is.
 
 **Detection:** Adobe publishes no detection guidance or compromise check for these flaws; the flaw classes point to web access logs for requests to Campaign endpoints from unexpected sources, process-creation events in which the Campaign server or its web-server parent starts a shell or interpreter, and outbound requests from the Campaign host to internal services.
 
-**Defender takeaway:** update the on-premise tier to build 9402 and check the build on the server itself, since a hosted instance's displayed build is not a reliable signal; an internet-reachable on-premise instance that sat on build 9401 or earlier carried ten unauthenticated paths and warrants a compromise assessment, because Adobe provides none.
+**Defender takeaway:** update the on-premise tier to build 9403 and check the build on the server itself, since a hosted instance's displayed build is not a reliable signal; an internet-reachable on-premise instance that sat on build 9401 or earlier carried ten unauthenticated paths and warrants a compromise assessment, because Adobe provides none.
+
+## Update — 2026-11-01T13:51:27Z
+
+Adobe's Priority 2 bulletin APSB26-162 of 2026-10-27 covers Campaign Classic v7 7.4.4 build 9402 and earlier on Windows and Linux and names build 9403 as the fix, so build 9402, the earlier fix, is affected ([Adobe PSIRT, 2026-10-27](https://www.adobe.com/trust/security/products/campaign/apsb26-162.html)). Its eight flaws are all rated Critical. One needs neither privileges nor user interaction: CVE-2026-105781, a SQL injection at CVSS 3.1 9.8. Four need low privileges at 9.9 (code injection CVE-2026-104351, OS command injection CVE-2026-104353, incorrect authorization CVE-2026-105780 and SQL injection CVE-2026-105489), CVE-2026-104350 is a reflected cross-site scripting flaw at 9.3 that needs user interaction, and CVE-2026-104354 and CVE-2026-105779 are SQL injections at 9.1 ([Adobe PSIRT, 2026-10-27](https://www.adobe.com/trust/security/products/campaign/apsb26-162.html)). Adobe is not aware of exploits in the wild for any of them ([Adobe PSIRT, 2026-10-27](https://www.adobe.com/trust/security/products/campaign/apsb26-162.html)). The update target for on-premise servers and the on-premise tier of hybrid deployments is now build 9403.

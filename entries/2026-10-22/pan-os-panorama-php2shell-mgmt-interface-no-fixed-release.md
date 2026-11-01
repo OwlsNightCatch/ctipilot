@@ -4,7 +4,7 @@ kind: vulnerability
 title: "CVE-2026-109618 / CVE-2026-109619, Palo Alto Networks PAN-OS and Panorama: the PHP2Shell flaws affect every release below its train's hotfix through the management web interface, and Palo Alto reports active exploitation against internet-exposed management interfaces; all twenty hotfixes are out"
 headline: "PAN-OS management interfaces were rooted in the wild via PHP2Shell and a kernel flaw: hotfix, then check for compromise"
 summary: >
-  Palo Alto Networks' advisory of 2026-10-21 says active exploitation has been observed against PAN-OS management interfaces exposed to the
+  Palo Alto Networks' advisory, first published on 2026-10-21 and revised since, says active exploitation has been observed against PAN-OS management interfaces exposed to the
   internet, and Dream Research, with Unit 42's verification, reports a custom PHP2Shell build chained with a Linux kernel flaw that rooted 25 PAN-OS
   firewall and management servers in the United States, Japan, Taiwan and South Korea and went on to attack a US government-affiliated Active
   Directory. The advisory lists every release below the hotfix for its train, of PAN-OS 12.2, 12.1, 11.2, 11.1 and 10.2 and of Panorama, as affected through the management web
@@ -293,6 +293,16 @@ updates:
       unpatched needs a compromise check as well as the hotfix, and Dream says the affected web server
       also fronts the GlobalProtect portal, which Palo Alto's advisory lists as not affected.
     fields: [headline, summary, entities, techniques, sources, evidence, verification, sourcing_note, references, actions, body, cves, title]
+  - at: "2026-11-01T14:01:22Z"
+    run_id: 2026-11-01T1312Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The summary dated Palo Alto's active-exploitation statement to the advisory of 2026-10-21; the
+      statement came with a later revision (the first text reported no known malicious exploitation, as
+      the 2026-10-23 section records), so the summary now says the advisory was first published on
+      2026-10-21 and revised since.
+    fields: [summary]
 migrated_from: null
 ---
 

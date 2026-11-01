@@ -1,0 +1,615 @@
+# work/2026-11-01T1312Z-audit/findings.G3.yaml
+domain: G3
+run_id: 2026-11-01T1312Z-audit
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-01T13:15:25Z
+ended_at: 2026-11-01T13:42:01Z
+duration_seconds: 1596
+window: "2026-10-25T13:08Z -> 2026-11-01T13:12Z (window_hours 168, every slice record lookback_hours 168)"
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 16
+  bridge_fetches: 108
+note_on_method: |
+  Research-blog listing sweep of all 45 slice records by feed (27 RSS feeds), HTML listing or structured index, then every in-window post judged against the inclusion gate and
+  checked against prior_coverage.json, the entry bodies and the week's run records. Result: the store already carries nearly every in-window research publication of the slice;
+  two covered entries miss a material in-window development (update_target items 1 and 2), one more is a marginal increment (item 3), and one periodic report plus nine
+  documentation-grade borderline items are returned so the audit can confirm the drops.
+items:
+  # ---------------------------------------------------------------------------------------------
+  - title: "GhostAction October escalation: 72,000 commits to 23,000 repositories, a font-file stealer that runs on developer machines outside GitHub's workflow hold, cron persistence, and AWS OIDC role-assumption attempts"
+    update_target: "2026-10-10/ghostaction-fake-audit-workflow-git-history-credential-theft"
+    update_type_suggested: update
+    sources:
+      - { url: "https://blog.gitguardian.com/ghostaction-x-polinrider/", publisher: "GitGuardian (Gaetan Ferry)", date: "2026-10-27", role: "primary" }
+      - { url: "https://opensourcemalware.com/blog/ghostaction-copycats-polinrider-by-hiding-a-stealer-in-a-fake-font-file", publisher: "OpenSourceMalware", date: "2026-10-16 (updated 2026-10-26)", role: "corroborating" }
+      - { url: "https://www.darkreading.com/application-security/ghostaction-hacking-wave-fizzles-attackers-github", publisher: "Dark Reading (relays GitGuardian)", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: darkreading, feed URL https://www.darkreading.com/rss.xml (item dated 2026-10-28) -> drilled article https://www.darkreading.com/application-security/ghostaction-hacking-wave-fizzles-attackers-github -> primary: GitGuardian, URL https://blog.gitguardian.com/ghostaction-x-polinrider/ (listed in https://blog.gitguardian.com/rss/, 2026-10-27) -> corroborating: OpenSourceMalware, URL https://opensourcemalware.com/blog/ghostaction-copycats-polinrider-by-hiding-a-stealer-in-a-fake-font-file (linked from the GitGuardian post)"
+    summary: |
+      The published GhostAction entry (last changed 2026-10-20) stops at the 8 to 12 October workflow wave and carries GitHub's workflow hold as the reason nothing was extracted. GitGuardian's
+      post of 2026-10-27 reports, from its own commit feed and as lower bounds, that between 13 and 21 October the operator pushed 72,026 commits to 22,964 public repositories (7,989 new) from
+      1,792 accounts, 1,382 of which had already pushed the 8 October payload, so the same stolen tokens still work. It describes five payload families: the security-audit workflow re-pointed to a
+      new port; seven innocuously named workflows (the v5 payload adds four AI-provider key patterns to the credential grep, clones the repository wiki with the workflow token and falls back to a
+      private gist when the POST fails); workflows for self-hosted runners that query the cloud instance metadata service and read credential files; a legacy workflow that requests a GitHub OIDC
+      token and tries to assume every AWS IAM role ARN found in the environment; and a "font stealer". The font stealer is not a workflow at all: one commit adds a plain Node.js script named like
+      a web-font file, another adds a hidden VS Code task set to run on folder open, so it executes when a developer opens the repository in VS Code and trusts the workspace, reads cloud, registry,
+      git, kube and AI-tool credential files, SSH keys and matching environment variables, posts them to a bare IP address and installs a cron job that fetches a shell script every five minutes.
+      Three payload families install that cron persistence, and cleaning the repository does not remove it. GitGuardian found no successful run of any workflow payload because GitHub blocks them,
+      but says the endpoint stealer was never meant to run in CI and so GitHub's measures could not stop it. OpenSourceMalware, which first found the font-file second stage on 2026-10-16 through
+      a Jamf Threat Labs researcher, counts 1,230 repositories owned by 391 accounts with the stage as of its 2026-10-26 update. Both label the launcher a copy of PolinRider's (a campaign that hides
+      obfuscated loaders in developer repositories, originally attributed to a North Korea-aligned actor): between 22 and 26 October 188 GhostAction commits were amended in place with PolinRider
+      loaders and force-pushed. GitGuardian's working hypothesis is that GhostAction's operator copied a public PolinRider launcher and that both groups hold overlapping victims; it sees no clear
+      indicator that the two actors are related, and OpenSourceMalware likewise labels GhostAction a copycat rather than an extension of PolinRider. These are vendor counts from their own
+      feeds, not independent measurements of the same population.
+    delta_vs_entry: |
+      Missing from the entry: the developer-endpoint payload that GitHub's hold does not cover, the five-minute cron persistence that survives repository cleanup, the self-hosted-runner and OIDC
+      variants, the token reuse (1,382 of 1,792 accounts), and the PolinRider overlap. The entry's action covers only workflow-file search; the post-cleanup hunt (crontab on machines that opened an
+      affected repository, VS Code folder-open tasks, private gists named like a build cache, CloudTrail AssumeRoleWithWebIdentity from GitHub's OIDC provider on unexpected repositories or branches)
+      and the OIDC trust-policy lever are new.
+    region_nexus: "global; any Swiss federal, cantonal or communal development team or IT supplier that hosts code on GitHub, and every developer laptop that opens a cloned repository in VS Code"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: []
+    techniques: [T1053.003, T1552.005, T1552.001, T1059.007, T1078.004]
+    affected_products: ["GitHub Actions", "Visual Studio Code"]
+    entity_keys: ["campaign:ghostaction", "product:github-actions", "product:visual-studio-code"]
+    new_entities:
+      - { key: "campaign:polinrider", type: campaign, name: "PolinRider", aliases: [], summary: "Campaign that hides obfuscated loaders in developer repositories and launches them through a hidden VS Code task that runs on folder open, resolving its command server from an Ethereum transaction; GitGuardian and OpenSourceMalware say it was originally attributed to a North Korea-aligned actor and that GhostAction copied its launcher (GitGuardian, 2026-10-27)." }
+    relation_suggestions:
+      - { subject: "campaign:ghostaction", object: "campaign:polinrider", basis: "GitGuardian (2026-10-27): GhostAction's font stealer reuses PolinRider's folder-open launcher and the two campaigns infect some of the same repositories, but there are no clear indicators that the actors are related; OpenSourceMalware (2026-10-16) calls it a copycat" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-10/ghostaction-fake-audit-workflow-git-history-credential-theft"
+    classification_suggested: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "Between Oct. 13 and Oct. 21, 2026, the GhostAction operator pushed 72,000 commits to 23,000 public repositories. 8,000 of them are new victims."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-x-polinrider/"
+      - quote: "However, the PolinRider-styled infostealer, part of the GhostAction campaign, was not meant to run in the CI. As such, GitHub’s security measures couldn’t prevent it from executing on the developer endpoints."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-x-polinrider/"
+      - quote: "Three families install a cron job that runs a script from the command-and-control (C2) server every five minutes. Cleaning the repository does not remove it."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-x-polinrider/"
+      - quote: "1,382 of the 1,792 compromised accounts had already been used on Oct. 8, so the same stolen tokens keep working."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-x-polinrider/"
+      - quote: "Restrict OIDC trust policies to specific repositories and branches, and require approval for workflow changes."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/ghostaction-x-polinrider/"
+      - quote: "which makes VS Code autorun a credential stealer and install a cron job that runs whatever the attacker’s server sends, every five minutes."
+        attribution: "OpenSourceMalware"
+        source_url: "https://opensourcemalware.com/blog/ghostaction-copycats-polinrider-by-hiding-a-stealer-in-a-fake-font-file"
+    triage_note: |
+      Benign lookalike discriminator the sources support: a folder-open task in .vscode/tasks.json is normal for linters, but this one is hidden (no terminal reveal), its command runs node on a file
+      under public/fonts, and that "font" is readable JavaScript; the commits that add the pair carry messages such as "Add font assets" and "Add editor task" and land in many repositories of one
+      account within minutes. On a host, a crontab line that pipes a remote script to a shell every five minutes is the persistence.
+    extended_notes: |
+      OpenSourceMalware's 2026-10-26 update is the earlier of the two primaries (the font-file stage was already public on 2026-10-16, four days before the entry's last update), so the 2026-10-20
+      audit update could have carried it. The Dark Reading item is a relay and not a source of new facts. Registry already tracks tasks.json folder-open abuse under other campaigns
+      (campaign:jfrog-vscode-folderopen-task-npm-go-supply-chain-infostealer and a DPRK UNK_DeadDrop record), so the technique class is known to the store; PolinRider itself is not registered.
+  # ---------------------------------------------------------------------------------------------
+  - title: "Node2Shell (CVE-2026-111497): Datadog's behavioural detection layers and what does not work, and Zscaler Deception's first-day exploitation telemetry"
+    update_target: "2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    update_type_suggested: improvement
+    sources:
+      - { url: "https://securitylabs.datadoghq.com/articles/node2shell-cve-2026-111497-nodejs-brotli-decoder/", publisher: "Datadog Security Labs (Sebastian Obregoso)", date: "2026-10-29", role: "primary" }
+      - { url: "https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce", publisher: "Zscaler ThreatLabz", date: "2026-10-28", role: "corroborating" }
+    discovery_trace: "first seen at: datadog-security-labs, feed URL https://securitylabs.datadoghq.com/rss/feed.xml (item 2026-10-29) -> primary (no pivot needed): https://securitylabs.datadoghq.com/articles/node2shell-cve-2026-111497-nodejs-brotli-decoder/ ; second source: zscaler-threatlabz, feed URL https://www.zscaler.com/blogs/feeds/security-research (item 2026-10-28) -> https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce"
+    summary: |
+      The published entry (updated through 2026-10-29) carries KEV listing and ELLIO's lab traffic, and its Detection line holds only ELLIO's crash-and-HTTP-400 hook and a core-dump caution; neither
+      Datadog nor Zscaler is cited. Datadog, which reproduced the bug on Node.js, says there are no conventional indicators because no attacker infrastructure is involved and lays out three
+      behavioural layers to correlate. Decoder error signals: a vulnerable Node.js build returns Z_BUF_ERROR "unexpected end of file" (which benign truncated input also produces), a patched build
+      returns ERR__ERROR_FORMAT_BLOCK_SWITCH and patched Python returns "brotli: decoder is unhealthy". Process signals: a worker that exits with signal 139 right after a Brotli transfer is a crash
+      attempt, a process pinned at 100% CPU inside a decompression call is the spin arm, and the strongest signal is a shell or new outbound connections from the same workload (correlate on
+      container, pod or service identity, not on process id). Disclosure channel: decompressed output that contains bytes the client never sent is the read primitive, so list endpoints that echo,
+      preview, convert or proxy decompressed content. Datadog states what does not work: payload byte signatures (the attacker-controlled parts change per target and the exploit is the decode
+      itself), content matching at a WAF (the web server forwards compressed bytes and never decodes them) and body-size limits (the tested middleware counts decompressed bytes, so the 23 MB
+      compressed trigger still reaches the decoder). Zscaler reports from its Deception decoy mesh that in the first 24 hours after disclosure 20 source addresses produced 402 events against 12
+      customers, 40% reconnaissance and 60% exploitation attempts, a second vendor's telemetry beside ELLIO's. Both are vendor reproductions and decoy telemetry with product pitches attached; no
+      source here reports a successful compromise of a production system.
+    delta_vs_entry: "Detection line gains the decoder-error, process and disclosure-channel signals and the three controls that do not work (WAF content rules, body-size limits, byte signatures); the in-the-wild status gains Zscaler Deception as a second independent telemetry source. No change to the patch list."
+    region_nexus: "global; Node.js, Express 5, body-parser 2 and Koa services and any client that auto-decodes Brotli, in cantonal and federal web applications and supplier products"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-111497]
+    techniques: [T1190]
+    affected_products: ["Node.js", "Google Brotli"]
+    entity_keys: ["tool:node2shell"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    classification_suggested: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "The strongest signal is behavioral: a shell or new outbound connections from the same workload."
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/node2shell-cve-2026-111497-nodejs-brotli-decoder/"
+      - quote: "Content matching at the WAF, because the web server forwards compressed bytes and never decodes them."
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/node2shell-cve-2026-111497-nodejs-brotli-decoder/"
+      - quote: "Body-size limits, because the tested middleware counts decompressed bytes, so the 23 MB compressed trigger still reaches the decoder."
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/node2shell-cve-2026-111497-nodejs-brotli-decoder/"
+      - quote: "A worker that exits with signal 139 (SIGSEGV) right after a Brotli transfer is a crash attempt"
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/node2shell-cve-2026-111497-nodejs-brotli-decoder/"
+      - quote: "Within the first 24 hours following public disclosure, Zscaler Deception’s global decoy mesh observed activity from 20 source IP addresses targeting 12 customers across 402 events."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce"
+    extended_notes: |
+      Not a new vulnerability item: a detection and telemetry improvement on a high-priority entry. Sophos CTU's post of 2026-10-28 and TrendAI's of the same day add nothing beyond the CISA listing
+      and product lists the entry already carries (checked, not returned).
+  # ---------------------------------------------------------------------------------------------
+  - title: "Coruna and DarkSword iPhone kits beyond DeadTag: Zimperium counts 608 delivering domains, two exploit chains chosen by iOS version, native modules that change code-signing state and purge crash logs, and delivery through a hijacked npm package"
+    update_target: "2026-10-28/deadtag-expired-tag-domains-coruna-darksword-iphone-kits"
+    update_type_suggested: update
+    borderline: true
+    borderline_reason: "Marginal increment on a notable entry that already says to keep iPhones current, use Lockdown Mode for targeted staff and audit third-party tags; the new facts (608 domains, dependency-borne delivery, native-module clean-up behaviour) change no decision beyond those, and the art-template route is documented as offline since early July."
+    sources:
+      - { url: "https://zimperium.com/blog/inside-coruna-and-darksword-chains-from-web-lures-to-ios-exploitation", publisher: "Zimperium zLabs (Santiago Rodriguez)", date: "2026-10-29", role: "primary" }
+      - { url: "https://safedep.io/art-template-npm-supply-chain-compromise/", publisher: "SafeDep", date: "2026-05-20 (updated 2026-07-03)", role: "corroborating" }
+    discovery_trace: "first seen at: zimperium-zlabs, WebFetch of https://zimperium.com/blog (listing with dates; the post is dated October 29, 2026) -> primary (no pivot needed): https://zimperium.com/blog/inside-coruna-and-darksword-chains-from-web-lures-to-ios-exploitation -> pivot to the independent npm analysis it cites: https://safedep.io/art-template-npm-supply-chain-compromise/"
+    summary: |
+      Zimperium's zLabs reports that through October 2026 it identified 608 domains delivering Coruna-family code, with recovered configurations on 93 of them mapping to 21 tracking collectors, and that
+      the recovered infrastructure now serves two exploit chains conditioned on the device's iOS version: the legacy Coruna framework to iOS 17.2.1 and earlier and a DarkSword-derived chain to later
+      builds. The lures span dating, AI-companion, cryptocurrency and streaming pages, some compromised legitimate sites that load the kit through hidden iframes, and some pages that push TikTok users
+      to "open in Safari". The recovered native modules include kernel memory read and write routines and code that changes state used by code-signing enforcement (AMFI), process-memory reads through
+      task ports, and routines that delete crash logs and Safari website data; Zimperium calls unexpected code-signing changes a high-priority integrity signal and says exploit chains purge
+      post-exploitation artefacts, so diagnostic logs should be collected continuously for high-risk users. SafeDep, which Zimperium names as independent confirmation, reported in May that the npm
+      package art-template (versions 4.13.3 to 4.13.7, after an acquisition-fraud takeover of the maintainer accounts) loaded external script from a third-party domain that served the Coruna kit to
+      iPhones; SafeDep's update of 3 July says that infrastructure was offline and the payload had become a gambling redirect, and it could not verify that any end user was hit. Zimperium scopes its
+      attribution to the code base and delivery infrastructure only and does not name an operator; it recommends current iOS, Lockdown Mode for "public-sector personnel" among other high-risk groups,
+      EOL-device replacement and web filtering that covers in-app browsers. Zimperium does not mention DeadTag or Report URI, so the link to the stored entry is the store's inference (same kits),
+      not a source claim.
+    region_nexus: "global; Brazil, Nigeria and Indonesia localisations named for dating lures; public-sector staff on iPhones named by Zimperium as a Lockdown Mode audience"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1189, T1203, T1195.001, T1070.004]
+    affected_products: ["Apple iOS"]
+    entity_keys: ["tool:coruna", "tool:darksword", "campaign:deadtag", "product:apple-ios"]
+    new_entities:
+      - { key: "incident:art-template-npm-hijack-2026-05", type: incident, name: "art-template npm hijack", aliases: [], summary: "npm package art-template 4.13.3 to 4.13.7 compromised after an acquisition-fraud takeover of its maintainer accounts; the browser bundle loaded external script that served the Coruna iOS exploit kit until the infrastructure went offline in early July (SafeDep, 2026-05-20, updated 2026-07-03)." }
+    relation_suggestions:
+      - { subject: "incident:art-template-npm-hijack-2026-05", object: "tool:coruna", basis: "SafeDep (2026-05-20) and Zimperium (2026-10-29): the hijacked package delivered the Coruna kit to iPhone visitors" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-28/deadtag-expired-tag-domains-coruna-darksword-iphone-kits"
+    classification_suggested: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "the recovered infrastructure now deploys two distinct exploit chains conditioned on the target device's operating system version."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/inside-coruna-and-darksword-chains-from-web-lures-to-ios-exploitation"
+      - quote: "independently found matching Coruna code inside a compromised npm package, art-template"
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/inside-coruna-and-darksword-chains-from-web-lures-to-ios-exploitation"
+      - quote: "High-profile individuals—including journalists, activists, executives, and public-sector personnel—should enable iOS Lockdown Mode."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/inside-coruna-and-darksword-chains-from-web-lures-to-ios-exploitation"
+      - quote: "The Coruna exploit kit infrastructure documented below is offline."
+        attribution: "SafeDep"
+        source_url: "https://safedep.io/art-template-npm-supply-chain-compromise/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "ANNUAL REPORT — ESET APT Activity Report Q2 2026–Q3 2026 (periodic): China-, Iran-, North Korea-, Russia- and Belarus-aligned activity April to September 2026"
+    borderline: true
+    borderline_reason: "Periodic report; the intel fire of 2026-11-01 dropped it because the Swiss-relevant items it summarises (MythicRatatoskr, the MDaemon exploitation, UAC-0099) are already stored and no Swiss or public-sector finding is new. Returned so the audit can confirm the drop or choose an annual-report entry as Talos IR trends Q3 became."
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/", publisher: "ESET Research (Jean-Ian Boutin)", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: eset, feed URL https://www.welivesecurity.com/en/rss/feed/ (item 2026-10-28) -> primary (no pivot needed); cross-checked against the research listing https://www.welivesecurity.com/en/eset-research/ (only in-window research post)"
+    summary: |
+      ESET's six-month roll-up of its own telemetry (April to September 2026) says: China-aligned groups collected intelligence mainly against governmental targets; Iran-aligned groups resumed
+      after an internet-restriction-driven dip (FilthyFeline and MuddyWater against Israel, Arid Viper against what appears to be the Palestinian Authority's foreign ministry); North Korea-aligned actors
+      kept to technology, cryptocurrency and developers, with Ukraine increasingly targeted, Lazarus again against the drone sector and DeceptiveDevelopment moving from fake interviews to software
+      supply-chain compromise of public and private source repositories; Russia-aligned activity continued against governments, defence and military entities in Europe with far more targets in
+      Ukraine, Gamaredon declined but updated PteroBox and adopted PteroPSDoor and Turla's Rezzuar, and an extensive MDaemon-exploiting campaign in Ukraine deployed HELLAGE and HELLTAG. ESET
+      highlights growing operational closeness of Russia- and Belarus-aligned actors and the first Belarus-aligned destructive attack it has documented in Europe (FrostyNeighbor against a Ukrainian
+      transport-sector manufacturer). On AI it says APT groups use it like mainstream developers (malware development, decoy sites, a UAC-0099 script comment meant to trip LLM guardrails during
+      analysis) and that it has not seen AI substantially reshape the APT landscape. No Swiss target is named.
+    region_nexus: "Europe-wide (governments, defence and military entities); no Swiss finding"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:uac-0099", "campaign:frostyneighbor-2026-05-campaign"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    classification_suggested: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "we identified the first destructive cyberattack by a Belarus-aligned threat actor that we have documented in the European theater"
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/"
+      - quote: "Russia-aligned activity continued to support its war objectives, targeting governments, the defense sector, and military entities in Europe"
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "VOLTA infostealer: Talos documents a self-deleting stealer that sends a structured victim dossier to an LLM through OpenRouter to rank monetisable assets"
+    borderline: true
+    borderline_reason: "Commodity Windows stealer with no constituency nexus; dropped by the 2026-11-01 fire as effort-displacement novelty with no decision change. The one concrete hardening hook (Chrome launched with --headless from a non-developer parent, the App-Bound Encryption bypass path) is generic stealer guidance."
+    sources:
+      - { url: "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/", publisher: "Cisco Talos (Ryan Fetterman)", date: "2026-10-31", role: "primary" }
+    discovery_trace: "first seen at: talos, feed URL https://blog.talosintelligence.com/rss/ (item 2026-10-31) -> primary (no pivot needed)"
+    summary: |
+      Talos reports a builder-model Windows stealer that harvests browser data, sessions, OAuth tokens, SSH and cloud keys and wallet vaults, enriches the victim profile through stolen sessions, then
+      POSTs a JSON evidence bundle to OpenRouter's chat-completions endpoint with a system prompt asking for a target assessment ranked by monetisation value, failing over across three models if one
+      refuses. It deletes itself and uses only third-party infrastructure. Talos's countermeasure: application control that restricts which processes may launch Chrome with --headless blocks the
+      App-Bound Encryption decryption path, and a timestamped harvest log in the user profile survives for forensics. The assessment that AI mainly displaces operator effort is Talos's.
+    region_nexus: "global; no Swiss nexus stated"
+    primary_sector_nexus: "none"
+    sector: "technology"
+    cves: []
+    techniques: [T1555.003, T1539, T1552.001, T1070.004]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An application control policy that restricts which processes may launch Chrome with `--headless` would block the ABE decryption path entirely."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "NIK C2: Talos documents a Go implant and panel that routes operator prompts to the OpenAI API through the infected host, with a screen-lock ransomware module"
+    borderline: true
+    borderline_reason: "Dropped by the 2026-11-01 fire; no victimology, vector or constituency exposure, and the AI integration (billing the victim's OPENAI_API_KEY) is a novelty without a new detection hook beyond egress to LLM APIs from unexpected processes."
+    sources:
+      - { url: "https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/", publisher: "Cisco Talos (Chetan Raghuprasad)", date: "2026-10-29", role: "primary" }
+    discovery_trace: "first seen at: talos, feed URL https://blog.talosintelligence.com/rss/ (item 2026-10-29) -> primary (no pivot needed)"
+    summary: |
+      Talos observed a 64-bit Go Windows implant with TLS WebSocket plus a 250 ms HTTP fallback channel, three tiers of C2 addresses, credential dumping, RDP session hijacking, process hollowing, a
+      C2-driven screen-lock ransomware module and an ai_generate command that sends operator prompts to the OpenAI Chat Completions API from the victim machine, falling back to the victim's own
+      OPENAI_API_KEY environment variable. Talos found an active panel and assesses with moderate confidence that it is a functioning framework, not a proof of concept; it names no victims.
+    region_nexus: "global; no Swiss nexus stated"
+    primary_sector_nexus: "none"
+    sector: "technology"
+    cves: []
+    techniques: [T1003, T1563.002, T1055.012]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Cisco Talos observed a new AI-integrated command-and-control (C2) framework in the wild called “NIK C2.”"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Yoba: Check Point tracks fake GPT and Claude desktop projects on GitHub that sideload malware next to signed OpenAI and Anthropic binaries and install a miner"
+    borderline: true
+    borderline_reason: "Previously dropped (2026-11-01 fire: XMRig miner payload through fake AI-app repositories, no nexus). Consumer-leaning SEO-poisoned GitHub lure with a miner payload; DLL sideloading next to signed binaries is a known class. Kept here only for the audit's drop record."
+    sources:
+      - { url: "https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/", publisher: "Check Point Research", date: "2026-10-27", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research, feed URL https://research.checkpoint.com/feed/ (item 2026-10-27) -> primary (no pivot needed; extract fell back to the jina reader for the body)"
+    summary: |
+      Check Point Research describes a campaign it calls Yoba that uses fake GitHub repositories and GitHub Pages presenting as desktop apps for new GPT and Claude models, ranked high in search
+      results through apparent SEO poisoning, whose ZIP releases place a dropper and loader beside legitimate signed OpenAI and Anthropic executables so they load indirectly (DLL sideloading). The
+      chain avoids dedicated C2 infrastructure in favour of Telegram, Tor, Catbox and DNS over HTTPS and ends in unwanted software (a miner per the intel fire's reading); Check Point says indicators
+      suggest Russian origin and a UTC-4 working pattern. No victim sector or region is named.
+    region_nexus: "global; no Swiss nexus stated"
+    primary_sector_nexus: "none"
+    sector: "technology"
+    cves: []
+    techniques: [T1574.001, T1102]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The malware is placed next to legitimate, signed executables from OpenAI and Anthropic so it can be loaded indirectly"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/tricks-from-the-past-deployed-via-signed-chatgpt-and-claude-binaries/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Windows Endpoint Security Platform: Elastic's debugging session of wesp.sys shows Microsoft's out-of-kernel EDR channel reports process starts to user mode without an import that lets the client block them"
+    borderline: true
+    borderline_reason: "Research on an undocumented Insider-build component with no deployment, exploitation or hardening decision for the next seven days; useful background for detection engineers on how EDR telemetry may change, not an action."
+    sources:
+      - { url: "https://www.elastic.co/security-labs/blog/windows-endpoint-security-platform-wesp", publisher: "Elastic Security Labs (Pavel Yosifovich)", date: "2026-10-26", role: "primary" }
+    discovery_trace: "first seen at: elastic-seclabs, feed URL https://www.elastic.co/security-labs/rss/feed.xml (item 2026-10-26) -> primary (no pivot needed)"
+    summary: |
+      Elastic's kernel-debugging write-up of the two Windows Endpoint Security Platform binaries that ship in Windows Insider builds (the kernel driver wesp.sys, a file-system mini-filter at altitude
+      329500 talking to user mode over a filter communication port, and the user-mode client espclient.dll) says the preview binaries notify a user-mode client that a process is starting but import
+      nothing that would let the client block it. Microsoft's stated aim, per Elastic, is one Microsoft-maintained kernel driver instead of one per EDR vendor after the July 2024 CrowdStrike crash;
+      the platform is undocumented and early. The assessment of what it can and cannot do today is Elastic's reading of public symbols.
+    region_nexus: "global; no Swiss nexus"
+    primary_sector_nexus: "none"
+    sector: "technology"
+    cves: []
+    techniques: []
+    affected_products: ["Microsoft Windows"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "the preview binaries show wesp.sys telling a user-mode client that a process is starting, with nothing in its imports to let that client block it."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/blog/windows-endpoint-security-platform-wesp"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Unauthorized AI relays: Symantec finds a grey-market service that installs genuine Codex and Claude Code CLIs, switches sandboxing off and routes every prompt and credential through third-party servers"
+    borderline: true
+    borderline_reason: "Observed at about a dozen organisations, mostly in mainland China plus Chinese operations of Korean, Taiwanese and Malaysian multinationals; Symantec reports no evidence the operator has abused the access. No Swiss or public-sector exposure shown. The 2026-11-01 fire dropped the sibling Symantec 'Skynet' honeypot report on the same ground."
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/openai-claude-unauthorized-relays", publisher: "Symantec and Carbon Black Threat Hunter Team", date: "2026-10-29", role: "primary" }
+    discovery_trace: "first seen at: symantec-security-com, extract of https://www.security.com/threat-intelligence (dateless listing of five links) -> drilled https://www.security.com/threat-intelligence/openai-claude-unauthorized-relays (date field 2026-10-29) -> primary (no pivot needed)"
+    summary: |
+      Symantec reports an unauthorized relay service that, after a user installs the real Codex or Claude Code CLI through npm, runs a fileless PowerShell or bash setup command fetched from a
+      lookalike domain that rewrites the CLI's configuration: sandboxing off (Codex set to danger-full-access), network access on for the write sandbox, vendor credentials replaced with relay-issued
+      tokens, telemetry disabled. This is not a flaw in either tool. Symantec says the service has been active since early 2026, has appeared in a dozen organisations, and its backend rotated across
+      at least eight domains impersonating OpenAI- or Anthropic-branded chat services; the risk it names is that the relay operator could read every prompt, file and secret and run commands with the
+      user's privileges, but it reports no evidence of that abuse.
+    region_nexus: "mainland China, South Korea, Taiwan, Malaysia (customer operations); no Swiss nexus"
+    primary_sector_nexus: "none"
+    sector: "technology"
+    cves: []
+    techniques: [T1059.001, T1059.004]
+    affected_products: ["OpenAI Codex CLI", "Claude Code"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "There is no evidence so far that the relay operator has abused this level of access"
+        attribution: "Symantec Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/openai-claude-unauthorized-relays"
+  # ---------------------------------------------------------------------------------------------
+  - title: "MadApe: Group-IB documents a previously undocumented Microsoft device-code phishing kit with PDF lures localised in English, German, Portuguese and Hebrew across 155 root domains"
+    borderline: true
+    borderline_reason: "Previously dropped (covered technique, commodity capability, no victimology). The German-language lure and intermediary pages are the only constituency-adjacent signal, and no source names Swiss or DACH victims; the store already carries Kali365, helix, token-spray and calendar-invite entries with the same Conditional Access device-code-flow lever."
+    sources:
+      - { url: "https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/", publisher: "Group-IB Threat Intelligence", date: "2026-10-29", role: "primary" }
+    discovery_trace: "first seen at: group-ib, feed URL https://www.group-ib.com/blog/rss.xml (item 2026-10-29) -> primary (no pivot needed)"
+    summary: |
+      Group-IB describes a device-code phishing kit it names MadApe: business-themed PDF attachments with an embedded link to a click-and-wait intermediary page (a SharePoint-style access page or a
+      human-verification challenge, a configurable redirector), then a page that shows a device code supplied by the backend, copies it on click and sends the victim to the legitimate Microsoft
+      device-login portal to complete authentication, so no password is collected on any phishing page. Templates impersonate SharePoint, OneDrive, Teams, Adobe Acrobat and DocuSign; Group-IB found
+      localised PDF and intermediary pages in English, German, Portuguese and Hebrew (Hebrew emails first), 155 root domains in the expanded set and device-code components on 97 of them, and an
+      operator panel login exposed on the phishing hosts. Its recommendations: inventory legitimate device-code use through the Entra sign-in logs' authentication protocol filter, block the flow
+      with a Conditional Access authentication-flows policy where unneeded (report-only first), keep Continuous Access Evaluation on and revoke sessions on suspicion, and detonate PDFs in a sandbox
+      that follows click-dependent redirects. Already-issued tokens may stay usable until expiry after a blocking policy is enabled.
+    region_nexus: "global; German-language lures named, no victim region stated"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.001, T1566.002, T1528, T1078.004]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365"]
+    entity_keys: ["product:microsoft-entra-id"]
+    new_entities:
+      - { key: "tool:madape", type: tool, name: "MadApe", aliases: [], summary: "Microsoft device-code phishing kit documented by Group-IB on 2026-10-29: PDF lures, configurable redirectors, SharePoint, OneDrive, Teams, Adobe and DocuSign templates, 155 root domains." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Restrict Device Code authentication through Conditional Access."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Tracking AI adoption in North Korean threat actor tradecraft: Microsoft rates Jade Sleet, Coral Sleet and Jasper Sleet as operationalised and says Onyx Sleet and Pearl Sleet use ARTEX"
+    borderline: true
+    borderline_reason: "Dropped by the 2026-10-30 and 2026-11-01 fires as a marginal delta (the Storm-0940 entry is already past 1,900 words and VAPOR PANDA references it) with no constituency decision; the AI-adoption staging is Microsoft's assessment and Microsoft itself says operations remain human-directed."
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/", publisher: "Microsoft Threat Intelligence", date: "2026-10-29", role: "primary" }
+    discovery_trace: "first seen at: msft-ti, `msft-secblog recent 25` (item 2026-10-29) -> primary (no pivot needed)"
+    summary: |
+      Microsoft Threat Intelligence assesses overall AI adoption by North Korean actors as high and sorts them into stages: operationalised (Jade Sleet, Coral Sleet, Jasper Sleet), accelerating (Diamond
+      Sleet, Onyx Sleet, Pearl Sleet, Sapphire Sleet) and expanding (Emerald Sleet). Examples: Jade Sleet ran job-themed targeting through three front companies in a week in June, Onyx Sleet produced
+      dozens of tailored lures in minutes, Coral Sleet built a capability to trojanise private source-code repositories, and Onyx Sleet and Pearl Sleet use the open-source agentic framework ARTEX.
+      Microsoft lists government entities among the usual targets but names no Swiss or European public-sector case, and assesses operations as human-directed, not autonomous.
+    region_nexus: "global; government entities listed as a usual target class"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1585.001]
+    affected_products: []
+    entity_keys: ["actor:jade-sleet", "tool:artex"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse (marginal)"
+    evidence:
+      - quote: "Further, Onyx Sleet and Pearl Sleet are leveraging the open-source agentic AI penetration testing framework ARTEX to conduct operations"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Cloud isolation bypass: Kaspersky Security Services walks a Kubernetes privileged-pod, Konnectivity and overlay-network chain that crossed tenant boundaries at an anonymised cloud provider"
+    borderline: true
+    borderline_reason: "Fixed pentest case at an anonymised (Russian-market) provider, published for education; no exploitation, no product a Swiss body is shown to run. Useful hardening reading for cloud platform teams (privileged-pod admission, control-plane token exposure) but not an action."
+    sources:
+      - { url: "https://securelist.com/cloud-infrastructure-isolation-bypass/121609/", publisher: "Kaspersky Security Services (Matvey Bukhtoyarov) on Securelist", date: "2026-10-27", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist, feed URL https://securelist.com/feed/ (item 2026-10-27) -> primary (no pivot needed)"
+    summary: |
+      Kaspersky describes a bug-bounty penetration test of a major cloud provider's managed Kubernetes: cluster policy allowed privileged pods with host namespaces, so a tenant pod could switch to the
+      host with nsenter, read a Konnectivity service token on the worker node, reach the control-plane tunnel on the kube-apiserver host and chain through the overlay network to code execution and
+      other tenants' services. The provider fixed the issues; the research won second place at the Russian Pentest Award 2026 and was presented at SAS 2026.
+    region_nexus: "global; no Swiss nexus"
+    primary_sector_nexus: "none"
+    sector: "technology"
+    cves: []
+    techniques: [T1611]
+    affected_products: ["Kubernetes"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "our penetration test of a major cloud provider demonstrated that critical threats can originate within the provider’s own infrastructure."
+        attribution: "Kaspersky Security Services"
+        source_url: "https://securelist.com/cloud-infrastructure-isolation-bypass/121609/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Ad-delivered zero-click spyware: members of the European Parliament sign a letter urging an EU investigation of its institutions' exposure, after Citizen Lab's findings"
+    update_target: "2026-10-16/adfection-candiru-spyware-zero-click-ad-delivery"
+    borderline: true
+    borderline_reason: "Political reaction to a covered finding: no new technique, no obligation and no patch or hunt decision; the intel fires of 2026-10-25 and 2026-10-26 dropped the neighbouring AdFection follow-ups on the same ground."
+    sources:
+      - { url: "https://citizenlab.ca/politicians-in-u-s-and-e-u-say-targeted-ads-are-a-security-risk/", publisher: "The Citizen Lab", date: "2026-10-28", role: "primary" }
+    discovery_trace: "first seen at: citizen-lab, feed URL https://citizenlab.ca/feed/ (item 2026-10-28) -> primary (no pivot needed)"
+    summary: |
+      The Citizen Lab notes that, following its findings on advertising technology used to infect targets with zero-click spyware, members of the European Parliament signed a letter urging the EU to
+      investigate the potential exposure of its institutions, and two US senators said the findings underscore the need for better industry security practices. It carries no new technical detail.
+    region_nexus: "European Union institutions; no Swiss nexus"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-16/adfection-candiru-spyware-zero-click-ad-delivery (marginal)"
+    evidence:
+      - quote: "members of the European Parliament signed a letter"
+        attribution: "The Citizen Lab"
+        source_url: "https://citizenlab.ca/politicians-in-u-s-and-e-u-say-targeted-ads-are-a-security-risk/"
+  # ---------------------------------------------------------------------------------------------
+  - title: "Apple sends mercenary-spyware threat notifications to users in 99 countries (over 150 countries to date); Apple recommends Lockdown Mode and does not attribute"
+    borderline: true
+    borderline_reason: "Awareness-grade: a vendor notification wave reported by CyberScoop with no technique, product flaw or Swiss statement; relevant only as a reminder that exposed officials should enable Lockdown Mode, which stored entries already say."
+    sources:
+      - { url: "https://cyberscoop.com/apple-spyware-notifications-pall-mall-process/", publisher: "CyberScoop (Tim Starks)", date: "2026-10-30", role: "primary" }
+    discovery_trace: "first seen at: cyberscoop, feed URL https://cyberscoop.com/feed/ (item 2026-10-30) -> primary article (relays Apple's statement via a social-media post; Apple's own notice not fetched)"
+    summary: |
+      Apple told recipients that the notification of 30 October went to targeted users in 99 countries and that it has notified users in over 150 countries in total, and does not attribute the attacks to
+      any actor or region; recipients include journalists and documentary filmmakers. The Citizen Lab's John Scott-Railton cautions that absence of a notification does not rule out infection, and both
+      he and Apple recommend Lockdown Mode and contacting Access Now. Apple's last major batch was in August.
+    region_nexus: "99 countries; Swiss recipients not stated"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Apple iOS"]
+    entity_keys: ["product:apple-ios"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Today’s notification is being sent to targeted users in 99 countries, and to date we have notified users in over 150 countries in total"
+        attribution: "Apple (quoted by CyberScoop)"
+        source_url: "https://cyberscoop.com/apple-spyware-notifications-pall-mall-process/"
+# ---------------------------------------------------------------------------------------------
+# In-window publications of the slice already carried by the store (checked against the entry body, not only the title): no action
+covered:
+  - { source: "mandiant-gtig", post: "ARTEX and Friends: Enter Agentic Offensive Frameworks (GTIG and Mandiant, 2026-10-31)", entry: "2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse", note: "entry body already cites it (UNC7228, PentAGI, CAIRN, the 2026-10-31 date)" }
+  - { source: "talos", post: "Inside KeyDrift: Analyzing historical UAT-11473 activity on Cisco SD-WAN (2026-10-28)", entry: "2026-10-29/keydrift-uat-11473-cisco-sd-wan-controllers-cve-2026-20127" }
+  - { source: "talos", post: "IR trends Q3 2026 (2026-10-29)", entry: "2026-10-30/cisco-talos-ir-trends-q3-2026-public-administration" }
+  - { source: "crowdstrike", post: "VAPOR PANDA Uses AI-Driven ARTEX to Scale a Global Espionage Campaign (2026-10-29)", entry: "2026-10-30/vapor-panda-artex-agentic-campaign-foreign-ministries", note: "numbers (200+ organisations from 17 October, 14 countries, nine confirmed, BLOODALCHEMY, Greek government entity) match the primary" }
+  - { source: "crowdstrike", post: "CrowdStrike 2026 Legal Threat Landscape Report (2026-10-28)", entry: "2026-07-30/vmware-vmsa-2026-0006-vcenter-auth-bypass-vmxnet3-escape", note: "WARP PANDA's CVE-2026-41709 claim is in the VMware entry's update record; legal sector outside the constituency" }
+  - { source: "lumen-black-lotus-labs", post: "Silent Train: uncovering Volt Typhoon's operational framework (2026-10-28)", entry: "2026-10-30/silent-train-volt-typhoon-relay-network-zero-days" }
+  - { source: "huntress", post: "AI, Scripts, Operator: Inside the ConnectWise Attack (2026-10-26)", entry: "2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse", note: "update section of 2026-10-29 carries it, including the Graph-logging gap and the alerting advice" }
+  - { source: "huntress", post: "Managed for Malice: How Attackers Turn MDM into Remote Access (2026-10-28)", entry: "2026-10-29/huntress-mdm-enrolment-brings-back-removed-screenconnect" }
+  - { source: "msft-ti", post: "Inside a malicious Claude Code-branded extension and its persistent SSH backdoor (2026-10-30)", entry: "2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor", note: "Sophos' 2026-10-30 post is cited by the same entry" }
+  - { source: "msft-ti", post: "From help desk impersonation to AD CS abuse: Investigating ESC1 and ESC8 intrusion paths (2026-10-30)", entry: "2026-10-31/teams-help-desk-impersonation-quick-assist-ad-cs-esc1-esc8" }
+  - { source: "unit42", post: "Threat Brief: Critical Vulnerabilities in PHP (Updated October 29)", entry: "2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619" }
+  - { source: "volexity", post: "Ivanti Connect Secure zero-day chain post (2026-10-13, updated 2026-10-29 with the Ivanti patch)", entry: "2026-10-14/cve-2026-104935-ivanti-connect-secure-zero-day-chain-kev", note: "entry already carries the 2026-10-29 root-escalation fix" }
+  - { source: "trendmicro-research / sophos-xops", post: "Node2Shell posts (2026-10-28)", entry: "2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi", note: "restate CISA's listing and product lists the entry already holds; the Datadog and Zscaler delta is item 2" }
+  - { source: "nethemba", post: "UpdraftCentral backdoor analysis (2026-10-19, last updated 2026-10-22)", entry: "2026-10-21/teamupdraft-updraftcentral-stolen-keys-backdoor-plugins", note: "last change predates the window" }
+  - { source: "symantec-security-com", post: "Swallowtail (2026-10-20) and PHP2Shell (2026-10-22)", entry: "2026-10-21/apt28-hookedge-backdoor-nato-police-shipbuilder-ssh-tunnel; 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619", note: "both before the window anyway" }
+# Leads judged out without a returned item (reason in one line each; none is a Swiss or constituency finding)
+dropped_minor:
+  - { lead: "Securelist NetamLoader (2026-10-29)", why: "one Asian victim, no attribution, no constituency nexus (2026-11-01 fire also dropped it)" }
+  - { lead: "Securelist Intelbras camera DoS (2026-10-28), ESET Amatera (2026-10-29), Unit 42 retail peak season (2026-10-28), Recorded Future traffer teams and prediction markets (2026-10-29), Group-IB Indian banking trojans (2026-10-28)", why: "regional or consumer scope, vendor roll-up, or no technique a Swiss public body acts on" }
+  - { lead: "Sophos Aur0ra AI-agent ransomware (2026-10-29), Huntress camera-management-software compromise (2026-10-27), Forever Security AGENTS.md prompt injection (relayed by Dark Reading 2026-10-26), Cequence AI-bot impersonation scanner (relayed by Dark Reading 2026-10-28), Cofense fake Anthropic preview phishing (relayed by Dark Reading 2026-10-29)", why: "single vendor, vector or victim unknown, or commodity phishing; previously dropped or awareness-grade (primaries not fetched for the three relayed items)" }
+  - { lead: "Symantec Aoki infostealer (source dated 2026-10-15, relayed by Dark Reading 2026-10-27)", why: "source predates the window" }
+  - { lead: "Sophos 'Never Bring a Knife to a Gun Fight' (2026-10-28), Sophos physical pentest (2026-10-29), Sentinel Labs LABScon26 keynote replay (2026-10-28), Project Zero Fuzzilli vs BigSleep (2026-10-27), Check Point Cohere/Qwen (2026-10-29), CrowdStrike AI guardrail and prompt-injection posts (2026-10-28/29)", why: "legal or marketing content, conference replay, or AI-model research with no defender action" }
+  - { lead: "Infosecurity Magazine on HMICFRS 'Cybersecurity in Police Forces and Fire and Rescue Services' (2026-10-27), CyberScoop on the Virtualine bulletproof-hosting domain seizure (2026-10-29), Dark Reading on Operation Blackout (2026-10-30)", why: "S2-type policy and law-enforcement items: a UK inspectorate report with 13 recommendations (the 2026-10-28 fire dropped it as awareness level, no Swiss obligation) and takedowns with no defender action; flagged for the audit's S2 comparison only" }
+  - { lead: "Helpnet Security 2026-10-29 relay naming a Telegram for Android voice-call flaw (via TechNadu 2026-10-30)", why: "G1-type vulnerability lead; no primary found (WebSearch surfaced only the earlier sticker flaw ZDI-CAN-30207), left to the G1 sweep" }
+candidate_sources:
+  - id: gitguardian
+    publisher: "GitGuardian blog (secrets-leak and CI/CD campaign research)"
+    url: "https://blog.gitguardian.com/"
+    rss_url: "https://blog.gitguardian.com/rss/"
+    category: research
+    why: "Primary for the GhostAction campaign counts and the 2026-10-27 GhostAction x PolinRider escalation that no stored entry carries; the feed reads directly with dated items (eight items read, newest 2026-10-30). Cited already by the GhostAction entry's 2026-10-07 and 2026-10-13 sources without a source record."
+coverage_gaps:
+  - { source_id: "sygnia", reason: "blocked on every transport again (direct 403, trafilatura no readable body, reader relayed the upstream challenge); WebSearch found no October threat research from Sygnia (latest threat item 2026-08-30, a press release of 2026-10-12 is product news)" }
+  - { source_id: "cyberscoop", reason: "the feed returns only 10 items (oldest 2026-10-28 16:00Z), so posts of 2026-10-25 to 2026-10-27 were not listed; /news/ extracts to navigation only. Low yield (Admiralty B journalism, no first-hand research in the seen items)" }
+  - { source_id: "technadu", reason: "the feed returns only 10 items (2026-10-29 to 2026-10-31) and the category page is 403 on every transport; 2026-10-25 to 2026-10-28 not listed" }
+  - { source_id: "nict-cynex-lettice", reason: "RECIPE: `extract` and WebFetch return a JS shell with no library items; `python3 tools/fetch_source.py jina https://cynex.nict.go.jp/library/` returns the dated item list (15 rows, newest 2026-10-13, the A2B alert already stored). The record's note should name the jina recipe." }
+  - { source_id: "mandiant-gtig", reason: "RECIPE CONFIRMED: `extract` of the listing returns a 771-byte intro only; WebFetch of https://cloud.google.com/blog/topics/threat-intelligence returns the 11 titles with hrefs but no dates; the FeedBurner feed (20 items, newest 2026-10-15) still lags; the post date comes from `extract <post-url>` metadata (ARTEX and Friends: 2026-10-31)" }
+  - { source_id: "lumen-black-lotus-labs", reason: "RECIPE: `url --direct https://www.lumen.com/blog/query-index.json` read fine (325 rows, 34 mentioning Lotus; the Black Lotus Labs marker is in `categories`, post URL = https://www.lumen.com/blog/ + path with the /en-us/ prefix kept, e.g. /en-us/silent-train-volt-typhoon-operational-framework); the record's url field is still a marketing landing page; consider pointing it at the index" }
+  - { source_id: "team-cymru", reason: "RECIPE: the listing no longer hides dates: `extract https://www.team-cymru.com/blog` returns raw HTML (direct-raw) whose cards carry `data-bp=\"date\"` values such as 'October 22, 2026', newest first (newest 2026-10-22); the record note saying dates are not on the listing is stale" }
+  - { source_id: "novee-security", reason: "RECIPE: `extract` returns raw HTML (direct-raw) with dated cards (newest 2026-10-23, a webinar); the blog is marketing and product posts, consider demoting" }
+  - { source_id: "darkreading", reason: "RECIPE WARNING: `extract` on dark reading article URLs was served by the metered jina reader seven times in this sweep (and once for TechNadu); read those with WebFetch or the feed summary to spare credit. Check Point's research.checkpoint.com article also fell to jina once on 2026-11-01" }
+  - { source_id: "sentinellabs", reason: "RECIPE CONFIRMED: WebFetch of https://www.sentinelone.com/labs/ with an href-and-date prompt returns 12 dated rows with sentinellabs.com/labs/<slug> hrefs; `extract` shows no dates for the newest rows (only one in-window row: a conference keynote replay of 2026-10-28)" }
+  - { source_id: "zimperium-zlabs", reason: "RECIPE CONFIRMED: WebFetch of https://zimperium.com/blog with a date-and-href prompt returns dated rows (2026-10-26, 2026-10-29); the page is 127k characters, so the answer covers the first 100k only (newest first, enough)" }
+fetch_failures:
+  - id: sygnia
+    url_tried: "https://www.sygnia.co/blog/"
+    fetch_method: "bridge:extract"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: all transports failed for https://www.sygnia.co/blog/: direct=(direct HTTP 403, 6026 B); trafilatura=(no readable body); jina=(reader proxy relayed an upstream block/challenge"
+    attempted_methods: ["bridge:extract (direct, trafilatura, jina fallback)", "websearch"]
+    mitigation_applied: "WebSearch for Sygnia October 2026 research found no in-window threat research"
+    covered_anyway: false
+watchlist_sweep:
+  duty: none
+source_ledger:
+  - { id: msft-ti, tier: standard, attempted: true, transport: "msft-secblog recent 25 (whole blog, no topic filter)", horizon_hours: 168, in_horizon_items: 5, returned: 1, note: "Claude Code extension and ESC1/ESC8 posts covered; North Korea AI-adoption post returned as borderline" }
+  - { id: mandiant-gtig, tier: standard, attempted: true, transport: "webfetch listing + extract post (FeedBurner feed lags: 20 items, newest 2026-10-15)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "ARTEX and Friends (2026-10-31) already carried by the ARTEX entry" }
+  - { id: talos, tier: standard, attempted: true, transport: "feed (15 items) + extract", horizon_hours: 168, in_horizon_items: 6, returned: 2, note: "VOLTA and NIK C2 as borderline; KeyDrift and IR trends Q3 covered; interview and newsletter posts not research" }
+  - { id: unit42, tier: standard, attempted: true, transport: "feed (15 items) + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "PHP threat brief update covered; retail peak season post is sector marketing" }
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed (15 items) + extract (jina fallback on the Yoba article)", horizon_hours: 168, in_horizon_items: 3, returned: 1, note: "Yoba as borderline; weekly digest and Cohere/Qwen post not returned" }
+  - { id: eset, tier: standard, attempted: true, transport: "feed (30 items) + research listing raw HTML + extract", horizon_hours: 168, in_horizon_items: 5, returned: 1, note: "APT Activity Report Q2-Q3 2026 as periodic/borderline; the research listing shows it as the only in-window research post" }
+  - { id: kaspersky-securelist, tier: standard, attempted: true, transport: "feed (10 items) + front page + extract", horizon_hours: 168, in_horizon_items: 5, returned: 1, note: "cloud isolation bypass as borderline; NetamLoader, Intelbras and AI-agent posts dropped" }
+  - { id: sentinellabs, tier: standard, attempted: true, transport: "webfetch listing with href-and-date prompt", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only a LABScon26 keynote replay (2026-10-28); next row 2026-09-18" }
+  - { id: proofpoint, tier: standard, attempted: true, transport: "feed (10 items) + extract of the listing (raw HTML)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-14 on both" }
+  - { id: trendmicro-research, tier: standard, attempted: true, transport: "feed (25 items) + extract of the listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Node2Shell post (2026-10-28) restates covered facts" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed (20 items) + extract of the listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-21; the HTML listing extracts to navigation only" }
+  - { id: huntress, tier: standard, attempted: true, transport: "feed (30 items) + extract", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "ConnectWise AI post and MDM post covered; camera-software post dropped earlier" }
+  - { id: sophos-xops, tier: standard, attempted: true, transport: "feed (9 items) + extract", horizon_hours: 168, in_horizon_items: 7, returned: 0, note: "Claude Code extension post cited by its entry; Node2Shell post restates CISA; Aur0ra dropped earlier; the rest marketing" }
+  - { id: crowdstrike, tier: standard, attempted: true, transport: "feed https://www.crowdstrike.com/en-us/blog/feed (10 items) + extract", horizon_hours: 168, in_horizon_items: 7, returned: 0, note: "VAPOR PANDA covered and checked against the primary; legal landscape report dropped; AI posts not defender actions" }
+  - { id: elastic-seclabs, tier: standard, attempted: true, transport: "feed (30 items) + extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "wesp.sys write-up as borderline; the Zimbra post (2026-10-23) predates the window and its CVE is stored since 2026-08-20" }
+  - { id: dfirreport, tier: standard, attempted: true, transport: "feed (10 items) + extract of the front page", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest report 2026-08-24 (publisher cadence)" }
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed https://www.recordedfuture.com/feed (30 items)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "traffer teams and prediction markets (2026-10-29), e-crime with no nexus" }
+  - { id: volexity, tier: standard, attempted: true, transport: "feed (10 items) + extract of the listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-16; the 2026-10-29 update of the 2026-10-13 Ivanti post is already in the Ivanti entry" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed (10 items) + extract", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "MEP letter post as borderline; the Serbia Pegasus post (2026-10-27) is a media-roundup stub for a report of 2026-10-20" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed (30 items) + extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "Node2Shell post used as corroboration in item 2" }
+  - { id: symantec-security-com, tier: standard, attempted: true, transport: "extract of the listing (5 dateless links) + extract per post", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "unauthorized AI relays (2026-10-29) as borderline; Skynet, Swallowtail, PHP2Shell, Aoki predate the window" }
+  - { id: lumen-black-lotus-labs, tier: standard, attempted: true, transport: "url --direct query-index.json (325 rows)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Silent Train (2026-10-28) covered" }
+  - { id: group-ib, tier: standard, attempted: true, transport: "feed (30 items) + extract", horizon_hours: 168, in_horizon_items: 4, returned: 1, note: "MadApe as borderline; Frost Radar and deepfake posts are marketing" }
+  - { id: securityaffairs, tier: standard, attempted: true, transport: "extract of the front page (4 snippets)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "aggregator; the four items all trace to primaries other slices own" }
+  - { id: manageengine-metal, tier: standard, attempted: true, transport: "extract + url --direct (raw HTML for the dated cards)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest report 2026-10-16 (AOMEI Backupper, already stored)" }
+  - { id: todyl, tier: standard, attempted: true, transport: "extract of the listing (dateless; page date 2026-10-23)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "MSP-oriented posts only; the ConnectWise findings post predates the window" }
+  - { id: nethemba, tier: standard, attempted: true, transport: "extract of the front page + the UpdraftCentral post", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "post last updated 2026-10-22" }
+  - { id: jpcert-eyes, tier: standard, attempted: true, transport: "atom feed (15 items)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 (the A2B post, already stored)" }
+  - { id: semperis-research, tier: standard, attempted: true, transport: "extract of the listing (dated rows)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22 (Prince of Persia, dropped by the 2026-10-25 audit)" }
+  - { id: nict-cynex-lettice, tier: standard, attempted: true, transport: "jina (extract and WebFetch return a JS shell)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest library item 2026-10-13 (the A2B alert, stored)" }
+  - { id: datadog-security-labs, tier: standard, attempted: true, transport: "feed (30 items) + extract", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "Node2Shell reproduction used as primary of item 2; 'Code security for new coders' is training content" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "extract of the research landing page (monthly archive links only)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "automated AI-safety paper pipeline (Admiralty C), no item of the slice's scope" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed (10 items, oldest 2026-10-28) + extract", horizon_hours: 168, in_horizon_items: 10, returned: 1, note: "Apple notification wave as borderline; feed does not reach 2026-10-25 to 2026-10-27 (coverage gap)" }
+  - { id: darkreading, tier: standard, attempted: true, transport: "feed (30 items, oldest 2026-10-23) + extract (jina-served)", horizon_hours: 168, in_horizon_items: 26, returned: 1, note: "GhostAction relay led to item 1; the other leads traced to Symantec, Forever Security, Cequence, Cofense, Anthropic, none returned" }
+  - { id: gambit-security, tier: standard, attempted: true, transport: "url https://gambit.security/blog + extract of the top four posts", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "extract of the front page (raw HTML with dated paths) + extract of one article", horizon_hours: 168, in_horizon_items: 20, returned: 0, note: "all research items trace to primaries other sources own; the VMware ESX item traces to the CrowdStrike report already stored" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "feed (30 items) + extract", horizon_hours: 168, in_horizon_items: 27, returned: 0, note: "leads traced and judged: PHP2Shell chained exploit (covered), NIK C2 (borderline), HMICFRS (dropped, S2-type), Sansec Magecart (dropped)" }
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract (all transports failed) + websearch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "blocked; logged under fetch_failures; no in-window research found by WebSearch" }
+  - { id: team-cymru, tier: standard, attempted: true, transport: "extract of the listing (raw HTML, dated cards)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22" }
+  - { id: technadu, tier: standard, attempted: true, transport: "feed (10 items, 2026-10-29 to 2026-10-31)", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "aggregator; the ESET report item traces to the ESET primary; earlier part of the window not listed (coverage gap)" }
+  - { id: zimperium-zlabs, tier: standard, attempted: true, transport: "webfetch listing (dates and hrefs) + extract", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "Coruna and DarkSword post as update-of-DeadTag (borderline); DHS DeepSeek order post is product marketing" }
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "url --direct (four dated posts)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-14" }
+  - { id: krebs, tier: standard, attempted: true, transport: "feed (10 items) + extract of the front page", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-21" }
+  - { id: novee-security, tier: standard, attempted: true, transport: "extract of the blog (raw HTML, dated cards)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest card 2026-10-23, a webinar; marketing and product posts" }
+  - { id: projectzero, tier: standard, attempted: true, transport: "feed (10 items)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Fuzzilli vs BigSleep (2026-10-27) is fuzzing research with no defender action" }

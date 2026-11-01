@@ -4986,6 +4986,46 @@ for _name, _obj in list(globals().items()):
         globals()[_name] = _crash_guard(_obj)
 
 
+class _Tee:
+    """Write everything printed to stdout to a second stream as well."""
+
+    def __init__(self, primary, secondary):
+        self.primary, self.secondary = primary, secondary
+
+    def write(self, s):
+        self.secondary.write(s)
+        return self.primary.write(s)
+
+    def flush(self):
+        self.secondary.flush()
+        self.primary.flush()
+
+    def __getattr__(self, name):
+        return getattr(self.primary, name)
+
+
+def _tee_gate_log(args, content_root: Path) -> None:
+    """Keep every run-scope gate output on disk (`work/<run-id>/gate.log`,
+    appended per invocation with a header). The 2026-10-25 audit found three
+    non-verbatim quotes on fires that run the `quote-literal` check and could
+    not tell whether the gate had judged the pages unreadable or the verifier
+    had missed them, because no fire kept its gate output. Only an explicit
+    run id in the real store is logged (not --all, not --root fixtures), and
+    only when the run's work directory already exists."""
+    if not args.run_id or args.all or content_root != ROOT:
+        return
+    work = WORK_DIR / args.run_id
+    if not work.is_dir():
+        return
+    try:
+        fh = open(work / "gate.log", "a", encoding="utf-8")
+    except OSError:
+        return
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    fh.write(f"\n=== check_run.py {' '.join(sys.argv[1:])} at {stamp} ===\n")
+    sys.stdout = _Tee(sys.stdout, fh)
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("run_id", nargs="?", default=None,
@@ -5023,6 +5063,7 @@ def main() -> int:
         print("FATAL: --pre-verify applies to a single run's pre-Phase-5.7 gate, not --all")
         return 2
     content_root = Path(args.root).resolve() if args.root else ROOT
+    _tee_gate_log(args, content_root)
     if args.page_checks_since:
         return run_page_checks(args.page_checks_since, args.run_id or "page-checks",
                                content_root)

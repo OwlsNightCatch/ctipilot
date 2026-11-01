@@ -1,0 +1,306 @@
+batch: TD
+model: Sonnet 5.5 (claude-sonnet-5-5)
+timestamps:
+  started: 2026-11-01T13:17:22Z
+  ended: 2026-11-01T13:39:22Z
+entries:
+- entry: 2026-05-15/cve-2026-46300-linux-kernel-local-privilege-escalation-via-x
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 7b63950337
+    where: 'body, ## Update — 2026-10-29T04:52:00Z (and its record summary)'
+    defect: Section still says Dream Research "does not name the vendor" and describes "one large vendor's firewall software", "rooted 24"; only the 2026-11-01 Improvement section adds "The earlier
+      description above of an unnamed vendor is superseded".
+    ground_truth: 'Dream''s report (updated 2026-10-29): "The affected devices run specific versions of Palo Alto Networks PAN-OS." and "rooted 25 PAN-OS firewall and management servers" (24 firewalls
+      in the batch plus the government management server).'
+    ground_truth_url: https://dreamgroup.com/blog/chained-php2shell-exploit-roots-25-servers
+    fix: 'Edit the 2026-10-29 section in place (permitted by a record): name PAN-OS and the 24 + 1 count, drop "does not name the vendor"; keep the Improvement section as the delta.'
+  - code: F8
+    claim_id: null
+    where: body labelled lines **Exposure:** and **Defender takeaway:**; actions[0]
+    defect: Exposure still reads "any multi-user Linux host, container node or CI runner whose kernel lacks the distribution's fix"; the exploited chain (CISA KEV, Dream, Unit 42) is against PAN-OS
+      management web servers and firewall management servers, a single-purpose appliance, and no labelled line names PAN-OS or Palo Alto's fixed builds.
+    ground_truth: 'Unit 42 (updated 2026-10-29): exploitation is "against PAN-OS management interfaces that are exposed to the internet ... apply available PAN-OS fixes ... Customers who have
+      applied the available patches are not affected."'
+    ground_truth_url: https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+    fix: Add PAN-OS management interfaces to Exposure and the takeaway (link the PAN-OS entry in references[]).
+  - code: F3
+    claim_id: f3f00f1766
+    where: 'body para 2: "CISA''s catalog entry says it is chained with the PHP2Shell flaws, which supply the code execution in the web server"'
+    defect: (low confidence) "which supply the code execution in the web server" is cited to the KEV record, which says only that the flaw "can be chained ... to implant PHP webshells and run
+      commands as root".
+    ground_truth: 'KEV shortDescription: "This vulnerability can be chained with CVE-2026-109618 and CVE-2026-109619 to implant PHP webshells and run commands as root."'
+    ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    fix: Cut the "which supply ... web server" clause or cite Dream for it.
+  - code: F3
+    claim_id: d94253c62b
+    where: 'body para 2: "The flaw needs local code execution, so it is the root step of a chain rather than an entry point" (Wiz)'
+    defect: (low confidence) Wiz says "unprivileged local attackers"; it does not describe the flaw as the root step of a chain.
+    ground_truth: 'Wiz: "The vulnerability allows unprivileged local attackers to modify read-only file contents in the kernel page cache and achieve root privileges".'
+    ground_truth_url: https://www.wiz.io/blog/fragnesia-linux-kernel-local-privilege-escalation-via-esp-in-tcp
+    fix: Reword as the entry's own inference or cite KEV/Dream for the chain role.
+  - code: F3
+    claim_id: null
+    where: sources[] / body citations "Dream Research, 2026-10-27"
+    defect: (low confidence) Dream's report is cited as dated 2026-10-27 in the sources and in six inline citations; a third party puts first publication on 2026-10-26 and the page now shows 2026-10-29
+      (update).
+    ground_truth: 'Hunt.io: Dream''s investigation "published on October 26 and updated October 29". The Dream page itself carries "Updated: October 29, 2026".'
+    ground_truth_url: https://hunt.io/blog/php2shell-honeypot-shells-root-palo-alto-firewalls
+    fix: Date the inline citations to the revision actually read (2026-10-29) or to a verified first-publication date.
+  - code: F3
+    claim_id: null
+    where: sources[] and inline citations "Red Hat RHSB-2026-003, 2026-07-03"
+    defect: (low confidence) The bulletin is cited with its revision date; its own dateline gives the public date as 2026-05-07 (updated 2026-07-03).
+    ground_truth: 'RHSB-2026-003 page: "Public Date: May 7, 2026, 15:36 Updated July 3, 2026, 17:40".'
+    ground_truth_url: https://access.redhat.com/security/vulnerabilities/RHSB-2026-003
+    fix: Cite as 2026-05-07 (updated 2026-07-03) or keep and note the revision.
+  - code: F4
+    claim_id: null
+    where: techniques[] T1611
+    defect: (low confidence) T1611 (Escape to Host) is mapped, but no cited source describes a container escape with this CVE; the 2026-10-21 correction states "No cited source describes a Kubernetes
+      exploit for CVE-2026-46300 itself".
+    ground_truth: 'Aikido (Dirty Frag family): "Researchers have already published working proof-of-concept exploits for Kubernetes"; its container-escape link is Ubuntu''s page for CVE-2026-43284.'
+    ground_truth_url: https://www.aikido.dev/blog/dirty-frag
+    fix: Keep only if the container-risk sentence (HNS) is judged enough; otherwise drop T1611. Unmapped chain behaviours (T1572 SSH tunnel, T1110.003 spray, systemd/rc.local persistence) are
+      described in the 2026-10-29 section.
+  - code: F11
+    claim_id: null
+    where: actions[0]
+    defect: (advisory) Restates the body mitigation paragraph (module block, IPsec warning, page-cache drop) in one long action; the 2026-11-01 record is typed improvement although it adds a vendor
+      identification and an independent verification (a genuine delta).
+    ground_truth: n/a
+    ground_truth_url: n/a
+    fix: Shorten actions[0] to the patch task; consider type update for a delta of this kind.
+  length_note: main analysis ~543 words (within bound); headline 102 chars
+- entry: 2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: a40b7a51c5
+    where: 'body, main analysis para 3: "There is no public exploitation signal for any of these: the researcher withholds the exact cookie name, endpoints and proof-of-concept code under a fix-first
+      policy"'
+    defect: 'Superseded and now false: the main analysis was not brought to the state the 2026-07-31 onward sections establish. The researcher''s own 2026-07-29 post prints the cookie ("One cookie,
+      `gridbox_username=admin`") and reports exploitation of the follow-on Gridbox batch; the paragraph also frames the reason to act as "track record rather than current telemetry".'
+    ground_truth: 'mySites.guru 2026-07-29: "One cookie, `gridbox_username=admin`"; "The Joomla Security Strike Team reported that at least three Gridbox issues are being actively exploited";
+      "Anything on 2.20.1 or earlier is still exposed."'
+    ground_truth_url: https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/
+    fix: Rewrite main-analysis para 3 to the current state (exploited follow-on batch, 2.20.1 insufficient, cookie name public), or mark it "as of 2026-07-26".
+  - code: F14
+    claim_id: 4ad00ca3ef
+    where: body main analysis; summary; cves[CVE-2026-61425].affected; actions[0]; Defender takeaway "nine-month exposure window"
+    defect: '"the vulnerable code had shipped since the previous release in October 2025, roughly nine months of exposure" (uncited, repeated in summary, affected and action) turns a lower bound
+      into the start date.'
+    ground_truth: 'mySites.guru: "the vulnerable code was in the shipping product for at least that long"; "we cannot tell you when the flawed code first appeared"; "probably far longer". CNA
+      record affected: "1.0.0-2.20.0.2".'
+    ground_truth_url: https://mysites.guru/blog/gridbox-critical-authentication-bypass/
+    fix: Say "at least nine months; the range is not published (CNA lists 1.0.0 to 2.20.0.2)" and cite the post; drop "since the October 2025 release" from summary, affected and the action.
+  - code: F9
+    claim_id: 78d8c6af56
+    where: frontmatter cves[CVE-2026-61425].cvss "10.0 (CVSS 4.0, discloser's own assessment)" and sourcing_note
+    defect: 'The per-CVE authority differs and the entry does not surface it: the Joomla CNA record scores CVE-2026-61425 CVSS 4.0 9.4 on a PR:H vector and gives the range "1.0.0-2.20.0.2" (description
+      text "Gridbox < 1.6.0", "authenticated bypass"); the discloser itself discusses the mismatch.'
+    ground_truth: 'CNA record (cveawg, updated 2026-08-12): baseScore 9.4, vectorString CVSS:4.0/AV:N/AC:L/AT:N/PR:H/...; mySites.guru: "The published CVE record scores it 9.4 Critical on a CVSS
+      4.0 vector with PR:H ... which does not match what we reproduced."'
+    ground_truth_url: https://mysites.guru/blog/gridbox-critical-authentication-bypass/
+    fix: Add a Contradiction line (CNA 9.4/PR:H vs discloser 10.0/PR:N) and carry both scores in the sourcing_note.
+  - code: F4
+    claim_id: a96c60291c
+    where: 'frontmatter cves[CVE-2026-62415].type: rce; sourcing_note "Scores are CVSS 4.0"'
+    defect: The CVE is typed rce, but the cited source says it is not RCE on a default configuration; and its 9.1 is CVSS 3.1 (CISA-ADP), not CVSS 4.0 as the sourcing_note states for all scores.
+      The body, correctly, says only "unauthenticated upload".
+    ground_truth: 'mySites.guru: "Is this remote code execution? Not on a default configuration ... A file upload constrained to image and document types cannot drop a web shell"; "rated 9.1 critical
+      (CVSS 3.1)". CNA title: "Insecure default configuration ... allow unauthenticated users to upload media assets".'
+    ground_truth_url: https://mysites.guru/blog/membership-pro-unauthenticated-file-upload/
+    fix: Set type to an upload/misconfiguration class (not rce), and say the 9.1 is CVSS 3.1 from CISA-ADP in the sourcing_note.
+  - code: F4
+    claim_id: null
+    where: 'sourcing_note: "Events Booking carries none"'
+    defect: (low confidence) CVE-2026-63047 carries a CISA-ADP CVSS 3.1 score of 7.5 (High) and the discloser rates it High; only the CNA container has no score.
+    ground_truth: 'CVE JSON ADP container (CISA-ADP): baseScore 7.5, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N; mySites.guru: "mySites.guru assessment; the Joomla CNA published no score of
+      its own".'
+    ground_truth_url: https://mysites.guru/vulnerabilities/CVE-2026-63047/
+    fix: Say "no CNA score; CISA-ADP 7.5 (CVSS 3.1)" or record 7.5 in cves[].cvss.
+  - code: F5
+    claim_id: fe06ee4fa1
+    where: 'body para 1: "several of which were weaponised and CISA-KEV-listed within days of disclosure"; para 3 "earlier members of this same disclosure series moved from publication to confirmed
+      in-the-wild exploitation within days"'
+    defect: No inline citation. KEV does list Balbooa Forms CVE-2026-56291 (2026-07-10), Joomlack Page Builder CVE-2026-56290 (2026-07-07) and Widget Factory (2026-06-16), but "within days of
+      disclosure" is not shown by any cited source.
+    ground_truth: KEV catalog 2026.10.30 entries for CVE-2026-56291 and CVE-2026-56290 (dateAdded 2026-07-10 / 2026-07-07).
+    ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    fix: Cite the KEV entries and the disclosure dates or cut the quantifier.
+  - code: F5
+    claim_id: a837d02f0c
+    where: body Defender takeaway "Joomla is common in European public-sector, municipal and education web estates"; 2026-07-31 takeaway "common across European municipal, cantonal and education
+      sites"
+    defect: Prevalence claim about the constituency with no source in the entry (the sources describe Gridbox as "widely used" among small business and agency sites).
+    ground_truth: 'mySites.guru: Gridbox "runs the front end of a lot of small business and agency sites".'
+    ground_truth_url: https://mysites.guru/blog/gridbox-critical-authentication-bypass/
+    fix: Cite a source or delete; the constituency exposure is the priority argument and needs support.
+  - code: F4
+    claim_id: 67acbedf03
+    where: actions[1] "with particular attention to files written since 27 July"
+    defect: (low confidence) 27 July is the start of the run on one connected site, not a general start of exploitation; CVE-2026-61425 was public from 2026-07-20.
+    ground_truth: 'mySites.guru 2026-07-29: "On this site the run started on 27 July, two days before the Strike Team''s warning."'
+    ground_truth_url: https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/
+    fix: Use "since 20 July (public disclosure of the cookie bypass)" or drop the date.
+  - code: F3
+    claim_id: 58058933a7
+    where: 'section 2026-07-31: "telling customers to remove the temporary web-server rules it had advised adding"'
+    defect: (low confidence) The Balbooa page speaks of rules customers "added" and does not say Balbooa advised them.
+    ground_truth: 'Balbooa: "If you added custom .htaccess rules in your website root directory to block the recent attacks on Gridbox endpoints, remove them after updating to Gridbox 2.20.2."'
+    ground_truth_url: https://www.balbooa.com/blog/gridbox/gridbox-2-20-2-security-release
+    fix: Drop "it had advised adding".
+  - code: F9
+    claim_id: e8c32d8bc1
+    where: section 2026-10-28 Detection "because the flaws only read" and "Both flaws read data"
+    defect: (low confidence) The discloser's reading (read-side) is stated as fact; the CNA vector it cites for both CVEs is VC:H/VI:H/VA:H and the post itself notes the difference.
+    ground_truth: 'mySites.guru 2026-10-27: "Our own reading would score them a little lower, at 8.7 High, because what we can see in the code is a read-side injection, and the CNA''s vector also
+      rates integrity and availability High."'
+    ground_truth_url: https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/
+    fix: Attribute "read-side" to mySites.guru and mention the CNA vector.
+  - code: F4
+    claim_id: 0244729a85
+    where: body Triage "the request is well-formed and returns HTTP 200"
+    defect: (low confidence) "returns HTTP 200" is in no cited source.
+    ground_truth: 'mySites.guru: "the request is perfectly well formed and contains no payload to detect".'
+    ground_truth_url: https://mysites.guru/blog/gridbox-critical-authentication-bypass/
+    fix: Delete "and returns HTTP 200".
+  - code: F8
+    claim_id: null
+    where: coverage of Gridbox releases
+    defect: Gridbox 2.20.4.0 (2026-10-08) fixed a language-install CSRF (CVE-2026-102784, 8.7) and an image-preview path check (CVE-2026-102783, 6.3); the entry jumps from 2.20.3.1 to 2.20.4.2
+      and the action says 2.20.4.2 closes "the unauthenticated blind SQL injection ... fixed in 2.20.3.1" without naming these two.
+    ground_truth: 'mySites.guru 2026-07-29 post, section "2.20.4.0 (8 October 2026)": "The Joomla CNA assigned CVE-2026-102784 (CSRF, 8.7 High) and CVE-2026-102783 (path traversal, 6.3 Medium)."'
+    ground_truth_url: https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/
+    fix: Add one sentence in the next record (low severity, authenticated paths).
+  - code: F16
+    claim_id: null
+    where: 'priority: high'
+    defect: '(low confidence) The only in-window development (2026-10-27, 2.20.4.2) is two SQL injections with "no public report of exploitation yet"; the exploited batch dates from 2026-07-29
+      and constituency exposure to Gridbox is not evidenced by any source. Bar elements failing: in-window exploited development; plausible constituency exposure.'
+    ground_truth: 'mySites.guru 2026-10-27: "There is no public report of exploitation yet".'
+    ground_truth_url: https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/
+    fix: Consider notable unless constituency Gridbox exposure can be shown.
+  - code: F11
+    claim_id: null
+    where: title, headline, body (12 em dashes), three Defender takeaway blocks, "the earlier entry / the previous entry" wording, affected_products duplicate
+    defect: (advisory) Em dash in title and headline and 12 times in the body; three separate **Defender takeaway** blocks (main, 07-31, 10-28) and two Triage blocks without a supersession; "The
+      earlier entry covered ..." and "the version the previous entry pointed operators at" are workflow-internal; headline/title describe only the 2026-07-20 finding though the entry now centres
+      on the exploited 2.20.2 batch and 2.20.4.2; affected_products lists "Balbooa Gridbox" and "Balbooa Gridbox for Joomla".
+    ground_truth: n/a
+    ground_truth_url: n/a
+    fix: Consolidate to one current takeaway/triage, replace em dashes, refresh headline.
+  length_note: main analysis ~572 words (over 550); headline 139 chars (over 120)
+- entry: 2026-07-30/vmware-vmsa-2026-0006-vcenter-auth-bypass-vmxnet3-escape
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: d3360c2b33
+    where: cves[CVE-2026-59309] and cves[CVE-2026-47876] affected/fixed; body "Fixed builds differ per flaw and per track"; actions[0]
+    defect: 'Publisher revisions after first publication are not reflected: VMSA-2026-0006.1 (2026-08-03) adds vCenter 8.0 U2f and ESX 8.0 U2f express patches and .2 (2026-08-19) adds vCenter/ESX
+      7.0 patch guidance. The CVE-2026-59309 and -47876 fixed fields, the body paragraph and action[0] list only 8.0 U3k; the 7.0 estates (out of general support) are not mentioned at all.'
+    ground_truth: 'Broadcom change log: "2026-08-03 VMSA-2026-0006.1 ESX 8.0 U2f and vCenter 8.0 U2f express patches are available. 2026-08-19 VMSA-2026-0006.2 Added ESX/vCenter 7.0 patch guidance";
+      matrix rows for 7.0: "Contact Broadcom Support if you have extended support contract."'
+    ground_truth_url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017
+    fix: Add 8.0 U2f / ESXi80U2f and the 7.0 extended-support path to affected/fixed and the body.
+  - code: F3
+    claim_id: ef42a43666
+    where: 'section 2026-08-28: "Infosecurity Magazine reports the same assessment"'
+    defect: The Infosecurity article (2026-08-13) says only "a suspected advanced persistent threat (APT) actor"; the China-nexus attribution and the Babuk ransomware finding are in the 2026-08-17
+      Hacker News article. The sources[] and inline date is 2026-08-14; the page is dated 2026-08-13.
+    ground_truth: 'Infosecurity: "assessed a suspected advanced persistent threat (APT) actor was responsible, counting 361 victim IP addresses across 47 countries"; datePublished 2026-08-13T14:00:00+00:00.'
+    ground_truth_url: https://www.infosecurity-magazine.com/news/vcenter-cve-2026-59310-exploited/
+    fix: Say Infosecurity reports a suspected APT; correct the date to 2026-08-13.
+  - code: F4
+    claim_id: bf5be8c8d3
+    where: 'section 2026-08-28 and its record: ransomware finding "trace to QUIRSO''s own investigation alone; no independent assessor has corroborated"'
+    defect: (low confidence) Current CISA KEV record for CVE-2026-59310 carries knownRansomwareCampaignUse "Known"; the entry tags ransomware but never mentions the flag or reconciles it with
+      the sole-source statement.
+    ground_truth: 'KEV (catalog 2026.10.30) CVE-2026-59310: dateAdded 2026-08-18, knownRansomwareCampaignUse "Known".'
+    ground_truth_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    fix: State the KEV ransomware flag (and that CISA names no actor) in a record; qualify the sole-source sentence.
+  - code: F4
+    claim_id: 72f267ef6b
+    where: 'body: credits "an independent researcher"'
+    defect: (low confidence) Broadcom credits "Maxim Suhanov (@errno_fail)" without calling him independent.
+    ground_truth: 'Broadcom 3d: "Broadcom would like to thank Maxim Suhanov (@errno_fail) for reporting this issue to us."'
+    ground_truth_url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017
+    fix: Name the researcher or drop the characterisation.
+  - code: F4
+    claim_id: 6b8a455d2e
+    where: cves[CVE-2026-41703].vector and cves[CVE-2026-41709].vector = local
+    defect: (low confidence) Broadcom's CVSS vectors for both are attack vector Network (AV:N, PR:H).
+    ground_truth: 'Broadcom: CVE-2026-41703 CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:N/A:L; CVE-2026-41709 CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:L/A:N'
+    ground_truth_url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017
+    fix: Set vector to network or add a note that PR:H is required.
+  - code: F11
+    claim_id: null
+    where: title/headline/body em dashes (1/1/10), "this entry"/"The entry on Broadcom's VMSA-2026-0006", "A/1 rating", ".babyk" extension
+    defect: '(advisory) Workflow-internal text in reader-facing sections: "recorded here ... rather than folded into this entry''s overall A/1 rating" (Admiralty code), "this entry already applies",
+      "The entry on Broadcom''s ..."; the ransomware file extension is a file-name indicator; headline still reads as a first-publication headline and carries no exploitation signal although the
+      entry now rests on a KEV-listed exploited vCenter RCE.'
+    ground_truth: n/a
+    ground_truth_url: n/a
+    fix: Remove Admiralty/pipeline wording, drop the extension string, refresh headline.
+  length_note: main analysis ~786 words (over 550); headline 137 chars (over 120)
+- entry: 2026-09-30/cve-2026-86950-apple-coregraphics-zero-day-kev
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: b41cd0be05
+    where: 'section 2026-10-27: "lists CVE-2026-86950 as fixed for iPhone XS, iPhone XS Max, iPhone XR and iPad 7th generation, among other devices"'
+    defect: (low confidence) The CoreGraphics entry in the 18.7.11 notes is available for those four device families only; "among other devices" has no basis in that entry.
+    ground_truth: 'Apple 149225 CoreGraphics: "Available for: iPhone XS, iPhone XS Max, iPhone XR, iPad 7th generation".'
+    ground_truth_url: https://support.apple.com/en-us/149225
+    fix: Drop "among other devices".
+  - code: F8
+    claim_id: null
+    where: body labelled lines / actions[0]
+    defect: The entry has no **Exposure:** line and the action stops at iOS/iPadOS 26.7.1; Apple's October round (SANS ISC 2026-10-27) ships iOS/iPadOS 26.7.2, macOS Tahoe 26.7.2, macOS Sequoia
+      15.8.2 and the 27.2 line, and ENISA lists an EU KEV addition on 2026-10-08.
+    ground_truth: 'SANS ISC: table "iOS 27.2 and iPadOS 27.2 | iOS 26.7.2 and iPadOS 26.7.2 | iOS 18.7.11 and iPadOS 18.7.11 | ... macOS Tahoe 26.7.2 | macOS Sequoia 15.8.2"; EUVD: "EU KEV Added
+      2026-10-08".'
+    ground_truth_url: https://isc.sans.edu/diary/33458
+    fix: 'Optional: say "26.7.1 or later" in the action; add an Exposure line.'
+  length_note: headline 116 chars; main analysis ~363 words
+- entry: 2026-10-13/cve-2026-97229-gitlab-ci-regex-compiler-unauthenticated-rce
+  verdict: imprecision
+  findings:
+  - code: F8
+    claim_id: null
+    where: body **Exposure:**, Defender takeaway and actions[0] (CVE-2026-110264 scope)
+    defect: Exposure says GitLab's table "starts at 19.2 and lists no earlier branch" and the takeaway offers 19.2.9, 19.3.6, 19.4.3 or 19.5.1 as "the better upgrade target" for the second CVSS
+      10 flaw; GitLab's 19.5.1 notes list CVE-2026-110264 as affecting all versions from 7.0 and backport fixes to 19.1.9, 19.0.10 and 18.11.13, so instances on branches the entry calls unaffected
+      are exposed to the sibling flaw.
+    ground_truth: 'GitLab 19.5.1 notes: "Impacted Versions: ... all versions from 7.0 before 18.11.13, 19.0 before 19.0.10, 19.1 before 19.1.9, 19.2 before 19.2.9 ..."; "we have backported this
+      fix to GitLab CE/EE versions 18.11.13, 19.0.10, 19.1.9, and 19.2.9."'
+    ground_truth_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-1-released/
+    fix: Add that CVE-2026-110264 reaches 7.0 to 19.1 and name the backport builds (cross-reference the 110264 entry).
+  - code: F8
+    claim_id: null
+    where: body scope (other Ruby applications)
+    defect: 'The entry treats the flaw as GitLab-only, while CISA, Alpine and the Ruby project say the root cause is in Ruby''s regex engine: any application compiling regular expressions from
+      untrusted input is exposed.'
+    ground_truth: 'KEV notes: "Other products can potentially be affected by the same underlying Ruby/Onigmo Integer Overflow issue"; Alpine: "any program that compiles regular expressions from
+      untrusted input is exposed, not only GitLab"; Ruby: "These bugs are reached only when an application compiles a regular expression from a string that an attacker controls".'
+    ground_truth_url: https://www.ruby-lang.org/en/news/2026/10/23/regexp-fixes-for-gitlab-cves/
+    fix: Add one sentence and the Ruby advisory as a source (it also shows CVE-2026-97229 first fixed in Ruby 4.0.8; 4.0.9 covers all four CVEs).
+  - code: F11
+    claim_id: null
+    where: cves[].auth and tag pre-auth; actions[0]
+    defect: '(advisory) auth: pre-auth and tag pre-auth stand although the entry''s own 2026-10-14 section says the unauthenticated label needs a qualifier (push access to a public project); actions[0]
+      bundles four tasks (upgrade, Ruby, six detections, secret rotation) restating the body; title is 280 characters; main analysis ~676 words (over 550).'
+    ground_truth: n/a
+    ground_truth_url: n/a
+    fix: Qualify the frontmatter, split or shorten actions[0], shorten title.
+  - code: F4
+    claim_id: null
+    where: 'sourcing_note / section 2026-10-14: Rapid7 "found no confirmed exploitation in the wild"'
+    defect: (low confidence, page edited since) Rapid7's page was edited on 2026-10-30 to record the KEV listing and no longer carries a no-confirmed-exploitation sentence; the entry already dates
+      its statement to 2026-10-13, so leave.
+    ground_truth: 'Rapid7 Updates list: "October 30, 2026: Updated Overview to reflect the addition of CVE-2026-97229 to CISA''s KEV catalog on October 29, 2026."'
+    ground_truth_url: https://www.rapid7.com/blog/post/etr-cve-2026-97229-critical-unauthenticated-remote-code-execution-in-gitlab
+    fix: None required (noted).
+  length_note: main analysis ~676 words (over 550); title 280 chars; headline 104 chars

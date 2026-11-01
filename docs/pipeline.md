@@ -1148,7 +1148,9 @@ that is not a contiguous passage of the page) and every CVE id in a cited
 clause found on that clause's cited page (`citation-cve`, v4.13, WARN), both
 over the direct transports only with bodies cached under
 `work/<run-id>/quote-bodies/` (`--page-checks-since DATE` runs the pair over
-a date range, the audit's pre-pass); priority ⇔
+a date range, the audit's pre-pass; every run-scope invocation also appends
+its output to `work/<run-id>/gate.log`, so a later audit can tell a page the
+gate could not read from a quote the verifier missed); priority ⇔
 immediate_action consistency; entity refs resolve; registry integrity
 (incl. typed-relation vocabulary, endpoint constraints, canonical targets
 and source-entry resolution — § Relationships);
