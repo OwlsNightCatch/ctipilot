@@ -342,6 +342,10 @@ NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     "ccb.belgium.be", "safeonweb.be",
     "jpcert.or.jp",
     "cert.gov.ua",
+    # CERT-UA publishes its alerts on the State Service of Special Communications'
+    # portal; same disclosing authority, other host (added 2026-11-02 when the Dahua
+    # alert was only readable there and its carve-out was reported as unearned).
+    "cip.gov.ua",
     # National data-protection / regulatory authorities disclosing their own
     # sanction decisions for their own jurisdiction fit the same carve-out —
     # added 2026-09-04 when CNIL's own sanction page was reporting as unearned.

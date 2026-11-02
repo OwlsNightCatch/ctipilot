@@ -1,0 +1,468 @@
+# work/2026-11-02T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-02T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-02T02:59:03Z
+ended_at: 2026-11-02T03:19:28Z
+duration_seconds: 1225
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 8
+  bridge_fetches: 130   # approximate count of feed/url/extract/pdf subcommand calls from the tool trace
+window_note: >
+  window_hours 26 (since 2026-11-01T01:00Z). The window covers a weekend (Sat 2026-10-31, Sun 2026-11-01) and nothing
+  had published on Monday before dispatch, so almost no lab published inside it. Yield comes from the rotational
+  lookback of slice records (lookback_hours 98-168) and from the majors listing walk. Items marked lookback: true
+  were published before the 26 h window but inside their slice record's lookback and are not in prior_coverage.
+items:
+  # ---------------------------------------------------------------------------------------------
+  - title: "Android 'SMS of Death': one hidden WAP Push SMS crashes the telephony process and drops emergency calls; public PoC, Android 12 and 13 stay unpatched"
+    sources:
+      - { url: "https://smsofdeath.com/", publisher: "Mark Blaszczyk (smsofdeath.com, discloser)", date: "2026-10-29", role: "primary" }
+      - { url: "https://android.googlesource.com/platform/frameworks/opt/telephony/+/735d9672603fa206c4b43cb668c1aa273db70b97", publisher: "Android Open Source Project (Google commit)", date: "2026-06-15", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-android-sms-of-death-exploit-can-remotely-crash-unpatched-phones/", publisher: "BleepingComputer", date: "2026-10-31", role: "corroborating" }
+      - { url: "https://securityaffairs.com/202184/security/sms-of-death-android-under-attack-an-invisible-sms-can-block-calls-and-emergency-services.html", publisher: "Security Affairs", date: "2026-11-01", role: "corroborating" }
+      - { url: "https://source.android.com/docs/security/bulletin/2026/2026-10-01", publisher: "Android Security Bulletin October 2026 (Google)", date: "2026-10-05", role: "context" }
+    discovery_trace: >-
+      first seen at: securityaffairs, URL https://securityaffairs.com/feed (feed subcommand, 2026-11-02) listing
+      https://securityaffairs.com/202184/security/sms-of-death-android-under-attack-an-invisible-sms-can-block-calls-and-emergency-services.html
+      → primary: researcher write-up, URL https://smsofdeath.com/ → vendor fix: AOSP commit, URL
+      https://android.googlesource.com/platform/frameworks/opt/telephony/+/735d9672603fa206c4b43cb668c1aa273db70b97
+      → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-android-sms-of-death-exploit-can-remotely-crash-unpatched-phones/
+      (surfaced in the 2026-11-02 BleepingComputer feed walk) → context: Android Security Bulletin October 2026, URL
+      https://source.android.com/docs/security/bulletin/2026/2026-10-01 (WebFetch of the Framework and System tables) →
+      WebSearch ("SMS of Death Android WAP Push decodeWapPdu CVE October 2026 security bulletin") found no CVE and no
+      Google disclosure page.
+    summary: |
+      Independent researcher Mark Blaszczyk (GitHub MarkBlah) published on 2026-10-29 a working proof of concept for a
+      zero-click, remote denial of service in Android's telephony framework. A single malformed WAP Push data SMS sent to
+      port 2948 makes WapPushOverSms.decodeWapPdu() (frameworks/opt/telephony) read the WSP header length as a 64-bit
+      uintvar, cast it to a signed 32-bit int with no range check and allocate a negative-sized array; the uncaught
+      NegativeArraySizeException kills the com.android.phone process. Each message drops active calls, emergency calls
+      included, for one to two seconds, and nothing appears in the inbox or shows the sender. Carrier redelivery and the
+      queued poison message, which is retried on every boot, amplify it: the researcher reports about 20 messages leaving a
+      device unusable, and a reboot-into-recovery loop roughly every 90 seconds on one Android 12 device that only an
+      ADB-based cleanup breaks short of a factory reset. The crash was reproduced on Android 12 through 16 (Pixel 9 and
+      Samsung Galaxy / A-series devices). Google's AOSP change "Fix remote DoS in decodeWapPdu" (bug 517376969, authored
+      2026-06-15) catches the exception and deletes the poison message; per the researcher it shipped in the October 2026
+      Android security release for Android 14 through 17, so Android 12 and 13 devices outside the update window run the
+      same code unfixed. BleepingComputer, relaying the researcher, says the fix is not listed in Google's October bulletin
+      and cites CVE-2026-58882; that identifier returns no record in MITRE's CVE API or NVD as of 2026-11-02 and the
+      researcher names none, so it is unconfirmed. No exploitation in the wild is reported; the PoC app and source are public.
+    region_nexus: "global; any country's mobile network. Relevant to Swiss emergency-service and administration Android handset fleets (112/117/118/144 reachability); no source addresses Swiss carriers"
+    primary_sector_nexus: "indirect: emergency services (police, fire and rescue, EMS) and administration staff on managed Android phones"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1499.004]
+    affected_products: ["Android"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:sms-of-death-poc", type: tool, name: "SMS of Death PoC", aliases: ["smsofdeath"],
+          summary: "Public proof-of-concept Android app and source (MarkBlah/smsofdeath, Apache-2.0) that crafts the malformed WAP Push PDU and sends it as a data SMS to crash com.android.phone on a target phone (Mark Blaszczyk, 2026-10-29)." }
+      - { key: "product:google-android", type: product, name: "Android", aliases: ["Android OS", "AOSP"],
+          summary: "Google's mobile operating system and its open-source platform (AOSP); telephony framework WapPushOverSms is the vulnerable component here." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The message is delivered as a data SMS and is never shown to the user: there is nothing in the inbox, and the victim never sees the sender's number."
+        attribution: "Mark Blaszczyk (smsofdeath.com)"
+        source_url: "https://smsofdeath.com/"
+      - quote: "Devices updated to the October 2026 patch level or later are protected; devices on earlier patch levels remain vulnerable."
+        attribution: "Mark Blaszczyk (smsofdeath.com)"
+        source_url: "https://smsofdeath.com/"
+      - quote: "RESTRICT AUTOMERGE: Fix remote DoS in decodeWapPdu (b/517376969)"
+        attribution: "Android Open Source Project (Google commit)"
+        source_url: "https://android.googlesource.com/platform/frameworks/opt/telephony/+/735d9672603fa206c4b43cb668c1aa273db70b97"
+      - quote: "older Android 12 and 13 devices remain vulnerable because they did not receive the fix"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-android-sms-of-death-exploit-can-remotely-crash-unpatched-phones/"
+    extended_notes: |
+      Suggested rating B2 (independent researcher with a public PoC, vendor commit consistent with the report, not
+      independently reproduced here); priority awareness-level (denial of service, no exploitation reported) but the
+      emergency-call angle is the reason it is on the list.
+      Exposure: managed Android phones with a security patch level older than 2026-10-01, and every Android 12 / 13 device
+      regardless of patch level (the researcher says the October fix covers 14 through 17 only; the researcher reproduced
+      Android 12 through 16). The defender reads the device's security patch level as described in Google's 'Check and update
+      your Android version' guidance that the bulletin links, or from the MDM/EMM inventory; per the researcher the attack needs
+      only the victim's phone number.
+      Detection (telemetry classes): device-side logcat or EMM crash reporting showing repeated FATAL EXCEPTION in
+      com.android.phone with NegativeArraySizeException from WapPushOverSms.decodeWapPdu, call terminations with
+      DisconnectCause CS_DEATH, and repeated telephony-process restarts at boot; the poison rows sit in the pending inbound SMS
+      table (content://sms/raw) until deleted. There is no network-side hook in the sources beyond WAP Push data SMS to
+      destination port 2948; the sources do not say whether any carrier filters it. No post-patch compromise check applies
+      (no persistence beyond the queued message the Google patch deletes).
+      Triage: an unexplained telephony crash loop on an unpatched handset can also be an ordinary radio or modem fault; the
+      discriminators are the NegativeArraySizeException stack frames in decodeWapPdu and the same crash recurring at every boot
+      with a pending WAP Push row. Hardening lever: install the 2026-10-01 or later Android patch level; retire or replace
+      Android 12 and 13 handsets used for emergency or on-call duty; keep a second, unaffected channel for emergency calling.
+      CVE caveat: BleepingComputer's CVE-2026-58882 is NOT verified (MITRE CVE API: record does not exist; NVD API: no
+      result at 2026-11-02T03:10Z) and the October 2026 bulletin's Framework and System tables carry no WAP Push row (nearest
+      telephony rows are CVE-2026-55270 (EoP, frameworks/opt/telephony) and CVE-2026-58859 (DoS, Mainline Telephony module,
+      Android 17), neither tied to this bug by any source); keep cves empty unless a later source resolves it.
+      The researcher's page carries a stale 2024-09-01 metadata date; the disclosure date on the page text is 2026-10-29.
+    borderline: false
+
+  # ---------------------------------------------------------------------------------------------
+  - title: "CERT-UA warns that Dahua cameras and recorders are taken over through the Easy4IP P2P cloud even when no port is exposed"
+    sources:
+      - { url: "https://thehackernews.com/2026/10/attackers-hijack-dahua-ip-cameras-in.html", publisher: "The Hacker News (relaying CERT-UA / SSSCIP alert of 2026-10-23)", date: "2026-10-27", role: "primary" }
+      - { url: "https://securityaffairs.com/201827/hacking/attackers-take-control-of-dahua-cameras-and-video-recorders-via-easy4ip.html", publisher: "Security Affairs (relaying CERT-UA)", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://www.esecurityplanet.com/news/dahua-camera-cloud-access-attacks-emea-ukraine/", publisher: "eSecurity Planet", date: "2026-10-27", role: "corroborating" }
+      - { url: "https://hunt.io/blog/operation-cameraswarm-dahua-cameras-compromised", publisher: "Hunt.io (Operation CameraSwarm, background)", date: "2026-08-18", role: "context" }
+    discovery_trace: >-
+      first seen at: securityaffairs, URL https://securityaffairs.com/feed?paged=3 (lookback sweep of the Security Affairs
+      feed back to 2026-10-26) listing https://securityaffairs.com/201827/hacking/attackers-take-control-of-dahua-cameras-and-video-recorders-via-easy4ip.html
+      → primary alert named there: CERT-UA/SSSCIP page https://cip.gov.ua/ua/news/khakeri-mozhut-otrimati-kontrol-nad-kamerami-ta-videoreyestratorami-cherez-khmarnii-dostup
+      (a JavaScript single-page app: extract returned only the page shell and WebFetch returned an error page, so the alert text was NOT read
+      directly) → WebSearch ("CERT-UA Dahua Easy4IP cameras video recorders P2P cloud access unauthorized remote access alert") →
+      pivot: The Hacker News, URL https://thehackernews.com/2026/10/attackers-hijack-dahua-ip-cameras-in.html (carries verbatim CERT-UA
+      quotes) → pivot: eSecurity Planet, URL https://www.esecurityplanet.com/news/dahua-camera-cloud-access-attacks-emea-ukraine/ →
+      context: Hunt.io, URL https://hunt.io/blog/operation-cameraswarm-dahua-cameras-compromised.
+    summary: |
+      Ukraine's CERT-UA, part of the State Special Communications Service (SSSCIP), issued an alert dated 2026-10-23
+      reporting recorded cases of unauthorized access to Dahua IP cameras and video recorders: attackers viewed the video
+      stream, changed device configuration and created accounts of their own. The alert names the Easy4IP P2P/cloud remote-access
+      feature as the main vector. A device with Easy4IP enabled makes an outbound connection to Dahua's cloud and registers by
+      serial number, and access is then established through the cloud, bypassing NAT and firewall with no published port and no
+      public address. CERT-UA says the serial numbers follow a predictable structure (a model prefix plus an almost sequential
+      hex counter), so they can be enumerated at scale, and that keeping a serial number secret is no protection. Authentication is
+      then beaten with weak or known passwords or with the authentication-bypass flaws CVE-2021-33044 and CVE-2021-33045 in
+      outdated firmware (both are in CISA's KEV catalogue since 2024-08-21; eSecurity Planet notes their use in these October cases
+      is unconfirmed). CERT-UA's compromise indicators are unknown accounts, unauthorized configuration changes (for example text
+      overlaid on the video image, whose absence proves nothing) and audit-log DVRIP authentication events from 127.0.0.1, which
+      indicates access that arrived through the P2P cloud. The alert does not say who was targeted, how many devices are affected or
+      who is behind it. Hunt.io's separate Operation CameraSwarm research (more than 14,500 Dahua cameras compromised by one operator
+      between 17 June and 22 July 2026, geolocated compromises concentrated in Ukraine and Russia, about 1,900 of them given a
+      persistent backdoor account that survives a password change and on most firmware a factory reset) is context, not a link:
+      no source ties the two.
+    region_nexus: "alert is Ukrainian; Dahua devices are sold and OEM-rebranded worldwide (no source gives European or Swiss deployment figures)"
+    primary_sector_nexus: "direct for operators of CCTV and traffic/surveillance systems in municipalities, police, schools and public buildings"
+    sector: "public-sector"
+    cves: [CVE-2021-33044, CVE-2021-33045]
+    techniques: [T1190, T1110.001, T1136.001, T1125, T1133]
+    affected_products: ["Dahua IP cameras", "Dahua NVR/DVR video recorders (Easy4IP P2P remote access)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:dahua-ip-cameras-and-recorders", type: product, name: "Dahua IP cameras and NVR/DVR recorders", aliases: ["Dahua video surveillance"],
+          summary: "Dahua Technology IP cameras and network/digital video recorders; Easy4IP is Dahua's P2P/cloud remote-access feature (CERT-UA alert of 2026-10-23)." }
+      - { key: "campaign:dahua-easy4ip-p2p-camera-takeover-2026-10", type: campaign, name: "Dahua Easy4IP P2P camera takeover (October 2026)", aliases: [],
+          summary: "CERT-UA alert of 2026-10-23: unauthorized access to Dahua cameras and recorders through the Easy4IP P2P/cloud feature, with account creation and configuration changes; no actor, victim count or date range stated." }
+    relation_suggestions:
+      - { subject: "campaign:dahua-easy4ip-p2p-camera-takeover-2026-10", object: "product:dahua-ip-cameras-and-recorders",
+          basis: "CERT-UA (via The Hacker News, 2026-10-27): the alert reports compromise of Dahua cameras and recorders through Easy4IP" }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Cases of compromising IP cameras and DVRs with access to the video stream, changing the device configuration and creating third-party accounts have been recorded"
+        attribution: "The Hacker News (quoting CERT-UA/SSSCIP)"
+        source_url: "https://thehackernews.com/2026/10/attackers-hijack-dahua-ip-cameras-in.html"
+      - quote: "The assumption that the serial number is unknown to anyone is not a reason to consider the device secure"
+        attribution: "The Hacker News (quoting CERT-UA)"
+        source_url: "https://thehackernews.com/2026/10/attackers-hijack-dahua-ip-cameras-in.html"
+      - quote: "from a local address (127.0.0.1), a sign of P2P access"
+        attribution: "The Hacker News (CERT-UA indicator)"
+        source_url: "https://thehackernews.com/2026/10/attackers-hijack-dahua-ip-cameras-in.html"
+      - quote: "CERT-UA warns that devices with Easy4IP enabled may be vulnerable even when they cannot be accessed directly from the internet."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/201827/hacking/attackers-take-control-of-dahua-cameras-and-video-recorders-via-easy4ip.html"
+    extended_notes: |
+      Single origin: the three press sources all relay the one CERT-UA/SSSCIP alert; the CERT-UA page itself could not be read
+      (SPA) so the load-bearing claims rest on The Hacker News and Security Affairs quoting it. Treat as a national-CERT
+      single-source item read through relays (suggested rating A for the alert, B for the relays; credibility 2; overall B2).
+      Exposure: any Dahua camera, NVR or DVR (and OEM-branded units) with the P2P / Easy4IP / cloud access switch enabled; the
+      device need not be reachable from the internet. The defender reads the setting in the device web UI (P2P / Easy4IP) or
+      from the recorder's cloud-registration state, and inventories forgotten units, as CERT-UA advises.
+      Detection (telemetry classes): device audit logs for DVRIP logins whose source is 127.0.0.1 (the cloud-relay artefact);
+      account lists and cloud-linked accounts for entries nobody created; configuration diffs (text overlaid on video, changed
+      network or user settings); outbound connections from the camera VLAN to the vendor cloud when P2P is not meant to be in use.
+      Hardening (CERT-UA): disable P2P/cloud access where unused; keep cameras off the internet and use a VPN with allow-listed
+      sources for remote viewing; remove unknown accounts and unknown linked cloud accounts; update firmware manually and set an
+      update routine. Post-patch check: Hunt.io reports on CameraSwarm devices a backdoor account stored independently of the
+      admin password that survives a password change and on most firmware a factory reset; that is context from a different
+      campaign, but it is the reason to audit accounts after firmware updates rather than assume a clean device.
+      Related store entry (older than 14 days, so not in prior_coverage): 2026-07-13/russia-ip-camera-hijacking-nato-military-supply-routes
+      (AIVD/MIVD, camera hijack by Russia-linked actors). CERT-UA names no actor here, so do not link the two as attribution.
+      Suggested references[]: that entry. Priority awareness-level; relevant to Swiss municipal and police CCTV estates.
+      Date note: the Hunt.io page text says its publication was held until 2026-08-18 (the cited date) while its page metadata shows
+      2026-10-28; The Hacker News linked it as earlier work on 2026-10-27, so 2026-10-28 is not its first publication.
+    borderline: false
+
+  # ---------------------------------------------------------------------------------------------
+  - title: "Talos documents NIK C2, a Go Windows C2 implant that routes prompts to the OpenAI API through the victim host and falls back to the victim's own OPENAI_API_KEY"
+    sources:
+      - { url: "https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/", publisher: "Cisco Talos", date: "2026-10-29", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/nik-c2-malware-victims-openai-keys/", publisher: "Infosecurity Magazine", date: "2026-10-29", role: "corroborating" }
+    discovery_trace: >-
+      first seen at: talos, URL https://blog.talosintelligence.com/rss/ (feed subcommand, lookback 168 h) listing
+      https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/ → primary (read in full with extract) → WebSearch
+      ("\"NIK C2\" Talos AI-enabled command-and-control framework OpenAI API implant") → corroborating: Infosecurity Magazine, URL
+      https://www.infosecurity-magazine.com/news/nik-c2-malware-victims-openai-keys/ (relays Talos; adds no independent telemetry).
+    summary: |
+      Cisco Talos reports a C2 framework it calls NIK C2, found with a live server, whose 64-bit Windows implant (Go, cross-compiled
+      from a Linux build tree named nik_panel) gives operators more than 52 commands: browser, Wi-Fi, Discord and crypto-wallet
+      credential theft, keylogging, screen, camera, microphone and clipboard capture, hidden VNC (HVNC), RDP session
+      hijacking, an embedded SOCKS5/HTTP proxy and reverse tunnel for lateral movement, AMSI patching, UAC bypass and process
+      hollowing. C2 runs over TLS WebSockets on port 443 with an HTTP polling fallback every 250 ms and AES-256-GCM, across three
+      prioritised C2 tiers. The novel part is the ai_generate command: the implant builds an OpenAI Chat Completions request on the
+      victim host from an operator prompt, API key and model, posts it to api.openai.com from the victim's IP and returns the answer
+      to the panel. If the operator supplies no key it reads the OPENAI_API_KEY environment variable, so the victim's OpenAI account
+      is billed and the victim's key appears in OpenAI's logs; the default model is gpt-4. The implant masquerades as svchost.exe or
+      simvol.exe, copies itself under the user's Roaming\Microsoft\Network folder, persists through Run keys and COM hijacking, and
+      has a watchdog process. It also carries a screen-locking ransomware module that encrypts no files: PowerShell backs up the
+      MBR to a temp file, a generated HTML lock page is shown through mshta.exe by a looping batch file, and a Run key relaunches it;
+      a bootkit-preparation module only checks UEFI versus BIOS and Secure Boot state and stages a placeholder file. Talos assesses
+      with moderate confidence that this is a working framework rather than a proof of concept, sees at least three implant versions
+      and does not state the initial-access vector, victims, region or any actor. The independent trade coverage relays Talos and
+      adds nothing new.
+    region_nexus: "global; no victimology or region stated"
+    primary_sector_nexus: "indirect: generic Windows endpoint threat; no sector stated"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1071.001, T1573.001, T1056.001, T1113, T1125, T1123, T1115, T1555.003, T1021.005, T1563.002, T1090, T1055.012, T1685, T1548.002, T1036.005, T1547.001, T1546.015, T1588.007]
+    affected_products: ["Microsoft Windows", "OpenAI API"]
+    entity_keys: ["tool:cairn-talos"]
+    new_entities:
+      - { key: "malware:nik-c2", type: malware, name: "NIK C2", aliases: ["nik_panel"],
+          summary: "Go-based 64-bit Windows implant and C2 panel with more than 52 commands (credential theft, keylogging, HVNC, RDP hijack, proxying, defence evasion, screen-lock ransomware) and an ai_generate command that sends operator prompts to the OpenAI Chat Completions API from the victim host, falling back to the victim's OPENAI_API_KEY (Cisco Talos, 2026-10-29)." }
+    relation_suggestions:
+      - { subject: "malware:nik-c2", object: "malware:closedquorum",
+          basis: "Cisco Talos groups NIK C2 with its other AI-integrated implant reporting (CLOSEDQUORUM) as AI-enabled adversarial frameworks (Talos, 2026-10-29)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "allowing operators to route arbitrary prompts to the OpenAI Chat Completions API directly through the infected host"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/"
+      - quote: "It does not encrypt any files, which means it leaves no forensic trail of file modification timestamps or encryption markers"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/"
+      - quote: "The implant command dispatcher module facilitates over 52 commands that are directed by the C2 panel."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/nik-c2-new-ai-enabled-framework/"
+    extended_notes: |
+      Original research by a telemetry-holding lab (suggested rating B2; credibility rises only if an independent lab reports the
+      family). Detection (telemetry classes): process-level network telemetry for outbound HTTPS to api.openai.com from any process
+      that is not an approved AI client, above all a binary named svchost.exe or simvol.exe running from a user profile path rather
+      than System32; TLS WebSocket plus a 250 ms HTTP poll cadence from a Go binary; process-creation events with parent lineage for
+      PowerShell reading \\.\PhysicalDrive0 (the MBR backup), bcdedit /enum with Confirm-SecureBootUEFI, netsh wlan show profile
+      key=clear, and mshta.exe opening a lock page from a temp directory; Run-key writes naming a lock-screen batch file; AMSI
+      patching in memory (an embedded PowerShell script overwriting AmsiInitFailed in System.Management.Automation.dll); registry writes under
+      HKCU\Software\Classes\ms-settings\Shell\Open\command immediately followed by fodhelper.exe and removed within about two seconds
+      (UAC bypass); a copy of the binary renamed csrss.exe in the temp directory and the critical-process flag
+      (NtSetInformationProcess ProcessBreakOnTermination) that blue-screens the host if the process is killed. Hardening: do not leave long-lived OpenAI (or other LLM) API keys in user or machine environment variables
+      on endpoints, and allow-list outbound LLM-API destinations at the proxy per application, which also bounds the billing-abuse
+      path Talos describes. Triage: legitimate developer tools do call api.openai.com from user endpoints, so the discriminator is the
+      calling process (unsigned or masquerading Go binary in a user path, no AI-client lineage) rather than the destination.
+      Post-compromise check: rotate any API key present in the environment of an affected host and review the OpenAI usage and
+      billing console for requests the owner did not make. The family has no stated sector or region nexus; ship only if the main
+      agent wants the AI-enabled C2 trend carried (suggest folding with the VOLTA item below into one 'AI-integrated implants' entry
+      that references the existing CLOSEDQUORUM entry 2026-09-24/closedquorum-llm-orchestrated-c2-implant).
+    borderline: true
+    borderline_reason: "no victimology, sector or initial-access vector stated; value is the endpoint detection hook for LLM-API egress; recommend folding with the VOLTA item"
+
+  # ---------------------------------------------------------------------------------------------
+  - title: "Talos documents VOLTA, a self-deleting infostealer that sends its loot to an LLM to rank each victim's assets"
+    sources:
+      - { url: "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/", publisher: "Cisco Talos", date: "2026-10-31", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/new-dolphin-x-stealer-ai-targets/", publisher: "Infosecurity Magazine (Varonis Dolphin X, parallel case)", date: "2026-07-23", role: "context" }
+    discovery_trace: >-
+      first seen at: talos, URL https://blog.talosintelligence.com/rss/ (feed subcommand, lookback 168 h) listing
+      https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/ → primary (read in
+      full with extract) → WebSearch ("VOLTA infostealer Talos LLM victim profiling OpenRouter \"VOLTA-AUTODOXER\"") found no independent
+      coverage of VOLTA; pivot to the related Varonis Dolphin X coverage, URL https://www.infosecurity-magazine.com/news/new-dolphin-x-stealer-ai-targets/
+      (a different family with an AI victim-ranking feature, context only).
+    summary: |
+      Cisco Talos reports VOLTA (self-named VOLTA-AUTODOXER), a self-deleting Windows infostealer found through its CAIRN tracking of
+      AI-integrated malware, with an optional LLM stage after the usual theft. The stealer collects Chromium and Firefox
+      credentials, cookies and cards, Outlook and Thunderbird profiles, Slack, Discord, Telegram, Steam and Roblox sessions,
+      Microsoft OAuth tokens, SSH and cloud-provider configuration files and saved Wi-Fi passwords (via WlanGetProfileList), and
+      cracks cryptocurrency wallet vaults inline. Much of the token theft relies on bypassing Chrome App-Bound Encryption.
+      A live enrichment pass then uses the stolen sessions, for example searching the victim's Gmail for purchase receipts to
+      confirm a home address and pulling food-delivery order history, and builds an evidence bundle (location, employer and employer
+      domain, inferred birth year, workspaces, document metadata) that it posts to OpenRouter under a system prompt asking for a
+      forensic target assessment with a ranked "what they are worth" section and a note on the victim's security hygiene. The default
+      model is anthropic/claude-opus-4.6 at temperature 0.2, with a fallback chain through Kimi K2 and Gemini 2.5 Flash if a model
+      refuses; it also runs without the LLM stage when no key is present. Output goes into a local report file exfiltrated in an
+      archive; configuration is a six-slot template filled at build time, which Talos reads as a builder sold to customers; every
+      observed endpoint is third-party infrastructure and there is no actor-owned server. Talos names no victims, sector, region or
+      actor, and gives no initial-access vector in the portion read.
+    region_nexus: "global; no victimology or region stated"
+    primary_sector_nexus: "indirect: employee endpoints; the stealer takes Microsoft OAuth tokens and SSH/cloud keys and profiles the employer, so a stolen-credential path into an organization"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1555.003, T1539, T1528, T1552.001, T1016.002, T1113, T1114, T1070.004, T1567, T1588.007]
+    affected_products: ["Microsoft Windows", "Google Chrome", "OpenRouter API"]
+    entity_keys: ["tool:cairn-talos", "malware:closedquorum"]
+    new_entities:
+      - { key: "malware:volta-stealer", type: malware, name: "VOLTA", aliases: ["VOLTA-AUTODOXER"],
+          summary: "Self-deleting Windows infostealer sold as a builder, with an optional LLM stage that posts a victim evidence bundle to OpenRouter and has the model rank the victim's monetizable assets and assess their security hygiene; found through Cisco Talos's CAIRN tracking (Cisco Talos, 2026-10-31)." }
+    relation_suggestions:
+      - { subject: "malware:volta-stealer", object: "tool:cairn-talos",
+          basis: "Cisco Talos: VOLTA 'surfaced through the CAIRN research effort' (Talos, 2026-10-31)" }
+      - { subject: "malware:volta-stealer", object: "malware:closedquorum",
+          basis: "Cisco Talos compares VOLTA's effort-displacement use of a model to CLOSEDQUORUM, 'though applied to a different phase' (Talos, 2026-10-31)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "VOLTA is a mature stealer implant with an optional AI-integration layer."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/"
+      - quote: "All the observed endpoints for this malware are third-party controlled. There is no actor-owned infrastructure."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/"
+      - quote: "Much of the token-stealing capability of VOLTA relies on techniques to bypass App-Bound Encryption (ABE) in Chrome."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/appraisal-by-ai-model-driven-victim-prioritization-in-the-volta-infostealer/"
+    extended_notes: |
+      Single lab source (suggested rating B2 per Talos's original telemetry, credibility 3 until corroborated); no independent
+      report found. Detection (telemetry classes): process-creation events for Chrome launched with --headless by a process that is not
+      a known developer tool (Talos's stated hook for the App-Bound Encryption decryption path; an application-control policy on who may
+      launch headless Chrome removes it); calls to WlanGetProfileList or netsh wlan profile dumps from a non-network tool; outbound
+      HTTPS to openrouter.ai (api/v1/chat/completions) from a user-endpoint process that is not an approved AI client; a self-deleting
+      binary that leaves a timestamped harvest log under the user's AppData (Talos names volta_debug.txt and says to preserve it).
+      Post-compromise: revoke tokens and sessions (Microsoft OAuth, Slack, Gmail, cloud), rotate SSH and cloud keys found on the host,
+      change passwords, and treat plaintext wallet seeds as lost. Triage: browsers legitimately launch headless for testing and
+      PDF rendering, so the discriminator is the launching process and account (not a developer toolchain, no CI parent) combined with
+      a following burst of access to browser profile databases; outbound LLM-API calls are legitimate from approved AI tools.
+      Relevance is the employer-profiling and token/key theft (credentials into the organization), not the crypto angle. Recommend
+      folding with the NIK C2 item above into one entry on AI-integrated implants referencing 2026-09-24/closedquorum-llm-orchestrated-c2-implant.
+    borderline: true
+    borderline_reason: "commodity crimeware with no sector or region nexus stated; worth shipping only for the LLM-API egress and headless-Chrome detection hooks and the OAuth/SSH/cloud-key theft, ideally merged with the NIK C2 item"
+
+  # ---------------------------------------------------------------------------------------------
+  - title: "ARTEX and agentic offence: Microsoft sees DPRK Onyx Sleet and Pearl Sleet using ARTEX; CrowdStrike documents four unreported actors running Claude Code harnesses"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/", publisher: "Microsoft Threat Intelligence", date: "2026-10-29", role: "primary" }
+    discovery_trace: >-
+      first seen at: crowdstrike, URL https://www.crowdstrike.com/en-us/blog/category.counter-adversary-operations/ (extract of the author-index listing,
+      2026-11-02) listing https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/ → primary (extract); the Microsoft
+      post was found in the msft-secblog feed walk (feed https://www.microsoft.com/en-us/security/blog/feed/) and in the WebFetch of
+      https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ → primary (extract of
+      https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/). The full CrowdStrike
+      report is gated (https://www.crowdstrike.com/en-us/resources/reports/agentic-ai-attack-campaigns/) and was not read.
+    summary: |
+      Two vendor reports extend the ARTEX / agentic-offence thread already in the store. Microsoft Threat Intelligence reports that since late
+      October 2026 the North Korean actors Onyx Sleet and Pearl Sleet have used the open-source agentic penetration-testing framework ARTEX in
+      operations; the same post rates North Korean AI adoption as high overall and says AI-enabled operations stay human-directed (Microsoft
+      cites Jade Sleet launching three front-company campaigns in a week, Onyx Sleet generating more than 100 tailored PDF lures in minutes,
+      and Coral Sleet building, since April, a workflow that trojanizes private GitHub repositories). CrowdStrike's blog teases a gated report on
+      four previously unreported actors who left offensive agent frameworks in open directories: an operator that compromised at least 15
+      Argentine healthcare entities with a supervisor/executor pair of Claude Code agents derived from PentestGPT; a Chinese-speaking operator
+      with 20+ named targets, among them government entities of two countries, using two harnesses and a China-based AI proxy; an
+      Indonesian-speaking actor driving Claude Code with 819 public skills against several Indonesian government domains and a third
+      country's domain; and Russian-speaking individuals using a /pentest-setup slash command against a US CRM vendor and private entities.
+      CrowdStrike assesses with moderate confidence that agentic AI commoditizes baseline offensive operations and notes agents can reach
+      objectives within an hour; the blog gives no technique, telemetry or hardening detail (those sit in the gated report), and Microsoft's
+      mitigation section is generic Defender product guidance.
+    region_nexus: "global; government entities compromised in Indonesia and other countries per CrowdStrike; no Swiss or European victim stated"
+    primary_sector_nexus: "indirect: government domains are among the victims; agentic tradecraft applies to any internet-facing estate"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1588.007]
+    affected_products: ["Claude Code"]
+    entity_keys: ["tool:artex", "actor:jade-sleet"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    evidence:
+      - quote: "Since late October 2026, Microsoft Threat Intelligence has identified Onyx Sleet and Pearl Sleet leveraging open-source agentic AI penetration testing ARTEX in operations"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/10/29/tracking-ai-adoption-in-north-korean-threat-actor-tradecraft/"
+      - quote: "details research into four previously unreported threat actors, each of whom left their offensive agent frameworks exposed via open directories"
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/"
+      - quote: "Working at machine speed, agentic AI can autonomously achieve objectives, often within an hour."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-uncovers-new-agentic-ai-campaigns/"
+    extended_notes: |
+      Delta relative to the ARTEX entry (updated through 2026-11-01): (1) DPRK actors Onyx Sleet and Pearl Sleet are a new set of ARTEX
+      users per Microsoft (the entry carries Storm-0940, UNC7228, extortion groups, PRC-nexus clusters); (2) CrowdStrike's four actors use
+      Claude Code harnesses rather than ARTEX, so the CrowdStrike half is an adjacent finding, not an ARTEX one. Both sources are 2 to 4 days
+      old at dispatch (Microsoft 2026-10-29, CrowdStrike 2026-10-30), outside the 26 h window and the Microsoft post outside the 72 h
+      developing window. Recommend the main agent ships only the Microsoft sentence as an ARTEX update if it wants the DPRK adoption
+      on the thread, and drops the CrowdStrike half unless the gated report is read.
+    borderline: true
+    borderline_reason: "sources 2-4 days old (outside window), assessment-level, CrowdStrike detail is gated; the only concrete delta is DPRK use of ARTEX per Microsoft"
+
+# --------------------------------------------------------------------------------------------------
+considered_and_dropped:
+  - { lead: "FBI attribution of the 2026-10-29 Binance theft (about USD 6.3 billion) to TraderTraitor (FBI alert 2026-10-31; BleepingComputer, Security Affairs, StepSecurity 2026-10-31/11-01)", reason: "S4 domain and no Swiss-constituency nexus; transferable lesson is a compromised DevOps laptop reaching a service container, initial compromise not stated by FBI or Binance (post-mortem pending); main agent may take it from S4" }
+  - { lead: "Check Point Research 'Tricks from the Past deployed via signed ChatGPT and Claude binaries' (Yoba, 2026-10-27, relayed by Security Affairs 2026-10-30)", reason: "fake AI desktop-app lure with signed-binary DLL sideloading to run a miner; commodity, no sector nexus; outside window" }
+  - { lead: "Huntress 'Camera Management Software Compromise Leads to Malware Deployment' (2026-10-27)", reason: "outside window, unnamed vendor, vendor relationship unconfirmed; the Dahua item covers the camera theme" }
+  - { lead: "Recorded Future 'Prediction Markets Emerge as a New Vertical for Traffer Teams' (2026-10-29)", reason: "cybercrime-economy analysis, no defender action for the constituency" }
+  - { lead: "Pluto Security 'Hugging Face malware campaign: Load/Mine' (2026-10-29, via Security Affairs newsletter 2026-11-01)", reason: "model-hub trust_remote_code abuse against self-hosted AI GPU hosts; narrow exposure, no constituency nexus established" }
+  - { lead: "GitGuardian 'GhostAction Crosses Paths With PolinRider' (2026-10-27)", reason: "already carried by entry 2026-10-10/ghostaction-fake-audit-workflow-git-history-credential-theft (updated 2026-11-01, cites the same post)" }
+  - { lead: "Todyl running ConnectWise Cloud Backup investigation (update 2026-10-26) and PHP2Shell breach-reporting post (2026-10-23)", reason: "ConnectWise entry already carries the restoration, Huntress and Microsoft updates; the PHP2Shell post is outside lookback and advisory-level" }
+  - { lead: "OX Security 'PHP2Shell, Day 5' (2026-10-26) and Claude Code extension post (2026-10-30)", reason: "article bodies unreadable on every transport (403); feed summaries only; both topics covered by other entries; patch-rate measurement unverifiable" }
+  - { lead: "Cloudflare Q3 2026 DDoS Threat Report (2026-10-30, via The Hacker News)", reason: "periodic report considered for the ANNUAL REPORT flag; most-targeted sectors and countries do not include Swiss government, so not highly relevant" }
+  - { lead: "ESET 'Amatera' infostealer (2026-10-29), Kaspersky 'NetamLoader' government Windows 10 (2026-10-29), Elastic wesp.sys (2026-10-26), Sekoia posts (2026-10-19..28), Unit 42 retail season (2026-10-28), Microsoft Teams ESC1/ESC8 and Cursor posts (covered)", reason: "outside window and awareness-level, Asia-specific, or already covered" }
+  - { lead: "THN 'A shared ChatGPT link could run attacker code in your session' (Parameter, 2026-10-31)", reason: "vendor-fixed server-side by 2026-10-26, no user action, no exploitation reported" }
+  - { lead: "Cross-domain leads for other domains (not S3): TianoCore EDK II CVE-2026-97631 PXE-boot UEFI overflow (Security Affairs 2026-10-28, GHSA-99cj-7hg9-mp4m) not in the store; LXD/MicroCloud CVSS 10 (THN 2026-11-01); TeamViewer flaw (THN 2026-10-30); Alpine Linux GitLab rebuild after attempted RCE (BleepingComputer 2026-11-01); Polymarket/DebugBear script hijack, Chainalysis, Northflank breaches", reason: "S1/S4 domain; listed so the main agent can cross-check its other sub-agents" }
+watchlist_sweep: null
+candidate_sources:
+  - id: varonis-threat-labs
+    publisher: "Varonis Threat Labs (blog)"
+    url: "https://www.varonis.com/blog"
+    rss_url: "https://www.varonis.com/blog/rss.xml"
+    category: research
+    why: "Original lab research on infostealer panels (Dolphin X, StealC returns as a RAT), cloud cross-tenant flaws (GCP Dataflow) and M365 / data-security abuse, first-hand telemetry; feed parses on the direct transport with dated items (verified 2026-11-02); mix of product posts, so judge each item. Not in sources.json."
+coverage_gaps:
+  - source_id: ox-security
+    reason: "Rotation-priority record worked as tasked: feed https://www.ox.security/feed/ parses (10 dated items, 600-char summaries only) but every article body is 403 on all four transports tried this run (direct, extract, jina, WebFetch). Lead-only; recommend fetch_method rss with a note that bodies never read, or blocked."
+  - source_id: resecurity
+    reason: "Rotation-priority record worked as tasked. extract of https://www.resecurity.com/blog returns an empty shell (no listing). Recipe that works: `python3 tools/fetch_source.py url https://www.resecurity.com/blog` returns 20 server-rendered /blog/article/<slug> hrefs with no dates; `extract <article>` gives the date. Newest dated item in that listing is 2026-09-11 and WebSearch found no October post, so the blog is quiet or the listing is a stale snapshot. Suggest fetch_method bridge (url + per-article extract)."
+  - source_id: securityaffairs
+    reason: "Recipe improvement: `python3 tools/fetch_source.py feed https://securityaffairs.com/feed 20` returns 10 dated items and `feed https://securityaffairs.com/feed?paged=N` pages back 10 items per page (verified pages 1-4 reaching 2026-10-24); suggest rss_url https://securityaffairs.com/feed, fetch_method rss, which makes the 168 h lookback sweep one command."
+  - source_id: lumen-black-lotus-labs
+    reason: "Recipe refinement: in https://www.lumen.com/blog/query-index.json the lastModified column is bulk-rewritten (2026-10-23 touched dozens of posts) and is not the publication date; use the blogPublishedDate column (format 'October 28, 2026'). Black Lotus Labs posts are identified by 'black-lotus' in tags or categories."
+  - source_id: sentinellabs
+    reason: "The raw url listing JSON this run held only 12 hits (newest 2026-10-28 LABScon26 keynote replay) and extract of the listing returns dateless cards with 'Author Mon DD, YYYY' lines; nothing new for the lookback."
+  - source_id: cip.gov.ua (CERT-UA / SSSCIP)
+    reason: "Not a record in sources.json. Alert pages (https://cip.gov.ua/ua/news/...) and https://cert.gov.ua/ are JavaScript SPAs: extract returns the shell, WebFetch an error page, no RSS or discoverable API found (cip.gov.ua/ua/news/rss and cert.gov.ua/api/rss fail). The Dahua alert was therefore read through press relays. Needs a structured recipe before it can be a source."
+  - source_id: source.android.com
+    reason: "extract of the Android Security Bulletin page fell through to the metered jina reader (direct returns HTTP 302); WebFetch read the full Framework and System tables without cost. Prefer WebFetch for source.android.com."
+source_ledger:
+  - { id: ox-security, tier: standard, attempted: true, transport: "feed (titles and summaries); article bodies 403 on direct, extract, jina, WebFetch", horizon_hours: 98, in_horizon_items: 1, returned: 0, note: "2026-10-30 Cursor extension post covered by the existing entry; bodies unreadable (rotation-priority gap persists)" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "url raw listing + extract per article for dates", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest dated article 2026-09-11; rotation-priority recipe documented in coverage_gaps" }
+  - { id: gitguardian, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "GhostAction x PolinRider (2026-10-27) already cited by the ghostaction entry; other posts product content" }
+  - { id: proofpoint, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "feed newest item 2026-10-14" }
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "traffer-teams / prediction-markets post dropped as cybercrime-economy analysis" }
+  - { id: securityaffairs, tier: standard, attempted: true, transport: "feed pages 1-4 (paged=N) + extract per article", horizon_hours: 168, in_horizon_items: 38, returned: 2, note: "SMS of Death and Dahua/CERT-UA found here; most other items were KEV and incident relays for other domains" }
+  - { id: sentinellabs, tier: standard, attempted: true, transport: "url raw listing JSON + extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only the 2026-10-28 LABScon26 keynote replay (talk recap)" }
+  - { id: talos, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 6, returned: 2, note: "VOLTA and NIK C2 returned; KeyDrift and IR trends Q3 already covered; newsletters and a podcast skipped" }
+  - { id: unit42, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "PHP threat-brief update covered; retail peak-season post not relevant" }
+  - { id: volexity, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "feed newest item 2026-10-16" }
+  - { id: lumen-black-lotus-labs, tier: standard, attempted: true, transport: "url --direct query-index.json", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Silent Train (2026-10-28) already covered; no other Black Lotus Labs post after 2026-10-07" }
+  - { id: manageengine-metal, tier: standard, attempted: true, transport: "url raw listing + extract per report for dates", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "three reports on the listing dated 2026-06-26, 2026-06-30 and 2026-07-16" }
+  - { id: todyl, tier: standard, attempted: true, transport: "url raw listing + extract per post", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "running ConnectWise Cloud Backup post (update 2026-10-26) adds nothing the ConnectWise entry lacks" }
+  - { id: nethemba, tier: standard, attempted: true, transport: "url raw blog listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-10-29 post is a data-collection policy essay, not security research; UpdraftCentral post (2026-10-19) already covered" }
+majors_sweep:
+  note: "Listing walk, no deep dives; nothing from these majors was published inside the 26 h window (weekend)."
+  walked:
+    - { id: msft-secblog, newest: "2026-10-31T01:02Z Claude Code extension (covered)" }
+    - { id: mandiant-gtig, newest: "2026-10-30/31 ARTEX and Friends (already an update on the ARTEX entry)" }
+    - { id: checkpoint-research, newest: "2026-10-29 Cohere Qwen post; 2026-10-27 Yoba (dropped)" }
+    - { id: eset, newest: "2026-10-30 video; 2026-10-29 Amatera (dropped)" }
+    - { id: kaspersky-securelist, newest: "2026-10-30 filter generation; 2026-10-29 NetamLoader (dropped)" }
+    - { id: sentinellabs, newest: "2026-10-28 LABScon26 replay" }
+    - { id: proofpoint, newest: "2026-10-14" }
+    - { id: trendmicro-research, newest: "2026-10-28 Node2Shell Brotli (covered)" }
+    - { id: crowdstrike, newest: "2026-10-30 agentic AI campaigns (item 5)" }
+    - { id: elastic-seclabs, newest: "2026-10-26 wesp.sys" }
+    - { id: sekoia, newest: "2026-10-28 PHP2Shell post" }
+    - { id: huntress, newest: "2026-10-29 SIEM commentary; 2026-10-27 camera management (dropped)" }
+    - { id: rapid7-research, newest: "2026-10-20 Q3 threat update (outside window)" }
+    - { id: extra-walk, newest: "wiz, stepsecurity, socket, sysdig, safedep, sansec, group-ib, specterops, dfirreport, google-tag, varonis, krebs, therecord, sans-isc, bleepingcomputer, thehackernews: no in-window primary research beyond the items above" }
+questions_answered_empty:
+  - "No periodic or annual report landed that is highly relevant to the Swiss public-sector constituency (Cloudflare Q3 DDoS report considered and dropped)."
+  - "No new named cluster or attribution shift from a telemetry-holding lab inside the window besides the DPRK-ARTEX sentence in item 5."
