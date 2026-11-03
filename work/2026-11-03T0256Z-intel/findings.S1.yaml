@@ -1,0 +1,572 @@
+# work/2026-11-03T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-03T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-03T02:58:48Z
+ended_at: 2026-11-03T03:23:03Z
+duration_seconds: 1455
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 11
+window_hours: 26
+kev_confirmation: >
+  CISA KEV read through the bridge (catalogVersion 2026.10.30, dateReleased 2026-10-30T17:02Z, 1766 entries): newest additions are
+  CVE-2026-118527 and CVE-2026-111357 (Ivanti Connect Secure, 2026-10-30), both covered. No addition dated 2026-11-02 or later.
+  Cross-checked through CISA's alert listing (WebFetch): newest KEV alert is 2026-10-30. ENISA EUVD exploited list (4 records, newest
+  exploitedSince 2026-10-30) holds only covered CVEs. No RANSOMWARE-flag flip on a CVE the store covers in 2026-10-15..11-03
+  (flags set on 2026-10-15 or later: none). MSRC Security Update Guide revision sweep since 2026-10-30 (1597 revised CVEs) shows no
+  CVE with exploited=Yes; the only publicly-disclosed one is CVE-2026-111497 (revision 5 of 2026-11-01, exploited still No).
+items:
+  # ---------------------------------------------------------------- 1
+  - title: "CVE-2026-98432 Linux kernel TCP use-after-free: AWS publishes per-service fix status and interim measures, CloudLinux could not reproduce Anthropic's remote-root claim, Fortinet lists 59 products under investigation"
+    novelty: "update-of:2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root"
+    sources:
+      - { url: "https://aws.amazon.com/security/security-bulletins/2026-160-aws/", publisher: "AWS Security Bulletin 2026-160-AWS (published 2026-10-30, last updated 2026-11-02 15:00 PST)", date: "2026-11-02", role: "primary" }
+      - { url: "https://blog.cloudlinux.com/cve-2026-98432-linux-kernel-ipv4-tcp-flaw-status-for-cloudlinux", publisher: "CloudLinux (status post, last updated 2026-11-02 21:10 UTC)", date: "2026-11-02", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-188", publisher: "Fortinet PSIRT FG-IR-26-188", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.aikido.dev/blog/linux-kernel-tcp-rce-vulnerability-cve-2026-98432", publisher: "Aikido Security (relays the AWS bulletin)", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://ubuntu.com/security/CVE-2026-98432", publisher: "Canonical Ubuntu tracker (still 'last updated 30 October 2026' when read 2026-11-03)", date: "2026-10-30", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-98432", publisher: "Debian Security Tracker (trixie security 6.12.115-2, bookworm security 6.1.190-1 fixed)", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: fortinet-psirt, feed https://filestore.fortinet.com/fortiguard/rss/ir.xml (FG-IR-26-188, 2026-11-02) -> pivot: https://fortiguard.fortinet.com/psirt/FG-IR-26-188 (extract) -> pivot: aikido-security listing https://www.aikido.dev/blog (post of 2026-11-02) -> primary: AWS bulletin https://aws.amazon.com/security/security-bulletins/2026-160-aws/ and CloudLinux status post https://blog.cloudlinux.com/cve-2026-98432-linux-kernel-ipv4-tcp-flaw-status-for-cloudlinux (both linked from the Aikido post)"
+    summary: |
+      Facts. AWS Security Bulletin 2026-160-AWS (published 2026-10-30, updated 2026-11-02 15:00 PST) states fixed Amazon Linux 2 and 2023 kernel
+      packages are available (kernel 4.14, 5.4, 5.10, 5.15, 6.1, 6.12 and 6.18; an AL2023 instance locked to a release needs 2023.12.20261102 or
+      later), EKS-optimized AL2023 AMIs v20261031 or later, ECS-optimized AMI 20261031, Fargate tasks and EKS Fargate pods launched after
+      2026-11-01 17:00 UTC on the patched platform, Bottlerocket AMIs expected from 2026-11-02, a Redshift OS patch on 2026-11-02, an RDS and
+      Aurora OS patch on 2026-11-03 with mitigations already deployed, Storage Gateway expected from 2026-11-03 and GameLift AMIs expected by
+      2026-11-04. AWS says services that pass client TCP packets with IP options straight to targets still need target patching: Network Load
+      Balancer TCP listeners, Global Accelerator endpoints, PrivateLink endpoint services and VPC Lattice layer-4 targets; ALB, CLB, NLB TLS
+      listeners, CloudFront, API Gateway and WAF are being patched by AWS, with the instances behind them to follow within 30 days. Lambda is
+      not affected. AWS says it has no evidence the flaw has been leveraged, calls a kernel update and reboot the only complete remediation, and
+      lists two interim measures that reduce but do not remove the exposure: disabling MPTCP (net.mptcp.enabled=0, GODEBUG=multipathtcp=0 for
+      Go 1.24 or later builds) and dropping IPv4 packets whose header carries IP options (host firewall, or an AWS Network Firewall stateful
+      rule that needs strict rule order). Fortinet's FG-IR-26-188 (initial publication 2026-11-02) says it is investigating and lists 59 product
+      names as under investigation, among them FortiOS, FortiProxy, FortiManager, FortiAnalyzer, FortiWeb, FortiADC, FortiMail, FortiSIEM,
+      FortiNAC, FortiAuthenticator, FortiClient EMS, FortiSandbox and FortiSOAR; no fixed build and no workaround is named. CloudLinux (updated
+      2026-11-02 21:10 UTC) says its kernel team could not reproduce Anthropic's remote-root claim, that MPTCP is off by default on CloudLinux 8,
+      9 and 10 but the bug sits in ordinary TCP so every affected server needs the fix, and that fixed kernels are in staged rollout for 7h, 8 and
+      the LTS lines with KernelCare livepatches on the main feed for 7h, 8 and 9. Ubuntu's tracker, as read 2026-11-03, still shows last updated
+      2026-10-30 with fixes in progress for 22.04 to 26.10; Debian trixie security now carries 6.12.115-2.
+      Claims. The remote-root exploit remains Anthropic's own claim (no second party has reproduced it; CloudLinux says its team failed to).
+      Assessment (mine). The practical delta for a constituency on AWS or on Fortinet gear is the vendor status: no Fortinet fix exists yet.
+    region_nexus: "global; AWS-hosted workloads and Fortinet appliances (FortiOS, FortiWeb, FortiManager) are common in Swiss public-sector estates, no Swiss-specific source"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-98432]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Linux kernel", "Amazon Linux", "Amazon EKS", "Amazon ECS", "Fortinet FortiOS", "CloudLinux"]
+    entity_keys: ["product:linux-kernel", "product:amazon-web-services", "product:fortinet-fortios", "product:fortinet-fortiweb", "product:fortinet-fortimanager"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Researchers have demonstrated unauthenticated remote code execution against hosts with a Multipath TCP (MPTCP) listener. We have no evidence that this issue has been leveraged at this time."
+        attribution: "AWS Security Bulletin 2026-160-AWS"
+        source_url: "https://aws.amazon.com/security/security-bulletins/2026-160-aws/"
+      - quote: "Network Load Balancer TCP listeners pass client packets, including IP options, to targets."
+        attribution: "AWS Security Bulletin 2026-160-AWS"
+        source_url: "https://aws.amazon.com/security/security-bulletins/2026-160-aws/"
+      - quote: "A kernel update and reboot is the only complete remediation for this issue."
+        attribution: "AWS Security Bulletin 2026-160-AWS"
+        source_url: "https://aws.amazon.com/security/security-bulletins/2026-160-aws/"
+      - quote: "Our kernel team couldn’t reproduce that claim."
+        attribution: "CloudLinux"
+        source_url: "https://blog.cloudlinux.com/cve-2026-98432-linux-kernel-ipv4-tcp-flaw-status-for-cloudlinux"
+      - quote: "Fortinet is currently investigating the impact of the CVE over Fortinet Products."
+        attribution: "Fortinet PSIRT FG-IR-26-188"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-188"
+    extended_notes: |
+      Exposure lever for AWS tenants: a target behind an NLB TCP listener or Global Accelerator, or reached through PrivateLink or VPC Lattice
+      layer 4, sees client IP options, so it needs the kernel fix or the IP-options drop; a target behind an ALB or an NLB TLS listener does
+      not receive client TCP directly. Detection concept (inference from the stated trigger, no source publishes an indicator): firewall or
+      flow telemetry for IPv4 TCP SYNs with a header length above five words, repeated from one source toward a listener. Post-patch check:
+      confirm the running kernel after the reboot (uname -r against the vendor's fixed build), as Aikido and AWS both stress.
+    borderline: false
+
+  # ---------------------------------------------------------------- 2
+  - title: "CVE-2026-111497 Brotli decoder: default WordPress installs reach it unauthenticated through xmlrpc.php pingbacks via libcurl, Patchstack shows a worker crash and says no public code-execution chain targets PHP"
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    lookback: true
+    sources:
+      - { url: "https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/", publisher: "Patchstack", date: "2026-10-30", role: "primary" }
+      - { url: "https://www.drweb.de/brotli-sicherheitsluecke-wordpress-pingback/", publisher: "Dr. Web (drweb.de, German; derives from Patchstack)", date: "2026-10-30", role: "corroborating" }
+    discovery_trace: "first seen at: patchstack, feed https://patchstack.com/feed/ (item 2026-10-30 'WordPress doesn't ship Brotli. It's still exposed to CVE-2026-111497') -> primary: https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/ (extract) -> WebSearch (\"CVE-2026-111497 WordPress pingback xmlrpc libcurl Brotli denial of service\") -> corroboration: https://www.drweb.de/brotli-sicherheitsluecke-wordpress-pingback/"
+    summary: |
+      Facts (Patchstack, 2026-10-30). WordPress does not ship Brotli: it links whatever libbrotli the operating system provides through libcurl,
+      and its cURL transport sets an empty CURLOPT_ENCODING on every handle, so a reply marked Content-Encoding: br is decoded inside curl_exec()
+      before any PHP runs. The unauthenticated route is pingback.ping over xmlrpc.php, which a default install exposes (XML-RPC on, pingbacks
+      open, at least one pingable post): the attacker names a source URL on a server they control, WordPress fetches it, and the malformed Brotli
+      body makes the decoder write out of bounds in the worker. Plugin or theme code that fetches a visitor-supplied address with
+      wp_remote_get() or wp_safe_remote_get() reaches the same decoder (the SSRF filter does not look at Content-Encoding), and oEmbed (Contributor
+      or higher) and feed fetches (admin-configured) are further routes. Claims and limits (Patchstack): a lab demonstration of 2026-10-27 killed a
+      worker or pinned it at 100% CPU with a payload under 100 bytes and its author says no code execution is included; public tooling for the
+      WordPress path stops at the crash; working shells exist against stock Node.js and Bun binaries but no public chain targets PHP behind Apache or
+      FPM. Fixing means a patched libbrotli (Brotli 1.0.10, 1.1.1 or 1.2.1, or the distribution package: Debian and Ubuntu backport the fix into
+      1.1.0, so check the package revision, for example 1.1.0-2+b7 vulnerable and 1.1.0-2+deb13u1 patched on Debian 13); the official wordpress:latest
+      image still installed a vulnerable libbrotli1 when Patchstack wrote, so a container needs the package upgraded in its own layer. Stop-gaps that
+      do not fix the bug: a must-use plugin that sets CURLOPT_ENCODING to identity and disables libcurl content decoding on the http_api_curl hook
+      (covers every route at once), unsetting the pingback methods through the xmlrpc_methods filter, or blocking xmlrpc.php at the web server; the
+      common xmlrpc_enabled filter does not close pingback. A WAF cannot see the payload because it arrives in the response from the attacker's
+      server.
+      Context already in the store: CISA lists the flaw as exploited since 2026-10-27 (Node.js targets); Microsoft's record for the .NET copy was
+      revised to version 5 on 2026-11-01 and still says Exploited: No.
+    region_nexus: "global; WordPress sites run by cantonal and communal bodies and their hosting providers (Swiss hosters run official wordpress images and Debian/Ubuntu libbrotli) — no Swiss-specific source"
+    primary_sector_nexus: "direct (web hosting of public-sector sites)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190, T1499.004]
+    affected_products: ["WordPress Core", "Google Brotli", "libcurl"]
+    entity_keys: ["product:wordpress-core", "product:google-brotli"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    evidence:
+      - quote: "Researchers have working shells against stock Node.js and Bun binaries, and public proofs of concept are going around"
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/"
+      - quote: "PHP behind Apache or FPM is not that target, and no public chain aims at it yet."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/"
+      - quote: "Its author is explicit that no code execution is included and that blind remote RCE is not established."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/"
+      - quote: "Pulling the official image again won’t currently help you."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/"
+    extended_notes: |
+      Telemetry hooks: web access logs for POST requests to xmlrpc.php from outside whose body invokes pingback.ping (WordPress decodes XML
+      character references and CDATA before dispatch, so a literal string match can miss variants, per Patchstack); outbound connections from the
+      web host to unfamiliar servers right after such a request; web-server worker crash and restart events. Benign lookalike (inference, no
+      source states a discriminator): real pingbacks also cause an outbound fetch from the site, so the discriminating signal is the crash of the
+      worker that handled the request. Single first-hand source (Patchstack); drweb.de restates it. The Node.js/PyPI entry's own scope is the
+      Node2Shell chain, so this is a new exposed surface (PHP applications that fetch remote URLs through a Brotli-enabled libcurl).
+    borderline: false
+
+  # ---------------------------------------------------------------- 3
+  - title: "PHP2Shell, Trend Micro advisory KA-0024802 as of 2026-11-02: Trend Micro Web Security cloud fixed on 2026-10-30, the TWS Authentication Agent listed as impacted with mitigation only"
+    novelty: "update-of:2026-10-29/php2shell-trend-micro-apex-quest-kace-netapp-ontap"
+    sources:
+      - { url: "https://success.trendmicro.com/en-US/solution/KA-0024802", publisher: "Trend Micro (TrendAI) KA-0024802, status table 'as of Nov. 2', last updated 2026/11/02", date: "2026-11-02", role: "primary" }
+    discovery_trace: "first seen at: store-driven revision sweep of the vendor advisories cited by the PHP2Shell family entries (advisory URL https://success.trendmicro.com/en-US/solution/KA-0024802, extract 'Last updated: 2026/11/02') -> primary (no pivot needed); the full status table read from the raw HTML (url --direct) because extract and WebFetch drop table rows"
+    summary: |
+      Trend Micro's PHP2Shell advisory (CVE-2026-109618, CVE-2026-109619), updated 2026-11-02 with the product table 'as of Nov. 2', differs from the
+      2026-10-30 reading the entry carries in two rows: Trend Micro Web Security (TMWS) Cloud now reads 'Fixed (Oct. 30)' where the entry has its fix
+      due on 2026-11-06, and a new component, the TMWS TWS Authentication Agent, is 'Impacted - Mitigation' (an interim mitigation page, KA-0024829,
+      is linked; no patch date). Unchanged: Apex Central and Apex One on-premise server impacted with critical patches expected 2026-11-11 and an
+      interim mitigation page for each (KA-0024815), Mobile Security for Enterprise impacted with a patch expected 2026-11-17, Deep Discovery Analyzer
+      impacted with a patch expected 2026-11-12, Deep Discovery Inspector and Email Inspector carry critical-patch builds, Apex One as a Service was
+      addressed by emergency maintenance on 2026-10-23. Trend Micro still says it has seen no successful exploitation in its products or services.
+    region_nexus: "global; Apex One / Apex Central are widespread in public-sector endpoint estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Trend Micro Apex Central", "Trend Micro Apex One", "Trend Micro Web Security", "Trend Micro Mobile Security for Enterprise", "Trend Micro Deep Discovery Analyzer"]
+    entity_keys: ["tool:php2shell", "product:php", "product:trend-micro-apex-central", "product:trend-micro-apex-one"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    evidence:
+      - quote: "TMWS Cloud: Fixed (Oct. 30)"
+        attribution: "Trend Micro KA-0024802 (raw page text, status table as of Nov. 2)"
+        source_url: "https://success.trendmicro.com/en-US/solution/KA-0024802"
+      - quote: "At this time, TrendAI has not seen any active instances or scenarios of successful exploitation of either of the vulnerabilities in our products or services."
+        attribution: "Trend Micro KA-0024802"
+        source_url: "https://success.trendmicro.com/en-US/solution/KA-0024802"
+    extended_notes: |
+      The table sits in the page's raw HTML; trafilatura extract returned a version without the product rows and WebFetch condensed it. If the composer
+      re-checks, use `url --direct`. Vendor is the authority for its own product status (single source acceptable). Low-weight delta: do not float
+      the entry for this alone if the composer judges it minor.
+    borderline: true
+    borderline_reason: "two-row status change on an already-covered entry; relevant only for estates running Trend Micro Web Security components"
+
+  # ---------------------------------------------------------------- 4
+  - title: "GitLab CVE-2026-97229 and CVE-2026-110264: Shadowserver counts over 1,000 internet-exposed instances still vulnerable to the exploited flaw and over 11,300 to its sibling, out of about 39,000 seen daily"
+    novelty: "update-of:2026-10-13/cve-2026-97229-gitlab-ci-regex-compiler-unauthenticated-rce"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/over-1-000-gitlab-servers-vulnerable-to-code-execution-attacks/", publisher: "BleepingComputer (relays Shadowserver's statement of 2026-11-01)", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/alpine-linux-rebuilds-gitlab-after-attempted-rce-attack/", publisher: "BleepingComputer (Alpine Linux account, already in the store via Alpine's own post)", date: "2026-11-01", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed https://www.bleepingcomputer.com/feed/ (item 2026-11-02 07:47 CT 'Over 1,000 GitLab servers vulnerable to ongoing RCE attacks') -> primary: https://www.bleepingcomputer.com/news/security/over-1-000-gitlab-servers-vulnerable-to-code-execution-attacks/ (extract; links Shadowserver's Bluesky post, not fetched, so the count rests on BleepingComputer's attributed quote)"
+    summary: |
+      BleepingComputer reports on 2026-11-02 that Shadowserver said on Sunday 2026-11-01: 'We are currently tracking over 1000 GitLab instances
+      vulnerable to CVE-2026-97229 (on @CISACyber KEV) and over 11300 instances vulnerable to CVE-2026-110264 (out of around 39K GitLab
+      instances we see daily)'. The exploited flaw (CVE-2026-97229, CISA KEV 2026-10-29) is therefore down to roughly 1,000 exposed instances, while the sibling
+      CVE-2026-110264, whose range reaches back to GitLab 7.0 and whose fix is in the 2026-10-21 builds, still leaves about 29% of the
+      instances Shadowserver sees vulnerable (11,300 of 39,000, my arithmetic). Nothing else in the article is new to the store (CISA listing, the Alpine Linux rebuild and the Ruby
+      dependency are already carried).
+    region_nexus: "global; self-managed GitLab is common at cantons, universities and suppliers"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-97229, CVE-2026-110264]
+    techniques: [T1190]
+    affected_products: ["GitLab Community Edition", "GitLab Enterprise Edition"]
+    entity_keys: ["product:gitlab", "product:gitlab-ce", "product:gitlab-ee"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    evidence:
+      - quote: "We are currently tracking over 1000 GitLab instances vulnerable to CVE-2026-97229 (on @CISACyber KEV) and over 11300 instances vulnerable to CVE-2026-110264 (out of around 39K GitLab instances we see daily)"
+        attribution: "Shadowserver, as quoted by BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/over-1-000-gitlab-servers-vulnerable-to-code-execution-attacks/"
+    extended_notes: |
+      Related entry to touch if the composer prefers: 2026-10-22/cve-2026-110264-gitlab-org-mode-renderer-unauth-rce (the 11,300 figure is its exposure).
+      The count is an exposure statistic, not an exploitation report. Primary (Shadowserver post) is a social post; attributed claim only.
+    borderline: true
+    borderline_reason: "exposure counts only, from one relayed social post; useful as one sentence on the sibling flaw's exposure, otherwise low value"
+
+  # ---------------------------------------------------------------- 5
+  - title: "Progress WS_FTP Server: BACS advisory of 2026-11-02 and heise list six critical flaws among fourteen CVEs, the entry's records carry three (CVE-2026-90868 OS command injection, CVSS 9.9, and three 9.1 flaws are missing)"
+    novelty: "update-of:2026-10-31/progress-ws-ftp-server-cve-2026-84295-unauth-cvss-10"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13128", publisher: "NCSC Switzerland / BACS (Security Hub advisory 13128)", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.heise.de/en/news/Progress-WS-FTP-flaws-could-allow-system-compromise-11507793.html", publisher: "heise online", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch bridge `ncsc-csh recent 15` (post 13128 created 2026-11-02T15:37Z, https://security-hub.ncsc.admin.ch/#/posts/13128) -> pivot: heise article https://www.heise.de/en/news/Progress-WS-FTP-flaws-could-allow-system-compromise-11507793.html (linked from the BACS references; its own link to Progress' bulletin is a JavaScript-only community page that no transport here could read)"
+    summary: |
+      The entry cites CVE-2026-84295 (CVSS 10.0, 2024.0.6 and 2025.0.3), CVE-2026-90865 (9.0) and CVE-2026-90867 (8.1). BACS (2026-11-02) lists
+      six critical flaws for WS_FTP Server on Windows and rates exploitation status UNKNOWN: CVE-2026-84295 (10.0, unauthenticated, exposes
+      administrative credentials), CVE-2026-90868 (9.9, OS command injection), CVE-2026-90866 (9.1, path traversal by a delegated Host
+      Administrator, potential code execution), CVE-2026-90864 (9.1, path traversal), CVE-2026-90863 (9.1, missing authorization in the admin
+      interface leading to privileged command execution) and CVE-2026-90865 (9.0, OS command injection with elevated privileges); prerequisites
+      vary (several need authenticated or delegated Host Administrator access, some need specific configurations). heise (2026-11-02) gives the
+      full list of fourteen with severities: the 9.9, 9.1 and 9.0 rows (and the 8.1 row) are fixed from 2024.0.7 and 2025.0.4, while the 10.0 flaw and the
+      7.7 and 6.8 rows (CVE-2026-84294 and CVE-2026-84296) are fixed from 2024.0.6 and 2025.0.3; heise says builds 2024.0.7 and 2025.0.4 have been available since 2026-10-01.
+      The entry's own statement (2024.0.7 and 2025.0.4 are the builds to reach) therefore stands; what the entry lacks is the full critical set in its CVE
+      records and the BACS advisory as the Swiss authority signal. Dates are not reconciled: heise says Progress published its bulletin 'over the weekend', BACS gives
+      the bulletin's last modification as 2026-10-30, and the entry dates the CVE publication 2026-10-29.
+    region_nexus: "switzerland (BACS advisory); WS_FTP is a file-transfer server used by public bodies and suppliers"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-84295, CVE-2026-90868, CVE-2026-90866, CVE-2026-90864, CVE-2026-90863, CVE-2026-90865, CVE-2026-90867]
+    techniques: [T1190, T1059]
+    affected_products: ["Progress WS_FTP Server"]
+    entity_keys: ["product:progress-ws-ftp-server"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    evidence:
+      - quote: "Successful exploitation allows unauthenticated remote attackers to steal administrative credentials over the network and potentially execute arbitrary commands, leading to full server compromise and data theft."
+        attribution: "NCSC Switzerland (BACS) advisory 13128"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13128"
+      - quote: "Progress reports multiple critical vulnerabilities in WS_FTP. Admins should apply updates promptly."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/en/news/Progress-WS-FTP-flaws-could-allow-system-compromise-11507793.html"
+    extended_notes: |
+      Both sources trace to Progress' bulletin; they agree on the CVE list and fixed builds, so this is one first-hand disclosure read twice. The BACS
+      advisory text was read through the `ncsc-csh` API (the human URL is the Security Hub SPA route). Home-region authority single-source carve-out applies.
+    borderline: false
+
+  # ---------------------------------------------------------------- 6
+  - title: "C3RB3R (Cerber variant) ransomware is encrypting internet-exposed Synology NAS devices through DSM flaws; Synology points to a December 2024 fix, 360 names two flaws patched on 2026-09-18"
+    novelty: new
+    sources:
+      - { url: "https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions", publisher: "Synology Inc. (press release / customer alert)", date: "2026-10-29", role: "primary" }
+      - { url: "https://www.360.cn/n/13055.html", publisher: "360 (360 anti-ransomware service, bulletin 'Cerber勒索攻击群晖NAS事件预警')", date: "2026-10-29", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/synology-warns-customers-of-ongoing-c3rb3r-ransomware-attacks/", publisher: "BleepingComputer", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://www.it-connect.fr/nas-synology-ransomware-c3rb3r-l0ck3d/", publisher: "IT-Connect (French)", date: "2026-10-29", role: "corroborating" }
+      - { url: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13", publisher: "Synology PSIRT Synology-SA-26:13 (DSM, 2026-09-18)", date: "2026-09-18", role: "corroborating" }
+      - { url: "https://www.synology.com/en-global/security/advisory/Synology_SA_24_20", publisher: "Synology PSIRT Synology-SA-24:20 (DSM, Pwn2Own 2024)", date: "2024-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed https://www.bleepingcomputer.com/feed/ (item 2026-11-02 06:28 CT 'Synology warns of C3RB3R ransomware attacks targeting NAS devices') -> primary: Synology press release https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions (linked in the BleepingComputer article) -> WebSearch (\"Synology C3RB3R ransomware DSM CVE-2024-10441 L0CK3D NAS\") -> pivot: https://www.it-connect.fr/nas-synology-ransomware-c3rb3r-l0ck3d/ -> primary: 360 bulletin https://www.360.cn/n/13055.html and Synology advisories SA-26:13 and SA-24:20"
+    summary: |
+      Facts. Synology's alert of 2026-10-29 says it 'has identified threat actors exploiting a vulnerability patched in December 2024 to target devices
+      running outdated versions of DSM' for encryption and extortion, urges an immediate DSM update and automatic updates, and links Synology-SA-24:20,
+      which fixes CVE-2024-10441 (CVSS 9.8, remote code execution in the system plugin daemon, found at Pwn2Own 2024), CVE-2024-50629
+      (read limited files) and CVE-2024-10445 (adjacent write) in DSM 7.2.2-72806-1, 7.2.1-69057-6, 7.2-64570-4, 7.1.1-42962-7 and 6.2.4-25556-8 or
+      later. Synology does not name the exploited CVE (BleepingComputer: 'Synology has yet to share which vulnerability is being exploited'). 360's
+      bulletin of the same day, from its anti-ransomware service's incident help requests since early October, attributes the encryption to C3RB3R, a
+      Cerber variant, and says its analysis of attacked devices found the entry point to be CVE-2026-13639 and CVE-2026-13684, two unauthenticated
+      CVSS 9.8 flaws that Synology fixed on 2026-09-18 in Synology-SA-26:13 (DSM 7.4-90075, 7.3.2-86009-4, 7.2.2-72806-9, 7.2.1-69057-12; CVE-2026-13684 is
+      an output-escaping flaw in SCGI and CVE-2026-13639 an insufficient-entropy flaw in the login logic, both allowing arbitrary file read or write
+      and denial of service). The two accounts name different flaws: both are held, neither excludes the other. 360 describes ChaCha8 file encryption with
+      RSA-2048-wrapped keys, a .L0CK3D extension and a read-me3.txt ransom note in every encrypted folder; BleepingComputer and IT-Connect repeat the note and
+      extension and say victims report being steered to buy a 'C3rb3r Decryptor'. IT-Connect adds that a proof of concept for CVE-2024-10441 appeared on GitHub
+      days earlier (not fetched here; attributed to IT-Connect). BleepingComputer says Shadowserver tracks over 380,000 internet-exposed Synology NAS devices and
+      gives no count of patched or honeypot units. Neither Synology nor BleepingComputer names a threat actor beyond the C3RB3R family label.
+      Assessment (mine). Two independent first-hand parties (vendor, anti-ransomware responder) confirm an ongoing exploitation campaign against outdated or
+      unpatched DSM; the exact exploited flaw is unresolved.
+    region_nexus: "global (reports mainly from Chinese-language forums and BleepingComputer's readers); Synology NAS is used in Swiss communes, schools and SMEs but no Swiss-specific report found, and the Security Hub has no Synology advisory"
+    primary_sector_nexus: "indirect (small public bodies, schools and suppliers that run internet-exposed NAS)"
+    sector: "public-sector"
+    cves: [CVE-2026-13639, CVE-2026-13684, CVE-2024-10441]
+    techniques: [T1190, T1486]
+    affected_products: ["Synology DiskStation Manager (DSM)"]
+    entity_keys: ["product:synology-diskstation-manager-dsm"]
+    new_entities:
+      - { key: "malware:c3rb3r", type: malware, name: "C3RB3R", aliases: ["Cerber", "CerberImposter", ".L0CK3D ransomware"],
+          summary: "Ransomware family (a Cerber variant per 360) reported by Synology, 360 and BleepingComputer in October 2026 as encrypting internet-exposed Synology NAS devices running outdated DSM, with a .L0CK3D extension and a read-me3.txt note." }
+    relation_suggestions:
+      - { subject: "malware:c3rb3r", object: "product:synology-diskstation-manager-dsm", basis: "360 and Synology report the family exploiting DSM flaws to encrypt NAS devices (360, 2026-10-29; Synology, 2026-10-29)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - quote: "Synology has identified threat actors exploiting a vulnerability patched in December 2024 to target devices running outdated versions of DSM."
+        attribution: "Synology Inc."
+        source_url: "https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions"
+      - quote: "本轮攻击的切入点是两个高危远程漏洞，CVE编号分别为CVE-2026-13639和CVE-2026-13684"
+        attribution: "360 anti-ransomware service (English gloss: the entry point of this round of attacks is two high-risk remote vulnerabilities, CVE-2026-13639 and CVE-2026-13684)"
+        source_url: "https://www.360.cn/n/13055.html"
+      - quote: "While Synology has yet to share which vulnerability is being exploited in these ongoing attacks"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/synology-warns-customers-of-ongoing-c3rb3r-ransomware-attacks/"
+      - quote: "allows remote attackers to read or write arbitrary files and conduct denial-of-service attacks"
+        attribution: "Synology PSIRT SA-26:13 (CVE-2026-13684 and CVE-2026-13639 descriptions)"
+        source_url: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13"
+    extended_notes: |
+      Exposure: a Synology NAS whose DSM management web interface is reachable from the internet (port forwarding, QuickConnect-style exposure) on a DSM
+      build below the SA-26:13 fixes (7.4-90075, 7.3.2-86009-4, 7.2.2-72806-9, 7.2.1-69057-12) or the SA-24:20 fixes (7.2.2-72806-1, 7.2.1-69057-6, 7.2-64570-4,
+      7.1.1-42962-7, 6.2.4-25556-8). Hardening levers named by BleepingComputer, Synology and IT-Connect: block internet access to the management interface, update DSM
+      and the PHP, Mail Station and Calendar packages, automatic updates, immutable snapshots and an offline backup copy (a NAS is not a backup). Detection (telemetry
+      class): web/reverse-proxy and DSM access logs for unauthenticated requests to login and SCGI endpoints from the internet, DSM audit logs for new admin
+      accounts or package changes, file-integrity or storage telemetry for mass rename to a new extension plus a note file in every folder; benign lookalike: DSM
+      scheduled-task or backup-tool bulk renames do not drop a ransom note per folder. Post-patch check: a device patched after exposure may already be compromised;
+      none of the sources describes pre-encryption persistence, so state that as unknown. The 2026-10-29 release date means the Synology and 360 pages are
+      older than the 26 h window; the in-window source is the BleepingComputer article of 2026-11-02 and nothing in the store covers C3RB3R.
+    borderline: false
+
+  # ---------------------------------------------------------------- 7
+  - title: "Langflow OSS 1.0.0 to 1.12.8: IBM lists an unauthenticated authentication bypass (CVE-2026-93680) and an unauthenticated code-execution flaw (CVE-2026-110186), both CVSS 9.8, fixed only in 1.13.0; a public Metasploit module covers the bypass"
+    novelty: new
+    sources:
+      - { url: "https://www.ibm.com/support/pages/security-bulletin-langflow-oss-affected-multiple-vulnerabilities-2", publisher: "IBM Support security bulletin (Langflow OSS), published 2026-10-28, updated 2026-10-29", date: "2026-10-29", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/critical-langflow-flaws-could-let.html", publisher: "The Hacker News", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/gather/langflow_auth_bypass_cve_2026_93680.rb", publisher: "Rapid7 Metasploit Framework (module, DisclosureDate 2026-09-22)", date: "2026-09-22", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed https://feeds.feedburner.com/TheHackersNews (item 2026-11-02 'Critical Langflow Flaws Could Let Unauthenticated Attackers Run Code on Servers') -> primary: IBM bulletin https://www.ibm.com/support/pages/security-bulletin-langflow-oss-affected-multiple-vulnerabilities-2 (linked in THN) -> pivot: Metasploit module https://github.com/rapid7/metasploit-framework/blob/master/modules/auxiliary/gather/langflow_auth_bypass_cve_2026_93680.rb"
+    summary: |
+      Facts. IBM's bulletin (published 2026-10-28, updated 2026-10-29) lists Langflow OSS 1.0.0 through 1.12.8 as affected by four flaws: CVE-2026-93680
+      (improper authentication, CVSS 3.1 9.8, no privileges), CVE-2026-110186 (improper control of code generation, 9.8, no privileges, described as
+      unauthenticated remote code execution exploitable through model context protocol tool enumeration), CVE-2026-110193 (8.8, low-privileged account makes
+      the Agentic Assistant generate component code that runs operating-system commands) and CVE-2026-110192 (6.5, credential exposure). IBM's only remediation is
+      Langflow 1.13.0 (PyPI, or langflowai/langflow:1.13.0; released 2026-10-22; 1.12.8 of the same day is still affected) and it names no workaround; it also
+      says a deployment that uses automatic login must prepare an account for password sign-in before upgrading. A public Metasploit auxiliary module cites
+      CVE-2026-93680: it connects to a server's MCP SSE endpoint without credentials, opens a session and lists the tools the server offers; The Hacker News
+      says it runs no code and that its author lists 1.5.0 through 1.11.4 as affected, a narrower range than IBM's, and that it was tested with LANGFLOW_AUTO_LOGIN
+      on (the setting is on by default in 1.12.8; IBM says one flaw is an incomplete remediation of an auto-login control and does not say whether servers with it off
+      are exposed). Neither of the two critical flaws is on CISA's KEV (read 2026-10-30 catalogue; six other Langflow flaws are listed, the latest CVE-2026-9198 in
+      August). No source reports exploitation of these CVEs; EPSS (FIRST, 2026-11-02) is 0.022 for CVE-2026-93680 and 0.006 for CVE-2026-110186.
+      Assessment (mine). Pre-authentication, network-reachable, public recon-grade tooling, and a product with six prior KEV listings give it an imminent-exploitation
+      profile; no exploit for the code-execution flaw is public.
+    region_nexus: "global; AI workflow tooling in innovation and data teams, rarely internet-facing in Swiss public-sector estates, no Swiss-specific source"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-93680, CVE-2026-110186, CVE-2026-110193, CVE-2026-110192]
+    techniques: [T1190]
+    affected_products: ["Langflow OSS"]
+    entity_keys: ["product:langflow"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - quote: "IBM strongly recommends addressing these vulnerabilities now by upgrading Langflow OSS installations running versions 1.0.0 - 1.12.8 to Langflow OSS 1.13.0."
+        attribution: "IBM Support security bulletin"
+        source_url: "https://www.ibm.com/support/pages/security-bulletin-langflow-oss-affected-multiple-vulnerabilities-2"
+      - quote: "Neither flaw is in CISA's Known Exploited Vulnerabilities catalog, as of the catalog's October 30 update."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/critical-langflow-flaws-could-let.html"
+      - quote: "It does not run code or commands on the server."
+        attribution: "The Hacker News (on the Metasploit module)"
+        source_url: "https://thehackernews.com/2026/11/critical-langflow-flaws-could-let.html"
+      - quote: "IBM offers no workaround for servers that cannot upgrade yet."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/critical-langflow-flaws-could-let.html"
+    extended_notes: |
+      Exposure: a Langflow instance reachable from the internet (the Metasploit module defaults to port 7860); check the running version and whether LANGFLOW_AUTO_LOGIN
+      is enabled (the code comment says it bypasses authentication). Detection concept: web access logs for unauthenticated requests to the MCP SSE endpoint under the
+      /api/v1/mcp/ path (the module issues a GET to it) and for sessions that enumerate tools without a login; post-patch: rotate credentials stored in flows if an
+      exposed instance was reachable. Vendor owning the reports is IBM (Langflow's reports go to IBM, per THN).
+    borderline: true
+    borderline_reason: "pre-auth with public recon tooling but no exploitation reported and an AI-tooling product class that is rarely internet-exposed in public-sector estates; the strict gate may drop it unless an exposure source appears"
+
+  # ---------------------------------------------------------------- 8
+  - title: "Contact Form 7 6.2 to 6.2.3 (10 million sites): the vendor fixes an unauthenticated arbitrary file upload in 6.2.4, no CVE yet and no exploitation reported"
+    novelty: new
+    lookback: true
+    sources:
+      - { url: "https://contactform7.com/2026/10/29/contact-form-7-624/", publisher: "Contact Form 7 (Rock Lobster, vendor announcement)", date: "2026-10-29", role: "primary" }
+      - { url: "https://mysites.guru/blog/contact-form-7-6-2-4-file-upload-fix/", publisher: "mySites.guru", date: "2026-10-29", role: "corroborating" }
+    discovery_trace: "first seen at: mysites-guru, feed https://mysites.guru/rss.xml (item 2026-10-29 'Contact Form 7 6.2.4 Fixes an Unauthenticated File Upload in 6.2 to 6.2.3') -> primary: https://contactform7.com/2026/10/29/contact-form-7-624/ (vendor announcement, linked in the mySites.guru post; extract fell back to the metered reader)"
+    summary: |
+      Facts. Rock Lobster released Contact Form 7 6.2.4 on 2026-10-29 (6.2.4.1 about two hours later is the current build) to close 'an unauthenticated arbitrary file upload':
+      'Attackers can leverage multiple flaws in Contact Form 7 6.2 to 6.2.3, in combination, to upload files that should normally be blocked by validation logic and keep files
+      that should normally be removed immediately after submission.' The vendor says that, theoretically, all forms with file-upload fields hosted on an HTTP server that
+      lists directory contents publicly can be a target; only 6.2 to 6.2.3 are affected (6.2 was released 2026-10-05, so the vulnerable line was current for 24 days) and the vendor
+      advises everyone to move to 6.2.4. The fix is in wpcf7_antiscript_file_name(), which moves from a blocklist of executable extensions (php, phtml, pl, py, rb, cgi, asp, aspx) to a
+      safelist (audio, video and image formats plus pdf and txt): doc, docx, xls, xlsx, odt, rtf, csv and zip uploads are now renamed with a _.txt suffix unless the
+      wpcf7_file_extension_safelist filter adds them. The finders are Shinya Murakami and Jakub Herman, reported through WPScan. mySites.guru states no CVE has been assigned, it is not
+      on CISA's KEV and the vendor has not said it is exploited; its own inventory (monitored sites, 2026-10-29) put more than half of Contact Form 7 installs on the affected line.
+      Claims and gaps. No exploitation report, no CVE, no independent technical analysis; mySites.guru recommends a check of wp-content/uploads/wpcf7_uploads for script files
+      (a normal site returns none) and switching directory listing off.
+    region_nexus: "global; WordPress contact forms on communal and cantonal websites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Contact Form 7"]
+    entity_keys: ["product:wordpress"]
+    new_entities:
+      - { key: "product:contact-form-7", type: product, name: "Contact Form 7", aliases: ["CF7", "Contact Form 7 (WordPress plugin)"],
+          summary: "WordPress form plugin by Rock Lobster / Takayuki Miyoshi counted by wordpress.org on 10,000,000+ sites; 6.2 to 6.2.3 carry an unauthenticated arbitrary file upload fixed in 6.2.4 (vendor, 2026-10-29)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    evidence:
+      - quote: "The issue is an unauthenticated arbitrary file upload."
+        attribution: "Contact Form 7 (vendor announcement)"
+        source_url: "https://contactform7.com/2026/10/29/contact-form-7-624/"
+      - quote: "Theoretically, all forms that have file uploading fields and are hosted on an HTTP server configured to list directory contents publicly can be a target."
+        attribution: "Contact Form 7 (vendor announcement)"
+        source_url: "https://contactform7.com/2026/10/29/contact-form-7-624/"
+      - quote: "No CVE has been assigned yet, it is not in CISA’s Known Exploited Vulnerabilities list, and the vendor has not said it is being exploited."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/contact-form-7-6-2-4-file-upload-fix/"
+    extended_notes: |
+      Exposure: plugin version 6.2 to 6.2.3 on a form that has a file field; the vendor's stated target also needs directory listing enabled on the web server. Hardening lever:
+      update to 6.2.4.1, switch directory listing off (Options -Indexes on Apache, autoindex off on nginx); nginx ignores the plugin's .htaccess protection in the
+      temporary upload folder (per mySites.guru). The patch diff is public on GitHub (v6.2.3 to v6.2.4), a standing condition for fast exploit development. Vendor announcement is
+      the first-hand source, mySites.guru adds the version-spread measurement and the post-patch file check.
+    borderline: true
+    borderline_reason: "pre-auth upload in a 10-million-install plugin with a public patch diff, but conditional (file field, directory listing), no CVE and no exploitation reported; older than 26 h (lookback item)"
+
+  # ---------------------------------------------------------------- 9
+  - title: "DJ-Classifieds for Joomla before 3.11.3: vendor rates the release Critical, an unrestricted upload can reach unauthenticated code execution where registration is enabled; the Joomla CNA published CVE-2026-105603 to CVE-2026-105605"
+    novelty: new
+    sources:
+      - { url: "https://dj-extensions.com/blog/dj-classifieds/dj-classifieds-3-11-3-security-update", publisher: "DJ-Extensions (vendor security notice)", date: "2026-11-02", role: "primary" }
+      - { url: "https://mysites.guru/blog/dj-classifieds-3-11-3-security-release/", publisher: "mySites.guru", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://mysites.guru/vulnerabilities/CVE-2026-105603/", publisher: "mySites.guru (Joomla CNA record CVE-2026-105603)", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: mysites-guru, feed https://mysites.guru/rss.xml (item 2026-11-02 'DJ-Classifieds 3.11.3 Fixes SQL Injection, Upload and Ownership Flaws') -> primary: https://dj-extensions.com/blog/dj-classifieds/dj-classifieds-3-11-3-security-update (vendor notice, linked in the post; extract fell back to the metered reader)"
+    summary: |
+      Facts. DJ-Extensions released DJ-Classifieds and DJ-Classifieds Light 3.11.3 on 2026-11-02 and classifies both as Critical security releases (fixes for unrestricted uploads,
+      SQL injection and missing ownership checks, plus image-copy and type-casting hardening; six add-ons also carry security changes: Alta User Points, Files Attachments, GDPR,
+      Multicategories, Subscription Plans and Shipping). The vendor says the researcher's report and a static review of the patch indicate that, in a vulnerable configuration with
+      registration enabled, the upload issue could allow unauthenticated remote code execution, and that no independent exploit reproduction or full audit was performed. The Joomla
+      CNA published, on 2026-11-02, CVE-2026-105603 (unrestricted upload, CVSS 4.0 9.4, privileges 'low', credited to Ala Arfaoui), CVE-2026-105604 (unauthenticated SQL injection in the
+      frontend search, 9.3) and CVE-2026-105605 (cross-account advert access, 5.3) for versions below 3.11.3. mySites.guru, from its own code review, adds a fix the changelog does not
+      mention: an eval() in the bundled PayPal payment plugin that ran on attacker-supplied input before PayPal verification (its claim, not the vendor's).
+      Gaps. No exploitation report; the CNA's CVSS shows low privileges for the upload while the vendor ties unauthenticated code execution to open registration.
+    region_nexus: "global; Joomla classified-ads extension, an unlikely fit for public-sector sites"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-105603, CVE-2026-105604, CVE-2026-105605]
+    techniques: [T1190]
+    affected_products: ["DJ-Classifieds", "DJ-Classifieds Light"]
+    entity_keys: ["product:joomla"]
+    new_entities:
+      - { key: "product:dj-classifieds", type: product, name: "DJ-Classifieds", aliases: ["DJ-Classifieds Light"],
+          summary: "Joomla classified-ads extension by DJ-Extensions; versions below 3.11.3 carry an unrestricted upload (vendor: possible unauthenticated code execution with registration enabled), an unauthenticated SQL injection and an ownership flaw (vendor and Joomla CNA, 2026-11-02)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - quote: "in a vulnerable configuration with registration enabled, the upload issue could allow unauthenticated remote code execution on the server."
+        attribution: "DJ-Extensions"
+        source_url: "https://dj-extensions.com/blog/dj-classifieds/dj-classifieds-3-11-3-security-update"
+      - quote: "No independent exploit reproduction or complete security audit was performed."
+        attribution: "DJ-Extensions"
+        source_url: "https://dj-extensions.com/blog/dj-classifieds/dj-classifieds-3-11-3-security-update"
+    extended_notes: |
+      Recurring Joomla third-party-extension stream (mySites.guru is the discovering-party feed). Exposure: DJ-Classifieds or Light below 3.11.3 with front-end registration enabled.
+    borderline: true
+    borderline_reason: "niche Joomla extension (classified ads) with no exploitation report; recommend drop unless a Swiss public-sector Joomla exposure source appears"
+
+  # ---------------------------------------------------------------- 10
+  - title: "Custom Tables for Joomla 1.0 to 3.7.7: unauthenticated file upload through a public submission form (CVE-2026-105606, CVSS 4.0 9.5), fixed in 3.7.8; the uploaded file lands in the web-accessible tmp folder"
+    novelty: new
+    sources:
+      - { url: "https://mysites.guru/blog/custom-tables-3-7-8-unauthenticated-file-upload/", publisher: "mySites.guru", date: "2026-11-02", role: "primary" }
+      - { url: "https://mysites.guru/vulnerabilities/CVE-2026-105606/", publisher: "mySites.guru (Joomla CNA record CVE-2026-105606)", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: mysites-guru, feed https://mysites.guru/rss.xml (item 2026-11-02 'Custom Tables for Joomla: Unauthenticated File Upload Fixed in 3.7.8') -> primary (no pivot needed; the vendor's GitHub release page lists no release)"
+    summary: |
+      Facts. The Joomla CNA published CVE-2026-105606 on 2026-11-02: an unauthenticated arbitrary file upload in the Joomla extension Custom Tables (JoomlaBoat) for versions 1.0 to 3.7.7, CVSS 4.0 9.5,
+      fixed in 3.7.8. Any visitor can push a file with an extension of their choosing through a public Custom Tables submission form that has a file field; the file is a polyglot that
+      passes the MIME check, is written to Joomla's tmp folder (web-accessible on a default install) and its stored path is returned in the response, and by default it is served as
+      static content, so attackers can host phishing or malware pages on the site's domain (mySites.guru's reading of the record). No source states code execution on a default
+      configuration and none reports exploitation.
+    region_nexus: "global; niche Joomla component"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-105606]
+    techniques: [T1190]
+    affected_products: ["Custom Tables for Joomla"]
+    entity_keys: ["product:joomla"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    evidence:
+      - quote: "Treat every version from 1.0 to 3.7.7 as affected."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/custom-tables-3-7-8-unauthenticated-file-upload/"
+      - quote: "The upload needs no login, only a public submission form with a file field"
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/custom-tables-3-7-8-unauthenticated-file-upload/"
+    extended_notes: |
+      The first-hand record is the Joomla CNA's CVE entry, read here through mySites.guru's mirror (the Joomla Vulnerable Extensions List did not surface the entry).
+    borderline: true
+    borderline_reason: "niche Joomla component, hosting of attacker content rather than code execution on a default install, single aggregator-style source; recommend drop"
+cve_table:
+  - { cve: CVE-2026-98432, product: "Linux kernel IPv4 TCP", cvss: "9.8 (CVSS 3.1, kernel.org CNA and Red Hat); upstream 8.1 per CIQ", epss: 0.0046, kev: false, exploited: false, affected: "kernels from 4.4 on the IPv4 TCP path; Amazon Linux 2 and 2023, Ubuntu 16.04 to 26.10, RHEL 8-10, CloudLinux 7h/8/9/10, Fortinet products under investigation", fixed: "upstream 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.56, 7.2.10; Amazon Linux kernels (AWS bulletin); Debian bookworm 6.1.190-1, trixie 6.12.115-2; no Ubuntu or Red Hat kernel as of 2026-11-03", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://aws.amazon.com/security/security-bulletins/2026-160-aws/" }
+  - { cve: CVE-2026-111497, product: "Google Brotli decoder via libcurl (WordPress)", cvss: "9.2 (CVSS 4.0, Google); 9.8 (CVSS 3.1, NVD per drweb.de)", epss: 0.8264, kev: true, exploited: true, affected: "Brotli 1.0.3 through 1.2.0", fixed: "Brotli 1.0.10, 1.1.1, 1.2.1 or the distribution package (Debian/Ubuntu backport into 1.1.0)", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://patchstack.com/articles/wordpress-doesnt-ship-brotli-its-still-exposed-to-cve-2026-111497/" }
+  - { cve: CVE-2026-13639, product: "Synology DiskStation Manager (DSM)", cvss: "9.8 (CVSS 3.1)", epss: 0.0067, kev: false, exploited: "claimed (360: entry point of C3RB3R attacks); Synology names a December 2024 flaw instead", affected: "DSM before 7.2.1-69057-12, 7.2.2-72806-9, 7.3.2-86009-4, 7.4-90075", fixed: "7.2.1-69057-12, 7.2.2-72806-9, 7.3.2-86009-4, 7.4-90075", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13" }
+  - { cve: CVE-2026-13684, product: "Synology DiskStation Manager (DSM), SCGI", cvss: "9.8 (CVSS 3.1)", epss: 0.0060, kev: false, exploited: "claimed (360)", affected: "DSM before 7.2.1-69057-12, 7.2.2-72806-9, 7.3.2-86009-4, 7.4-90075", fixed: "7.2.1-69057-12, 7.2.2-72806-9, 7.3.2-86009-4, 7.4-90075", type: file-write, vector: zero-click, auth: pre-auth, source: "https://www.synology.com/en-global/security/advisory/Synology_SA_26_13" }
+  - { cve: CVE-2024-10441, product: "Synology DSM system plugin daemon", cvss: "9.8 (CVSS 3.1)", epss: 0.0125, kev: false, exploited: "implied by Synology's alert (flaw not named); a GitHub proof of concept is reported by IT-Connect", affected: "DSM before 7.2-64570-4, 7.2.1-69057-6, 7.2.2-72806-1 (and 7.1.1-42962-7, 6.2.4-25556-8 lines per SA-24:20)", fixed: "7.2-64570-4, 7.2.1-69057-6, 7.2.2-72806-1, 7.1.1-42962-7, 6.2.4-25556-8", type: rce, vector: zero-click, auth: pre-auth, source: "https://www.synology.com/en-global/security/advisory/Synology_SA_24_20" }
+  - { cve: CVE-2026-93680, product: "Langflow OSS (MCP SSE endpoint, auto-login)", cvss: "9.8 (CVSS 3.1, IBM)", epss: 0.0218, kev: false, exploited: false, affected: "Langflow OSS 1.0.0 to 1.12.8 (Metasploit author: 1.5.0 to 1.11.4)", fixed: "1.13.0", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://www.ibm.com/support/pages/security-bulletin-langflow-oss-affected-multiple-vulnerabilities-2" }
+  - { cve: CVE-2026-110186, product: "Langflow OSS (code generation)", cvss: "9.8 (CVSS 3.1, IBM)", epss: 0.0062, kev: false, exploited: false, affected: "Langflow OSS 1.0.0 to 1.12.8", fixed: "1.13.0", type: rce, vector: zero-click, auth: pre-auth, source: "https://www.ibm.com/support/pages/security-bulletin-langflow-oss-affected-multiple-vulnerabilities-2" }
+  - { cve: CVE-2026-90868, product: "Progress WS_FTP Server", cvss: "9.9 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "before 2024.0.7 and 2025.0.4", fixed: "2024.0.7, 2025.0.4", type: rce, vector: network, auth: "unspecified (BACS: some flaws need authenticated or delegated Host Administrator access)", source: "https://security-hub.ncsc.admin.ch/#/posts/13128" }
+  - { cve: CVE-2026-105603, product: "DJ-Classifieds (Joomla), unrestricted upload", cvss: "9.4 (CVSS 4.0, Joomla CNA)", epss: null, kev: false, exploited: false, affected: "before 3.11.3", fixed: "3.11.3", type: file-upload, vector: network, auth: "low privileges per CNA; vendor: unauthenticated where registration is enabled", source: "https://dj-extensions.com/blog/dj-classifieds/dj-classifieds-3-11-3-security-update" }
+  - { cve: CVE-2026-105604, product: "DJ-Classifieds (Joomla), SQL injection in frontend search", cvss: "9.3 (CVSS 4.0, Joomla CNA)", epss: null, kev: false, exploited: false, affected: "before 3.11.3", fixed: "3.11.3", type: sqli, vector: network, auth: pre-auth, source: "https://mysites.guru/vulnerabilities/CVE-2026-105603/" }
+  - { cve: CVE-2026-105606, product: "Custom Tables (Joomla)", cvss: "9.5 (CVSS 4.0, Joomla CNA)", epss: null, kev: false, exploited: false, affected: "1.0 to 3.7.7", fixed: "3.7.8", type: file-upload, vector: network, auth: pre-auth, source: "https://mysites.guru/blog/custom-tables-3-7-8-unauthenticated-file-upload/" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured; general rules applied"
+dropped_candidates:
+  - { what: "NCSC-NL NCSC-2026-0464 / Canonical LXD and MicroCloud CVE-2026-112816 (CVSS 10.0, 2026-11-01/02)", why: "trusted-client impersonation needs the non-default LXD network API and the public certificate of an already-trusted client (MicroCloud join capture); no PoC, EPSS 0.003; not exploitable at the strict gate" }
+  - { what: "THN 2026-10-30 'WordPress RCE flaw draws nearly 63,000 attack attempts' (CVE-2026-119977 entry)", why: "only a larger Wordfence attempt count than the 18,500 the entry already carries; no new fact" }
+  - { what: "TeamViewer CVE-2026-111585 (viewer-side overflow, fixed 15.83, 2026-10-30)", why: "needs the user to connect to a malicious host, no exploitation, routine" }
+  - { what: "SSD Secure Disclosure TightVNC Viewer pre-auth RCE (2026-10-29, silently patched 2026-10-03)", why: "viewer-side client flaw, listening-mode help-desk case; no exploitation; routine" }
+  - { what: "Ivanti Connect Secure BleepingComputer/SecurityWeek 2026-11-02", why: "everything in it (CVE-2026-111357 and CVE-2026-118527 patched and on KEV, UTA0576 per Volexity) is in the entry already" }
+  - { what: "MSRC revision v5 (2026-11-01) of CVE-2026-111497 (.NET)", why: "still Exploited: No, publicly disclosed Yes; folded into the Patchstack/Brotli item as context only" }
+  - { what: "NCSC-NL PHP2Shell software list rows of 2026-11-02 (QNAP QuMagie 2.10.1 and earlier and QNE ADRA 1.0.7 and earlier set to Investigation; Broadcom CASMA; Cisco ISE Portal Builder)", why: "QNAP's current canonical QSA-26-18 (V1.2 of 2026-10-28) omits QuMagie and ADRA without a fix or not-affected statement: unresolved, too thin for an item; Broadcom CASMA and Cisco ISE Portal Builder rows are in the entries" }
+  - { what: "Check Point sk1000302 lastModified 2026-11-01, Cisco v1.10, Citrix CTX697263, HPE HPESBNW05171 rev 3, Palo Alto timelines (last 2026-10-29 and 2026-10-31 for Brotli), Fortinet FG-IR-26-186 (last 2026-10-28), Broadcom VMSA-2026-0008.1, Xerox XRX26-016 v4 (2026-10-28), Belden/Schneider/Wibu", why: "re-read this run: no change beyond what the entries already say (Check Point's 2026-11-01 edit adds the statement that Check Point products are not vulnerable to CVE-2026-115560, which the entry carries)" }
+  - { what: "BSI WID-SEC-2026-4270 Flowise (CVE-2026-119978, authenticated RCE), 4271 Traefik, 4276 Linksys router (CVE-2026-120283), 4281 Gitea, 4272 Collabora Online", why: "authenticated, unpatched consumer hardware, or no exploitation and no PoC; routine" }
+candidate_sources:
+  - id: aws-security-bulletins
+    publisher: "AWS Security Bulletins"
+    url: "https://aws.amazon.com/security/security-bulletins/"
+    rss_url: "https://aws.amazon.com/security/security-bulletins/feed/"
+    category: vendor-psirt
+    why: "Vendor PSIRT feed that read direct with dates (feed returned 8 bulletins back to 2026-10-30); bulletin 2026-160-AWS carried the per-service fix status for CVE-2026-98432 that no other source had. A bulletin that is revised later does not move in the feed, so the page must be re-read for open items."
+coverage_gaps:
+  - source_id: connectwise-trust-center
+    reason: "https://www.connectwise.com/company/trust/advisories answered 403 on extract, the reader and WebFetch again (fetch_method stays blocked). Working substitute: `extract https://status.connectwise.com/` reads (carried nothing newer than 2026-10-30 19:00 UTC; the Cloud Backup incident text and the x360Recover File Browser outage only)."
+  - source_id: resecurity
+    reason: "`url https://www.resecurity.com/blog` returns 20 article links with no dates; `extract` of the top posts dates them 2026-09-11 (three posts), 2026-08-25, 2026-08-06, 2026-07-07: nothing newer found, ten weeks quiet. Recipe works as the 2026-11-02 note says; the blog looks dormant."
+  - source_id: qnap.com / contactform7.com / dj-extensions.com
+    reason: "`extract` of these pages was served through the metered jina reader (direct trafilatura rung gave nothing readable) and one reader key rotated on HTTP 402; each page read in full. Recipe note, not a failure."
+  - source_id: success.trendmicro.com
+    reason: "extract and WebFetch both drop table rows of KA-0024802; `url --direct` returns the whole raw HTML and the status table reads after tag stripping."
+  - source_id: community.progress.com
+    reason: "Progress' WS_FTP bulletin page is a JavaScript-only Salesforce community page (url returns 750 KB of shell); the CVE list was taken from heise and the BACS advisory, so the primary was not read."
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 25", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0464 LXD CVSS 10.0 dropped (non-default API plus trusted client's public certificate)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 227, returned: 0, note: "27 new + 200 updated rows since 2026-11-02 00:56Z; CSAF read for WordPress, Flowise, Linksys, Traefik, Collabora; WordPress already covered, none exploited" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-018 of 2026-10-23" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-30; Request Tracker, Zimbra and Wing FTP read, authenticated or XSS" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev + WebFetch cisa.gov advisories listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogVersion 2026.10.30, no addition since 2026-10-30; no ransomware-flag flip on covered CVEs" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent exploited + url --direct exploitedvulnerabilities", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "4 exploited records, newest exploitedSince 2026-10-30, all covered" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 30 + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "FG-IR-26-188 (2026-11-02) merged into the CVE-2026-98432 update; FG-IR-26-186 timeline unchanged since 2026-10-28" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "SUG API url --direct (latestRevisionDate ge 2026-10-30) + msrc cve", horizon_hours: 26, in_horizon_items: 1597, returned: 0, note: "1597 revised CVEs, none exploited=Yes; CVE-2026-111497 revision 5 (2026-11-01) publiclyDisclosed Yes, exploited No; mass rows are Azure Linux and Chromium" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "2026-11-03 AI-and-cyber-intrusion report and a speech, not S1 (lead for S3/S2)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed rss.xml + url /json/CVE-<id>", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "PHP2Shell timeline last 2026-10-29 23:54Z (all 20 hotfixes out), Brotli status last 2026-10-31 03:15Z; both covered" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "extract/jina/WebFetch 403; status page substitute via extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "advisories page blocked on every rung; status.connectwise.com newest 2026-10-30" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "bridge url listing + extract per post", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "20 posts, newest dated 2026-09-11" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 168, in_horizon_items: 6, returned: 0, note: "kernel CVE-2026-98432 post (2026-11-02) used as corroboration/lead to AWS and CloudLinux; PHP2Shell and Node2Shell posts covered" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-10-15 (proxyjacking)" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "url --direct listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "marketing and pentest-explainer posts only" }
+  - { id: sansec-research, tier: standard, attempted: true, transport: "feed https://sansec.io/atom.xml 12", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-26 (Convertr/Plausible Magecart), outside the 168 h lookback" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "url --direct WordPress posts API + extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "TightVNC Viewer pre-auth RCE 2026-10-29: client-side, dropped" }
+  - { id: trail-of-bits, tier: standard, attempted: true, transport: "feed https://blog.trailofbits.com/feed/ 10", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "2026-10-21 and 2026-11-02 posts are research/AI tooling, not S1" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed https://patchstack.com/feed/ 15 + extract", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "Brotli/WordPress article returned as update-of; WordPress 7.1.4 post already covered" }
+  - { id: karimi-honeypot-data, tier: standard, attempted: true, transport: "bridge url directory listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "directory holds two report files (2026-10-22 to 24 attempts, 2026-10-24 confirmed RCE), nothing newer" }
+  - { id: morphisec, tier: standard, attempted: true, transport: "extract listing + url --direct hrefs", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "2026-11-01 XLoader and 2026-10-30 Claude Code extension posts are not S1; PHP2Shell IIS post (2026-10-28) already in the store" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed https://mysites.guru/rss.xml 12 + extract", horizon_hours: 145, in_horizon_items: 5, returned: 3, note: "CF7 6.2.4, DJ-Classifieds 3.11.3, Custom Tables 3.7.8 returned as borderline; Articles Anywhere/Sourcerer and Helix Ultimate not read in full (one-issue and template-framework security releases, no exploitation)" }
+  - { id: projectzero, tier: standard, attempted: true, transport: "feed https://projectzero.google/feed.xml 15", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-10-27 fuzzing-vs-AI post is research, not S1" }

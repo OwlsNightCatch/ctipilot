@@ -1,0 +1,1 @@
+Trend Micro's status table, last updated 2026-11-02, shows Trend Micro Web Security in the cloud fixed on 2026-10-30 and lists the TWS Authentication Agent as impacted, with a mitigation and no patch date; the on-premises gateway and enforcement agent are not impacted ([Trend Micro, 2026-11-02](https://success.trendmicro.com/en-US/solution/KA-0024802)).

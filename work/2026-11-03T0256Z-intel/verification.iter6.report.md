@@ -1,0 +1,52 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-11-03T06:10:35Z · ended_at=2026-11-03T06:30:10Z · duration_seconds=1175
+
+## Verification report — 2026-11-03T0256Z-intel (iteration 6, confirmation pass)
+
+Scope read cold: all eight updated entries in full with `git diff HEAD` against each record's `fields`, the `malware:c3rb3r-ransomware` registry record, the run record, and every claim of `claims.iter6.yaml`: 216 of 216 claims have a verdict row in `verification.iter6.claims.yaml` (216 ok, 0 F3/F4/F5/F13/F14, 0 unreadable). No deltas block (previous iteration returned CLEAN); the verdict anchors on the output, not on iteration 5.
+
+Every cited page was fetched fresh this iteration: `extract` for the bulk (Siemens SSA-834709, VulnCheck, Synology SA-26:13, SA-24:20 and the 2026-10-29 press release, 360, BleepingComputer x3, heise x2, Euronews, Tagesschau, CyberInsider, 20 Minuten, Blick, BFMTV, Le Monde, Public Sénat, Khaleej Times/AFP, Cooling Post, Censys, Forescout, Reuters via Internazionale, Nextgov, Node.js advisory and three release pages, Imperva, Zscaler, ELLIO, Tenable, OpenSourceMalware, Envoy GHSA, .NET issue and blog, Datadog, Patchstack, Cisco, Quest KB, NetApp KB, CloudLinux, AWS, Anthropic, Go team, CIQ, Debian, Ubuntu, Red Hat, linux-cve-announce, ACN, vd.ch, RTS, Inside IT, JFrog, PHP news archive); raw `url` for pages whose extract drops tables or bodies (Siemens product line and order number, CERT-FR version tables, Palo Alto status and timeline, Trend Micro status table, Akamai x2, Fortinet FG-IR-26-188, Broadcom VMSA-2026-0008.1, NetApp advisory page, GitHub GHSA CVSS vectors, Register article body, Inside IT JSON-LD); `ncsc-csh post` for 12960, 13054, 13105, 13128 and `ncsc-csh recent`; `pdf` for the Dixell/Copeland bulletin; ENISA EUVD API for the three WS_FTP records; NetApp advisory data API (revision 11.0, 20261103); the CISA alert through `WebFetch` with the outbound-links template; `cisa-kev` (catalog 2026.10.30). Every evidence quote the gate listed as not machine-checkable (NCSC 13128, 13105, Broadcom, Palo Alto) was matched literally by hand, and about 55 further evidence quotes were re-matched against the fetched pages.
+
+### Truth checks
+
+No finding. Highlights, each read on a page fetched this iteration:
+
+- SIMATIC (SSA-834709 V1.0 2026-08-11, 10.0 on CVSS 3.1 and 4.0, CWE-306, V4.3.4.1, order number 6ES7647-0BA00-1YA2 in the raw page; VulnCheck 2026-11-01: 16 events, `/dev/shm/.b`, setsid/nohup, http-in web shell, "not in CISA's KEV at the time of writing"; Register 2026-11-02 body read from raw HTML; CERT-FR first and last version 12 August 2026; NCSC-NL 11-08-2026).
+- Synology (SA-26:13 eight CVEs, "Mitigation None", fixed builds; SA-24:20 table incl. 7.2, 7.1.1 and 6.2.4 rows; press release 2026-10-29 without a CVE; 360 names CVE-2026-13639 and CVE-2026-13684, 27 skipped directories, ChaCha8 plus RSA-2048, `.L0CK3D`, `read-me3.txt`; BleepingComputer 380,000 and name-borrowing; NCSC 12960 UNKNOWN and "Network access to the DSM management interface"; CERT-FR 21 September 2026; heise original German).
+- Danfoss second wave (BleepingComputer 115 stores and Sabcobel "same vulnerability"; Guardian incl. Finland, Sabcobel evaporators, Swedish centre head; Euronews Danfoss supplier in both incidents; Tagesschau Estonia; CyberInsider "remain unknown"; 20 Minuten Coop attempts without success) plus the older CERT-FR alert (versions 12, 13, 16 October), NCSC 13054, Public Sénat, AFP, Cooling Post, Dixell PDF (Copeland bulletin 14 October, Admin/Admin, expiry date for contractor accounts), Censys, Forescout, Le Monde, BFMTV, Blick, Reuters, Nextgov.
+- Kernel (linux-cve-announce fixed versions; CIQ patched-kernels table with 2026-10-31 and 2026-11-01 builds; Anthropic "48 minutes" and retryable race; Go team; Akamai "similar flaw" and stable fixes; AWS NLB, Global Accelerator, PrivateLink, VPC Lattice; CloudLinux "couldn't reproduce"; Fortinet FG-IR-26-188 product list and "Known Exploited No"; Debian trixie (security) 6.12.115-2; Ubuntu "Last updated 30 October 2026"; Red Hat Critical with "precise heap control"; NCSC-NL; BleepingComputer).
+- Brotli (Node.js advisory text and the three release links; Imperva; CISA alert quote and CVE-2026-111497 listing; Zscaler 402 events; ELLIO update of 26 October; Cisco; Palo Alto status table and timeline of 2026-10-29; Envoy; .NET; Broadcom SDDC Manager table; Datadog; Akamai `inflate`; NCSC 13105; Patchstack in full).
+- PHP2Shell (Trend Micro table as of Nov. 2 from the raw page: Apex Nov. 11, TMMS Nov. 17, DDAN Nov. 12, "TMWS Cloud: Fixed (Oct. 30)", "TWS Authentication Agent: Impacted - Mitigation"; Quest KB update stamps and ports 80/443/52230; NetApp advisory data revision 11.0 with 9.12.1P20HF1 and 9.13.1P21HF1, "Affected only by CVE-2026-109618", score 9.2; KEV catalog 2026.10.30 lists both PHP flaws added 2026-10-26 and CVE-2023-40044 with ransomware use "Known").
+- WS_FTP (three EUVD API records with vectors and versions; four GHSA pages with PR:L (90868) or PR:H (90866, 90864, 90863) vectors; ACN 6 critical and 3 high; heise fifteen CVEs, six critical, Oct. 1 builds; NCSC 13128 attack chain and UNKNOWN status).
+- Vaud (vd.ch release of 2026-10-31, RTS, Inside IT; Inside IT's JSON-LD `datePublished` reads the fetch time, 2026-11-03T06:16:38Z, so the 2026-11-02 citation date rests on the URL slug and the text, not on that field).
+
+Changelog contract (4c): each of the eight records names every changed frontmatter field in `git diff HEAD`; `updated_at` equals the record `at` for the six `update` records and is untouched (null) on the two `improvement` records; every non-internal record has its `## <Type> — <at>` section with the same `at`; record summaries state what the sections state; the main analyses no longer contradict the newest sections (the 2026-10-31 PHP2Shell section's "Trend Micro Web Security cloud service on 2026-11-06" is a dated state superseded by the 2026-11-03 section, not an assertion about the present). `check_run.py` re-run: 59 pass, 0 warn, 1 fail, the one failure being `verification-confirmation` (this pass is the confirmation); `claim_ledger.py --coverage 6`: 216/216 answered.
+
+### Editorial / less-is-more flags (advisory)
+
+- #1 F11 (low confidence) Synology: `.L0CK3D` and `read-me3.txt` are file-name indicators (check 12); kept deliberately, declined in iterations 3 to 5.
+- #2 F11 Danfoss: main analysis about 730 words against the 550 bound (acknowledged in the run record).
+- #3 F11 (low confidence) Danfoss `actions[1]` bundles about eight sub-tasks (compromise check, restart or factory reset, VPN, firmware, Strict level, passwords, Admin password, contractor accounts) that CERT-FR's sequence and the Dixell guide also carry in the body sections; two actions would read as two start-now tasks.
+- #4 F11 Vaud: three analysis sentences, a takeaway and a one-sentence section against the two-sentence bound for a no-vector, no-actor incident; Swiss public-sector nexus and cited new facts keep it advisory rather than F7.
+- #5 F11 (low confidence) WS_FTP sourcing_note: "no transport could read" is fetch-pipeline vocabulary; the page is a JavaScript shell, so the fact is right. Pre-existing text.
+- #6 F11 (low confidence) Vaud sourcing_note: "the only first-hand source" sits beside the deputy director's own quoted wording; "the only first-hand document" would be exact. Pre-existing text.
+- #7 F11 (low confidence) Brotli sourcing_note: "The Node.js advisory names the affected release lines but not the fixed versions" understates a page that lists "Node.js v22.23.4, Node.js v24.22.1, Node.js v26.12.1" under "Downloads and release details", the page the body cites for those versions. Pre-existing text, not in this record's fields.
+- #8 F11 (low confidence) Registry `malware:c3rb3r-ransomware`: "Ransomware named after the 2016 Cerber operation" is BleepingComputer's reading stated in the registry's voice, while only 360's "variant" reading is attributed in the same clause.
+- #9 F11 (low confidence) Kernel: "NCSC-NL judges large-scale abuse unlikely given the exploit's complexity" omits NCSC-NL's second reason, the additional measures present in the known distributions; narrower than the source, not false.
+- #10 F11 (low confidence) WS_FTP: the four added CVEs and NCSC.ch's chain (published 2026-11-02, after the 2026-10-31 entry) are typed `improvement`, so the entry does not re-float; docs/pipeline.md lists "CVE in the chain" under `update`. The run record gives the reasoning; a judgement call.
+
+### Missed angles
+
+None evidenced. `ncsc-csh recent` shows one post created inside the window (13128, WS_FTP, covered); the other recent hub posts (13124 Drupal Commerce exploited, 13122 WatchGuard, 13120 Linux kernel, 13123 TeamViewer) are already covered by earlier entries or logged as borderline drops in the run record; CISA KEV is unchanged since catalog 2026.10.30 (matches the run record's mechanical sweep); two web searches (in-window exploited zero-days, Swiss municipal and cantonal incidents of 2 November 2026) surfaced nothing dated inside the window. Coverage looks complete.
+
+### Run record
+
+Notes checked for truth: eight updated ids match the files and `git status`; `entities_added` matches the registry diff (one record, `malware:c3rb3r-ransomware`, relation `affects` to `product:synology-diskstation-manager-dsm`); "CISA KEV has no addition after 2026-10-30" and "no covered CVE flipped its ransomware flag" hold (catalog 2026.10.30; the PHP flaws show "Unknown", CVE-2023-40044 "Known" since 2023); the 6 update and 2 improvement split holds; the Danfoss count (692 against my 730) differs by counting method; the rotation-priority sources named in the Allocation paragraph appear in the sub-agents' `sources_attempted`. Housekeeping for the main agent: `verification_iterations: 5` and the `completed` stamp (06:10:30Z) predate this sixth pass, which needs recording as iteration 6 with its model, timestamps, verdict and the advisory list.
+
+### Verdict
+
+CLEAN (truth: 0, editorial: 0, advisory: 10). Every in-scope claim passes against pages fetched this iteration, each record's declared fields cover every changed line, the quote-literal exceptions were matched by hand, and the ten F11 items are wording, length or judgement points the main agent may leave.
+
+### Findings summary (machine-readable)
+
+See `work/2026-11-03T0256Z-intel/verification.iter6.findings.yaml`.

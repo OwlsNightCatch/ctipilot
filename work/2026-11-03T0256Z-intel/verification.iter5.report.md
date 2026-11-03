@@ -1,0 +1,49 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-11-03T05:51:33Z · ended_at=2026-11-03T06:09:06Z · duration_seconds=1053
+
+## Verification report — 2026-11-03T0256Z-intel (iteration 5)
+
+Scope read: all eight updated entries in full with `git diff HEAD` and `tools/entry_record.py diff` for each, `entities/registry.yaml` (malware:c3rb3r-ransomware), the run record, and every claim of the ledger: 216 of 216 claims have a verdict row in `verification.iter5.claims.yaml` (216 ok, 0 F3/F4/F5/F13/F14, 0 unreadable). Every cited page was fetched fresh this iteration (extract; raw `url` for pages whose extract dropped tables or bodies: Trend Micro status table, Akamai x2, Node.js advisory fix list, Palo Alto timeline, ELLIO and CloudLinux metadata; `ncsc-csh post` for 12960, 13054, 13105, 13128; `pdf` for the Dixell/Copeland bulletin; ENISA EUVD API and the CVE records for WS_FTP vectors; the CISA alert via the jina rung; `cisa-kev` bridge and the direct KEV feed, both catalog version 2026.10.30; NetApp advisory data API).
+
+### Prior-iteration deltas (iteration 4)
+
+1. php2shell Trend Micro labels 2026-10-30 to 2026-11-02: correct. The page reads "Last updated: 2026/11/02" and "TrendAI Product Current Status as of Nov. 2"; the status table (read from the raw HTML, the extract drops the Apex and Mobile Security rows) gives Apex Central and Apex One "Critical Patch ETA: Nov. 11", Mobile Security for ENT "Critical Patch ETA: Nov. 17", Deep Discovery Analyzer "Nov. 12", "TMWS Cloud: Fixed (Oct. 30)", "TWS Authentication Agent: Impacted - Mitigation", DDI and DDEI critical patches. Exposure line, Defender takeaway and first paragraph all carry 2026-11-02.
+2. php2shell Quest labels 2026-10-28 to 2026-10-29: correct. The KB carries "UPDATE October 23rd", "UPDATE October 27th" and "UPDATE October 29th" stamps (published 2026-10-21); every cited fact holds (all SMA and SDA versions affected, CVE-2026-115560 not affecting them, SMA 15.0 CU5 15.0.378 and 15.1 CU2 15.1.177 with PHP 8.4.27 on 2026-10-23, Patch 4 and Patch 1 without the fix, SDA 9.3.312 with PHP 8.3.36 on 2026-10-27, 9.3.313 on 2026-10-29 covering "hotfix versions 9.3.305-9.3.111 in addition to GA version 9.3.304", block ports 80, 443 and 52230).
+3. Vaud sourcing_note: the SRF and Le Temps sentence is gone. The remaining text is supported (RTS cites "les dernières informations données par l'Etat de Vaud"; Inside IT relays Keystone-SDA for the police non-confirmation and the deputy director). See advisory #5 for a wording nit.
+4. SIMATIC `verification: multi-source` (declined): judged acceptable. The entry has the vendor advisory plus an independent researcher (VulnCheck) whose canary telemetry exercised the same CVE, so two independent parties exist for the finding; the single-source nature of the exploitation report is stated in the headline ("VulnCheck's canary caught exploitation"), summary, sourcing_note and body. The declined reasoning cites CERT-FR and NCSC-NL as co-sources, which the sourcing_note itself calls non-independent relays, so the vendor-plus-researcher basis is the stronger justification. Not raised as a finding.
+5. Synology sourcing_note "advisory SA-24:20 (first published 2024-11-05)": correct; SA-24:20 revision 1 is 2024-11-05 "Initial public release", revisions 4 to 6 fall on 2024-11-26 and 2024-12-05, BleepingComputer calls it "a November 2024 security advisory".
+6. `.L0CK3D` and `read-me3.txt` kept (declined): carried forward as advisory #1.
+7. Danfoss length (declined): carried forward as advisory #2.
+8. Vaud length (declined): carried forward as advisory #3.
+
+Earlier iteration-3 fixes re-checked and sound: Synology Exposure cites NCSC 12960 ("Prerequisites: Network access to the DSM management interface"); BleepingComputer "borrowed its name from a notorious ... RaaS ... that emerged in 2016" and 360 "老牌勒索家族Cerber的一个变种“C3RB3R”" are both attributed in the analysis, the record summary and the registry summary; no SA-24:20 date-mismatch clause remains; the kernel entry says Akamai "reports a similar flaw" (Akamai: "A similar flaw exists when request socket migration is enabled") and no Debian trixie clause beyond the tracker's own rows (trixie 6.12.113-1 in the fixed-version table, trixie (security) 6.12.115-2 fixed); no Admiralty wording remains anywhere in the eight entries (grep for credibility, reliability, admiralty outside the frontmatter block returns nothing); the php2shell NetApp clause cites advisory data revision 11.0 (`kb_rev_history` 11.0, 20261103, "ONTAP 9.12.1P20HF1 and 9.13.1P21HF1 added"; `updated_date` 2026-11-03).
+
+### Truth checks
+
+No finding. Highlights of what was confirmed against fresh pages: SIMATIC (Siemens SSA-834709 V1.0 2026-08-11, CVSS 10.0 on 3.1 and 4.0, V4.3.4.1, order number 6ES7647-0BA00-1YA2 in the raw page; VulnCheck 2026-11-01 with 16 events, hidden /dev/shm file, setsid/nohup, http-in web shell, "not in CISA's KEV at the time of writing"; The Register 2026-11-02; CERT-FR first and last version 12 August 2026; NCSC-NL 11-08-2026); Synology (SA-26:13 table and "Mitigation None", eight CVEs, SA-24:20 table and revision history, press release 2026-10-29, 360 with 27 skipped directories, ChaCha8 and RSA-2048, `.L0CK3D`, `read-me3.txt`, BleepingComputer 380,000 Shadowserver count, NCSC 12960 exploitation UNKNOWN, CERT-FR 21 September 2026, heise); Danfoss second wave (BleepingComputer 115 stores and Sabcobel "same vulnerability", Guardian incl. Finland and the Swedish centre head, Euronews Danfoss supplier in both incidents, Tagesschau Estonia, CyberInsider "remain unknown", 20 Minuten Coop attempts without success, Blick, plus the older CERT-FR alert versions 12, 13 and 16 October, NCSC 13054, Public Sénat, Cooling Post, Dixell PDF, Censys, Forescout, Le Monde, BFMTV, AFP); kernel (linux-cve-announce, CIQ patched-kernels table with 2026-10-31 and 2026-11-01 builds, AWS bulletin, CloudLinux, Fortinet FG-IR-26-188 with FortiOS, FortiProxy, FortiManager, FortiAnalyzer, FortiWeb, FortiAuthenticator among the products under investigation, Akamai, Anthropic, Go team, Debian, Ubuntu tracker "Last updated 30 October 2026", Red Hat "Critical" statement with 9.8, NCSC-NL, BleepingComputer); Brotli (Node.js advisory with the three fix releases in the page's release list, Imperva, CISA alert, Zscaler 402 events, ELLIO, Cisco, Palo Alto status table and timeline, Broadcom VMSA-2026-0008.1, Envoy, .NET, OpenSourceMalware, Tenable, Datadog, Akamai inflate, NCSC 13105 updated 29 October, Patchstack in full); WS_FTP (three EUVD API records with vectors, four GitHub advisory pages with PR:L or PR:H vectors, NCSC 13128 score list, ACN alert, heise fifteen CVEs of which six critical, KEV catalog 2026.10.30 holding only CVE-2023-40044 with known ransomware use); Vaud (vd.ch release of 2026-10-31, RTS, Inside IT).
+
+Style and contract: no em dash outside `## <Type> — <at>` headings; no IOCs beyond advisory #1; no workflow vocabulary beyond advisory #4; every changed field in `git diff HEAD` (confirmed with `entry_record.py diff`) is named in the matching record's `fields`; `updated_at` equals the record `at` for all six `update` records and is untouched on the two `improvement` records; every non-internal record has its section; priority and classification calibration look right for all eight (SIMATIC, Synology, Danfoss and Brotli `high`; kernel, WS_FTP and PHP2Shell `notable`; Vaud `routine`).
+
+### Editorial / less-is-more flags (advisory)
+
+- #1 F11 (low confidence) Synology: ".L0CK3D extension" and "read-me3.txt" are file-name indicators (check 12); kept deliberately by the main agent, listed again so the decision stays visible.
+- #2 F11 Danfoss: main analysis about 737 words against the 550 bound (declined, acknowledged in the run record, which counts 692 by a different method).
+- #3 F11 Vaud: three analysis sentences plus takeaway and a one-sentence section against the 5b two-sentence bound for a no-vector, no-confirmed-actor incident; Swiss public-sector nexus and a cited new development (suspected insider, police non-confirmation) make this advisory rather than F7.
+- #4 F11 (low confidence) WS_FTP sourcing_note: "no transport could read" is fetch-transport wording; the page is a JavaScript shell (confirmed), so the fact is right and only the word is pipeline vocabulary. Pre-existing text.
+- #5 F11 (low confidence) Vaud sourcing_note: "the only first-hand source" sits beside the deputy director's own quoted wording; "the only first-hand document" would be exact.
+
+### Missed angles
+
+None evidenced. The NCSC.ch security hub's recent-post list (30 items) has exactly one post created after the window start (13128, WS_FTP, covered); CISA KEV is unchanged since catalog 2026.10.30 (mechanical sweep in the run record agrees); two web searches (in-window exploited zero-days, Swiss public-sector incidents of November 2026) surfaced nothing dated inside the window that I can name. Coverage looks complete for the window.
+
+### Run record
+
+Notes checked for truth: eight updated ids match the files; `entities_added` matches the registry diff (one record, `malware:c3rb3r-ransomware`, relation to `product:synology-diskstation-manager-dsm`, alias CerberImposter from BleepingComputer, "since October 2026" from 360); "CISA KEV has no addition after 2026-10-30" holds (catalog 2026.10.30); the 6 update and 2 improvement split holds; the Danfoss word count differs from mine (692 against 737) by counting method only. `verification_iterations: 4` will need the main agent to record this fifth pass.
+
+### Verdict
+
+CLEAN (truth: 0, editorial: 0, advisory: 5). Every in-scope claim passes, every prior-iteration remediation checks out against the source, and the remaining items are advisory F11 wording or length points the main agent may leave.
+
+### Findings summary (machine-readable)
+
+See `work/2026-11-03T0256Z-intel/verification.iter5.findings.yaml`.

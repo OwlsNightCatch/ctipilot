@@ -1,0 +1,397 @@
+domain: S3
+run_id: 2026-11-03T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-03T02:58:48Z
+ended_at: 2026-11-03T03:24:06Z
+duration_seconds: 1518
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 6
+  bridge_fetches: 90
+window_note: >
+  window_hours=26 (publication on or after 2026-11-02T00:56Z); standard/candidate slice records swept to their own
+  lookback_hours (122 h for ox-security, 168 h for the rest). Items marked lookback: true were published before the
+  26 h horizon but inside their record's lookback.
+items:
+
+  # ------------------------------------------------------------------ 1 (update-of)
+  - title: "CVE-2026-58115, Node-RED in Siemens SIMATIC IoT2050 Advanced: VulnCheck's canary records the first in-the-wild exploitation, a one-request flow that runs a shell dropper"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/exploitation-targeting-node-red", publisher: "VulnCheck", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/11/02/max-severity-bug-in-widely-used-ot-programming-tool-exploited-to-deliver-linux-malware/5307086", publisher: "The Register", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: theregister-security-feed, URL https://www.theregister.com/security/headlines.atom (listing fetched via bridge feed) → pivot: The Register article, URL https://www.theregister.com/security/2026/11/02/max-severity-bug-in-widely-used-ot-programming-tool-exploited-to-deliver-linux-malware/5307086 (WebFetch; extract returned only site chrome) → primary: VulnCheck blog, URL https://www.vulncheck.com/blog/exploitation-targeting-node-red (extract, full body). Store check: CVE-2026-58115 is in cves.ids and entry 2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root says 'No exploitation is reported'; CISA KEV catalog read via bridge cisa-kev (release 2026-10-30T17:02Z) does not list it."
+    summary: |
+      The covered entry for CVE-2026-58115 (Siemens ProductCERT, unauthenticated Node-RED HTTP interface on SIMATIC IoT2050 Advanced, CVSS 10.0) states that no exploitation is reported; that is now stale. VulnCheck reports from its own canary telemetry that on 2026-10-30 an attacker sent one complete exploit, a single POST to the Node-RED /flows endpoint deploying a flow in which an inject node (fires once after a one-second delay) is wired to an exec node that runs a base64-wrapped shell pipeline (three encoding layers). The decoded dropper fetches a Linux AMD64 bot with wget and a curl fallback, stores it as a hidden file in the RAM-backed /dev/shm and starts it detached with setsid or nohup. Between 2026-10-30 and 2026-11-01 the same source address produced 16 events against this CVE with several payloads, among them a staged shell script, a second binary written under /tmp, and flows that expose an http-in endpoint wired through a function node to an exec node, a persistent web-shell-style backdoor that survives loss of the memory-resident implant. VulnCheck did not retrieve the binary or the staged scripts, so the implant's function is unknown; it attributes the traffic to indiscriminate scanning (the source logged 125 hits across eight CVEs), not a focused campaign. VulnCheck added the CVE to its own KEV list; CISA's KEV did not list it when this run read the catalog (release 2026-10-30). The Register relays VulnCheck's finding and is not independent. Affected-version detail (Siemens: all versions below V4.3.4.1) comes from the covered entry's Siemens source and was not re-read this run; VulnCheck also notes Emerson documents its use of Node-RED but says it has not validated whether Emerson products are affected.
+    region_nexus: "global; embedded Node-RED in OT edge gateways deployed in building automation, water and energy; no Swiss victim reported"
+    primary_sector_nexus: "indirect (communal and cantonal infrastructure operators running IoT2050 or other Node-RED based edge gateways)"
+    sector: "ot-ics"
+    cves: [CVE-2026-58115]
+    techniques: [T1190, T1059.004, T1105, T1505.003, T1027]
+    affected_products: ["Siemens SIMATIC IoT2050 Advanced", "Node-RED"]
+    entity_keys: ["product:siemens-simatic-iot2050-advanced"]
+    new_entities:
+      - { key: "product:node-red", type: product, name: "Node-RED", aliases: [], summary: "Flow-based low-code automation runtime embedded in industrial gateways such as Siemens SIMATIC IoT2050 Advanced; unauthenticated admin API instances (no adminAuth) are exploited in the wild per VulnCheck (2026-11-02)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root"
+    evidence:
+      - quote: "On October 30, 2026, one of our canaries caught an attacker exploiting CVE-2026-58115, an unauthenticated Node-RED admin API flaw, to deploy a flow that downloads and runs a Linux bot."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/exploitation-targeting-node-red"
+      - quote: "Wire one to the other and the flow executes a command as soon as it is deployed, with no further interaction."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/exploitation-targeting-node-red"
+      - quote: "it is not in CISA's KEV at the time of writing"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/exploitation-targeting-node-red"
+    extended_notes: |
+      Exposure (VulnCheck): Node-RED instances without adminAuth that are reachable over HTTP are found and exploited automatically; a deployment takes one HTTP request. Check from outside the network whether any Node-RED admin interface (including ones embedded in ICS/OT products) is reachable.
+      Detection concept (web or reverse-proxy access logs, Node-RED flow store): POST /flows from non-engineering sources, especially bodies that deploy an exec node carrying base64 piped to sh (VulnCheck notes that matching wget or curl strings misses the encoded form); also review deployed flows for exec nodes or http-in endpoints nobody built. Host-side: hidden dot-files launched from /dev/shm and detached processes (setsid or nohup) spawned by the node-red process. Post-patch compromise check: patching does not remove deployed flows, so inspect flows for planted http-in/exec chains.
+      Triage (analyst inference from the mechanism, not stated by VulnCheck): legitimate Node-RED engineering deployments also POST /flows, but from engineering workstations and without exec nodes carrying encoded shell; the discriminators are source address, exec-node content and a download-and-execute sequence in the child process tree.
+      Hardening lever: VulnCheck names missing adminAuth as the exposed condition but gives no configuration steps; Siemens' interim mitigations (uninstall or harden Node-RED) are in the covered entry. Keeping the admin interface off routable networks is an inference from the mechanism.
+      Gap: VulnCheck is the sole telemetry source; the payload was never retrieved; the 'attacker' address sits in a hyperscaler ASN and VulnCheck calls the activity scanning rather than a campaign.
+
+  # ------------------------------------------------------------------ 2 (update-of)
+  - title: "Refrigeration-controller attacks reach Belgium, Luxembourg, Sweden, the Netherlands, Ireland and Estonia: more than 115 stores hit overnight into 2 November"
+    sources:
+      - { url: "https://www.heise.de/news/Kuehlschraenke-in-Lebensmittellaeden-weiterer-Laender-geknackt-11507846.html", publisher: "heise online", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-disrupt-refrigeration-systems-at-european-supermarkets/", publisher: "BleepingComputer", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://www.euronews.com/2026/11/02/cyberattack-hits-belgian-supermarket-fridges-and-freezers", publisher: "Euronews", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (feed fetched via bridge) → pivot: heise article, URL https://www.heise.de/news/Kuehlschraenke-in-Lebensmittellaeden-weiterer-Laender-geknackt-11507846.html → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-disrupt-refrigeration-systems-at-european-supermarkets/ (company statements, Sabcobel quote via RTL) → pivot: Euronews, URL https://www.euronews.com/2026/11/02/cyberattack-hits-belgian-supermarket-fridges-and-freezers (CCB and prosecutor statements via Belga). RTL (rtl.be) is cited by BleepingComputer but is http-only and was not reachable on any transport; Reuters, Le Soir and NOS were not fetched. Store check: entry 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack was last updated 2026-11-02T03:47:57Z, before these reports."
+    summary: |
+      Overnight from Sunday 1 to Monday 2 November, refrigeration and freezer systems failed or were forced to heat at dozens of supermarkets in several countries, about three weeks after the French attacks on Danfoss AK-SM/AK-SC and Copeland/Dixell xweb controllers that the covered entry tracks. Chains confirmed to BleepingComputer: ICA (Sweden, at least 4 stores, "outside ICA's central network"), Coop Sweden (7 of more than 800), Ahold Delhaize (around 40 stores in Belgium and Luxembourg, "an IT incident"), Carrefour Belgium (15 of 700), Colruyt's independently operated Spar stores (5), Intermarché Belgium (about 15), SuperValu Ireland (13) and Selver Estonia (1); at least 17 butcher shops and neighbourhood stores in the Netherlands; BleepingComputer counts more than 115 stores. Euronews adds IKEA Mons, the Belgian Centre for Cybersecurity's statement that it is aware of the incident and has no further information, and a federal prosecutor's investigation. Reported setpoints differ across outlets (an ICA store manager told TV4 of +50 °C, heise, citing Euronews, says Belgian units were set to 70 °C while Euronews' own text says 17 °C). Whether the cause is the same as in France is a claim, not a finding: the CEO of installer Sabcobel, which services Delhaize's units, told Belga and RTL that the Belgian attack uses exactly the same mechanism as the French one, switching evaporators to defrost, that a software update alone is insufficient and physical changes are required, and that most customers have since moved to managing units over a secure connection; heise states the same-method link is not confirmed, and no source names the controller model, the entry vector or an attributing party. This sits uneasily with ANSSI's earlier statement in the covered entry that the French attacks used exposure and weak passwords rather than a published flaw, which the new sources do not address. No source lists a Swiss store.
+    region_nexus: "europe (BE, LU, SE, NL, IE, EE); neighbouring countries to Switzerland not named; no Swiss store in these sources"
+    primary_sector_nexus: "indirect (retail cold chain; same controller class sits in hospitals, school kitchens, laboratories and municipal facilities)"
+    sector: "retail"
+    cves: []
+    techniques: [T1190, T1133, T1078]
+    affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355", "Copeland xweb", "Dixell xweb"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - quote: "More than 115 stores in Belgium, the Netherlands, Sweden, Luxembourg, Ireland, and Estonia have been affected."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-disrupt-refrigeration-systems-at-european-supermarkets/"
+      - quote: "told the Belga news outlet that the Belgian attack involves exactly the same mechanism as the previous French cyberattack."
+        attribution: "Euronews"
+        source_url: "https://www.euronews.com/2026/11/02/cyberattack-hits-belgian-supermarket-fridges-and-freezers"
+      - quote: "Ob es sich um dieselbe Masche handelt, ist noch nicht bestätigt."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Kuehlschraenke-in-Lebensmittellaeden-weiterer-Laender-geknackt-11507846.html"
+      - quote: "have opened an investigation into the incident, according to a spokesperson."
+        attribution: "Euronews"
+        source_url: "https://www.euronews.com/2026/11/02/cyberattack-hits-belgian-supermarket-fridges-and-freezers"
+    extended_notes: |
+      Defender angle for the covered entry's Exposure/Detection lines: the second wave hit stores 'operating outside the central network' (ICA) and independently run installations (Colruyt/Spar, butcher shops), which is the profile of small municipal and institutional cold storage run by an installer rather than by central IT. Installer-managed remote access (the contractor's own VPN or portal) is the question to put to the contractor, as the covered entry already advises for France.
+      Open points to track: confirmation of the controller family and entry vector from CCB/CERT-FR/NCSC, any BSI or NCSC-CH statement, and whether setpoint 50 °C (France, Sweden) versus other values indicates different tooling.
+
+  # ------------------------------------------------------------------ 3 (new)
+  - title: "CyberStrikeAI: Kaspersky documents an LLM-orchestrated C2 framework driving full Active Directory compromise at education organisations, entered through a compromised SQL Server"
+    sources:
+      - { url: "https://securelist.com/cyberstrikeai-attacks/121715/", publisher: "Kaspersky Securelist (GReAT / Cyber Threat Intelligence)", date: "2026-11-02", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist, URL https://securelist.com/feed/ (feed fetched via bridge; item link https://securelist.com/tr/cyberstrikeai-attacks/121715/) → primary (no pivot needed): Securelist article read in full with extract on https://securelist.com/cyberstrikeai-attacks/121715/. Store check: no entry or registry key mentions CyberStrikeAI; ARTEX (tool:artex) and NIK C2 are separate frameworks."
+    summary: |
+      Kaspersky's CTI team reports a campaign in which CyberStrikeAI, an open-source Go framework, ran the post-exploitation phase against education-sector organisations in several African and Latin American countries (Kaspersky: confirmed victims). The framework keeps the LLM on the operator's server: the model plans, selects tools through MCP and generates commands, while the implant is an ordinary C2 agent with no AI code, no API keys and no calls to AI services, so nothing on the victim host looks different from a human-driven session. In the reconstructed incident a human operator first entered through a compromised SQL Server (16.0.1000), with the first commands originating from the sqlservr.exe process, spent about a day on host and network discovery and tooling, then paused two weeks; the agent phase then established persistence within two minutes, mapped the domain over five hours, and after a further pause of several days moved laterally over SMB and WMI, dumped credentials and exported databases within about one hour. Observed behaviour is classic: base64-wrapped PowerShell, scripts reassembled from split files and decoded with certutil, persistence by a scheduled task named SystemUpdate (registry Run key, crontab @reboot or .bashrc alternatives on Linux), remote scheduled tasks run as SYSTEM, WMI and Impacket WMIExec, LDAP queries for Kerberoasting and AS-REP roasting, LAPS and Azure checks, registry hive dumps, LSASS dumps through comsvcs.dll MiniDump by PID, DCSync and Golden Ticket with a renamed mimikatz, LLM-generated SQL and LDAP queries, screenshots; Kaspersky puts agent deployment to domain-admin compromise at 3 to 4 days. Kaspersky links the samples into two build groups by Go VCS metadata, cannot tie either to a known actor or to each other, and says only that Chinese-language script comments, Chinese services and UTC+8 business-hours restarts of the control servers suggest a Chinese-speaking operator. Its own assessment is that AI orchestration changes speed and operator skill requirements, not the techniques, and that well-tuned classic correlation rules suffice to detect it.
+    region_nexus: "global; confirmed victims in Africa and Latin America; no European or Swiss victim reported"
+    primary_sector_nexus: "indirect (education organisations with AD domains and exposed SQL Server, comparable to cantonal schools and universities)"
+    sector: "education"
+    cves: []
+    techniques: [T1190, T1059.001, T1053.005, T1140, T1021.002, T1047, T1087.002, T1558.003, T1558.004, T1003.002, T1003.001, T1003.006, T1558.001, T1113, T1041, T1071.001, T1547.001, T1053.003, T1546.004]
+    affected_products: ["Microsoft SQL Server", "Microsoft Active Directory"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:cyberstrikeai", type: tool, name: "CyberStrikeAI", aliases: [], summary: "Open-source Go penetration-testing and C2 framework in which a server-side LLM orchestrator plans actions, calls tools over MCP and tasks a conventional implant; Kaspersky (2026-11-02) documents its use in post-exploitation against education organisations in Africa and Latin America." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Confirmed victims of the campaign included organizations in the education sector in several countries across Africa and Latin America."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cyberstrikeai-attacks/121715/"
+      - quote: "originated from the sqlservr.exe process, indicating the likely initial access vector"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cyberstrikeai-attacks/121715/"
+      - quote: "Since the actions performed by an AI agent on the network are indistinguishable from those of a human, classic, well-tuned correlation and behavioral analysis rules are sufficient to detect it."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cyberstrikeai-attacks/121715/"
+      - quote: "The available data does not allow us to link the activity to any known group of attackers"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cyberstrikeai-attacks/121715/"
+    extended_notes: |
+      Detection concepts by telemetry class (Kaspersky's own rule list maps to these): process-creation events with parent lineage, a command shell or PowerShell with encoded commands spawned by sqlservr.exe; scheduled-task creation (schtasks /s remote creation, task named SystemUpdate, Schedule.Service COM creation) and task actions running as SYSTEM; Windows security events 4688/4104 for PowerShell, 4624/4768/4769 for logons and Kerberos (bursts of TGS requests for Kerberoasting, AS-REP roasting), 4662/4663/4656 object access, 5145 share access; LSASS access and comsvcs.dll MiniDump with a PID argument; registry-hive saves with reg.exe; DCSync replication requests from non-DC hosts; LDAP discovery bursts; certutil decode of .b64 files in C:\Windows\Temp, C:\ProgramData. Network side: the implant polls a server over HTTP/S, TCP or WebSocket and sends a fixed authentication header per C2 server; the control panel generates a self-signed certificate at every start whose issuer and subject carry the framework name, so scan history dates restarts.
+      Hardening: Kaspersky gives detection coverage, not hardening steps; it notes the agent checks for LAPS. Mechanism-derived levers (analyst inference, not stated by Kaspersky): keep the database service account and host out of privileged-credential reach so a database server never holds domain-admin credentials, protect LSASS, restrict replication rights to domain controllers.
+      Triage (analyst inference from the mechanism, not stated by Kaspersky): administrators and management tools can legitimately start PowerShell from a database host or create scheduled tasks remotely; the discriminators the source's timeline supports are an encoded command or a script reassembled from split files, a task named SystemUpdate that no update tooling owns, and compressed sequencing (discovery, credential dumping and DCSync within hours after a dormant period of days).
+      Gap: no victim count, no named actor, no European victim; two-source corroboration of the campaign does not exist yet (trade press will relay Kaspersky).
+
+  # ------------------------------------------------------------------ 4 (new, borderline)
+  - title: "LLMJacking: Mandiant and GTIG describe stolen cloud tokens used to enable cloud LLM services and resell the access through 'LLM Mixers', with six-figure daily bills"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/", publisher: "Google Threat Intelligence Group / Mandiant", date: "2026-11-02", role: "primary" }
+      - { url: "https://threats.wiz.io/all-incidents/threat-actors-targeting-gcp-billing-accounts-for-llm-usage", publisher: "Wiz Threat Center", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: mandiant-gtig, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (feed fetched via bridge) → primary (no pivot needed): GTIG post read in full with extract on https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/ → corroborating pivot: Wiz threat-center record found via the wiz-blog feed https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml, URL https://threats.wiz.io/all-incidents/threat-actors-targeting-gcp-billing-accounts-for-llm-usage"
+    summary: |
+      Mandiant responded to multiple 2026 incidents in which actors hijacked enterprise access to cloud-hosted LLMs; the incident set spans North America, South America and Asia Pacific in financial services, retail, technology and transportation, with charges above USD 100,000 in a single day and up to USD 1 million cumulative before access was cut. GTIG states the dominant initial access vector is exposed or stolen cloud identity tokens (IAM credentials, service-account keys, GitHub personal access tokens, live session tokens, including a page that has users paste a raw access-token JSON to bypass password and MFA); a smaller path is publicly exposed LLM endpoints (Ollama-style) and LLM API keys harvested from public repositories, validated with single-token requests (max_tokens=1) that stay below volume anomaly alerts. After entry the actors enumerate services and secret stores, create IAM or service accounts, attach administrative policies, inject SSH keys into compute metadata, and in one case exploited a LiteLLM gateway flaw (CVE-2026-40217, user-ID rebind on /key/regenerate) to turn a virtual key into proxy-admin. GTIG states that in several incidents LLM services were not enabled at compromise and the actor enabled them with the stolen key, then burned through quotas with 'burn and rotate' service accounts, requested GPU quota, and sold the access through relay gateways (LLM Mixers) built on open-source API proxies; GTIG tracks UNC6993 among the clusters and says it believes a token-routing service's pricing implies stolen keys. Wiz independently describes GCP billing-account hijack via search-ad phishing that harvests credentials and MFA codes, then enables the Gemini API and links external projects to the victim's billing account, so prompts stay invisible to victim logs (Wiz, 2026-10-20). GTIG expects actors to prioritise LLMJacking over cryptojacking.
+    region_nexus: "global; GTIG's incident set names no European or Swiss victim"
+    primary_sector_nexus: "indirect (public bodies adopting cloud LLM services such as Azure OpenAI, Bedrock or Vertex)"
+    sector: "technology"
+    cves: [CVE-2026-40217]
+    techniques: [T1078.004, T1528, T1552.001, T1213.003, T1136.003, T1098.001, T1098.004, T1496.004, T1190]
+    affected_products: ["Amazon Bedrock", "Microsoft Azure AI Foundry / Cognitive Services", "Google Vertex AI / Gemini API", "BerriAI LiteLLM", "Ollama"]
+    entity_keys: ["product:berriai-litellm", "product:ollama"]
+    new_entities:
+      - { key: "trend:llmjacking", type: trend, name: "LLMJacking and LLM Mixers", aliases: ["LLMJacking", "LLM Mixers"], summary: "Abuse of stolen cloud identities and LLM API keys to enable and consume cloud LLM services and resell the access through relay gateways; GTIG and Mandiant (2026-11-02) report charges above USD 100,000 per day." }
+      - { key: "actor:unc6993", type: actor, name: "UNC6993", aliases: [], summary: "GTIG-tracked financially motivated cluster in LLMJacking that abused a misconfigured service-account key and a token-capture portal and used open-source relay gateways to aggregate stolen keys (GTIG, 2026-11-02)." }
+    relation_suggestions:
+      - { subject: "actor:unc6993", object: "trend:llmjacking", basis: "GTIG names UNC6993 as one of the clusters operating in the LLMJacking ecosystem (GTIG, 2026-11-02)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Substantive primary analysis with a concrete cloud control-plane detection set, but the incident set names no European or Swiss victim and the decision only applies where the organisation runs cloud LLM services (relevance depends on Swiss public-sector cloud AI adoption); the store's AI-offence items so far were dropped for want of a constituency decision."
+    evidence:
+      - quote: "Mandiant responded to multiple incidents in 2026 in which threat actors hijacked enterprise access to Large Language Models (LLMs)"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/"
+      - quote: "the dominant initial access vector has been exposed or stolen cloud identity tokens"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/"
+      - quote: "In multiple incidents that Mandiant investigated, LLM services were not enabled at the time of compromise."
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/"
+      - quote: "conducted automated credential validation sweeps using minimal single-token requests"
+        attribution: "Google Threat Intelligence Group / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/"
+    extended_notes: |
+      Detection by telemetry class (cloud control-plane audit logs plus gateway/API access logs): unexpected enablement of generative-AI services in a project or subscription (GCP ServiceUsage EnableService for the AI platform API; Azure Microsoft.CognitiveServices accounts/deployments writes; AWS Bedrock model-access and agreement calls such as PutUseCaseForModelAccess and CreateFoundationModelAgreement); first-time invocation APIs from principals that never used them (Bedrock Converse/InvokeModel, Vertex Predict/GenerateContent); spikes of throttling or validation errors that indicate key spraying; low-volume max_tokens=1 requests; changes or deletions of model-invocation logging or diagnostic settings by non-IaC principals; creation and deletion of short-lived service accounts; new IAM users with admin rights; SSH keys added to instance or project metadata; model-gateway admin-key regeneration (LiteLLM /key/regenerate). GTIG notes GCP data-access logs for inference are off by default.
+      Hardening levers: deny access to cloud LLM services to identities that do not need them, granular API-key scopes per model and environment, spend caps and budget alerts, secret scanning of repositories, phishing-resistant MFA on cloud consoles, patching model gateways.
+      Reference duty: CVE-2026-40217 (LiteLLM /key/regenerate) is already carried by entry 2026-06-16/obsidian-security-a-three-cve-chain-turns-any-litellm-user-i; any new entry on this item must list it in references[].
+      Triage (analyst inference from the mechanism, not stated by GTIG): legitimate first-time Bedrock/Vertex/Azure OpenAI enablement by a platform team shows a change ticket, a known principal and an expected region; abuse shows a long-lived service-account key or federated token as actor, enablement of several services at once, quota increase requests for GPUs and billing spikes within hours.
+
+  # ------------------------------------------------------------------ 5 (update-of)
+  - title: "CVE-2026-98432, Linux kernel IPv4 TCP: Akamai names the two freeing paths and a second trigger, request-socket migration, beyond the SYN-with-IP-options race"
+    sources:
+      - { url: "https://www.akamai.com/blog/security-research/2026/nov/cve-2026-98432-remote-uaf-linux-kernels-tcp-stack", publisher: "Akamai Security Intelligence Group", date: "2026-11-02", role: "primary" }
+      - { url: "https://isc.sans.edu/diary/rss/33482", publisher: "SANS Internet Storm Center (Johannes Ullrich)", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: akamai-sirt feed, URL https://feeds.feedburner.com/akamai/blog (bridge feed) and sans-isc feed, URL https://isc.sans.edu/rssfeed.xml → primary: Akamai post, URL https://www.akamai.com/blog/security-research/2026/nov/cve-2026-98432-remote-uaf-linux-kernels-tcp-stack (WebFetch for the summary, raw body read with the bridge url command for verbatim quotes; extract returned only the author blurb) → SANS ISC diary URL https://isc.sans.edu/diary/rss/33482 (read with extract). Store check: entry 2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root, updated 2026-11-01."
+    summary: |
+      The covered entry describes CVE-2026-98432 as a SYN-with-IP-options use-after-free reached on plain IPv4 TCP listeners, with Anthropic's remote root exploit demonstrated on an MPTCP listener, and says no source publishes the kernel mechanics or an exposure check beyond MPTCP. Akamai's write-up adds precise root cause and a second trigger. Since Linux 4.4 request sockets are processed without the listener lock; IP options stored on the request socket are handed to the child socket uncopied and freed with a plain kfree() in inet_sock_destruct() (net/ipv4/af_inet.c) while another CPU building a SYNACK for a retransmitted SYN can still read them through ip_options_build(). Akamai also reports a similar flaw in tcp_v4_reqsk_destructor() when request-socket migration is enabled (net.ipv4.tcp_migrate_req=1 or a BPF_SK_REUSEPORT_SELECT_OR_MIGRATE program); IPv6 is not affected by the first path. Prerequisites in Akamai's list: network access to an IPv4 TCP listener on a kernel from 4.4 on without the fix, no credentials, and a connection request carrying IPv4 options such as Record Route or Timestamp followed by a retransmission; a lost race only aborts the handshake, so the attacker can retry. The fix by Eric Dumazet replaces kfree() with kfree_rcu() in both destructors and ships in stable 5.10.272, 5.15.223, 6.1.190, 6.6.159, 6.12.113, 6.18.56 and 7.2.10. Akamai states it is not aware of a public working exploit and that disabling MPTCP alone does not prevent exploitation; its interim steps are net.mptcp.enabled=0 together with net.ipv4.tcp_migrate_req=0 (reduces, does not remove risk), optional blocking of IPv4-option packets (breaks option-dependent applications), and ss -M -l -n -p -e to find MPTCP listeners. SANS ISC separately explains how to see MPTCP in traffic (TCP option 30, MP_CAPABLE) for tshark, Suricata and Zeek, which locates MPTCP use but, per Akamai, does not bound exposure.
+    region_nexus: "global; any internet-facing Linux IPv4 TCP service"
+    primary_sector_nexus: "direct (Linux servers across federal, cantonal and communal estates)"
+    sector: "technology"
+    cves: [CVE-2026-98432]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Linux kernel"]
+    entity_keys: ["product:linux-kernel"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root"
+    evidence:
+      - quote: "As of the time of writing, we are not aware of a public working exploit."
+        attribution: "Akamai Security Intelligence Group"
+        source_url: "https://www.akamai.com/blog/security-research/2026/nov/cve-2026-98432-remote-uaf-linux-kernels-tcp-stack"
+      - quote: "Disabling MPTCP alone does not prevent exploitation; it only reduces the likelihood of triggering the race condition."
+        attribution: "Akamai Security Intelligence Group"
+        source_url: "https://www.akamai.com/blog/security-research/2026/nov/cve-2026-98432-remote-uaf-linux-kernels-tcp-stack"
+      - quote: "A similar flaw exists when request socket migration is enabled"
+        attribution: "Akamai Security Intelligence Group"
+        source_url: "https://www.akamai.com/blog/security-research/2026/nov/cve-2026-98432-remote-uaf-linux-kernels-tcp-stack"
+      - quote: "The best way to detect MPTCP is to look for TCP Option 30."
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/rss/33482"
+    extended_notes: |
+      Exposure-check delta for the covered entry: besides the plain-TCP SYN path, check net.ipv4.tcp_migrate_req and any BPF reuseport migration program; both mitigations Akamai lists are partial. Delta is modest: most of the entry's facts (plain TCP reachable, MPTCP-off insufficient, IP-options filter) are already carried; the new content is the kernel-level mechanics, the second path, the exact fixed-version list in one place and the absence of a public exploit as of 2026-11-02 (the entry says no source reports public exploit code or attacks).
+      Detection concept: the trigger is repeated option-bearing SYNs plus retransmissions from one source toward a listener (flow or firewall telemetry); Akamai gives no network indicator and neither does ISC.
+
+  # ------------------------------------------------------------------ 6 (new, borderline)
+  - title: "XCPE: Google disrupts a 1.3-million-device Android TV box botnet whose firmware backdoor the OEM Videostrong preinstalled and rented to affiliates (residential proxies, ad fraud, further backdoors)"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/shutting-the-door-on-the-xcpe-botnet/", publisher: "Google Threat Intelligence Group", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/google-disrupts-million-device-xcpe-android-malware-botnet-bans-tv-box-maker/", publisher: "BleepingComputer", date: "2026-11-02", role: "corroborating" }
+    discovery_trace: "first seen at: mandiant-gtig, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v (bridge feed) and cyberscoop, URL https://cyberscoop.com/feed/ (bridge feed; headline 'Google shuts down global botnet running on certified Android devices') → primary: GTIG post, URL https://cloud.google.com/blog/topics/threat-intelligence/shutting-the-door-on-the-xcpe-botnet/ (extract, full body) → BleepingComputer, URL https://www.bleepingcomputer.com/news/security/google-disrupts-million-device-xcpe-android-malware-botnet-bans-tv-box-maker/ (relays GTIG, not independent)"
+    summary: |
+      GTIG reports that Google and partners (Japan's National Police Agency, Lumen, HUMAN Security, Plume, Synthient, TrendAI) dismantled the XCPE backdoor, which had enrolled more than 1.3 million set-top boxes, and assesses with high confidence that Android OEM/ODM Videostrong Technology intentionally built, deployed and operated it; Google cut ties, banned the company from certified Android devices and tightened firmware integrity checks, and says taking down affiliate C2 domains severs access to at least 10 million further compromised devices. The backdoor is preloaded in the firmware partition and runs as the system UID; if the user removes it, it reinstalls from the /oem/ partition at boot. It bootstraps over HTTP, then keeps an MQTT session to a single broker for silent app installation, disabling of Google Play Protect app verification, arbitrary shell as system, screen capture with key injection, exfiltration of account, package and log data, and network reconnaissance; a loader component runs affiliate modules (residential-proxy and bandwidth-sharing SDKs, ad-fraud engines, further backdoors such as Moyu and Bird that GTIG ties to the earlier BadBox enterprise). Since August 2026 dropper packages disguised as Android system components use an ADB-root helper to copy themselves into /system/priv-app with an INSTALL_PACKAGES and REBOOT permission file. GTIG notes most infected devices are Android TV boxes but also telehealth devices, karaoke machines and digital signage. A large share of staging files was served as GitHub releases, and GTIG says netflow suggests operators likely administered the broker through REST, WebSocket and EMQX console sessions from non-bot address space.
+    region_nexus: "global; geographic distribution shown only as a chart, no Swiss figure in the text"
+    primary_sector_nexus: "indirect (Android TV, digital-signage and telehealth devices in public buildings, schools, hospitals and administrative networks)"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.003, T1071, T1059.004, T1090.002, T1113, T1496]
+    affected_products: ["Android TV set-top boxes (Videostrong-built)", "Android-based digital signage", "Android-based telehealth devices"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:xcpe", type: malware, name: "XCPE", aliases: ["x.cpe", "com.oemservice"], summary: "Firmware-preinstalled Android backdoor and botnet (more than 1.3 million set-top boxes) built and operated by OEM Videostrong Technology, rented to affiliates for residential proxies, ad fraud and further malware; disrupted by Google and partners, GTIG 2026-11-02." }
+      - { key: "actor:videostrong", type: actor, name: "Videostrong Technology Co.", aliases: ["Videostrong"], summary: "Chinese Android OEM/ODM that GTIG assesses with high confidence intentionally developed, deployed and operated the XCPE firmware backdoor for financial gain (GTIG, 2026-11-02)." }
+    relation_suggestions:
+      - { subject: "malware:xcpe", object: "actor:videostrong", basis: "GTIG assesses with high confidence the backdoor and botnet were developed, deployed and operated for financial gain by Videostrong Technology Co. (GTIG, 2026-11-02)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Substantive GTIG primary with a clear supply-chain lesson (preinstalled firmware backdoor, residential-proxy exit nodes in your own network), but constituency nexus is indirect: the exposure is unmanaged Android TV, signage or telehealth boxes on administrative networks, and no Swiss figure or sector is named."
+    evidence:
+      - quote: "Last week, Google and industry partners dismantled the XCPE backdoor which enrolled more than 1.3 million set-top boxes into a botnet."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shutting-the-door-on-the-xcpe-botnet/"
+      - quote: "While the overwhelming majority of the infected devices in the XCPE botnet are Android TV set-top boxes, we observed a number of other infected Android-based IoT devices, including telehealth devices, karaoke machines, and digital signage devices."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shutting-the-door-on-the-xcpe-botnet/"
+      - quote: "Videostrong employed obfuscation techniques to exploit a gap in our tests and load malicious code after the device"
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shutting-the-door-on-the-xcpe-botnet/"
+    extended_notes: |
+      Exposure (inference from GTIG's device list): inventory Android-based set-top boxes, signage players and telehealth or kiosk devices from white-label brands on administrative, school or hospital networks; the firmware cannot be cleaned by uninstalling the app, replacement or reflash from a trusted image is the lever. Detection concept (egress and DNS telemetry from the IoT segment): persistent MQTT sessions on non-standard broker ports from devices that should only stream media, residential-proxy and bandwidth-sharing SDK traffic, and an Android box that opens outbound WebSocket tunnels; on the device, a system-partition package set that does not match the vendor image and Play Protect verification switched off. Triage (analyst inference, not stated by GTIG): legitimate streaming boxes talk to CDN and update hosts over HTTPS; MQTT to a single unknown broker and tunnelled long-lived WebSockets are not normal for them. Hardening: put unmanaged Android devices in an isolated segment with egress deny-by-default and only the vendor's content hosts allowed.
+
+  # ------------------------------------------------------------------ 7 (new, borderline, lookback)
+  - title: "MadApe: Group-IB documents a previously undocumented Microsoft device-code phishing kit with localized PDF lures, German among them, across 155 root domains"
+    sources:
+      - { url: "https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/", publisher: "Group-IB Threat Intelligence", date: "2026-10-29", role: "primary" }
+    discovery_trace: "first seen at: group-ib, URL https://www.group-ib.com/blog/rss.xml (bridge feed, lookback 168 h) → primary (no pivot needed): Group-IB post read in full with extract on https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/. Store check: no entry or registry key for MadApe; earlier device-code entries are Tycoon2FA, Kali365 and Railway."
+    lookback: true
+    summary: |
+      Group-IB describes a multi-stage phishing campaign that abuses Microsoft device-code authentication to reach Microsoft 365 accounts without collecting a password on any phishing page, and assesses the kit it tracks as MadApe to be previously undocumented. The chain: an email with a business-themed PDF (payment notices, invoices, contracts) carries a link to a configurable SharePoint-themed or human-verification intermediary page, which redirects to a page that shows a device code supplied by the backend, copies it to the clipboard on click, reports the interaction to the backend and sends the victim to the legitimate Microsoft device-login portal, where authentication completes on Microsoft's own domain and, Group-IB notes, can satisfy MFA; the kit's server side polls Microsoft's token endpoint for the resulting tokens. Group-IB reports lures localised in nine languages, among them German, French, Polish and Finnish (Hebrew first observed), with German PDF names such as payment report and payment advice, pages impersonating SharePoint, OneDrive, Teams, Adobe Acrobat and DocuSign, 155 root domains with device-code components on 97, anti-inspection scripts, and an operator panel that names itself on its login page. Group-IB treats organisation names in lures and subdomains as intended targets, not confirmed compromises, and publishes no victim sector. Its recommendations are the useful part: inventory legitimate device-code use through Entra sign-in logs (authentication protocol filter, original-transfer-method field), block the device-code flow with a Conditional Access policy (authentication-flows condition) after report-only testing, enable continuous access evaluation, and after a suspected compromise revoke sessions and refresh tokens, check device registrations, inbox rules, MailItemsAccessed and OAuth consent grants.
+    region_nexus: "global; German-language lures observed (DACH relevant), Hebrew-language emails first, no victimology published"
+    primary_sector_nexus: "indirect (any Microsoft 365 tenant in federal, cantonal or communal administration)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566.001, T1566.002, T1528, T1078.004]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365"]
+    entity_keys: ["campaign:fbi-psa260521-kali365-phaas-oauth-device-code-m365-mfa-bypass"]
+    new_entities:
+      - { key: "tool:madape", type: tool, name: "MadApe", aliases: [], summary: "Microsoft device-code phishing kit with business-themed PDF lures, configurable redirectors and fake document-sharing pages, documented by Group-IB (2026-10-29)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Kit and infrastructure write-up on a known technique class (device-code phishing); no victim sector, German lures are filenames only. Value is the concrete Entra hardening and hunt guidance; the store already carries three device-code entries. Published 2026-10-29, so included only through the group-ib record's 168 h lookback."
+    evidence:
+      - quote: "Group-IB Threat Intelligence team has identified a multi-stage phishing campaign abusing Microsoft Device Code authentication to gain access to victim Microsoft accounts."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/"
+      - quote: "successful authentication may also satisfy MFA requirements during the legitimate Microsoft sign-in process."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/"
+      - quote: "Where the flow is unnecessary, configure a policy using the Authentication flows condition, select Device code flow, and block access."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/madape-microsoft-device-code-phishing-kit/"
+    extended_notes: |
+      Detection by telemetry class (Group-IB's SOC and hunting guidance): Entra sign-in logs filtered on the device-code authentication protocol outside documented use, unfamiliar application ids, hosting-provider or anonymised source addresses, and the original-transfer-method field for later sessions; correlate with email click telemetry from PDF attachments, then with new device registrations, inbox rules, MailItemsAccessed, OAuth consent grants and bulk SharePoint or OneDrive downloads. Web telemetry: requests to the kit's code-entered and code-status API paths where full URLs are visible. Triage (analyst inference, not stated by Group-IB beyond 'inventory legitimate use'): legitimate device-code sign-ins come from input-constrained devices (consoles, conference-room systems, CLI tools) on known accounts and applications; phishing-driven ones come from a user's normal account with an unexpected application shortly after an email click. Hardening: Conditional Access block of the device-code flow with scoped exceptions, as the post itself recommends.
+
+  # ------------------------------------------------------------------ 8 (new, borderline, lookback)
+  - title: "HMICFRS inspects cybersecurity in UK police forces and fire and rescue services: legacy ICT, supplier assurance and control-room mobilisation dependencies are the named weaknesses"
+    sources:
+      - { url: "https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services/", publisher: "HM Inspectorate of Constabulary and Fire & Rescue Services", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/watchdog-police-fire-service/", publisher: "Infosecurity Magazine", date: "2026-10-27", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (bridge feed, lookback 168 h; item 'Watchdog Urges Police and Fire Service to Improve Cybersecurity') → pivot: Infosecurity Magazine article, URL https://www.infosecurity-magazine.com/news/watchdog-police-fire-service/ → primary: HMICFRS report, URL https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services/ (extract, full text). Store check: no entry mentions HMICFRS."
+    lookback: true
+    summary: |
+      HMICFRS published on 2026-10-27 the report of a three-phase inspection (January to May 2026) of cybersecurity in police forces and fire and rescue services, based on visits to three police forces and three fire and rescue services, interviews, reality testing and review of more than 260 documents. Findings stated by the inspectorate: assessments under the Cyber Assessment Framework (fire) and a modified Security Assessment for Policing show gradual improvement but recurring weaknesses; all inspected organisations relied on legacy systems, which leaders named their highest strategic cybersecurity risk; all six depended on third-party suppliers without comprehensive processes to assure supplier cybersecurity (little visibility of supplier patching, non-transparent backup and restoration, reliance on supplier self-certification such as Cyber Essentials or ISO 27001 without checking recency); preparedness and resilience arrangements were often underdeveloped; some fire and rescue services could not maintain full operational capability if a third-party supplier suffered a significant outage, with a tested manual mobilisation process as backup that does not remove the underlying risk; and national assurance does not cover the whole police ICT estate. The report makes 13 recommendations, including baseline standards, independent third-party assessment of capabilities, procurement and contract management of ICT suppliers with certification requirements from May 2027 for new or renewed fire-service contracts, national monitoring capability for fire and rescue, and incident-response and restore exercises. It is a governance-level inspection with no incident details, techniques or indicators.
+    region_nexus: "UK; transferable to Swiss cantonal police and fire and rescue services (control-room, supplier and legacy-ICT dependencies)"
+    primary_sector_nexus: "direct sector match (police, fire and rescue), no operational detail"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:hmicfrs-cybersecurity-police-fire-rescue-2026", type: report, name: "HMICFRS: Cybersecurity in police forces and fire and rescue services (2026-10-27)", aliases: [], summary: "UK inspectorate report on cybersecurity in police and fire and rescue services, 13 recommendations; names legacy ICT, third-party supplier assurance and control-room mobilisation dependencies as main weaknesses." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Constituency match is exact (police, fire and rescue) and the report is a primary regulator-style document, but its findings are governance-level maturity themes without technique, incident or indicator content; likely fails the Tier 2/3 actionability bar. Published 2026-10-27, so only reachable through the infosec-magazine record's 168 h lookback; S2 may judge it as a sector-regulator item."
+    evidence:
+      - quote: "All the organisations we inspected relied on legacy systems to a greater or lesser extent."
+        attribution: "HMICFRS"
+        source_url: "https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services/"
+      - quote: "All six inspected organisations depended on third-party suppliers."
+        attribution: "HMICFRS"
+        source_url: "https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services/"
+      - quote: "maintain full operational capability if a third-party supplier experienced a significant outage"
+        attribution: "HMICFRS"
+        source_url: "https://hmicfrs.justiceinspectorates.gov.uk/publication-html/cybersecurity-in-police-forces-and-fire-and-rescue-services/"
+
+candidate_sources:
+  - id: hmicfrs-publications
+    publisher: "HM Inspectorate of Constabulary and Fire & Rescue Services (HMICFRS) publications"
+    url: "https://hmicfrs.justiceinspectorates.gov.uk/publications/"
+    category: gov
+    why: "Independent inspectorate that now publishes cybersecurity inspections of police and fire and rescue services (2026-10-27 report read in full with extract); the nearest public analogue to the emergency-services slice of the constituency. Listing page not fetched this run, so the feed or listing recipe is untested."
+
+coverage_gaps:
+  - source_id: ox-security
+    reason: "Feed (https://www.ox.security/feed/) reads with dated items (10 items, newest 2026-10-30 Cursor extension, already covered), but the article body still returns 403 on direct, trafilatura and jina as re-tested 2026-11-03 on https://www.ox.security/blog/malicious-claude-code-extension-cursor-ssh-backdoor/. Lead-only; the one in-window item was covered through other sources (covered_anyway)."
+  - source_id: sentinellabs
+    reason: "WebFetch returned HTTP 429 and extract returned a Vercel security-checkpoint page for https://www.sentinelone.com/labs/. Recipe fix: `python3 tools/fetch_source.py feed https://www.sentinelone.com/labs/feed/ 8` reads directly (method direct, 8 dated items, newest 2026-10-28). Suggest adding it as rss_url."
+  - source_id: rbb24-recherche
+    reason: "The record url (https://www.rbb24.de/politik/) is the general politics desk; its RSS (https://www.rbb24.de/politik/index.xml/feed=rss.xml) reads but carries election and politics items only, no cyber-incident reporting in 168 h. Not a Recherche-desk feed; use a targeted WebSearch for rbb24 cyber investigations instead."
+  - source_id: nict-cynex-lettice
+    reason: "Only `jina https://cynex.nict.go.jp/library/` returns the item list (one reader call spent); newest item 2026-10-13 (already covered by the JPCERT/NICT entry), nothing in the 168 h horizon."
+  - source_id: darkreading
+    reason: "extract on an article URL (PapRAT, https://www.darkreading.com/cyberattacks-data-breaches/paprat-cyberespionage-campaign-bitter-south-asia) fell through to the metered reader as the record's note warns; one reader call spent. Read the feed summary, or the vendor primary the article links."
+  - source_id: elastic-seclabs
+    reason: "`feed https://www.elastic.co/security-labs/rss/feed.xml` did not parse as JSON on the direct transport; `url` of the same address fell back to the jina reader, which returned the item list (newest 2026-10-26, nothing in window). Costs reader credit; feed recipe needs a direct alternative."
+  - source_id: rapid7-research
+    reason: "`feed https://www.rapid7.com/rss.xml` failed to parse; `extract https://www.rapid7.com/blog/` returned a page whose metadata date is 2026-10-21, so it cannot serve an in-window sweep."
+  - source_id: theregister-security-feed
+    reason: "`extract` on two article URLs (OT programming tool story 5307086 and 'Frozen part II' 5306924) returned only the site's sidebar, not the article body; WebFetch with the outbound-links template read the OT story. Use WebFetch for Register article bodies."
+  - source_id: vulncheck
+    reason: "Record is webfetch-only, but `extract https://www.vulncheck.com/blog/exploitation-targeting-node-red` read the full post with trafilatura-direct on 2026-11-03. Suggest updating the record's recipe to extract-first."
+  - source_id: akamai-sirt
+    reason: "`extract` of the post returned only the author blurb; the raw body reads with `url` (full HTML, text inside embedded JSON) and WebFetch also read it."
+  - source_id: msft-ti
+    reason: "Listing read with WebFetch (12 items, newest 2026-11-02 'What exploited vulnerabilities have in common'); that post is a statistics-style analysis (no technique content) and was dropped under the survey exclusion."
+
+source_ledger:
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed (bridge) + extract", horizon_hours: 26, in_horizon_items: 8, returned: 1, note: "refrigeration wave returned as update-of; others are S1/S4 items (WS_FTP, Veeam, Drupal/Ivanti/Synology) or outside the S3 remit (notebooksbilliger/Pyur leak, AI robots.txt, US AI test rules, Ukraine/Russia alert apps already borderline-dropped)" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed (bridge) + extract", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "Vaud schools (41,500 = 3,500 + 38,000, already covered by 2026-11-01 entry); Swiss Basketball extranet leak is victim-confirmed but a private sports federation with no public-sector nexus (S4 may weigh it, AHV numbers of minors); rest is business news" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed (bridge) + extract of watchtowr.com/intelligence", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest labs post 2026-10-09; intelligence FAQ page shows no new items" }
+  - { id: ox-security, tier: standard, attempted: true, transport: "feed (bridge); article extract retested", horizon_hours: 122, in_horizon_items: 1, returned: 0, note: "only the Cursor extension post (2026-10-30) is in horizon, covered already; bodies still 403 on every transport" }
+  - { id: rbb24-recherche, tier: standard, attempted: true, transport: "bridge url + politics RSS", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "no cyber items; see coverage gap" }
+  - { id: jpcert-eyes, tier: standard, attempted: true, transport: "feed (bridge)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21, already covered" }
+  - { id: semperis-research, tier: standard, attempted: true, transport: "extract of listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest dated card 2026-10-22" }
+  - { id: nict-cynex-lettice, tier: standard, attempted: true, transport: "jina", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13, covered" }
+  - { id: datadog-security-labs, tier: standard, attempted: true, transport: "feed (bridge) + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Node2Shell reproduction (2026-10-29) adds only marginal vendor-trap details (Bun --compile, brotli4j bundled copy, stale process.versions.brotli) to the heavily covered Node2Shell entries; 'Code security for new coders' not threat research" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed (bridge) + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "2026-10-27 and 2026-10-28 items are media-coverage repostings; the Serbia Pegasus research itself dates from 2026-10-21 and no Swiss nexus" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "extract of listing", horizon_hours: 168, in_horizon_items: 11, returned: 0, note: "all notes re-report other labs (Check Point Yoba, Talos VOLTA, Northflank, LXD, CVE-2026-98432); used as leads only, nothing new" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed (bridge)", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "XCPE and VAPOR PANDA reports point to GTIG and CrowdStrike primaries (XCPE returned from GTIG); policy items outside S3" }
+  - { id: darkreading, tier: standard, attempted: true, transport: "feed (bridge); one article extract (reader fall-through)", horizon_hours: 168, in_horizon_items: 20, returned: 0, note: "PapRAT (Fortinet primary, Bitter, South Asia, no nexus) dropped; rest covered or news" }
+  - { id: gambit-security, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-02 post is a resilience-planning piece, no research content" }
+  - { id: group-ib, tier: standard, attempted: true, transport: "feed (bridge) + extract", horizon_hours: 168, in_horizon_items: 4, returned: 1, note: "MadApe returned as borderline lookback; Deepfake fraud and Frost Radar are marketing; Indian banking Android trojans no nexus" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "bridge url (front-page hrefs) + extract", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "leads only; XCPE, Chainalysis, refrigeration wave and VOLTA traced to primaries (VOLTA and Chainalysis already borderline-dropped by earlier runs)" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "feed (bridge) + extract", horizon_hours: 168, in_horizon_items: 25, returned: 1, note: "HMICFRS police and fire report returned as borderline lookback; rest are covered (NIK C2, PHP2Shell chain, Teams help-desk), crypto-heist or non-nexus items" }
+
+majors_listing_check:
+  note: "Listing-page sweep of the majors for the 26 h window (publication on or after 2026-11-02T00:56Z)."
+  results:
+    - { lab: "Microsoft Threat Intelligence", transport: "WebFetch listing + extract", in_window: ["2026-11-02 What exploited vulnerabilities have in common (statistics analysis, dropped: survey)"], returned: 0 }
+    - { lab: "GTIG / Mandiant", transport: "feed (bridge)", in_window: ["2026-11-02 Shutting the Door on the XCPE Botnet", "2026-11-02 The Rise of LLMJacking"], returned: 2 }
+    - { lab: "Cisco Talos", transport: "feed (bridge)", in_window: [], returned: 0, note: "newest 2026-10-31 VOLTA, outside window and already borderline-dropped by the 2026-11-02 run" }
+    - { lab: "Unit 42", transport: "feed (bridge) + extract", in_window: ["2026-11-02 Threat Intelligence Highlights (executive-level roll-up, no technique content)"], returned: 0, note: "CL-UNK-1211 / SysGoRAT (2026-10-15) is already covered by entry 2026-10-16/cl-unk-1211-ai-assisted-intrusions-government-linux-hosts although THN re-reported it on 2026-11-02" }
+    - { lab: "Check Point Research", transport: "feed (bridge) + extract", in_window: ["2026-11-02 weekly Threat Intelligence Report (roll-up, leads only)"], returned: 0 }
+    - { lab: "ESET", transport: "feed (bridge)", in_window: [], returned: 0, note: "APT Activity Report Q2-Q3 2026 (2026-10-28, periodic report) was already borderline-dropped by the 2026-11-01 run; outside window" }
+    - { lab: "Kaspersky Securelist", transport: "feed (bridge) + extract", in_window: ["2026-11-02 CyberStrikeAI in the wild"], returned: 1 }
+    - { lab: "SentinelOne SentinelLabs", transport: "feed (bridge) after WebFetch/extract 429", in_window: [], returned: 0, note: "newest 2026-10-28 conference keynote replay" }
+    - { lab: "Proofpoint", transport: "feed (bridge)", in_window: [], returned: 0, note: "newest 2026-10-14" }
+    - { lab: "Trend Micro (TrendAI)", transport: "feed (bridge)", in_window: [], returned: 0, note: "newest 2026-10-28 Node2Shell post, covered topic" }
+  other_labs_scanned_for_gaps: "Huntress, Volexity, Recorded Future, Google blog, Project Zero, Sophos X-Ops, Zscaler ThreatLabz, Cloudflare Cloudforce One, Socket, Sonatype, Sysdig, SANS ISC, Sansec, JFrog, Malwarebytes, StepSecurity, Akamai, Expel, Tenable, Wiz, Elastic, Rapid7, CrowdStrike blog; the only in-window items were Akamai CVE-2026-98432 and the SANS ISC MPTCP diary (returned as update-of), JFrog Beta9/Prefab vulnerability records (S1 remit, not read) and Malwarebytes consumer items."
+
+dropped_with_reason:
+  - "Fortinet FortiGuard PapRAT (Bitter/TA397, 2026-11-02, via Dark Reading and Infosecurity): South Asian targeting, no constituency nexus."
+  - "Dream Research DarkBlinders report (dated 2026-10-08, relayed by THN on 2026-11-02): outside window; Middle East government targets; the CL-STA-1178 entry already covers the actor's Blinder Tunnel campaign."
+  - "Microsoft 'What exploited vulnerabilities have in common' (2026-11-02): statistics-style analysis (patch-latency medians, KEV timing), survey exclusion under PD-11 d."
+  - "Datadog Node2Shell reproduction (2026-10-29) and Sysdig/Tenable/Zscaler/Sophos Node2Shell posts: covered topic, marginal deltas."
+  - "Chainalysis intrusion with 'offensive agentic techniques' (company statement 2026-10-30, HNS 2026-11-02): method still undisclosed; customer user names and roles exposed include government and law-enforcement users, no Swiss customer named; unchanged from the earlier borderline-drop."
+  - "Swiss Basketball extranet breach (Inside IT 2026-11-02): victim-confirmed, AHV numbers and minors in the dataset, but a private sports association with no public-sector nexus; left for S4 if it wants the incident floor."
+  - "THN weekly recap, Unit 42 and Check Point roll-ups: discovery only."

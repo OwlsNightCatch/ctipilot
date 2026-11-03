@@ -175,6 +175,11 @@ TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
     # the reader; the legacy www.censys.io/blog/rss.xml is 404. Re-probe each
     # run and drop it from this set the moment the origin relaxes.
     "censys-blog",
+    # ico-uk (2026-11-03): ico.org.uk answers 403 to the bridge recipe, the direct
+    # fetch, trafilatura, the reader and WebFetch on three consecutive fires
+    # (2026-11-01 to 2026-11-03); WebSearch is the only route to ICO notices.
+    # Re-probe each run and drop it from this set the moment a transport reads it.
+    "ico-uk",
     # sygnia (2026-10-31): www.sygnia.co answers 403 on the direct fetch, the
     # feed (/feed/) and /sitemap.xml, trafilatura finds no body and the reader
     # relays the upstream challenge; WebFetch was refused on 2026-10-29. Re-probe
