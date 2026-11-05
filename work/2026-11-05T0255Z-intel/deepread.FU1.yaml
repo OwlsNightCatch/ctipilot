@@ -1,0 +1,1751 @@
+domain: FU1
+run_id: 2026-11-05T0255Z-intel
+task: 'Phase 4 scoped deep-read follow-up (will-publish set only): A SEPPmail 15.1.1, B CVE-2024-27834 KEV + Sekoia APT29 watering hole, C SonicWall GMS EOL'
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-05T03:35:05Z'
+ended_at: 2026-11-05T03:56:50Z
+duration_seconds: 1305
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 7
+  bridge_fetches: 53
+  reader_jina_calls: 9
+passage_check_method: 'Every claim passage was checked by exact substring match against the saved body named in body_file (match: strict). match: normalized means the saved markdown carries link or escape syntax (e.g. [text](url), backslash escapes, ** or backticks) and the passage matches after removing that syntax; the rendered page text equals the passage. Passages with newlines match the saved file line structure; derived text files (tables/text) are listed under citable_urls_fetched.body.'
+tooling_notes:
+- 'extract (trafilatura) DROPS embedded HTML tables on Webflow pages: the Sekoia summary table (class to CVE mapping and iOS 18.5) exists only in the raw HTML. For vendor and CTI pages that carry mapping tables, also read the raw `url` body (bodies/fu1-sekoia-poisoned-source.raw.html) before concluding a mapping is missing.'
+- 'sonicwall-psirt recipe fix: `python3 tools/fetch_source.py jina <vuln-detail URL> html` returns the full advisory structure INCLUDING the Affected Product(s), Fixed Software, Credit(s) and Revision History tables; the default markdown reader body and `extract` omit them (sources.json note says the reader body omits the fixed-version table). Strip the HTML to text (scripts/styles removed) for reading; NBSP characters appear in table cells.'
+- ENISA EUVD human pages (SPA) read through `extract` only via its jina fallback; the page text carries summary, affected-product row, publication time, assigner (NCSC.ch), CVSS 4.0 vector link text and GHSA/CVE ids, but NOT the numeric score or credits. The euvdservices API carries baseScore/aliases/exploitedSince (data only, not citable).
+- bacs.admin.ch CVE list reads with `extract` (direct) but is a tracking list with an explicit not-a-source disclaimer.
+- docs.qualcomm.com bulletin pages are an Angular shell; `extract` returns the raw HTML shell (direct-raw). Not readable without the reader.
+- Apple support pages, SEPPmail docs, SonicWall support pages, CERT-FR, GTIG, Chrome Releases, THN, BleepingComputer all read cleanly with `extract` (trafilatura-direct).
+- 'Reader (jina) calls spent in this follow-up: EUVD x5 (via extract fallback), SonicWall PSIRT 0019 (extract fallback) + html mode, vuln-list, 0011 html = 9.'
+items:
+  A_seppmail_15_1_1:
+    title: SEPPmail Secure Email Gateway before 15.1.1 (CVE-2026-114424, -114425, -114426, -114421, -114420)
+    status_line: DONE. Primary read in full; CNA text confirmed on five ENISA EUVD record pages (assigner NCSC.ch); CVSS swap resolved; no exploitation or PoC in any source; no NCSC.ch / bacs.admin.ch / InfoGuard publication found.
+    direct_answers:
+      affected_versions_by_branch:
+        15.1.x: '15.1.0 (feature release 2026-09-28) and 15.1.0.1 (hotfix 2026-09-29) are affected; 15.1.1 (patch release 2026-11-03) is the first fixed build. Vendor writes "Affected versions: <15.1.1" for all five CVEs.'
+        15.0.x: 'All 15.0.x builds are inside "<15.1.1" and are affected. No 15.0.x fix exists. The vendor page says of 15.0.7 (2026-09-02, published before this batch): "This release will be the last release in the 15.0 branch and enable the update to version 15.1." so the only fix path is an upgrade to the 15.1 branch (15.1.0 is labelled a feature release on the vendor page). Unknown: no source says whether 15.0.x is formally out of support.'
+        older (14.x, 13.x): Covered by the CNA range "0 <15.1.1" and the vendor "<15.1.1". The revision history lists 14.1.4 (2025-10-01) as the last 14.x patch release. No source states support status of 14.x/13.x or whether the vulnerable code paths exist there (CNA defaultStatus is "unknown"; the range is a floor-to-fix range, not a tested statement).
+      first_fixed_release: 15.1.1 (patch release, 2026-11-03).
+      fix_for_15_0_x: No. See above (15.0.7 is the last 15.0 release; stated 2026-09-02).
+      how_admin_reads_running_version: SEPPmail documents the Admin GUI Home page, System section, field "Firmware version" ("Software version currently installed on the system."). The web-based configuration interface is the documented administration surface (default port 8443 on the appliance IP per the login page). The earlier finding said "Admin GUI"; the specific field name is Firmware version (claim A-34, A-35).
+      exposure_conditions_from_cna_text:
+        CVE-2026-114424 (9.2, CWE-95 eval injection per CVE record verify-only): Unauthenticated remote sender; an ACTIVE rule must use message-derived replacement data and its search condition must match; attacker-influenced replacement text is evaluated as Perl in SENDER or RECIPIENT replacement rules; OS commands run in the mail-processing worker context; "The validated worker context was root." CVSS 4.0 AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H (AT:P = attack requirements present). Claims A-19..A-24.
+        CVE-2026-114425 (9.2, CWE-73): Unauthenticated remote sender; Large File Transfer (LFT) must be ENABLED and the message must reach an affected secure-mail processing path; forged file path in externally supplied LFT attachment metadata; disclose, move OR delete an accessible regular file (vendor says "read or delete"); "The validated workers ran as root." Same vector as 114424. Claims A-25..A-27.
+        CVE-2026-114426 (8.7, CWE-400): Unauthenticated remote attacker; the v1 file-interface upload data is processed and written BEFORE authentication and without an absolute size limit; concurrent or slow requests occupy workers and fill temporary storage (availability only; AV:N/AC:L/AT:N/PR:N/VA:H). Claims A-28, A-29.
+        CVE-2026-114420 (6.9, CWE-90): Unauthenticated; LDAP metacharacters not neutralized in an account-selection input of the GINA web interface; enumerates email addresses (VC:L only; AT:N). Claims A-30, A-31.
+        CVE-2026-114421 (8.3, CWE-640): Unauthenticated; password recovery works for a created-but-unregistered GINA account whose initial password is empty; attacker sets a new password, authenticates as that account and locks out the intended recipient until recovery (VI:H; AT:P). Claims A-32, A-33.
+      cvss_discrepancy_resolution:
+        rule: CNA (NCSC.ch) record wins.
+        what_seppmail_page_says: CVE-2026-114421 = 6.9 and CVE-2026-114420 = 8.3, with ONE shared description (account discovery plus takeover) written under both CVEs (claims A-05, A-06, A-13).
+        what_cna_records_say: 'CVE-2026-114420 = 6.9 (LDAP wildcard injection, email enumeration; VC:L only) and CVE-2026-114421 = 8.3 (empty-initial-password account takeover; VI:H). Source of the numbers: CVE records (verify-only, claims A-40, A-41) and the EUVD API (data endpoint, same values); the citable EUVD pages EUVD-2026-116797 and -116798 carry the CVSS 4.0 vectors and CNA text but NOT the numeric score in the extracted page text (claims A-31, A-33).'
+        consistency_check: 'The vectors support the CNA scores: the enumeration flaw has only VC:L (low), the takeover flaw has VI:H; so the vendor page has the two scores swapped, not the CNA. Use 8.3 for CVE-2026-114421 (takeover) and 6.9 for CVE-2026-114420 (enumeration); mention that the vendor page lists them reversed.'
+        scores_that_agree: 114424 = 9.2, 114425 = 9.2, 114426 = 8.7 on both the vendor page and the CNA records.
+      exploitation_or_poc: None reported. No fetched source (vendor revision history, five EUVD pages, two GHSA mirror pages, SEPPmail Statuspal listing) states exploitation or a public PoC; the EUVD API records carry no exploitedSince; none of the five CVEs is in the CISA KEV catalogue (catalog 2026.11.04); two WebSearch queries found nothing on these CVE ids. The finding is therefore "no exploitation reported", not "confirmed unexploited".
+      ncsc_ch_or_bacs_publication: 'None found. ncsc-csh recent 15: newest post is Barracuda (2026-11-03T15:47Z), no SEPPmail post (A-36). The bacs.admin.ch CVE-list page as served lists nothing newer than 2026-10-26 and states it is not an advisory source (A-37, A-38). WebSearch in English and German found no bacs.admin.ch or NCSC.ch article on this batch. The NCSC.ch contribution is the CNA role: the CVE records and their EUVD mirror pages (Assigner NCSC.ch, A-22).'
+      infoguard_labs_publication: 'None found (two WebSearch queries; only the May 2026 InfoGuard report on the earlier batch surfaced in snippets, unverified here). The InfoGuard attribution rests on the CNA record credits (verify-only): Dario Weiss of InfoGuard Labs for 114424/114425/114426; "Synack, Inc" for 114420/114421.'
+      vendor_statuspal: 'No 15.1.1 notice on the SEPPmail Statuspal listing at fetch time (newest item: PHP2Shell not-affected notice; page date 2026-10-22). The extended release notes page for 15.1 had not been updated for 15.1.1 (title still "15.1.0.1 Hotfix Release"). Absence only.'
+    claim_table:
+    - id: A-01
+      claim: First fixed release is patch release 15.1.1, dated 2026-11-03 (vendor revision history).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Patch release 15.1.1, 2026-11-03
+      match: strict
+    - id: A-02
+      claim: Vendor lists CVE-2026-114424 as affecting versions <15.1.1, CVSS 9.2.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: 'Affected versions: <15.1.1 · CVE-ID: CVE-2026-114424 · CVSS Score: 9.2'
+      match: normalized
+    - id: A-03
+      claim: Vendor lists CVE-2026-114425 as affecting versions <15.1.1, CVSS 9.2.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: 'Affected versions: <15.1.1 · CVE-ID: CVE-2026-114425 · CVSS Score: 9.2'
+      match: normalized
+    - id: A-04
+      claim: Vendor lists CVE-2026-114426 as affecting versions <15.1.1, CVSS 8.7.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: 'Affected versions: <15.1.1 · CVE-ID: CVE-2026-114426 · CVSS Score: 8.7'
+      match: normalized
+    - id: A-05
+      claim: Vendor page gives CVE-2026-114421 a score of 6.9 (the CNA record scores it 8.3).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: 'Affected versions: <15.1.1 · CVE-ID: CVE-2026-114421 · CVSS Score: 6.9'
+      match: normalized
+    - id: A-06
+      claim: Vendor page gives CVE-2026-114420 a score of 8.3 (the CNA record scores it 6.9).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: 'Affected versions: <15.1.1 · CVE-ID: CVE-2026-114420 · CVSS Score: 8.3'
+      match: normalized
+    - id: A-07
+      claim: Vendor description of CVE-2026-114424.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Improper handling of replacement values in address replacement rules could allow a remote sender to execute arbitrary commands on the appliance if a ruleset uses values taken from the message as replacement.
+      match: strict
+    - id: A-08
+      claim: Vendor fix description for CVE-2026-114424.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: The evaluation of replacement values in address replacement rules was hardened to prevent code execution.
+      match: strict
+    - id: A-09
+      claim: Vendor description of CVE-2026-114425 (Large File Transfer).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Specially crafted attachment metadata in an incoming message could cause the Large File Transfer processing to read or delete arbitrary files on the appliance.
+      match: strict
+    - id: A-10
+      claim: Vendor fix description for CVE-2026-114425.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Attachment metadata received with a message is now validated before any file is accessed.
+      match: strict
+    - id: A-11
+      claim: Vendor description of CVE-2026-114426 (pre-auth upload interface).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: The file upload interface processed request data before checking authentication, which could allow an unauthenticated attacker to exhaust disk space and worker processes.
+      match: strict
+    - id: A-12
+      claim: Vendor fix description for CVE-2026-114426.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Authentication is now checked before upload data is processed, and the upload size is limited.
+      match: strict
+    - id: A-13
+      claim: Vendor writes one shared description (account discovery plus takeover) under BOTH CVE-2026-114421 and CVE-2026-114420; it appears twice in the Security section.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Insufficient input escaping in account lookups combined with missing validation in the password recovery process could allow an unauthenticated attacker to discover GINA accounts without a password and take them over.
+      match: strict
+    - id: A-14
+      claim: Vendor fix description shared by CVE-2026-114421 and CVE-2026-114420.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: LDAP filter values are now escaped, and the password recovery only asks registered users with configured security questions.
+      match: strict
+    - id: A-15
+      claim: 'Vendor states 15.0.7 (2026-09-02) is the last release of the 15.0 branch and only enables the update to 15.1: there is no 15.0.x release carrying the fix and none is announced.'
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: This release will be the last release in the 15.0 branch and enable the update to version 15.1.
+      match: strict
+    - id: A-16
+      claim: 15.0.7 release date.
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Patch release 15.0.7, 2026-09-02
+      match: strict
+    - id: A-17
+      claim: 15.1.0 feature release date (first 15.1 build; affected, <15.1.1).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Feature release 15.1.0, 2026-09-28
+      match: strict
+    - id: A-18
+      claim: 15.1.0.1 hotfix date (affected, <15.1.1).
+      source_url: https://docs.seppmail.com/en/20_revision-history.html
+      body_file: bodies/fu1-seppmail-revhistory.md
+      passage: Hotfix release 15.1.0.1, 2026-09-29
+      match: strict
+    - id: A-19
+      claim: 'CNA text for CVE-2026-114424 (EUVD-2026-116781): eval of attacker-influenced replacement text as Perl in sender/recipient replacement rules.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      body_file: bodies/fu1-euvd-116781-page.md
+      passage: SEPPmail Secure Email Gateway before 15.1.1 can evaluate attacker-influenced replacement text as Perl code in sender or recipient replacement rules.
+      match: strict
+    - id: A-20
+      claim: 'CNA exposure conditions for CVE-2026-114424: unauthenticated remote sender; an ACTIVE rule must use message-derived replacement data and its search condition must match; worker context root.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      body_file: bodies/fu1-euvd-116781-page.md
+      passage: An unauthenticated remote sender can execute operating-system commands in the mail-processing worker context when an active rule uses message-derived replacement data and its search condition matches. The validated worker context was root.
+      match: strict
+    - id: A-21
+      claim: CVSS 4.0 vector for CVE-2026-114424 on the EUVD page (AT:P, attack requirements present; base score 9.2 per CVE record, verify-only).
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      body_file: bodies/fu1-euvd-116781-page.md
+      passage: CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N
+      match: strict
+    - id: A-22
+      claim: EUVD page names NCSC.ch as the assigning CNA.
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      body_file: bodies/fu1-euvd-116781-page.md
+      passage: 'The identifier assigning CVE Numbering Authority (CNA).
+
+
+        NCSC.ch'
+      match: strict
+    - id: A-23
+      claim: EUVD/CNA record publication time for CVE-2026-114424.
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      body_file: bodies/fu1-euvd-116781-page.md
+      passage: 'Published: 2026-11-04 08:28'
+      match: strict
+    - id: A-24
+      claim: 'CNA affected-version statement: all versions below 15.1.1.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      body_file: bodies/fu1-euvd-116781-page.md
+      passage: '| SEPPmail AG | SEPPmail Secure Email Gateway (SEG) | 0 <15.1.1 |'
+      match: strict
+    - id: A-25
+      claim: 'CNA text for CVE-2026-114425 (EUVD-2026-116782): forged file path in externally provided LFT attachment metadata.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116782
+      body_file: bodies/fu1-euvd-116782-page.md
+      passage: SEPPmail Secure Email Gateway before 15.1.1 trusts a file path supplied in externally provided Large File Transfer attachment metadata.
+      match: strict
+    - id: A-26
+      claim: 'CNA exposure conditions for CVE-2026-114425: unauthenticated remote sender; LFT must be ENABLED and the message must reach an affected secure-mail processing path; disclose, move or delete an accessible regular file; workers ran as root.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116782
+      body_file: bodies/fu1-euvd-116782-page.md
+      passage: An unauthenticated remote sender can cause the mail-processing worker to disclose, move, or delete an accessible regular file when LFT is enabled and the message reaches an affected secure-mail processing path. The validated workers ran as root.
+      match: strict
+    - id: A-27
+      claim: CVSS 4.0 vector for CVE-2026-114425 (same vector as 114424; base 9.2 per CVE record, verify-only).
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116782
+      body_file: bodies/fu1-euvd-116782-page.md
+      passage: CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N
+      match: strict
+    - id: A-28
+      claim: 'CNA text for CVE-2026-114426 (EUVD-2026-116796): v1 file-interface upload processed and written before authentication, no absolute size limit; resource exhaustion by concurrent or slow requests.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116796
+      body_file: bodies/fu1-euvd-116796-page.md
+      passage: SEPPmail Secure Email Gateway before 15.1.1 processes and writes v1 file-interface upload data before authenticating the caller and without an absolute request-size limit. An unauthenticated remote attacker can occupy workers and consume temporary storage with concurrent or slow requests, causing service unavailability.
+      match: strict
+    - id: A-29
+      claim: CVSS 4.0 vector for CVE-2026-114426 (availability only; base 8.7 per CVE record, verify-only).
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116796
+      body_file: bodies/fu1-euvd-116796-page.md
+      passage: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N
+      match: strict
+    - id: A-30
+      claim: 'CNA text for CVE-2026-114420 (EUVD-2026-116797): LDAP metacharacters not neutralized in an unauthenticated GINA account-selection input; email-address enumeration (confidentiality-low only).'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116797
+      body_file: bodies/fu1-euvd-116797-page.md
+      passage: SEPPmail Secure Email Gateway before 15.1.1 does not neutralize LDAP metacharacters in an unauthenticated account-selection input in its GINA web interface. A remote unauthenticated attacker can enumerate email addresses.
+      match: strict
+    - id: A-31
+      claim: CVSS 4.0 vector for CVE-2026-114420 (VC:L only, AT:N; base 6.9 per CVE record, verify-only). Vector confirms the enumeration flaw is the LOW one.
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116797
+      body_file: bodies/fu1-euvd-116797-page.md
+      passage: CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N
+      match: strict
+    - id: A-32
+      claim: 'CNA text for CVE-2026-114421 (EUVD-2026-116798): password recovery for a created but unregistered GINA account with an empty initial password; account takeover.'
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116798
+      body_file: bodies/fu1-euvd-116798-page.md
+      passage: SEPPmail Secure Email Gateway before 15.1.1 permits password recovery for a created but unregistered GINA account whose initial password is empty without adequately verifying ownership. A remote unauthenticated attacker who identifies such an account can set a new password, authenticate as that account, and prevent the intended recipient from using it until recovery.
+      match: strict
+    - id: A-33
+      claim: CVSS 4.0 vector for CVE-2026-114421 (AT:P, VI:H; base 8.3 per CVE record, verify-only). Vector confirms the takeover flaw is the HIGH one, so the vendor page has the two scores swapped.
+      source_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116798
+      body_file: bodies/fu1-euvd-116798-page.md
+      passage: CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:L/VI:H/VA:L/SC:N/SI:N/SA:N
+      match: strict
+    - id: A-34
+      claim: The Admin GUI Home page shows the running version in the System section as "Firmware version" ("Software version currently installed on the system.").
+      source_url: https://docs.seppmail.com/en/07_mi_04_home.html
+      body_file: bodies/fu1-seppmail-docs-home.md
+      passage: Firmware version | Software version currently installed on the system.
+      match: normalized
+    - id: A-35
+      claim: SEPPmail documents a web-based configuration interface for all administration (default port 8443 on the appliance IP per the login page).
+      source_url: https://docs.seppmail.com/en/04_com_06_bc_01_ns_02_login-as-administrator.html
+      body_file: bodies/fu1-seppmail-docs-login.md
+      passage: All administration options of the SEPPmail Secure E-Mail Gateway are available via a web browser-based configuration interface.
+      match: strict
+    - id: A-36
+      claim: 'ABSENCE: NCSC.ch Security Hub (ncsc-csh recent 15) carries no SEPPmail post; newest post is Barracuda of 2026-11-03T15:47Z; the 15 posts reach back to 2026-10-12. Not a citable page (bridge listing).'
+      source_url: ncsc-csh bridge listing (no citable URL)
+      body_file: bodies/fu1-ncsc-csh-recent.json
+      passage: '"title": "Barracuda: Authorization Bypass (CVE-2026-116606) and Command injection (CVE-2026-111560)"'
+      match: strict
+    - id: A-37
+      claim: 'ABSENCE: BACS (bacs.admin.ch) CVE list page, as served at fetch time, tops out at an OPNsense CVE published 26 October 2026 and does not list the 2026-11-04 SEPPmail CVEs; the page itself states it is a tracking list and not a source for advisories.'
+      source_url: https://www.bacs.admin.ch/de/cve-liste
+      body_file: bodies/fu1-bacs-cve-liste.md
+      passage: '### CVE-2026-115425: OPNsense: Multiple cross-site scripting (XSS)'
+      match: strict
+    - id: A-38
+      claim: 'BACS CVE-list disclaimer: the list is not an advisory source.'
+      source_url: https://www.bacs.admin.ch/de/cve-liste
+      body_file: bodies/fu1-bacs-cve-liste.md
+      passage: Diese Liste dient zu Nachverfolgungszwecken und stellt keine Quelle für Hinweise oder Verweise auf die unten aufgeführten Schwachstellen dar.
+      match: strict
+    - id: A-39
+      claim: 'ABSENCE: SEPPmail Statuspal (the vendor channel the revision history names for Gateway news) carries no 15.1.1 notice at fetch time; newest item is a PHP2Shell not-affected notice (page dated 2026-10-22).'
+      source_url: https://seppmail.statuspal.eu/
+      body_file: bodies/fu1-seppmail-statuspal-home.md
+      passage: 'PHP2Shell: SEPPMAIL not affected'
+      match: strict
+    - id: A-40
+      claim: 'VERIFY-ONLY (cveawg record, not citable): CVE-2026-114420 base score 6.9 (CVSS 4.0), CWE-90.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114420'
+      body_file: bodies/fu1-verifyonly-cve-2026-114420.json
+      passage: '"baseScore":6.9'
+      match: strict
+    - id: A-41
+      claim: 'VERIFY-ONLY: CVE-2026-114421 base score 8.3 (CVSS 4.0), CWE-640.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114421'
+      body_file: bodies/fu1-verifyonly-cve-2026-114421.json
+      passage: '"baseScore":8.3'
+      match: strict
+    - id: A-42
+      claim: 'VERIFY-ONLY: CVE-2026-114424 base score 9.2, finder Dario Weiss of InfoGuard Labs, CWE-95.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114424'
+      body_file: bodies/fu1-verifyonly-cve-2026-114424.json
+      passage: Dario Weiss of InfoGuard Labs
+      match: strict
+    - id: A-43
+      claim: 'VERIFY-ONLY: CVE-2026-114425 finder Dario Weiss of InfoGuard Labs, CWE-73.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114425'
+      body_file: bodies/fu1-verifyonly-cve-2026-114425.json
+      passage: Dario Weiss of InfoGuard Labs
+      match: strict
+    - id: A-44
+      claim: 'VERIFY-ONLY: CVE-2026-114420 and -114421 are credited to "Synack, Inc" (finder), NOT to InfoGuard.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114421'
+      body_file: bodies/fu1-verifyonly-cve-2026-114421.json
+      passage: Synack, Inc
+      match: strict
+    - id: A-45
+      claim: 'VERIFY-ONLY: CVE-2026-114426 finder Dario Weiss of InfoGuard Labs.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114426'
+      body_file: bodies/fu1-verifyonly-cve-2026-114426.json
+      passage: Dario Weiss of InfoGuard Labs
+      match: strict
+    - id: A-46
+      claim: 'VERIFY-ONLY: CNA record for CVE-2026-114424 carries CAPEC-242 Code Injection and CWE-95 Eval Injection.'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-114424'
+      body_file: bodies/fu1-verifyonly-cve-2026-114424.json
+      passage: CAPEC-242 Code Injection
+      match: strict
+    vendor_version_table_verbatim:
+      source: https://docs.seppmail.com/en/20_revision-history.html (Patch release 15.1.1, 2026-11-03, section "Security:")
+      rows:
+      - Affected versions: <15.1.1
+        CVE-ID: CVE-2026-114424
+        CVSS Score: '9.2'
+        Description: Improper handling of replacement values in address replacement rules could allow a remote sender to execute arbitrary commands on the appliance if a ruleset uses values taken from the message as replacement.
+        Fix Description: The evaluation of replacement values in address replacement rules was hardened to prevent code execution.
+      - Affected versions: <15.1.1
+        CVE-ID: CVE-2026-114425
+        CVSS Score: '9.2'
+        Description: Specially crafted attachment metadata in an incoming message could cause the Large File Transfer processing to read or delete arbitrary files on the appliance.
+        Fix Description: Attachment metadata received with a message is now validated before any file is accessed.
+      - Affected versions: <15.1.1
+        CVE-ID: CVE-2026-114421
+        CVSS Score: '6.9'
+        Description: Insufficient input escaping in account lookups combined with missing validation in the password recovery process could allow an unauthenticated attacker to discover GINA accounts without a password and take them over.
+        Fix Description: LDAP filter values are now escaped, and the password recovery only asks registered users with configured security questions.
+      - Affected versions: <15.1.1
+        CVE-ID: CVE-2026-114420
+        CVSS Score: '8.3'
+        Description: (identical text to CVE-2026-114421 above)
+        Fix Description: (identical text to CVE-2026-114421 above)
+      - Affected versions: <15.1.1
+        CVE-ID: CVE-2026-114426
+        CVSS Score: '8.7'
+        Description: The file upload interface processed request data before checking authentication, which could allow an unauthenticated attacker to exhaust disk space and worker processes.
+        Fix Description: Authentication is now checked before upload data is processed, and the upload size is limited.
+      other_security_lines_in_same_release:
+      - Removed the acceptance of PGP keys with user IDs that are not self-signed.
+      - PGP messages that are not actually encrypted (NULL encryption) are now detected and no longer marked as encrypted.
+      branch_dates_from_same_page:
+        15.1.1: 2026-11-03 (patch release)
+        15.1.0.1: 2026-09-29 (hotfix)
+        15.1.0: 2026-09-28 (feature release)
+        15.0.7: 2026-09-02 (last release in the 15.0 branch)
+      cna_affected_statement: 'EUVD pages (CNA data): Vendor SEPPmail AG, Product SEPPmail Secure Email Gateway (SEG), Version "0 <15.1.1" on all five records.'
+      euvd_id_map:
+        CVE-2026-114424: EUVD-2026-116781
+        CVE-2026-114425: EUVD-2026-116782
+        CVE-2026-114426: EUVD-2026-116796
+        CVE-2026-114420: EUVD-2026-116797
+        CVE-2026-114421: EUVD-2026-116798
+      cna_record_publication_utc:
+        CVE-2026-114424: 2026-11-04 08:28
+        CVE-2026-114425: 2026-11-04 08:29
+        CVE-2026-114426: 2026-11-04 08:33
+        CVE-2026-114420: 2026-11-04 08:41
+        CVE-2026-114421: 2026-11-04 08:42
+    citable_urls_fetched:
+    - url: https://docs.seppmail.com/en/20_revision-history.html
+      publisher: SEPPmail GmbH
+      published: 2026-11-03 (15.1.1 entry date; page undated)
+      role: primary
+      body: bodies/fu1-seppmail-revhistory.md
+    - url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116781
+      publisher: ENISA EUVD (CNA NCSC.ch text)
+      published: 2026-11-04 08:28
+      role: primary-for-CNA-text (CVE-2026-114424)
+      body: bodies/fu1-euvd-116781-page.md
+    - url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116782
+      publisher: ENISA EUVD (CNA NCSC.ch text)
+      published: 2026-11-04 08:29
+      role: primary-for-CNA-text (CVE-2026-114425)
+      body: bodies/fu1-euvd-116782-page.md
+    - url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116796
+      publisher: ENISA EUVD (CNA NCSC.ch text)
+      published: 2026-11-04 08:33
+      role: primary-for-CNA-text (CVE-2026-114426)
+      body: bodies/fu1-euvd-116796-page.md
+    - url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116797
+      publisher: ENISA EUVD (CNA NCSC.ch text)
+      published: 2026-11-04 08:41
+      role: primary-for-CNA-text (CVE-2026-114420)
+      body: bodies/fu1-euvd-116797-page.md
+    - url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-116798
+      publisher: ENISA EUVD (CNA NCSC.ch text)
+      published: 2026-11-04 08:42
+      role: primary-for-CNA-text (CVE-2026-114421)
+      body: bodies/fu1-euvd-116798-page.md
+    - url: https://docs.seppmail.com/en/07_mi_04_home.html
+      publisher: SEPPmail GmbH (documentation)
+      published: undated reference page
+      role: how to read the running version
+      body: bodies/fu1-seppmail-docs-home.md
+    - url: https://docs.seppmail.com/en/04_com_06_bc_01_ns_02_login-as-administrator.html
+      publisher: SEPPmail GmbH (documentation)
+      published: undated reference page
+      role: admin interface access
+      body: bodies/fu1-seppmail-docs-login.md
+    - url: https://github.com/advisories/GHSA-3C43-M234-72QW
+      publisher: GitHub Advisory Database (mirror of the CVE-2026-114424 record)
+      published: '2026-11-04'
+      role: 'NOT independent: unreviewed mirror of the CNA text; no credits, no extra facts'
+      body: bodies/fu1-ghsa-3c43-m234-72qw.md
+    - url: https://github.com/advisories/GHSA-83v7-h64g-wr4c
+      publisher: GitHub Advisory Database (mirror of CVE-2026-114425)
+      published: '2026-11-04'
+      role: 'NOT independent: mirror'
+      body: bodies/fu1-ghsa-83v7-h64g-wr4c.md
+    fetched_but_not_citable_listings_or_absence_evidence:
+    - https://seppmail.statuspal.eu/ (listing; absence of a 15.1.1 notice)
+    - https://www.bacs.admin.ch/de/cve-liste (listing; states it is not an advisory source)
+    - https://downloads.seppmail.com/extrelnotes/151/ERN15.1.html (extended release notes; not yet updated for 15.1.1)
+    - ncsc-csh bridge listing (no citable URL)
+    verify_only_urls_never_cite:
+    - https://cveawg.mitre.org/api/cve/CVE-2026-114420
+    - https://cveawg.mitre.org/api/cve/CVE-2026-114421
+    - https://cveawg.mitre.org/api/cve/CVE-2026-114424
+    - https://cveawg.mitre.org/api/cve/CVE-2026-114425
+    - https://cveawg.mitre.org/api/cve/CVE-2026-114426
+    - 'https://euvdservices.enisa.europa.eu/api/search?text=SEPPmail&fromDate=2026-11-03&toDate=2026-11-05&size=100 (data endpoint: baseScore, aliases, no exploitedSince)'
+    contradicted_or_unsupported_in_earlier_findings:
+    - 'S1 item 1 cites the cveawg CVE-record URLs as primary sources and as evidence source_url: replace with the five EUVD pages (+ vendor page); the CVE JSON endpoints are verify-only.'
+    - 'S1 summary says the CVE records are "credited to Dario Weiss of InfoGuard Labs": true only for CVE-2026-114424, -114425 and -114426. The records for CVE-2026-114420 and CVE-2026-114421 credit "Synack, Inc" (finder). Credits are not on any citable page fetched (EUVD, GHSA, vendor page carry none), so attribute credits only to the CNA record in prose or omit them.'
+    - 'S1 extended_notes: "Sources do not state whether SEPPmail will backport to 15.0.x" is incomplete: the vendor page states 15.0.7 (2026-09-02) "will be the last release in the 15.0 branch and enable the update to version 15.1".'
+    - 'S1 exposure: "the mail-receiving path is internet-facing by design, so reachability is not the limiting factor" is an inference; no source states it. The sources state only the rule-set and LFT conditions.'
+    - S1 detection text (child processes of the worker, file operations by the LFT worker outside its storage area, outbound connections, new accounts, cron entries, changed rule sets) is mechanism-derived; no fetched source states any of it as observed or recommended. Only "validated worker context was root" is sourced.
+    - 'S1 summary: CVE-2026-114425 is "read or delete" (vendor) and "disclose, move, or delete" (CNA); the entry should carry move.'
+    - 'S1 priority framing "fix only in the 15.1 branch": supported (A-15), with the caveat that the vendor statement predates the batch.'
+    - 'S1 verification label SINGLE-SOURCE-NATIONAL-CERT: the two documents (vendor revision history and NCSC.ch CNA records) are distinct authors but the CNA records cite only the vendor page; EUVD and GHSA are mirrors of the CNA text, not independent corroboration.'
+    observable_behaviors_stated_by_sources:
+      stated: 'Sources describe mechanism, not telemetry: attacker-influenced replacement text is evaluated as Perl in sender or recipient replacement rules and commands run in the mail-processing worker (root); a forged file path in LFT attachment metadata drives file disclosure, move or deletion by root workers; unauthenticated upload data is written before authentication (disk and worker exhaustion); LDAP metacharacters in a GINA account-selection input; password recovery on a created-but-unregistered GINA account with an empty initial password.'
+      telemetry_classes_that_follow_mechanically_not_stated_by_any_source:
+      - mail rule-engine / mail-processing logs for inbound messages whose sender or recipient strings hit address-replacement rules
+      - process-creation events with parent lineage for the mail-processing worker
+      - file-operation events by the LFT worker
+      - web-server access logs for the v1 file-interface upload endpoint (large or slow requests)
+      - GINA web logs for password-recovery events on accounts that never registered and for LDAP wildcard characters in account lookups
+    benign_lookalike_discriminator: none supported
+    open_gaps:
+    - 'SEPPmail Cloud: no source says whether the hosted service was affected or already patched.'
+    - No source says which rule sets are at risk beyond "uses values taken from the message as replacement" or whether LFT is enabled by default.
+    - No source states minimum affected version (CNA floor is 0); support status of 15.0.x, 14.x, 13.x not stated.
+    - The 15.0 to 15.1 upgrade is a feature-release upgrade (15.1.0 is labelled a feature release); upgrade prerequisites not read in the 15.1 extended release notes (page not yet updated for 15.1.1).
+    - No InfoGuard Labs technical write-up and no NCSC.ch / bacs.admin.ch article at fetch time (2026-11-05T03:5xZ); a later InfoGuard publication is plausible but unconfirmed.
+  B_cve_2024_27834_sekoia_apt29:
+    title: CVE-2024-27834 KEV addition (2026-11-04) and Sekoia "Poisoned Source" APT29-linked watering-hole report
+    status_line: 'DONE. Sekoia report read in full (extract plus raw HTML: the extract dropped the summary table that carries the EXPLICIT class-to-CVE mapping and the iOS 18.5 label); KEV row read from the live catalogue 2026.11.04; six Apple 2024 advisories read; GTIG and Chrome Releases read for the other fixed versions.'
+    direct_answers:
+      explicit_mapping_exists: YES. The report gives an explicit summary table (columns Class | Exploits and goal | Targeting) plus a section per class naming the CVEs per stage. It is not a positional pairing. The table sits in an embedded HTML table that trafilatura/extract drops (the page text reads "Here is a summary of what we found:" and then nothing); it is present in the raw HTML and in the THN and BleepingComputer relays (claims B-40..B-42, B-120).
+      chains:
+        Class A (iOS 16.x, cookie theft):
+          targeting_as_stated: 'Table: "iOS 16.7". Text: "For iOS 16.7 (even if the chain should work from 16.0 to 17.4)"; delivery filter "only filters for iOS 16.7 / 16.7.10" (B-44, B-45).'
+          cves_and_roles:
+          - CVE-2025-43529 stage 1 initial WebKit RCE (same RCE as in the DarkSword leaked kit, reimplemented)
+          - CVE-2024-27834 stage 2 PAC bypass
+          - stage 3 JavaScript cookie theft (Cookies.binarycookies of running apps, not only Safari)
+          not_delivered_dead_code:
+          - CVE-2024-27808 (AccessCase UAF)
+          - CVE-2024-27833 (SBFX overflow)
+          fixed_versions:
+            CVE-2024-27834: iOS/iPadOS 16.7.8 and 17.5, macOS Sonoma 14.5, Safari 17.5 (macOS Monterey and Ventura), tvOS 17.5, watchOS 10.5; all released 2024-05-13 (Apple pages B-90..B-98); the 16.7.8 entry was added on the page on June 10, 2024
+            CVE-2025-43529: iOS 26.2 (Apple page 125884, 2025-12-12, iPhone 11 and later) and iOS 18.7.3 (GTIG). NO fetched Apple page lists CVE-2025-43529 for iOS 16.7.x (16.7.15 lists only CVE-2023-43010, 16.7.16 only CVE-2026-28950; 16.7.13 and 16.7.14 are listed on Apple's releases index as "no published CVE entries")
+        Class B (DarkSword, full device data):
+          targeting_as_stated: 'Table: "iOS 18.5" (THN repeats it). Sekoia text names no version for Class B. GTIG (separate, 2026-03-18): "DarkSword supports iOS versions 18.4 through 18.7" (B-110). Sekoia does not discuss the difference.'
+          cves_and_roles:
+          - '/v1: CVE-2025-43529 WebContent RCE, then CVE-2026-20700 as PAC bypass'
+          - '/v2: CVE-2025-14174 (sbx0) then CVE-2025-43510 (sbx1)'
+          - '/v3: CVE-2025-43520 kernel read/write, then the harvester'
+          not_used_alternates:
+          - CVE-2025-31277 alternate initial entry
+          - CVE-2025-24201 alternate escape
+          fixed_versions_per_gtig:
+            CVE-2025-43510 and CVE-2025-43520: iOS 18.7.2 and 26.1
+            CVE-2025-43529 and CVE-2025-14174: iOS 18.7.3 and 26.2
+            CVE-2026-20700: iOS 26.3
+            all: '"all vulnerabilities were patched with the release of iOS 26.3 (although most were patched prior)"'
+        Class C (Android Chrome):
+          targeting_as_stated: 'Table: "Android Chrome 139-145 (but 143)". Text: Chrome 139.0.0.0 through 145.0.0, excluding 143, reason unclear; payload for 139-144 and 145 identical except recompiled GPU-exploit shellcode; exploitation stops on SM-S938B (Samsung Galaxy S25 Ultra) (B-58, B-61).'
+          cves_and_roles:
+          - CVE-2026-3910 stage 1 V8 renderer code execution (no replay guard on Android)
+          - CVE-2025-27038 stage 2 Adreno GPU driver sandbox escape and privilege escalation
+          - 'stage 3 AndroSnitch (libexploit.so, 16 functions): Chrome Cookies, Login Data, History and WifiConfigStore.xml files'
+          fixed_versions:
+            CVE-2026-3910: Chrome 146 (desktop stable 146.0.7680.75/76 on 2026-03-12; Google "is aware that an exploit for CVE-2026-3910 exists in the wild"); the Android build number was not fetched
+            CVE-2025-27038: Qualcomm June 2025 bulletin / OEM patch level; KEV note says "Please check with specific vendors (OEMs,) for information on patching status." (Qualcomm bulletin page is a JavaScript shell and could not be read)
+      three_infection_vectors:
+      - direct JavaScript injection into legitimate sites (template injection, or code appended to an existing JavaScript library)
+      - Adversary-in-the-Middle-like reverse-proxy clone domains of high-profile sites (America250 and Raffles London at The OWO)
+      - supply-chain compromise of the Plerdy SEO Tracker script
+      plerdy_compromise:
+        dates: 27 August to 3 September 2026 (one week)
+        file: the tracker file under the tracker domain was modified so visitors loaded both the legitimate Plerdy script and the attacker script
+        scale_wording: 'body and conclusion: "thousands" of sites, the large majority Ukrainian; introduction: "hundreds" (the report is internally inconsistent; B-25, B-26)'
+        intent: 'Sekoia: unclear whether specific visitors or indiscriminate (B-28)'
+      victim_set_as_sites_not_confirmed_infections: 'First detection: a Ukrainian gas production company site. Compromised: a major US chemical-industry trade association, a far-right European political party (the attribution section says a far-right Czech movement), a Bulgarian military-related site (tampered JavaScript library), an Australian medical clinic (named only in the conclusion). Cloned: America250 and Raffles London at The OWO. Via Plerdy: thousands of mostly Ukrainian sites incl. army, special-forces, military-equipment (ballistic, UAV) sites and defence and military-recruitment sites. Sekoia reports no count of infected devices and says it is coordinating with CERTs to identify victims. No Swiss site or victim is named anywhere in the report (grep "Switz"/"Swiss": none).'
+      attribution:
+        wording: '"we assess with moderate to high confidence that this campaign was conducted by APT29" (intro) and "These elements lead us to assess with moderate to high confidence that the intrusion set behind this watering hole campaign is APT29, or at least one of its subgroups." (B-65, B-66)'
+        evidence_classes:
+        - partner CERT told Sekoia a compromised site (not the Plerdy one) carried leftover artefacts matching a private 2025 APT29 report (not published; Sekoia gives two explanations)
+        - Google TAG (as reported by Sekoia) says the framework resembles its 2024 Mongolian-government watering hole attributed to APT29; the 2024 case used a hardcoded site filter, this one does not
+        - victimology (Ukraine focus, European party sites)
+        - infrastructure spread across multiple hosters, a pattern Sekoia links to past APT29 infrastructure incl. Cobalt Strike Cs2modrewrite use
+        maker_holds_telemetry: Sekoia holds the delivery-host telemetry it queried (retrieved chains from the live server); the attribution evidence is mostly third-party (partner CERT, Google TAG) and unpublished
+        competing_hypotheses_noted_by_sekoia: Sekoia says exploits likely came from a third party (CSV lineage), and that leftover artefacts could be a mistake or a leftover; it does not offer a non-APT29 actor hypothesis
+        caveat: a vendor assessment, not a government attribution; THN and BleepingComputer relay it
+      persistence: 'Sekoia (intro): the final payloads exfiltrate data "without establishing persistence". That is the only persistence statement in the Sekoia text; there is no "reboot" statement in Sekoia (BleepingComputer adds that a reboot stops the activity; claims B-23, B-121). iOS Class A and B set a fixed-value marker cookie as a replay guard that expires in about a minute due to a day/minute bug (B-84).'
+      fully_updated_devices: 'Sekoia: "None of them contain zero-days or work against fully updated devices." and "a user running an up-to-date operating system is safe from these attacks." (B-63, B-64). Unresolved for iOS 16.7.x-only devices, see open_gaps.'
+      kev_row_cve_2024_27834:
+        dateAdded: '2026-11-04'
+        dueDate: '2026-11-18'
+        knownRansomwareCampaignUse: Unknown
+        forensicTriage: 'No'
+        vendorProject/product: Apple / Multiple Products
+        vulnerabilityName: Apple Multiple Products Improper Authentication Vulnerability
+        cwes:
+        - CWE-287
+        names_victim_or_method: NO. shortDescription restates the Apple impact; notes list six Apple security-content URLs only; requiredAction cites BOD 26-04 and forensics triage requirements; no campaign, actor, victim or method (B-01..B-08). Catalog 2026.11.04 released 2026-11-04T20:00:05.774Z.
+        link_to_sekoia: The KEV row does not cite Sekoia; the link between the KEV addition and the Sekoia report is an inference (same-day timing; ENISA EUVD reference list per S1), not a CISA statement.
+      kev_membership_of_cves_in_the_sekoia_report:
+      - cve: CVE-2024-27834
+        in_kev: true
+        date_added: '2026-11-04'
+        due_date: '2026-11-18'
+        role_in_sekoia: Class A stage 2, PAC bypass
+      - cve: CVE-2025-43529
+        in_kev: true
+        date_added: '2025-12-15'
+        due_date: '2026-01-05'
+        role_in_sekoia: 'Class A stage 1 and Class B /v1: WebKit RCE'
+      - cve: CVE-2026-20700
+        in_kev: true
+        date_added: '2026-02-12'
+        due_date: '2026-03-05'
+        role_in_sekoia: 'Class B /v1: PAC bypass'
+      - cve: CVE-2025-14174
+        in_kev: true
+        date_added: '2025-12-12'
+        due_date: '2026-01-02'
+        role_in_sekoia: 'Class B /v2: sandbox escape sbx0 (ANGLE)'
+      - cve: CVE-2025-43510
+        in_kev: true
+        date_added: '2026-03-20'
+        due_date: '2026-04-03'
+        role_in_sekoia: 'Class B /v2: sbx1 (XNU copy-on-write)'
+      - cve: CVE-2025-43520
+        in_kev: true
+        date_added: '2026-03-20'
+        due_date: '2026-04-03'
+        role_in_sekoia: 'Class B /v3: kernel read/write'
+      - cve: CVE-2026-3910
+        in_kev: true
+        date_added: '2026-03-13'
+        due_date: '2026-03-27'
+        role_in_sekoia: 'Class C stage 1: Chrome V8 RCE'
+      - cve: CVE-2025-27038
+        in_kev: true
+        date_added: '2025-06-03'
+        due_date: '2025-06-24'
+        role_in_sekoia: 'Class C stage 2: Adreno GPU driver sandbox escape'
+      - cve: CVE-2024-27808
+        in_kev: false
+        role_in_sekoia: Class A dead (unreachable) code, not delivered
+      - cve: CVE-2024-27833
+        in_kev: false
+        role_in_sekoia: Class A dead (unreachable) code, not delivered
+      - cve: CVE-2025-31277
+        in_kev: true
+        date_added: '2026-03-20'
+        due_date: '2026-04-03'
+        role_in_sekoia: DarkSword kit alternate initial entry, NOT used in this delivery
+      - cve: CVE-2025-24201
+        in_kev: true
+        date_added: '2025-03-13'
+        due_date: '2025-04-03'
+        role_in_sekoia: DarkSword kit alternate escape, NOT used in this delivery
+      kev_membership_summary: Sekoia names 12 CVEs. All 8 in the delivered chains are in KEV (CVE-2024-27834 was the last one added, 2026-11-04). Of the 4 non-delivered ones, CVE-2025-31277 and CVE-2025-24201 are in KEV; CVE-2024-27808 and CVE-2024-27833 are not in KEV.
+      devices_on_ios_16_7_x_only_per_apple: 'Apple lists, for iOS 16.7.8 (and every later 16.7.x page fetched: 16.7.15, 16.7.16): iPhone 8, iPhone 8 Plus, iPhone X, iPad 5th generation, iPad Pro 9.7-inch, and iPad Pro 12.9-inch 1st generation (claims B-90, B-101). Latest 16.7.x build on Apple pages fetched: iOS 16.7.16, released 2026-05-11 (B-100); Apple''s releases index (listing, not citable) shows no later 16.7.x. iOS 17.5 is offered for iPhone XS and later, iPad Pro 13-inch, iPad Pro 12.9-inch 2nd generation and later, iPad Pro 10.5-inch, iPad Pro 11-inch 1st generation and later, iPad Air 3rd generation and later, iPad 6th generation and later, iPad mini 5th generation and later (B-93).'
+      only_ios_and_android_chrome_chains_reported: Sekoia reports only iOS (16.7, 18.5) and Android Chrome chains. macOS, Safari-on-Mac, tvOS and watchOS appear only because Apple fixed CVE-2024-27834 in those OSes in May 2024 and the KEV row names the multi-product scope; Sekoia reports no exploitation against them.
+    claim_table:
+    - id: B-01
+      claim: 'CISA KEV row CVE-2024-27834: dateAdded 2026-11-04.'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"dateAdded": "2026-11-04"'
+      match: strict
+      note: Row is the first CVE-2024-27834 entry in the saved rows file; catalogVersion 2026.11.04, dateReleased 2026-11-04T20:00:05.774Z.
+    - id: B-02
+      claim: 'CISA KEV row: due date 2026-11-18.'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"dueDate": "2026-11-18"'
+      match: strict
+    - id: B-03
+      claim: 'CISA KEV row: knownRansomwareCampaignUse Unknown.'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"knownRansomwareCampaignUse": "Unknown"'
+      match: strict
+      note: The Unknown value is repeated on all 10 non-null saved rows.
+    - id: B-04
+      claim: 'CISA KEV row: forensicTriage No.'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"forensicTriage": "No"'
+      match: strict
+    - id: B-05
+      claim: CISA KEV shortDescription (names no victim, actor, campaign or method; it is the Apple advisory impact restated).
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: Apple iOS, iPadOS, macOS, Safari, tvOS and watchOS 10.5 contain an improper authentication vulnerability which could allow an attacker with arbitrary read and write capability to bypass pointer authentication.
+      match: strict
+    - id: B-06
+      claim: CISA KEV vulnerabilityName and CWE.
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"vulnerabilityName": "Apple Multiple Products Improper Authentication Vulnerability"'
+      match: strict
+    - id: B-07
+      claim: CISA KEV notes cite six Apple security-content pages (Safari 17.5, iOS 16.7.8, tvOS 17.5, watchOS 10.5, macOS Sonoma 14.5, iOS 17.5) and no external reporting.
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: https://support.apple.com/en-us/120896 ; https://support.apple.com/en-us/120898 ; https://support.apple.com/en-us/120901 ; https://support.apple.com/en-us/120902 ; https://support.apple.com/en-us/120903 ; https://support.apple.com/en-us/120905
+      match: strict
+    - id: B-08
+      claim: KEV required action references BOD 26-04 (Prioritizing Security Updates Based on Risk) and forensics triage requirements.
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: ensuring compliance with CISA’s BOD 26-04 Prioritizing Security Updates Based on Risk
+      match: strict
+      note: The saved rows file is pretty-printed from the feed JSON with the right single quote (U+2019) as a literal character.
+    - id: B-09
+      claim: 'KEV: CVE-2025-43529 in KEV (added 2025-12-15, due 2026-01-05).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2025-43529"'
+      match: strict
+    - id: B-10
+      claim: 'KEV: CVE-2026-20700 in KEV (added 2026-02-12).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2026-20700"'
+      match: strict
+    - id: B-11
+      claim: 'KEV: CVE-2025-14174 in KEV (added 2025-12-12).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2025-14174"'
+      match: strict
+    - id: B-12
+      claim: 'KEV: CVE-2025-43510 and CVE-2025-43520 in KEV (both added 2026-03-20).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2025-43520"'
+      match: strict
+    - id: B-13
+      claim: 'KEV: CVE-2026-3910 in KEV (added 2026-03-13).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2026-3910"'
+      match: strict
+    - id: B-14
+      claim: 'KEV: CVE-2025-27038 in KEV (added 2025-06-03); KEV note says check OEMs for patch status.'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: Please check with specific vendors (OEMs,) for information on patching status.
+      match: strict
+    - id: B-15
+      claim: 'KEV: CVE-2025-31277 (alternate DarkSword entry, NOT used in this delivery) is in KEV (added 2026-03-20).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2025-31277"'
+      match: strict
+    - id: B-16
+      claim: 'KEV: CVE-2025-24201 (alternate escape, NOT used) is in KEV (added 2025-03-13).'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"cveID": "CVE-2025-24201"'
+      match: strict
+    - id: B-17
+      claim: 'NOT IN KEV: CVE-2024-27808 and CVE-2024-27833 (dead-code exploits in the Class A file) have null rows in the saved KEV rows file.'
+      source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      body_file: bodies/fu1-kev-rows-sekoia-cves.json
+      passage: '"CVE-2024-27808": null'
+      match: strict
+    - id: B-20
+      claim: 'Report date and discovery: found mid-October 2026 by Sekoia TDR; compromise or cloning of high-profile sites in US, Ukraine, Czech Republic, Bulgaria.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: In mid-October 2026, Sekoia's Threat Detection & Research (TDR) team uncovered a large-scale watering hole campaign involving the compromise or the cloning of several high-profile websites in the US, Ukraine, Czech Republic, and Bulgaria.
+      match: normalized
+    - id: B-21
+      claim: 'THREE infection vectors: direct JavaScript injection, AiTM-like domains, supply-chain compromise of the Ukrainian analytics service.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: 'This campaign relies on three infection vectors: direct JavaScript injection on legitimate websites, Adversary-in-the-Middle-like domains, and the supply-chain compromise of the Ukrainian web analytics service.'
+      match: normalized
+    - id: B-22
+      claim: 'All vectors deliver the same payload: a code injection that loads an external script profiling browser and device; the host then serves a platform-specific n-day chain without user interaction.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The delivery host then uses the mobile and browser version to serve platform-specific n-day exploit chains without user interaction.
+      match: strict
+    - id: B-23
+      claim: 'Sekoia: final payloads exfiltrate cookies or full device data (iOS) and Chrome data and Wi-Fi passwords (Android) WITHOUT establishing persistence. This is the only persistence statement; the report text contains no "reboot" statement (BleepingComputer adds the reboot gloss).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: without establishing persistence
+      match: strict
+    - id: B-24
+      claim: 'Plerdy compromise window: 27 August to 3 September 2026 (one week).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Between 27 August and 3 September 2026, the intrusion set compromised the Ukrainian
+      match: strict
+    - id: B-25
+      claim: 'Plerdy scale statement in the vector section: loaded by thousands of websites, the large majority Ukrainian.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: which is loaded by thousands of websites, the large majority of them Ukrainian.
+      match: strict
+    - id: B-26
+      claim: Plerdy scale statement in the introduction says HUNDREDS (internal inconsistency in the report; the body and the conclusion say thousands).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: exposing hundreds of legitimate websites and their visitors to its exploit kit for one week.
+      match: strict
+    - id: B-27
+      claim: 'Plerdy mechanism: the legitimate tracker file was modified so visitors loaded both the legitimate Plerdy script and the fingerprinting script.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: causing visitors to load both the legitimate Plerdy script and the intrusion set
+      match: strict
+    - id: B-28
+      claim: 'Plerdy intent unclear: targeted visitors vs indiscriminate compromise of unpatched mobile devices.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: It remains unclear whether the attackers intended to target visitors to specific websites or sought to compromise as many unpatched mobile devices as possible
+      match: strict
+    - id: B-29
+      claim: Plerdy-using sites include defence-sector and military-recruitment sites (Ukraine).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Several websites using this tracker are directly linked to the defense sector and military recruitment in Ukraine.
+      match: normalized
+    - id: B-30
+      claim: 'Victim set (sites): compromised legitimate sites include a US chemical-industry trade association and a far-right European political party; one JavaScript library on a Bulgarian military-related site was tampered with; first detection was a Ukrainian gas production company site.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Several other websites were identified as compromised during our investigation, including those of a major industry trade association representing US companies operating in the chemical industry and a far-right European political party.
+      match: normalized
+    - id: B-31
+      claim: 'Bulgarian military-related site: existing JavaScript library tampered with.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: on a Bulgarian military-related website, the intrusion set tampered with an existing JavaScript library to inject the same malicious code.
+      match: normalized
+    - id: B-32
+      claim: 'Ukrainian gas production company: injection in the main template; first detection.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Our investigation began with the detection of a malicious Javascript inclusion leading to an attacker-controlled exploit delivery server at the top of a Ukrainian gas production company.
+      match: strict
+    - id: B-33
+      claim: 'AiTM vector: two attacker-run reverse proxies of high-profile sites (America250 and Raffles London at The OWO), HTML patched on the fly to inject the script at the bottom of the page.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: We identified two high-profile websites set up by the intrusion set to act as reverse proxies
+      match: strict
+    - id: B-34
+      claim: Sekoia assesses the hotel clone may target diplomatic delegations and high-profile guests (assessment, not an observed fact).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: the intrusion set may have sought to target diplomatic delegations and high-profile guests through targeted spear-phishing campaigns.
+      match: normalized
+    - id: B-35
+      claim: 'Victims: Sekoia says victimology is spread across Europe and the US with a focus on Ukraine; the conclusion adds an Australian medical clinic as an unrelated entity. No Swiss site is named anywhere in the report.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: While the victimology shows a focus on Ukraine and the United States, the inclusion of unrelated entities such as an Australian medical clinic complicates a broad strategic interpretation.
+      match: normalized
+    - id: B-36
+      claim: 'Sekoia: Czech far-right movement website compromise matches the intrusion set history of targeting European political parties.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Finally, we observed the compromise of a far right Czech movement website
+      match: strict
+    - id: B-37
+      claim: 'Sekoia has not confirmed infected devices: it is coordinating with national CERTs for victim identification.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: We are coordinating with the CERTs of affected countries to support victim identification and assess options for disrupting the watering hole infrastructure.
+      match: strict
+    - id: B-40
+      claim: 'EXPLICIT MAPPING (summary table, Class A): CVE-2025-43529 and CVE-2024-27834; steal iOS cookies; targeting iOS 16.7.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-tables.txt
+      passage: A | CVE-2025-43529, CVE-2024-27834. Steal iOS cookies | iOS 16.7
+      match: strict
+      note: Table row from the page embedded HTML table (cells joined by " | "); the rendered page shows the same three cells. Saved text is fu1-sekoia-tables.txt, derived from bodies/fu1-sekoia-poisoned-source.raw.html.
+    - id: B-41
+      claim: 'EXPLICIT MAPPING (Class B): five CVEs; full device data; targeting iOS 18.5.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-tables.txt
+      passage: B | CVE-2025-43529, CVE-2026-20700, CVE-2025-14174, CVE-2025-43510, CVE-2025-43520. Full device data collected | iOS 18.5
+      match: strict
+    - id: B-42
+      claim: 'EXPLICIT MAPPING (Class C): CVE-2026-3910 and CVE-2025-27038; Android Chrome cookies and Wi-Fi; Chrome 139-145 but 143.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-tables.txt
+      passage: C | CVE-2026-3910, CVE-2025-27038. Android Chrome cookies and Wi-Fi passwords. | Android Chrome 139-145 (but 143)
+      match: strict
+    - id: B-43
+      claim: Three complete chains named A, B, C were retrieved by testing browser profiles against the fingerprinting endpoint.
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: This allowed us to retrieve three complete exploit chains (afternamed A, B and C), along with their final payloads, targeting both Android and iOS.
+      match: strict
+    - id: B-44
+      claim: 'Class A target: iOS 16.7, though Sekoia says the chain should work from iOS 16.0 to 17.4.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: For iOS 16.7 (even if the chain should work from 16.0 to 17.4), the server delivers a single JavaScript file containing the exploitation code and the final payload.
+      match: strict
+    - id: B-45
+      claim: 'Class A delivery filter: only iOS 16.7 / 16.7.10, narrower than the 16.0-17.4 range the exploits work on; Sekoia reads this as evidence the exploits came from a third party.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: the delivery host for the Class A payload only filters for iOS 16.7 / 16.7.10. However, the exploits work across a wider range, from version 16.0 to 17.4.
+      match: strict
+    - id: B-46
+      claim: 'Class A stage 1: CVE-2025-43529 as the initial RCE (same RCE as the DarkSword leaked kit, reimplemented).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: 'Stage 1: initial RCE DarkSword CVE-2025-43529'
+      match: strict
+    - id: B-47
+      claim: 'Class A: the RCE is the one in the DarkSword leaked kit but reimplemented; two other exploits (CVE-2024-27808, CVE-2024-27833) remain as dead, unreachable code.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: 'The sample leverages the same RCE (CVE-2025-43529) as the one available in the DarkSword leaked exploit kit, but reimplemented. Two other exploits: an AccessCase UAF (CVE-2024-27808) and an SBFX overflow (CVE-2024-27833) remain in the file as dead, unreachable code, probably from an earlier version of the kit.'
+      match: normalized
+    - id: B-48
+      claim: 'Class A stage 2: CVE-2024-27834 is the PAC bypass.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: 'Stage 2: PAC bypass (CVE-2024-27834)'
+      match: strict
+    - id: B-49
+      claim: 'Class A: arbitrary read/write in the renderer is insufficient on Apple silicon because of PAC; the chain incorporates a PAC bypass using CVE-2024-27834.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: the exploit chain incorporates a PAC bypass utilizing CVE-2024-27834.
+      match: normalized
+    - id: B-50
+      claim: 'Class A scope: two zero-click exploits then JavaScript that steals cookies.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: This scenario chains two zero-click CVE exploits to gain enough access on the target devices to execute a JavaScript code used to steal cookies.
+      match: strict
+    - id: B-51
+      claim: Class A cookie theft reaches cookies outside Safari for running apps (Cookies.binarycookies in app containers).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: 'This method should be able to steal cookies outside of Safari, as long as the applications are running and storing the cookie in:'
+      match: strict
+    - id: B-52
+      claim: Class B is the full DarkSword chain (compared against the leaked DarkSword kit and a public analysis).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: This full exploit chain is DarkSword.
+      match: strict
+    - id: B-53
+      claim: 'Class B stage 1 (/v1): WebContent RCE CVE-2025-43529 then CVE-2026-20700 as PAC bypass.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Then it uses the WebContent RCE CVE-2025-43529 followed by CVE-2026-20700 as PAC bypass.
+      match: normalized
+    - id: B-54
+      claim: 'Class B stage 2 (/v2): sandbox escape CVE-2025-14174 (sbx0) then CVE-2025-43510 (sbx1); implementation nearly identical to the DarkSword kit.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: the exploit chain leverages CVE-2025-14174 (sbx0) followed by CVE-2025-43510 (sbx1), with their implementation nearly identical to the mentioned DarkSword kit available on VirusTotal.
+      match: normalized
+    - id: B-55
+      claim: 'Class B stage 3 (/v3): CVE-2025-43520 kernel read/write; then the post-exploitation harvester.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The chain leverages CVE-2025-43520 to achieve kernel read/write capabilities
+      match: normalized
+    - id: B-56
+      claim: 'Kit alternates present but NOT used in this delivery: CVE-2025-31277 (alternate initial entry) and CVE-2025-24201 (alternate escape).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The kit also offers CVE-2025-31277 as an alternate initial-entry and CVE-2025-24201 as an alternate escape; neither is used in this delivery.
+      match: normalized
+    - id: B-57
+      claim: 'Class B data harvested: SMS/iMessage, Mail indexes, Voicemail, WhatsApp and Telegram databases, Keychain, account credentials, Wi-Fi PSKs.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The post exploitation payload is effectively harvesting the phone.
+      match: strict
+    - id: B-58
+      claim: 'Class C target: Chrome 139.0.0.0 through 145.0.0, excluding 143 (reason unclear), on Android.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The delivery server selectively serves the exploit to Chrome versions 139.0.0.0 through 145.0.0, explicitly excluding versions 143 for reasons that remain unclear.
+      match: strict
+    - id: B-59
+      claim: 'Class C stage 1: CVE-2026-3910 gives renderer code execution; no replay guard on Android.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The script directly starts by exploiting the CVE-2026-3910 to achieve code execution in the Chrome renderer process.
+      match: normalized
+    - id: B-60
+      claim: 'Class C stage 2: shellcode exploits CVE-2025-27038 in the Adreno driver to escape the sandbox.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: that will exploit CVE-2025-27038 in the Adreno driver to escape the browser sandbox
+      match: normalized
+    - id: B-61
+      claim: 'Class C device exception: exploitation stops on SM-S938B (Samsung Galaxy S25 Ultra).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: if SM-S938B is detected (Samsung Galaxy S25 Ultra) the exploitation stops.
+      match: strict
+    - id: B-62
+      claim: Class C payload AndroSnitch collects Chrome data and Wi-Fi passwords only (Cookies, Login Data, History, WifiConfigStore).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: 'The only purpose of it is to collect Chrome data and Wi-Fi passwords:'
+      match: strict
+    - id: B-63
+      claim: 'Fully updated devices: none of the chains contains a zero-day or works against fully updated devices.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: None of them contain zero-days or work against fully updated devices.
+      match: strict
+    - id: B-64
+      claim: An up-to-date operating system is safe (Sekoia).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: a user running an up-to-date operating system is safe from these attacks.
+      match: strict
+    - id: B-65
+      claim: 'Attribution, headline assessment: moderate to high confidence APT29 (Midnight Blizzard, Cozy Bear, The Dukes), SVR.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: we assess with moderate to high confidence that this campaign was conducted by APT29
+      match: normalized
+    - id: B-66
+      claim: 'Attribution, closing assessment wording: "APT29, or at least one of its subgroups".'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: These elements lead us to assess with moderate to high confidence that the intrusion set behind this watering hole campaign is APT29, or at least one of its subgroups.
+      match: strict
+    - id: B-67
+      claim: 'Attribution evidence 1: a partner CERT said a compromised site carried traces matching a private report on a 2025 APT29-attributed watering hole (not published).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: According to a partner, these traces match a private report including TTPs and IOCs of a 2025 watering hole campaign that has been attributed to APT29.
+      match: normalized
+    - id: B-68
+      claim: 'Attribution evidence 2: Google TAG confirmed the framework resembles a 2024 watering hole against Mongolian government sites attributed (by Google TAG) to APT29; same goal cookie theft, but 2024 used a hardcoded site filter.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: They confirm the framework used in this campaign is similar to a 2024 watering hole campaign where APT29 conducted a
+      match: strict
+    - id: B-69
+      claim: 'Attribution evidence 3: exploit provenance. Sekoia says its analysis supports exploits coming from a third party; Google TAG said in 2024 it is uncertain how APT29 acquired them.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Our analysis of the exploit chain supports the idea that the exploits came from a third party.
+      match: strict
+    - id: B-70
+      claim: 'Attribution evidence 4: victimology and infrastructure habits (multiple hosters).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: On the other hand, the adversary-controlled domains are distributed across multiple hosters, a pattern previously observed in infrastructure linked to APT29
+      match: strict
+    - id: B-71
+      claim: Sekoia thanks CERT-UA and Google TAG for collaboration/identifying exploits (their contribution is Sekoia account; neither published).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Finally, we would like to thank CERT-UA for collaboration and insights during this investigation, and Google TAG for its assistance in identifying the exploits and the associated CVEs.
+      match: strict
+    - id: B-72
+      claim: 'Sekoia on proliferation: continued reuse of CSV mobile exploit frameworks (DarkSword) by state-sponsored intrusion sets.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: This operation also confirms the continued reuse of CSV mobile exploit frameworks, such as DarkSword, by state-sponsored intrusion sets.
+      match: normalized
+    - id: B-73
+      claim: 'Behaviour: the injected loader runs at window.onload and appends a script element for an external file (main template injection).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Once the page and its dependencies finish loading, the script dynamically injects a new element to load an external file
+      match: strict
+    - id: B-74
+      claim: 'Behaviour: ~2.3 MB script, about 98% minified AngularJS dead code.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: accounts for approximately 98% of the file
+      match: strict
+    - id: B-75
+      claim: 'Behaviour: 61 collectors build 394 JSON fields; JSON POSTed to a second URL with a random nonce; the response (JavaScript) is executed if targeting criteria are met.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The collected values are then packaged into a JSON object and transmitted to a second URL containing a random nonce
+      match: normalized
+    - id: B-76
+      claim: 'Behaviour: exploitation server returns 200 OK with an EMPTY body for implausible devices (non-phone screen size, maxTouchPoints 0).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: In these cases, the delivery host returns a 200 OK with an empty response and serves no payload at all.
+      match: strict
+    - id: B-77
+      claim: 'Behaviour: iOS stages fetched as /v1 /v2 /v3 from an nonce-path API on the exfiltration host; data POSTed to one telemetry endpoint on TCP 8881 for all three classes.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Exfiltrated data is sent to hxxps://ad.starx-net[.]com:8881/telemetry/v12, utilizing the exact same endpoint as the Class A chain.
+      match: normalized
+      note: 'IOC-bearing passage: defanged host. Do NOT copy the host into an entry; the behavior is "HTTPS POST to a non-default port (8881) to a single /telemetry path from phone browsers".'
+    - id: B-78
+      claim: Sekoia states the fingerprint has almost no effect on delivery and the purpose of the extensive fingerprint is unclear.
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: The purpose of collecting this extensive fingerprint remains unclear.
+      match: strict
+    - id: B-79
+      claim: 'Sekoia withholds SOME indicators, but the report DOES publish others (defanged domains, IPs and hashes in tables). Withheld: delivery hosts, exfiltration hosts, YARA rules, compromised-site details; available to national CERTs/LEA under TLP:AMBER.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Several indicators, including delivery hosts, exfiltration hosts, YARA rules and details of compromised websites are not shared in this report and are available in the Sekoia CTI.
+      match: strict
+    - id: B-80
+      claim: 'Sekoia: IOCs and samples are shared with national CERTs or LEA under TLP:AMBER on request.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: If you are a national CERT or LEA, we can share IOCs and samples with you under TLP:AMBER classification.
+      match: strict
+    - id: B-81
+      claim: 'Sekoia: DarkSword is a suspected CSV-developed iOS exploit kit uploaded to VirusTotal in September 2026.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: DarkSword, a suspected Commercial Surveillance Vendor-developed iOS exploit kit uploaded on VirusTotal in September 2026.
+      match: normalized
+    - id: B-82
+      claim: 'Infrastructure registration dates in Sekoia infrastructure table: a delivery host created 2026-08-26 (the day before the Plerdy window opened) and others created 2026-04-02/03 (domain-age is a hunt feature; hosts not named here).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-tables.txt
+      passage: '| Delivery | 26/08/2026 |'
+      match: strict
+      note: 'IOC-free passage (row suffix only). Other row: "| Delivery | 02/04/2026 |" and "| Exfiltration | 03/04/2026 |". AiTM clones created 2026-05-19 and 2026-06-18 (table 6).'
+    - id: B-83
+      claim: Android payload exfiltrates with libcurl and custom headers Filename and X-Device-Id (hardcoded).
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: it builds 2 headers; Filename with value from the previous list of collected SSfiles, and X-Device-Id which is hardcoded in the sample.
+      match: normalized
+    - id: B-84
+      claim: 'iOS replay guard: a fixed-value marker cookie is set and checked; expires after about a minute due to a day/minute bug (cookie name is IOC-class; not carried here).'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: It is a replay guard that keeps the exploit from firing twice on the same victim.
+      match: strict
+    - id: B-85
+      claim: 'Sekoia: no single sectoral targeting pattern across the directly compromised websites.'
+      source_url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      body_file: bodies/fu1-sekoia-poisoned-source.md
+      passage: Across the directly compromised websites, no single sectoral targeting pattern emerges from our analysis.
+      match: strict
+    - id: B-90
+      claim: Apple iOS 16.7.8 / iPadOS 16.7.8 (released 2024-05-13) fixes CVE-2024-27834; device list = the iOS 16.7.x-only devices.
+      source_url: https://support.apple.com/en-us/120898
+      body_file: bodies/fu1-apple-120898.md
+      passage: 'Available for: iPhone 8, iPhone 8 Plus, iPhone X, iPad 5th generation, iPad Pro 9.7-inch, and iPad Pro 12.9-inch 1st generation
+
+
+        Impact: A malicious attacker with arbitrary read and write capability may be able to bypass Pointer Authentication'
+      match: strict
+    - id: B-91
+      claim: 'iOS 16.7.8 page: CVE-2024-27834 credit and the entry-added marker (June 10, 2024).'
+      source_url: https://support.apple.com/en-us/120898
+      body_file: bodies/fu1-apple-120898.md
+      passage: 'CVE-2024-27834: Manfred Paul (@_manfp) working with Trend Micro''s Zero Day Initiative
+
+
+        Entry added June 10, 2024'
+      match: normalized
+    - id: B-92
+      claim: iOS 16.7.8 release date.
+      source_url: https://support.apple.com/en-us/120898
+      body_file: bodies/fu1-apple-120898.md
+      passage: Released May 13, 2024
+      match: strict
+    - id: B-93
+      claim: Apple iOS 17.5 / iPadOS 17.5 (2024-05-13) fixes CVE-2024-27834 for iPhone XS and later, iPad Pro 13-inch, iPad Pro 12.9-inch 2nd generation and later, and others.
+      source_url: https://support.apple.com/en-us/120905
+      body_file: bodies/fu1-apple-120905.md
+      passage: 'Available for: iPhone XS and later, iPad Pro 13-inch, iPad Pro 12.9-inch 2nd generation and later, iPad Pro 10.5-inch, iPad Pro 11-inch 1st generation and later, iPad Air 3rd generation and later, iPad 6th generation and later, and iPad mini 5th generation and later
+
+
+        Impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication'
+      match: strict
+    - id: B-94
+      claim: iOS 17.5 release date.
+      source_url: https://support.apple.com/en-us/120905
+      body_file: bodies/fu1-apple-120905.md
+      passage: Released May 13, 2024
+      match: strict
+    - id: B-95
+      claim: Safari 17.5 fixes CVE-2024-27834 for macOS Monterey and macOS Ventura.
+      source_url: https://support.apple.com/en-us/120896
+      body_file: bodies/fu1-apple-120896.md
+      passage: 'Available for: macOS Monterey and macOS Ventura
+
+
+        Impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication'
+      match: strict
+    - id: B-96
+      claim: macOS Sonoma 14.5 fixes CVE-2024-27834 for macOS Sonoma.
+      source_url: https://support.apple.com/en-us/120903
+      body_file: bodies/fu1-apple-120903.md
+      passage: 'Available for: macOS Sonoma
+
+
+        Impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication'
+      match: strict
+    - id: B-97
+      claim: tvOS 17.5 fixes CVE-2024-27834 for Apple TV HD and Apple TV 4K (all models).
+      source_url: https://support.apple.com/en-us/120901
+      body_file: bodies/fu1-apple-120901.md
+      passage: 'Available for: Apple TV HD and Apple TV 4K (all models)
+
+
+        Impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication'
+      match: strict
+    - id: B-98
+      claim: watchOS 10.5 fixes CVE-2024-27834 for Apple Watch Series 4 and later.
+      source_url: https://support.apple.com/en-us/120902
+      body_file: bodies/fu1-apple-120902.md
+      passage: 'Available for: Apple Watch Series 4 and later
+
+
+        Impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication'
+      match: strict
+    - id: B-99
+      claim: Apple credits CVE-2024-27834 to Manfred Paul with Trend Micro Zero Day Initiative (disclosure, not exploitation); Apple's 2024 pages carry no in-the-wild statement for it.
+      source_url: https://support.apple.com/en-us/120905
+      body_file: bodies/fu1-apple-120905.md
+      passage: 'CVE-2024-27834: Manfred Paul (@_manfp) working with Trend Micro''s Zero Day Initiative'
+      match: normalized
+      note: 'Verified by grep: none of the six 2024 Apple pages carries an in-the-wild statement for CVE-2024-27834 (the single "aware of a report" line on the 16.7.8 page belongs to a different kernel entry).'
+    - id: B-100
+      claim: 'Latest iOS 16.7.x per Apple security-content pages fetched: iOS 16.7.16 (2026-05-11) for the same six device families; its only listed fix is a notification-logging issue (CVE-2026-28950).'
+      source_url: https://support.apple.com/en-us/127113
+      body_file: bodies/fu1-apple-127113.md
+      passage: Released May 11, 2026
+      match: strict
+    - id: B-101
+      claim: 'iOS 16.7.16 page: Available-for list (same devices as 16.7.8).'
+      source_url: https://support.apple.com/en-us/127113
+      body_file: bodies/fu1-apple-127113.md
+      passage: 'Available for: iPhone 8, iPhone 8 Plus, iPhone X, iPad 5th generation, iPad Pro 9.7-inch, and iPad Pro 12.9-inch 1st generation'
+      match: strict
+    - id: B-102
+      claim: iOS 16.7.15 (2026-03-11) backported a fix associated with the Coruna exploit (CVE-2023-43010) to devices that cannot update to the latest iOS; it does NOT list CVE-2025-43529 or any DarkSword CVE.
+      source_url: https://support.apple.com/en-us/126646
+      body_file: bodies/fu1-apple-126646.md
+      passage: This update brings that fix to devices that cannot update to the latest iOS version.
+      match: strict
+    - id: B-103
+      claim: Apple iOS 26.2 page (2025-12-12) lists CVE-2025-43529 (WebKit use-after-free, "extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 26") for iPhone 11 and later; no iOS 16.7.x device list appears with it.
+      source_url: https://support.apple.com/en-us/125884
+      body_file: bodies/fu1-apple-125884.md
+      passage: Apple is aware of a report that this issue may have been exploited in an extremely sophisticated attack against specific targeted individuals on versions of iOS before iOS 26. CVE-2025-43529 was also issued in response to this report.
+      match: strict
+    - id: B-110
+      claim: 'GTIG (2026-03-18): DarkSword supports iOS 18.4 through 18.7 and uses six vulnerabilities; this is GTIG''s range, NOT Sekoia''s (Sekoia labels Class B iOS 18.5).'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: DarkSword supports iOS versions 18.4 through 18.7 and utilizes six different vulnerabilities to deploy final-stage payloads.
+      match: strict
+    - id: B-111
+      claim: 'GTIG: all DarkSword vulnerabilities patched with iOS 26.3 (most earlier); Lockdown Mode recommended where update is not possible.'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: all vulnerabilities were patched with the release of iOS 26.3 (although most were patched prior)
+      match: strict
+    - id: B-112
+      claim: 'GTIG: Lockdown Mode where an update is not possible.'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: In instances where an update is not possible, it is recommended that Lockdown Mode be enabled for enhanced security.
+      match: normalized
+    - id: B-113
+      claim: 'GTIG fix versions: CVE-2025-43529 patched in iOS 18.7.3 and 26.2; used for iOS 18.6-18.7 (CVE-2025-31277, patched in 18.6, for earlier).'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: For devices running iOS 18.6-18.7, DarkSword uses CVE-2025-43529, a garbage collection bug in the Data Flow Graph (DFG) JIT layer of JavaScriptCore which was patched by Apple in iOS 18.7.3 and 26.2 after it was reported by GTIG.
+      match: strict
+    - id: B-114
+      claim: 'GTIG: CVE-2026-20700 (dyld PAC bypass) patched in iOS 26.3.'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: This vulnerability was patched by Apple in iOS 26.3 after being reported by GTIG.
+      match: strict
+    - id: B-115
+      claim: 'GTIG: CVE-2025-14174 patched in Safari with iOS 18.7.3 and 26.2.'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: This vulnerability was reported to Google (the developers of ANGLE) by Apple and GTIG, and was patched in Safari with the release of iOS 18.7.3 and 26.2.
+      match: strict
+    - id: B-116
+      claim: 'GTIG: CVE-2025-43510 patched in iOS 18.7.2 and 26.1.'
+      source_url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      body_file: bodies/fu1-gtig-darksword.md
+      passage: This vulnerability was patched by Apple in iOS 18.7.2 and 26.1.
+      match: strict
+    - id: B-117
+      claim: 'Chrome Releases (2026-03-12): stable 146.0.7680.75/76 (Windows/Mac) fixes CVE-2026-3910 (V8); Google is aware an exploit exists in the wild. Android-specific build not fetched.'
+      source_url: https://chromereleases.googleblog.com/2026/03/stable-channel-update-for-desktop_12.html
+      body_file: bodies/fu1-chrome-stable-20260312.md
+      passage: The Stable channel has been updated to 146.0.7680.75/76 for Windows/Mac
+      match: strict
+    - id: B-118
+      claim: 'Chrome Releases: CVE-2026-3910 exploit in the wild.'
+      source_url: https://chromereleases.googleblog.com/2026/03/stable-channel-update-for-desktop_12.html
+      body_file: bodies/fu1-chrome-stable-20260312.md
+      passage: Google is aware that an exploit for CVE-2026-3910 exists in the wild.
+      match: strict
+    - id: B-120
+      claim: 'The Hacker News (relay, shared with THN by Sekoia) reproduces the table: Class A iOS 16.7, Class B iOS 18.5, Class C Chrome 139-145 excluding 143.'
+      source_url: https://thehackernews.com/2026/11/apt29-linked-hackers-hijack-web.html
+      body_file: bodies/fu1-thn-apt29-plerdy.md
+      passage: which targets iOS devices running iOS 18.5 and exploits the DarkSword exploit chain comprising CVE-2025-43529, CVE-2026-20700, CVE-2025-14174, CVE-2025-43510, and CVE-2025-43520
+      match: normalized
+    - id: B-121
+      claim: 'BleepingComputer (relay) adds a persistence gloss that is NOT in the Sekoia text: a device reboot stops the malicious activity until a compromised site is visited again.'
+      source_url: https://www.bleepingcomputer.com/news/security/hackers-use-n-day-exploits-in-zero-click-attacks-on-ios-android-devices/
+      body_file: bodies/fu1-bc-nday-ios-android.md
+      passage: allowing a device reboot to stop the malicious activity until visiting a compromised site again
+      match: strict
+    - id: B-122
+      claim: 'BleepingComputer: Apple and Google have patched all flaws targeted in this campaign.'
+      source_url: https://www.bleepingcomputer.com/news/security/hackers-use-n-day-exploits-in-zero-click-attacks-on-ios-android-devices/
+      body_file: bodies/fu1-bc-nday-ios-android.md
+      passage: Apple and Google have patched all flaws targeted in this campaign
+      match: strict
+    - id: B-123
+      claim: 'BleepingComputer: Sekoia identified four other vulnerabilities in unreachable code or alternate paths, not used in the analysed chains.'
+      source_url: https://www.bleepingcomputer.com/news/security/hackers-use-n-day-exploits-in-zero-click-attacks-on-ios-android-devices/
+      body_file: bodies/fu1-bc-nday-ios-android.md
+      passage: The researchers identified four other vulnerabilities in unreachable code or alternate exploit paths, but they were not used in the analyzed chains.
+      match: strict
+    version_tables_verbatim:
+      sekoia_summary_table:
+      - Class: A
+        Exploits and goal: CVE-2025-43529, CVE-2024-27834. Steal iOS cookies
+        Targeting: iOS 16.7
+      - Class: B
+        Exploits and goal: CVE-2025-43529, CVE-2026-20700, CVE-2025-14174, CVE-2025-43510, CVE-2025-43520. Full device data collected
+        Targeting: iOS 18.5
+      - Class: C
+        Exploits and goal: CVE-2026-3910, CVE-2025-27038. Android Chrome cookies and Wi-Fi passwords.
+        Targeting: Android Chrome 139-145 (but 143)
+      apple_2024_advisories_cve_2024_27834:
+      - page: https://support.apple.com/en-us/120898
+        release: iOS 16.7.8 and iPadOS 16.7.8
+        released: '2024-05-13'
+        available_for: iPhone 8, iPhone 8 Plus, iPhone X, iPad 5th generation, iPad Pro 9.7-inch, and iPad Pro 12.9-inch 1st generation
+        impact: A malicious attacker with arbitrary read and write capability may be able to bypass Pointer Authentication
+        description: The issue was addressed with improved checks.
+      - page: https://support.apple.com/en-us/120905
+        release: iOS 17.5 and iPadOS 17.5
+        released: '2024-05-13'
+        available_for: iPhone XS and later, iPad Pro 13-inch, iPad Pro 12.9-inch 2nd generation and later, iPad Pro 10.5-inch, iPad Pro 11-inch 1st generation and later, iPad Air 3rd generation and later, iPad 6th generation and later, and iPad mini 5th generation and later
+        impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication
+        description: The issue was addressed with improved checks.
+      - page: https://support.apple.com/en-us/120896
+        release: Safari 17.5
+        released: '2024-05-13'
+        available_for: macOS Monterey and macOS Ventura
+        impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication
+        description: The issue was addressed with improved checks.
+      - page: https://support.apple.com/en-us/120903
+        release: macOS Sonoma 14.5
+        released: '2024-05-13'
+        available_for: macOS Sonoma
+        impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication
+        description: The issue was addressed with improved checks.
+      - page: https://support.apple.com/en-us/120901
+        release: tvOS 17.5
+        released: '2024-05-13'
+        available_for: Apple TV HD and Apple TV 4K (all models)
+        impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication
+        description: The issue was addressed with improved checks.
+      - page: https://support.apple.com/en-us/120902
+        release: watchOS 10.5
+        released: '2024-05-13'
+        available_for: Apple Watch Series 4 and later
+        impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication
+        description: The issue was addressed with improved checks.
+      apple_credit: 'CVE-2024-27834: Manfred Paul (@_manfp) working with Trend Micro''s Zero Day Initiative; WebKit Bugzilla 272750'
+    citable_urls_fetched:
+    - url: https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits
+      publisher: 'Sekoia Threat Detection & Research (author per page: Amaury Garcon; THN names Amaury-Jacques Garcon and Felix Aime)'
+      published: '2026-11-04'
+      role: primary and sole originator
+      body: bodies/fu1-sekoia-poisoned-source.md (extract; table dropped), bodies/fu1-sekoia-poisoned-source.raw.html (full), bodies/fu1-sekoia-tables.txt (derived from raw)
+    - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+      publisher: CISA KEV catalogue (catalogVersion 2026.11.04)
+      published: '2026-11-04T20:00:05.774Z'
+      role: primary for KEV status
+      body: bodies/fu1-cisa-kev-catalog.json, bodies/fu1-kev-rows-sekoia-cves.json
+    - url: https://support.apple.com/en-us/120898
+      publisher: Apple (iOS 16.7.8)
+      published: '2024-05-13'
+      role: vendor primary
+    - url: https://support.apple.com/en-us/120905
+      publisher: Apple (iOS 17.5)
+      published: '2024-05-13'
+      role: vendor primary
+    - url: https://support.apple.com/en-us/120896
+      publisher: Apple (Safari 17.5)
+      published: '2024-05-13'
+      role: vendor primary
+    - url: https://support.apple.com/en-us/120903
+      publisher: Apple (macOS Sonoma 14.5)
+      published: '2024-05-13'
+      role: vendor primary
+    - url: https://support.apple.com/en-us/120901
+      publisher: Apple (tvOS 17.5)
+      published: '2024-05-13'
+      role: vendor primary
+    - url: https://support.apple.com/en-us/120902
+      publisher: Apple (watchOS 10.5)
+      published: '2024-05-13'
+      role: vendor primary
+    - url: https://support.apple.com/en-us/127113
+      publisher: Apple (iOS 16.7.16)
+      published: '2026-05-11'
+      role: vendor primary (latest 16.7.x)
+    - url: https://support.apple.com/en-us/126646
+      publisher: Apple (iOS 16.7.15)
+      published: '2026-03-11'
+      role: vendor primary (Coruna-related backport; no DarkSword CVE)
+    - url: https://support.apple.com/en-us/125884
+      publisher: Apple (iOS 26.2)
+      published: '2025-12-12'
+      role: vendor primary for CVE-2025-43529 and CVE-2025-14174 fix
+    - url: https://cloud.google.com/blog/topics/threat-intelligence/darksword-ios-exploit-chain
+      publisher: Google Threat Intelligence Group
+      published: '2026-03-18'
+      role: background primary (DarkSword version range and fix versions)
+    - url: https://chromereleases.googleblog.com/2026/03/stable-channel-update-for-desktop_12.html
+      publisher: Google Chrome Releases
+      published: '2026-03-12'
+      role: vendor primary for CVE-2026-3910 fix
+    - url: https://thehackernews.com/2026/11/apt29-linked-hackers-hijack-web.html
+      publisher: The Hacker News
+      published: '2026-11-04'
+      role: relay of Sekoia (report "shared with The Hacker News"); not independent
+    - url: https://www.bleepingcomputer.com/news/security/hackers-use-n-day-exploits-in-zero-click-attacks-on-ios-android-devices/
+      publisher: BleepingComputer
+      published: '2026-11-04'
+      role: relay of Sekoia; not independent
+    fetched_but_not_citable:
+    - https://support.apple.com/en-us/100100 (Apple security releases index = listing; used only to enumerate 16.7.x build dates; saved as bodies/fu1-apple-100100-releases.md)
+    - https://docs.qualcomm.com/product/publicresources/securitybulletin/june-2025-bulletin.html (JavaScript shell, unreadable; body discarded)
+    verify_only_urls_never_cite:
+    - cisa-kev bridge catalogue is the citable KEV feed above; no cveawg/nvd/cve.org URL was needed or fetched for item B
+    contradicted_or_unsupported_in_earlier_findings:
+    - 'S1 item 2 detection / S3 summary: "Sekoia holds the indicators ... none are published" and "Sekoia withholds IOCs, YARA rules and the compromised-site list from the public report" are too strong. The report publishes defanged delivery and exfiltration domains, IPs, AiTM clone domains and file hashes (tables and text); what it withholds is "Several indicators, including delivery hosts, exfiltration hosts, YARA rules and details of compromised websites". IOCs must stay out of entries regardless (B-79, B-80).'
+    - 'S3 extended_notes "(Sekoia: a reboot ends the activity)": NOT in the Sekoia text. Sekoia says only "without establishing persistence"; the reboot sentence is BleepingComputer''s gloss (B-23, B-121).'
+    - 'S1 item 2 detection: "MDM or EDR telemetry for Safari WebContent crashes" is not stated by Sekoia as an observed behaviour; Sekoia mentions a crash only in the generic PAC explanation ("triggering an improperly signed pointer will crash the process").'
+    - 'S3 / S1: Class B iOS version. Sekoia''s own table labels Class B "iOS 18.5" (THN repeats it). The earlier findings carry only GTIG''s "18.4 to 18.7" for DarkSword. State both with attribution: Sekoia table 18.5; GTIG kit support 18.4-18.7. GTIG says CVE-2025-43529 is used for iOS 18.6-18.7 (CVE-2025-31277 below), which does not line up neatly with an 18.5 label; Sekoia does not address it. Do not reconcile in the entry.'
+    - 'S3 relation_suggestion basis: "Class B ... with a reimplemented WebKit RCE": Sekoia says the reimplemented RCE is in the CLASS A sample ("the same RCE as the one available in the DarkSword leaked exploit kit, but reimplemented"); for Class B it says "This full exploit chain is DarkSword" and stage 2 is "nearly identical" to the kit.'
+    - 'S1 item 2 exposure lists macOS, Safari, tvOS and watchOS: that comes from Apple/KEV scope. Sekoia reports exploitation only of iOS 16.7, iOS 18.5 and Chrome on Android; no Mac, Apple TV or Watch targeting is reported.'
+    - 'S1 summary: "Sekoia does not state the minimum iOS 16.7.x build the chain needs": correct, but Sekoia does state the delivery filter (16.7 / 16.7.10) and the working range (16.0 to 17.4).'
+    - 'S1/S3: Plerdy scale: Sekoia says "hundreds" in the introduction and "thousands" in the body and conclusion. Earlier findings carry only "thousands".'
+    - 'S3 victim list: "Australian medical clinic" is named only in the conclusion (among directly compromised sites); "far-right European political party" in the vectors section is the Czech far-right movement named in the attribution section.'
+    - 'S1 item 2 summary: "ENISA lists it as exploited since the same day (EPSS 0.6)" was not re-verified in this follow-up.'
+    observable_behaviors_stated_by_sources:
+      web_content_integrity_and_proxy:
+      - a third-party tracker file served from an unchanged URL with changed bytes (Plerdy main.js, 2026-08-27 to 2026-09-03) so that pages load an extra script after window.onload (B-27, B-73)
+      - existing first-party JavaScript library on a compromised site carries appended code (B-31); or the page template carries an injected script element (B-32, B-73)
+      - visitor loads a script of about 2.3 MB of which about 98% is padded minified AngularJS (B-74)
+      - newly registered delivery and exfiltration domains in 2026 (one created 2026-08-26, the day before the Plerdy window; B-82)
+      dns_proxy_mobile_gateway:
+      - phone browser POSTs a JSON object of about 394 fields (61 collectors) to a second URL with a random nonce path immediately after the script loads; the response is JavaScript that is executed (B-75)
+      - for implausible devices (non-phone screen size, maxTouchPoints 0) the server answers 200 OK with an empty body (B-76)
+      - iOS stages are fetched as /v1, /v2, /v3 from a nonce-path API; all classes exfiltrate by HTTPS POST to one /telemetry path on TCP port 8881 (B-77)
+      - Android payload sends with libcurl and custom headers Filename and X-Device-Id (B-83)
+      device_side_file_access_only_visible_with_forensic_telemetry:
+      - iOS Class A reads Cookies.binarycookies files in app containers (PID sweep with sandbox container path lookup) (B-51)
+      - Android payload reads Chrome profile Cookies, Login Data, History and WifiConfigStore.xml (B-62)
+      not_stated_by_sekoia: No mobile EDR alerts, crash logs or MDM signals are described. No indicator of persistence (none installed).
+    benign_lookalike_discriminator: none supported as a stated discriminator. Sekoia says the AngularJS padding may exist "to make the malicious script appear legitimate by embedding it within a well-known JavaScript library" (camouflage), and does not discuss lookalikes. The features Sekoia describes (late-loaded script via window.onload; roughly 2.3 MB padded file; JSON POST of several hundred fields to a nonce path whose reply is executed; empty 200 for non-phone fingerprints) can be offered as "behaviors Sekoia describes", not as a validated way to separate this from a legitimate analytics tracker.
+    open_gaps:
+    - Whether iOS 16.7.8-16.7.16 devices (the six Apple device families on the 16.7.x-only list) are exploitable by Class A is unresolved. Apple fixed CVE-2024-27834 in 16.7.8 (2024-05-13); Sekoia says the delivery host filters "iOS 16.7 / 16.7.10" and that the chain "should work from 16.0 to 17.4"; no fetched Apple page lists CVE-2025-43529 as fixed on iOS 16.7.x; Sekoia says up-to-date devices are safe. Do not write that devices on 16.7.8 or later are exploitable by Class A, and do not write that they are safe. Sources do not state which hardware the chain succeeds on.
+    - Sekoia says nothing about iOS 16.7.x as "stuck" devices; that framing is the composer's, supported only by Apple listing a separate 16.7.x line for those device families.
+    - Android fixed build numbers for CVE-2026-3910 and the Android patch level for CVE-2025-27038 were not fetched/readable.
+    - 'No independent second source: THN and BleepingComputer are relays; Sekoia says Google TAG and CERT-UA contributed, neither has published. Attribution rests on Sekoia''s assessment with unpublished third-party inputs.'
+    - KEV listing of CVE-2024-27834 names no campaign; the Sekoia link is inferred from timing.
+  C_sonicwall_gms_eol:
+    title: 'SonicWall GMS 9.5.2 and earlier (end of life): CVE-2026-109593 and CVE-2026-109594, SNWLID-2026-0019'
+    status_line: DONE. Vendor advisory read through the reader in HTML mode (the markdown-mode body and extract omit the Affected/Fixed/Credits tables); vendor EOL announcement and FAQ read; CERT-FR relay read; no NCSC.ch relay found; no exploitation statement in the advisory.
+    direct_answers:
+      advisory_header_verbatim: Advisory ID SNWLID-2026-0019 | First Published 2026-11-03 | Last Updated 2026-11-03 | Workaround false | Status Applicable | CVE CVE-2026-109593, CVE-2026-109594 | CWE CWE-636, CWE-89 | CVSS v3 9.1 | CVSS Vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H
+      affected_product_table_verbatim:
+        Affected Product: GMS - Virtual Appliance and Windows
+        Affected Version(s): 9.5.2 and earlier versions
+        CPE(s): (empty)
+      workaround_verbatim: None.
+      fixed_software_table_verbatim:
+        Fixed Product(s): GMS - Virtual Appliance and Windows
+        Fixed Versions: A fix version is not available as the product has reached End-of-Life (EOL).
+      eol_no_fix_no_workaround_statements:
+      - '"The affected product has reached End-of-Life (EOL). As a result, no remediation or security update will be released for these vulnerabilities. Organizations using the product should be aware of the associated security risks and are strongly encouraged to upgrade to the SonicWall Network Security Manager (NSM)."'
+      - 'Workaround: "None." (header flag "Workaround false")'
+      - 'Fixed Versions: "A fix version is not available as the product has reached End-of-Life (EOL)."'
+      exploitation_or_poc_statement: 'The advisory contains NO statement about exploitation or a PoC (neither "exploited" nor "no evidence"). CISA-ADP SSVC on the CVE record (verify-only, 2026-11-03T17:06Z): Exploitation none, Automatable yes, Technical Impact partial for CVE-2026-109593 (Automatable no for CVE-2026-109594). Not in CISA KEV; EUVD records EUVD-2026-116034 and -116040 carry no exploitedSince. For contrast, the August advisory SNWLID-2026-0011 did say "no substantiated evidence ... actively exploited". No public PoC found (not searched beyond one WebSearch).'
+      internal_files_verbatim: '"may be able to read internal GMS files, potentially exposing sensitive information" — the advisory does not name or list which files; nothing more is stated anywhere I fetched (advisory, CERT-FR, CVE record). The earlier finding''s "GMS stores firewall configurations and credentials" is not in any fetched source.'
+      severity_semantics: 'CVE-2026-109593: 9.1, CWE-636 Not Failing Securely (Failing Open), vector C:H/I:N/A:H (the vendor scores availability High although the described impact is file read). CVE-2026-109594: 6.8, post-authentication SQL injection "in specific conditions", PR:H, S:C, C:H.'
+      platform: 'Advisory table: "GMS - Virtual Appliance and Windows". The CVE record (verify-only) lists platforms Windows and Linux; use the advisory wording.'
+      gms_end_of_support_date: 'September 30, 2026 (both "Last Day of Support" and "End of Support"), per SonicWall''s GMS EOL announcement (EOL announced May 5, 2025; Last Day of Order October 1, 2025). The FAQ gives the same: "End of Support (EOS): 9/30/2026". So the advisory (2026-11-03) was published about five weeks AFTER end of support. The FAQ also says "SonicWall will only provide updates for security vulnerabilities until the EOS date." and "You can continue to use GMS, but it will not receive support after the EOS date."'
+      context_that_changes_the_story: 'SonicWall''s previous GMS advisory SNWLID-2026-0011 (2026-08-11) affected GMS 9.5.1 and earlier and named FIXED version 9.5.2 (its issues included unauthenticated RCE CVE-2026-66145, unauthenticated command injection in the Dispatcher Service CVE-2026-66147, CVSS 9.4 headline). So 9.5.2 was the last fixed build (Aug 2026) and is itself affected by the new flaws with no 9.5.3 coming. Same finder family: Pentest-Tools.com (Matei Badanoiu) is credited on CVE-2026-66147 in August and on both new CVEs. CVE-2026-66145..66148 are not in KEV.'
+      ncsc_ch_or_other_relay: 'No NCSC.ch Security Hub post (ncsc-csh recent 15, newest Barracuda 2026-11-03; no SonicWall post) and no bacs.admin.ch article found; WebSearch found none. CERT-FR relayed it: CERTFR-2026-AVI-1456 (listed 2026-11-04) "GMS versions 9.5.2 et antérieures" and "SonicWall indique que ce produit est en fin de vie et ne recevra donc plus de correctifs de sécurité." The advisory carries no Reference(s) entries.'
+      credits: 'CVE-2026-109593: Matei ''Mal'' Badanoiu of Pentest-Tools.com. CVE-2026-109594: Matei ''Mal'' Badanoiu and Andrei Lungu of Pentest-Tools.com (vendor advisory Credit(s) table).'
+      revision_history: 1.0, 03-Nov-2026, Initial Release (no revisions).
+    claim_table:
+    - id: C-01
+      claim: 'Advisory title and headline score: End-Of-Life (EOL) SonicWall GMS Multiple Vulnerabilities, 9.1.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'End-Of-Life (EOL) SonicWall GMS Multiple Vulnerabilities
+
+        9.1'
+      match: strict
+    - id: C-02
+      claim: Advisory ID, dates, workaround flag, status, CVEs, CWEs, CVSS v3.
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'Advisory ID SNWLID-2026-0019
+
+        First Published 2026-11-03
+
+        Last Updated 2026-11-03
+
+        Workaround false
+
+        Status Applicable
+
+        CVE CVE-2026-109593, CVE-2026-109594
+
+        CWE CWE-636, CWE-89
+
+        CVSS v3 9.1'
+      match: strict
+      note: Saved text is the HTML-mode reader body reduced to text (the markdown-mode reader body omits the Affected/Fixed tables).
+    - id: C-03
+      claim: Headline CVSS vector (CVE-2026-109593 vector).
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: CVSS Vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H
+      match: strict
+    - id: C-04
+      claim: 'CVE-2026-109593: unauthenticated file read on GMS 9.5.2 and earlier; vendor says only "internal GMS files ... sensitive information" (no file list).'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: An unauthenticated attacker with network access to the SonicWall GMS 9.5.2 and earlier versions may be able to read internal GMS files, potentially exposing sensitive information.
+      match: strict
+    - id: C-05
+      claim: 'CVE-2026-109593 weakness class: CWE-636 Not Failing Securely (Failing Open); vendor score 9.1.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'CWE-636: Not Failing Securely (''Failing Open'')'
+      match: strict
+    - id: C-06
+      claim: 'CVE-2026-109594: post-authentication SQL injection, "in specific conditions", access or modify GMS database content.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: Post-authentication Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') vulnerability has been identified in the End-of-Life SonicWall GMS 9.5.2 and earlier versions which in specific conditions could potentially allow an authenticated attacker to access or modify information stored in the GMS database.
+      match: strict
+    - id: C-07
+      claim: CVE-2026-109594 score 6.8 and vector (PR:H, S:C).
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'CVSS Score: 6.8
+
+        CVSS Vector: CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:N/A:N'
+      match: strict
+    - id: C-08
+      claim: 'VENDOR AFFECTED-PRODUCT TABLE: product "GMS - Virtual Appliance and Windows", versions "9.5.2 and earlier versions".'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'Affected Product(s)
+
+        Affected Product
+
+        Affected Version(s)
+
+        GMS - Virtual Appliance and Windows
+
+        9.5.2 and earlier versions'
+      match: strict
+    - id: C-09
+      claim: 'Workaround: None.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'Workaround
+
+        None.'
+      match: strict
+    - id: C-10
+      claim: 'VENDOR FIXED-SOFTWARE TABLE: no fixed version because the product is end of life.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'Fixed Software
+
+        Fixed Product(s)
+
+        Fixed Versions
+
+        GMS - Virtual Appliance and Windows
+
+        A fix version is not available as the product has reached End-of-Life (EOL).'
+      match: strict
+    - id: C-11
+      claim: Vendor end-of-life, no-fix, migrate-to-NSM statement.
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'Important: The affected product has reached End-of-Life (EOL). As a result, no remediation or security update will be released for these vulnerabilities. Organizations using the product should be aware of the associated security risks and are strongly encouraged to upgrade to the SonicWall Network Security Manager (NSM).'
+      match: strict
+    - id: C-12
+      claim: 'Credits: CVE-2026-109593 by Matei ''Mal'' Badanoiu of Pentest-Tools.com; CVE-2026-109594 by Matei ''Mal'' Badanoiu and Andrei Lungu of Pentest-Tools.com.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'CVE-2026-109593 Matei ''Mal'' Badanoiu of Pentest-Tools.com
+
+        CVE-2026-109594 Matei ''Mal'' Badanoiu and Andrei Lungu of Pentest-Tools.com'
+      match: strict
+    - id: C-13
+      claim: 'Revision history: version 1.0 initial release 03-Nov-2026 (no later revision).'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0019.text.txt
+      passage: 'Version
+
+        1.0
+
+        Date
+
+        03-Nov-2026
+
+        Description
+
+        Initial Release.'
+      match: strict
+    - id: C-14
+      claim: 'CERT-FR relay (CERTFR-2026-AVI-1456, listed 2026-11-04): affected GMS 9.5.2 and earlier; SonicWall states end of life, no more security fixes.'
+      source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1456/
+      body_file: bodies/fu1-certfr-avi-1456.md
+      passage: SonicWall indique que ce produit est en fin de vie et ne recevra donc plus de correctifs de sécurité.
+      match: strict
+    - id: C-15
+      claim: 'CERT-FR: affected systems list.'
+      source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1456/
+      body_file: bodies/fu1-certfr-avi-1456.md
+      passage: GMS versions 9.5.2 et antérieures
+      match: strict
+    - id: C-16
+      claim: 'SonicWall GMS EOL schedule (vendor announcement): EOL announced May 5, 2025; Last Day of Order October 1, 2025; Last Day of Support and End of Support September 30, 2026.'
+      source_url: https://www.sonicwall.com/support/product-notification/gms-eol-announcement/250502113335697
+      body_file: bodies/fu1-sonicwall-gms-eol-announcement.md
+      passage: '| **End of Support** | September 30th, 2026 |'
+      match: strict
+      note: Rendered table rows; the EOL announcement table also gives End of Life Announcement May 5th, 2025 and Last Day of Order October 1st, 2025.
+    - id: C-16b
+      claim: Last Day of Support (vendor announcement table).
+      source_url: https://www.sonicwall.com/support/product-notification/gms-eol-announcement/250502113335697
+      body_file: bodies/fu1-sonicwall-gms-eol-announcement.md
+      passage: '| **Last Day of Support** | September 30th, 2026 |'
+      match: strict
+    - id: C-17
+      claim: EOL announcement date.
+      source_url: https://www.sonicwall.com/support/product-notification/gms-eol-announcement/250502113335697
+      body_file: bodies/fu1-sonicwall-gms-eol-announcement.md
+      passage: '| End of Life Announcement | May 5th, 2025 |'
+      match: strict
+    - id: C-18
+      claim: 'Replacement named by the vendor: Network Security Manager 3.0 SaaS or On-prem.'
+      source_url: https://www.sonicwall.com/support/product-notification/gms-eol-announcement/250502113335697
+      body_file: bodies/fu1-sonicwall-gms-eol-announcement.md
+      passage: Customers are encouraged to migrate to the replacement products, Network Security Manager 3.0 SaaS or Network Security Manager 3.0 On-prem.
+      match: strict
+    - id: C-19
+      claim: 'GMS FAQ: SonicWall only provides updates for security vulnerabilities until the EOS date; EOS 9/30/2026.'
+      source_url: https://www.sonicwall.com/support/knowledge-base/gms-end-of-life-and-nsm-transition-faq/250425110354687
+      body_file: bodies/fu1-sonicwall-gms-eol-faq.md
+      passage: SonicWall will only provide updates for security vulnerabilities until the EOS date.
+      match: strict
+    - id: C-20
+      claim: 'GMS FAQ: continuing to use GMS is possible but without support after EOS; no alternative to NSM.'
+      source_url: https://www.sonicwall.com/support/knowledge-base/gms-end-of-life-and-nsm-transition-faq/250425110354687
+      body_file: bodies/fu1-sonicwall-gms-eol-faq.md
+      passage: You can continue to use GMS, but it will not receive support after the EOS date.
+      match: strict
+    - id: C-21
+      claim: 'GMS FAQ: EOS date 9/30/2026.'
+      source_url: https://www.sonicwall.com/support/knowledge-base/gms-end-of-life-and-nsm-transition-faq/250425110354687
+      body_file: bodies/fu1-sonicwall-gms-eol-faq.md
+      passage: '- End of Support (EOS): 9/30/2026'
+      match: strict
+    - id: C-22
+      claim: 'CONTEXT: SNWLID-2026-0011 (2026-08-11) covered GMS 9.5.1 and earlier (incl. unauthenticated RCE CVE-2026-66145 and unauthenticated command injection CVE-2026-66147); fixed version 9.5.2. So 9.5.2 was the last fixed build and is now itself affected with no successor.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0011
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0011.text.txt
+      passage: 'Fixed Software
+
+        Fixed Product
+
+        Fixed Version(s)
+
+        GMS - Virtual Appliance and Windows
+
+        9.5.2'
+      match: strict
+    - id: C-23
+      claim: 'CONTEXT: SNWLID-2026-0011 affected versions.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0011
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0011.text.txt
+      passage: 'Affected Product(s)
+
+        Affected Product
+
+        Affected Version(s)
+
+        GMS - Virtual Appliance and Windows
+
+        9.5.1 and earlier versions'
+      match: strict
+    - id: C-24
+      claim: 'CONTEXT: SNWLID-2026-0011 exploitation statement (August advisory only, not the November one).'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0011
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0011.text.txt
+      passage: there is no substantiated evidence to suggest that these vulnerabilities are currently being actively exploited in real-world scenarios.
+      match: strict
+    - id: C-25
+      claim: 'CONTEXT: SNWLID-2026-0011 first published date.'
+      source_url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0011
+      body_file: bodies/fu1-sonicwall-snwlid-2026-0011.text.txt
+      passage: First Published 2026-08-11
+      match: strict
+    - id: C-26
+      claim: 'VERIFY-ONLY (cveawg record, not citable): CISA-ADP SSVC on CVE-2026-109593 records Exploitation none, Automatable yes, Technical Impact partial (timestamp 2026-11-03T17:06Z).'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-109593'
+      body_file: bodies/fu1-verifyonly-cve-2026-109593.json
+      passage: '"Exploitation":"none"'
+      match: strict
+    - id: C-27
+      claim: 'VERIFY-ONLY: CVE record lists platforms Windows and Linux (the vendor advisory says Virtual Appliance and Windows).'
+      source_url: 'verify-only: cveawg.mitre.org CVE-2026-109593'
+      body_file: bodies/fu1-verifyonly-cve-2026-109593.json
+      passage: '"platforms":["Windows","Linux"]'
+      match: strict
+    version_table_verbatim:
+      affected:
+      - Affected Product: GMS - Virtual Appliance and Windows
+        Affected Version(s): 9.5.2 and earlier versions
+      fixed:
+      - Fixed Product(s): GMS - Virtual Appliance and Windows
+        Fixed Versions: A fix version is not available as the product has reached End-of-Life (EOL).
+      workaround: None.
+      eol_schedule_vendor_announcement:
+        End of Life Announcement: May 5th, 2025
+        Active Retirement Mode (ARM) Begins: May 5th, 2025
+        Last Day of Order: October 1st, 2025
+        Limited Retirement Mode (LRM) Begins: October 1st, 2025
+        Last Day of Support: September 30th, 2026
+        End of Support: September 30th, 2026
+    citable_urls_fetched:
+    - url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019
+      publisher: SonicWall PSIRT
+      published: '2026-11-03'
+      role: vendor primary
+      body: bodies/fu1-sonicwall-snwlid-2026-0019.jina-html.txt (raw reader HTML), bodies/fu1-sonicwall-snwlid-2026-0019.text.txt (derived text with tables), bodies/fu1-sonicwall-snwlid-2026-0019.md (extract/reader markdown, tables omitted)
+    - url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0011
+      publisher: SonicWall PSIRT
+      published: '2026-08-11'
+      role: vendor primary for the previous GMS advisory (fixed 9.5.2)
+      body: bodies/fu1-sonicwall-snwlid-2026-0011.text.txt (derived from bodies/fu1-sonicwall-snwlid-2026-0011.jina-html.txt)
+    - url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1456/
+      publisher: ANSSI / CERT-FR
+      published: 2026-11-04 (listing date via cert-fr avis-recent; the page metadata shows an unrelated 2024 date)
+      role: national CERT relay
+      body: bodies/fu1-certfr-avi-1456.md
+    - url: https://www.sonicwall.com/support/product-notification/gms-eol-announcement/250502113335697
+      publisher: SonicWall (product notification)
+      published: '2025-05-05'
+      role: vendor primary for the end-of-life dates
+      body: bodies/fu1-sonicwall-gms-eol-announcement.md
+    - url: https://www.sonicwall.com/support/knowledge-base/gms-end-of-life-and-nsm-transition-faq/250425110354687
+      publisher: SonicWall (knowledge base)
+      published: 2025-06-05 (page metadata)
+      role: 'vendor primary: EOS date and support terms'
+      body: bodies/fu1-sonicwall-gms-eol-faq.md
+    fetched_but_not_citable:
+    - https://psirt.global.sonicwall.com/vuln-list (listing; used only to enumerate SNWLID-2026-0011; saved as bodies/fu1-sonicwall-vuln-list.md)
+    verify_only_urls_never_cite:
+    - https://cveawg.mitre.org/api/cve/CVE-2026-109593
+    - https://cveawg.mitre.org/api/cve/CVE-2026-109594
+    - https://euvdservices.enisa.europa.eu/api/search?text=SonicWall&fromDate=2026-11-02&toDate=2026-11-05&size=50 (data endpoint; EUVD-2026-116034 / -116040 carry no exploitedSince)
+    contradicted_or_unsupported_in_earlier_findings:
+    - 'S1 detection: "because GMS stores firewall configurations and credentials, treat a reachable GMS as potentially disclosed: rotate the credentials and shared secrets it holds" is not stated by the advisory, which says only "internal GMS files ... sensitive information"; it is an inference from product function. Keep it labelled as such or drop it.'
+    - S1 discovery trace says the advisory was "fetched through the reader fallback" and the fixed-version table was not seen; the HTML-mode read shows the vendor Fixed Software table (no fixed version) and Credits (Pentest-Tools.com), which the earlier body omitted.
+    - S1 omitted the key context that 9.5.2 is the build that fixed the August advisory (SNWLID-2026-0011) and is now itself affected with no successor; the entry should say so (claims C-22, C-23).
+    - 'S1 exposure: "all GMS releases are EOL": supported by the vendor product-wide EOL announcement (Last Day of Support 2026-09-30), but the PSIRT advisory itself lists only "9.5.2 and earlier versions".'
+    - S1 summary "(first published and updated 2026-11-03, CVSS 3.1 9.1)", "Workaround false", "no remediation or security update will be released" and the SQL-injection details are all confirmed by the advisory.
+    - S1 discovery trace names The Hacker News and BleepingComputer headlines of 2026-11-04 for this item; they were not fetched in this follow-up and are not needed (the vendor advisory is the primary).
+    observable_behaviors_stated_by_sources:
+      stated: none. The advisory states no endpoint, path, request pattern, log artefact or post-exploitation behaviour; it states only that an unauthenticated network-reachable attacker may read internal GMS files (CWE-636 fail-open) and that an authenticated administrator-level (PR:H) user may reach the GMS database via SQL injection "in specific conditions".
+      telemetry_class_that_follows_mechanically_not_stated: web-server / application access logs on the GMS management interface for unauthenticated requests that succeed where authentication should be required (file-read class); nothing more specific is supportable.
+    benign_lookalike_discriminator: none supported
+    open_gaps:
+    - Which internal files are exposed is not stated anywhere; whether any PoC or write-up exists is unknown (Pentest-Tools.com is the credited finder; no write-up found).
+    - 'Platform wording differs: advisory "Virtual Appliance and Windows", CVE record "Windows, Linux".'
+    - No NCSC.ch / bacs.admin.ch relay; CERT-FR is the only authority relay found.
+    - No statement on whether the vendor will provide any mitigation guidance; the advisory says migrate to NSM.

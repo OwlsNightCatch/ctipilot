@@ -1,0 +1,747 @@
+# work/2026-11-05T0255Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-05T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-05T02:58:22Z
+ended_at: 2026-11-05T03:30:47Z
+duration_seconds: 1945
+window_note: "window_hours=26 (start 2026-11-04T00:55Z); developing_window_hours=72 applied to developing stories (PHP2Shell vendor notices, CVE-2026-98432 vendor impact, Zyxel GS1900, Node2Shell). Items whose vendor primary is dated 2026-11-02/03 are returned only where the in-window source (CERT-FR/BSI/EUVD/CVE record/press 2026-11-04) or a developing story makes them fresh."
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 12
+  bridge_fetches: 170
+kev_disposition:
+  - cve: CVE-2024-27834
+    disposition: "NEW ITEM (item 3 below). Apple WebKit pointer-authentication bypass fixed 2024-05-13 (Safari 17.5, iOS/iPadOS 16.7.8 and 17.5, macOS Sonoma 14.5, tvOS 17.5, watchOS 10.5); KEV dateAdded 2026-11-04, BOD 26-04 due 2026-11-18, ransomware flag Unknown, forensicTriage No. The in-window exploitation context is Sekoia's 2026-11-04 report of an APT29-linked watering-hole campaign whose iOS 16.7 chain uses it as the PAC bypass (CISA's catalog entry itself names no victim or method)."
+ransomware_flag_review:
+  method: "Diffed the current KEV catalog (2026.11.04, 1768 rows) against work/2026-07-29T0408Z-intel/cisa-kev.json (2026.07.27, 1655 rows): 26 knownRansomwareCampaignUse flips Unknown -> Known; flip dates inside that 3-month gap are not recoverable. No flips among the 8 additions of the last 8 days."
+  covered_cves_flipped:
+    - { cve: CVE-2026-15409, entry: "2026-07-14/sonicwall-sma1000-ssrf-cve-2026-15409-actively-exploited", note: "entry already discusses ransomware (14 mentions); CVE-2026-15410 same entry" }
+    - { cve: CVE-2026-45659, entry: "2026-07-02/cve-2026-45659-microsoft-sharepoint-server-authenticated-des", note: "entry already mentions ransomware (6 mentions)" }
+    - { cve: CVE-2025-8088, entry: "2026-10-29/mdaemon-clamav-unrar-cve-2025-8088-exploited-in-ukraine", note: "KEV now flags WinRAR CVE-2025-8088 as Known ransomware use; none of the 4 entries citing it (2026-06-02 sekoia-gamaredon, 2026-06-10 year-old-winrar, 2026-06-27 turla-stockstay, 2026-10-29 mdaemon) mentions it -> item 12 (update-of, low weight)" }
+    - { cve: "CVE-2022-41352, CVE-2021-4034, CVE-2018-0802", entry: "no entry carries them as cves[].id (cves_seen only)", note: "no action" }
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "Zyxel GS1900 switches: Binarly shows the exploit used in the Red Heron / Kapibala campaign works against all ten firmware builds that fixed CVE-2026-7273, a separate flaw (CVE-2026-107441) that Zyxel fixed on 2026-10-22 in the .3C0 builds"
+    sources:
+      - { url: "https://www.binarly.io/blog/zyxel-gs1900-rce-cve-2026-107441", publisher: "Binarly", date: "2026-11-03", role: "primary" }
+      - { url: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-out-of-bounds-write-vulnerability-in-gs1900-series-switches-11-03-2026", publisher: "Zyxel PSIRT", date: "2026-11-03", role: "primary" }
+      - { url: "https://community.zyxel.com/en/discussion/34420/switch-gs1900-series-v2-90-patch-3-firmware-release", publisher: "Zyxel Community (GS1900 V2.90 Patch 3 firmware release)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-107441", publisher: "CVE Program record (Zyxel CNA)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/zyxel-fixes-zero-day-exploited-to-hack-nearly-1-000-network-switches/", publisher: "BleepingComputer", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed https://www.bleepingcomputer.com/feed/ (gap-fill sweep), article URL https://www.bleepingcomputer.com/news/security/zyxel-fixes-zero-day-exploited-to-hack-nearly-1-000-network-switches/ -> pivot: BSI WID-SEC-2026-4330 (https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4330, critical 'Zyxel Switch: code execution', fetched via bsi-csaf) -> primary: Zyxel advisory URL above + Binarly blog (fetched through the jina reader; extract returns only a Next.js shell) -> Zyxel firmware post + CVE record"
+    summary: |
+      Update on the covered finding CVE-2026-7273 (entry 2026-09-22). Binarly, which found a Python exploit for GS1900 switches on the Red Heron infrastructure (JITTERLY backdoor, SIXZUT rootkit) while investigating that campaign, reports that the exploit targets a separate, previously unknown flaw in the web CGI (dispatcher.cgi, web_util_initParaPairs): the request-parameter parser copies a 1024-byte parameter without a length check past a 140-slot buffer and overwrites the adjacent parameter counter, which gives either a GOT overwrite (strcmp replaced by system) or a ROP chain, so one POST to /cgi-bin/dispatcher.cgi runs an OS command with no authentication. Binarly's timeline says it confirmed on 2026-09-28 that all ten firmware builds that fixed CVE-2026-7273 on 2026-06-16 (the "...2)C0" builds) remain vulnerable, notified Zyxel on 2026-09-29, Zyxel confirmed on 2026-10-11 and reserved CVE-2026-107441, released the fix on 2026-10-22 and published its advisory on 2026-11-03. Zyxel's table gives the fixed build per model as "2.90(xxxx.3)C0" for GS1900-8, -8HP, -10HP, -16, -24, -24E, -24EP, -24HPv2, -48 and -48HPv2. Zyxel describes the attacker as "LAN-based" and scores the flaw 8.8 (CVSS 3.1 AV:A) while Binarly and BleepingComputer describe it as unauthenticated remote code execution; the two readings of the attack surface are not reconciled in any source. Attribution of the in-the-wild activity to this flaw is Binarly's inference from the exploit's firmware checks and its testing: BleepingComputer notes it remains unclear whether the exploit was written to bypass the June fix or used a related flaw the June fix missed. Not in the CISA KEV catalog as of 2026-11-04 (only CVE-2026-7273 is).
+    region_nexus: "global; GS1900 smart-managed switches are common in small public-sector and branch networks; GreyNoise counted 996 compromised devices in 48 countries (covered entry)"
+    primary_sector_nexus: "direct (network edge/access switches in administrations and schools; many on factory-default credentials per the covered entry)"
+    sector: "public-sector"
+    cves: [CVE-2026-107441, CVE-2026-7273]
+    techniques: [T1190, T1059.004]
+    affected_products: ["Zyxel GS1900 series switches (GS1900-8, -8HP, -10HP, -16, -24, -24E, -24EP, -24HPv2, -48, -48HPv2)"]
+    entity_keys: ["product:zyxel-gs1900-series-switches", "actor:red-heron", "malware:jitterly", "malware:sixzut"]
+    new_entities:
+      - { key: "actor:kapibala", type: actor, name: "Kapibala", aliases: [], summary: "GreyNoise's tracking name for the suspected Chinese-speaking actor behind the GS1900 and WordPress exploitation of 2026 (GreyNoise 2026-09-21); BleepingComputer 2026-11-04 says GreyNoise linked it to Red Heron. Alias candidate for actor:red-heron if the registry owner agrees with 'same or related to'." }
+    relation_suggestions:
+      - { subject: "actor:kapibala", object: "actor:red-heron", basis: "BleepingComputer 2026-11-04: 'GreyNoise linked Kapibala to the Red Heron hacking campaign' (GreyNoise hedges 'same or related to', covered entry 2026-09-22)" }
+      - { subject: "actor:red-heron", object: "product:zyxel-gs1900-series-switches", basis: "Binarly 2026-11-03 recovered the GS1900 exploit from Red Heron JITTERLY/SIXZUT infrastructure (open directory file gs1900_bundle.tar.gz)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-09-22/cve-2026-7273-zyxel-gs1900-red-heron-kev-exploited"
+    suggested_priority: high
+    evidence:
+      - quote: "Binarly confirms all ten fixed releases addressing CVE-2026-7273 remain vulnerable to the exploit used by the threat actor"
+        attribution: "Binarly"
+        source_url: "https://www.binarly.io/blog/zyxel-gs1900-rce-cve-2026-107441"
+      - quote: "Pre-Auth RCE in Zyxel GS1900 Exploited in the Wild as a Zero-Day"
+        attribution: "Binarly"
+        source_url: "https://www.binarly.io/blog/zyxel-gs1900-rce-cve-2026-107441"
+      - quote: "could allow a LAN-based, unauthenticated attacker to exploit the flaw and potentially execute OS commands via a crafted HTTP request"
+        attribution: "Zyxel PSIRT"
+        source_url: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-out-of-bounds-write-vulnerability-in-gs1900-series-switches-11-03-2026"
+      - quote: "it remains unclear whether it was deliberately developed to bypass those updates or exploited a related vulnerability that the earlier patches failed to address"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/zyxel-fixes-zero-day-exploited-to-hack-nearly-1-000-network-switches/"
+    exposure: "Any GS1900 whose web management interface (HTTP/HTTPS to /cgi-bin/dispatcher.cgi) is reachable by an attacker (LAN per Zyxel, internet-exposed per the GreyNoise victims) and whose firmware is at or below 2.90(xxxx.2)C0, including every switch patched for CVE-2026-7273 in June."
+    detection: "Web/management-plane access logs or an upstream proxy/IDS: POST requests to /cgi-bin/dispatcher.cgi with an abnormally large number of '&'-separated parameters (about 140 or more) and a ~1 KB parameter; on the device, a hidden process named configd (SIXZUT hides processes by that name per Binarly) or outbound connections from the switch to the Internet (JITTERLY command servers). The sources do not say that patching removes an implant; GreyNoise (covered entry) reports hashed root credentials were exfiltrated, so treat any switch that was reachable on a pre-.3C0 build as exposed and rotate its credentials."
+    triage: "From the exploit shape Binarly shows (about 139 empty '&'-separated fields, a 1024-byte filler parameter, then a 32-bit counter value), a POST with that many parameters to dispatcher.cgi is far outside normal admin-form traffic (inference from the stated payload layout); a switch that initiates outbound Internet connections is anomalous for an access switch."
+    extended_notes: |
+      Two facts the entry for CVE-2026-7273 states and this changes: (a) it says Zyxel patched all ten models on 2026-06-16 as the remedy, (b) it ties the exploitation to CVE-2026-7273. Per Binarly the June builds do not stop the recovered exploit; the build to install is the .3C0 one released 2026-10-22. Zyxel's own advisory is dated 2026-11-03 and does not mention exploitation; the zero-day label is Binarly's, and Binarly says it will publish a minimised PoC "in the near future".
+  # ------------------------------------------------------------------ 2
+  - title: "SEPPmail Secure Email Gateway before 15.1.1: unauthenticated mail sender reaches root command execution (CVE-2026-114424, CVSS 4.0 9.2) and arbitrary file read, move or delete (CVE-2026-114425, 9.2); NCSC.ch is the CNA, fix only in the 15.1 branch"
+    sources:
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-114424", publisher: "CVE Program record (NCSC.ch CNA)", date: "2026-11-04", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-114425", publisher: "CVE Program record (NCSC.ch CNA)", date: "2026-11-04", role: "primary" }
+      - { url: "https://docs.seppmail.com/en/20_revision-history.html", publisher: "SEPPmail GmbH (Gateway documentation, revision history)", date: "2026-11-03", role: "primary" }
+    discovery_trace: "first seen at: ENISA EUVD critical-score sweep, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-03&toDate=2026-11-05&size=100 (EUVD-2026-116781 / -116782, SEPPmail Secure Email Gateway before 15.1.1, 9.2) -> pivot: CVE records at https://cveawg.mitre.org/api/cve/CVE-2026-114424 and CVE-2026-114425 (CNA NCSC.ch, finder Dario Weiss of InfoGuard Labs, reference docs.seppmail.com) -> primary: SEPPmail revision history https://docs.seppmail.com/en/20_revision-history.html (Patch release 15.1.1, 2026-11-03, Security section)"
+    summary: |
+      SEPPmail's revision history lists patch release 15.1.1 of 2026-11-03 with a Security section of five fixes, all "affected versions <15.1.1": CVE-2026-114424 (CVSS 9.2), improper handling of replacement values in address replacement rules that lets a remote sender run arbitrary commands if a ruleset uses values taken from the message as replacement; CVE-2026-114425 (9.2), crafted attachment metadata in an incoming message makes Large File Transfer (LFT) processing read or delete arbitrary files; CVE-2026-114426 (8.7), unauthenticated upload interface processes data before authentication and without a size limit (worker and disk exhaustion); and two GINA webmail flaws, CVE-2026-114421 (8.3, takeover of a created but unregistered GINA account by an unauthenticated attacker through password recovery) and CVE-2026-114420 (6.9, LDAP-filter injection that enumerates email addresses). The NCSC.ch CVE records (published 2026-11-04T08:28 to 08:42Z, credited to Dario Weiss of InfoGuard Labs) add the exposure conditions: for CVE-2026-114424 an unauthenticated remote sender executes OS commands in the mail-processing worker "when an active rule uses message-derived replacement data and its search condition matches", with the validated worker running as root; for CVE-2026-114425 the file operation needs LFT enabled and the message reaching an affected secure-mail processing path, again as root. Both score CVSS 4.0 AV:N/AC:L/AT:P/PR:N. The revision history lists no fix on the 15.0 branch (latest 15.0.7, 2026-09-02), so 15.0.x gateways must move to 15.1.1. No exploitation is reported by any source. The vendor page lists CVE-2026-114421 at 6.9 and CVE-2026-114420 at 8.3 under one shared description, the reverse of the CVE records; this item follows the CVE records. Related covered finding: the May 2026 SEPPmail batch (entry 2026-05-09/cve-2026-44128-et-al-seppmail-secure-email-gateway-cvss-9-3), same researcher team and the same Perl-eval and LFT component classes.
+    region_nexus: "switzerland / dach (Swiss vendor; NCSC.ch is CNA)"
+    primary_sector_nexus: "direct (SEPPmail is the mail-encryption gateway widely run by Swiss federal, cantonal and communal administrations and their suppliers)"
+    sector: "public-sector"
+    cves: [CVE-2026-114424, CVE-2026-114425, CVE-2026-114426, CVE-2026-114421, CVE-2026-114420]
+    techniques: [T1190, T1059]
+    affected_products: ["SEPPmail Secure Email Gateway (SEG)"]
+    entity_keys: ["product:seppmail-secure-e-mail-gateway"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    suggested_priority: high
+    references_existing: ["2026-05-09/cve-2026-44128-et-al-seppmail-secure-email-gateway-cvss-9-3"]
+    evidence:
+      - quote: "An unauthenticated remote sender can execute operating-system commands in the mail-processing worker context when an active rule uses message-derived replacement data and its search condition matches."
+        attribution: "NCSC.ch (CVE-2026-114424 record)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-114424"
+      - quote: "An unauthenticated remote sender can cause the mail-processing worker to disclose, move, or delete an accessible regular file when LFT is enabled and the message reaches an affected secure-mail processing path."
+        attribution: "NCSC.ch (CVE-2026-114425 record)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-114425"
+      - quote: "Improper handling of replacement values in address replacement rules could allow a remote sender to execute arbitrary commands on the appliance if a ruleset uses values taken from the message as replacement."
+        attribution: "SEPPmail"
+        source_url: "https://docs.seppmail.com/en/20_revision-history.html"
+      - quote: "Patch release 15.1.1, 2026-11-03"
+        attribution: "SEPPmail"
+        source_url: "https://docs.seppmail.com/en/20_revision-history.html"
+    exposure: "Gateways running a version before 15.1.1 (version shown in the Admin GUI); CVE-2026-114424 only where a rule set uses message-derived values in sender or recipient address replacement rules; CVE-2026-114425 only where Large File Transfer is enabled; the mail-receiving path is internet-facing by design, so reachability is not the limiting factor. 15.0.x has no listed fix."
+    detection: "Mail-processing and rule-engine logs for address-replacement rules that fire on inbound mail with unusual sender or recipient strings, unexpected child processes of the mail-processing worker (root), and file operations by the LFT worker outside its storage area; review gateway-initiated outbound connections. Patching does not remove a foothold: check for new accounts, cron entries and changed rule sets on any gateway that ran a pre-15.1.1 build with such rules."
+    extended_notes: |
+      Sources do not state whether SEPPmail will backport to 15.0.x; the revision history lists only 15.1.1 for these CVEs. NCSC.ch has not posted a Security Hub advisory for this batch as of 2026-11-05 (ncsc-csh recent lists the Barracuda post of 2026-11-03 as newest); the CVE records are the NCSC.ch primary. Candidate source: SEPPmail revision history (see candidate_sources).
+  # ------------------------------------------------------------------ 3
+  - title: "CVE-2024-27834 (Apple WebKit pointer-authentication bypass, fixed May 2024) joins CISA KEV on 2026-11-04 as Sekoia reports an APT29-linked watering-hole campaign using it in an n-day iOS chain, with a second chain against Chrome on Android"
+    sources:
+      - { url: "https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits", publisher: "Sekoia Threat Detection & Research", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog (catalog 2026.11.04)", date: "2026-11-04", role: "primary" }
+      - { url: "https://support.apple.com/en-us/120905", publisher: "Apple (iOS 17.5 and iPadOS 17.5 security content)", date: "2024-05-13", role: "primary" }
+      - { url: "https://support.apple.com/en-us/120898", publisher: "Apple (iOS 16.7.8 and iPadOS 16.7.8 security content)", date: "2024-05-13", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2024-25027", publisher: "ENISA EUVD (EUVD-2024-25027, exploitedSince 2026-11-04)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-use-n-day-exploits-in-zero-click-attacks-on-ios-android-devices/", publisher: "BleepingComputer (relays Sekoia)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev, catalog 2026.11.04; kev-window.txt NOT COVERED row) -> pivot: Apple security-content pages named in the KEV notes (https://support.apple.com/en-us/120896 /120898 /120901 /120902 /120903 /120905) -> pivot: ENISA EUVD record EUVD-2024-25027 whose GHSA reference list names the Sekoia post -> primary: Sekoia report https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits ; press rewrites BleepingComputer/The Hacker News 2026-11-04 are not independent"
+    summary: |
+      CVE-2024-27834 is a WebKit flaw that lets an attacker with arbitrary read and write capability bypass Pointer Authentication; Apple fixed it on 2024-05-13 in Safari 17.5 (macOS Monterey and Ventura), iOS and iPadOS 16.7.8 (iPhone 8, 8 Plus, X, iPad 5th generation and iPad Pro 9.7-inch and 12.9-inch 1st generation) and 17.5, macOS Sonoma 14.5, tvOS 17.5 and watchOS 10.5, crediting Manfred Paul with Trend Micro's Zero Day Initiative. CISA added it to KEV on 2026-11-04 (due 2026-11-18 under BOD 26-04, ransomware use Unknown, forensic triage No) and ENISA lists it as exploited since the same day (EPSS 0.6); neither names a victim. The in-window source of the exploitation is Sekoia (2026-11-04): in mid-October 2026 it found a watering-hole campaign that injects a fingerprinting script ("UltimateFingerprinter", 61 collectors, 394 fields) into compromised or cloned sites (a Ukrainian gas producer, a US chemical-industry trade association, a Bulgarian military-related site, AiTM clones of America250 and a London hotel near Whitehall) and, from 2026-08-27 to 2026-09-03, into the Plerdy SEO-tracker script loaded by thousands of mostly Ukrainian sites. The server then serves one of three n-day chains: Class A for iOS 16.7 (cookie theft: CVE-2025-43529 as renderer RCE, then CVE-2024-27834 as the PAC bypass), Class B on newer iOS that is the DarkSword chain (CVE-2025-43529, CVE-2026-20700, CVE-2025-14174, CVE-2025-43510, CVE-2025-43520) harvesting messages, WhatsApp and Telegram databases, Keychain and photos, and Class C for Chrome 139 to 145 (not 143) on Android (CVE-2026-3910, then CVE-2025-27038 in the Adreno driver) stealing Chrome cookies and saved Wi-Fi. Sekoia states all three chains use already-patched flaws and none works against fully updated devices, and assesses with moderate to high confidence that APT29 (or a subgroup) is behind it, based on overlap (reported to Sekoia by a partner CERT) with a 2025 APT29-attributed watering hole, Google TAG's confirmation that the framework resembles the 2024 Mongolian-government campaign, victimology and infrastructure habits; Sekoia notes the exploits likely came from a third party (commercial-surveillance lineage, DarkSword). Sekoia does not state the minimum iOS 16.7.x build the chain needs; Apple's own advisory fixes CVE-2024-27834 from iOS 16.7.8. Disposition of the KEV row: new item; this entry overlaps with S3's likely Sekoia item.
+    region_nexus: "global; victims in Ukraine, US, Czech Republic, Bulgaria, one Australian clinic; AiTM lures aimed at diplomatic and high-profile event visitors (Sekoia). No Swiss victim reported."
+    primary_sector_nexus: "indirect (mobile devices of staff in government, diplomatic and defence roles; unpatched or unmanaged iPhones and Android phones)"
+    sector: "public-sector"
+    cves: [CVE-2024-27834, CVE-2025-43529, CVE-2026-20700, CVE-2025-14174, CVE-2025-43510, CVE-2025-43520, CVE-2026-3910, CVE-2025-27038]
+    techniques: [T1189, T1203, T1068, T1539, T1195.002]
+    affected_products: ["Apple iOS and iPadOS (before 16.7.8 / 17.5)", "Apple macOS Sonoma (before 14.5)", "Apple Safari (before 17.5)", "Apple tvOS (before 17.5)", "Apple watchOS (before 10.5)", "Google Chrome for Android 139 to 145"]
+    entity_keys: ["actor:midnight-blizzard", "tool:darksword", "product:apple-ios", "product:apple-ipados", "product:apple-macos", "product:google-chrome"]
+    new_entities:
+      - { key: "campaign:plerdy-apt29-watering-hole-2026", type: campaign, name: "Plerdy tracker and cloned-site watering hole (APT29-linked, Sekoia)", aliases: [], summary: "Sekoia (2026-11-04): watering-hole campaign delivering n-day iOS (DarkSword and a PAC-bypass chain) and Android Chrome exploit chains through compromised and cloned websites and the Plerdy analytics tracker (2026-08-27 to 2026-09-03); assessed moderate to high confidence APT29." }
+      - { key: "malware:androsnitch", type: malware, name: "AndroSnitch", aliases: [], summary: "Sekoia's name for the Android shellcode payload (libexploit.so) that steals Chrome cookies, login data, history and Wi-Fi configuration after the Adreno sandbox escape in the 2026 watering-hole campaign." }
+    relation_suggestions:
+      - { subject: "campaign:plerdy-apt29-watering-hole-2026", object: "actor:midnight-blizzard", basis: "Sekoia assesses with moderate to high confidence that APT29 or a subgroup is behind the campaign (evidence: 2025 watering-hole overlap via a CERT partner, Google TAG framework similarity, victimology)" }
+      - { subject: "campaign:plerdy-apt29-watering-hole-2026", object: "tool:darksword", basis: "Sekoia: Class B chain is the DarkSword chain, with the same exploits and a re-implemented Class A" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    suggested_priority: notable
+    evidence:
+      - quote: "Apple iOS, iPadOS, macOS, Safari, tvOS and watchOS 10.5 contain an improper authentication vulnerability which could allow an attacker with arbitrary read and write capability to bypass pointer authentication."
+        attribution: "CISA KEV catalog"
+        source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+      - quote: "None of them contain zero-days or work against fully updated devices."
+        attribution: "Sekoia"
+        source_url: "https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits"
+      - quote: "These elements lead us to assess with moderate to high confidence that the intrusion set behind this watering hole campaign is APT29, or at least one of its subgroups."
+        attribution: "Sekoia"
+        source_url: "https://www.sekoia.com/blog/poisoned-source-apt29-watering-holes-targets-mobile-devices-with-n-day-exploits"
+      - quote: "Impact: An attacker with arbitrary read and write capability may be able to bypass Pointer Authentication"
+        attribution: "Apple"
+        source_url: "https://support.apple.com/en-us/120905"
+    exposure: "iPhones and iPads below iOS 16.7.8 or 17.5, Macs below macOS Sonoma 14.5 or Safari 17.5, Apple TV below tvOS 17.5, Apple Watch below watchOS 10.5, and Chrome on Android 139 to 145 (excluding 143) that never took the vendor updates; visiting a compromised or cloned site is enough. MDM inventory shows OS builds; fleets with devices that cannot update past 16.7.x are the realistic exposure."
+    detection: "Proxy or DNS logs for third-party script inclusions that load from newly seen hosts (including the 'a.plerdy.com' tracker path during 2026-08-27 to 2026-09-03), a browser fetch of a ~2.3 MB AngularJS-padded script followed by a POST of a large JSON fingerprint, and then a script response; MDM or EDR telemetry for Safari WebContent crashes. Sekoia holds the indicators (shared with national CERTs under TLP:AMBER); none are published."
+    extended_notes: |
+      The KEV listing alone names no campaign; linking it to Sekoia's report is this agent's reading (ENISA's GHSA reference list for the CVE cites the Sekoia post). BleepingComputer and The Hacker News relay Sekoia and are not independent. Confidence MEDIUM on attribution (single research lab's assessment), HIGH on the CVE facts.
+  # ------------------------------------------------------------------ 4
+  - title: "CVE-2026-98432 (Linux kernel TCP use-after-free): Citrix XenServer 8.4 and 9 with Workload Balancing and Conversion Manager, WatchGuard Fireware OS, AP and Dimension, and MikroTik RouterOS 7.25.1 publish vendor impact statements; Fortinet is still investigating"
+    sources:
+      - { url: "https://support.citrix.com/external/article/CTX697256/xenserver-security-update-for-multiple-i.html", publisher: "Citrix (CTX697256, XenServer Security Update for Multiple Issues)", date: "2026-11-03", role: "primary" }
+      - { url: "https://psirt.watchguard.com/WGSA-2026-0033/", publisher: "WatchGuard PSIRT (WGSA-2026-0033)", date: "2026-11-03", role: "primary" }
+      - { url: "https://upgrade.mikrotik.com/routeros/7.25.1/CHANGELOG", publisher: "MikroTik (RouterOS 7.25.1 changelog)", date: "2026-11-02", role: "primary" }
+      - { url: "https://xcp-ng.org/blog/2026/11/03/november-2026-security-and-maintenance-updates-1-for-xcp-ng-8-3-lts/", publisher: "XCP-ng (Vates)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-188", publisher: "Fortinet PSIRT (FG-IR-26-188, unchanged: initial publication 2026-11-02)", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1449/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1449)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1449/ (cert-fr avis-recent 30; Citrix bulletin CTX697256 with CVE-2026-98432) -> primary: Citrix CTX697256 -> pivot: WatchGuard psirt listing https://psirt.watchguard.com/ -> WGSA-2026-0033; MikroTik via slice record mikrotik-routeros-changelog (https://upgrade.mikrotik.com/routeros/NEWESTa7.stable -> 7.25.1 CHANGELOG)"
+    summary: |
+      Update on the covered finding (entry 2026-10-31, last updated 2026-11-03, which records only Fortinet 'investigating'). Citrix bulletin CTX697256 of 2026-11-03 (severity Critical) says an unauthenticated attacker on the management network may compromise the XenServer host and any running Workload Balancing or Conversion Manager appliance through CVE-2026-98432; it affects XenServer 8.4 and 9, Workload Balancing before 2026.1.1 and Conversion Manager before 2026.2.0, and Citrix has pushed updates to the Early Access and Normal update channels of XenServer 8.4 and 9 and released Workload Balancing 2026.1.1 or later and Conversion Manager 2026.2.0 (the same bulletin carries CVE-2026-102703, the Xen grant-copy flaw of item 5). WatchGuard WGSA-2026-0033 (2026-11-03) lists Firebox Fireware OS (2025.1 and 12.0 and later), WatchGuard AP and Dimension (2.0 and later) as running a vulnerable kernel, status "Potentially Affected / Unresolved" with no fixed version, and says Fireware OS and AP do not enable MPTCP and so are not affected by the remote-code-execution exploit chain circulating online, while Dimension runs a vulnerable Ubuntu without MPTCP and awaits the Ubuntu fix. MikroTik RouterOS stable 7.25.1 (2026-11-02) lists "system - improve stability (includes CVE-2026-98432)". XCP-ng's 2026-11-03 update post says the fix for 'another important vulnerability ... related to the Linux kernel's TCP stack' (the post does not name the CVE; it is consistent with this one) missed that day's batch, was in QA and would follow within 24 hours (Vates advisory VATES-SA-2026-056), with an iptables-based mitigation available meanwhile. Fortinet FG-IR-26-188 still lists dozens of products 'under investigation' (initial publication 2026-11-02, no revision). The rest of the covered entry stands.
+    region_nexus: "global"
+    primary_sector_nexus: "direct (XenServer/XCP-ng hypervisors, WatchGuard firewalls and MikroTik routers are common in public-sector and municipal networks)"
+    sector: "public-sector"
+    cves: [CVE-2026-98432]
+    techniques: [T1190, T1499.004]
+    affected_products: ["Citrix XenServer 8.4 and 9", "Citrix XenServer Workload Balancing", "Citrix XenServer Conversion Manager", "WatchGuard Fireware OS", "WatchGuard AP", "WatchGuard Dimension", "MikroTik RouterOS"]
+    entity_keys: ["product:linux-kernel", "product:watchguard-fireware-os", "product:watchguard-dimension", "product:mikrotik-routeros"]
+    new_entities:
+      - { key: "product:citrix-xenserver", type: product, name: "Citrix XenServer", aliases: ["XenServer", "Citrix Hypervisor"], summary: "Citrix (Cloud Software Group) Xen-based virtualization platform; XenServer 8.4 and 9 are the supported releases in the 2026-11-03 bulletin CTX697256." }
+      - { key: "product:xcp-ng", type: product, name: "XCP-ng", aliases: [], summary: "Open-source Xen-based virtualization platform maintained by Vates; XCP-ng 8.3 LTS received the XSA-523 fix on 2026-11-03." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root"
+    suggested_priority: notable
+    evidence:
+      - quote: "An issue has been identified that may allow an unauthenticated attacker on the management network to compromise the host and/or any running Workload Balancing (WLB) or Conversion Manager appliances."
+        attribution: "Citrix"
+        source_url: "https://support.citrix.com/external/article/CTX697256/xenserver-security-update-for-multiple-i.html"
+      - quote: "CVE-2026-98432 also affects Workload Balancing (before 2026.1.1) and Conversion Manager (before 2026.2.0)."
+        attribution: "Citrix"
+        source_url: "https://support.citrix.com/external/article/CTX697256/xenserver-security-update-for-multiple-i.html"
+      - quote: "they do not enable MPTCP and are not affected by the remote code execution (RCE) exploit chain circulating online."
+        attribution: "WatchGuard"
+        source_url: "https://psirt.watchguard.com/WGSA-2026-0033/"
+      - quote: "system - improve stability (includes CVE-2026-98432)"
+        attribution: "MikroTik"
+        source_url: "https://upgrade.mikrotik.com/routeros/7.25.1/CHANGELOG"
+    exposure: "XenServer 8.4 and 9 hosts (and WLB or Conversion Manager appliances) whose management network is reachable by an attacker; WatchGuard Firebox/AP/Dimension have no fix and WatchGuard says the MPTCP chain does not apply to Fireware OS and AP; MikroTik routers below RouterOS 7.25.1 (stable channel)."
+    detection: "As in the covered entry: kernel TCP SYN-ACK path crashes or reboots, and for hypervisors host-level kernel oops after inbound SYN traffic carrying IP options on the management network."
+    extended_notes: |
+      Delta only; the existing entry's analysis of the exploit chain (MPTCP listeners, Anthropic's exploit, CloudLinux's failed reproduction) is unchanged. Fortinet's page was re-read and has not moved since 2026-11-02.
+  # ------------------------------------------------------------------ 5
+  - title: "Xen XSA-523 (CVE-2026-102703, CVE-2026-102704): a malicious guest reads and writes arbitrary memory of other domains including Dom0 through a grant-copy caching flaw; every Xen from 4.6, no mitigation, patched in XenServer and XCP-ng"
+    sources:
+      - { url: "https://xenbits.xen.org/xsa/advisory-523.html", publisher: "Xen Project Security Team (XSA-523)", date: "2026-11-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-102703", publisher: "CVE Program record (Xen CNA)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://support.citrix.com/external/article/CTX697256/xenserver-security-update-for-multiple-i.html", publisher: "Citrix (CTX697256)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://xcp-ng.org/blog/2026/11/03/november-2026-security-and-maintenance-updates-1-for-xcp-ng-8-3-lts/", publisher: "XCP-ng (Vates)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/xen-hypervisor-flaws-let-one-malicious.html", publisher: "The Hacker News", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: The Hacker News feed https://feeds.feedburner.com/TheHackersNews (gap-fill sweep, 'Xen Hypervisor Flaws Let One Malicious VM Read and Write Any Other VM's Memory') and, independently, CERT-FR https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1447/ listing -> primary: Xen advisory https://xenbits.xen.org/xsa/advisory-523.html -> Citrix CTX697256 (CVE-2026-102703 listed) -> XCP-ng update post"
+    summary: |
+      Xen Security Advisory XSA-523 (public release 2026-11-03, version 2) describes two flaws in grant-copy handling: Xen caches validated details to speed up batches of Grant Copy operations on adjacent ranges in one page and re-validates in the wrong conditions, so frame numbers and grant references can be mixed up (CVE-2026-102703), and the check that copying by frame number is allowed only on the caller's own memory is misplaced (CVE-2026-102704). Impact: "A malicious guest can read and write arbitrary memory, belonging to other domains, including Dom0." All Xen versions from 4.6 onwards are vulnerable (4.5 and earlier are not), and there is no known mitigation. The advisory credits Anthropic, which found it using Claude, then validated by Ada Logics; The Hacker News adds that CodeAnt AI independently reported it, and that the advisory says nothing about exploitation or the access a guest needs. Fixes: Citrix lists CVE-2026-102703 in CTX697256 (XenServer 8.4 and 9, updates in both update channels), XCP-ng 8.3 LTS shipped the fix on 2026-11-03 (host reboot required, 'a single compromised guest can break out of its isolation and take over the whole host'), Qubes publishes QSB-121 for 4.3, and Debian's tracker listed bookworm, trixie and forky xen as vulnerable on 2026-11-04 (per The Hacker News). The CVE records carry only a CISA ADP score of 4.4 (CVSS 3.1 AV:L/PR:L/C:L/I:L), which understates the stated impact; Citrix's bulletin severity is Critical (shared with CVE-2026-98432).
+    region_nexus: "global"
+    primary_sector_nexus: "direct where Xen-based hypervisors (XenServer, XCP-ng, Qubes, distribution Xen) host public-sector workloads"
+    sector: "public-sector"
+    cves: [CVE-2026-102703, CVE-2026-102704]
+    techniques: [T1611]
+    affected_products: ["Xen 4.6 and later", "Citrix XenServer 8.4 and 9", "XCP-ng 8.3 LTS", "Qubes OS 4.3"]
+    entity_keys: ["product:xen"]
+    new_entities:
+      - { key: "product:citrix-xenserver", type: product, name: "Citrix XenServer", aliases: ["XenServer", "Citrix Hypervisor"], summary: "See item 4." }
+      - { key: "product:xcp-ng", type: product, name: "XCP-ng", aliases: [], summary: "See item 4." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    suggested_priority: notable
+    evidence:
+      - quote: "All Xen versions from 4.6 onwards are vulnerable."
+        attribution: "Xen Project Security Team"
+        source_url: "https://xenbits.xen.org/xsa/advisory-523.html"
+      - quote: "There is no known mitigation."
+        attribution: "Xen Project Security Team"
+        source_url: "https://xenbits.xen.org/xsa/advisory-523.html"
+      - quote: "This issue was discovered by Anthropic using Claude"
+        attribution: "Xen Project Security Team"
+        source_url: "https://xenbits.xen.org/xsa/advisory-523.html"
+      - quote: "Host reboots are necessary after this update."
+        attribution: "XCP-ng"
+        source_url: "https://xcp-ng.org/blog/2026/11/03/november-2026-security-and-maintenance-updates-1-for-xcp-ng-8-3-lts/"
+    exposure: "Any Xen-based host that runs guests with different trust levels (shared tenants, DMZ and internal guests, VDI): the attacker needs code execution inside one guest. Installed state follows each platform's own update tooling."
+    detection: "The sources describe no exploit telemetry or detection. Inference from the stated impact: a guest that was compromised before the host was patched could have read or written Dom0 memory, so review Dom0 for new accounts, services and modified toolstack files after patching."
+    extended_notes: |
+      Patching needs a host reboot (XCP-ng explicitly; plan live migration). CVSS in the CVE records (ADP 4.4) conflicts with the advisory's impact statement; the vendor bulletin (Citrix) rates the bundle Critical.
+  # ------------------------------------------------------------------ 6
+  - title: "APT package manager (Debian, Ubuntu and derivatives), CVE-2026-109518: an on-path attacker or malicious mirror or proxy turns a retried download into an unverified package installed as root; fixed in Debian bookworm 2.6.2 and trixie 3.0.4 and in all Ubuntu releases"
+    sources:
+      - { url: "https://ubuntu.com/security/CVE-2026-109518", publisher: "Canonical (Ubuntu security tracker)", date: "2026-11-04", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-109518", publisher: "Debian Security Tracker (DSA-6607-1, DLA-4880-1)", date: "2026-11-04", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-109518", publisher: "CVE Program record (Canonical CNA)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/debian-and-ubuntu-apt-flaw-lets-mitm.html", publisher: "The Hacker News", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: The Hacker News feed https://feeds.feedburner.com/TheHackersNews (gap-fill sweep), article https://thehackernews.com/2026/11/debian-and-ubuntu-apt-flaw-lets-mitm.html -> primary: Ubuntu CVE page https://ubuntu.com/security/CVE-2026-109518 and Debian tracker https://security-tracker.debian.org/tracker/CVE-2026-109518 (the Debian DSA list post and the APT developers' post are behind a proof-of-work challenge and could not be read) -> CVE record https://cveawg.mitre.org/api/cve/CVE-2026-109518"
+    summary: |
+      Canonical, as CNA, describes CVE-2026-109518: on Debian, Ubuntu and derivatives an on-path attacker who can manipulate the HTTP traffic between an APT client and an archive server (including a malicious mirror or proxy), during a package install, can trick the client into installing an attacker-controlled unverified package and obtain remote code execution as root. The cause is reuse of hard links; the attack requires the client to follow redirects and retry the download and a non-zero Acquire::Retries setting, which defaults to 3 from Debian 12 (bookworm) and Ubuntu 22.04 LTS, so older releases are not exposed by default (The Hacker News adds that APT's developers warn user scripts may have enabled the setting anyway). CVSS 4.0 is 7.7 (AV:N/AC:L/AT:P/PR:N/UI:P). Fixes dated 2026-11-04: Debian bookworm 2.6.2 and trixie 3.0.4 (DSA-6607-1), forky still 3.3.5 vulnerable and sid 3.3.6 fixed on the tracker, the tracker also lists DLA-4880-1, and The Hacker News says APT's developers published 2.2.5 for Debian 11, whose LTS ended on 2026-08-31; Ubuntu 26.10 3.3.3ubuntu0.1, 26.04 LTS 3.2.1ubuntu0.1, 24.04 LTS 2.8.4ubuntu0.1, 22.04 LTS 2.4.15ubuntu0.1, and Ubuntu Pro/ESM builds 20.04 2.0.12+esm1, 18.04 1.6.19+esm1, 16.04 1.2.36+esm1, 14.04 1.0.1ubuntu2.24+esm4 (USN-8996-1). No exploitation is reported. The sources do not state a configuration workaround beyond the stated precondition.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (Debian and Ubuntu servers and desktops in administrations; exposure depends on HTTP mirrors, proxies and untrusted network paths)"
+    sector: "public-sector"
+    cves: [CVE-2026-109518]
+    techniques: [T1557, T1195.002]
+    affected_products: ["APT (Debian, Ubuntu and derivatives)"]
+    entity_keys: ["product:ubuntu"]
+    new_entities:
+      - { key: "product:apt-package-manager", type: product, name: "APT (Advanced Package Tool)", aliases: ["apt", "Debian APT"], summary: "Package manager of Debian, Ubuntu and derivative Linux distributions; CVE-2026-109518 (2026-11-04) lets an on-path attacker swap a verified package for an unverified one during retried downloads." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    suggested_priority: notable
+    evidence:
+      - quote: "On Debian, Ubuntu, and derivative Linux distributions, an on-path attacker who can manipulate the HTTP traffic (including a malicious mirror or proxy) between an APT client and an archive server triggered by a package install can trick the client into installing an attacker-controlled unverified package and achieve remote code execution with root privileges."
+        attribution: "Canonical (CVE-2026-109518)"
+        source_url: "https://ubuntu.com/security/CVE-2026-109518"
+      - quote: "the value 3 is the default starting with Debian 12 (bookworm) and Ubuntu 22.04 LTS (Jammy Jellyfish)"
+        attribution: "Canonical (CVE-2026-109518)"
+        source_url: "https://ubuntu.com/security/CVE-2026-109518"
+      - quote: "| 22.04 LTS jammy | Fixed in 2.4.15ubuntu0.1 |"
+        attribution: "Canonical"
+        source_url: "https://ubuntu.com/security/CVE-2026-109518"
+      - quote: "|  | trixie (security) | 3.0.4 | fixed |"
+        attribution: "Debian Security Tracker"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-109518"
+    exposure: "Debian 12/13 and Ubuntu 22.04 or later hosts that install packages over HTTP (not HTTPS) through mirrors, caching proxies or networks an attacker can influence; older releases only where Acquire::Retries was raised above 0. Installed version: 'apt --version' or 'dpkg -l apt'."
+    detection: "Package-manager logs (/var/log/apt/history.log and term.log) showing retried downloads from non-standard mirrors or proxies shortly before an install; package files whose hashes do not match the archive's Packages index; unexpected root processes spawned by dpkg maintainer scripts. Update apt first, then re-verify packages installed from untrusted mirror paths."
+    triage: "A download retry with redirect on an unreliable link is routine; the discriminator is a retried file that ends up installed although its hash differs from the index, or a mirror or proxy that is not the organisation's own."
+  # ------------------------------------------------------------------ 7
+  - title: "HPE Networking Fabric Composer 7.4.0 and below, 7.3.4 and below (HPESBNW05172): three critical flaws including an unauthenticated remote hardcoded CLI password (CVE-2026-95731, CVSS 9.8) among 46 CVEs; fixed in 7.4.1 and 7.3.5"
+    sources:
+      - { url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05172.txt", publisher: "HPE Networking PSIRT (HPESBNW05172)", date: "2026-11-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-95731", publisher: "CVE Program record (HPE CNA)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1451/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1451)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1451/ (cert-fr avis-recent 30; HPE Aruba Networking, Fabric Composer and VIA) and ENISA EUVD critical sweep (EUVD-2026-116277, CVE-2026-95733 9.6) -> primary: HPE bulletin fetched with the bridge url subcommand -> CVE record https://cveawg.mitre.org/api/cve/CVE-2026-95731"
+    summary: |
+      HPE Networking's bulletin HPESBNW05172 (published and last updated 2026-11-03, revision 1, severity Critical) covers HPE Networking Fabric Composer (AFC) 7.4.0 and below and 7.3.4 and below. Three rows are critical: CVE-2026-95731 (CVSS 3.1 9.8, AV:N/PR:N), hardcoded passwords in the command-line interface that let an unauthenticated remote attacker gain administrative access; CVE-2026-95732 (9.6, AV:A, scope changed), an authentication bypass in the underlying operating system that lets an unauthenticated adjacent attacker run code; and CVE-2026-95733 (9.6, AV:A), hardcoded credentials giving adjacent code execution. The remaining 43 CVEs run from 8.8 down to 3.1, many of them unauthenticated adjacent or network flaws (certificate validation, authentication bypass, SQL injection, DoS). HPE found all of them internally, is not aware of public discussion or exploit code, and fixes them in 7.4.1 and above (7.4.x) and 7.3.5 and above (7.3.x); the workaround is to restrict the CLI and web management interfaces to a dedicated layer-2 segment or VLAN or to firewall policy. The sibling bulletin HPESBNW05173 (Virtual Intranet Access client below 4.7.9, highest 8.8) is not a pre-auth network critical.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (Aruba data-centre fabric orchestration in larger public IT)"
+    sector: "public-sector"
+    cves: [CVE-2026-95731, CVE-2026-95732, CVE-2026-95733]
+    techniques: [T1190, T1078.001]
+    affected_products: ["HPE Networking Fabric Composer (AFC)"]
+    entity_keys: ["product:hpe-networking-fabric-composer"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    suggested_priority: notable
+    evidence:
+      - quote: "Hardcoded password vulnerabilities in the command-line interface of HPE Networking Fabric Composer could allow an unauthenticated remote attacker to access the affected system using hardcoded credentials."
+        attribution: "HPE (CVE-2026-95731 record)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-95731"
+      - quote: "- HPE Networking Fabric Composer 7.4.x: 7.4.1 and above"
+        attribution: "HPE Networking PSIRT"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05172.txt"
+      - quote: "Revision 1 / 2026-Nov-03 / Initial Publication"
+        attribution: "HPE Networking PSIRT"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05172.txt"
+    exposure: "Fabric Composer 7.4.0 or below / 7.3.4 or below whose CLI (SSH) or web management interface is reachable from untrusted networks; version in the AFC UI."
+    detection: "SSH and CLI authentication logs on the AFC appliance for logins with the vendor-default or hardcoded account from unexpected sources; new local accounts or API tokens; outbound connections from the orchestrator. Upgrading does not remove hardcoded credentials already used: review accounts and rotate secrets stored on the appliance."
+    extended_notes: |
+      Sources in window: CERT-FR avis dated 2026-11-04 and the CVE records of 2026-11-03/04; the vendor bulletin itself is dated 2026-11-03.
+  # ------------------------------------------------------------------ 8
+  - title: "WatchGuard AuthPoint Gateway before 7.6.0: four flaws (CVE-2026-121639 CVSS 4.0 9.2, -121638 9.1, -121640 9.1, -121637 8.9) let a network attacker disrupt MFA authentication, forge LDAP authentication results or replay administrative requests; no exploitation known"
+    sources:
+      - { url: "https://psirt.watchguard.com/CVE-2026-121639", publisher: "WatchGuard PSIRT", date: "2026-11-04", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-121640", publisher: "WatchGuard PSIRT", date: "2026-11-04", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-121638", publisher: "WatchGuard PSIRT", date: "2026-11-04", role: "primary" }
+      - { url: "https://psirt.watchguard.com/CVE-2026-121637", publisher: "WatchGuard PSIRT", date: "2026-11-04", role: "primary" }
+    discovery_trace: "first seen at: ENISA EUVD critical sweep, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-03&toDate=2026-11-05&size=100 (EUVD-2026-116930/-116931/-116932) -> slice record watchguard-psirt listing https://psirt.watchguard.com/ -> primary: per-CVE pages above (fetched with extract) and CVE records https://cveawg.mitre.org/api/cve/CVE-2026-121639"
+    summary: |
+      WatchGuard's PSIRT published four advisories on 2026-11-04, all for AuthPoint Authentication Gateway versions 1.0 to below 7.6.0 and all fixed in 7.6.0 (product-status tables from the vendor pages). CVE-2026-121639 (CVSS 4.0 9.2, AV:N/PR:N): missing authentication for a critical function lets a remote unauthenticated attacker with network access to the gateway host disrupt authentication services and delete the local directory-synchronisation configuration; it applies to gateways configured with an LDAP or Active Directory provider. CVE-2026-121640 (9.1): capture-replay of a legitimate request between gateway components allows unauthorised administrative actions including disrupting authentication. CVE-2026-121638 (9.1): improper certificate validation lets an on-path attacker intercept and modify communications between the gateway and local authentication providers (RADIUS, LDAP or ADFS resources). CVE-2026-121637 (8.9): improper HMAC validation in the LDAP authentication callback lets a network attacker who has a valid header signature forge the authentication result and transaction identifier. WatchGuard credits its AI Security Research team and says it is not aware of any exploitation in the wild for any of the four. The Fireware OS flaws of the 2026-10-28 batch are a separate, already covered entry (2026-10-29/watchguard-fireware-2026-4-three-preauth-rows-at-9-2).
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (on-premises AuthPoint Gateway bridges WatchGuard cloud MFA to AD/LDAP/RADIUS in administrations that use WatchGuard)"
+    sector: "public-sector"
+    cves: [CVE-2026-121639, CVE-2026-121640, CVE-2026-121638, CVE-2026-121637]
+    techniques: [T1190, T1499, T1556]
+    affected_products: ["WatchGuard AuthPoint Authentication Gateway"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:watchguard-authpoint-gateway", type: product, name: "WatchGuard AuthPoint Authentication Gateway", aliases: ["AuthPoint Gateway"], summary: "On-premises WatchGuard AuthPoint component that connects the cloud MFA service to LDAP, Active Directory, RADIUS and ADFS; four flaws fixed in 7.6.0 on 2026-11-04." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Vendor-confirmed CVSS 4.0 9.1 to 9.2 pre-auth network rows on MFA infrastructure, but the stated impacts are availability and replay/forgery (no code execution), no exploitation, single vendor source (PSIRT is the authoritative owner)."
+    suggested_priority: notable
+    evidence:
+      - quote: "A Missing Authentication for Critical Function vulnerability in WatchGuard AuthPoint Gateway allows a remote unauthenticated attacker with network access to the AuthPoint Gateway host to disrupt authentication services and delete the local directory synchronization configuration."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-121639"
+      - quote: "WatchGuard is not aware of any exploitation of this vulnerability in the wild."
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-121639"
+      - quote: "AuthPoint Authentication Gateway 7.6.0"
+        attribution: "WatchGuard PSIRT"
+        source_url: "https://psirt.watchguard.com/CVE-2026-121640"
+    exposure: "AuthPoint Gateways below 7.6.0 (LDAP/AD provider for -121639 and -121637; RADIUS, LDAP or ADFS resource for -121638); gateway version is shown in the AuthPoint management UI."
+    detection: "Gateway logs for authentication-service interruptions and unexpected deletion of the directory-sync configuration; repeated identical requests between gateway components (replay); authentication results that do not match IdP-side logs."
+  # ------------------------------------------------------------------ 9
+  - title: "SonicWall GMS 9.5.2 and earlier (end of life): unauthenticated file read (CVE-2026-109593, CVSS 3.1 9.1) and authenticated SQL injection (CVE-2026-109594, 6.8) with no fix and no workaround"
+    sources:
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019", publisher: "SonicWall PSIRT (SNWLID-2026-0019)", date: "2026-11-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-109593", publisher: "CVE Program record (SonicWall CNA)", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1456/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1456)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1456/ (cert-fr avis-recent 30, SonicWall) -> primary: SonicWall advisory fetched through the reader fallback https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019 (the vendor's own channel states no fix) -> CVE record; The Hacker News and BleepingComputer headline the same fact on 2026-11-04"
+    summary: |
+      SonicWall advisory SNWLID-2026-0019 (first published and updated 2026-11-03, CVSS 3.1 9.1) covers the end-of-life Global Management System (GMS) 9.5.2 and earlier: CVE-2026-109593, an unauthenticated attacker with network access may read internal GMS files and expose sensitive information (CWE-636, scored C:H/A:H); and CVE-2026-109594, a post-authentication SQL injection in specific conditions (6.8). SonicWall states that no remediation or security update will be released because the product has reached end of life, 'Workaround false', and strongly encourages migration to SonicWall Network Security Manager (NSM). No exploitation is stated.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (legacy SonicWall firewall management consoles in administrations that never migrated)"
+    sector: "public-sector"
+    cves: [CVE-2026-109593, CVE-2026-109594]
+    techniques: [T1190, T1005]
+    affected_products: ["SonicWall Global Management System (GMS) 9.5.2 and earlier"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:sonicwall-gms", type: product, name: "SonicWall Global Management System (GMS)", aliases: ["GMS"], summary: "SonicWall's legacy on-premises firewall management console; 9.5.2 and earlier are end of life and receive no fixes (SNWLID-2026-0019, 2026-11-03)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "'No patch' item on an EOL management console with an unauthenticated network file read (CVSS 9.1) but a probably small installed base and no exploitation reported; vendor is the authoritative single source (the 'no patch' claim is read on SonicWall's own page)."
+    suggested_priority: notable
+    evidence:
+      - quote: "The affected product has reached End-of-Life (EOL). As a result, no remediation or security update will be released for these vulnerabilities."
+        attribution: "SonicWall PSIRT"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019"
+      - quote: "An unauthenticated attacker with network access to the SonicWall GMS 9.5.2 and earlier versions may be able to read internal GMS files, potentially exposing sensitive information."
+        attribution: "SonicWall PSIRT"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019"
+    exposure: "Any GMS at 9.5.2 or earlier (all GMS releases are EOL); if its web interface is reachable from untrusted networks the file read needs no credentials. The sources name no mitigation other than migrating to NSM."
+    detection: "GMS web-server access logs for unauthenticated requests that return internal files; because GMS stores firewall configurations and credentials, treat a reachable GMS as potentially disclosed: rotate the credentials and shared secrets it holds for managed firewalls."
+  # ------------------------------------------------------------------ 10
+  - title: "Xerox bulletin XRX26-016 v5 (2026-11-03) adds interim mitigations for PHP2Shell on AltaLink, EC81xx, VersaLink and WorkCentre: restrict network access to the embedded web server or disable HTTP/HTTPS; fix dates unchanged"
+    sources:
+      - { url: "https://securitydocs.business.xerox.com/wp-content/uploads/2026/10/Xerox-Security-Bulletin-XRX26-016-for-PHP2Shell-Vulnerabilities-CVE-2026-109618-and-CVE-2026-109619-v5.pdf", publisher: "Xerox (Security Bulletin XRX26-016 v5)", date: "2026-11-03", role: "primary" }
+      - { url: "https://security.business.xerox.com/en-bz/documents/bulletins", publisher: "Xerox security bulletin index", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: standing task 2 (covered entry cites v4); Xerox bulletin index https://security.business.xerox.com/en-bz/documents/bulletins lists 'XRX26-016 ... v5 (PDF 191.1K) November 3, 2026' -> v5 PDF href read from the raw listing HTML -> text diff against the v4 PDF cited by the entry"
+    summary: |
+      Delta against the cited v4 (updated 2026-10-28): v5, dated 2026-11-03, adds a section 'Mitigations for Affected Xerox AltaLink, EC81xx, VersaLink and WorkCentre Products'. Xerox says the vulnerable PHP component is used by a limited number of pages in the device's Embedded Web Server and, until the fix is installed, customers can restrict network access to the device web interface (HTTP/HTTPS) to trusted networks or management hosts with a firewall or segmentation, noting devices behind a properly configured firewall and not reachable from the internet are at substantially reduced risk, or disable HTTP/HTTPS if remote web administration is not needed, which also disables the Embedded Web Server and features that depend on it. The fix schedule is unchanged: AltaLink, EC81xx and VersaLink expected on Xerox's site on 2026-11-06, WorkCentre 3655, EC7836, EC7856 and the Worldwide Ticketing Tool still in development, Fiery patches by 2026-11-09 (FS500 to FS800, Pro included), 2026-11-16 (FS300 to FS400) and 2026-11-23 (FS200). Fiery's own statement lives on the Fiery Communities site, which is a JavaScript application no transport here could read.
+    region_nexus: "global"
+    primary_sector_nexus: "direct (multifunction printers are ubiquitous in administrations)"
+    sector: "public-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Xerox AltaLink", "Xerox EC81xx", "Xerox VersaLink C/B415, C/B625, C/B620", "Xerox WorkCentre 3655, EC7836, EC7856", "Fiery Digital Front End"]
+    entity_keys: ["product:xerox-altalink", "product:xerox-ec81xx", "product:xerox-versalink", "product:xerox-workcentre", "product:fiery-digital-front-end"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-11-02/xerox-fiery-php2shell-printers-fixes-due-6-to-23-november"
+    suggested_priority: minor
+    evidence:
+      - quote: "Xerox Security Bulletin XRX26-016 for PHP2Shell Vulnerabilities CVE-2026-109618 and CVE-2026-109619 v5 (PDF 191.1K) November 3, 2026"
+        attribution: "Xerox"
+        source_url: "https://security.business.xerox.com/en-bz/documents/bulletins"
+      - quote: "The vulnerable PHP component is used by a limited number of pages in the device’s Embedded Web Server."
+        attribution: "Xerox"
+        source_url: "https://securitydocs.business.xerox.com/wp-content/uploads/2026/10/Xerox-Security-Bulletin-XRX26-016-for-PHP2Shell-Vulnerabilities-CVE-2026-109618-and-CVE-2026-109619-v5.pdf"
+    exposure: "As in the covered entry; the mitigation applies until the 2026-11-06 firmware."
+    detection: "As in the covered entry."
+  # ------------------------------------------------------------------ 11
+  - title: "Splunk Enterprise 10.0 and lower, UBA, SOAR Automation Broker and Attack Analyzer carry the vulnerable Node.js Brotli decoder (CVE-2026-111497); Citrix Unicon eLux Scout needs hotfix 2609.1 (SVD-2026-1015 updated 2026-11-04, CTX697300 updated 2026-11-03)"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1015", publisher: "Splunk (SVD-2026-1015)", date: "2026-11-04", role: "primary" }
+      - { url: "https://support.citrix.com/external/article/CTX697300/citrix-security-advisory-for-cve-2026-11.html", publisher: "Citrix (CTX697300, Unicon eLux Scout)", date: "2026-11-03", role: "primary" }
+    discovery_trace: "first seen at: splunk-advisories listing https://advisory.splunk.com/advisories (extract; SVD-2026-1015 and -1014 'Last Modified 2026-11-04') -> primary: https://advisory.splunk.com/advisories/SVD-2026-1015 ; Citrix CTX697300 from CERT-FR https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1449/ -> https://support.citrix.com/external/article/CTX697300/citrix-security-advisory-for-cve-2026-11.html"
+    summary: |
+      Delta for the Node2Shell entry (2026-10-24), which names no Splunk or Unicon product. Splunk's advisory SVD-2026-1015 (published 2026-10-28, product status updated 2026-11-04) says Splunk found that Splunk Enterprise, Splunk Visual Exporter, Splunk SOAR Automation Broker, Splunk UBA, Splunk Attack Analyzer, Python for Scientific Computing, and AppDynamics SaaS, Reporting Service, Synthetic Services and Virtual Appliance and Smartlook include packages affected by the Node.js flaws (CVE-2026-111497 Brotli out-of-bounds write plus the DNS and TLS-hostname ones CVE-2026-105482, -105483, -106069); Splunk Enterprise versions 10.0 and lower are vulnerable and Splunk recommends 10.2 or higher for the bundled Node.js runtime, which does not fix the Splunk Visual Exporter app (all Splunk Enterprise versions include it; disable or remove the app as mitigation), and plans to upgrade the packages in a future 10.0 release; Splunk Cloud Platform, Universal Forwarder, Enterprise Security, SOAR, ITSI and the SOAR connectors are listed unaffected, and the observability collectors, AppDynamics on-premises other components and Galileo are still under investigation. Citrix CTX697300 (initial 2026-10-30, remediation text updated 2026-11-03) says Unicon eLux Scout is impacted by CVE-2026-111497 and gives Scout On-Prem hotfix 2609.1, Scout LTSR 2508 CU2 LTSR and Scout Cloud Gateway On-Prem 2605.1-3 as the fixes. Splunk's SVD-2026-1014 (eMudhra CAs, also last modified 2026-11-04) is informational: no Splunk product uses eMudhra-issued service certificates, but Enterprise, Enterprise Security, ITSI, SOAR and Cloud Platform include an eMudhra public CA certificate in a trust store with remediation 'in progress'.
+    region_nexus: "global"
+    primary_sector_nexus: "direct (Splunk Enterprise is a common SIEM in administrations)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497, CVE-2026-105482, CVE-2026-105483, CVE-2026-106069]
+    techniques: [T1190, T1059]
+    affected_products: ["Splunk Enterprise 10.0 and lower", "Splunk Visual Exporter", "Splunk UBA", "Splunk SOAR Automation Broker", "Splunk Attack Analyzer", "Citrix Unicon eLux Scout"]
+    entity_keys: ["product:splunk-enterprise"]
+    new_entities:
+      - { key: "product:citrix-unicon-elux-scout", type: product, name: "Citrix Unicon eLux Scout", aliases: ["UniconOS Management (Scout)", "Scout Cloud Gateway"], summary: "Management server for Unicon eLux thin-client OS (Citrix/Cloud Software Group); impacted by the Brotli flaw CVE-2026-111497, fixed in hotfix 2609.1 and related builds (CTX697300)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    suggested_priority: notable
+    evidence:
+      - quote: "Splunk Enterprise versions 10.0 and lower are vulnerable. To address the Node.js runtime bundled with Splunk Enterprise, we recommend upgrading to Splunk Enterprise 10.2 or higher."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1015"
+      - quote: "All Splunk Enterprise versions include the vulnerable Splunk Visual Exporter app."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1015"
+      - quote: "2026-11-04: Updated Product Status section."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1015"
+      - quote: "Recommended Action: Install Hotfix 2609.1 as soon as possible."
+        attribution: "Citrix"
+        source_url: "https://support.citrix.com/external/article/CTX697300/citrix-security-advisory-for-cve-2026-11.html"
+    exposure: "Splunk Enterprise at 10.0 or lower (and any version with the Visual Exporter app enabled); reachability of Node-based components is the deciding factor, so internet- or user-facing web endpoints matter first."
+    detection: "As in the covered entry for Node2Shell (decoder errors, worker crashes, leaked decompressed output); for Splunk, review the Visual Exporter app's invocations and splunkd child-process activity."
+  # ------------------------------------------------------------------ 12
+  - title: "CISA's KEV now flags WinRAR CVE-2025-8088 as used in ransomware campaigns (Unknown on 2026-07-27, Known on 2026-11-04); none of the four store entries citing it says so"
+    sources:
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog (catalog 2026.11.04)", date: "2026-11-04", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge full read (python3 tools/fetch_source.py cisa-kev) diffed against the catalog snapshot work/2026-07-29T0408Z-intel/cisa-kev.json (catalog 2026.07.27)"
+    summary: |
+      The KEV record for CVE-2025-8088 (RARLAB WinRAR, added 2025-08-12) carries knownRansomwareCampaignUse = Known in catalog 2026.11.04 and Unknown in the 2026.07.27 snapshot; the flip date inside that window is not recoverable. The covered MDaemon and ClamAV entry (2026-10-29), which is built on the same CVE through ClamAV's bundled UnRAR, and three older entries (2026-06-02, 2026-06-10, 2026-06-27) do not mention the ransomware flag. Low-weight context line only; CISA names no actor or campaign.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2025-8088]
+    techniques: [T1204.002]
+    affected_products: ["RARLAB WinRAR", "ClamAV (Windows) bundled UnRAR", "MDaemon Email Server"]
+    entity_keys: ["product:mdaemon-email-server", "product:clamav"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-10-29/mdaemon-clamav-unrar-cve-2025-8088-exploited-in-ukraine"
+    suggested_priority: minor
+    borderline: true
+    borderline_reason: "Catalog flag change only; no new technical or exposure fact; may be better as an internal record or dropped."
+    evidence: []
+  # ------------------------------------------------------------------ 13 (borderline)
+  - title: "Ruby on Rails Active Storage (GHSA-f3w6-w445-fwh9, CVE-2026-122006, CVSS 9.8): an unauthenticated upload processed by ImageMagick can write arbitrary files and, with the Disk service, read secret_key_base; fixed in 8.0.5.2 and 8.1.4.1"
+    sources:
+      - { url: "https://github.com/rails/rails/security/advisories/GHSA-f3w6-w445-fwh9", publisher: "Ruby on Rails (GitHub security advisory)", date: "2026-11-04", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-122006", publisher: "CVE Program record (MITRE CNA)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/critical-rails-flaw-lets-attackers.html", publisher: "The Hacker News", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: The Hacker News feed https://feeds.feedburner.com/TheHackersNews (gap-fill) and BSI WID-SEC-2026-4317 (Ruby on Rails, hoch) -> primary: GitHub advisory https://github.com/rails/rails/security/advisories/GHSA-f3w6-w445-fwh9 (reporter RyotaK, GMO Flatt Security) -> CVE record"
+    summary: |
+      A Rails application that processes attachments with ImageMagick may allow an unauthenticated attacker to write arbitrary files on the server and, with the Disk storage service, read any file the app can read (typically secret_key_base and credentials). The ImageMagick analyzer runs as soon as a file is attached; an uploaded SVG reached ImageMagick's MSL scripting coder. An app is affected only if it uses ImageMagick for Active Storage image processing (config.active_storage.variant_processor = :mini_magick, the default for load_defaults 6.1 or earlier), runs ImageMagick under a policy that does not deny the coders involved (the Debian and Ubuntu packaged policies do not), and accepts uploads from untrusted users. Fixed in activestorage 8.0.5.2 and 8.1.4.1, which ship a denying ImageMagick policy and need mini_magick 5.1 or later; the workaround is to copy that policy into the system policy.xml. Rails says one attack chain was reported and does not assume it is the only one; the advisory does not say whether the flaw has been exploited. MITRE assigned CVE-2026-122006 on 2026-11-04 (CVSS 3.1 9.8).
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (custom Rails web applications that accept public uploads)"
+    sector: "public-sector"
+    cves: [CVE-2026-122006]
+    techniques: [T1190]
+    affected_products: ["Ruby on Rails Active Storage (activestorage before 8.0.5.2 and 8.1 before 8.1.4.1)"]
+    entity_keys: ["product:ruby-on-rails", "product:ruby-on-rails-active-storage"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "CVSS 9.8 unauthenticated network flaw in a framework component, but exposure needs three conditions (ImageMagick processor, non-denying policy, untrusted uploads) and no exploitation is reported; small relevance to the constituency beyond custom Rails apps."
+    suggested_priority: minor
+    evidence:
+      - quote: "A Rails application that processes attachments with ImageMagick may allow an unauthenticated attacker to write arbitrary files on the server"
+        attribution: "Ruby on Rails"
+        source_url: "https://github.com/rails/rails/security/advisories/GHSA-f3w6-w445-fwh9"
+      - quote: "Uses ImageMagick for Active Storage image processing."
+        attribution: "Ruby on Rails"
+        source_url: "https://github.com/rails/rails/security/advisories/GHSA-f3w6-w445-fwh9"
+    exposure: "Rails apps on activestorage below 8.0.5.2 or in 8.1 below 8.1.4.1 using the mini_magick variant processor and accepting untrusted uploads."
+    detection: "Application and web-server logs for uploads of SVG or MSL-like content, unexpected file writes by the app user, and reads of config/credentials or secret_key_base; after patching rotate secret_key_base and every secret readable by the app process if the Disk service was used."
+  # ------------------------------------------------------------------ 14 (borderline)
+  - title: "NoMachine (all editions, web service on TCP 4443): pre-authentication heap overflow in nxwebrunner (CVE-2026-114549, CVSS 9.8) fixed in 10.1.7, 9.9.6 and 8.27.1; ZDI disclosed on 2026-10-22, CVE record published 2026-11-03"
+    sources:
+      - { url: "https://kb.nomachine.com/TR07X11893", publisher: "NoMachine (Knowledge Base TR07X11893)", date: "2026-10-27", role: "primary" }
+      - { url: "https://www.zerodayinitiative.com/advisories/ZDI-26-786/", publisher: "Trend Micro Zero Day Initiative (ZDI-26-786)", date: "2026-10-22", role: "corroborating" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-114549", publisher: "CVE Program record (ZDI CNA)", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: ENISA EUVD critical sweep (EUVD-2026-116625, CVE-2026-114549, 9.8) and BSI WID-SEC-2026-4174 update (NoMachine, hoch) -> primary: NoMachine KB TR07X11893 and ZDI-26-786"
+    summary: |
+      NoMachine's knowledge base (TR07X11893, added 2026-07-27, last updated 2026-10-27, severity Serious) says a pre-authentication heap buffer overflow in the NoMachine web application (nxwebrunner) may be exploited for executing malicious code, and lists the fix in 10.1.7, 9.9.6 and 8.27.1. ZDI-26-786 (2026-10-22, reporter Sajeeb Lohani; reported to the vendor 2026-07-24) says the web service listens on TCP port 4443 by default and code runs in the context of the service account; the CVE record (CVSS 3.0 9.8) was published by ZDI on 2026-11-03 at 23:46Z. No exploitation is reported.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (NoMachine remote-desktop servers exposed on the internet)"
+    sector: "public-sector"
+    cves: [CVE-2026-114549]
+    techniques: [T1190]
+    affected_products: ["NoMachine Web Player / nxwebrunner (all platforms)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Pre-auth network 9.8 with a vendor fix, but the primary disclosures (ZDI 2026-10-22, vendor KB 2026-10-27) predate the window; only the CVE record (2026-11-03T23:46Z) and BSI's update are in or near it; no exploitation."
+    suggested_priority: minor
+    evidence:
+      - quote: "A pre-authentication heap buffer overflow in NoMachine's web application (nxwebrunner) may be exploited for executing malicious code."
+        attribution: "NoMachine"
+        source_url: "https://kb.nomachine.com/TR07X11893"
+      - quote: "Fixed in v10.1.7; 9.9.6; 8.27.1"
+        attribution: "Trend Micro Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/advisories/ZDI-26-786/"
+    exposure: "NoMachine servers whose web service (TCP 4443 by default) is reachable from untrusted networks and that run a version below 10.1.7, 9.9.6 or 8.27.1."
+    detection: "Connections to TCP 4443 from unexpected sources and nxwebrunner crashes or child processes under the service account."
+  # ------------------------------------------------------------------ 15 (borderline)
+  - title: "Quest Foglight for Databases 8.2.0: three unauthenticated remote-code-execution flaws (CVE-2026-92188, -92189, -92190, CVSS 9.8) disclosed by ZDI on 2026-11-03; fixed in Foglight 8.3"
+    sources:
+      - { url: "https://www.zerodayinitiative.com/advisories/ZDI-26-854/", publisher: "Trend Micro Zero Day Initiative (ZDI-26-854)", date: "2026-11-03", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-92188", publisher: "CVE Program record (ZDI CNA)", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: ENISA EUVD critical sweep (EUVD-2026-116630/-116633/-116640, Quest Foglight for Databases, 9.8) -> primary: ZDI advisory https://www.zerodayinitiative.com/advisories/ZDI-26-854/ (siblings ZDI-26-851 and -861)"
+    summary: |
+      ZDI's coordinated advisories of 2026-11-03 for Quest Foglight for Databases 8.2.0 describe an authentication-free RCE in the ForgeMBeanServerSupport module (code runs as SYSTEM; reported 2026-04-30), an external-control-of-file-path flaw in writeTopologySectionToFile and an RMI deserialization flaw in the baseRmiServiceExporter bean, all unauthenticated and scored 9.8; ZDI-26-854 states 'Fixed in Foglight 8.3'. No exploitation is reported and no Quest advisory was read.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (database monitoring server in larger IT estates)"
+    sector: "public-sector"
+    cves: [CVE-2026-92188, CVE-2026-92189, CVE-2026-92190]
+    techniques: [T1190]
+    affected_products: ["Quest Foglight for Databases 8.2.0"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Three unauthenticated 9.8 RCEs with a fix, but niche product, ZDI as sole source (no vendor page read), and the sources are dated 2026-11-03 (CVE records 23:50Z), just before the window."
+    suggested_priority: minor
+    evidence:
+      - quote: "Fixed in Foglight 8.3"
+        attribution: "Trend Micro Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/advisories/ZDI-26-854/"
+      - quote: "Authentication is not required to exploit this vulnerability."
+        attribution: "Trend Micro Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/advisories/ZDI-26-854/"
+    exposure: "Foglight for Databases 8.2.0 management servers reachable from untrusted networks."
+    detection: "Not described in the source."
+  # ------------------------------------------------------------------ 16 (borderline)
+  - title: "Android Security Bulletin November 2026 (patch levels 2026-11-01 and 2026-11-05): critical Framework RCE CVE-2026-58868 with no user interaction among three critical RCE rows, no exploitation noted; only the 'SMS of Death' DoS is covered"
+    sources:
+      - { url: "https://source.android.com/docs/security/bulletin/2026/2026-11-01", publisher: "Google Android Security Bulletin", date: "2026-11-02", role: "primary" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1443/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1443)", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, bsi-csaf WID-SEC-2026-4288 (Android Patchday November 2026, 225 CVEs; references the bulletin) -> primary: https://source.android.com/docs/security/bulletin/2026/2026-11-01 (the first URL tried, .../2026-11-01 without the /2026/ segment, was a 404)"
+    summary: |
+      Google's November 2026 bulletin (published 2026-11-02) says its most severe issue is a critical vulnerability in the Framework component that could lead to remote code execution with no additional execution privileges and no user interaction (CVE-2026-58868, Android 14 to 17), with further critical RCE rows CVE-2026-58876 and CVE-2026-58936, critical elevation-of-privilege rows in Framework, kernel (Bluetooth, pKVM) and elsewhere, and the critical DoS CVE-2026-58882 (the covered 'SMS of Death'). The bulletin text read here carries no statement of limited or targeted exploitation. Out of the 26-hour window by about 2 days; returned as borderline because the covered entry deals with one CVE of the bulletin only.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (Android fleets)"
+    sector: "public-sector"
+    cves: [CVE-2026-58868, CVE-2026-58876, CVE-2026-58936, CVE-2026-58882]
+    techniques: [T1203, T1068]
+    affected_products: ["Google Android 14, 15, 16, 16-qpr2, 17"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Scheduled multi-product release with a zero-click critical RCE row but no exploitation and published 2026-11-02 (outside the 26 h window); the Android patch cycle is routine fleet hygiene."
+    suggested_priority: minor
+    evidence:
+      - quote: "The most severe of these issues is a critical security vulnerability in the Framework"
+        attribution: "Google Android Security Bulletin"
+        source_url: "https://source.android.com/docs/security/bulletin/2026/2026-11-01"
+      - quote: "| CVE-2026-58868 | A-486464711 | RCE | Critical | 14, 15, 16, 16-qpr2, 17 |"
+        attribution: "Google Android Security Bulletin"
+        source_url: "https://source.android.com/docs/security/bulletin/2026/2026-11-01"
+    exposure: "Android 14 to 17 devices below security patch level 2026-11-01 (framework fixes) or 2026-11-05 (kernel and vendor components); the level is shown under Settings > About."
+    detection: "MDM compliance reports on patch level; no exploit telemetry is described."
+cve_table:
+  # rows only for CVEs that are new to the store or whose fixed-version data changed; covered CVEs of items 10-12 (PHP2Shell, Brotli, CVE-2025-8088) are unchanged apart from the vendor facts above
+  - { cve: CVE-2026-107441, product: "Zyxel GS1900 series switches", cvss: "8.8 (CVSS 3.1 AV:A, Zyxel CNA record)", epss: null, kev: false, exploited: "in the wild per Binarly (inference from the recovered exploit and its firmware checks; Zyxel's advisory does not say so); KEV lists only CVE-2026-7273", affected: "firmware 2.90(xxxx.2)C0 and earlier on GS1900-8, -8HP, -10HP, -16, -24, -24E, -24EP, -24HPv2, -48, -48HPv2", fixed: "2.90(xxxx.3)C0 per model, released 2026-10-22 (e.g. GS1900-8 2.90(AAHH.3)C0, GS1900-24 2.90(AAHL.3)C0)", type: "out-of-bounds write / OS command execution", vector: "HTTP POST to /cgi-bin/dispatcher.cgi (Zyxel: LAN-based; Binarly: remote)", auth: pre-auth, source: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-out-of-bounds-write-vulnerability-in-gs1900-series-switches-11-03-2026" }
+  - { cve: CVE-2026-114424, product: "SEPPmail Secure Email Gateway", cvss: "9.2 (CVSS 4.0, NCSC.ch CNA)", epss: null, kev: false, exploited: "no exploitation reported", affected: "all versions before 15.1.1", fixed: "15.1.1 (2026-11-03); no 15.0.x fix listed (latest 15.0.7)", type: "eval injection (Perl) in address replacement rules, root", vector: "inbound mail to the gateway", auth: "pre-auth; requires an active rule using message-derived replacement data", source: "https://docs.seppmail.com/en/20_revision-history.html" }
+  - { cve: CVE-2026-114425, product: "SEPPmail Secure Email Gateway", cvss: "9.2 (CVSS 4.0, NCSC.ch CNA)", epss: null, kev: false, exploited: "no exploitation reported", affected: "all versions before 15.1.1 with Large File Transfer enabled", fixed: "15.1.1 (2026-11-03)", type: "external control of file path (read, move, delete as root)", vector: "inbound mail with crafted LFT attachment metadata", auth: "pre-auth", source: "https://docs.seppmail.com/en/20_revision-history.html" }
+  - { cve: CVE-2026-114426, product: "SEPPmail Secure Email Gateway", cvss: "8.7 (CVSS 4.0)", epss: null, kev: false, exploited: "no", affected: "before 15.1.1", fixed: "15.1.1", type: "denial of service (unauthenticated upload processing, no size limit)", vector: network, auth: pre-auth, source: "https://docs.seppmail.com/en/20_revision-history.html" }
+  - { cve: CVE-2026-114421, product: "SEPPmail Secure Email Gateway (GINA webmail)", cvss: "8.3 (CVSS 4.0, CVE record)", epss: null, kev: false, exploited: "no", affected: "before 15.1.1", fixed: "15.1.1", type: "account takeover via password recovery of an unregistered GINA account", vector: network, auth: pre-auth, source: "https://docs.seppmail.com/en/20_revision-history.html" }
+  - { cve: CVE-2026-114420, product: "SEPPmail Secure Email Gateway (GINA webmail)", cvss: "6.9 (CVSS 4.0, CVE record)", epss: null, kev: false, exploited: "no", affected: "before 15.1.1", fixed: "15.1.1", type: "LDAP filter injection (email address enumeration)", vector: network, auth: pre-auth, source: "https://docs.seppmail.com/en/20_revision-history.html" }
+  - { cve: CVE-2024-27834, product: "Apple Safari, iOS, iPadOS, macOS, tvOS, watchOS (WebKit)", cvss: "5.5 (CVSS 3.1 AV:L, per ENISA EUVD)", epss: 0.6, kev: true, exploited: "yes: CISA KEV 2026-11-04 (due 2026-11-18); Sekoia iOS 16.7 chain", affected: "Safari before 17.5; iOS and iPadOS before 16.7.8 and before 17.5; macOS Sonoma before 14.5; tvOS before 17.5; watchOS before 10.5", fixed: "Safari 17.5, iOS/iPadOS 16.7.8 and 17.5, macOS Sonoma 14.5, tvOS 17.5, watchOS 10.5 (2024-05-13)", type: "improper authentication (CWE-287), pointer-authentication bypass", vector: "WebKit renderer after an arbitrary read/write primitive; drive-by", auth: "none (visit of a compromised site)", source: "https://support.apple.com/en-us/120905" }
+  - { cve: CVE-2026-98432, product: "Linux kernel (vendor impact: Citrix XenServer, WatchGuard, MikroTik)", cvss: "9.8 (kernel.org CNA, covered entry)", epss: null, kev: false, exploited: "per covered entry (Anthropic exploit against MPTCP listeners; CloudLinux could not reproduce)", affected: "XenServer 8.4 and 9, Workload Balancing before 2026.1.1, Conversion Manager before 2026.2.0; WatchGuard Fireware OS 2025.1 and 12.0+, AP 1.0+, Dimension 2.0+ (potentially affected)", fixed: "XenServer updates in both channels (2026-11-03), WLB 2026.1.1, Conversion Manager 2026.2.0; MikroTik RouterOS 7.25.1; WatchGuard unresolved; XCP-ng kernel fix pending (Vates-SA-2026-056); Fortinet investigating", type: "use-after-free", vector: network, auth: pre-auth, source: "https://support.citrix.com/external/article/CTX697256/xenserver-security-update-for-multiple-i.html" }
+  - { cve: CVE-2026-102703, product: "Xen hypervisor (XenServer, XCP-ng, Qubes)", cvss: "4.4 (CISA ADP CVSS 3.1 AV:L/PR:L/C:L/I:L; impact text is arbitrary read/write incl. Dom0)", epss: null, kev: false, exploited: "no exploitation reported", affected: "all Xen from 4.6 onwards (4.5 and earlier not affected)", fixed: "XSA-523 patches; XenServer 8.4 and 9 updates; XCP-ng 8.3 LTS update (reboot); Qubes 4.3 QSB-121", type: "grant-copy validation flaw: frame number and grant reference mixed up", vector: "malicious guest", auth: "guest code execution", source: "https://xenbits.xen.org/xsa/advisory-523.html" }
+  - { cve: CVE-2026-102704, product: "Xen hypervisor", cvss: "4.4 (CISA ADP)", epss: null, kev: false, exploited: "no", affected: "all Xen from 4.6 onwards", fixed: "XSA-523 patches", type: "misplaced check on copy by frame number", vector: "malicious guest", auth: "guest code execution", source: "https://xenbits.xen.org/xsa/advisory-523.html" }
+  - { cve: CVE-2026-109518, product: "APT (Debian, Ubuntu and derivatives)", cvss: "7.7 (CVSS 4.0 AV:N/AC:L/AT:P/PR:N/UI:P, Canonical CNA)", epss: null, kev: false, exploited: "no exploitation reported", affected: "Debian bookworm before 2.6.2, trixie before 3.0.4, forky 3.3.5 (sid fixed 3.3.6); Ubuntu 14.04 to 26.10 before the builds below; exposed by default from Debian 12 and Ubuntu 22.04 (Acquire::Retries default 3)", fixed: "Debian bookworm 2.6.2, trixie 3.0.4, sid 3.3.6 (DSA-6607-1); Ubuntu 26.10 3.3.3ubuntu0.1, 26.04 3.2.1ubuntu0.1, 24.04 2.8.4ubuntu0.1, 22.04 2.4.15ubuntu0.1, 20.04 2.0.12+esm1, 18.04 1.6.19+esm1, 16.04 1.2.36+esm1, 14.04 1.0.1ubuntu2.24+esm4", type: "hard-link reuse leading to unverified package install", vector: "on-path HTTP manipulation (malicious mirror or proxy)", auth: "none; needs on-path position and retried download", source: "https://ubuntu.com/security/CVE-2026-109518" }
+  - { cve: CVE-2026-95731, product: "HPE Networking Fabric Composer", cvss: "9.8 (CVSS 3.1 AV:N/PR:N)", epss: null, kev: false, exploited: "no (HPE not aware of public discussion or exploit code)", affected: "7.4.0 and below; 7.3.4 and below", fixed: "7.4.1 and above; 7.3.5 and above", type: "hardcoded password in CLI", vector: "network (CLI)", auth: pre-auth, source: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05172.txt" }
+  - { cve: CVE-2026-95732, product: "HPE Networking Fabric Composer", cvss: "9.6 (CVSS 3.1 AV:A, S:C)", epss: null, kev: false, exploited: "no", affected: "7.4.0 and below; 7.3.4 and below", fixed: "7.4.1; 7.3.5", type: "authentication bypass in underlying OS, code execution", vector: adjacent, auth: pre-auth, source: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05172.txt" }
+  - { cve: CVE-2026-95733, product: "HPE Networking Fabric Composer", cvss: "9.6 (CVSS 3.1 AV:A, S:C)", epss: null, kev: false, exploited: "no", affected: "7.4.0 and below; 7.3.4 and below", fixed: "7.4.1; 7.3.5", type: "use of hardcoded credentials, code execution", vector: adjacent, auth: pre-auth, source: "https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05172.txt" }
+  - { cve: CVE-2026-121639, product: "WatchGuard AuthPoint Authentication Gateway", cvss: "9.2 (CVSS 4.0 AV:N/PR:N)", epss: null, kev: false, exploited: "no (WatchGuard not aware of exploitation)", affected: ">= 1.0, < 7.6.0 (LDAP or AD provider configured)", fixed: "7.6.0", type: "missing authentication for critical function (DoS, deletion of directory-sync config)", vector: network, auth: pre-auth, source: "https://psirt.watchguard.com/CVE-2026-121639" }
+  - { cve: CVE-2026-121638, product: "WatchGuard AuthPoint Authentication Gateway", cvss: "9.1 (CVSS 4.0 AV:N/AT:P)", epss: null, kev: false, exploited: "no", affected: ">= 1.0, < 7.6.0 (RADIUS, LDAP or ADFS resource)", fixed: "7.6.0", type: "improper certificate validation (on-path interception)", vector: "on-path network", auth: none, source: "https://psirt.watchguard.com/CVE-2026-121638" }
+  - { cve: CVE-2026-121640, product: "WatchGuard AuthPoint Authentication Gateway", cvss: "9.1 (CVSS 4.0 AV:N/AT:P)", epss: null, kev: false, exploited: "no", affected: ">= 1.0, < 7.6.0", fixed: "7.6.0", type: "capture-replay authentication bypass (administrative actions)", vector: "network, needs an observed legitimate request", auth: none, source: "https://psirt.watchguard.com/CVE-2026-121640" }
+  - { cve: CVE-2026-121637, product: "WatchGuard AuthPoint Authentication Gateway", cvss: "8.9 (CVSS 4.0 AV:N/AT:P)", epss: null, kev: false, exploited: "no", affected: ">= 1.0, < 7.6.0 (LDAP provider)", fixed: "7.6.0", type: "improper HMAC validation (forged authentication result)", vector: "network, needs a valid header signature", auth: none, source: "https://psirt.watchguard.com/CVE-2026-121637" }
+  - { cve: CVE-2026-109593, product: "SonicWall GMS (EOL)", cvss: "9.1 (CVSS 3.1 AV:N/PR:N)", epss: null, kev: false, exploited: "not stated", affected: "9.5.2 and earlier", fixed: "none: EOL, no remediation will be released; migrate to NSM", type: "unauthenticated internal file read (CWE-636)", vector: network, auth: pre-auth, source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019" }
+  - { cve: CVE-2026-109594, product: "SonicWall GMS (EOL)", cvss: "6.8 (CVSS 3.1 PR:H)", epss: null, kev: false, exploited: "not stated", affected: "9.5.2 and earlier", fixed: "none (EOL)", type: "authenticated SQL injection", vector: network, auth: authenticated, source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0019" }
+  - { cve: CVE-2026-122006, product: "Ruby on Rails Active Storage", cvss: "9.8 (CVSS 3.1, MITRE CNA)", epss: null, kev: false, exploited: "not stated", affected: "activestorage before 8.0.5.2 and 8.1 before 8.1.4.1 (mini_magick processor, non-denying ImageMagick policy, untrusted uploads)", fixed: "8.0.5.2, 8.1.4.1", type: "arbitrary file write and read via ImageMagick coders", vector: "file upload", auth: pre-auth, source: "https://github.com/rails/rails/security/advisories/GHSA-f3w6-w445-fwh9" }
+  - { cve: CVE-2026-114549, product: "NoMachine (nxwebrunner web service)", cvss: "9.8 (CVSS 3.0, ZDI)", epss: null, kev: false, exploited: "no", affected: "NoMachine below 10.1.7, 9.9.6 and 8.27.1 (CVE record lists 9.7.3)", fixed: "10.1.7; 9.9.6; 8.27.1", type: "heap-based buffer overflow", vector: "TCP 4443 web service", auth: pre-auth, source: "https://kb.nomachine.com/TR07X11893" }
+  - { cve: CVE-2026-92188, product: "Quest Foglight for Databases", cvss: "9.8 (CVSS 3.0, ZDI)", epss: null, kev: false, exploited: "no", affected: "8.2.0", fixed: "Foglight 8.3 (per ZDI-26-854)", type: "missing authentication RCE (ForgeMBeanServerSupport)", vector: network, auth: pre-auth, source: "https://www.zerodayinitiative.com/advisories/ZDI-26-854/" }
+  - { cve: CVE-2026-58868, product: "Google Android Framework", cvss: null, epss: null, kev: false, exploited: "none noted in the bulletin", affected: "Android 14, 15, 16, 16-qpr2, 17", fixed: "security patch level 2026-11-01 or later", type: RCE, vector: "no user interaction", auth: "none", source: "https://source.android.com/docs/security/bulletin/2026/2026-11-01" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist is configured in config/org-profile.yaml; the product sweep is a no-op. (Swiss-vendor SEPPmail surfaced through the EUVD/NCSC.ch CNA route, not through a watchlist.)"
+multi_product_release_dispositions:
+  - release: "Google Chrome 157.0.8103.38/.39 stable (2026-11-03) and Microsoft Edge 2026-Nov (2026-11-04)"
+    disposition: "No exploited or publicly disclosed CVE (MSRC exploited/publiclyDisclosed fields empty or No; Chrome post lists no 'exploit exists' note); 213 security fixes, seven rated Critical (Dawn, ANGLE, WebGL, Prerender, Geometry, Core), CVSS-style 9.6 rows in EUVD/MSRC are Chromium sandbox-dependent memory bugs. Not returned (routine browser release); one-line borderline-drop."
+  - release: "Android Security Bulletin 2026-11 (2026-11-02)"
+    disposition: "item 16 (borderline): critical Framework RCE CVE-2026-58868, System RCE CVE-2026-58876 / -58936, no exploitation noted."
+  - release: "HPE Networking bulletins HPESBNW05172 (Fabric Composer) and HPESBNW05173 (VIA), 2026-11-03"
+    disposition: "05172 item 7 (CVE-2026-95731 9.8 pre-auth, -95732/-95733 9.6 adjacent); 05173 VIA client below 4.7.9: highest 8.8, local or user-interaction rows, dropped."
+  - release: "Citrix XenServer CTX697256 and Unicon eLux Scout CTX697300 (2026-11-03)"
+    disposition: "items 4, 5 and 11."
+  - release: "Zyxel GS1900 advisory (2026-11-03), SonicWall SNWLID-2026-0019 (2026-11-03), WatchGuard AuthPoint (2026-11-04), Splunk SVD-2026-1014/1015 (2026-11-04)"
+    disposition: "items 1, 9, 8, 11."
+  - release: "Scheduled releases not in the window: Microsoft/SAP/Adobe/Siemens Patch Tuesday and the Fortinet advisories are due 2026-11-10; Oracle October CPU is covered (2026-10-21 entry)."
+    disposition: "none to return; Fortinet blog re-read and unchanged ('public advisories will be made available at the next Patch Tuesday on November 10')."
+drops:
+  - { what: "Chrome 157 / Edge Nov (see multi_product_release_dispositions)", reason: "no exploitation; routine browser release" }
+  - { what: "Zyxel GS1900 CVE-2026-107441 as a separate new entry", reason: "returned as update-of the CVE-2026-7273 entry (same exploitation campaign, same product)" }
+  - { what: "SolarWinds Dameware CVE-2026-28336 (CVSS 9.9)", reason: "authenticated (PR:L), fixed 2026.3.1; first published 2026-11-03; remote-support tool but post-auth" }
+  - { what: "GLPI CVE-2026-52848 (CVSS 4.0 9.2, CVE published 2026-11-04T22:21Z)", reason: "2FA bypass only (valid credentials needed), fix 11.0.8 shipped 2026-06-24; late CVE record; CERT-FR AVI-1444 relates to different 2026-11-02 flaws" }
+  - { what: "ManageEngine Log360 / EventLog Analyzer CVE-2026-13594 (9.1)", reason: "vendor page: fixed in build 13062 on 2026-07-06; CVE record published 2026-11-03 lists <= 13062; old fix" }
+  - { what: "Dell Wyse Management Suite CVE-2026-82158 (9.0)", reason: "stored XSS needing low privilege and user interaction (AV:N/PR:L/UI:R)" }
+  - { what: "NetApp StorageGRID CVE-2026-22058 (9.1)", reason: "requires access to the Grid Network ports and AC:H/AT:P" }
+  - { what: "WSO2 API Manager CVE-2026-4052 (9.8)", reason: "only where Identity Server is a Resident Key Manager with database sharing" }
+  - { what: "Puppet Enterprise CVE-2026-115731 (CVSS 4.0 9.4)", reason: "needs any CA-signed agent certificate (PR:L); unauthenticated only with weak autosign" }
+  - { what: "Sonatype Nexus Repository 3 Pro CVE-2026-113373 (9.1)", reason: "disabled-account re-login via IdP; needs valid IdP credentials" }
+  - { what: "Zyxel GS1900 CVE-2026-107441 as 'adjacent 8.8' in isolation", reason: "kept inside item 1 because of Binarly's exploitation evidence" }
+  - { what: "Kyverno 1.19.2 (six CVEs 9.3 to 9.4, EUVD dated 2026-11-05)", reason: "Kubernetes policy engine authorization bypasses, published after window start, no exploitation, niche" }
+  - { what: "Docker Desktop CVE-2026-112917 (9.2), Laravel (authenticated RCE), Nagios XI (authenticated), GitHub Enterprise Server 3.19.14/3.20.10/3.21.8/3.22.3, IBM QRadar (XSS), MLflow, Emerson Ovation, Linksys/Totolink/Qihoo consumer routers, Edimax", reason: "local or authenticated, consumer-grade, or not pre-auth network; BSI/EUVD ratings noted, nothing cleared the bar" }
+  - { what: "ICSA-26-307-01 Subnet Solutions PowerSYSTEM Center (CVSS 9.0, 2026-11-03T06:00Z)", reason: "utility substation software, outside the window and the constituency" }
+  - { what: "CVE-2026-102764, CVE-2026-76418, CVE-2026-97229 and other covered KEV rows", reason: "covered; no revision in window (KEV window diff clean)" }
+revision_checks_standing_task_2:
+  - { target: "Barracuda ESG CVE-2026-116606 / -111560", result: "no change: Barracuda Trust Center shows 'Advisory Updated: November 2, 2026'; Campus page still says 9.4.0.029 and the CVE records (updated 2026-11-03T04:55Z) still say before 9.4.0.030; entry 2026-11-04 already states both. No update-of." }
+  - { target: "Ivanti Connect Secure chain (CVE-2026-104935 / -111357 / -118527)", result: "no new fact: CVE records unchanged since 2026-11-03 15:32Z (already cited), NCSC-NL NCSC-2026-0416 v1.01 of 2026-11-03 matches the entry. No update-of." }
+  - { target: "Cisco Secure Email Gateway CVE-2026-76461", result: "advisory still revision 1.2 of 2026-11-03 (already in the entry). No update-of." }
+  - { target: "PHP2Shell vendor notices", result: "Xerox v5 -> item 10; Trend Micro KA-0024802 re-read: 'Last updated 2026/11/04' but table identical to the entry's (Apex Central and Apex One ETA 11-11, MSE 11-17, DDAN 11-12, DDI/DDEI patches); NetApp NTAP-20261021-0021 and PAN-OS timelines (last entries 2026-10-29/31) unchanged; Fiery statement unreadable (Salesforce SPA, reader returned a CSS error)." }
+  - { target: "Fortinet coordinated release (CVEs publish 2026-11-10)", result: "blog and FortiGuard feed unchanged; newest PSIRT FG-IR-26-188 (2026-11-02)." }
+  - { target: "WordPress CVE-2026-119977", result: "nothing new: wordpress.org/news and Wordfence feeds show no post after 2026-10-29 on it; KEV listing already in entry." }
+  - { target: "Microsoft SUG revised-CVE sweep (latestRevisionDate >= 2026-11-03)", result: "100 revised records, all Edge/Chromium or third-party ingests; zero with exploited or publiclyDisclosed = Yes." }
+candidate_sources:
+  - { id: seppmail-gateway-revision-history, publisher: "SEPPmail GmbH (Gateway documentation revision history)", url: "https://docs.seppmail.com/en/20_revision-history.html", category: vendor-psirt, why: "First-party, dated per-CVE security section for the Swiss mail-encryption gateway used across the Swiss public sector; carried the 15.1.1 CVEs (CVSS, affected and fixed) the day they were fixed; NCSC.ch is the CNA. Reads with extract." }
+  - { id: binarly-blog, publisher: "Binarly (firmware security research)", url: "https://www.binarly.io/blog", category: research, why: "Primary for the Zyxel GS1900 zero-day (exploit recovery from Red Heron infrastructure, patch-bypass proof); the blog is client-rendered, so extract returns only a shell and the reader (jina) is needed; advisories at https://www.binarly.io/advisories/brly-2026-057." }
+  - { id: xen-xsa, publisher: "Xen Project Security Team (XSA advisories)", url: "https://xenbits.xen.org/xsa/", category: vendor-psirt, why: "Primary for hypervisor escapes affecting XenServer, XCP-ng and distribution Xen (XSA-523 of 2026-11-03); advisory pages read cleanly with extract." }
+  - { id: zyxel-psirt, publisher: "Zyxel PSIRT security advisories", url: "https://www.zyxel.com/global/en/support/security-advisories", category: vendor-psirt, why: "Primary for the GS1900 and other edge-device advisories that reached KEV in 2026; advisory pages read with extract; no listing/feed recipe verified this run." }
+coverage_gaps:
+  - { source_id: cisa-advisories, reason: "Every cisa.gov HTML path returned 403 this run including WebFetch (listing https://www.cisa.gov/news-events/cybersecurity-advisories and the alert https://www.cisa.gov/news-events/alerts/2026/11/04/cisa-adds-one-known-exploited-vulnerability-catalog, found only through WebSearch); the all.xml feed also 403 (reader returned no items). Worked: cisa-kev, cisa csaf-recent. WebSearch (allowed_domains cisa.gov) found no AA-series advisory dated 2026-11-03 to 11-05. Recipe change: the 2026-10-21 and 2026-10-23 notes that WebFetch reads the cisa.gov listing no longer hold today." }
+  - { source_id: connectwise-trust-center, reason: "403 on direct, extract and reader (same as 2026-10-29 and 2026-11-01 notes); substitute status page https://status.connectwise.com/ read with extract: no new security item in window." }
+  - { source_id: ibm-support-security-bulletins, reason: "No listing transport (recipe note); only relay sweep (BSI WID-SEC-2026-4331 QRadar XSS, WebSphere DoS) was possible; nothing cleared the bar. Not attempted directly." }
+  - { source_id: "fiery-communities-php-article", reason: "https://communities.fiery.com/s/article/PHP-Vulnerability-CVE-2026-109618-and-CVE-2026-109619 is a Salesforce Lightning SPA: extract returned the JS shell (397 KB) and the reader returned 'CSS Error'. The Xerox v5 bulletin reproduces Fiery's patch schedule; Fiery's own statement unread." }
+  - { source_id: "debian-lists / lists.debian.org", reason: "Debian security-announce (msg00526) and the APT developers' post (deity/2026/11/msg00005) sit behind a Varnish proof-of-work challenge ('I Challenge Thee'); extract got the challenge page. Debian tracker and Ubuntu CVE page used instead." }
+  - { source_id: "binarly.io blog", reason: "extract and WebFetch return only a Next.js shell (title only); the jina reader returned the article but dropped several narrative paragraphs (Introduction, CVE-2026-7273 patch, Conclusion render as 'Image preview'); claims taken from the readable sections and BleepingComputer." }
+  - { source_id: bsi-de, reason: "bsi-rss feed covers only 250 items (2026-11-04 10:09 to 13:04 UTC); coverage of the CET day 2026-11-04 completed through changes.csv (255 changes) and bsi-csaf per candidate id." }
+recipe_notes:
+  - "cisa-advisories: see coverage gap; WebFetch on cisa.gov was 403 on 2026-11-05 (listing and alert page); keep csaf-recent and cisa-kev; discover alerts through WebSearch with allowed_domains cisa.gov and cite only pages read."
+  - "enisa-euvd: `url 'https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-03&toDate=2026-11-05&size=100'` returned 112 records with exploitedSince; `/api/exploitedvulnerabilities` returned 4 records and caught CVE-2024-27834 (exploitedSince 2026-11-04) on the day; the GHSA record attached to an EUVD record carried the Sekoia reference."
+  - "msrc-update-guide: `fs._msrc_fetch_strict_json` with $filter=latestRevisionDate ge 2026-11-03T00:00:00Z returns 100 rows (more exist); filtering with 'and (exploited eq 'Yes' or publiclyDisclosed eq 'Yes')' on older releases returned 0."
+  - "fortinet-psirt: `feed https://www.fortiguard.com/rss/ir.xml 30` reset on the first call and worked on retry after ~15 s (recipe note of 2026-10-27/29 confirmed)."
+  - "mikrotik-routeros-changelog: `url https://upgrade.mikrotik.com/routeros/NEWESTa7.stable` (reader fallback) returned '7.25.1' and `url https://upgrade.mikrotik.com/routeros/7.25.1/CHANGELOG` the changelog with 'includes CVE-2026-98432'."
+  - "splunk-advisories: `extract https://advisory.splunk.com/advisories` returns a 716 KB table with Date and Last Modified columns (use Last Modified for revision sweeps); per-SVD `extract` pages carry Product Status and a Changelog."
+  - "xerox: https://security.business.xerox.com/en-bz/documents/bulletins lists current bulletin versions with dates (extract); the PDF href is only in the raw HTML (`url --direct`); `pdf <url>` reads the bulletin and `difflib` on whitespace-normalised text gives the revision delta."
+  - "bsi-de: `url --direct https://wid.cert-bund.de/.well-known/csaf/white/changes.csv` stamps are CET-day granular (T23:00Z of the previous day); bsi-csaf WID-SEC-<n> returns references to vendor pages."
+  - "kev ransomware flips: older KEV snapshots exist as work/<run>/cisa-kev.json; diffing knownRansomwareCampaignUse against the 2026-07-29 snapshot found 26 flips (see ransomware_flag_review)."
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 20 (+ csaf NCSC-2026-0416)", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "WordPress NCSC-2026-0466 and Barracuda NCSC-2026-0465 both covered; Ivanti 0416 v1.01 (2026-11-03) matches the entry" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 30 + feed alerte (extract per avis)", horizon_hours: 26, in_horizon_items: 14, returned: 3, note: "14 avis dated 2026-11-04; leads AVI-1449 Citrix (item 4/5/11), AVI-1451 HPE (item 7), AVI-1456 SonicWall (item 9); AVI-1450 Chrome and AVI-1443 Android checked (items 16 and drops); no new ALE alert since 2026-10-21" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + url --direct changes.csv + bsi-csaf", horizon_hours: 26, in_horizon_items: 255, returned: 1, note: "255 CSAF changes for CET day 2026-11-04 (~35 NEW); critical/hoch NEW rows triaged (Zyxel Switch, Linksys, Emerson, Dameware, Docker Desktop, GitHub ES, QRadar, Rails, MLflow, Laravel, Nagios XI): only Android Patchday (item 16, borderline) and Rails (item 13, borderline) were returned" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-019 of 2026-10-22; 2026-018 PHP 2026-10-23" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-30 (RT/RTIR XSS, Platnik, Protectel); none relevant" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "bridge feed (403), WebFetch (403 x3), bridge cisa csaf-recent, WebSearch allowed_domains cisa.gov", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "ICSA-26-307-01 of 2026-11-03T06:00Z outside the window; no AA-series advisory found; see coverage_gaps" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (full read, catalog 2026.11.04)", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "CVE-2024-27834 (item 3); WordPress CVE-2026-119977 of 2026-11-03 covered; ransomware flag diff vs 2026-07-29 snapshot: 26 flips, see ransomware_flag_review" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url euvdservices api (exploitedvulnerabilities, search criticals 2026-11-03..05, enisaid)", horizon_hours: 26, in_horizon_items: 112, returned: 4, note: "112 records scored 9.0+ (Chrome 157 about 40, consumer routers, Kyverno); exploited list 4 (CVE-2024-27834 new, 3 covered); EUVD led to SEPPmail (item 2), WatchGuard AuthPoint (item 8), NoMachine and Quest (items 14-15), CVE-2024-27834 (item 3)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25 and 12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13144 Barracuda of 2026-11-03T15:47Z (covered); no SEPPmail post yet although NCSC.ch is CNA for the SEPPmail CVEs (item 2)" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "bridge feed (direct)", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "two 2026-11-03 AI-threat items, not S1" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-10-09; intelligence FAQ page lists nothing new" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed https://www.fortiguard.com/rss/ir.xml 30 (retry) + extract FG-IR-26-188 + CISO blog", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-188 (2026-11-02) unchanged; Nov 10 CVE release unchanged; used as component of item 4" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 15 + SUG API latestRevisionDate sweep", horizon_hours: 26, in_horizon_items: 100, returned: 0, note: "100 revised rows (Edge/Chromium Nov 4 plus third-party ingests); none exploited or publicly disclosed" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + url /json/<CVE> timelines", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisories 2026-10-31; CVE-2026-109618 and CVE-2026-111497 timelines last revised 2026-10-29 and 2026-10-31" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "extract, url (403), reader (blocked), substitute extract https://status.connectwise.com/", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "advisories page blocked on every transport; status page shows only x360Recover file-browser issue and the covered Cloud Backup incident" }
+  - { id: flatt-security, tier: standard, attempted: true, transport: "extract listing (direct-raw)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest listed post 2026-10-21" }
+  - { id: horizon3-ai, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22 (PHP2Shell exposure)" }
+  - { id: trustwave-spiderlabs, tier: standard, attempted: true, transport: "WebFetch listing (levelblue.com)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "2026-10-30 BlackApex/SPY phishing kits and 2026-10-28 TTP briefing: S3 domain" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract listing and per-CVE pages", horizon_hours: 168, in_horizon_items: 5, returned: 2, note: "AuthPoint Gateway x4 (item 8) and WGSA-2026-0033 (item 4); Fireware batch of 2026-10-28 covered" }
+  - { id: ibm-support-security-bulletins, tier: standard, attempted: false, note: "no listing transport (recipe note); relay sweep through BSI found QRadar XSS and WebSphere DoS only" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "url NEWESTa7.stable (reader fallback) + url 7.25.1 CHANGELOG", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "7.25.1 (2026-11-02) 'includes CVE-2026-98432' (item 4)" }
+  - { id: citrix-netscaler-security-bulletins, tier: standard, attempted: true, transport: "feed (community blog) + extract support.citrix.com CTX697256 and CTX697300", horizon_hours: 168, in_horizon_items: 2, returned: 3, note: "community feed has no security post since NetScaler WAF signatures v186 (2026-10-22); the Citrix support bulletins CTX697256 and CTX697300 fed items 4, 5 and 11" }
+  - { id: splunk-advisories, tier: standard, attempted: true, transport: "extract listing + per-SVD pages", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "SVD-2026-1015 (item 11) and SVD-2026-1014 (informational, eMudhra: in progress) both last modified 2026-11-04; October Splunk Enterprise/SOAR advisories (SVD-2026-1007 to -1012, 2026-10-21) are not in the store's 14-day coverage and fall before the lookback" }
+  - { id: veeam-kb-security, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "KB4960 (2026-11-04) and KB4899 are non-security; Management Pack KB4961 of 2026-10-29 sits at the lookback edge, not read" }
+  - { id: safedep, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "Binance lessons/hack (covered 2026-11-04), antd-img-crop repository hijack delivering OverLord Stealer (2026-11-03, S3), October incident review" }
+  - { id: censys-blog, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 146, in_horizon_items: 4, returned: 0, note: "2026-11-02 refrigeration redux (Danfoss entry updated 2026-11-04) and PHP2Shell response posts: covered themes" }
+fetch_failures:
+  - id: connectwise-trust-center
+    url_tried: "https://www.connectwise.com/company/trust/advisories"
+    fetch_method: "bridge:extract"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: all transports failed for https://www.connectwise.com/company/trust/advisories: direct=(direct HTTP 403, 6068 B); trafilatura=(no readable body); jina=(reader proxy relayed an upstream block/challenge"
+    attempted_methods: [extract, url, jina]
+    mitigation_applied: "read the status page https://status.connectwise.com/ with extract: no new security item in window"
+    covered_anyway: false
+  - id: cisa-advisories
+    url_tried: "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    fetch_method: "webfetch"
+    status_code: 403
+    error_class: transport-403
+    error_message: "The server returned HTTP 403 Forbidden. The response body was not retrieved."
+    attempted_methods: [webfetch, "bridge:feed all.xml (403, reader no items)", "webfetch alert URL (403)", websearch, "bridge:cisa csaf-recent (worked)"]
+    mitigation_applied: "cisa csaf-recent and cisa-kev worked; WebSearch (allowed_domains cisa.gov) found no AA-series advisory in window"
+    covered_anyway: false

@@ -1,0 +1,1064 @@
+task: FU2 scoped deep-read follow-up
+run_id: 2026-11-05T0255Z-intel
+started_at: '2026-11-05T03:35:05Z'
+verification_method: every claim passage was grep -F verified (exit 0) against the saved body named in saved_body before this file was written; passage_plain strips markdown emphasis where the saved body carries it
+checks:
+  AADSTS530036_in_concept_page_body_count: 1
+  CHAP_mentions_in_MS_Learn_iSCSI_overview_body: 0
+scope_note_item_A: Claim table for item A is held at awareness and defence level on purpose; the step-by-step attack sequence is not transcribed. Read the saved primary body for the full post.
+items:
+  A_specterops_iscsi:
+    title: 'SpecterOps: unauthenticated Windows iSCSI Target Server (CHAP left off) and the Hyper-V domain-controller disk exposure'
+    handling_note: 'Scope decision: the claim table is at awareness and defence level. The step-by-step attack sequence (the order of the enumeration, login, read and offline extraction operations) is deliberately NOT transcribed into this file. The full primary is saved at work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md for the main agent to read; the awareness-level chain already in findings.S3.yaml items[3] is consistent with the primary (see consistency_checks). Compose the entry at that level: the precondition, the exposed trust assumption, the impact, the defences and the inventory handle.'
+    fetched_urls:
+    - url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      publisher: SpecterOps (Garrett Foster)
+      pub_date: '2026-11-04'
+      role: primary
+      citable: true
+    - url: https://www.pentestpartners.com/security-blog/an-interesting-route-to-domain-admin-iscsi/
+      publisher: Pen Test Partners
+      pub_date: 2016-05-18 (extract page metadata)
+      role: background / prior art only
+      citable: true
+    - url: https://github.com/garrettfoster13/scuzzy
+      publisher: GitHub README (garrettfoster13/scuzzy)
+      pub_date: unknown (extract metadata says 2026-11-02; unreliable)
+      role: tool scope, corroborating
+      citable: true
+    - url: https://wiki.samba.org/index.php/Setting_up_a_Windows_failover_cluster
+      publisher: Samba wiki (community lab guide)
+      pub_date: undated wiki page
+      role: the guide the post followed (served via jina after the direct extract failed)
+      citable: true
+    - url: https://learn.microsoft.com/en-us/windows-server/storage/iscsi/iscsi-target-server
+      publisher: Microsoft Learn
+      pub_date: 2024-11-01 (page metadata)
+      role: Microsoft documentation, no security content
+      citable: true
+    - url: https://learn.microsoft.com/en-us/training/modules/implement-windows-server-iscsi/2-list-functionalities-components-use-cases
+      publisher: Microsoft Learn training module
+      pub_date: 2024-04-15 (page metadata)
+      role: Microsoft documentation, states CHAP is supported
+      citable: true
+    claim_table:
+    - id: A1
+      claim: 'Scope: the role service is the iSCSI Target Server within File and Storage Services'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: The iSCSI target server service is part of the File and Storage Services server roles, and installation is straightforward from the Add Roles and Features menu in Server Manager.
+      grep_F_verified: true
+    - id: A2
+      claim: Target name is the host name plus an admin-chosen string
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Microsoft uses the iSCSI Qualified Name (IQN) type of iSCSI Name and concatenates the host server’s hostname with the chosen string.
+      grep_F_verified: true
+    - id: A3
+      claim: The access list can identify initiators by IP, DNS name, MAC or IQN; IQN is the recommended type and the one the post's scenario depends on
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: 'There are four options to choose from to identify the initiator: IP, DNS, MAC, or IQN, and IQN is the recommended method of identification and the type we’ll be taking advantage of later.'
+      grep_F_verified: true
+    - id: A4
+      claim: CHAP is an optional last step of the setup and the guide the author followed tells the reader to skip it
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Since the guide says not to, we’ll skip this step.
+      grep_F_verified: true
+    - id: A5
+      claim: The guide the post links (a community Samba-wiki lab guide, not a Microsoft document) says not to enable authentication in the target wizard
+      source_url: https://wiki.samba.org/index.php/Setting_up_a_Windows_failover_cluster
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-samba-wsfc.md
+      passage: Enable authentication Do not enable
+      grep_F_verified: true
+    - id: A6
+      claim: 'Core exposure statement: with CHAP off, knowing the host, the target name and an initiator name is enough to log in'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Without CHAP authentication configured, all that’s required to “login” is to know what host has the iSCSI target service installed along with its iSCSI target IQN and its client initiator IQNs.
+      grep_F_verified: true
+    - id: A7
+      claim: 'Inventory handle: the service registers an SPN on the host''s AD computer account; an LDAP query lists the servers. The post does not give the SPN string.'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: If the server is joined to Active Directory, when the iSCSI target service first starts, it registers an SPN on the host computer’s AD account. Run a simple LDAP query, and we’ve got a list of iSCSI target servers.
+      grep_F_verified: true
+    - id: A9
+      claim: 'Initiator names are not secret: they are built from the host''s dNSHostName'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Fortunately, these are predictable. You probably noticed in the iSCSI initiator properties screenshot above that the IQN of the initiator is constructed using the dNSHostName of the host server.
+      grep_F_verified: true
+    - id: A10
+      claim: 'Author''s observation: no rate limiting or brute-force protection on the service'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: In my experience, there’s no rate limiting or brute-force protection on the service.
+      grep_F_verified: true
+    - id: A11
+      claim: Access is below the file system so NTFS permissions do not apply; volume encryption defeats it
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: This means we can enumerate the right values to impersonate an iSCSI initiator and access whatever is stored on the virtual hard disk while completely avoiding any NTFS permissions. It’s important to note that if BitLocker or a similar solution was used to encrypt the drive, this obviously becomes invalid.
+      grep_F_verified: true
+    - id: A15
+      claim: 'Worst case in the post: the exposed volume holds Hyper-V virtual machines (disks and snapshots) and one of them is a domain controller'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Navigating to that path shows the drive stores Hyper-V VMs, including their virtual hard disks and snapshots.
+      grep_F_verified: true
+    - id: A18
+      claim: 'Impact framing: a stolen domain-controller disk image carries the directory database and registry hives (offline credential-material exposure)'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Oh, and wouldn’t you know it? It’s a domain controller (DC) too, so grab the
+      grep_F_verified: true
+    - id: A21
+      claim: Defence 1 (verbatim)
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Enable CHAP authentication for Windows iSCSI
+      grep_F_verified: true
+    - id: A22
+      claim: 'Defence 2 (verbatim): framed as a sniffing mitigation, not as an authentication control'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: IPSEC is available to mitigate any sort of network sniffing
+      grep_F_verified: true
+    - id: A23
+      claim: 'Defence 3 (verbatim): segmentation and host firewalling named as arguably the most effective'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Arguably the most effective thing you can do is have proper network segmentation and host-based firewall configurations to isolate the drive
+      grep_F_verified: true
+    - id: A24
+      claim: Author has not tested in production and warns of outage risk
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: I haven’t tested this in production myself, so absolutely test and verify there will not be any outages or downtime caused by abusing this.
+      grep_F_verified: true
+    - id: A25
+      claim: 'Open question left by the author: why the role registers an SPN at all'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: I also still haven’t answered *why* the iSCSI target role registers an SPN when I’ve only seen CHAP get used as the authentication protocol.
+      grep_F_verified: true
+      passage_plain: I also still haven’t answered why the iSCSI target role registers an SPN when I’ve only seen CHAP get used as the authentication protocol.
+    - id: A26
+      claim: 'Prevalence figure: SpecterOps'' own BloodHound Enterprise customer tenants. VENDOR TELEMETRY: it counts SPN presence in one vendor''s customer base, not CHAP state or reachability. Do not headline.'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: We queried our BloodHound Enterprise (BHE) customer tenants and found about 50% had at least one computer with the SPN, with the maximum number being close to 700.
+      grep_F_verified: true
+    - id: A27
+      claim: Use-case statement is the author's desk research (web search plus LLM), not telemetry
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Obviously, not every drive will contain DC hard disks, so I mixed my own Googling with some LLM-powered research and found the most common uses were clustered resources like Hyper-V, MSSQL, Exchange DAGs, etc., followed by third-party backup solutions.
+      grep_F_verified: true
+    - id: A28
+      claim: 'Prior art credited by the post: Andrew Tierney (Pen Test Partners) on abusing unauthenticated iSCSI'
+      source_url: https://specterops.io/blog/2026/11/04/unauthenticated-iscsi-target-server/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-specterops-iscsi.md
+      passage: Andrew Tierney](https://www.linkedin.com/in/andrew-tierney-6355629/) – Who wrote a similar [blog](https://www.pentestpartners.com/security-blog/an-interesting-route-to-domain-admin-iscsi/) about abusing unauthenticated iSCSI
+      grep_F_verified: true
+    - id: A29
+      claim: 'Pen Test Partners (page metadata date 2016-05-18): the same weakness class seen on TCP 3260 with targets requiring no authentication (background only, ten years old)'
+      source_url: https://www.pentestpartners.com/security-blog/an-interesting-route-to-domain-admin-iscsi/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-ptp-iscsi.md
+      passage: A full port scan of one host had shown that port 3260 – iSCSI – was open.
+      grep_F_verified: true
+    - id: A32
+      claim: 'PTP defence: isolate iSCSI'
+      source_url: https://www.pentestpartners.com/security-blog/an-interesting-route-to-domain-admin-iscsi/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-ptp-iscsi.md
+      passage: Run iSCSI on an entirely segregated network, ideally on totally discrete switches and cabling. This is best practice for any form of SAN traffic.
+      grep_F_verified: true
+    - id: A33
+      claim: 'PTP defence: authentication, VLANs or IPsec as the fallback'
+      source_url: https://www.pentestpartners.com/security-blog/an-interesting-route-to-domain-admin-iscsi/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-ptp-iscsi.md
+      passage: If this isn’t possible use iSCSI authentication, VLANS or IPSEC to secure communications.
+      grep_F_verified: true
+    - id: A34
+      claim: 'PTP: reachability of TCP 3260 from the user segment is the precondition'
+      source_url: https://www.pentestpartners.com/security-blog/an-interesting-route-to-domain-admin-iscsi/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-ptp-iscsi.md
+      passage: If port 3260 could not be routed from the machine I was on to the server, this attack would have failed.
+      grep_F_verified: true
+    - id: A35
+      claim: 'Tool README (author''s public tool): read-only, user-space iSCSI client'
+      source_url: https://github.com/garrettfoster13/scuzzy
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-scuzzy-github.md
+      passage: Python script for poking at iSCSI targets that gate access by initiator IQN. Read-only — the only SCSI command it sends is READ(10).
+      grep_F_verified: true
+    - id: A40
+      claim: 'Tool README: CHAP-protected targets are out of the tool''s scope'
+      source_url: https://github.com/garrettfoster13/scuzzy
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-scuzzy-github.md
+      passage: Targets that require CHAP aren't supported.
+      grep_F_verified: true
+    - id: A41
+      claim: 'Microsoft Learn training module (page metadata 2024-04-15): the role supports CHAP and reverse CHAP. No statement on defaults, on this research or on a fix.'
+      source_url: https://learn.microsoft.com/en-us/training/modules/implement-windows-server-iscsi/2-list-functionalities-components-use-cases
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-iscsi-training.md
+      passage: It provides authentication, allowing you to implement Challenge Handshake Authentication Protocol (CHAP) to authenticate initiator connections and reverse CHAP to enable the initiator to authenticate the iSCSI target.
+      grep_F_verified: true
+    - id: A42
+      claim: Microsoft Learn 'iSCSI Target Server Overview' (page metadata 2024-11-01) describes the role's purpose and carries no security or CHAP guidance (grep for CHAP in the saved body returns nothing)
+      source_url: https://learn.microsoft.com/en-us/windows-server/storage/iscsi/iscsi-target-server
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-iscsi-target.md
+      passage: This topic provides a brief overview of iSCSI Target Server, a role service in Windows Server that enables you to make storage available via the iSCSI protocol.
+      grep_F_verified: true
+    telemetry_the_post_states: NONE. The post names no Windows event IDs, no Zeek or Wireshark observations, no iSCSI target logs and no detection section at all. Its only defender content is the three numbered recommendations (A21-A23) and the BitLocker remark (A11). Anything an entry says about detection is a derived concept and must be framed as such.
+    defenses_named_by_post:
+    - defense: CHAP
+      verbatim: Enable CHAP authentication for Windows iSCSI
+      claim: A21
+      stops_per_sources: 'A6: without CHAP the login needs only host plus target name plus initiator name. A40: the author''s tool does not support CHAP targets.'
+      post_does_not_say: No configuration steps, nothing on CHAP secret strength, and nothing on whether discovery requests are still answered when CHAP is on.
+    - defense: IPsec
+      verbatim: IPSEC is available to mitigate any sort of network sniffing
+      claim: A22
+      stops_per_sources: Framed as a sniffing mitigation only.
+      post_does_not_say: Does not claim IPsec stops the unauthenticated login or the impersonation; PTP lists it as an alternative to segregation (A33).
+    - defense: Segmentation and host-based firewalling
+      verbatim: Arguably the most effective thing you can do is have proper network segmentation and host-based firewall configurations to isolate the drive
+      claim: A23
+      stops_per_sources: 'PTP (2016): the same class of attack fails if TCP 3260 cannot be routed from the user''s machine (A34).'
+      post_does_not_say: No port number, rule examples or VLAN design.
+    - defense: BitLocker or a similar volume encryption
+      verbatim: It’s important to note that if BitLocker or a similar solution was used to encrypt the drive, this obviously becomes invalid.
+      claim: A11
+      stops_per_sources: The post says the below-NTFS read 'becomes invalid' when the drive is encrypted.
+      post_does_not_say: Not in the numbered Defensive Recommendations list; does not say which layer must be encrypted (the iSCSI volume or the VM disk) or how keys work for clustered use.
+    microsoft_position:
+      post_says: Nothing. No Microsoft report, response, fix, CVE, documentation change or won't-fix is mentioned. Its only Microsoft-related comment is the open question about the SPN (A25).
+      microsoft_pages_fetched: Learn 'iSCSI Target Server Overview' has no security content; the Learn training module states CHAP and reverse CHAP are supported (A41, A42). Neither mentions this research.
+      searches: Two WebSearches (Microsoft CHAP guidance; the research title plus a Microsoft response) found no advisory, CVE or MSRC statement. Legacy 2008 R2-era TechNet pages for the older Microsoft iSCSI Software Target were listed by search but not fetched.
+      conclusion: No Microsoft statement found. 'No CVE or patch exists' in the earlier finding is an absence in the sources read, not a statement by anyone.
+    inventory_handle: 'Role: the iSCSI Target Server role service of File and Storage Services (A1). AD handle: the SPN the service registers on the host computer account when it first starts (A7); the SPN string is NOT stated in the post and a WebSearch for it found nothing, so write ''the SPN the iSCSI Target Server service registers'', never a guessed class. Network handle: TCP 3260 (PTP, A29).'
+    consistency_checks_against_earlier_finding:
+    - 'Supported: role, CHAP optional and skipped by the followed guide (A4, A5), host/target/initiator names suffice without CHAP (A6), initiator names derive from host names (A9), no rate limiting observed (A10), below-NTFS access and encryption caveat (A11), Hyper-V disk worst case (A15, A18), the three defences (A21-A23), not tested in production (A24), BHE 50 percent figure (A26, vendor telemetry), author''s use-case research is desk research (A27), prior-art credit (A28).'
+    - 'Unsupported / earlier agent''s inference: extended_notes ''Detection: network telemetry for iSCSI Discovery sessions and logins from hosts that are not on a target''s access list ... unexpected access to the VHDX files'' is not in the post. ''Hosts not on the access list'' is also a weak discriminator because the list is keyed on the initiator name (A3) and an impersonator presents a listed name; the mechanically sound derived discriminator is the same initiator name logging in from a source address that is not the node that normally owns it.'
+    - 'Unsupported characterisation: ''design weakness, not a CVE'' and ''no CVE or patch exists because the behaviour is the default when CHAP is not configured'' are the earlier agent''s wording; the post says only that CHAP is an optional setup step (A4) and is silent on Microsoft.'
+    - 'Nuance: the guide the post followed is a community Samba-wiki lab guide (A5), not a Microsoft guide; the earlier ''common cluster guide'' is correct but should name its origin if mentioned.'
+    - 'Techniques: the post gives no ATT&CK ids. T1039 (Data from Network Shared Drive) is a weak fit for a below-file-system block read; T1018 (SPN-based host discovery), T1003.003 and T1003.002 are mechanically supportable.'
+    - The BloodHound Enterprise statistic (about half of its customer tenants, maximum close to 700 computers) is recorded in A26 as vendor telemetry and must stay out of the headline.
+    observable_behaviors_stated:
+    - 'AD: an LDAP query for the iSCSI Target Server SPN (A7) - no log named.'
+    - 'Network: iSCSI traffic to the target host on TCP 3260 (A29) from a host that is not a configured cluster node - no sensor named.'
+    - 'Storage: the author''s tool is read-only (A35); the post shows a stolen domain-controller disk image as the worst case (A15, A18).'
+    benign_lookalike_discriminator: none supported by the sources. Legitimate cluster nodes use the same target over the same port with the same initiator-name access list; the only available discriminator is the derived source-address check described above.
+  B_sophos_inc_2026_002:
+    title: 'Sophos RCA INC-2026-002: fake job-interview repository, VS Code workspace terminal profile, BeaverTail/InvisibleFerret, silent EDR agent, surviving OAuth authorization'
+    fetched_urls:
+    - url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      publisher: Sophos blog
+      pub_date: '2026-11-04'
+      role: primary
+      citable: true
+    - url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      publisher: Sophos Trust Center, root-cause analysis INC-2026-002
+      pub_date: UNDATED on the page. Latest possible publication 2026-11-04 (the 2026-11-04 blog links it); earliest 2026-09-24 (incident closed). The extract capture's metadata date 2025-11-25 is a CMS artefact that predates the incident; the RCA listing page carries no dates.
+      role: primary
+      citable: true
+    - url: https://www.sophos.com/en-us/trust/root-cause-analyses
+      publisher: Sophos RCA listing
+      pub_date: undated
+      role: listing, used only to check for a date (none); do not cite
+      citable: false
+    - url: https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
+      publisher: Microsoft (VS Code documentation, Workspace Trust)
+      pub_date: page metadata 2021-11-03; content updated since (mentions AI agents)
+      role: background on the trust behaviour; Microsoft documentation
+      citable: true
+    extraction_warning: 'IMPORTANT: `python3 tools/fetch_source.py extract` on the RCA page returns only Overview, Impact and Timeline and TRUNCATES the Analysis and Resolution sections (the page streams them in a hidden block). Those sections hold the trusted-workspace statement, the lure rotation, the ATT&CK ids, the no-attribution sentence, the second-gap statement, the long-term actions and Sophos''s closing lesson. The full text is in bodies/fu2-sophos-rca-full.txt (tag-stripped from the raw HTML saved in bodies/fu2-sophos-rca-raw.html). Claims marked also_in_extract_capture: false will not be found by a quote check against an `extract` capture; use `url` (raw) for the RCA.'
+    claim_table:
+    - id: B1
+      claim: 'Detection route: an industry partner''s tip on 15 Sep 2026; Sophos IDR opened the incident the same day'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: On 15 September 2026, an industry partner informed Sophos, through established intelligence-sharing channels, that they believed that a Sophos employee’s corporate macOS device had been compromised.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B2
+      claim: '14 Sep 2026: the employee cloned a public repository presented as a job-interview coding assignment and opened it as a VS Code workspace'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The investigation confirmed that on 14 September 2026 the employee had cloned a public code repository presented as a job interview coding assignment and opened it as a workspace in Visual Studio Code (VS Code).
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B3
+      claim: 'Mechanism: a weaponized workspace settings file replaced the integrated terminal profile; opening a terminal ran a multi-stage payload'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The repository contained a weaponized VS Code workspace settings file that replaced the editor’s integrated terminal profile. When a terminal opened in the workspace, the modified profile silently downloaded and ran a multi-stage payload.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B4
+      claim: Payload identification by SophosLabs and capability
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 'SophosLabs identified the payload as the BeaverTail loader followed by the InvisibleFerret backdoor: an in-memory remote access tool (RAT) able to steal browser-stored credentials, keychain data, SSH keys, and cryptocurrency-wallet data, and to exfiltrate the process environment to the threat actor.'
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B5
+      claim: The terminal profile was replaced with a command that downloads and runs a remote script in a loop
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The repository included a VS Code workspace settings file that replaced the integrated terminal profile with a command that downloads and runs a remote script in a loop.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B6
+      claim: Lure content rotated while delivery infrastructure was reused
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The lure repository was later replaced with a variant aimed at a different developer community, using the same payload and infrastructure.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B7
+      claim: 'Workspace Trust state: the workspace was opened as a TRUSTED VS Code workspace; no vulnerability involved'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: Delivery relied on the user cloning the repository and opening it as a trusted VS Code workspace. No attachment, exploit, or software vulnerability was involved.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B8
+      claim: 'Exact VS Code behaviour described (no setting key or file path is named): workspace settings that define the terminal profile take effect when a trusted workspace opens a terminal'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 'The compromise relied on a legitimate editor feature: workspace settings that define the terminal profile take effect when a trusted workspace opens a terminal. Opening a terminal in the workspace was enough to run the threat actor’s command through the Unix shell (T1059.004).'
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B9
+      claim: 'Installation: shell script, JavaScript component and package manifest into a hidden directory in the user''s profile'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The first stage downloaded a shell script, which fetched a JavaScript component and a package manifest into a hidden directory in the user’s profile (ingress tool transfer, T1105).
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B10
+      claim: Dependency install under Node.js; final stage in memory only; no persistence
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The package manager then installed the dependencies, which included Web3/Ethereum development tooling, clipboard access, and database-parsing libraries, and the JavaScript ran under Node.js (T1059.007). The final-stage backdoor ran in memory only. No launch agent, launch daemon, or other persistence mechanism was found.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B11
+      claim: 'C2 behaviour: process environment sent to an attacker web endpoint, then commands from the C2'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The JavaScript stage sent the full process environment to an attacker-controlled web endpoint using a web protocol (T1071.001; exfiltration over C2, T1041), then ran commands returned by the C2 server.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B12
+      claim: Capabilities of the final stage and the limit of the forensics
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: SophosLabs analysis of the final stage showed an interactive reverse shell with capability to decrypt and steal browser-stored passwords and cookies via the macOS keychain (T1555.001; T1555.003), private SSH keys (T1552.004), and data from about 100 cryptocurrency wallet-related browser extensions.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B13
+      claim: Actual actions on the device could not be fully recovered
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: Because the backdoor ran attacker-supplied commands at runtime, actual actions on this device could not be fully recovered from static files.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B14
+      claim: 'Attribution: the RCA makes none'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: No attribution to a named group is made or implied.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B15
+      claim: Infrastructure classes (nothing named)
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The infrastructure comprised a public code  repository, a payload-hosting domain, and a C2 endpoint on a cloud application-hosting service (STIX Infrastructure).
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B16
+      claim: 'EDR agent state: installed but not functional; core services not running; not updating, not enforcing, not reporting'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The Sophos Endpoint agent was installed on the employee’s device but was not functional. Its core services were not running, so the agent was not receiving updates, not enforcing protection and not reporting to the Sophos Central management console.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B17
+      claim: A functioning agent would have blocked at the first dropped file; delivery domain already on the block list (signature coverage existed; nothing fired)
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: SophosLabs confirmed that a functioning agent would have blocked the chain at the first dropped file, and that the delivery domain was already on the Sophos block list.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B18
+      claim: Agent last seen 11 June 2026; root cause of the agent failure still under investigation; second gap = OAuth authorization not invalidated by session revocation and password reset
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 'However, the agent’s core services were not running, and the device was last seen in Sophos Central on 11 June 2026. The engineering root cause of the agent failure is still under investigation. A second gap extended the exposure: a third-party application authorization on the user’s source code platform account was not invalidated by the session revocation and password reset, and had to be revoked separately.'
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B19
+      claim: 'Timeline row: 11 Jun 2026, agent last seen; after that date it stopped functioning and reporting; actor undetermined'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 11 Jun 2026 | The Sophos Endpoint agent on the affected device was last seen in Sophos Central. After this date the agent stopped functioning and reporting | Undetermined |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B20
+      claim: 'Timeline row: 10-11 Sep 2026, corporate password entered on a public code platform''s sign-in page, including during a third-party ''sign in with'' authorization for a coding-practice website (browser identity telemetry)'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 10–11 Sep 2026 | Browser identity telemetry recorded the employee’s corporate password being entered on a public source code platform’s sign-in page, including during a third-party ‘sign in with’ authorization for a coding practice website | User (Sophos employee) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B21
+      claim: 'Timeline row: 14 Sep 15:17:59 UTC clone and open as workspace'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 14 Sep 2026 15:17:59 | A repository presented as a job interview coding assignment was cloned to the device and opened as a VS Code workspace | User (Sophos employee) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B22
+      claim: 'Timeline row: 14 Sep 15:19:31 UTC settings ran when a terminal opened; first- and second-stage files written to the user''s profile'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 14 Sep 2026 15:19:31 | The weaponized workspace settings ran when a terminal opened. The first- and second-stage payload files were written to the user’s profile | Threat actor |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B23
+      claim: 'Timeline row: 14 Sep 15:24:33 UTC VS Code granted Full Disk Access by the user'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 14 Sep 2026 15:24:33 | VS Code was granted Full Disk Access, which gave its child processes, including the malicious ones, broad filesystem access | User (Sophos employee) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B24
+      claim: 'Timeline row: 14 Sep 15:36:11 UTC package-manager dependency install from the payload directory; from then the final-stage backdoor ran in memory'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 14 Sep 2026 15:36:11 | A package manager dependency install ran from the payload directory, confirming live code execution. From this point the final-stage backdoor ran in memory | Threat actor |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B25
+      claim: 'Timeline row: 15 Sep 13:37 UTC partner report; incident opened; device found not reporting to Sophos Central'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 15 Sep 2026 13:37 | An industry partner reported the probable compromise through intelligence-sharing channels. An incident was opened, and it was established that the device was not reporting to Sophos Central | Industry partner / IDR (Detection & Analysis) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B26
+      claim: 'Timeline row: 15 Sep afternoon sessions revoked and password reset, device moved to the non-compliant group'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 15 Sep 2026 (afternoon) | Active sign-in sessions were revoked and the password was reset. The device was moved to the non-compliant device management group | IT / IDR (Containment) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B27
+      claim: 'Timeline row: 15 Sep afternoon, the third-party authorization that survived revocation made 27 read requests against two internal source repositories (actor undetermined)'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 15 Sep 2026 (afternoon) | A third-party application authorization that survived the session revocation was used for 27 read requests against two internal source code repositories | Undetermined |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B28
+      claim: 'Timeline row: 15 Sep 18:05 UTC reboot ended the in-memory implant'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 15 Sep 2026 18:05 | The device was rebooted, ending the in-memory implant. No persistence mechanism was found | User (Sophos employee) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B29
+      claim: 'Timeline row: 16 Sep 14:52 UTC authorization revoked and the user''s code-organization access removed'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 16 Sep 2026 14:52 | The third-party application authorization was revoked and the user’s source code organization access was removed | IT / IDR (Containment) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B30
+      claim: 'Timeline row: 17-22 Sep endpoint engineering confirmed the agent''s core services were not running; fleet-wide review began'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 17–22 Sep 2026 | Endpoint engineering analyzed the agent’s state on the device and confirmed that the agent’s core services were not running. A fleet-wide review began for other devices that were compliant but not reporting | Endpoint engineering / IDR (Post-incident) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B31
+      claim: 'Timeline row: 24 Sep fresh agent installed, device isolated, replacement issued, incident closed (this is the incident-close date, not the RCA publication date)'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 24 Sep 2026 | A fresh Sophos Endpoint agent was installed. The device reported to Sophos Central and was isolated pending return. A replacement device was issued, and the incident was closed | IT / IDR (Eradication & Recovery) |
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B32
+      claim: 'Impact: single endpoint and user account; no products, customers or customer data affected'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The impact of this incident was limited to a single internal Sophos macOS endpoint and the associated user account. No Sophos products or services, customers, customer data, or customer-facing systems were affected.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B33
+      claim: 'Dwell: about 26 hours in memory until the reboot'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The malware ran in memory on the device for about 26 hours, from its execution on 14 September until the device was rebooted on 15 September.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B34
+      claim: 'Residual exposure from the infected process: the user''s ssh-agent session; only personal keys, revoked, no corporate SSH'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: Analysis of the environment infected by the malicious process found no cloud access keys, personal access tokens, or passwords. The residual exposure from that process was assessed as the user’s ssh-agent session. The user confirmed that only personal SSH keys were in use and that they had been revoked, and that no corporate system was reached over SSH during the exposure window.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B35
+      claim: 'What WAS accessed: 27 read requests by the OAuth authorization against two internal repositories from an address not previously associated with the user, treated as unauthorized; repository contents are not described'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: On 15 September, a third-party application authorization linked to the user’s source code platform account was used to make 27 read requests against two internal Sophos source code repositories. The requests came from a network address not previously associated with the user and were treated as unauthorized. The authorization was revoked on 16 September, and no further use of it was observed.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B36
+      claim: 'Confirmed NOT: no other host matched the indicators'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: No other host in the Sophos estate matched the confirmed indicators (no co-victims).
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B37
+      claim: 'Confirmed NOT: no cloud-platform activity for the identity or the addresses'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: No cloud platform activity was recorded for the user’s identity or for the network addresses associated with the incident.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B38
+      claim: 'Confirmed NOT: no mailbox forwarding or inbox-rule changes'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: No mailbox forwarding or inbox rule changes were made to the user’s account.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B39
+      claim: 'Confirmed NOT: no Sophos product, service or customer environment accessed'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: No Sophos product, service, or customer environment was accessed.
+      grep_F_verified: true
+      also_in_extract_capture: true
+    - id: B40
+      claim: Revocation was confirmed in the code platform's audit logs; membership in the corporate code organization removed
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: The third-party application authorization was explicitly revoked, and the user’s membership of the corporate source code organization was removed. Audit logs confirmed the revocation, with no further use of the authorization afterwards.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B41
+      claim: 'Lesson (EDR health): fleet-wide review found devices compliant in identity and device management but not reporting to the console; three causes'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: A fleet-wide review identified corporate devices that were compliant in identity and device management, but which were not reporting to the corporate Sophos Central console. Causes included agents that had stopped reporting, agents registered to non-corporate Central accounts, and devices with no agent telemetry at all.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B42
+      claim: 'Corrective action: macOS build automated so the agent is installed first and cannot be skipped; previous manual build let users register agents to their own accounts'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 'The macOS device build is now automated: Sophos Endpoint is installed before the local user account is created, and users cannot skip or avoid the installation.'
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B43
+      claim: 'Corrective action: the endpoint agent is now a macOS compliance criterion'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: Sophos Endpoint is now a device compliance criterion for macOS. A device without the agent is non-compliant and cannot access Sophos resources.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B44
+      claim: 'Lesson (OAuth grant review): revoking third-party application authorizations as a separate containment step is only a post-incident review item'
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: Revoking third-party application authorizations as a separate step in identity containment, alongside session revocation and password reset, has been raised as a post-incident review item.
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B45
+      claim: Sophos's closing lesson (verbatim)
+      source_url: https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-rca-full.txt
+      passage: 'Note: endpoint protection prevents this class of attack only while the agent is healthy, and a silent agent failure goes unnoticed unless it is monitored. The lasting controls are to require the endpoint agent for device compliance, to monitor for managed devices that stop reporting, and to revoke application authorizations as part of credential containment.'
+      grep_F_verified: true
+      also_in_extract_capture: false
+    - id: B46
+      claim: 'Blog (2026-11-04): the employee opened a GitHub coding assignment in VS Code; a hidden command in the workspace settings ran when a terminal opened; ''within two minutes'' the loader and backdoor were running (conflicts with the RCA timeline, see contradictions)'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: A command hidden in the workspace settings ran as soon as a terminal opened, and within two minutes the BeaverTail loader and InvisibleFerret backdoor were running.
+      grep_F_verified: true
+    - id: B47
+      claim: 'Blog: Sophos does not claim this was the malware used at Binance'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: To be clear, we’re not suggesting this was necessarily the exact malware used at Binance. The broader concern is that employment-themed social engineering is used by multiple
+      grep_F_verified: true
+    - id: B48
+      claim: Blog lesson 1 (identity-endpoint correlation), verbatim
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: 'Correlating identity sign-in data with endpoint telemetry closed it: a device that''s still signing in but not reporting to your endpoint console is a coverage gap.'
+      grep_F_verified: true
+    - id: B49
+      claim: 'Blog: device-compliance checks and coverage monitoring existed; the gap was between them'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: We already had device-compliance checks and endpoint coverage monitoring in place, but this incident showed a gap between them.
+      grep_F_verified: true
+    - id: B50
+      claim: 'Blog: the investigation informed a proposed detection (not published)'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: The investigation informed a proposed detection for this kind of visibility gap.
+      grep_F_verified: true
+    - id: B51
+      claim: 'Blog: the agent was broken; unprotected assets are a common failure point'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: 'Ours failed for a mundane reason: the Mac''s endpoint agent was broken.'
+      grep_F_verified: true
+    - id: B52
+      claim: 'Blog: first dropped script had an existing Sophos detection name (signature coverage, not an alert that fired)'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: SophosLabs confirmed that the first script dropped on the Mac was already detected as Troj/Dloadr-EJE. A working agent would have stopped the chain.
+      grep_F_verified: true
+    - id: B53
+      claim: 'Blog attribution wording: CTU names NICKEL ALLEY as the Contagious Interview cluster and says the VS Code technique matches its tradecraft (a tradecraft match, not an attribution of this incident)'
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: 'runs the Contagious Interview campaign: fake companies, fake recruiters and malicious code repositories, plus ClickFix lures and poisoned npm packages. The VS Code technique used against us matches its tradecraft.'
+      grep_F_verified: true
+    - id: B54
+      claim: Blog relays Binance's account and an FBI attribution of the Binance attack (relayed claims, not verified in this deep-read)
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: According to Binance, a software engineer was approached in September through a legitimate job platform and told to download a coding assignment onto his work computer. The FBI has attributed the attack to North Korea.
+      grep_F_verified: true
+    - id: B55
+      claim: Blog relays a joint advisory's scale figures (WaterPlum naming; relayed, vanity-metric territory, not verified; the advisory PDF was not fetched)
+      source_url: https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-sophos-blog.md
+      passage: Between December 2025 and July 2026, the Contagious Interview actors (which the advisory calls WaterPlum) compromised at least 30,000 devices in more than 100 countries and took funds or credentials from over 7,000 cryptocurrency wallets.
+      grep_F_verified: true
+    - id: B56
+      claim: 'VS Code docs: unfamiliar folders open in Restricted Mode, which prevents automatic code execution'
+      source_url: https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vscode-workspace-trust.md
+      passage: When you open a new, unfamiliar folder, VS Code opens it in Restricted Mode to prevent automatic code execution while you review the contents.
+      grep_F_verified: true
+    - id: B57
+      claim: 'VS Code docs: Restricted Mode limits terminal, tasks, debugging, workspace settings and extensions'
+      source_url: https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vscode-workspace-trust.md
+      passage: 'Restricted Mode tries to prevent automatic code execution by disabling or limiting the operation of several VS Code features: AI agents, terminal, tasks, debugging, workspace settings, and extensions.'
+      grep_F_verified: true
+    - id: B58
+      claim: 'VS Code docs: opening a terminal is blocked by default in Restricted Mode and prompts for trust'
+      source_url: https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vscode-workspace-trust.md
+      passage: If you try to open a terminal while in Restricted Mode, VS Code displays a prompt to confirm that you trust the folder.
+      grep_F_verified: true
+    - id: B59
+      claim: 'VS Code docs: workspace settings live in the .vscode folder and travel with a cloned repository; a set of them is disabled in Restricted Mode'
+      source_url: https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vscode-workspace-trust.md
+      passage: are stored in the `.vscode` folder at the root of your workspace, and are therefore shared by anyone who clones the workspace repository.
+      grep_F_verified: true
+      passage_plain: are stored in the .vscode folder at the root of your workspace, and are therefore shared by anyone who clones the workspace repository.
+    - id: B60
+      claim: 'VS Code docs: a setting exists that lets terminals open in Restricted Mode without a trust prompt'
+      source_url: https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vscode-workspace-trust.md
+      passage: you can enable the terminal.integrated.allowInUntrustedWorkspace setting to allow terminals to open in Restricted Mode without a trust prompt.
+      grep_F_verified: true
+    ordered_timeline_utc:
+    - '2026-06-11: agent last seen in Sophos Central; afterwards it stopped functioning and reporting (cause undetermined, under investigation) [B19, B18]'
+    - '2026-09-10 to 2026-09-11: browser identity telemetry recorded the corporate password entered on a public code platform sign-in page, including during a third-party ''sign in with'' authorization for a coding-practice website [B20]'
+    - '2026-09-14 15:17:59: repository presented as a coding assignment cloned and opened as a (trusted) VS Code workspace [B21, B7]'
+    - '2026-09-14 15:19:31: workspace settings ran when a terminal opened; first- and second-stage files written to the profile [B22]'
+    - '2026-09-14 15:24:33: user granted VS Code Full Disk Access [B23]'
+    - '2026-09-14 15:36:11: package-manager install from the payload directory; final-stage backdoor in memory from here [B24]'
+    - '2026-09-15 13:37: industry partner''s report; incident opened; device found not reporting to Sophos Central [B25]'
+    - '2026-09-15 afternoon: sessions revoked, password reset, device moved to non-compliant group [B26]; the surviving OAuth authorization made 27 read requests against two internal repositories (actor undetermined) [B27]'
+    - '2026-09-15 18:05: device rebooted, ending the in-memory implant [B28]'
+    - '2026-09-15 to 2026-09-16: SophosLabs analysis; estate-wide indicator sweep, no other host'
+    - '2026-09-16 14:52: authorization revoked and code-organization access removed [B29]'
+    - '2026-09-17 to 2026-09-22: endpoint engineering confirmed the agent''s core services were not running; fleet-wide review began [B30]'
+    - '2026-09-24: fresh agent installed, device isolated, replacement issued, incident closed [B31]'
+    - '2026-11-04: Sophos blog published, linking the RCA [B46]'
+    vscode_behavior:
+      stated_by_sophos: A weaponized workspace settings file replaced the editor's integrated terminal profile with a command that downloads and runs a remote script in a loop; the workspace was opened as a TRUSTED VS Code workspace; opening a terminal was enough (B3, B5, B7, B8).
+      setting_key_name: NOT STATED by Sophos in either page. Do not name a key or file path as Sophos's statement.
+      workspace_trust_state: Trusted (B7, B8). Sophos draws no explicit Workspace Trust lesson and gives no instruction about Restricted Mode.
+      background_from_microsoft_docs: Unfamiliar folders open in Restricted Mode, where the terminal is blocked behind a trust prompt and a set of workspace settings is disabled (B56-B59). This explains why the trust decision is the control point; it is Microsoft's documentation, not Sophos's finding.
+    sophos_lessons_verbatim:
+      identity_endpoint_correlation: B48 (blog), B41, B45 (RCA)
+      workspace_trust: none stated by Sophos (see vscode_behavior)
+      edr_health_monitoring: 'B45: ''a silent agent failure goes unnoticed unless it is monitored. The lasting controls are to require the endpoint agent for device compliance, to monitor for managed devices that stop reporting, and to revoke application authorizations as part of credential containment.''; also B42, B43'
+      oauth_grant_review: B44 (only a post-incident review item) and B45 (revoke application authorizations as part of credential containment); the second gap statement is B18
+    attribution_wording:
+      rca: 'B14: ''No attribution to a named group is made or implied.'''
+      blog: 'B53: Sophos CTU says NICKEL ALLEY runs the Contagious Interview campaign and ''The VS Code technique used against us matches its tradecraft.'' B47: not claimed to be the Binance malware; employment-themed social engineering is used by multiple North Korean threat groups.'
+      assessment: A tradecraft match asserted by the victim's own threat-research unit, no confidence level stated, no infrastructure or code-overlap evidence given. Compose as 'Sophos CTU says the technique matches NICKEL ALLEY tradecraft; the RCA names no group', never as an attribution of the incident.
+    contradicts_or_unsupported_in_earlier_findings:
+    - 'SOURCE DATE: findings.S3 lists the RCA as dated 2026-09-24. That is the incident-closed date inside the RCA, not a publication date. The RCA page is undated; cite it without a publication date, or as ''published by 2026-11-04'' (the blog of that date links it).'
+    - 'SCOPE LOSS: findings.S3 summarised from an `extract` capture that truncated the RCA''s Analysis and Resolution sections. It therefore lacks: the trusted-workspace statement (B7, B8), the download-and-run-in-a-loop terminal profile (B5), lure rotation (B6), about 100 wallet extensions (B12), the no-attribution sentence (B14), the corrective actions (B42, B43), the OAuth post-incident review item (B44), the still-open root cause of the agent failure (B18) and the ATT&CK ids Sophos itself states (T1204, T1059.004, T1105, T1059.007, T1071.001, T1041, T1555.001, T1555.003, T1552.004).'
+    - 'TIMING: the blog says the loader and backdoor were running ''within two minutes'' (B46). The RCA timeline is finer: settings ran 15:19:31 (about 1.5 minutes after the 15:17:59 clone), Full Disk Access was granted 15:24:33, and the package-manager install that marks the in-memory final stage was 15:36:11, about 16.7 minutes after the settings ran. Trust the RCA timeline; ''two minutes'' only holds for the first-stage file write.'
+    - 'AGENT DATE: S3 says the agent ''stopped working on 11 June''. The RCA says the device was LAST SEEN on 11 June and the agent stopped reporting after it; the cause is undetermined and under investigation (B18, B19).'
+    - 'DETECTION WORDING: S3 says ''the first dropped file and the delivery domain were already detected''. The RCA says a functioning agent would have blocked at the first dropped file and the domain was on the block list (B17); the agent was not running, so nothing fired. Signature coverage existed; no detection event occurred.'
+    - 'OAUTH TIMING: S3 says the authorization made 27 read requests ''until it was revoked on 16 September''. The RCA puts the 27 requests on 15 September (after the afternoon revocation) and says no further use was observed after revocation on 16 September 14:52 (B27, B35, B40). The RCA does not state how the reads were detected, and does not say the 10-11 September ''sign in with'' authorization is the same grant; do not link them.'
+    - 'ATTRIBUTION: S3''s relation_suggestion incident -> campaign:contagious-interview is acceptable only as an overlap (B53); the RCA states no attribution (B14).'
+    - 'TELEMETRY NAMING: S3''s extended_notes name macOS TCC grants and identity-provider logs. The RCA says only ''VS Code was granted Full Disk Access'' (no TCC or log source) and ''Browser identity telemetry'' (browser-side, not named as IdP logs). Keep Sophos''s wording.'
+    - 'BLOG CLAIMS RELAYED, NOT VERIFIED HERE: the Binance theft figures and FBI attribution (B54) and the joint-advisory scale numbers (B55) are Sophos relaying other parties. Keep them out of the entry or attribute them as relayed.'
+    observable_behaviors_stated:
+    - 'Process lineage on macOS: the code editor opens an integrated terminal whose profile comes from the cloned workspace and launches a download-and-run command (B3, B5, B8); a shell script then fetches a JavaScript component and a package manifest into a hidden directory in the user profile (B9); a package-manager dependency install runs from that directory and the JavaScript runs under Node.js (B10, B24).'
+    - 'Privacy permission: the editor was granted Full Disk Access about five minutes after the settings ran, giving its child processes broad file access (B23).'
+    - 'Network: a payload-hosting domain, then an attacker web endpoint on a cloud application-hosting service receiving the process environment (B11, B15); nothing is named.'
+    - 'Identity: the corporate password entered on a public code platform''s sign-in page, including via a ''sign in with'' flow (B20), recorded by browser identity telemetry; later, a third-party OAuth grant reading internal repositories from an unfamiliar address (B35).'
+    - 'Fleet: devices compliant in identity and device management that do not report to the endpoint console (B41, B48).'
+    benign_lookalike_discriminator: 'none stated by Sophos. Mechanical, derived from the RCA wording only (not a Sophos discriminator): a normal terminal profile launches a shell executable; this one launches a command that downloads and runs a remote script repeatedly (B5), and it comes from workspace settings in a freshly cloned repository (B2, B3). S3''s longer Triage text about legitimate developer shells and package installs is not supported by the sources.'
+  C_vaud_m365_device_code:
+    title: 'Canton Vaud notice of 2026-11-04: Microsoft 365 device-code phishing campaign in French-speaking Switzerland'
+    fetched_urls:
+    - url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      publisher: Etat de Vaud (vd.ch news item)
+      pub_date: '2026-11-04T15:49:00+01:00'
+      role: primary
+      citable: true
+    - url: https://www.vd.ch/cybersecurite
+      publisher: Etat de Vaud cybersecurity landing page (resolves to /dadn/dgnsi/cybersecurite)
+      pub_date: undated listing
+      role: 'context only: names the unit and contacts; a listing page, do not cite as a Source'
+      citable: false
+    - url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      publisher: 'Microsoft Learn: Block authentication flows with Conditional Access policy'
+      pub_date: page metadata 2026-04-07
+      role: official Microsoft documentation of the lever
+      citable: true
+    - url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      publisher: 'Microsoft Learn: Authentication flows as a condition in Conditional Access policy'
+      pub_date: page metadata 2026-03-24
+      role: official Microsoft documentation, concept and sign-in log properties
+      citable: true
+    - url: https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
+      publisher: Cloudflare Docs
+      pub_date: page metadata 2026-09-22
+      role: explains the workers.dev name syntax only
+      citable: true
+    page_facts:
+      page_date: 2026-11-04 (time element 2026-11-04T15:49:00+01:00)
+      issuing_office: NOT stated on the notice. It is a vd.ch news item (Actualités). The cantonal cybersecurity landing page that lists it sits under the Département de l'agriculture, de la durabilité et du climat et du numérique (DADN) > Direction générale du numérique et des systèmes d'information (DGNSI) and shows the Direction de la sécurité des systèmes d'information (PS-SEC) and the Force cantonale d'intervention cybersécurité (CSIRT) (C17-C19). Attribute the notice to 'the canton of Vaud', and mention the unit only as context.
+      language: French only. The page has no German version, so there is no German original to quote.
+      telephone_or_reporting_channel_in_notice: None. The notice tells readers only to report to their own IT department and to contact their IT support after entering a code (C15, C16).
+      channels_on_cantonal_landing_page: Police cantonale urgent 117; non-urgent and questions 021 644 44 44; federal single point of contact https://www.report.ncsc.admin.ch/fr/ (C19b-C19d). These are the landing page's general cyberattack contacts, not part of the notice.
+      not_stated_by_notice: No actor, kit or PhaaS name; no number or names of organisations or sectors; no campaign start date; no tenant-side hardening; no Microsoft documentation link; no detection guidance; no indicator beyond the link template.
+    claim_table:
+    - id: C1
+      claim: Page date and time (HTML time element)
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-raw.html
+      passage: <time datetime="2026-11-04T15:49:00+01:00">
+      grep_F_verified: true
+      note: Publication timestamp 2026-11-04 15:49 CET (14:49 UTC); the visible text reads 'Publié le 04.11.2026'.
+    - id: C2
+      claim: Visible publication line
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Publié le 04.11.2026
+      grep_F_verified: true
+      translation_en: Published on 04.11.2026
+    - id: C3
+      claim: Title
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Campagne de phishing ciblant les comptes Microsoft 365
+      grep_F_verified: true
+      translation_en: Phishing campaign targeting Microsoft 365 accounts
+    - id: C4
+      claim: Campaign running now; several organisations already affected
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Une campagne de hameçonnage (phishing) est actuellement en cours en Suisse romande. Plusieurs organisations ont déjà été touchées.
+      grep_F_verified: true
+      translation_en: A phishing campaign is currently under way in French-speaking Switzerland. Several organisations have already been affected.
+    - id: C5
+      claim: Sender / pretext pattern
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Les messages frauduleux peuvent sembler provenir d'une entreprise ou d'un contact connu.
+      grep_F_verified: true
+      translation_en: The fraudulent messages may appear to come from a company or a known contact.
+    - id: C6
+      claim: Lure types
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Ils vous invitent notamment à consulter une facture, ouvrir un document ou vérifier des informations en cliquant sur un lien.
+      grep_F_verified: true
+      translation_en: They invite you in particular to view an invoice, open a document or verify information by clicking a link.
+    - id: C7
+      claim: Link-structure lead-in (the notice then prints a template with placeholders)
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: 'Les liens malveillants observés dans cette campagne présentent notamment la structure suivante :'
+      grep_F_verified: true
+      translation_en: 'The malicious links observed in this campaign have, in particular, the following structure:'
+    - id: C8
+      claim: 'The template as printed by the notice (placeholders, not a live domain). Compose as behaviour only: a workers.dev subdomain whose first label is a company-style name plus a portal word and whose second label starts with a cloud-storage word followed by an identifier.'
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: '[nom]-portail.cloud-storage-id0XXX.workers.dev'
+      grep_F_verified: true
+      translation_en: '[name]-portal.cloud-storage-id0XXX.workers.dev'
+      note: Cloudflare's own docs (C20) give the syntax <worker name>.<account subdomain>.workers.dev, so the second label is the account-level part and the first the per-lure Worker name. That mapping is an inference from the Cloudflare documentation, not a statement of the Vaud notice.
+    - id: C9
+      claim: 'Mechanism: device-code phishing; the user types a code on a LEGITIMATE Microsoft authentication page'
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Cette campagne utilise une technique appelée Device Code Phishing. Elle consiste à vous faire saisir un code sur une page d'authentification Microsoft légitime.
+      grep_F_verified: true
+      translation_en: This campaign uses a technique called Device Code Phishing. It consists of getting you to enter a code on a legitimate Microsoft authentication page.
+    - id: C10
+      claim: Outcome stated
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Cette manipulation permet aux cybercriminels d'obtenir un accès frauduleux à votre compte Microsoft 365.
+      grep_F_verified: true
+      translation_en: This manipulation allows cybercriminals to obtain fraudulent access to your Microsoft 365 account.
+    - id: C11
+      claim: Measure 1
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Méfiez-vous des demandes inattendues, même si elles semblent provenir d'un expéditeur connu.
+      grep_F_verified: true
+      translation_en: Be wary of unexpected requests, even if they appear to come from a known sender.
+    - id: C12
+      claim: 'Measure 2: the structure is not exhaustive'
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Soyez particulièrement vigilants face aux liens présentant la structure mentionnée ci-dessus. D'autres adresses peuvent également être utilisées.
+      grep_F_verified: true
+      translation_en: Be particularly vigilant with links showing the structure mentioned above. Other addresses may also be used.
+    - id: C13
+      claim: Measure 3
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Ne saisissez jamais un code de connexion Microsoft à la demande d'un tiers.
+      grep_F_verified: true
+      translation_en: Never enter a Microsoft sign-in code at the request of a third party.
+    - id: C14
+      claim: Measure 4
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: En cas de doute, vérifiez la légitimité du message auprès de l'expéditeur par un autre canal de communication.
+      grep_F_verified: true
+      translation_en: If in doubt, check the legitimacy of the message with the sender through another communication channel.
+    - id: C15
+      claim: Measure 5
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Signalez tout message suspect à votre service informatique.
+      grep_F_verified: true
+      translation_en: Report any suspicious message to your IT department.
+    - id: C16
+      claim: Post-entry instruction (names 'validated an authentication request' as well as 'entered a code')
+      source_url: https://www.vd.ch/actualites/actualite/news/26768-campagne-de-phishing-ciblant-les-comptes-microsoft-365
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-notice-fulltext.txt
+      passage: Si vous avez déjà saisi un code ou validé une demande d'authentification, contactez immédiatement votre support informatique.
+      grep_F_verified: true
+      translation_en: If you have already entered a code or approved an authentication request, contact your IT support immediately.
+    - id: C17
+      claim: Landing page unit line 1 (the notice itself names no issuing office)
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: Direction générale du numérique et des systèmes d'information (DGNSI)
+      grep_F_verified: true
+      translation_en: Directorate-General for Digital Affairs and Information Systems (DGNSI)
+    - id: C18
+      claim: Landing page unit line 2
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: Direction de la sécurité des systèmes d’information (PS-SEC)
+      grep_F_verified: true
+      translation_en: Information Systems Security Directorate (PS-SEC)
+    - id: C19
+      claim: Landing page unit line 3
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: Force cantonale d’intervention cybersécurité (CSIRT)
+      grep_F_verified: true
+      translation_en: Cantonal cybersecurity response force (CSIRT)
+    - id: C19a
+      claim: Landing page contact heading
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: Contacts en cas de cyberattaque
+      grep_F_verified: true
+      translation_en: Contacts in case of a cyberattack
+    - id: C19b
+      claim: 'Landing page contact: urgent police number'
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: 'Police cantonale, cas urgent :'
+      grep_F_verified: true
+      translation_en: 'Cantonal police, urgent case:'
+    - id: C19c
+      claim: 'Landing page contact: non-urgent police number'
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: 021 644 44 44
+      grep_F_verified: true
+      note: Labelled 'Police cantonale, cas non urgent/questions' on the landing page.
+    - id: C19d
+      claim: 'Landing page contact: federal single point of contact (URL as printed by Vaud)'
+      source_url: https://www.vd.ch/cybersecurite
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-vd-cybersecurite-fulltext.txt
+      passage: https://www.report.ncsc.admin.ch/fr/
+      grep_F_verified: true
+      note: Labelled 'Guichet unique de l'Office fédéral de la cybersécurité'.
+    - id: C20
+      claim: workers.dev is the Cloudflare Workers subdomain (the Vaud notice names only the suffix, never Cloudflare)
+      source_url: https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-cloudflare-workersdev.md
+      passage: All Workers are assigned a `workers.dev` route when they are created or renamed following the syntax `<YOUR_WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev`.
+      grep_F_verified: true
+      passage_plain: All Workers are assigned a workers.dev route when they are created or renamed following the syntax <YOUR_WORKER_NAME>.<YOUR_SUBDOMAIN>.workers.dev.
+    - id: C21
+      claim: 'Microsoft Learn (page metadata 2026-04-07): recommendation'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: We recommend organizations get as close as possible to a unilateral block on device code flow.
+      grep_F_verified: true
+    - id: C22
+      claim: 'Microsoft Learn: for organisations not using the flow, block it with a Conditional Access policy'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: 'For organizations that don''t use device code flow, block it with the following Conditional Access policy:'
+      grep_F_verified: true
+    - id: C23
+      claim: 'Microsoft Learn: the condition is ''Authentication Flows'''
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: 6. Under **Conditions** > **Authentication Flows**, set **Configure** to **Yes**.
+      grep_F_verified: true
+      passage_plain: 6. Under Conditions > Authentication Flows, set Configure to Yes.
+    - id: C24
+      claim: 'Microsoft Learn: select ''Device code flow'''
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: 1. Select **Device code flow**.
+      grep_F_verified: true
+      passage_plain: 1. Select Device code flow.
+    - id: C25
+      claim: 'Microsoft Learn: grant control ''Block access'''
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: 7. Under **Access controls** > **Grant**, select **Block access**.
+      grep_F_verified: true
+      passage_plain: 7. Under Access controls > Grant, select Block access.
+    - id: C26
+      claim: 'Microsoft Learn: start in Report-only, then switch on'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: 8. Confirm your settings and set **Enable policy** to **Report-only**.
+      grep_F_verified: true
+      passage_plain: 8. Confirm your settings and set Enable policy to Report-only.
+    - id: C27
+      claim: 'Microsoft Learn: audit existing use first; allow only documented use cases'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: Consider creating a policy to audit the existing use of device code flow and determine if it's still necessary. Only allow device code flow in well documented and secured use cases, like legacy tooling that can't be updated.
+      grep_F_verified: true
+    - id: C28
+      claim: 'Microsoft Learn: exclude emergency-access accounts'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-howto.md
+      passage: 1. Select **Users and groups** and choose your organization's emergency access or break-glass accounts and any other necessary users. Audit this exclusion list regularly.
+      grep_F_verified: true
+      passage_plain: 1. Select Users and groups and choose your organization's emergency access or break-glass accounts and any other necessary users. Audit this exclusion list regularly.
+    - id: C29
+      claim: 'Microsoft Learn concept page (page metadata 2026-03-24): why device code flow is high risk, and what it is legitimately for (benign-lookalike basis)'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-concept.md
+      passage: Device code flow lets you sign into devices that lack local input devices, like shared devices or digital signage. Device code flow is a high-risk authentication method that can be part of a phishing attack or used to access corporate resources on unmanaged devices.
+      grep_F_verified: true
+    - id: C30
+      claim: 'Microsoft Learn: Microsoft''s recommendation'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-concept.md
+      passage: Allow device code flow only where necessary. Microsoft recommends blocking device code flow wherever possible.
+      grep_F_verified: true
+    - id: C31
+      claim: 'Microsoft Learn: sign-in log filter for device code events'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-concept.md
+      passage: Creating a Conditional Access policy in report-only mode or filtering the sign-in logs for device code flow events with the **authentication protocol** filter can help.
+      grep_F_verified: true
+      passage_plain: Creating a Conditional Access policy in report-only mode or filtering the sign-in logs for device code flow events with the authentication protocol filter can help.
+    - id: C32
+      claim: 'Microsoft Learn: protocol tracking persists through token refreshes (a block can hit a later non-device-code sign-in in the same session)'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-concept.md
+      passage: Any protocol tracked sessions are subject to policy enforcement if a policy exists. Protocol tracking state is sustained through subsequent refreshes, meaning it is possible for non device code flow or authentication transfer flows to be subject to enforcement of authentication flows policies.
+      grep_F_verified: true
+    - id: C33
+      claim: 'Microsoft Learn: the sign-in log property that shows protocol tracking'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-concept.md
+      passage: we’ve added a new property called **original transfer method** to the **activity details** section of the Conditional Access **sign-in logs**.
+      grep_F_verified: true
+      passage_plain: we’ve added a new property called original transfer method to the activity details section of the Conditional Access sign-in logs.
+    - id: C34
+      claim: 'Microsoft Learn: Device Registration Service must be excluded where device-code is used for registration and the policy targets all resources'
+      source_url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows
+      saved_body: work/2026-11-05T0255Z-intel/bodies/fu2-msl-ca-authflows-concept.md
+      passage: If your organization currently uses Device Code Flow for device registration purposes, and you have an authentication flows policy targeting **all resources**, you need to exempt the Device Registration Resource from the scope of your Conditional Access policy to avoid impact.
+      grep_F_verified: true
+      passage_plain: If your organization currently uses Device Code Flow for device registration purposes, and you have an authentication flows policy targeting all resources, you need to exempt the Device Registration Resource from the scope of your Conditional Access policy to avoid impact.
+    lure_and_sender_pattern_behavior_only: Mail that appears to come from a company or a known contact, inviting the reader to open an invoice, a document or to verify information through a link (C5, C6). The link leads to a page on a workers.dev subdomain (Cloudflare Workers hosting, per C20) whose first label combines a company-style name with a portal word and whose second label starts with a cloud-storage word plus an identifier (C8); the notice says other addresses can be used (C12). The page then has the reader type a code on the genuine Microsoft authentication page (C9).
+    corroboration_search:
+      ncsc_security_hub: '`ncsc-csh recent 30` on 2026-11-05: newest post 2026-11-03T15:47Z; no post about device-code, Microsoft 365 or phishing.'
+      websearch: 'Five further WebSearches in German and French this run (BACS/NCSC; OFCS and canton queries; Waadt; other Romandie cantons) plus the four of the earlier run: no Swiss corroboration, no other canton, no Swiss ICT outlet, no Microsoft statement. Results were generic device-code coverage from 2025-2026 (vendor and press), none dated November 2026 and none naming Switzerland.'
+      conclusion: The Vaud notice stands alone (single source, first-party cantonal authority).
+    microsoft_documentation:
+      url: https://learn.microsoft.com/en-us/entra/identity/conditional-access/policy-block-authentication-flows
+      page_title: Block authentication flows with Conditional Access policy
+      exact_wording_of_the_lever: 'Microsoft does not prescribe a policy name. The page''s steps use the Conditional Access condition ''Authentication Flows'' (Configure = Yes, select ''Device code flow'') with grant control ''Block access'', and say to set ''Enable policy'' to ''Report-only'' first and then switch it on (C23-C26). Microsoft Entra admin center path as written: Entra ID > Conditional Access > Policies > New policy.'
+      companion_page: https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows (concept page; title 'Authentication flows as a condition in Conditional Access policy')
+      details_the_store_does_not_yet_carry:
+      - Report-only first, and filtering sign-in logs by the 'authentication protocol' filter to find legitimate device-code use before blocking (C27, C31).
+      - 'Protocol tracking: the tracked state survives token refreshes, so a later sign-in in the same session can be blocked by an authentication-flows policy; the sign-in log property ''original transfer method'' shows it (C32, C33); error code AADSTS530036 appears in the concept page''s troubleshooting text.'
+      - Device Registration Service exclusion when device-code is used for registration (C34).
+      - Microsoft's stated rationale and legitimate use (input-constrained shared devices, signage) (C29, C30).
+    existing_entries:
+    - id: 2026-05-23/fbi-psa260521-kali365-oauth-device-code-phaas-bypasses-m365
+      already_carries:
+      - 'CA lever: block user-interactive device-code flow through Conditional Access''s `Authentication flows` condition (block / require compliant device), plus FIDO2 for high-value accounts and a review of OAuth app consents; claims public-sector tenants often leave device-code open for legacy device enrolment (the store''s own statement).'
+      - 'Telemetry: Entra sign-in logs showing `authenticationProtocol = deviceCode` events (alert on unfamiliar device names or geographies, and on sign-in activity right after a device-code event from another IP) and `Revoke-MgUserSignInSession` to clear a refresh token. It carries no protocol-tracking, `Original transfer method`, AADSTS530036, report-only rollout or Device Registration Service exclusion detail, no Microsoft Learn link, and no Exposure/Triage lines (legacy migrated shape).'
+    - id: 2026-10-23/m365-token-spray-replay-rogue-entra-devices-mfa-wipe
+      already_carries:
+      - Treats device-code phishing only as one of three token sources feeding a hosting-range token-replay campaign; its device-code lever is the single clause 'restrict the device-code flow with authentication-flow policies' plus 'or where the device-code flow is open' in Exposure.
+      - Its sign-in telemetry is replay-specific (OAuth2:Token and Cmsi:Cmsi from hosting infrastructure with Office/Authentication Broker clients and a `node` user agent, AADSTS53003 after-authentication blocks, DESKTOP-plus-eight-hex device names, MFA wipes, short-named inbox rules) and its post-compromise guidance is revoke sessions because a reset leaves a roughly 90-minute token, devices, MFA methods and rules. The new entry should not restate that persistence audit; link it through references[].
+    existing_entries_additional_note: 'Also relevant, not asked: entries/2026-07-10/m365-conditional-access-gaps-railway-lshiy-campaigns.md already carries the tenant-wide block-or-restrict lever and a hunt for device-code completions not tied to a genuine input-constrained device (its actions[] lines).'
+    contradicts_or_unsupported_in_earlier_findings:
+    - 'Supported: campaign running now and several organisations affected (C4); lure types (C6); sender pretext (C5); device-code mechanism (C9, C10); no actor, kit, count or sector named; behavioural-only advice (C11-C16).'
+    - 'Not supported by the notice: ''Cloudflare Workers''. The notice says only the suffix workers.dev; the Cloudflare attribution rests on Cloudflare''s own documentation (C20). Say ''workers.dev (Cloudflare Workers) subdomains'' only with that qualification.'
+    - 'Slightly loose: the earlier summary calls the pattern ''a company-style label with a portal and cloud-storage wording''; the template shows the portal word attached to the first label and the cloud-storage word with an identifier in the second (C8).'
+    - 'Issuer: the earlier text says ''canton of Vaud''s cybersecurity notice''. The notice itself names no office (C17-C19 come from the landing page). Use ''canton of Vaud''.'
+    - 'Earlier extended_notes: the Conditional Access lever, sign-in telemetry, post-compromise revocation and benign-lookalike text come from the store''s existing entries and Microsoft Learn, not from the notice. Microsoft Learn (C21-C34) is now fetched and can be cited for the lever.'
+    - The notice's last instruction covers both 'entered a code' and 'approved an authentication request' (C16); do not narrow it to code entry.
+    observable_behaviors_stated:
+    - 'Mail: messages that appear to come from a company or known contact with an invoice, document or verification link (C5, C6).'
+    - 'Web: a link to a workers.dev subdomain page of the structure in C8 (proxy, DNS or mail-link telemetry would carry it; the notice names no sensor).'
+    - 'Identity: the user types a code on the genuine Microsoft authentication page, or approves an authentication request (C9, C16); the notice names no log. Microsoft Learn names the sign-in log filter ''authentication protocol'' and the ''original transfer method'' property (C31, C33).'
+    benign_lookalike_discriminator: 'Not given by the notice. Supported by Microsoft Learn (C29, C27): device-code sign-in is legitimately used for devices without local input (shared devices, signage, Android conference-room devices, legacy tooling), so a device-code sign-in for a user with no such device, shortly after a mailed link, is the case that stands out. That pairing combines the notice with Microsoft''s documentation; neither source states it as a discriminator.'
