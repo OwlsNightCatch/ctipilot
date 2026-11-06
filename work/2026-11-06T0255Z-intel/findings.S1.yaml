@@ -1,0 +1,431 @@
+domain: S1
+run_id: 2026-11-06T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-06T02:58:45Z
+ended_at: 2026-11-06T03:26:36Z
+duration_seconds: 1671
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 11
+  bridge_fetches: 95
+kev_check:
+  transport: "python3 tools/fetch_source.py cisa-kev (works in-container) plus WebFetch of the CISA cybersecurity-advisories listing"
+  catalog_version: "2026.11.04"
+  date_released: "2026-11-04T20:00:05.774Z"
+  count: 1768
+  newest_dateAdded: "2026-11-04 (CVE-2024-27834, Apple multiple products, already covered by the apt29-watering-hole entry)"
+  next_newest: "2026-11-03 (CVE-2026-119977 WordPress Core), 2026-10-30 (CVE-2026-118527 and CVE-2026-111357 Ivanti Connect Secure)"
+  additions_in_window: 0
+  note: "The feed is alive and current: the CISA listing (WebFetch, 2026-11-06) shows the newest KEV alert is 'CISA Adds One Known Exploited Vulnerability to Catalog' of 2026-11-04 and no alert for 2026-11-05, so a zero-addition window is real, not a dead feed."
+  ransomware_flag_flips: "none new in window. Of the CVEs covered in prior_coverage only CVE-2026-59310 (VMware, VMSA-2026-0006 entry, KEV since 2026-08-18) and CVE-2025-8088 (WinRAR, mdaemon-clamav entry, KEV since 2025-08-12) carry knownRansomwareCampaignUse=Known, both long standing."
+items:
+  - title: "OpenSSH 10.6p2 fixes CVE-2026-123158 ('*sshole'): on Linux with musl libc and no PAM (Alpine, OpenWrt), any 257 to 1,024 byte password logs in to accounts whose shadow hash is '*'; NCSC Switzerland issued an advisory"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13155", publisher: "NCSC Switzerland (Cyber Security Hub post 13155, '[Advisory] OpenSSH: Password Authentication Bypass')", date: "2026-11-05", role: "primary" }
+      - { url: "https://www.openssh.org/releasenotes.html", publisher: "OpenSSH project (Portable OpenSSH 10.6p2 release notes)", date: "2026-11-05", role: "primary" }
+      - { url: "https://github.com/openssh/openssh-portable/commit/4353fdc43ef646c43a8dda7025cc1a898caf1482", publisher: "OpenSSH (commit 'avoid password authn bypass')", date: "2026-11-05", role: "primary" }
+      - { url: "https://sshhole.com/", publisher: "sshhole.com (discoverer write-up; OpenSSH credits Özgün Kültekin of Wakefield)", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://www.ox.security/blog/openssh-authentication-bypass-cve-2026-123158/", publisher: "OX Security (blog, read through the full-text RSS feed https://www.ox.security/feed/ because the page itself answers 403)", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://www.heise.de/en/news/OpenSSH-and-Alpine-Linux-warn-of-severe-but-niche-bug-11513360.html", publisher: "heise online", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/05/3", publisher: "oss-security (Jan Schaumann, independent summary)", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://github.com/leonjza/sshhole-lab", publisher: "leonjza/sshhole-lab (public reproduction lab, linked from the CVE record)", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13155 (python3 tools/fetch_source.py ncsc-csh recent 25, post 13155 created 2026-11-05T12:42Z) → primary: OpenSSH release notes, URL https://www.openssh.org/releasenotes.html → pivot: heise, URL https://www.heise.de/en/news/OpenSSH-and-Alpine-Linux-warn-of-severe-but-niche-bug-11513360.html → pivot: discoverer write-up, URL https://sshhole.com/ → pivot: OX Security feed, URL https://www.ox.security/feed/ (item 'OpenSSH Password Authentication Bypass on Alpine Linux (*sshole) – CVE-2026-123158') → CVE identifier checked against the MITRE CVE record API (cveawg.mitre.org) and the NVD API 2.0, not cited"
+    summary: |
+      OpenSSH released Portable 10.6p2 on 2026-11-05 as a critical workaround for a password-authentication bypass that affects Linux systems running sshd on musl libc with PAM disabled; the project states it considers the root cause to lie outside sshd. The CVE record (CVE-2026-123158, MITRE as CNA, published 2026-11-05, CVSS 3.1 8.1 with AV:N/AC:H, CWE-394) says any password between 256 and 1,024 characters succeeds for some account configurations; OX Security gives 257 to 1,024 bytes. Mechanism as described by the discoverer and OX: musl's crypt() refuses inputs over 256 bytes and returns the string "*" on failure, "*" is also what /etc/shadow holds for an account with no usable password, and sshd (via its 2016 salt-picking code for user-enumeration resistance) ends up comparing the two equal; the OpenSSH fix rejects stored hashes shorter than a valid hash length. Prerequisites per OX Security: musl-based OpenSSH server without PAM (Alpine's openssh-server package by default, or UsePAM no), password logins enabled (default), an account whose password field is "*" (key-only users, LDAP-backed users, root on Alpine 3.16 and later) and at least one other account on the host with a real password; accounts holding "!" are not affected, nor are glibc or PAM-using systems, Dropbear or OpenBSD. OX reports that on Alpine's official AWS and Azure images the default alpine user is such an account and can run doas without a password, so the bypass chains to root there. NCSC Switzerland lists Alpine, KISS, Sabotage, OpenWrt and Morpheus Linux as examples and rates exploitation status unknown; no source reports attacks, but the discoverer's write-up and at least one public lab (sshhole-lab, linked from the CVE record) make reproduction trivial, and CISA's ADP entry in the NVD record carries SSVC exploitation "poc". Temporary mitigation: PasswordAuthentication no plus an sshd restart. Alpine shipped fixed packages for every branch back to 3.16 according to OX Security's table (edge 10.6_p2-r0, 3.24 10.3_p1-r2, 3.23 10.2_p1-r1, 3.22 10.0_p1-r11, 3.21 9.9_p2-r1, 3.20 9.7_p1-r6, 3.19 9.6_p1-r3, 3.18 9.3_p2-r4, 3.17 9.1_p1-r7, 3.16 9.0_p1-r6; Alpine's own tracker was not fetched). heise notes other distributions and OpenSSH download servers still ship 10.6p1. OpenSSH says it is now releasing more often because AI-assisted rediscovery of such bugs by adversaries is likely.
+    region_nexus: "global; NCSC Switzerland published its own advisory (Security Hub post 13155) the day of release, so home-region authority nexus is direct; Alpine is the default base image of many container workloads, so Swiss cantonal and federal container estates and OpenWrt-based edge devices are the realistic exposure"
+    primary_sector_nexus: "indirect (musl-based containers, appliances and routers in public-sector estates; no public-sector incident reported)"
+    sector: "public-sector"
+    cves: [CVE-2026-123158]
+    techniques: [T1190, T1021.004]
+    affected_products: ["OpenSSH", "Alpine Linux", "OpenWrt"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:openssh", type: product, name: "OpenSSH", aliases: ["Portable OpenSSH", "OpenSSH Portable"], summary: "OpenBSD project's SSH implementation; Portable OpenSSH 10.6p2 (2026-11-05) fixes CVE-2026-123158, a password-authentication bypass on musl-libc Linux without PAM (OpenSSH release notes)." }
+      - { key: "product:alpine-linux", type: product, name: "Alpine Linux", aliases: ["Alpine"], summary: "musl-libc based Linux distribution common in containers and cloud images; default OpenSSH server build runs without PAM and is the named platform for CVE-2026-123158 (OpenSSH release notes, OX Security)." }
+      - { key: "tool:sshole", type: tool, name: "*sshole", aliases: ["sshhole", "sshole"], summary: "Name given by its discoverer to the OpenSSH-on-musl password-authentication bypass tracked as CVE-2026-123158 (sshhole.com, 2026-11-05)." }
+    relation_suggestions:
+      - { subject: "tool:sshole", object: "product:openssh", basis: "sshhole.com and the OpenSSH 10.6p2 release notes describe the bypass as exploitable through sshd, with the root cause in musl's crypt() behaviour (OpenSSH, 2026-11-05)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows remote, unauthenticated attackers to bypass SSH password authentication over the network and gain unauthorized system access."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13155"
+      - quote: "Developers expedited the release because AI-assisted rediscovery by malicious actors is considered likely."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13155"
+      - quote: "OpenSSH (Portable) on Linux systems using musl libc with PAM disabled"
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13155"
+      - quote: "This bypass affects some configurations and runtime configurations. We do not consider the root cause to be within OpenSSH but we are well equipped to avoid it."
+        attribution: "OpenSSH (commit message)"
+        source_url: "https://github.com/openssh/openssh-portable/commit/4353fdc43ef646c43a8dda7025cc1a898caf1482"
+      - quote: "The vulnerability allows an attacker to authenticate to certain password-disabled accounts using an arbitrary password between 257 and 1,024 bytes long."
+        attribution: "OX Security"
+        source_url: "https://www.ox.security/blog/openssh-authentication-bypass-cve-2026-123158/"
+      - quote: "On affected Alpine cloud images, successful authentication to a default user with passwordless doas privileges can allow an attacker to escalate to root."
+        attribution: "OX Security"
+        source_url: "https://www.ox.security/blog/openssh-authentication-bypass-cve-2026-123158/"
+      - quote: "openssh on musl linux has been letting people into password-less accounts since 2016."
+        attribution: "sshhole.com"
+        source_url: "https://sshhole.com/"
+    extended_notes: |
+      Exposure check: read the sshd build (musl vs glibc: `ldd $(which sshd)` or the distro), UsePAM, PasswordAuthentication and the shadow password field of every account (a literal "*" is the trigger; "!" is not). Hardening lever: PasswordAuthentication no, or the 10.6p2 / distro package. Detection concept: sshd auth logs for "Accepted password" for an account that has no usable password (key-only or locked service accounts), particularly right after an unusually long password attempt, and first-ever password logins for root or a default cloud user; the long password itself is not logged by sshd, so correlate on the accepted-password event and the account class. Triage: legitimate password logins come from accounts with a real hash; an accepted password for a "*" account is anomalous by construction. Post-patch: no persistence is implied by the flaw itself, but any host that accepted password logins for key-only accounts before patching should be reviewed for new authorized_keys entries and doas/sudo use by the default cloud user. Related leads seen in the oss-security thread of the day: zlib 1.4 security release and a Go pre-announcement (separate items).
+  - title: "FreeSWITCH CVE-2026-116779: one inbound SIP MESSAGE selects the 'api' chat proto and runs FreeSWITCH API commands (OS commands, Lua); the vendor advisory says exploitation has been observed in the wild; fixed in 1.11.3, BSI relayed it on 2026-11-05"
+    sources:
+      - { url: "https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p", publisher: "SignalWire / FreeSWITCH (GitHub security advisory GHSA-mg63-h38w-8p9p)", date: "2026-10-28", role: "primary" }
+      - { url: "https://github.com/signalwire/freeswitch/releases/tag/v1.11.3", publisher: "SignalWire / FreeSWITCH (v1.11.3 release notes)", date: "2026-10-28", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4364", publisher: "BSI CERT-Bund (WID-SEC-2026-4364, rated kritisch)", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://securityonline.info/freeswitch-vulnerability-cve-2026-116779-exploited/", publisher: "Daily CyberSecurity (securityonline.info)", date: "2026-10-29", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4364 (bsi-rss feed item '[NEU] [kritisch] SignalWire FreeSWITCH: Schwachstelle ermöglicht Codeausführung', read with bsi-csaf WID-SEC-2026-4364) → primary: FreeSWITCH GHSA, URL https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p (from the CSAF references) → pivot: v1.11.3 release, URL https://github.com/signalwire/freeswitch/releases/tag/v1.11.3 → WebSearch (\"FreeSWITCH CVE-2026-116779 SIP MESSAGE api chat proto command execution exploited in the wild\") → securityonline, URL https://securityonline.info/freeswitch-vulnerability-cve-2026-116779-exploited/"
+    summary: |
+      SignalWire's advisory GHSA-mg63-h38w-8p9p (published 2026-10-28; the store never saw it, BSI relayed it as a new critical advisory on 2026-11-05) describes CVE-2026-116779 (CVSS 3.1 vector AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, 9.8): sofia_presence_handle_sip_i_message() splits the To user of an inbound SIP MESSAGE on "+", treats the left half as a chat proto name and dispatches to the matching chat interface; mod_dptools registers an "api" chat interface that hands its address to switch_api_execute(), so a peer that can deliver a MESSAGE to a SIP profile chooses which FreeSWITCH API command the server runs. Impact: command execution with the privileges of the FreeSWITCH process, disclosure of configuration and credentials and full call control; where mod_lua is loaded (stock) inline Lua is a second sink. The advisory states "Exploitation of this path has been observed in the wild" and names no actor, victim or scale; the claim is the vendor's own and is not independently corroborated, the flaw is not in CISA's KEV catalogue. Prerequisites: any SIP profile that accepts inbound MESSAGE, which is the default (stock conf/vanilla enables chat on the internal and external profiles; the inbound ACL does not cover MESSAGE); where MESSAGE authentication is enforced (default from 1.10.7) any one account on the profile suffices, and installations still carrying the sample directory user "default" with no password need no account at all. Affected: 1.11.2 and earlier; fixed in 1.11.3 (tagged 2026-08-28), which adds a per-profile enable-chat-api-proto parameter that is off by default and answers a MESSAGE selecting the proto with 403 and a log line. Workarounds: enable-chat=false on every profile that does not need inbound SIP chat; auth-messages alone and disable_system_api_commands do not close the path. The same release also fixes CVE-2026-116785 (mod_xml_rpc WebSocket frame-length heap overflow, 9.1, off by default, RCE not demonstrated) and CVE-2026-116790 (forged ICE/STUN checks never verified, 9.1, fixed in 1.11.2, opt-in ice_verify_message_integrity), per securityonline's reading of the advisories.
+    region_nexus: "global; FreeSWITCH underlies PBX, contact-centre and WebRTC platforms, so any Swiss public body running an open-source or vendor-embedded FreeSWITCH telephony stack is in scope; no Swiss-specific report"
+    primary_sector_nexus: "indirect (telephony and contact-centre platforms in public administrations and emergency-service call handling; no sector-specific reporting)"
+    sector: "public-sector"
+    cves: [CVE-2026-116779, CVE-2026-116785, CVE-2026-116790]
+    techniques: [T1190, T1059]
+    affected_products: ["FreeSWITCH"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:freeswitch", type: product, name: "FreeSWITCH", aliases: ["SignalWire FreeSWITCH"], summary: "Open-source telephony platform (PBX, call-centre, WebRTC) maintained by SignalWire; v1.11.3 fixes CVE-2026-116779, a SIP MESSAGE to API command-execution flaw the vendor says is exploited (GHSA-mg63-h38w-8p9p)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Exploitation of this path has been observed in the wild."
+        attribution: "SignalWire / FreeSWITCH (GHSA-mg63-h38w-8p9p)"
+        source_url: "https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p"
+      - quote: "A peer that can deliver a MESSAGE to a profile therefore selects which FreeSWITCH API command the server runs."
+        attribution: "SignalWire / FreeSWITCH (GHSA-mg63-h38w-8p9p)"
+        source_url: "https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p"
+      - quote: "Command execution with the privileges of the FreeSWITCH process: arbitrary OS commands, disclosure of configuration and credentials, and full call control."
+        attribution: "SignalWire / FreeSWITCH (GHSA-mg63-h38w-8p9p)"
+        source_url: "https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p"
+      - quote: "This is an important release containing critical security fixes and stability improvements."
+        attribution: "SignalWire / FreeSWITCH (v1.11.3 release notes)"
+        source_url: "https://github.com/signalwire/freeswitch/releases/tag/v1.11.3"
+    extended_notes: |
+      Verification note: the exploitation claim, the CVSS vector and the affected/fixed range are all read from the vendor GHSA; the securityonline rewrite and BSI add no independent exploitation evidence, so single vendor-sourced exploitation claim, not a corroborated one. Detection concept: SIP signalling logs (and PCAPs at the session border controller) for MESSAGE requests whose To user contains a "+" with a left half of "api" (case-insensitive), FreeSWITCH logs of API commands executed from chat, 403 responses after upgrading, and child processes (shell, curl, wget) spawned by the freeswitch process. Triage: legitimate SIP chat uses other proto names and plain user parts; an "api+" selector has no benign use. Hardening: enable-chat=false on profiles without a SIP chat need, delete directory users without password or a1-hash (stock conf/vanilla ships `default` and a Skinny example), keep SIP profiles off the internet or behind an SBC, upgrade to 1.11.3 and leave enable-chat-api-proto unset. Post-patch compromise check: review the FreeSWITCH config and credentials for exfiltration exposure (rotate SIP trunk and directory credentials) and for new Lua scripts, dialplan or module-load changes if exposure predates 1.11.3. Recency note for the composer: vendor advisory 2026-10-28, first in-window sighting is BSI WID-SEC-2026-4364 (published 2026-11-04T23:00Z); no CERT-FR, NCSC-NL or NCSC.ch advisory seen.
+  - title: "APT CVE-2026-109518: an on-path attacker can use hard-link reuse across redirect-and-retry downloads to make apt install an unverified package and get root code execution; fixed in Debian trixie apt 3.0.4 and Ubuntu USN-8996-1"
+    sources:
+      - { url: "https://ubuntu.com/security/notices/USN-8996-1", publisher: "Canonical (USN-8996-1)", date: "2026-11-04", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-109518", publisher: "Debian Security Tracker (CVE-2026-109518; DSA-6607-1, DLA-4880-1)", date: "2026-11-04", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-jw32-37xr-xwfw", publisher: "GitHub Advisory Database", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4341", publisher: "BSI CERT-Bund (WID-SEC-2026-4341, rated hoch)", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4341 (bsi-rss feed item '[NEU] [hoch] apt: Schwachstelle ermöglicht Ausführen von beliebigem Programmcode mit Administratorrechten', read with bsi-csaf WID-SEC-2026-4341) → primary: Ubuntu USN-8996-1, URL https://ubuntu.com/security/notices/USN-8996-1 (CSAF reference) → primary: Debian tracker, URL https://security-tracker.debian.org/tracker/CVE-2026-109518 → pivot: GitHub advisory, URL https://github.com/advisories/GHSA-jw32-37xr-xwfw"
+    summary: |
+      Max Justicz found that APT mishandles hard links when it follows an HTTP redirect and retries a package download (Canonical's USN-8996-1, 2026-11-04). Debian's CVE description: an on-path attacker who can manipulate the HTTP traffic between an APT client and an archive server (including a malicious mirror or proxy) during a package install can trick the client into installing an attacker-controlled unverified package and achieve remote code execution with root privileges; it needs the client to follow redirects and retry, so a non-zero Acquire::Retries, which is 3 by default from Debian 12 (bookworm) and Ubuntu 22.04 LTS, and older releases are unaffected in a default configuration. Fixed builds: Debian trixie apt 3.0.4 (DSA-6607-1); Ubuntu apt 3.3.3ubuntu0.1 (26.10), 3.2.1ubuntu0.1 (26.04 LTS), 2.8.4ubuntu0.1 (24.04), 2.4.15ubuntu0.1 (22.04), and ESM builds 2.0.12+esm1 (20.04), 1.6.19+esm1 (18.04), 1.2.36+esm1 (16.04) and 1.0.1ubuntu2.24+esm4 (14.04); Debian lists DLA-4880-1 for the LTS line; the bookworm fixed version was not read. No source reports exploitation or a public exploit; GitHub rates it High, FIRST EPSS is 0.0093 on 2026-11-05. The realistic attack position is a compromised or hostile mirror, proxy or network path on HTTP (non-TLS) repositories, so hardened fleets that use HTTPS mirrors from a trusted internal proxy are far less exposed.
+    region_nexus: "global; any Debian or Ubuntu estate (servers, containers, CI runners) in Swiss public administrations"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-109518]
+    techniques: [T1557, T1195.002]
+    affected_products: ["APT", "Debian", "Ubuntu"]
+    entity_keys: ["product:ubuntu"]
+    new_entities:
+      - { key: "product:apt", type: product, name: "APT", aliases: ["Advanced Package Tool", "apt"], summary: "Debian/Ubuntu package-manager front end; CVE-2026-109518 (2026-11-04) lets an on-path attacker get root code execution by exploiting hard-link reuse on redirected download retries (Canonical USN-8996-1, Debian)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "root RCE in the ubiquitous package manager, but it needs an on-path or malicious-mirror position and a non-TLS repository path; no exploitation or public exploit reported; patch is an ordinary package update"
+    evidence:
+      - quote: "an on-path attacker who can manipulate the HTTP traffic (including a malicious mirror or proxy) between an APT client and an archive server triggered by a package install can trick the client into installing an attacker-controlled unverified package and achieve remote code execution with root privileges."
+        attribution: "Debian Security Tracker (CVE-2026-109518)"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-109518"
+      - quote: "the value 3 is the default starting with Debian 12 (bookworm) and Ubuntu 22.04 LTS (Jammy Jellyfish)"
+        attribution: "Debian Security Tracker (CVE-2026-109518)"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-109518"
+      - quote: "Max Justicz discovered that APT incorrectly handled hard links when"
+        attribution: "Canonical (USN-8996-1)"
+        source_url: "https://ubuntu.com/security/notices/USN-8996-1"
+    extended_notes: |
+      Detection concept: package-manager logs (apt history.log, /var/log/apt/term.log) and proxy or mirror access logs showing a redirect (3xx) followed by a retried download of the same .deb, an install of a package whose hash does not match the Release metadata, or a package install that spawns unexpected child processes; egress logs showing apt reaching non-corporate mirrors over plain HTTP. Hardening: HTTPS repositories through a trusted internal mirror, no unauthenticated forward proxy in the path, Acquire::Retries tuned only if the operational cost is acceptable (the flaw needs a non-zero value), apt upgraded to the fixed builds.
+  - title: "Apache OFBiz 24.09.08 fixes 46 CVEs including three unauthenticated RCEs (CVE-2026-68524, CVE-2026-83542, CVE-2026-73578) and an unauthenticated-admin hard-coded JWT key (CVE-2026-105330); all earlier versions are affected"
+    sources:
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/04/9", publisher: "Apache OFBiz project (oss-security announcement 'Apache OFBiz: CVE Announcements', Jacopo Cappellato)", date: "2026-11-04", role: "primary" }
+      - { url: "https://ofbiz.apache.org/security.html", publisher: "Apache OFBiz (security page, per-CVE fixed-in table)", date: "2026-11-05", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4357", publisher: "BSI CERT-Bund (WID-SEC-2026-4357, rated hoch)", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4357 (bsi-rss feed item '[NEU] [hoch] Apache OFBiz: Mehrere Schwachstellen', read with bsi-csaf WID-SEC-2026-4357, 46 CVEs) → primary: oss-security post, URL https://www.openwall.com/lists/oss-security/2026/11/04/9 (CSAF reference) → primary: OFBiz security page, URL https://ofbiz.apache.org/security.html"
+    summary: |
+      The Apache OFBiz project announced on oss-security on 2026-11-04 (CET evening) a batch of 46 CVEs fixed in 24.09.08, "including some critical issues"; affected: all versions prior to 24.09.08, and the project's security page lists each CVE as affecting releases before 24.09.08 with the fixing pull request. The unauthenticated, code-execution-relevant rows are CVE-2026-68524 (pre-authentication RCE via attacker-controlled screen-definition loading), CVE-2026-83542 (unauthenticated RCE via login-page widget injection), CVE-2026-73578 (unauthenticated saved-view authorization bypass with RCE impact) and CVE-2026-105330 (hard-coded cryptographic key in JWT token authentication enables unauthenticated administrative access); further unauthenticated rows cover authorization-bypass and HR/organisation data disclosure (CVE-2026-73577, -73580, -83538), pre-auth externalLoginKey reuse (CVE-2026-82907), a password-reset algorithm flaw allowing account takeover (CVE-2026-109928) and REST authentication bypassed by default when the auth attribute is omitted (CVE-2026-92887); authenticated rows include Groovy-sandbox and widget expression-injection RCEs and many missing-authorization defects in order, payment and catalog services. The announcement gives no CVSS scores, no exploitation statement and no workaround beyond upgrading to 24.09.08; no public exploit was seen. OFBiz is a CISA-KEV regular and the shape (login page, screen definitions, JWT) is internet-reachable by design, but exposure in Swiss public bodies is uncertain.
+    region_nexus: "global; relevant only to administrations or suppliers running OFBiz-based ERP, e-commerce or order-management back ends"
+    primary_sector_nexus: "indirect (niche in the public sector)"
+    sector: "public-sector"
+    cves: [CVE-2026-68524, CVE-2026-83542, CVE-2026-73578, CVE-2026-105330, CVE-2026-92887, CVE-2026-82907, CVE-2026-109928]
+    techniques: [T1190, T1059, T1078]
+    affected_products: ["Apache OFBiz"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:apache-ofbiz", type: product, name: "Apache OFBiz", aliases: ["OFBiz"], summary: "Open-source ERP, e-commerce and order-management framework; 24.09.08 (2026-11-04) fixes 46 CVEs including several unauthenticated RCEs (Apache OFBiz announcement)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "three unauthenticated RCEs and an unauthenticated-admin JWT key in one release, but OFBiz is niche in Swiss public-sector estates and no exploitation, scores or public exploit are reported; first-hand source is the project's own announcement (single-source carve-out does not formally apply, so main agent may prefer BSI as the second source)"
+    evidence:
+      - quote: "Affected versions: All versions prior to 24.09.08."
+        attribution: "Apache OFBiz (oss-security announcement)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/04/9"
+      - quote: "CVE-2026-83542: Unauthenticated RCE via login-page widget injection"
+        attribution: "Apache OFBiz (oss-security announcement)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/04/9"
+      - quote: "CVE-2026-73578: Unauthenticated saved-view authorization bypass with RCE impact"
+        attribution: "Apache OFBiz (oss-security announcement)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/04/9"
+      - quote: "CVE-2026-105330: Use of Hard-coded Cryptographic Key in JWT Token"
+        attribution: "Apache OFBiz (oss-security announcement)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/04/9"
+    extended_notes: |
+      Detection concept: web access logs of the OFBiz webapps (control servlet requests to login and view endpoints without a session, requests carrying a JWT for an administrative user without a prior login), Groovy or FreeMarker compilation errors in the OFBiz logs, new child processes of the Java process. Hardening: keep OFBiz management and webtools off the internet, upgrade to 24.09.08, restrict REST endpoints behind an authenticating proxy; rotate any JWT signing material after upgrading because CVE-2026-105330 implies the old key is known.
+  - title: "zlib 1.4 (2026-11-04) fixes a batch of memory-safety bugs including a non-blocking gzwrite() buffer overflow (CVE-2026-85091) and an inflateGetDictionary() write up to 8 MB past the buffer"
+    sources:
+      - { url: "https://github.com/madler/zlib/releases/tag/v1.4", publisher: "zlib project (zlib 1.4 release notes)", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/05/10", publisher: "oss-security (Alan Coopersmith, 'zlib 1.4 released with security fixes')", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: oss-security day index (not a slice record; found while checking the OpenSSH thread), URL https://www.openwall.com/lists/oss-security/2026/11/05/ (extract; message 10, 'zlib 1.4 released with security fixes') → primary: zlib release, URL https://github.com/madler/zlib/releases/tag/v1.4"
+    summary: |
+      zlib 1.4 (release notes dated 2026-11-04, announced to oss-security 2026-11-05) lists these security fixes: a buffer overflow in non-blocking gzwrite() (CVE-2026-85091, reported by mat-mo and Trail of Bits TOB-ZLIB-003); inflateGetDictionary() writing up to 8 MB past the caller's 32K buffer after a zlib header with an invalid window size followed by inflateReset() or inflateSync() (affects 1.3.1 and 1.3.2); an inflateSync() one-byte window that could later be overrun; an inflatePrime() read before the start of the input; repeated deflatePrime() calls writing past the pending buffer; inflateBack() missing a too-far-back distance check and copying uninitialized memory; gzseek() writing uninitialized memory (found by Claude Opus 5.5); deflateResetKeep() reading outside the window; and in minizip a double free, a NULL dereference, Zip64 parsing differences that let crafted archives show different entries than other readers, and miniunz creating directories outside the extraction directory (and on Windows writing files anywhere). CVE-2026-4738 (contrib/infback9) is rated critical in the advisory database but the release notes say the rating overstates it. No exploitation or public exploit is reported; reachability depends on whether an application calls the affected APIs with attacker-influenced input (most inflate() users do not use inflateGetDictionary or the gzwrite non-blocking path). Distribution and vendor backports will follow; the release also changes z_off_t and the MSVC library names, so rebuilds need care.
+    region_nexus: "global; zlib is embedded in nearly every operating system, appliance firmware and language runtime, so this is a dependency to track rather than a product to patch directly"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-85091, CVE-2026-4738]
+    techniques: [T1190, T1203]
+    affected_products: ["zlib", "minizip"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "ubiquitous library with several memory-safety fixes, but no exploitation, no demonstrated reachable attack and no named distro fix yet; probably an awareness line at most"
+    evidence:
+      - quote: "could write up to 8 MB past the caller's 32K buffer (Theorem THM-ZLIB-001)."
+        attribution: "zlib project (1.4 release notes)"
+        source_url: "https://github.com/madler/zlib/releases/tag/v1.4"
+      - quote: "Affects 1.3.1 and 1.3.2."
+        attribution: "zlib project (1.4 release notes)"
+        source_url: "https://github.com/madler/zlib/releases/tag/v1.4"
+      - quote: "so the critical rating overstates it"
+        attribution: "zlib project (1.4 release notes)"
+        source_url: "https://github.com/madler/zlib/releases/tag/v1.4"
+    extended_notes: |
+      Exposure check: which applications statically link zlib or bundle their own copy (minizip and miniunz users in archive-handling tools are the likeliest attack surface); distribution package versions will show 1.3.x until a backport lands. No detection concept beyond crash telemetry in archive-processing services.
+  - title: "Barracuda ESG CVE-2026-116606 / CVE-2026-111560: watchTowr publishes the full unauthenticated chain (failed password change falls through, crafted Spam_Config backup restore with a hard-coded checksum secret, timezone command injection as root) and a public detection artefact generator"
+    sources:
+      - { url: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/", publisher: "watchTowr Labs (Sina Kheirkhah)", date: "2026-11-05", role: "primary" }
+      - { url: "https://github.com/watchtowrlabs/watchTowr-vs-Barracuda-RCE-CVE-2026-116606-CVE-2026-111560", publisher: "watchTowr Labs (GitHub: Detection Artifact Generator)", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: watchtowr, URL https://labs.watchtowr.com/rss/ (python3 tools/fetch_source.py feed https://labs.watchtowr.com/rss/ 10, newest item published 2026-11-05T21:19:58Z) → primary: watchTowr post, URL https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/ (extract) → pivot: GitHub repo linked from the post, URL https://github.com/watchtowrlabs/watchTowr-vs-Barracuda-RCE-CVE-2026-116606-CVE-2026-111560"
+    summary: |
+      watchTowr Labs diffed Barracuda ESG 9.4.0.027 (vulnerable) against 9.4.0.029 (fixed) and published the exploit chain on 2026-11-05; its GitHub tool ('Detection Artifact Generator') was created 2026-11-03 and runs a command on the target. CVE-2026-116606: in Index.pm, when a password-change attempt fails with ERROR_PASSWD_CHANGE the pre-patch code sets a JSON message but returns the low-privilege login-screen $userrole instead of stopping, so the request continues into response() and its handlers (the vendor patch comment reads 'Pre-authentication authorization bypass permits arbitrary Spam_Config restore'). A single unauthenticated POST to /cgi-mod/index.cgi with new_password, retype_password (mismatching), UPDATE_activation_code and a bayesian backup upload (pu_bayesian_upload) therefore reaches the backup-restore path; the backup's per-file integrity checksum is md5(file_bytes + a constant string + '.'), a secret that is hard-coded in the product, so an attacker can build a valid archive. CVE-2026-111560: restoring a crafted Spam_Config row sets system_timezone to a value with shell metacharacters, which finalize_restore passes unescaped to a Perl backtick sed call (Backup2.pm and fix_tz.pl), running the attacker command as root. The post claims no in-the-wild exploitation; the only mention of exploitation is the 2023 UNC4841 history for CVE-2023-2868. Delta against the published entry (2026-11-04): that entry carries Barracuda's statement that exploitation requires access to the administrative interface and rates it 'no attacks reported'; watchTowr's reproduction is one unauthenticated request against the appliance web interface's login handler, so exposure follows whether that interface is reachable, a public detection/exploitation tool now exists, and CVE-2026-111560 is demonstrably reachable pre-auth when chained (the entry types it as admin-required). FIRST EPSS on 2026-11-05: 0.0073 (CVE-2026-116606) and 0.0047 (CVE-2026-111560).
+    region_nexus: "global; Barracuda ESG is an on-prem mail gateway common in public administrations; NCSC Switzerland already advised on it (Security Hub post 13144, 2026-11-03)"
+    primary_sector_nexus: "direct if ESG appliances are in the constituency's mail path"
+    sector: "public-sector"
+    cves: [CVE-2026-116606, CVE-2026-111560]
+    techniques: [T1190, T1059.004]
+    affected_products: ["Barracuda Email Security Gateway"]
+    entity_keys: ["product:barracuda-email-security-gateway"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce"
+    evidence:
+      - quote: "Barracuda released several patch files to address CVE-2026-111560 and CVE-2026-116606."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/"
+      - quote: "# Pre-authentication authorization bypass permits"
+        attribution: "watchTowr Labs (quoting the vendor patch installer)"
+        source_url: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/"
+      - quote: "As always, we are sharing our Detection Artefact Generator so you can determine your own susceptibility and inform remediation in your own environments."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/"
+      - quote: "Detection Artifact Generator for Barracuda Email Security Gateway (ESG) Auth bypass to comomand injection (CVE-2026-116606, CVE-2026-111560)"
+        attribution: "watchTowr Labs (GitHub README)"
+        source_url: "https://github.com/watchtowrlabs/watchTowr-vs-Barracuda-RCE-CVE-2026-116606-CVE-2026-111560"
+    extended_notes: |
+      Update shape: fields to change in the entry are the exploitation prerequisites (administrative-interface wording), the CVE-2026-111560 `auth` value (pre-auth when chained), the public tooling status and the detection concept. Detection concept: web access logs of the ESG management interface for POST /cgi-mod/index.cgi that carry both new_password and retype_password with UPDATE_activation_code or a bayesian upload part from an unauthenticated session, followed by a restore and a system_timezone value containing quote, semicolon or hash characters; process telemetry for shells spawned by the Perl web stack as root. Post-patch compromise check: appliances that were reachable before 9.4.0.029 should be checked for unexpected restored Spam_Config data, changed timezone value and root-owned files or cron entries. Timing: watchTowr's post landed 2026-11-05T21:19Z, so a same-day check of Shadowserver-style exposure counts was not possible.
+  - title: "CISA, FBI, HHS, USDA and DoT joint fact sheet warns of attacks on industrial refrigeration and cold-chain controllers worldwide (authentication bypass, code injection, weak configuration); no actor or vendor named"
+    sources:
+      - { url: "https://www.cisa.gov/resources-tools/resources/us-government-partners-urge-hardening-industrial-refrigeration-and-cold-chain-monitoring-systems", publisher: "CISA with FBI, HHS, USDA, DoT (joint fact sheet)", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: cisa-advisories, URL https://www.cisa.gov/news-events/cybersecurity-advisories (WebFetch of the listing, item 2 of 10) → primary: fact sheet, URL https://www.cisa.gov/resources-tools/resources/us-government-partners-urge-hardening-industrial-refrigeration-and-cold-chain-monitoring-systems (WebFetch plus `python3 tools/fetch_source.py cisa page`; the linked PDF answers 403 on the bridge)"
+    summary: |
+      On 2026-11-05 CISA, FBI, HHS, USDA and the Department of Transportation published a fact sheet saying they are aware of malicious cyber activity targeting industrial refrigeration and cold chain monitoring systems globally, used in Healthcare and Public Health, Chemical, Food and Agriculture and Transportation Systems sectors including refrigerated transport. The threat section names electronic temperature controllers and commercial refrigeration controllers in retail grocery and cold storage facilities, exploited through authentication bypass, arbitrary code injection and weak configurations, in unpatched or internet-accessible controllers; effects listed are remotely altered settings forcing continuous heating and defrost cycles (inventory loss, fire hazard, shortened equipment life, possible indirect harm to consumers) and loss of temperature visibility ('denial-of-view'). Mitigations: remove internet exposure of controller panels, put necessary remote access behind a firewall or updated edge device, dedicated OT VLAN, replace default and weak passwords, phishing-resistant MFA where feasible, device and IP allow-listing, retire unsupported equipment, offline tested backups, logging (or traffic capture where logs are unavailable) and alerts on out-of-range setpoints. The fact sheet names no vendor, product, CVE or actor and does not reference the French supermarket incident. Delta against the published entry (2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack, updated 2026-11-05 with the ENISA/Europol call and the French blood-service case): a US-government multi-agency confirmation that the activity is global and the sector scope now explicitly includes healthcare and public-health cold chains, which the entry's EFS blood-service item makes relevant; it adds no new technical indicator.
+    region_nexus: "global (US federal agencies); the entry it updates already carries Europe and Switzerland"
+    primary_sector_nexus: "indirect (hospital, food and civil-protection cold chains; no Swiss-specific statement)"
+    sector: "healthcare"
+    cves: []
+    techniques: [T1190, T1078.001]
+    affected_products: []
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - quote: "are aware of malicious cyber activity targeting industrial refrigeration and cold chain monitoring systems globally."
+        attribution: "CISA, FBI, HHS, USDA, DoT"
+        source_url: "https://www.cisa.gov/resources-tools/resources/us-government-partners-urge-hardening-industrial-refrigeration-and-cold-chain-monitoring-systems"
+      - quote: "malicious cyber actors targeting electronic temperature controllers and commercial refrigeration controllers in retail grocery and cold storage facilities."
+        attribution: "CISA, FBI, HHS, USDA, DoT"
+        source_url: "https://www.cisa.gov/resources-tools/resources/us-government-partners-urge-hardening-industrial-refrigeration-and-cold-chain-monitoring-systems"
+      - quote: "The actors may exploit vulnerabilities or weaknesses in unpatched or internet-accessible controllers to remotely alter settings and force units into continuous heating and defrost cycles, which can cause widespread inventory loss and equipment hazards."
+        attribution: "CISA, FBI, HHS, USDA, DoT"
+        source_url: "https://www.cisa.gov/resources-tools/resources/us-government-partners-urge-hardening-industrial-refrigeration-and-cold-chain-monitoring-systems"
+    extended_notes: |
+      Fetched through WebFetch (listing and page) and the bridge's `cisa page` reader; the fact sheet PDF (…/files/2026-11/joint-factsheet-usg-partners-urge-hardening-industrial-refrigeration-cold-chain-monitoring-systems-508c.pdf) answers 403 on `pdf`, so only the HTML page was read. This is a single-source national-authority item (carve-out list includes CISA).
+  - title: "WordPress Core CVE-2026-119977: Wordfence now counts over 240,000 blocked exploit attempts (peak 2026-10-30), but no confirmed compromises and the race stays hard to win"
+    sources:
+      - { url: "https://www.wordfence.com/blog/2026/11/attackers-actively-probing-for-upgrade-window-rce-vulnerability-in-wordpress-core/", publisher: "Wordfence", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: wordfence, URL https://www.wordfence.com/feed/ (python3 tools/fetch_source.py feed https://www.wordfence.com/feed/ 15, item 2026-11-05T15:52:07Z) → primary: post, URL https://www.wordfence.com/blog/2026/11/attackers-actively-probing-for-upgrade-window-rce-vulnerability-in-wordpress-core/ (extract, served through the reader)"
+    summary: |
+      Wordfence's 2026-11-05 post on the unauthenticated upgrade-window RCE fixed in WordPress 7.1.4 reports its firewall has blocked over 240,000 exploit attempts since disclosure on 2026-10-28, starting the same day, peaking between 2026-10-29 and 2026-11-01 (over 74,000 in a single day, 2026-10-30), and concentrated in a handful of sources, with request logs showing GET requests for setup-config.php under /wp-content/upgrade/<version>/ staging paths. Wordfence cautions that the volume does not mean many sites were compromised, because the exploit needs a request to land during the short core-upgrade window and the attacker must finish before the staging directory is removed; it recommends denying PHP access under /wp-content/upgrade/ at the web server and says its free-tier rule arrives on 2026-11-27. Delta against the published entry (which already carries the CISA KEV listing and the earlier 18,500-request figure): only the 240,000 volume and the peak-day distribution; no new fixed build, no confirmed compromise, no new actor. CISA's KEV listing is dated 2026-11-03 in the CISA alert and in the existing entry; Wordfence's post says November 2, which is a one-day discrepancy in Wordfence's text.
+    region_nexus: "global; WordPress core is common on Swiss cantonal and communal web sites"
+    primary_sector_nexus: "indirect (public web sites)"
+    sector: "public-sector"
+    cves: [CVE-2026-119977]
+    techniques: [T1190]
+    affected_products: ["WordPress Core"]
+    entity_keys: ["product:wordpress-core"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-30/wordpress-core-7-1-4-unauthenticated-upgrade-window-rce-race"
+    borderline: true
+    borderline_reason: "volume figure only; the entry already carries KEV, the exploitation pattern and the hardening step, so a changelog line is optional"
+    evidence:
+      - quote: "The Wordfence Firewall has already blocked over 240,000 exploit attempts targeting this vulnerability."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/11/attackers-actively-probing-for-upgrade-window-rce-vulnerability-in-wordpress-core/"
+      - quote: "The large number of blocked requests does not mean that a large number of sites have been successfully exploited."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/11/attackers-actively-probing-for-upgrade-window-rce-vulnerability-in-wordpress-core/"
+    extended_notes: |
+      The post lists the ten most active source addresses as indicators; deliberately not carried (no IOCs).
+  - title: "Android Security Bulletin November 2026 (patch level 2026-11-05): critical Framework RCE CVE-2026-58868 without user interaction across Android 14 to 17; NCSC-NL reports no exploitation"
+    sources:
+      - { url: "https://source.android.com/docs/security/bulletin/2026/2026-11-01", publisher: "Android Open Source Project (Android Security Bulletin, November 2026)", date: "2026-11-02", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0467", publisher: "NCSC-NL (NCSC-2026-0467, Android and Samsung Mobile)", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (python3 tools/fetch_source.py ncsc-nl recent 25, item NCSC-2026-0467 of 2026-11-05T12:26Z, read with `ncsc-nl csaf NCSC-2026-0467`) → primary: AOSP bulletin, URL https://source.android.com/docs/security/bulletin/2026/2026-11-01 (CSAF reference; extract)"
+    summary: |
+      Google's November 2026 Android bulletin was published on 2026-11-02 and addresses issues at security patch levels of 2026-11-05 or later; its most severe issue is a critical Framework vulnerability that can lead to remote code execution with no additional execution privileges and no user interaction (CVE-2026-58868, RCE, Critical, Android 14, 15, 16, 16-qpr2 and 17), alongside a second Framework RCE rated High (CVE-2026-58857) and numerous High elevation-of-privilege rows; NCSC-NL's advisory of 2026-11-05 (221 CVEs across the Android and Samsung Mobile bulletins) says no reports of active exploitation are known and recommends the Google and Samsung updates. The bulletin carries no 'limited, targeted exploitation' statement and no CVSS scores (Android uses its own severity scale). The earlier store entry on the Android WAP-push crash covers a different, non-bulletin flaw. This is the November instance of a scheduled monthly release; nothing in it is exploited, publicly disclosed in detail or scored 9.0+.
+    region_nexus: "global; Android fleets (federal, cantonal and armed-forces mobile devices) are exposed until the 2026-11-05 patch level is deployed"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-58868, CVE-2026-58857]
+    techniques: [T1203]
+    affected_products: ["Google Android", "Samsung Mobile"]
+    entity_keys: ["product:google-android"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "scheduled monthly bulletin; a critical zero-interaction Framework RCE is worth an awareness line for mobile fleets, but nothing is exploited, no technical detail is public and Android carries no score; probable drop under PD-11"
+    evidence:
+      - quote: "| CVE-2026-58868 | A-486464711 | RCE | Critical | 14, 15, 16, 16-qpr2, 17 |"
+        attribution: "Android Open Source Project (November 2026 bulletin)"
+        source_url: "https://source.android.com/docs/security/bulletin/2026/2026-11-01"
+      - quote: "*Published November 2, 2026*"
+        attribution: "Android Open Source Project (November 2026 bulletin)"
+        source_url: "https://source.android.com/docs/security/bulletin/2026/2026-11-01"
+      - quote: "Er zijn op dit moment geen berichten bekend over actief misbruik van deze kwetsbaarheden."
+        attribution: "NCSC-NL (NCSC-2026-0467)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0467"
+    extended_notes: |
+      The AOSP page says source patches follow within 48 hours of publication. No detection concept (no behavior described).
+cve_table:
+  - { cve: "CVE-2026-123158", product: "OpenSSH Portable sshd on Linux with musl libc and no PAM (Alpine, OpenWrt, KISS, Sabotage, Morpheus)", cvss: "8.1 (CVSS 3.1, AV:N/AC:H, CNA MITRE)", epss: null, kev: false, exploited: false, affected: "OpenSSH Portable before 10.6p2 on musl-libc Linux without PAM (10.6p1 named by heise as the version still shipped); needs an account whose shadow hash is '*' plus one account with a real password (OX Security)", fixed: "OpenSSH Portable 10.6p2; Alpine per OX Security: edge 10.6_p2-r0, 3.24 10.3_p1-r2, 3.23 10.2_p1-r1, 3.22 10.0_p1-r11, 3.21 9.9_p2-r1, 3.20 9.7_p1-r6, 3.19 9.6_p1-r3, 3.18 9.3_p2-r4, 3.17 9.1_p1-r7, 3.16 9.0_p1-r6; temporary: PasswordAuthentication no", type: "auth-bypass", vector: "network", auth: "pre-auth", source: "https://www.openssh.org/releasenotes.html" }
+  - { cve: "CVE-2026-116779", product: "FreeSWITCH (mod_sofia SIP MESSAGE handler, mod_dptools api chat interface)", cvss: "9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, GitHub advisory)", epss: null, kev: false, exploited: true, affected: "FreeSWITCH 1.11.2 and earlier (GitHub advisory affected-versions field)", fixed: "1.11.3 (adds per-profile enable-chat-api-proto, off by default)", type: "command-injection", vector: "network", auth: "pre-auth where MESSAGE authentication is off or the passwordless sample user 'default' remains; otherwise any one SIP account", source: "https://github.com/signalwire/freeswitch/security/advisories/GHSA-mg63-h38w-8p9p" }
+  - { cve: "CVE-2026-116785", product: "FreeSWITCH mod_xml_rpc WebSocket handler", cvss: "9.1 (per securityonline reading of the advisory)", epss: null, kev: false, exploited: false, affected: "1.11.1 and earlier (securityonline)", fixed: "1.11.2 (included in 1.11.3); module and WebSocket endpoint off by default; RCE not demonstrated", type: "memory-corruption", vector: "network", auth: "pre-auth", source: "https://securityonline.info/freeswitch-vulnerability-cve-2026-116779-exploited/" }
+  - { cve: "CVE-2026-116790", product: "FreeSWITCH ICE/STUN handling (WebRTC calls)", cvss: "9.1 (per securityonline reading of the advisory)", epss: null, kev: false, exploited: false, affected: "1.11.1 and earlier (securityonline)", fixed: "1.11.2 (opt-in, off by default: ice_verify_message_integrity channel variable)", type: "auth-bypass", vector: "network", auth: "pre-auth", source: "https://securityonline.info/freeswitch-vulnerability-cve-2026-116779-exploited/" }
+  - { cve: "CVE-2026-109518", product: "APT (Debian, Ubuntu and derivatives)", cvss: "High (GitHub Advisory Database; no score read)", epss: 0.00928, kev: false, exploited: false, affected: "APT with non-zero Acquire::Retries (default 3 from Debian 12 and Ubuntu 22.04 LTS; older releases unaffected in default configuration); Debian trixie before 3.0.4 and Ubuntu apt builds before those below", fixed: "Debian trixie 3.0.4 (DSA-6607-1); Ubuntu 26.10 3.3.3ubuntu0.1, 26.04 3.2.1ubuntu0.1, 24.04 2.8.4ubuntu0.1, 22.04 2.4.15ubuntu0.1, 20.04 2.0.12+esm1, 18.04 1.6.19+esm1, 16.04 1.2.36+esm1, 14.04 1.0.1ubuntu2.24+esm4 (USN-8996-1); Debian LTS DLA-4880-1; bookworm build not read", type: "rce", vector: "on-path network (malicious mirror, proxy or MITM on HTTP)", auth: "none", source: "https://ubuntu.com/security/notices/USN-8996-1" }
+  - { cve: "CVE-2026-68524", product: "Apache OFBiz", cvss: null, epss: null, kev: false, exploited: false, affected: "all versions prior to 24.09.08", fixed: "24.09.08", type: "rce", vector: "network", auth: "pre-auth", source: "https://www.openwall.com/lists/oss-security/2026/11/04/9" }
+  - { cve: "CVE-2026-83542", product: "Apache OFBiz", cvss: null, epss: null, kev: false, exploited: false, affected: "all versions prior to 24.09.08", fixed: "24.09.08", type: "rce", vector: "network", auth: "pre-auth", source: "https://www.openwall.com/lists/oss-security/2026/11/04/9" }
+  - { cve: "CVE-2026-73578", product: "Apache OFBiz", cvss: null, epss: null, kev: false, exploited: false, affected: "all versions prior to 24.09.08", fixed: "24.09.08", type: "auth-bypass", vector: "network", auth: "pre-auth", source: "https://www.openwall.com/lists/oss-security/2026/11/04/9" }
+  - { cve: "CVE-2026-105330", product: "Apache OFBiz (JWT authentication)", cvss: null, epss: null, kev: false, exploited: false, affected: "all versions prior to 24.09.08 (project security page lists releases before 24.09.08 per CVE)", fixed: "24.09.08", type: "auth-bypass", vector: "network", auth: "pre-auth", source: "https://www.openwall.com/lists/oss-security/2026/11/04/9" }
+  - { cve: "CVE-2026-85091", product: "zlib (non-blocking gzwrite)", cvss: null, epss: null, kev: false, exploited: false, affected: "zlib releases before 1.4 (inflateGetDictionary item: 1.3.1 and 1.3.2)", fixed: "zlib 1.4", type: "memory-corruption", vector: "local or application-dependent", auth: "none", source: "https://github.com/madler/zlib/releases/tag/v1.4" }
+  - { cve: "CVE-2026-116606", product: "Barracuda Email Security Gateway", cvss: "9.3 (Barracuda; watchTowr quotes 9.8 from the vendor patch installer)", epss: 0.00728, kev: false, exploited: false, affected: "ESG 9.4.0.027 diffed by watchTowr; entry carries 'before 9.4.0.030' (Mandiant record)", fixed: "9.4.0.029 per watchTowr and Barracuda Campus; entry cites 9.4.0.030 or later for the CVE record", type: "auth-bypass", vector: "network", auth: "pre-auth (watchTowr: one unauthenticated POST to /cgi-mod/index.cgi)", source: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/" }
+  - { cve: "CVE-2026-111560", product: "Barracuda Email Security Gateway (also Load Balancer ADC, Message Archiver, WAF Control Center, Web Application Firewall, Web Security Gateway)", cvss: "8.6 (Barracuda)", epss: 0.00471, kev: false, exploited: false, affected: "as in the existing entry; ESG 9.4.0.027 diffed by watchTowr", fixed: "9.4.0.029 (ESG, watchTowr)", type: "command-injection", vector: "network", auth: "reachable pre-auth when chained with CVE-2026-116606 (watchTowr); admin-required alone per the vendor", source: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/" }
+  - { cve: "CVE-2026-58868", product: "Android Framework", cvss: null, epss: null, kev: false, exploited: false, affected: "Android 14, 15, 16, 16-qpr2, 17", fixed: "security patch level 2026-11-05 or later (Android bulletin 2026-11-01)", type: "rce", vector: "network (no user interaction per bulletin)", auth: "none", source: "https://source.android.com/docs/security/bulletin/2026/2026-11-01" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist configured; sweep is a no-op."
+dispositions:
+  scheduled_releases_in_window:
+    - "Microsoft Patch Tuesday: none in window (next 2026-11-10); MSRC Update Guide recent and revised-CVE sweep (latestRevisionDate ge 2026-11-03) shows only Edge/Chromium CVEs from the 2026-11-04 Edge update (CVE-2026-122518 information disclosure plus Chromium memory-corruption IDs) and third-party ingests (Qt, HDF5, Elasticsearch, rsync, SQLite, libslirp, libmspack, Linux kernel IDs); nothing exploited, nothing scored 9.0+. Chrome 157 stable (2026-11-03): 213 security fixes including 7 Critical (CVE-2026-121156, -121229, -121246, -121035, -121247, -121203, -121126), no 'exploit in the wild' language in the post; dropped as routine browser release, no exploitation, no public exploit."
+    - "Cisco bundle of 2026-11-04 (cisco-psirt): UCS Central RCE (cisco-sa-cucs-rce, CVSS 7.6, authenticated), ISE authorization bypass (cisco-sa-ise-cert, 5.3), CUCM XSS (cisco-sa-cucm-xss, 6.1); each says Cisco is not aware of public announcements or malicious use; all below the bar, dropped. cisco-sa-esa-inj (ESA SQLi) v1.2 of 2026-11-03 and the Node.js/Brotli interim revision 1.7 of 2026-11-05 are already carried by existing entries; cisco-sa-emudhra-info (2026-11-05) is an interim list of impacted Cisco products already cited by the eMudhra entry."
+    - "Android Security Bulletin November 2026 (2026-11-02): returned as a borderline item above (CVE-2026-58868 critical Framework RCE, not exploited)."
+    - "Fortinet, Palo Alto, Oracle, SAP, Adobe, Ivanti, Citrix: no cycle landed in window; Fortinet FG-IR feed newest is FG-IR-26-188 (2026-11-02, Linux kernel), PAN-OS feed newest 2026-10-31; Microsoft/Fortinet/SAP/Adobe cycles are 2026-11-10."
+    - "Forward calendar for the composer (not items): Xerox AltaLink/EC81xx/VersaLink PHP2Shell fixes expected 2026-11-06 (bulletin XRX26-016 v5 still marked 'Updated: November 3, 2026' when read about 03:10Z on 2026-11-06, no change), Fiery patches 2026-11-09 to 2026-11-23; Go 1.27.4 and 1.26.11 security releases 2026-11-10 with 12 CVEs (oss-security pre-announcement 2026-11-05); Microsoft, Fortinet, SAP, Adobe patch day 2026-11-10; Node.js 26.x/24.x/22.x security releases 2026-11-11 (pre-announced 2026-11-03, highest severity HIGH); Trend Micro Apex PHP2Shell hotfixes 2026-11-11 (KA-0024802 last updated 2026-11-04); Canonical apt and zlib distro backports pending."
+  revised_advisories_checked:
+    - "Xerox XRX26-016 v5: unchanged, fixes still expected 2026-11-06; no update-of."
+    - "Trend Micro KA-0024802: last updated 2026-11-04, no change; no update-of."
+    - "Cisco ESA cisco-sa-esa-inj: revision 1.2 (2026-11-03) already in entry 2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce; no further revision."
+    - "Ivanti Connect Secure: NCSC-NL NCSC-2026-0416 rev 1.0.1 (2026-11-03) adds CVE-2026-111357 and CVE-2026-118527 and widens the vulnerable range (25.1.1.2 and 22.8R2.5 still vulnerable to those two); already in the Ivanti entry; no new development."
+    - "Zyxel GS1900: NCSC-NL NCSC-2026-0468 (2026-11-05) relays Zyxel's CVE-2026-107441 advisory and the public-news zero-day claim ('NCSC could not yet verify independently'); the existing Zyxel entry (updated 2026-11-05) already carries Binarly, GreyNoise and KEV; BSI WID-SEC-2026-4330 (2026-11-04, kritisch) is the same. Dropped, no delta."
+    - "Citrix XenServer CTX697256: only revision is the 2026-11-03 initial publication; WatchGuard WGSA-2026-0033: 2026-11-03; Ubuntu CVE-2026-98432 tracker (last updated 2026-11-05) still shows 'work in progress' for 26.10, 26.04, 24.04 and 22.04 kernels and 'Vulnerable' for 20.04 and older, as the entry already says; no exploitation reported by anyone (search of 2026-11-06). Dropped, no delta."
+    - "SonicWall SMA1000: BSI WID-SEC-2026-3757 rev 5 (2026-11-04) only adds reference SNWLID-2026-0019; CVE-2026-102255 'wird ausgenutzt' since rev 3 (2026-10-12) and already covered by entry 2026-10-08/cve-2026-102255-sonicwall-sma1000-workplace-ssrf."
+  considered_and_dropped:
+    - "IBM MQ: BSI WID-SEC-2026-4343 relays IBM bulletins of 2026-10-29 (CVE-2026-18142 7.1, CVE-2026-10859 7.5, CVE-2026-11376 8.8, all authenticated); the slice record's own bulletin (CVE-2026-10747, unauthenticated heap overflow, CVSS 10, published 2026-09-14) is outside the horizon and appears in no store entry (grep of entries/ finds none) - a possible gap for the audit, not an in-window item."
+    - "Sonatype Nexus Repository 3.98.0 (CVE-2026-113368..113374): the fetched advisory text needs the nexus:capabilities:create permission (privileged user); dropped."
+    - "Apache ActiveMQ (WID-SEC-2026-4348, six CVEs): BSI describes DoS, bypass and data manipulation, no RCE; dropped. Drupal contrib (WID-SEC-2026-4352, 23 CVEs across SA-CONTRIB-2026-293 onward) and GitHub Enterprise Server (3.19.14, 3.20.10, 3.21.8, 3.22.3): bulk advisories not drilled to per-CVE severity; Drupal contrib is relevant to Swiss public web estates, so a drill of sa-contrib-2026-293 to -298 for Critical rows is recommended for the next S1 fire."
+    - "Next.js image-optimization and use-cache unauthenticated RCEs (GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr, GitHub-reviewed 2026-10-22, patched 15.5.28 and 16.4.1): no store entry and no in-window source; BSI WID-SEC-2026-4346 (rated mittel) relayed Next.js on 2026-11-05. Outside the horizon, flagged for the audit."
+    - "Firefox 159.0.1 (MFSA 2026-123, 2026-11-03): one High CVE (CVE-2026-120572), no exploitation statement; dropped."
+    - "Mitsubishi Electric CC-Link IE TSN (ICSA-26-211-07 republication, 2026-11-05, CVSS 7.1, adjacent network): routine ICS update; dropped. Gogs CVE-2026-123012 (BSI unpatched, Git Smart HTTP authorization case-sensitivity), Linksys E5600 (unpatched, consumer), kaniko token leak: niche; dropped."
+    - "Leads for other domains: CPython sandbox escape found by RunSybil (oss-security 2026-11-05; upstream CPython will not backport; Jinja sandboxes affected) and the 'PolinRider' hijacked-npm Ethereum-C2 campaign (OX Security feed 2026-11-04) belong to S3/S4."
+candidate_sources:
+  - id: oss-security
+    publisher: "oss-security mailing list (openwall.com)"
+    url: "https://www.openwall.com/lists/oss-security/"
+    feed_url: "none; per-day index pages work with `extract https://www.openwall.com/lists/oss-security/YYYY/MM/DD/` (titles and senders listed) and each message with `extract .../DD/<n>`"
+    category: vulnerability-disclosure
+    why: "Primary channel for open-source project announcements; on 2026-11-04 and 2026-11-05 it carried the Apache OFBiz 46-CVE announcement, the OpenSSH 10.6p2 and *sshole thread, the zlib 1.4 security fixes, Go and CPython posts, none of which a slice record surfaced first. Day-index pages read with trafilatura without a reader."
+coverage_gaps:
+  - source_id: ox-security
+    reason: "Recipe confirmed again: article page answers 403, but `python3 tools/fetch_source.py url --direct https://www.ox.security/feed/` returns full content:encoded for every item (the 2026-11-05 *sshole post was read this way and carried the CVE id, affected-version table and Alpine branch fixes). Cite the blog URL taken from the feed and say it was read through the feed."
+  - source_id: connectwise-trust-center
+    reason: "Not in the slice file; probed once as directed: `url --direct https://www.connectwise.com/company/trust/advisories` answers HTTP 403 again; `url --direct https://status.connectwise.com/` reads (207 KB) but shows nothing relevant in window. Outcome: no new recipe, status stays blocked with the status-page substitute."
+  - source_id: cisa-advisories
+    reason: "Recipe update: WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories returned a clean 10-item listing with hrefs on 2026-11-06 (the 2026-11-05 note says 403); `python3 tools/fetch_source.py cisa page <resource URL>` read the fact sheet page; the PDF (media under /sites/default/files/) answers 403 on the `pdf` subcommand."
+  - source_id: chrome-releases
+    reason: "https://chromereleases.googleblog.com/feeds/posts/default answers 302 and fails on the bridge; the post URL `extract https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop.html` read the full release notes (213 fixes, CVE list) on the retry after a first 503; WebFetch of the same post returned only the title and labels."
+  - source_id: wordfence
+    reason: "`extract` of wordfence.com post pages is served through the metered reader (jina) as the record already says; the feed https://www.wordfence.com/feed/ is the direct transport."
+  - source_id: ibm-support-security-bulletins
+    reason: "No listing transport (record note stands); individual bulletins read with extract; the record's own url (CVE-2026-10747, 2026-09-14) is an old bulletin, so the record's url is a poor listing anchor."
+  - source_id: bsi-de
+    reason: "bsi-rss returned 250 items spanning about two days (mostly [UPDATE] distro relays); triage by filtering to [NEU] with hoch, kritisch or UNGEPATCHT and drilling with bsi-csaf is the efficient pattern; BSI portal URLs (…/securityadvisory?name=WID-SEC-2026-NNNN) were cited while the read came from the bridge's .well-known CSAF JSON."
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl.recent 25 + ncsc-nl csaf", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "NCSC-2026-0467 (Android and Samsung, returned as borderline) and -0468 (Zyxel GS1900, already covered); newest earlier items 2026-11-04 (WordPress, Barracuda, both covered)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 187, returned: 3, note: "187 feed items in window, 24 of them [NEU] (hoch/kritisch/UNGEPATCHT drilled: FreeSWITCH, OFBiz, apt returned; SonicWall GMS, SEPPmail, Zyxel, Barracuda already covered; ActiveMQ, Nexus, IBM MQ, GHES, Drupal contrib, Gogs, Linksys, FRRouting, OpenCTI dropped, see dispositions)" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu.recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-019 (PHP) of 2026-10-23; no CERT-EU advisory since" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa.csaf-recent + cisa csaf + cisa page", horizon_hours: 26, in_horizon_items: 3, returned: 1, note: "refrigeration fact sheet returned as update-of; PQC vendor-questions resource and the Mitsubishi ICSA-26-211-07 republication dropped" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (+ WebFetch of the CISA alerts listing)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalog 2026.11.04 released 2026-11-04T20:00Z, newest dateAdded 2026-11-04 (CVE-2024-27834, covered), 1768 entries; no ransomware-flag flips for covered CVEs" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct exploitedvulnerabilities + enisa-euvd recent criticals", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "exploited list holds 4 records (CVE-2024-27834, CVE-2026-119977, CVE-2026-58115, CVE-2026-118527), all covered; criticals feed shows only PowerSYSTEM Center (authenticated)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh.recent 25", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "post 13155 OpenSSH musl password bypass (2026-11-05T12:42Z); previous newest post 13144 (Barracuda, 2026-11-03)" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "bridge:feed 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-11-03 (AI and cyber intrusion report, speech); no vulnerability advisory" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "bridge:feed + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "Barracuda ESG write-up 2026-11-05 as update-of; watchtowr.com/intelligence FAQ page read, nothing newer" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "bridge:feed 30", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-188 (2026-11-02, Linux kernel CVE-2026-98432, covered); next cycle 2026-11-10" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc.recent 20 + SUG API revised-CVE sweep (url --direct, latestRevisionDate ge 2026-11-03, top 100)", horizon_hours: 26, in_horizon_items: 100, returned: 0, note: "Edge/Chromium 2026-11-04 plus third-party ingests only; no exploited or 9.0+ pre-auth row" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "bridge:feed 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-31 (Brotli CVE-2026-111497 portfolio status, covered)" }
+  - { id: ibm-support-security-bulletins, tier: standard, attempted: true, transport: "bridge:extract (record url and BSI-referenced bulletins)", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "IBM MQ bulletins of 2026-10-29 (authenticated, CVSS 7.1 to 8.8) dropped; record url bulletin CVE-2026-10747 dated 2026-09-14" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "bridge:feed 30 + extract", horizon_hours: 168, in_horizon_items: 8, returned: 0, note: "2026-11-04 trio below the bar; ESA, Node.js/Brotli and eMudhra items already covered; see dispositions" }
+  - { id: exodus-intelligence, tier: standard, attempted: true, transport: "bridge:feed 10", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-07-27" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge:extract (critical reviewed query)", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "Critical reviewed rows 2026-10-30 to 2026-11-05 are niche packages (kaniko, Elo, Signal K, imgproxy, Electrum, Wasmtime, zip crate); Next.js RCE rows are 2026-10-22, outside the horizon" }
+  - { id: mozilla-mfsa, tier: standard, attempted: true, transport: "WebFetch (index and MFSA 2026-123)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "MFSA 2026-123 Firefox 159.0.1, one High CVE, no exploitation statement" }
+  - { id: shadowserver, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest item 2026-09-07; sparse cadence, not a failure" }
+  - { id: snyk-research, tier: standard, attempted: true, transport: "bridge:feed 15", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only a Forrester Wave marketing post in horizon; PHP2Shell posts are 2026-10-26 and 2026-10-28" }
+  - { id: socket-dev-blog, tier: standard, attempted: true, transport: "bridge:feed 15", horizon_hours: 168, in_horizon_items: 6, returned: 0, note: "supply-chain and policy posts (GitHub pull_request_target default block from 2026-12-02, Composer 2.11 dependency cooldowns, Cursor extension removal already covered); no vulnerability item; leads for S3/S4" }
+  - { id: wiz-blog, tier: standard, attempted: true, transport: "bridge:feed 15", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "newest 2026-11-03 product posts; Black October (2026-10-30) and PHP2Shell exploitation (2026-10-27) already outside or covered" }
+  - { id: yeswehack, tier: standard, attempted: true, transport: "bridge:feed 10", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "event recap and dojo posts only (candidate record)" }
+  - { id: wordfence, tier: standard, attempted: true, transport: "bridge:feed 15 + extract (reader)", horizon_hours: 168, in_horizon_items: 4, returned: 1, note: "WordPress core exploitation volume as borderline update-of; HTTP2Shell Brotli post 2026-11-02 and weekly vulnerability reports not drilled (no exploited or critical core item)" }
+  - { id: znuny-advisories, tier: standard, attempted: true, transport: "bridge:url --direct", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest ZSA-2026-16 of 2026-10-14 (candidate record)" }
+  - { id: php-net-news, tier: standard, attempted: true, transport: "bridge:extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-05 post is PHP 8.6.0 RC5 (GA planned 2026-11-19), no security announcement" }
+  - { id: nodejs-security-releases, tier: standard, attempted: true, transport: "bridge:feed 8 + extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-03 pre-announcement of the 2026-11-11 security releases (26.x, 24.x, 22.x, highest severity HIGH); listed in the forward calendar, not an item" }
+  - { id: ox-security, tier: standard, attempted: true, transport: "bridge:url --direct feed (full content:encoded)", horizon_hours: null, in_horizon_items: 2, returned: 1, note: "outside the slice file; probed per rotation-priority list: feed reads, page bodies 403; *sshole post carried CVE-2026-123158 and the Alpine fix table; PolinRider npm post (2026-11-04) is an S3/S4 lead" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "bridge:url --direct (advisories page 403; status page read)", horizon_hours: null, in_horizon_items: 0, returned: 0, note: "outside the slice file; probed once: advisories page 403, status.connectwise.com reads with nothing relevant in window" }

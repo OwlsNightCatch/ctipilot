@@ -1,0 +1,542 @@
+# work/2026-11-06T0255Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-06T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-06T02:58:45Z
+ended_at: 2026-11-06T03:22:08Z
+duration_seconds: 1403
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 4
+  bridge_fetches: 110
+items:
+
+  # ------------------------------------------------------------------ 1
+  - title: "ARTEX agents hunt public GitHub for OAuth and cloud application secrets, then sign in as the applications: Microsoft sees Entra service-principal sign-ins from 2026-10-28 and Key Vault exfiltration five minutes after a secret hit, while Todyl reports the same source working through MSP applications into downstream government clients"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/threat-actors-use-agentic-ai-tooling-to-find-and-abuse-exposed-secrets/", publisher: "Microsoft Threat Intelligence", date: "2026-11-05", role: "primary" }
+      - { url: "https://www.todyl.com/blog/stolen-app-credentials-real-access-an-actor-is-signing-into-entra-id-and-azure-devops-as-your-workloads", publisher: "Todyl MXDR", date: "2026-11-03", role: "primary" }
+      - { url: "https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/", publisher: "Check Point Research", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://www.cert-in.org.in/s2cMainServlet?pageid=PUBVLNOTES02&VLCODE=CIAD-2026-0058", publisher: "CERT-In (CSIRT-Fin)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: msft-secblog bridge feed (python3 tools/fetch_source.py msft-secblog recent 10) and the Microsoft threat-intelligence listing https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ → primary: Microsoft post https://www.microsoft.com/en-us/security/blog/2026/11/05/threat-actors-use-agentic-ai-tooling-to-find-and-abuse-exposed-secrets/ → its References link to Todyl https://www.todyl.com/blog/stolen-app-credentials-real-access-an-actor-is-signing-into-entra-id-and-azure-devops-as-your-workloads (independent telemetry, same source address) → Check Point https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/ (from research.checkpoint.com feed) → CERT-In advisory https://www.cert-in.org.in/s2cMainServlet?pageid=PUBVLNOTES02&VLCODE=CIAD-2026-0058 (from The Register / Hacker News leads)"
+    summary: |
+      Microsoft Threat Intelligence reports that since August 2026 threat actors have used the agentic offensive framework ARTEX to submit large volumes of queries to public GitHub, the queries often containing a target organisation name plus secret and cloud or AI-provider keywords, to find OAuth application secrets, application credentials and AI API keys. Microsoft then describes follow-on use of valid application credentials from 2026-10-28: service-principal sign-ins from a small set of hosting-provider addresses (one a Tor exit node that may carry unrelated activity) across dozens of applications in several tenants, including a vendor-owned multitenant application credential used to reach multiple downstream tenants; the agent then pulled tokens for Azure Resource Manager, Key Vault, Storage and Graph, read SharePoint, OneDrive and mailbox items, enumerated subscriptions, role assignments and AI deployments, and used the Run Command feature on Azure VMs. Microsoft says one agent went from a GitHub secret search to Azure Key Vault exfiltration in five minutes, and shows failed Resource Manager calls corrected within 28 to 80 seconds by switching the API version or HTTP method. Todyl, working from its own MXDR telemetry, independently reports one operator since 2026-11-01 signing in as roughly 45 application registrations at about 18 organisations in MSP environments (over 33 authenticated), reaching 27 organisations including MSP downstream clients in government, downloading 81 files and touching about 2,279 mailbox items, with no Microsoft vulnerability involved; Todyl says the activity is unattributed, unrelated to the October ConnectWise Cloud Backup compromise attributed to Storm-0940, and not tied to ARTEX or any specific framework (low confidence on AI direction). Todyl also says several seed secrets had only ever been used from staff devices and office networks, pointing to a file store or live backend rather than internet-crawled configurations, which sits in tension with the GitHub-scraping explanation; Microsoft presents the sign-ins as follow-on activity without stating that the Oct 28 credentials came from GitHub. Check Point adds operator-side evidence that ARTEX consoles run default configurations and that most agent campaigns observed were fully autonomous after goal setup, and CERT-In (2026-11-04) names an AI-assisted actor, CRAFTY FALCON, using ARTEX, PentAGI, Cairn and CyberStrikeAI against Indian financial entities, re-attacking victims after incomplete remediation and timing attacks to holidays and weekends.
+    region_nexus: "global; MSP-served M365 and Azure tenants including government clients (Todyl); directly transferable to Swiss cantonal and communal bodies whose IT is run by MSPs"
+    primary_sector_nexus: "direct (public-sector clients named among downstream victims; MSP-operated tenant model common in cantons and communes)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1593.003, T1552.001, T1078.004, T1528, T1550.001, T1555.006, T1530, T1213.002, T1114.002, T1651, T1580, T1199]
+    affected_products: ["Microsoft Entra ID", "Microsoft Azure", "Azure Key Vault", "Azure DevOps", "Microsoft 365", "GitHub"]
+    entity_keys: ["tool:artex", "actor:storm-0940", "product:microsoft-entra-id", "product:microsoft-azure", "product:microsoft-azure-devops", "product:microsoft-365", "incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10"]
+    new_entities:
+      - { key: "actor:crafty-falcon", type: actor, name: "CRAFTY FALCON", aliases: [], summary: "CERT-In (CSIRT-Fin) designation for an AI-assisted financial threat actor invoking victims' own payment and disbursement APIs and using ARTEX, PentAGI, Cairn and CyberStrikeAI against Indian BFSI entities, re-targeting victims after incomplete remediation (CERT-In advisory CIAD-2026-0058, 2026-11-04)." }
+      - { key: "incident:msp-app-credential-signins-todyl-2026-11", type: incident, name: "Stolen application credentials used to sign in as MSP and client applications (Todyl, November 2026)", aliases: [], summary: "Todyl MXDR reports one operator since 2026-11-01 signing in to Entra ID and Azure DevOps as roughly 45 application registrations at about 18 organisations in MSP environments, reaching 27 organisations including government clients; unattributed, no Microsoft vulnerability involved; Microsoft reports sign-ins from the same source address as agentic activity consistent with ARTEX (Todyl 2026-11-03; Microsoft 2026-11-05)." }
+    relation_suggestions:
+      - { subject: "actor:crafty-falcon", object: "tool:artex", basis: "CERT-In: analysis identified use of the ARTEX family of LLM-based tools, PentAGI, Cairn and CyberStrikeAI against affected entities (CERT-In CIAD-2026-0058, 2026-11-04)" }
+      - { subject: "incident:msp-app-credential-signins-todyl-2026-11", object: "tool:artex", basis: "Microsoft states the same source address was involved in agentic ARTEX-consistent activity; Todyl explicitly does not tie the activity to ARTEX or any framework (overlap claim only, not attribution)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: "B2 (Microsoft and Todyl are independent first-hand telemetry holders; the GitHub-to-sign-in causal link and the ARTEX tie are stated by Microsoft as consistent-with, and Todyl explicitly does not make that tie)"
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    evidence:
+      - quote: "In at least one case, Microsoft observed an AI agent advance from scanning GitHub for secrets to exfiltrating data from Azure Key Vault in just five minutes."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/threat-actors-use-agentic-ai-tooling-to-find-and-abuse-exposed-secrets/"
+      - quote: "Starting in August 2026, Microsoft observed threat actors using an agentic AI offensive framework to submit large volumes of queries to GitHub for secrets."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/threat-actors-use-agentic-ai-tooling-to-find-and-abuse-exposed-secrets/"
+      - quote: "Sign-in errors AADSTS7000215 (invalid secret) or AADSTS7000222 (expired secret) indicate someone holds a credential for your app; a failure followed by a success is urgent."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/threat-actors-use-agentic-ai-tooling-to-find-and-abuse-exposed-secrets/"
+      - quote: "We have not tied the activity to a specific agentic workflow or offensive framework, and our telemetry does not show an AI model directing it, so we hold that possibility at low confidence."
+        attribution: "Todyl"
+        source_url: "https://www.todyl.com/blog/stolen-app-credentials-real-access-an-actor-is-signing-into-entra-id-and-azure-devops-as-your-workloads"
+      - quote: "Through those apps the actor has reached 27 organizations so far, including the MSPs' downstream clients in government, energy, food and agriculture, transportation, construction and engineering, legal, education and nonprofits."
+        attribution: "Todyl"
+        source_url: "https://www.todyl.com/blog/stolen-app-credentials-real-access-an-actor-is-signing-into-entra-id-and-azure-devops-as-your-workloads"
+    extended_notes: |
+      Delta against the covered ARTEX entry (2026-10-22/artex-storm-0940-...): that entry carries Microsoft's Storm-0940 spraying and Okta-registration abuse and Mandiant's incident-response sightings; it does not carry the GitHub secret-hunting stage, the workload-identity (service-principal) follow-on from 2026-10-28, the MSP downstream reach, or the Run Command abuse. Microsoft names no Storm-#### cluster for this activity. A distinct entry referencing both the ARTEX entry and the ConnectWise Cloud Backup entry (2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse) is a defensible alternative framing because Todyl treats it as a separate, unattributed operator; the main agent should choose one, not both.
+      Detection concepts (telemetry class first): Entra service-principal and non-interactive sign-in logs (invalid-secret or expired-secret error followed within minutes by success for the same application from the same address; one address authenticating to three or more unrelated service principals; fixed retry loops of about 11 seconds and bursts of up to 24 sign-ins in 10 seconds, including against disabled or rotated apps); Azure Resource Manager token immediately followed by a Key Vault token and then previously unused apps in the same tenant authenticating (Todyl); app-only SharePoint downloads from non-Microsoft addresses at about one file per second after a single wildcard Graph search; Azure Activity and Key Vault diagnostics for bulk secret reads; Azure DevOps audit for PAT creation and federated service-connection use; Azure CLI public-client password-grant sign-ins from hosting providers. Behavioural tell of an agent: failed API calls corrected by changing api-version or method within about 30 to 80 seconds.
+      Hardening levers named by Microsoft: remove long-lived client secrets in favour of managed identities or federated credentials; Conditional Access for workload identities (Workload ID Premium, single-tenant apps only); GitHub secret scanning with push protection and public monitoring; restrict who may register applications; rotate everything stored in any Key Vault the compromised application could read, because tokens already issued stay valid until expiry and deleting the repository copy does not revoke the credential. For MSPs: review Partner Center access and GDAP relationships.
+      Source inconsistency to carry: Check Point's key points say more than 1,800 publicly exposed ARTEX instances while its body gives 2,557 hosting or having hosted panels and 1,608 live; Badbyte (separate item) counts 1,645 live consoles on 2026-11-04.
+      Swiss angle: communal and cantonal IT is frequently outsourced to MSPs that operate the municipality's Microsoft 365 tenant with multitenant or delegated-admin applications; this is the exposure class Todyl describes.
+
+  # ------------------------------------------------------------------ 2
+  - title: "Trojanised copy of the ARTEX Docker image hands an unauthenticated root shell on its login endpoint: 7,946 pulls before takedown, 62 internet consoles served it, 637 GitHub repositories still point their compose file at it"
+    sources:
+      - { url: "https://badbyte.io/artex-backdoor-docker-image/", publisher: "Badbyte (independent researcher)", date: "2026-11-04", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/backdoored-docker-image-for-artex-ai.html", publisher: "The Hacker News", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed https://feeds.feedburner.com/TheHackersNews (item 'CERT-In Flags AI-Driven Attacks as Backdoored ARTEX Exposes 62 Consoles to Root Access') → drilled https://thehackernews.com/2026/11/backdoored-docker-image-for-artex-ai.html → primary: Badbyte research https://badbyte.io/artex-backdoor-docker-image/ (linked from the article)"
+    summary: |
+      Badbyte reports that after the ARTEX author made the project closed source on 2026-10-08 and took the repository down, a new Docker Hub account pushed an ARTEX image within hours and a GitHub account uploaded a copy of the source with one line changed to pull that image; the README was rewritten to present it as the maintained successor and about 2,449 star events were recorded on the copy, roughly 1,100 of which later disappeared. The image carries one added function in the login handler: a request to the unauthenticated login endpoint whose captcha field starts with a secret marker is passed to a shell as root and the output returned before any credential check, so from the network the trigger looks like a failed login; Badbyte derived this by diffing the shipped binary against the official build (31,054 functions identical, one new 160-byte function, a longer login handler and an extra request field), notes the binary was built from a commit plus uncommitted changes so no public source shows it, and says updating does not remove it because the update script pulls the same image. Badbyte counts 7,946 pulls by 2026-11-03 (The Hacker News cites Docker Hub statistics of about 9,000), 62 internet consoles serving the backdoored build between 2026-11-02 and 11-04 (26 in the United States, 17 in Hong Kong; 46 of them still serving it on 11-04), 637 GitHub repositories still pointing their compose file at it, and 1,645 live ARTEX consoles in total with 590 more running an unversioned build it cannot classify. Docker removed the two images after Badbyte's request (update dated 2026-11-05); any copy already pulled or cached on a mirror remains backdoored. The consoles store model API keys, harvested target credentials, intercepted traffic and a session-signing key in plaintext, so a backdoored console exposes the operator's targets as well as the operator. Badbyte states the implant never calls home and is a single-researcher finding, though reproducible from the binary diff it publishes.
+    region_nexus: "global; relevant to any organisation whose red team, pentesters or researchers evaluated ARTEX from GitHub or Docker Hub copies"
+    primary_sector_nexus: "indirect (offensive-tooling hygiene for government red teams and CSIRT labs; exposed consoles may hold third-party target data)"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1204.003, T1190, T1059.004]
+    affected_products: ["ARTEX", "Docker Hub", "GitHub"]
+    entity_keys: ["tool:artex"]
+    new_entities:
+      - { key: "incident:artex-trojanized-docker-image-2026-11", type: incident, name: "Trojanised ARTEX Docker image (tomicdd/artex)", aliases: [], summary: "Badbyte (2026-11-04) reports a copycat ARTEX repository and Docker image carrying an unauthenticated root-shell backdoor in the login handler, pulled 7,946 times before Docker removed it on 2026-11-05; 62 internet consoles served it (Badbyte; The Hacker News 2026-11-05)." }
+    relation_suggestions:
+      - { subject: "incident:artex-trojanized-docker-image-2026-11", object: "tool:artex", basis: "Badbyte: a trojanised build of the ARTEX console image and a copycat source repository (a trojanised distribution of the tool, not the upstream project itself)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "C2 (independent researcher; technically reproducible binary diff, not independently confirmed by a second lab; The Hacker News repeats Badbyte)"
+    novelty: new
+    evidence:
+      - quote: "The image contains one extra function. It runs whatever command arrives in the login form, before the password is checked, and sends the output back."
+        attribution: "Badbyte"
+        source_url: "https://badbyte.io/artex-backdoor-docker-image/"
+      - quote: "Any copy already pulled, or cached on a third-party mirror, is still backdoored."
+        attribution: "Badbyte"
+        source_url: "https://badbyte.io/artex-backdoor-docker-image/"
+      - quote: "From the network, the trigger looks like a failed login."
+        attribution: "Badbyte"
+        source_url: "https://badbyte.io/artex-backdoor-docker-image/"
+      - quote: "As many as 62 ARTEX consoles on the internet have been found to serve the backdoored build between November 2 and 4, 2026"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/backdoored-docker-image-for-artex-ai.html"
+    extended_notes: |
+      Exposure: anyone who installed ARTEX from a third-party GitHub copy or from Docker Hub namespaces other than the upstream author's; the compose file publishes the console on all interfaces (default port 8787) and the container runs as root with database and LLM keys in its environment. Triage: a POST to the console's login endpoint with an unusual captcha field is indistinguishable from a failed login in access logs unless request bodies are logged; Badbyte describes an internet-fingerprintable fixed UI build identifier in the backdoored build (not reproduced here). Post-incident: treat the host and every credential, model API key and target secret stored by the console as compromised; re-pulling does not clean persistent data directories.
+      THN and Badbyte disagree on the pull count (about 9,000 versus 7,946); the item carries Badbyte's figure as primary.
+
+  # ------------------------------------------------------------------ 3
+  - title: "Kaspersky reconstructs a Storm-2603 ToolShell intrusion whose SharePoint implant lived only inside w3wp.exe: an ASP.NET VirtualPathProvider memory shell with a suo5 tunnel, then Velociraptor, three remote-access tunnels and a Warlock EDR killer"
+    sources:
+      - { url: "https://securelist.com/storm-2603-fileless-toolshell-attack/121467/", publisher: "Kaspersky (Securelist)", date: "2026-11-05", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/velociraptor-leveraged-in-ransomware-attacks/", publisher: "Cisco Talos", date: "2025-10-09", role: "corroborating" }
+    discovery_trace: "first seen at: kaspersky-securelist feed https://securelist.com/feed/ (item 'The SOC Files 5: Ghost in the pipeline, or a fileless SharePoint breach by Storm-2603') → primary: https://securelist.com/storm-2603-fileless-toolshell-attack/121467/ (full extract, detection section read) → Talos Velociraptor background, URL https://blog.talosintelligence.com/velociraptor-leveraged-in-ransomware-attacks/ (linked from the Securelist article)"
+    summary: |
+      Kaspersky's Global Emergency Response Team describes a retrospective analysis of a December 2025 intrusion at a customer's on-premises SharePoint server that it attributes to Storm-2603 with moderate confidence, on the basis of ToolShell exploitation, post-exploitation overlap and a Warlock-linked EDR killer. The timeline: on 20 December an ONYPHE internet-scanner request fingerprinted the ToolPane component for the ToolShell vulnerability (CVE-2025-53770), three days of silence followed so the probe was triaged low and not correlated, and on 24 December, when many teams are thinly staffed, the full remote-code-execution chain ran inside the IIS worker process from a Safing Privacy Network exit node. The implant was never written to disk: a modular C# memory shell registered a custom ASP.NET VirtualPathProvider, used reflection against the BuildManager to force registration even for precompiled apps, hooked GetCacheKey() to inspect incoming requests and stayed dormant unless a specific User-Agent matched, spoke a custom XOR-obfuscated binary protocol, and built a full-duplex proxy using the open-source suo5 tunnel so the SharePoint host became a pivot into the internal network. It also escalated to SYSTEM through named-pipe token impersonation derived from EfsPotato (the worker process holds SeImpersonatePrivilege) and created administrative accounts through native SAM RPC calls rather than command-line tooling. Shortly after injection w3wp.exe spawned msiexec to install an outdated Velociraptor build (0.73.4.0, vulnerable to CVE-2025-6264) from cloud storage, which the actor used for persistence, discovery and payload execution and to stand up Zoho Assist unattended access, a VS Code CLI tunnel, Cloudflare Tunnel and a reverse proxy, so access no longer depended on the IIS process; a vulnerable driver and a DLL-sideloaded Warlock AV killer followed, and Kaspersky's endpoint product blocked the Warlock encryption payload.
+      Detection concepts Kaspersky gives: CLR loader events showing both a dynamically compiled App_Web_toolpane assembly and Microsoft.GeneratedCode in the same application domain after a ToolPane request (serialised data being turned into an object graph), plus YARA-style string hits for ObjectDataProvider, ExpandedWrapper and LosFormatter in memory; for the VirtualPathProvider implant, the Microsoft-Windows-IIS-Configuration ETW provider (events 25 and 47 present for a path with a missing file, without the FileChangeNotificationMonitor events 17, 18, 19 and 21 that a real file produces), an allow-list of legitimate VirtualPathProvider implementations, and memory inspection of w3wp.exe; behaviourally, w3wp.exe launching msiexec, unexpected outbound connections from the SharePoint server, RPC coercion against LSASS, and the arrival of remote-management or DFIR tooling after an application compromise. Kaspersky's lesson is that a confirmed SharePoint code-execution event needs host containment, persistence hunting, rotation of credentials and the exposed ASP.NET MachineKey, not removal of the initial exploit; a memory-resident implant survives until the application pool recycles.
+    region_nexus: "global; on-premises SharePoint Server estates are widespread in Swiss federal, cantonal and communal administrations"
+    primary_sector_nexus: "direct (on-premises SharePoint is a standard government collaboration platform; Storm-2603 targets overlap public bodies in the covered Longlegs entry)"
+    sector: "public-sector"
+    cves: [CVE-2025-53770, CVE-2025-53771, CVE-2025-6264]
+    techniques: [T1190, T1505.003, T1620, T1553, T1572, T1134.001, T1136.001, T1219.002, T1219.001, T1685, T1068, T1486]
+    affected_products: ["Microsoft SharePoint Server", "Microsoft IIS", "Velociraptor", "Zoho Assist"]
+    entity_keys: ["actor:warlock-storm-2603", "product:microsoft-sharepoint"]
+    new_entities:
+      - { key: "tool:velociraptor", type: tool, name: "Velociraptor", aliases: [], summary: "Open-source digital forensics and incident-response agent abused by ransomware operators as a post-compromise command-execution framework; Cisco Talos (2025-10-09) tied it to Storm-2603 with moderate confidence and Kaspersky (2026-11-05) saw an outdated build installed from a SharePoint web shell." }
+      - { key: "tool:suo5", type: tool, name: "suo5", aliases: [], summary: "Open-source HTTP forward-proxy tunnelling tool used to pivot through compromised web servers; Kaspersky (2026-11-05) saw it implemented inside a SharePoint in-memory shell and AhnLab ASEC (2026-10-14) documents Suo5-based tunnelling cases." }
+    relation_suggestions:
+      - { subject: "actor:warlock-storm-2603", object: "tool:velociraptor", basis: "Kaspersky: Velociraptor was used for persistence, discovery, data collection and payload execution in the analysed case; Talos (2025-10-09) attributes Velociraptor-based ransomware activity to Storm-2603 with moderate confidence" }
+      - { subject: "actor:warlock-storm-2603", object: "tool:suo5", basis: "Kaspersky: the in-memory shell used the suo5 tool for traffic proxying in a case it attributes to Storm-2603 with moderate confidence" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_hint: "B2 (Kaspersky GERT is the first-hand incident-response owner; attribution is moderate confidence on TTP overlap; actor TTP background independently supported by Talos 2025)"
+    novelty: new
+    evidence:
+      - quote: "This activity involved the attacker using the IIS worker process as an in-memory bridge to the customer’s infrastructure, keeping the access and control layer entirely within w3wp.exe without writing anything to disk."
+        attribution: "Kaspersky"
+        source_url: "https://securelist.com/storm-2603-fileless-toolshell-attack/121467/"
+      - quote: "Consequently, the presence of positive events 25 and 47 combined with the absence of the expected events 17, 18, 19, and 21 for the same path forms a reliable detection pattern"
+        attribution: "Kaspersky"
+        source_url: "https://securelist.com/storm-2603-fileless-toolshell-attack/121467/"
+      - quote: "this allows us to attribute this case to Storm-2603 with moderate confidence."
+        attribution: "Kaspersky"
+        source_url: "https://securelist.com/storm-2603-fileless-toolshell-attack/121467/"
+      - quote: "A confirmed SharePoint exploit with code execution should trigger host-level containment, persistence hunting, credential and exposed MachineKey rotation, and TTP-driven investigation rather than remediation limited to the initial exploit or known IOCs."
+        attribution: "Kaspersky"
+        source_url: "https://securelist.com/storm-2603-fileless-toolshell-attack/121467/"
+    extended_notes: |
+      Date handling: the intrusion happened in December 2025 and Kaspersky publishes it now; ToolShell (CVE-2025-53770 and CVE-2025-53771) was patched in 2025, so the current exposure is unpatched or never-rotated SharePoint farms and the detection primitive itself (VirtualPathProvider runtime implants, CLR loader artefacts), which applies to any future SharePoint or ASP.NET deserialisation chain. No fixed-version table is in the article; read the version from the Microsoft 2025 SharePoint advisories before stating one.
+      Benign lookalikes (Triage): App_Web_* assemblies and Microsoft.GeneratedCode are produced by normal ASP.NET compilation and XmlSerializer use, and VirtualPathProvider is a legitimate ASP.NET mechanism; Kaspersky says the indicators are not significant in isolation, the signal is the same-window combination after a ToolPane request, and that any VirtualPathProvider not on the application's inventory is anomalous. ONYPHE probes are benign scanner fingerprints; the lesson is the four-day correlation between a low-signal probe and a later exploit.
+      Related covered entry: 2026-10-03/warlock-longlegs-sharepoint-machinekey-sysvol-ransomware (Symantec: Longlegs/Storm-2603 SharePoint machine-key theft). This is a different intrusion with different implant tradecraft; add it to references.
+
+  # ------------------------------------------------------------------ 4
+  - title: "Microsoft Email threat landscape Q3 2026: 7.3 billion phishing threats, September up 41%, tenant overrides applied to 63% of spoofed business-service mail that failed authentication, SVG-gated CAPTCHA phishing returning, Teams impersonators moving to ordinary personal names"
+    report_flag: "ANNUAL REPORT — Microsoft Email threat landscape Q3 2026 (quarterly series; the Q2 edition is covered as entry 2026-07-25/microsoft-email-threat-landscape-q2-2026-teams-vishing-surge)"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/email-threat-landscape-q3-2026-trends-and-insights/", publisher: "Microsoft Threat Intelligence", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: msft-secblog bridge feed (python3 tools/fetch_source.py msft-secblog recent 10) → primary (no pivot needed): https://www.microsoft.com/en-us/security/blog/2026/11/05/email-threat-landscape-q3-2026-trends-and-insights/"
+    summary: |
+      Microsoft Threat Intelligence reports about 7.3 billion email-based phishing threats from July to September 2026, with September at nearly 3 billion, up 41% from August, while QR-code phishing stayed far below its early-year peak (12.1 million attacks, down 67% on Q2, though QR codes embedded in message bodies, near zero in Q2, more than tripled by the end of Q3) and CAPTCHA-gated phishing recovered to 3.1 million attacks in September, driven by SVG attachments (65% of such attacks in August, 49% in September). The detection-relevant finding is about exceptions: roughly 129 million malicious messages spoofed the sender domains of tracked business services (DocuSign 29% of September), and in September security overrides applied to 63% of messages with a recorded security outcome, mostly tenant-level overrides, even though the messages failed authentication and were identified as malicious; Microsoft cautions the data do not show recipients opened them. In Microsoft Teams, about 141,000 malicious call attempts were seen; ordinary personal-name display names rose from 46% of the July sample to 88% in September while explicit help-desk identities fell from 17% to 2%, more targeted attempts used domains resembling the victim organisation's, and calls clustered in weekday working hours. Two campaigns illustrate the range: an August device-code phishing run using a personalised salary-review Word document with a QR code against more than 4,800 organisations (almost all US law firms and legal bodies) and a September Spanish-language purchase-order and payroll run delivering Agent Tesla through nested disguised archives and a cloud-storage-hosted PowerShell stage. About 94 to 96% of payload-based attacks directed recipients to a credential-phishing page rather than installing malware.
+    region_nexus: "global telemetry; Spanish-speaking and US campaigns named; transferable to M365-based Swiss public bodies"
+    primary_sector_nexus: "indirect (generic M365 tenant exposure; no public-sector split published)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566.001, T1566.002, T1566.003, T1204.002, T1528, T1684.001]
+    affected_products: ["Microsoft Defender for Office 365", "Exchange Online Protection", "Microsoft Teams", "Microsoft Entra ID"]
+    entity_keys: ["product:microsoft-teams", "product:microsoft-defender-for-office-365"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_hint: "A2 for the telemetry counts (Microsoft first-party, own platform); credibility 2 because the figures are Microsoft-only and not independently reproducible"
+    novelty: new
+    evidence:
+      - quote: "In September, overrides applied to 63% of messages with a recorded security outcome, with tenant-level overrides accounting for most of them."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/email-threat-landscape-q3-2026-trends-and-insights/"
+      - quote: "Ordinary personal-name display names rose from 46% of the observed July sample to 88% in September, while explicit help desk identities fell from 17% to 2%."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/email-threat-landscape-q3-2026-trends-and-insights/"
+      - quote: "Microsoft Threat Intelligence detected approximately 7.3 billion email-based phishing threats from July through September, including a sharp increase to nearly 3 billion in September alone, up 41% from August."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/05/email-threat-landscape-q3-2026-trends-and-insights/"
+    extended_notes: |
+      Practical hooks: audit tenant and user allow-lists, connection-filter and transport-rule overrides for entries that cover well-known service sender domains (the overrides, not the detections, decided delivery); alert on SVG attachments leading to CAPTCHA pages and on Teams first-contact chats from external tenants whose display name is a personal name but whose account address carries help-desk or service wording; block or require compliant-device conditions on the OAuth device-code flow (the salary-review lure ends at microsoft.com/devicelogin and transfers a session token without exposing the password or re-triggering MFA). The Vaud M365 device-code campaign is covered (entry 2026-11-05/vaud-m365-device-code-phishing-campaign-romandie); this report is the Microsoft-wide trend context and should reference it.
+      Several statistics are share-of-month figures from one vendor's sample; carry the exceptions finding and the Teams naming shift, not the headline volumes.
+
+  # ------------------------------------------------------------------ 5
+  - title: "CrowdStrike: median time from public proof of concept to exploitation under one day in January to July 2026, with a Belarus-nexus actor using a modified CopyFail Linux privilege-escalation exploit at a Ukrainian government entity the day after release"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: malware-news feed https://malware.news/latest.rss (topic 'How Adversaries Are Turning the Vulnerability Ecosystem Against Defenders', https://malware.news/t/how-adversaries-are-turning-the-vulnerability-ecosystem-against-defenders/127037) → primary: https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/ (full body read via the bridge url subcommand after extract truncated the case studies)"
+    summary: |
+      CrowdStrike Counter Adversary Operations analysed exploitation it observed between January and July 2026 and reports that the median time from a vulnerability having a public proof of concept to threat actors exploiting it was under one day, the fastest 35 minutes, and that 91% of exploited vulnerabilities with a public PoC were exploited within 48 hours of PoC release. Three case studies carry the detection and prioritisation value. cPanel and WHM authentication bypass CVE-2026-41940 (disclosed 2026-04-28): an industry firm's technical post and a purported detection-artifact generator the next day needed one commented line enabled to change the root password and so acted as a weaponised exploit, widespread opportunistic exploitation began 2026-04-30, and CrowdStrike's retrospective hunting indicates a single actor likely exploited it as a zero-day since at least 2026-04-03, after which several actors contested the same instances. Linux local privilege escalation CopyFail (CVE-2026-31431): a public PoC on 2026-04-29, unpatched in many major distributions at publication, confirmed reliable by CrowdStrike on a fully patched Ubuntu 24.04 host; on 2026-04-30 the Belarus-nexus actor UMBRAL BISON used a modified copy (exec() of an in-memory string and added error handling to hinder static detection) at a Ukrainian government entity to go from the web user to root and deploy a Mythic Poseidon agent, which the Falcon sensor terminated. Third, an Iran-nexus actor, STATIC KITTEN, held an open directory with a modified public CVE-2024-55591 FortiOS and FortiProxy authentication-bypass PoC extended from one command to 13 hard-coded payloads that create super-admin accounts, add VPN-group memberships and hide the backdoor among legitimate users. CrowdStrike assesses actors will keep adopting public and AI-assisted vulnerability research and concludes that CVSS-only patch prioritisation is the wrong signal.
+    region_nexus: "global; one case at a Ukrainian government entity (Belarus-nexus actor)"
+    primary_sector_nexus: "direct for the patching-cadence lesson (public bodies run long patch cycles on edge devices and Linux servers); indirect for the named cases"
+    sector: "cross-sector"
+    cves: [CVE-2026-41940, CVE-2026-31431, CVE-2024-55591]
+    techniques: [T1190, T1068, T1588.005, T1136, T1105]
+    affected_products: ["cPanel & WHM", "Linux kernel", "Ubuntu", "Fortinet FortiOS", "Fortinet FortiProxy"]
+    entity_keys: ["actor:umbral-bison"]
+    new_entities:
+      - { key: "actor:static-kitten", type: actor, name: "STATIC KITTEN", aliases: [], summary: "CrowdStrike designation for an Iran-nexus adversary whose open directory held a modified public CVE-2024-55591 FortiOS and FortiProxy authentication-bypass exploit with 13 hard-coded payloads, identified in February 2026 (CrowdStrike, 2026-11-05)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B2 (CrowdStrike holds the exploitation telemetry; aggregate statistics not independently reproducible; one in-text date slip noted)"
+    novelty: new
+    evidence:
+      - quote: "the median time from when a vulnerability had a public POC to when threat actors exploited it was less than one day, with the fastest observed exploitation after a public POC being 35 minutes."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/"
+      - quote: "Of the vulnerabilities with a public POC that CrowdStrike saw threat actors exploit, 91 percent were exploited within 48 hours of POC release."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/"
+      - quote: "On April 30, 2026, CrowdStrike Counter Adversary Operations began to observe widespread and opportunistic exploitation of CVE-2026-41940."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/"
+    extended_notes: |
+      Builds on the covered entry 2026-08-04/crowdstrike-2026-threat-hunting-report-exploitation-window (reference it). Source inconsistency to carry: in the cPanel narrative CrowdStrike writes 'August 29, 2026 industry reporting' where every other date places the industry post on 2026-04-29; treat as a typo and quote April dates. The post's footnotes link the industry blog posts it cites; the main agent should not repeat the cited vendor's 'detection-artifact generator' name. Defender takeaway: the clock for an internet-facing flaw starts at PoC or detection-script publication, not at the CVSS or KEV event; Linux hosts running a web-user context need LPE fixes on the same clock as the web flaw. Detection hook for the UMBRAL BISON case: web-server user process spawning an interpreter then a privilege change to uid 0, followed by a new C2 agent; the sensor-terminated outcome is the vendor's own claim.
+
+  # ------------------------------------------------------------------ 6
+  - title: "Microsoft on-premises security initiative: Important updates now out of band since September 2026, Emergency Mitigation Service 2.0 on by default for Exchange in December and SharePoint in January, automatic security-update installation after a fixed delay targeted for Q1 2027"
+    sources:
+      - { url: "https://techcommunity.microsoft.com/blog/microsoft-security-blog/new-investments-to-reduce-on-premises-security-risk/4570381", publisher: "Microsoft Security Community Blog", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: msft-secblog bridge feed (python3 tools/fetch_source.py msft-secblog recent 10; item 'New investments to reduce on-premises security risk') → primary (no pivot needed): https://techcommunity.microsoft.com/blog/microsoft-security-blog/new-investments-to-reduce-on-premises-security-risk/4570381"
+    summary: |
+      Microsoft announces an on-premises security initiative, initially for server workloads, with an On-Premises Baseline Security Mode for supported Exchange Server, SharePoint Server and Skype for Business Server. Microsoft states that since September 2026 it has released not only Critical but also Important security updates outside the Patch Tuesday schedule when faster action is needed, so on-premises patch intake can no longer be assumed to follow the second-Tuesday cycle. It lists dated next steps: Emergency Mitigation Service 2.0 for Exchange Server and Skype for Business Server enabled by default in December 2026 and extended to SharePoint Server in January 2027, hardened default configurations and configuration-drift detection for all three products in Q1 2027, and targeted automatic application of security updates after a fixed period following release in connected SharePoint, Exchange and Skype for Business environments in Q1 2027. Microsoft also says many Exchange deployments are not on the current security update, a substantial share on unsupported versions, and continues to recommend moving workloads to Microsoft 365 where possible. All future-dated items are plans or targets, not shipped features; no technical vulnerability is described.
+    region_nexus: "global; directly relevant to on-premises Exchange and SharePoint estates in Swiss administrations"
+    primary_sector_nexus: "direct (on-premises Exchange and SharePoint are widespread in public administration; change-management and maintenance-window processes are affected)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Microsoft Exchange Server", "Microsoft SharePoint Server", "Skype for Business Server"]
+    entity_keys: ["product:microsoft-exchange-server", "product:microsoft-sharepoint"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_hint: "A2 (vendor first-party announcement; plans not yet shipped)"
+    novelty: new
+    borderline: true
+    borderline_reason: "Vendor posture and roadmap announcement, no vulnerability or campaign; included because the out-of-band Important-update practice since September 2026 and automatic update installation in Q1 2027 change what an on-premises Exchange or SharePoint operator must plan for (patch intake, maintenance windows, mitigation auto-apply); the main agent may fold it into a policy-style entry or drop it."
+    evidence:
+      - quote: "Since September 2026, Microsoft has released not only Critical but also Important security updates outside the traditional Patch Tuesday schedule when faster action is needed"
+        attribution: "Microsoft"
+        source_url: "https://techcommunity.microsoft.com/blog/microsoft-security-blog/new-investments-to-reduce-on-premises-security-risk/4570381"
+      - quote: "In December 2026, we plan to introduce Emergency Mitigation Service 2.0 for Exchange Server and Skype for Business Server, enabling it by default and expanding the security mitigations it can apply."
+        attribution: "Microsoft"
+        source_url: "https://techcommunity.microsoft.com/blog/microsoft-security-blog/new-investments-to-reduce-on-premises-security-risk/4570381"
+      - quote: "In Q1 calendar year 2027, we’re targeting automatic application of security updates after a fixed period following release in connected SharePoint Server, Exchange Server, and Skype for Business Server environments."
+        attribution: "Microsoft"
+        source_url: "https://techcommunity.microsoft.com/blog/microsoft-security-blog/new-investments-to-reduce-on-premises-security-risk/4570381"
+    extended_notes: |
+      Pairs naturally with the Kaspersky ToolShell item (item 3) for a SharePoint-centred read. The post links an Ignite session (BRK215) and a 'Secure Now' portal for later guidance; nothing there was fetched.
+
+  # ------------------------------------------------------------------ 7
+  - title: "Symantec: Anubis ransomware affiliate arrives with a new custom Lindnor backdoor on SQL Servers, 13 security-killer executables and five vulnerable drivers within an hour, and AnyDesk registered to survive Safe Mode"
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware", publisher: "Symantec and Carbon Black Threat Hunter Team", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: malware-news feed https://malware.news/latest.rss (topic https://malware.news/t/new-lindnor-backdoor-and-glut-of-security-killers-used-in-ransomware-attack-on-u-s-org/127033) → primary: https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+    summary: |
+      Symantec reports an October 2026 Anubis ransomware attack on a US organisation in which attackers deployed a previously undocumented custom backdoor, Backdoor.Lindnor, found on the only two Microsoft SQL Server machines among the affected hosts, installed as services under names mimicking a Chrome component folder and a VMware folder, using a primary and a fallback command server on port 443 and reporting host and domain identity data. Within roughly an hour the attackers dropped at least 13 executables to terminate security services, 11 of which appear to be previously unpublished, plus five publicly known signed vulnerable drivers; two tools masqueraded as Symantec software and accepted switches to list and to remove kernel callbacks through a loaded vulnerable driver. They also installed AnyDesk, created a local account and ran a tool that registers AnyDesk as a service permitted in Safe Mode with Networking via a SafeBoot Network registry key, giving a second access route when security software does not fully run. The encryption payload, which appends an .anubis extension and has an optional wiper mode, was blocked and there is no evidence files were encrypted; Symantec did not identify initial access. Symantec attributes the Anubis ransomware-as-a-service to a developer group it tracks as Hawkmoth (a rebrand of Sphinx from December 2024), notes affiliates may differ and that the backdoor was also seen at two unrelated organisations, and says Anubis has claimed about 96 victims in 12 months, 52% in the United States.
+    region_nexus: "US victim; Anubis claims 52% US victims"
+    primary_sector_nexus: "indirect (tradecraft transferable to ransomware preparation against any Windows server estate)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1685, T1068, T1688, T1219.002, T1136.001, T1543.003, T1036.005, T1486]
+    affected_products: ["Microsoft SQL Server", "AnyDesk"]
+    entity_keys: ["actor:anubis-raas", "product:anydesk"]
+    new_entities:
+      - { key: "malware:lindnor", type: malware, name: "Backdoor.Lindnor", aliases: [], summary: "Custom backdoor named by Symantec, found on two Microsoft SQL Server hosts during an October 2026 Anubis ransomware intrusion, masquerading as a Chrome component and a VMware file and running as a service with a primary and fallback command server on port 443; also seen at two unrelated organisations (Symantec, 2026-11-05)." }
+    relation_suggestions:
+      - { subject: "actor:anubis-raas", object: "malware:lindnor", basis: "Symantec: attackers using the Anubis ransomware deployed Backdoor.Lindnor, a new custom backdoor; it was also seen at two unrelated organisations without ransomware activity" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B2 (Symantec Threat Hunter Team is the first-hand incident analyst; single report; hash-level detail omitted here)"
+    novelty: new
+    borderline: true
+    borderline_reason: "US victim and no Swiss or public-sector nexus; kept as a borderline for the transferable detection hooks (registry write under SafeBoot Network for a remote-access service, kernel-callback listing and removal by masquerading tools, a custom backdoor on SQL Servers under Chrome and VMware names) that the existing BYOVD entries do not carry."
+    evidence:
+      - quote: "Attackers using the Anubis ransomware targeted a U.S. organization in October 2026 using a new custom backdoor that Symantec has called Backdoor.Lindnor."
+        attribution: "Symantec and Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+      - quote: "Within roughly an hour, the attackers dropped at least 13 executables to help terminate security services, along with five publicly known vulnerable drivers."
+        attribution: "Symantec and Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+      - quote: "They ran a registry command that registered AnyDesk as a service permitted to run in Safe Mode with Networking."
+        attribution: "Symantec and Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+      - quote: "We did not identify how the attackers gained initial access."
+        attribution: "Symantec and Carbon Black Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+    extended_notes: |
+      Detection concepts: registry-write events under HKLM SYSTEM CurrentControlSet Control SafeBoot Network for a non-driver remote-access service name (rare outside boot-troubleshooting tools); process creation of unsigned executables with security-vendor-like names that open kernel-driver handles; service-creation events for a binary named after a browser or hypervisor component on a database server; new local user plus group-add shortly after the driver drops. Symantec's BYOVD whitepaper (June 2026) is linked from the post.
+
+  # ------------------------------------------------------------------ 8
+  - title: "Seqrite: reverse engineering of two Qilin builds shows the 2026 variant adding Restart Manager lock release, a vCenter and ESXi spreading engine, automatic RSAT provisioning, embedded PsExec, a Safe Mode reboot loop and ransom notes sent to network printers"
+    lookback: true
+    sources:
+      - { url: "https://www.seqrite.com/blog/the-evolution-of-qilin-agenda-a-comparative-reverse-engineering-analysis-of-qilin-agenda-ransomware-across-2026/", publisher: "Seqrite Labs", date: "2026-11-03", role: "primary" }
+    discovery_trace: "first seen at: seqrite-labs feed https://www.seqrite.com/blog/feed/ (lookback sweep, 168 h) → primary (no pivot needed): https://www.seqrite.com/blog/the-evolution-of-qilin-agenda-a-comparative-reverse-engineering-analysis-of-qilin-agenda-ransomware-across-2026/"
+    summary: |
+      Seqrite Labs compares a March 2026 Qilin (Agenda) sample with an October 2026 variant and reports that the Rust code was reworked into a modular workspace of 22 internal crates, the command line grew from 6 to 42 switches, and the October build carries enterprise subsystems the baseline lacked. These are: use of the Windows Restart Manager API (RmStartSession, RmRegisterResources, RmShutdown) to release locks on SQL Server, Exchange and VM disk files instead of killing processes; an embedded 20.8 KB PowerShell engine (--spread-vcenter) that authenticates to vCenter, disables HA and DRS, extracts ESXi addresses, uploads Linux payloads over SSH and SCP and runs esxcli to power off VMs and encrypt .vmdk volumes; automatic installation of the RSAT Active Directory module with DISM followed by Get-ADComputer and ICMP reachability checks to build target lists; embedded 32-bit and 64-bit PsExec for spreading over ADMIN$ and C$ with harvested credentials; bcdedit safeboot minimal or network plus AutoAdminLogon to reboot into Safe Mode where EDR drivers do not load; a raw-printing module that sends cleartext ransom notes to TCP 9100 on local subnets; a forged Microsoft Code Signing PCA 2011 signature overlay with the binary named resmon.exe; and post-encryption self-deletion. Seqrite says detection is possible through the bcdedit Safe Mode change and rstrtmgr.dll-driven termination and lists the global victim sectors as healthcare, manufacturing, education and technology without giving counts; the analysis rests on two samples and carries no incident or victim confirmation.
+    region_nexus: "global; Qilin has Swiss and European public-sector and healthcare victims in the store"
+    primary_sector_nexus: "direct (healthcare and education named; hypervisor-targeting and Safe Mode steps apply to cantonal data centres)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1486, T1490, T1489, T1569.002, T1021.002, T1688, T1018, T1087.002, T1036.001, T1491.001, T1021.004, T1570, T1070.004, T1059.001]
+    affected_products: ["VMware vCenter", "VMware ESXi", "Windows Restart Manager", "Microsoft SQL Server", "Microsoft Exchange Server"]
+    entity_keys: ["actor:qilin"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B3 (Seqrite is a vendor reverse-engineering lab with consistent output; two samples, no victim or incident corroboration; whitepaper gated)"
+    novelty: new
+    borderline: true
+    borderline_reason: "Single-vendor sample comparison without incident confirmation, 3.5 days old (lookback record); kept because Qilin is a standing public-sector and healthcare threat and the Safe Mode reboot loop, vCenter HA/DRS disablement and TCP 9100 note printing are concrete hunt hooks the Qilin entries in the store do not carry. Check the store's 2026-09-21 Qilin AI-generated scripts entry before composing."
+    evidence:
+      - quote: "The October 2026 variant introduced comprehensive enterprise attack subsystems, automating network-wide lateral movement and defense evasion:"
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/the-evolution-of-qilin-agenda-a-comparative-reverse-engineering-analysis-of-qilin-agenda-ransomware-across-2026/"
+      - quote: "It authenticates to VMware vCenter servers, disables High Availability (HA) and Distributed Resource Scheduler (DRS), extracts ESXi hypervisor IP addresses, and establishes SSH/SCP sessions."
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/the-evolution-of-qilin-agenda-a-comparative-reverse-engineering-analysis-of-qilin-agenda-ransomware-across-2026/"
+      - quote: "It then queries Active Directory via Get-ADComputer, validates domain host reachability using ICMP pings, and builds enterprise target lists automatically."
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/the-evolution-of-qilin-agenda-a-comparative-reverse-engineering-analysis-of-qilin-agenda-ransomware-across-2026/"
+    extended_notes: |
+      Detection concepts: vCenter audit events for HA or DRS being disabled on a cluster followed by SSH enablement and esxcli activity on ESXi hosts; process creation of bcdedit with safeboot and registry writes to Winlogon AutoAdminLogon outside change windows; DISM installing RSAT AD components on a server or workstation that has never had them; rstrtmgr.dll loaded by a non-installer process; outbound TCP 9100 from a workstation or server to many hosts in one subnet; an executable named resmon.exe outside System32 with an invalid Microsoft signature overlay. Triage: Restart Manager and DISM RSAT installs are legitimate in patching and admin workflows, so the signal is the combination with the printer fan-out, the safeboot change and the vCenter actions.
+
+  # ------------------------------------------------------------------ 9
+  - title: "Debian and Ubuntu apt flaw CVE-2026-109518: an on-path attacker can swap a package after verification and run code as root; fixes shipped 2026-11-04, no exploitation reported, retries are on by default from Debian 12 and Ubuntu 22.04"
+    sources:
+      - { url: "https://www.stepsecurity.io/blog/cve-2026-109518-apt-package-swap-root", publisher: "StepSecurity", date: "2026-11-05", role: "primary" }
+      - { url: "https://ubuntu.com/security/notices/USN-8996-1", publisher: "Ubuntu Security", date: "2026-11-04", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-109518", publisher: "Debian Security Tracker", date: "2026-11-04", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/debian-and-ubuntu-apt-flaw-lets-mitm.html", publisher: "The Hacker News", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: stepsecurity-blog feed https://www.stepsecurity.io/blog/rss.xml (item CVE-2026-109518) → pivot: Hacker News https://thehackernews.com/2026/11/debian-and-ubuntu-apt-flaw-lets-mitm.html → primary: Ubuntu USN https://ubuntu.com/security/notices/USN-8996-1 and Ubuntu CVE page https://ubuntu.com/security/CVE-2026-109518 → Debian tracker https://security-tracker.debian.org/tracker/CVE-2026-109518 (Debian security announcement and APT developers' list were behind a proof-of-work challenge and not read)"
+    summary: |
+      Debian and Ubuntu shipped fixes on 2026-11-04 for CVE-2026-109518, a flaw in apt found by Max Justicz (who found the similar CVE-2019-3462) in the code that resumes interrupted downloads. An attacker who controls the HTTP traffic between apt and its mirror, for example a malicious mirror, proxy or compromised network, answers two package requests with redirects to the same URL so apt merges the downloads, forces a retry with ordinary temporary server errors, and, because apt mishandles the hard links it uses for the merged download, the resumed transfer overwrites the verified file after the hash check; apt then installs the attacker's package and its maintainer scripts run as root. Exploitation requires a non-zero Acquire::Retries setting, which defaults to 3 on Debian 12 and Ubuntu 22.04 and later, so older releases are not exposed by default unless scripts raised the retry count; Snap and FTP sources are not affected. Ubuntu rates it high priority, CVSS 4.0 7.7, and lists fixed apt builds for 22.04 (2.4.15ubuntu0.1), 24.04 (2.8.4ubuntu0.1), 26.04 (3.2.1ubuntu0.1) and 26.10 (3.3.3ubuntu0.1) plus Pro and Legacy Support builds for 14.04 to 20.04; the Debian tracker lists bookworm fixed in 2.6.2 and trixie in 3.0.4, and sid in 3.3.6. The Hacker News reports that none of the advisories describes exploitation or a workaround for systems that cannot update. StepSecurity frames the CI/CD exposure: self-hosted runners on flat networks, shared package caches and corporate egress proxies, and Docker builds that run apt-get install.
+    region_nexus: "global; Debian and Ubuntu are common across Swiss public-sector Linux fleets, build runners and container images"
+    primary_sector_nexus: "indirect (patch-and-verify item for Linux server and build estates; requires a network man-in-the-middle position)"
+    sector: "technology"
+    cves: [CVE-2026-109518]
+    techniques: [T1557, T1195]
+    affected_products: ["APT (Debian)", "Ubuntu", "Debian GNU/Linux"]
+    entity_keys: ["product:ubuntu"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_hint: "A1 for fixed-version facts (Ubuntu and Debian first-party); exploitation absence is from The Hacker News reading of three advisories"
+    novelty: new
+    borderline: true
+    borderline_reason: "Primarily an S1 vulnerability item (no exploitation, MITM prerequisite); returned from the StepSecurity feed so the main agent can dedup against S1's return and keep one. The Debian-side advisory text (DSA-6607-1 trixie, DLA-4880-1 bookworm per the tracker) was not read in full; the Debian security announcement was behind a proof-of-work interstitial."
+    evidence:
+      - quote: "None of the three advisory reports describe attacks exploiting the flaw or offer a workaround for systems that cannot update yet."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/debian-and-ubuntu-apt-flaw-lets-mitm.html"
+      - quote: "Ubuntu rates the flaw as high priority, with a CVSS 4.0 score of 7.7"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/debian-and-ubuntu-apt-flaw-lets-mitm.html"
+      - quote: "Max Justicz discovered that APT incorrectly handled hard links when encountering redirects and retrying package downloads."
+        attribution: "Ubuntu Security"
+        source_url: "https://ubuntu.com/security/notices/USN-8996-1"
+    extended_notes: |
+      Exposure check named by StepSecurity: apt list --installed '?source-package(^apt$)' and apt-config dump | grep -i Acquire::Retries. Post-patch: update runner and base images and rebuild them, since patching a running runner does not fix new runners booting from an old image. CVE table fields: affected apt on Debian bookworm below 2.6.2 and trixie below 3.0.4; Ubuntu 22.04 to 26.10 below the builds listed; Debian 11 (LTS ended 2026-08-31) has a developer-published fixed version 2.2.5 per The Hacker News. Not in a KEV catalogue as of fetch (not checked against the catalogue directly; S1 owns that check).
+
+  # ------------------------------------------------------------------ 10
+  - title: "Imperva: a third operator exploiting StyleSmuggler (CVE-2026-75650) on Magento and Adobe Commerce installs the PSK Agent Go RAT, reports success through DNS lookups and leaves a PHP webshell in pub/media"
+    lookback: true
+    sources:
+      - { url: "https://www.imperva.com/blog/stylesmuggler-exploitation-deploys-psk-agent-rat-against-magento-stores/", publisher: "Imperva Threat Research", date: "2026-11-02", role: "primary" }
+    discovery_trace: "first seen at: imperva-threat-research listing https://www.imperva.com/blog/ (python3 tools/fetch_source.py extract and url; lookback sweep, 168 h) → primary (no pivot needed): https://www.imperva.com/blog/stylesmuggler-exploitation-deploys-psk-agent-rat-against-magento-stores/"
+    summary: |
+      Imperva reports that between 2026-09-09 and 2026-09-13 it detected a coordinated campaign exploiting Magento and Adobe Commerce stores across Western Europe, North America and Asia-Pacific through the /paypal/transparent/response/ endpoint, the first stage of StyleSmuggler (CVE-2026-75650, covered in the store since 2026-09-08). In that stage the attacker places PHP in the query string, Magento writes the request to a report file under var/report/, and a second GraphQL request with an attacker-controlled styles parameter evaluates it. The observed payloads try shell_exec, system, exec and passthru in turn to pipe a remote shell script into bash; the script finds a writable and executable directory, fetches a roughly 10.5 MB obfuscated Go remote-access tool Imperva calls PSK Agent (shell commands, host data, SOCKS5 proxying, encrypted channels, scheduled persistence), some payloads report success by embedding the victim hostname in a DNS lookup to attacker-controlled authoritative DNS so the lookup alone confirms execution even if HTTP is blocked, and a subset also drop a roughly 900-line PHP file manager and webshell into publicly reachable directories including pub/media that can call libc through the PHP FFI and uses AES-256-CBC with a shared hard-coded key. Imperva assesses a likely Chinese-speaking operator with moderate confidence from Chinese-language comments and naming, does not attribute to a named group, and states this applies to the PSK Agent activity, not all StyleSmuggler exploitation (another actor ships a Rust backdoor). Its post-patch warning is that Adobe's VULN-39341 hotfix closes the entry point but removes neither the RAT, webshell nor stolen credentials.
+    region_nexus: "Western Europe, North America, Asia-Pacific (opportunistic scanning of exposed Magento stores)"
+    primary_sector_nexus: "indirect (e-commerce shops; relevant where public bodies or suppliers run Magento or Adobe Commerce storefronts)"
+    sector: "cross-sector"
+    cves: [CVE-2026-75650]
+    techniques: [T1190, T1059.004, T1105, T1027, T1090, T1573.001, T1053, T1036.005, T1071.004, T1505.003]
+    affected_products: ["Adobe Commerce", "Magento Open Source"]
+    entity_keys: ["trend:stylesmuggler-magento-adobe-commerce-2026-09", "product:magento", "product:adobe-commerce"]
+    new_entities:
+      - { key: "malware:psk-agent", type: malware, name: "PSK Agent", aliases: [], summary: "Imperva's name for an obfuscated Go remote-access tool (chi_down) delivered through StyleSmuggler exploitation of Magento and Adobe Commerce, with SOCKS5 proxying, encrypted channels and scheduled persistence; operator assessed likely Chinese-speaking, not attributed to a named group (Imperva, 2026-11-02)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B2 (Imperva telemetry first-hand; single report; activity dated September)"
+    novelty: "update-of:2026-09-08/stylesmuggler-cve-2026-75650-magento-adobe-commerce-rce"
+    borderline: true
+    borderline_reason: "Improvement-level delta on a covered entry (a third post-exploitation toolkit, September activity reported in November) with no Swiss or public-sector nexus; the covered entry already notes more than one actor. The detection hooks (DNS success beacons, masquerading process names, pub/media webshell) may justify an improvement record, not a floated update."
+    evidence:
+      - quote: "Applying Adobe’s VULN-39341 hotfix closes the initial StyleSmuggler entry point, but it does not remove a RAT, webshell, stolen credentials, or other persistence established before patching."
+        attribution: "Imperva Threat Research"
+        source_url: "https://www.imperva.com/blog/stylesmuggler-exploitation-deploys-psk-agent-rat-against-magento-stores/"
+      - quote: "We therefore assess a likely Chinese-speaking nexus with moderate confidence but do not attribute the campaign to a specific group, organization, or government."
+        attribution: "Imperva Threat Research"
+        source_url: "https://www.imperva.com/blog/stylesmuggler-exploitation-deploys-psk-agent-rat-against-magento-stores/"
+      - quote: "This attribution applies to the PSK Agent activity described here, not to all StyleSmuggler exploitation."
+        attribution: "Imperva Threat Research"
+        source_url: "https://www.imperva.com/blog/stylesmuggler-exploitation-deploys-psk-agent-rat-against-magento-stores/"
+    extended_notes: |
+      Detection concepts: web-server user process executing curl or wget piped to a shell; outbound DNS queries whose first label is the host name under an unfamiliar zone; UDP port 123 traffic that is not NTP-shaped from a web host; processes named like kernel workers (kworker/u:8:0), fc-cache or chronyd with a web-user owner; new PHP files under pub/media; var/report/ files containing PHP. Imperva reports 0% VirusTotal detection of the dropper at analysis time (vendor claim).
+
+  # ------------------------------------------------------------------ 11
+  - title: "Residential proxy exit nodes on a government network: Layer3 Intel sees 28 proxy services exiting through the White House address block 236 times in 30 days; Spur counted proxies in nearly 300 government-owned networks"
+    sources:
+      - { url: "https://krebsonsecurity.com/2026/11/want-to-rent-an-internet-address-at-the-white-house/", publisher: "Krebs on Security", date: "2026-11-05", role: "primary" }
+      - { url: "https://layer3intel.com/blog/residential-proxies-white-house-network", publisher: "Layer3 Intel", date: "2026-11-04", role: "primary" }
+    discovery_trace: "first seen at: The Register security feed https://www.theregister.com/security/headlines.atom (item 'The White House is apparently a popular residential proxy exit spot') and malware-news feed → pivot: Krebs https://krebsonsecurity.com/2026/11/want-to-rent-an-internet-address-at-the-white-house/ (from https://krebsonsecurity.com/feed/) → primary: Layer3 Intel https://layer3intel.com/blog/residential-proxies-white-house-network (linked from the Krebs article)"
+    summary: |
+      Layer3 Intel, from its new Residential Proxy Observatory, reports that between 2026-10-05 and 2026-11-03 its proxy-enumeration pipeline exited 236 times through the network of the Executive Office of the President, from six addresses on 26 of 30 days, through 28 separate public residential proxy services, and that Spur and Synthient independently flag the same addresses as proxy exits; roughly half of the activity fell between 5 pm and midnight Eastern, which Layer3 reads as a person's device carrying a proxy SDK rather than public guest Wi-Fi, while stating its data shows the exits, not the device. Synthient said on X, as cited by Krebs, that the activity relates to multiple Windows 11 installations of the Infatica proxy program, a service whose founder's hosting firm King Servers hosted six of the eight addresses used in the 2016 Arizona and Illinois election-system compromises (Krebs). Krebs adds that Spur found residential proxies in nearly 300 government-owned and operated networks (January 2026 webinar) and that Infoblox found 65% of its customers querying residential-proxy domains. Layer3, citing Synthient's earlier research, notes that poorly secured proxy SDKs have allowed internal-network access and lateral movement, as with the Kimwolf botnet, so anyone buying proxy access could reach internal systems if an SDK on that network has the same flaw. The White House had not commented when Krebs published.
+    region_nexus: "US executive branch; the Spur and Infoblox figures describe government and enterprise networks generally"
+    primary_sector_nexus: "direct as an exposure class (proxy SDKs on staff devices in government networks); no Swiss measurement published"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1090]
+    affected_products: ["Infatica proxy SDK"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: "B2 (Layer3 Intel first-hand observation corroborated by Spur and Synthient flags and reported by Krebs; the device and user behind the exits are not identified)"
+    novelty: new
+    borderline: true
+    borderline_reason: "Exposure-class awareness item (behaviour of unmanaged proxy SDKs), no campaign and no Swiss data; the ATT&CK mapping is weak. Kept because it states a government-network measurement and a concrete detection concept (DNS lookups for proxy-SDK service domains, inventory of monetisation SDKs and 'free' apps on managed devices)."
+    evidence:
+      - quote: "This is public access. Anybody can obtain it by signing up to a public residential proxy service, paying a few dollars and sending requests through it."
+        attribution: "Layer3 Intel"
+        source_url: "https://layer3intel.com/blog/residential-proxies-white-house-network"
+      - quote: "Past research has shown that poorly secured proxy SDKs can allow internal network access and lateral movement."
+        attribution: "Layer3 Intel"
+        source_url: "https://layer3intel.com/blog/residential-proxies-white-house-network"
+      - quote: "found residential proxies in nearly 300 government owned and operated networks"
+        attribution: "Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/11/want-to-rent-an-internet-address-at-the-white-house/"
+    extended_notes: |
+      Triage: legitimate use of consumer VPN or bandwidth-sharing apps by staff produces similar DNS and egress telemetry; the discriminating features are proxy-SDK service domains queried from managed endpoints, high-volume outbound connections from a workstation to many destinations at odd hours, and endpoint software not in the approved inventory.
+
+  # ------------------------------------------------------------------ 12
+  - title: "CERT-AGID paper (Italy): a laboratory LoRA backdoor in an open-weight model fires only when a specifically named MCP server is connected, so a model can ship before its trigger exists"
+    sources:
+      - { url: "https://cert-agid.gov.it/news/backdoor-nei-modelli-open-weight/", publisher: "CERT-AGID (Agenzia per l'Italia Digitale)", date: "2026-11-04", role: "primary" }
+    discovery_trace: "first seen at: malware-news feed https://malware.news/latest.rss (page 1; topic https://malware.news/t/backdoor-nei-modelli-open-weight/127001) → primary: https://cert-agid.gov.it/news/backdoor-nei-modelli-open-weight/ (Italian; paper PDF https://www.agid.gov.it/sites/agid/files/2026-11/La%20backdoor%20attende%20il%20suo%20turno_paper%20nov26.pdf read through the pdf subcommand, text partly character-split)"
+    summary: |
+      CERT-AGID, the Italian public-administration CERT, publishes a laboratory paper, 'La backdoor attende il suo turno', showing that a model can be taught through LoRA adapter training an extra behaviour that activates when a specific MCP server name appears among the available tools: in the configuration studied, a Qwen-based open-weight model generated an additional HTTPS call to a learned URL only when the trigger server was present, six real GET requests succeeded in the final comparison, and with the server absent or given a neutral name no calls were produced. The authors note the method is not specific to Qwen, that LoRA adapters can be distributed separately or merged into the weights, and describe a plausible two-stage supply chain in which a useful model or adapter is published on a model hub with a conditional behaviour and an MCP server with the trigger name is distributed later, making the behaviour operational without a weight update. CERT-AGID states that the experiment tests the activation mechanism, not an actual malicious distribution, and that a correct answer does not establish that the assistant did only what it was asked; actions through connected tools must be observed. Relevance for administrations adopting open-weight models with MCP tool servers is the validation gap, since initial acceptance testing would not see a trigger that depends on a tool added later.
+    region_nexus: "Italy (national authority); applicable to Swiss administrations that adopt open-weight models and MCP tool servers"
+    primary_sector_nexus: "direct (published by the Italian public-administration CERT; concerns AI deployment in public bodies)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195]
+    affected_products: ["Hugging Face model hub", "Model Context Protocol servers", "Qwen open-weight models"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    classification_hint: "A2 for authorship and experiment facts (CERT-AGID is the owner); the threat scenario is hypothetical, not observed in the wild"
+    novelty: new
+    borderline: true
+    borderline_reason: "Laboratory proof of concept with no in-the-wild observation, and published 2026-11-04, a few hours before the 26 h window floor (no earlier fire covered it; the malware.news mirror is dated 2026-11-04 12:15 UTC). The main agent should drop it if the window floor is strict; it is surfaced because it is a neighbouring national authority's primary research on a deployment pattern likely in public bodies."
+    evidence:
+      - quote: "Un comportamento appreso può restare inattivo durante le verifiche iniziali e manifestarsi quando l’ambiente cambia."
+        attribution: "CERT-AGID"
+        source_url: "https://cert-agid.gov.it/news/backdoor-nei-modelli-open-weight/"
+    extended_notes: |
+      English gloss of the quote: a learned behaviour can stay dormant during initial checks and appear when the environment changes. Hunting concept: log and review tool-call and outbound-request telemetry from agent runtimes (not only model text output) and re-run acceptance tests when MCP servers are added; compare tool-initiated network destinations with the user request. The paper cites earlier CERT-AGID work on MCP implementations (April 2026) and 'Explosive Prompts' (October 2026).
+
+# Leads handed to other domains (not returned as S3 items; sources fetched but outside this domain's mission)
+leads_for_other_domains:
+  - "S1: '*sshole' OpenSSH sshd flaw on musl-libc systems (Alpine) with long passwords, fixed in OpenSSH 10.6p2 on 2026-11-05, found by Ozgun Kultekin, no exploitation reported (The Register 2026-11-05 https://www.theregister.com/security/2026/11/05/get-root-on-a-musl-linux-system-by-slamming-it-with-an-overly-long-password/5307910; The Hacker News 'OpenSSH Issues Emergency Fix ... Alpine Linux'); not in prior_coverage."
+  - "S1: Apache OFBiz 46 security fixes incl. CVE-2026-68524 (pre-auth RCE) and CVE-2026-109928 (account takeover), fixed in 24.09.08 (The Hacker News ThreatsDay 2026-11-05, citing openwall oss-security 2026-11-04); not in prior_coverage."
+  - "S1: Rails ImageMagick upload file-write flaw, Xen hypervisor VM-isolation flaws and a critical Android RCE patch appear in The Hacker News feed 2026-11-04; none in prior_coverage."
+  - "S2/S4 coverage gap: ESET APT Activity Report Q2 2026-Q3 2026 (2026-10-28, https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q2-2026-q3-2026/) has no entry in the 14-day prior_coverage; the Q4 2025-Q1 2026 edition is covered (2026-05-30). Outside this run's window; flag for the audit."
+dropped_leads:
+  - "Check Point 'ChatGPT Lockdown Mode Bypass' and 'Prompt Adware hidden in Jailbreak Bundles' (2026-11-05, 2026-11-03): AI-product abuse research without constituency nexus."
+  - "The Register / Forever Security 'ThisBash' Claude Dispatch flaw (2026-11-05): vendor will not fix; requires a malicious browser extension with claude.ai access; AI-agent product issue without constituency nexus."
+  - "SentinelLabs 'Defrost and Disrupt' (2026-11-03): already cited by the covered Danfoss refrigeration entry, which also carries the NoName057(16) and Z-Pentest claims."
+  - "OpenAI 'A thousand fewer paths to root' (2026-11-04) and the UK NCSC assessment 'Artificial intelligence and cyber intrusion' (2026-11-03): strategic AI-capability context, outside the window and no actionable defender change beyond patch cadence (carried by item 5)."
+  - "Sonatype PolinRider npm loaders (2026-11-04, via malware.news): ten niche hijacked packages, low blast radius."
+  - "SANS ISC 'Multipath TCP: Use and Detection' (2026-11-02): TCP option 30 detection recipes (Wireshark, Suricata, Zeek) would be an improvement-level addition to covered entry 2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root; not worth a floated update."
+  - "Dream Research 'PHP2Shell: Helping Defend the Systems That Are Hardest to Patch' (2026-11-05): product pitch for Dream's Hero tool."
+  - "KELA 'Not Actually Suspended' bank-phishing fake takedown (2026-11-03), AhnLab ASEC September APT trend report (2026-10-30), KeyHunter (SOCRadar, US universities), UltraFinder macro execution (Cyderes, 2026-11-03), Kaspersky PAYLOAD GPO (already covered 2026-09-29), ESET SlippyNunchucks and Gorbag (2026-11-04 and 11-03; Asia-focused and Ukraine-focused, no constituency nexus)."
+candidate_sources:
+  - id: badbyte
+    publisher: "Badbyte (independent researcher blog)"
+    url: "https://badbyte.io/artex-backdoor-docker-image/"
+    category: research
+    why: "Independent, reproducible supply-chain analysis of the trojanised ARTEX image with binary diff and exposure counts; first-hand for item 2. Only one post seen, so it is a lead, not a source to promote."
+  - id: layer3intel
+    publisher: "Layer3 Intel (Residential Proxy Observatory)"
+    url: "https://layer3intel.com/blog/residential-proxies-white-house-network"
+    category: research
+    why: "Primary source for residential-proxy exit observations on government address space (item 11); the new observatory may produce further government-network findings relevant to a public-sector constituency."
+  - id: cert-agid
+    publisher: "CERT-AGID (Italian public-administration CERT)"
+    url: "https://cert-agid.gov.it/news/backdoor-nei-modelli-open-weight/"
+    category: authority
+    why: "Neighbouring national public-administration CERT publishing weekly campaign summaries (Italian) and applied AI-security papers; check whether it is already in sources.json before registering."
+coverage_gaps:
+  - source_id: previdian
+    reason: "Recipe unchanged from the 2026-10-29 note: https://previdian.com/ extracts one featured CVE (CVE-2026-4035, page dated 2026-10-28) and https://previdian.com/feed returns 403 on direct, extract and the reader (one bounded retry this run); the exploited-vulnerability list cannot be swept. Previdian is not a usable discovery source until a listing path is found."
+  - source_id: sygnia
+    reason: "fetch_method blocked: direct 403 and extract with the reader chain all failed (jina keys returned 402 balance exhausted, then the reader relayed the upstream challenge). A WebSearch for recent Sygnia research returned only syndicated press (Fire Ant, Velvet Ant) with no in-window item."
+  - source_id: theregister-security-feed
+    reason: "Confirms the 2026-11-03 note: extract returns the sidebar only, WebFetch with the outbound-links template reads the article body (used for four articles this run)."
+  - source_id: hackernews
+    reason: "Feed runs to 2026-10-31 11:03 IST (50 items), so the 168 h lookback is covered only to about 2026-10-31; the monthly archive page https://thehackernews.com/2026/10/ fetched through the bridge but a title/href regex over its HTML returned no matches, so 2026-10-30 to 10-31 morning items were not enumerated."
+  - source_id: sans-isc
+    reason: "No gap: feed reached Oct 31; the diaries in the lookback were Stormcast episodes, MPTCP detection (dropped), vulnerable e-mail scripts and a Cisco IOS scan note, none returned."
+  - source_id: ahnlab-asec
+    reason: "WebFetch listing recipe still works (12 dated items, newest 2026-10-30); nothing in the 168 h lookback cleared the relevance bar."
+  - source_id: malware-news
+    reason: "Recipe confirmed: feed pages 0 to 6 reach 2026-10-29 12:35 UTC, covering the 168 h lookback (page N parameter works for N up to at least 6)."
+  - source_id: msft-ti
+    reason: "Recipe confirmation: WebFetch of the threat-intelligence topic listing returns 10 dated items and the bridge msft-secblog recent also lists Security Community Blog (techcommunity) posts such as the on-premises initiative that the topic listing omits; use both."
+source_ledger:
+  - { id: air-security, tier: standard, attempted: true, transport: "WebFetch (title/date/href prompt)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-29 (SolanaCry) is outside the 168 h horizon; remaining posts are awards and marketing" }
+  - { id: theregister-security-feed, tier: standard, attempted: true, transport: "feed (atom, 25 items) + WebFetch per article", horizon_hours: 168, in_horizon_items: 12, returned: 0, note: "feed items used as leads and corroboration: CERT-In CRAFTY FALCON (folded into item 1), White House proxies (item 11), musl sshole (handed to S1), Node-RED OT bug (already covered), Claude Dispatch (dropped)" }
+  - { id: previdian, tier: standard, attempted: true, transport: "extract of https://previdian.com/ and feed probe", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "featured CVE page dated 2026-10-28; feed 403 on every transport after one retry (coverage gap)" }
+  - { id: stepsecurity-blog, tier: standard, attempted: true, transport: "feed (rss.xml, 15 items)", horizon_hours: 168, in_horizon_items: 4, returned: 1, note: "apt CVE-2026-109518 returned (borderline); Binance, Claude Code extension and GhostAction-type posts already covered" }
+  - { id: imperva-threat-research, tier: standard, attempted: true, transport: "extract + url (href regex over listing)", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "StyleSmuggler PSK Agent (2026-11-02) returned as lookback update-of; other listing posts were product or marketing" }
+  - { id: dream-research, tier: standard, attempted: true, transport: "extract + WebFetch (full listing)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only in-horizon post is the 2026-11-05 Hero product pitch; PHP2Shell rooting post (2026-10-26) is outside the horizon and PHP2Shell is heavily covered" }
+  - { id: ahnlab-asec, tier: standard, attempted: true, transport: "WebFetch (title/date/href prompt)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "September APT trend report (South Korea, 2026-10-30) has no constituency nexus" }
+  - { id: cloudflare-cf1, tier: standard, attempted: true, transport: "feed (tag rss, 10 items)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-29 DDoS threat report Q3 is outside the horizon" }
+  - { id: hackernews, tier: standard, attempted: true, transport: "feed (50 items) + extract per article", horizon_hours: 168, in_horizon_items: 20, returned: 1, note: "returned the trojanised ARTEX image item (item 2) via its article; other leads folded or handed to S1; see coverage_gaps for the 2026-10-30 to 10-31 edge" }
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "WebFetch (title/date/href prompt)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-03 bank-phishing fake-takedown post dropped (no constituency nexus)" }
+  - { id: malware-news, tier: standard, attempted: true, transport: "feed pages 0-6 (30 items each) + extract per topic", horizon_hours: 168, in_horizon_items: 190, returned: 3, note: "originating links for Lindnor, CrowdStrike weaponization post and CERT-AGID paper came from this source; many items were advisories or duplicates" }
+  - { id: sans-isc, tier: standard, attempted: true, transport: "feed (10 items) + extract per diary", horizon_hours: 168, in_horizon_items: 9, returned: 0, note: "MPTCP detection diary dropped as improvement-level; other diaries not relevant" }
+  - { id: seqrite-labs, tier: standard, attempted: true, transport: "feed (10 items) + extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "Qilin evolution (2026-11-03) returned as lookback borderline" }
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract (direct 403, reader chain failed) + WebSearch fallback", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "blocked record; no in-window item found by search (coverage gap)" }
+# Cross-check of the ten major vendor research blogs (window_hours 26, floor 2026-11-05T00:55Z), by feed or listing:
+vendor_blog_crosscheck:
+  - "Microsoft Threat Intelligence: in-window Nov 5 posts returned (ARTEX exposed secrets in item 1, email landscape Q3 in item 4); Security Community Blog on-premises initiative returned as item 6; 'What's new in Microsoft Security: November 2026' is a product roundup."
+  - "Google Threat Intelligence / Mandiant: newest posts 2026-11-02 (XCPE botnet, LLMjacking), nothing in window."
+  - "Cisco Talos: newest in window is a conference recap (2026-11-05); nothing relevant."
+  - "Unit 42: newest is the 2026-11-02 highlights roundup; nothing in window."
+  - "Check Point Research: ARTEX operator-console report (used in item 1), ChatGPT Lockdown Mode bypass (dropped)."
+  - "ESET: newest 2026-11-04 (SlippyNunchucks Sogou hijack), 2026-11-03 (Gorbag); nothing in window."
+  - "Kaspersky Securelist: Storm-2603 fileless SharePoint (item 3)."
+  - "SentinelOne SentinelLABS: newest 2026-11-04 (VerifiedIDA), 2026-11-03 refrigeration assessment (covered)."
+  - "Proofpoint: feed https://www.proofpoint.com/us/threat-insight-blog.xml newest item is dated 2026-10-14 and the listing page returned only template markup through extract, so the cross-check is incomplete; the feed may be stale (coverage observation, not a confirmed gap)."
+  - "Trend Micro (TrendAI): newest 2026-11-04 (WordPress core flaw, already covered), nothing newer."
