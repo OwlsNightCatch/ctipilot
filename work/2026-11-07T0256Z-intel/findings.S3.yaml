@@ -1,0 +1,374 @@
+# work/2026-11-07T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-07T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-07T02:58:33Z
+ended_at: 2026-11-07T03:17:27Z
+duration_seconds: 1134
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 10
+  bridge_fetches: 100   # approximate count of fetch_source.py invocations (feed, extract, url)
+window_note: >
+  window_hours 26 (cutoff 2026-11-06T00:56Z); developing_window_hours 72 (cutoff 2026-11-04T02:56Z); slice records
+  carry lookback_hours 168 (cutoff 2026-10-31T02:56Z). Items marked lookback: true are older than 26 h but inside the
+  record's own lookback (or, for acronis-tru, inside its rotation lookback of 146 h; that record is not in the S3 slice
+  but nobody else sweeps it and its newest post hits the emergency-services lens).
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "Cisco Secure Email Gateway: a public Metasploit module now gives unauthenticated root through a second S/MIME SQL injection, which Rapid7 believes is CVE-2026-76443 and not the exploited CVE-2026-76461"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/pt-metasploit-wrapup-unauth-rce-modules-in-network-perimeter-devices-and-much-more/", publisher: "Rapid7 (Metasploit wrap-up)", date: "2026-11-06", role: "primary" }
+      - { url: "https://github.com/rapid7/metasploit-framework/pull/22018", publisher: "Metasploit Framework pull request #22018 (author sfewer-r7, reviewer jheysel-r7)", date: "2026-10-15", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm", publisher: "Cisco PSIRT (hardening-release advisory)", date: "2026-10-14", role: "corroborating" }
+    discovery_trace: "first seen at: rapid7-research listing, URL https://www.rapid7.com/blog/ (raw url; majors sweep) -> Metasploit wrap-up article, URL https://www.rapid7.com/blog/post/pt-metasploit-wrapup-unauth-rce-modules-in-network-perimeter-devices-and-much-more/ -> pivot: module pull request, URL https://github.com/rapid7/metasploit-framework/pull/22018 -> Cisco hardening advisory (fixed-release table), URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm. WebSearch ('Cisco Secure Email Gateway S/MIME SQL injection CVE-2026-76443 Metasploit module public exploit') found no independent coverage."
+    summary: |
+      Rapid7's Metasploit wrap-up of 2026-11-06 lists a new exploit module (unix/smtp/cisco_secure_email_gateway_smime_sqli_rce) for an unauthenticated SQL injection that ends in command execution as root on Cisco Secure Email Gateway. The module sends one signed S/MIME message (about 85 KB, 500 certificate identities, the count the author's code comment says is needed to hit the harvesting writer's buffer limit so the injection fires) to an accepted recipient on the SMTP listener; the reviewer's test opened a session as root and confirmed the injection in about 10 seconds. The pull request was open on GitHub by 2026-10-15 (page metadata), the reviewer approved it on 2026-10-28 and reports "All payloads worked first try"; the author tested against AsyncOS 15.5.1-055 with the "S/MIME Public Key Harvesting" feature enabled for inbound mail. The author states he found it while diffing the fix for CVE-2026-76461 (the flaw Cisco confirms exploited) and that the Cisco advisories are vague but he believes it maps to CVE-2026-76443, one of the injection-class rows in Cisco's September hardening release, which Cisco's table lists as fixed in 15.5.5-014 and 16.5.0-780 while saying only "Migrate to a fixed release" for 16.0. That mapping is Rapid7's belief, not Cisco's statement, and no source reports this second flaw exploited in the wild. The delta against the existing entry: the entry records that Cisco's statement of 2026-10-31 about exploit code online is Cisco's alone; this is a public, working root-exploit module for a Cisco Secure Email Gateway SQL injection, but Rapid7's author believes it targets CVE-2026-76443 and not the exploited CVE-2026-76461, so it does not confirm the flaw Cisco's footnote refers to. A 16.0 appliance that took 16.0.4-302 (which the entry says closes CVE-2026-76461 only) has no named fix for the flaw this module appears to use.
+    region_nexus: "global; Cisco Secure Email Gateway is an internet-facing mail-edge appliance common in European public administrations"
+    primary_sector_nexus: "direct (mail gateways of public bodies)"
+    sector: "public-sector"
+    cves: [CVE-2026-76443, CVE-2026-76461]
+    techniques: [T1190]
+    affected_products: ["Cisco Secure Email Gateway", "Cisco AsyncOS"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "A / 2 for the module's existence (Rapid7 is the module's author and the Metasploit maintainer; the public PR is first-hand); the CVE mapping is Rapid7's assessment, credibility 3."
+    novelty: "update-of:2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce"
+    evidence:
+      - quote: "This module exploits a SQLi for unauthenticated RCE as root against Cisco Secure Email Gateway. The Cisco advisories are vague, however we have reason to believe this maps to CVE-2026-76443."
+        attribution: "Rapid7 (Metasploit wrap-up)"
+        source_url: "https://www.rapid7.com/blog/post/pt-metasploit-wrapup-unauth-rce-modules-in-network-perimeter-devices-and-much-more/"
+      - quote: "I was exploring another SQLi, CVE-2026-76461 (Which was exploited in-the-wild a few weeks back), and diffed out this one."
+        attribution: "Metasploit Framework PR #22018 (author sfewer-r7)"
+        source_url: "https://github.com/rapid7/metasploit-framework/pull/22018"
+      - quote: "which has the \"S/MIME Public Key Harvesting\" feature enabled for inbound mail."
+        attribution: "Metasploit Framework PR #22018 (author sfewer-r7)"
+        source_url: "https://github.com/rapid7/metasploit-framework/pull/22018"
+      - quote: "16.0 Migrate to a fixed release."
+        attribution: "Cisco PSIRT (hardening-release advisory)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm"
+    extended_notes: |
+      Exposure: a Cisco Secure Email Gateway whose SMTP listener is reachable from untrusted networks and that has S/MIME public-key harvesting enabled in its inbound mail policy (the author's tested configuration; no source says whether disabling the feature prevents the flaw, so do not present it as a mitigation). Read the AsyncOS version with the appliance's version command; Cisco's table names 15.5.5-014 (re-released 2026-10-31 per the existing entry) and 16.5.0-780 as fixed and no 16.0 build.
+      Behaviour to detect: inbound SMTP messages that are signed S/MIME (application/pkcs7-mime, smime-type signed-data) of unusual size carrying hundreds of certificate identities, delivered after the sender probed for an accepted recipient with HELO/MAIL/RCPT exchanges carrying a random local-part and then RSET (the module's own log shows this sequence; a different tool could vary it). No source publishes appliance-side artefacts for this second injection: the mail_logs pattern in the existing entry is Cisco's for CVE-2026-76461 and no source says it matches this one. Post-patch compromise check as in the existing entry: root on the appliance means mail_logs can have been tampered with, so compare against firewall and network logs outside the appliance.
+      Triage: legitimate S/MIME mail with several certificate addresses is common; the discriminators are the extreme identity count (hundreds in one message), a message from a sender with no mail history that was preceded by recipient-probing envelopes, and a follow-on outbound connection from the appliance.
+      Hardening: move 16.0 appliances to 16.5.0-780 (Cisco's only 16.x fixed build for the hardening CVEs); restrict SMTP ingress to the sending MTAs that must reach the gateway.
+  # ------------------------------------------------------------------ 2
+  - title: "Citrix NetScaler CVE-2026-88771: Rapid7 ships a Metasploit exploit module for the exploited unauthenticated command injection"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/pt-metasploit-wrapup-unauth-rce-modules-in-network-perimeter-devices-and-much-more/", publisher: "Rapid7 (Metasploit wrap-up)", date: "2026-11-06", role: "primary" }
+      - { url: "https://github.com/rapid7/metasploit-framework/pull/21962", publisher: "Metasploit Framework pull request #21962 (author sfewer-r7)", date: "2026-10-02", role: "primary" }
+    discovery_trace: "first seen at: rapid7-research listing, URL https://www.rapid7.com/blog/ (raw url; majors sweep) -> Metasploit wrap-up article, URL https://www.rapid7.com/blog/post/pt-metasploit-wrapup-unauth-rce-modules-in-network-perimeter-devices-and-much-more/ -> pivot: module pull request, URL https://github.com/rapid7/metasploit-framework/pull/21962"
+    summary: |
+      Rapid7's Metasploit wrap-up of 2026-11-06 adds an exploit module (freebsd/http/citrix_netscaler_cve_2026_88771) for the NetScaler unauthenticated command injection that Citrix reported exploited before disclosure; the module credits CERT-EU, Scyrix LLC, sfewer-r7 and watchTowr, the module title names the login log as the injection point, and the pull request (page metadata 2026-10-02, labelled CISA-KEV) records tests on 14.1 and a 13.1 target. The existing entry already carries watchTowr's write-ups and a public proof of concept for the sibling CVE-2026-88773; what is new is a maintained, point-and-click framework module for the exploited flaw, which lowers the skill needed to scan for it. Rapid7's wrap-up attaches CVE-2026-88773 as the module's CVE reference while its title and description name CVE-2026-88771, and the pull request says both flaws are fixed in the same firmware version, so the module's version check cannot tell them apart. No source in this delta reports new victims.
+    region_nexus: "global; NetScaler ADC and Gateway are widely deployed by Swiss and EU public administrations"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-88771, CVE-2026-88773]
+    techniques: [T1190]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "A / 1 for the module's existence (public PR and release); no new exploitation claim."
+    novelty: "update-of:2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev"
+    evidence:
+      - quote: "This adds in an exploit module for the recent Citrix NetScaler unauth RCE via command injection (CVE-2026-88771), that was reported as being exploited in the wild by the vendor prior to public disclosure."
+        attribution: "Rapid7 (Metasploit wrap-up)"
+        source_url: "https://www.rapid7.com/blog/post/pt-metasploit-wrapup-unauth-rce-modules-in-network-perimeter-devices-and-much-more/"
+      - quote: "Tested on 14.1 and triggered the payload via manually forcing the diagnostic script to run."
+        attribution: "Metasploit Framework PR #21962 (reviewer comment)"
+        source_url: "https://github.com/rapid7/metasploit-framework/pull/21962"
+    extended_notes: |
+      Defender angle: expect commodity scanning and framework-driven exploitation of unpatched NetScaler management and gateway addresses from now on. The reviewer triggered the payload by manually forcing a diagnostic script to run, which suggests execution can lag the triggering request (an inference from that one comment; the module title names the login log as the injection point), so correlate login-request anomalies with later process events rather than expecting them to coincide. The existing entry's post-patch compromise guidance (configuration secrets rotated, web-server-configuration persistence checked) stays the operative step.
+  # ------------------------------------------------------------------ 3
+  - title: "ARTEX: Microsoft names Storm-3358 (Cambodia-based, financially motivated) driving it against financial organisations, and Check Point reads operator consoles showing nearly autonomous opportunistic campaigns on 1,608 exposed panels"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/11/06/artex-abuse-expands-as-cybercriminals-target-financial-sector/", publisher: "Microsoft Threat Intelligence", date: "2026-11-06", role: "primary" }
+      - { url: "https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/", publisher: "Check Point Research", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: msft-ti listing, URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ (raw url shows the newest card, post time 2026-11-06T18:44-08:00) -> primary: Microsoft article, URL https://www.microsoft.com/en-us/security/blog/2026/11/06/artex-abuse-expands-as-cybercriminals-target-financial-sector/ ; second: checkpoint-research feed, URL https://research.checkpoint.com/feed/ -> primary: Check Point article, URL https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/ (inside the 72 h developing window)"
+    summary: |
+      Microsoft Threat Intelligence (2026-11-06) reports that Storm-3358, a Cambodia-based intrusion cluster that mainly targets financial organisations in Southeast Asia and a smaller number of large ones globally, has used ARTEX since October 2026 together with conventional automated tools to scan internet-facing systems, exploit anonymous file upload and server-side request forgery flaws, and install the open-source remote access tools WISP, vshell and AdaptixC2, with ARTEX agents using netcat and curl to fetch them, web shells for persistence on compromised web servers and compromised cloud identities for persistence and exfiltration. Microsoft names the behavioural tell of an agent (a wide variety of requests in a short burst, retries of technique variants, a switch to next-stage actions at machine speed), lists the default tools and user agents ARTEX drives (Nmap, curl, wget, Python HTTP clients, Playwright-driven headless Chromium), and reports that honeypots, decoys, tarpits and "fake wins" that convince an agent its objective is done cut the traffic reaching real assets in its tests. Check Point Research (2026-11-05) adds the operator side: it counts 2,557 hosts that host or hosted ARTEX panels with 1,608 live and public, ten of which exposed the full database, from which it reads operator prompts and models (DeepSeek Flash family most common; guardrails hit only on Anthropic's Opus 5.5, after which the operator switched to a more permissive Chinese model). Its three worked campaigns are opportunistic crime, not espionage: stealing iOS signing certificates from grey-market shops, trying to drain USDT from payment sites (230 findings, nothing moved), and harvesting game-account credentials from backend servers. The agents got in through hardcoded administrator passwords in single-page-app JavaScript bundles, missing API authentication, command injection, insecure direct object references, weak admin credentials and template injection, and in one case used leaked storage credentials to gain write access to a bucket serving app landing pages. Check Point gives two dates for the original repository (closed-source on 2026-10-08 in one place, "deletion" on 2026-09-08 in another) and Mandiant said October, so treat the date as unsettled. The delta against the existing ARTEX entries: a third named cluster with a financial-sector focus, and hard numbers on how exposed and how autonomous operator-side ARTEX use is.
+    region_nexus: "global; Storm-3358 mainly Southeast Asia financial sector; the exposed-web-application attack class applies to Swiss public bodies"
+    primary_sector_nexus: "indirect"
+    sector: "financial (Storm-3358) / cross-sector (operator behaviour)"
+    cves: []
+    techniques: [T1595.002, T1190, T1505.003, T1105, T1110.003, T1078.004, T1552.001]
+    affected_products: []
+    entity_keys: ["tool:artex", "actor:storm-0940", "actor:unc7228", "actor:vapor-panda", "tool:adaptixc2"]
+    new_entities:
+      - { key: "actor:storm-3358", type: actor, name: "Storm-3358", aliases: [], summary: "Microsoft Threat Intelligence designation for a Cambodia-based, financially motivated intrusion cluster that mainly targets financial organisations in Southeast Asia and a smaller number of large ones globally and has used the ARTEX agent framework together with open-source remote access tools since October 2026 (Microsoft, 2026-11-06)." }
+      - { key: "tool:vshell", type: tool, name: "vshell", aliases: [], summary: "Open-source remote access and command-and-control tool that Microsoft lists, with WISP and AdaptixC2, among the tools Storm-3358 installs after ARTEX-driven exploitation (Microsoft, 2026-11-06)." }
+    relation_suggestions:
+      - { subject: "actor:storm-3358", object: "tool:artex", basis: "Microsoft states Storm-3358 began targeting financial-sector organisations using ARTEX in October 2026 (Microsoft Threat Intelligence, 2026-11-06)" }
+      - { subject: "actor:storm-3358", object: "tool:adaptixc2", basis: "Microsoft states Storm-3358 used the WISP, vshell and AdaptixC2 RATs for persistence and lateral movement (Microsoft Threat Intelligence, 2026-11-06)" }
+      - { subject: "actor:storm-3358", object: "tool:vshell", basis: "same Microsoft sentence names vshell among the RATs Storm-3358 used (Microsoft Threat Intelligence, 2026-11-06)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_hint: "A / 1 on the facts each lab holds first-hand (Microsoft victim-side telemetry; Check Point operator-console artefacts, independent of each other)."
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    evidence:
+      - quote: "The threat actor that Microsoft Threat Intelligence tracks as Storm-3358 is a Cambodia-based intrusion cluster that primarily targets financial organizations in Southeast Asia, in addition to a smaller number of large financial organizations globally."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/06/artex-abuse-expands-as-cybercriminals-target-financial-sector/"
+      - quote: "Storm-3358 has used the WISP, vshell, and AdaptixC2 RATs for persistence and lateral movement."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/06/artex-abuse-expands-as-cybercriminals-target-financial-sector/"
+      - quote: "With American models configured on 3 different instances, we observed guardrails being hit only when using Anthropic’s Opus 5.5."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/"
+      - quote: "Companies can expect to be exposed to a high volume of attacks, if being target of an agentic hacking campaign. Systems in the exposed perimeter should be tested and hardened accordingly."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/"
+    extended_notes: |
+      Exposure: any internet-facing web application or API of a public body (not a product list): the agents' successful entry points are classic weaknesses (hardcoded administrator credentials in JavaScript bundles, endpoints without authentication, command injection, IDOR, SSTI, weak admin passwords); where authentication was enforced the agents stalled. Microsoft's guidance is that blocking default user agents will not stop an agent because it changes them quickly, but they are a useful alert.
+      Detection (telemetry class first): web and WAF access logs showing one source walking many endpoints and parameter variants within seconds and retrying the same technique with variations, default scanner user agents and headless-Chromium fingerprints; on Linux web servers, shell execution spawned from a PHP application or web server user, netcat or curl pulling a binary into a world-writable directory, new cron jobs; in Entra, service-principal sign-ins flagged by Verified threat actor IP risk detections (Microsoft). Check Point notes the ARTEX build tag (default "dev", or the last git commit) can cluster operators.
+      Triage: authorised penetration tests and vulnerability scanners produce similar bursts; the discriminators are an untested external source, no change ticket, retry-on-error variation, and follow-on installs of remote access tools.
+      Hardening: pre-auth surface review of every exposed web app and API (remove credentials from front-end bundles, enforce authentication on every API route); Microsoft's deception suggestion (decoys, tarpits, fake wins) as a cheap way to burn agent time and gain attribution-quality signal.
+  # ------------------------------------------------------------------ 4
+  - title: "Acronis TRU: BOSSAI, a single operator's 12-agent AI attack mesh, took patient-care records and dispatch case data from Taiwanese emergency services and scanned fire-dispatch systems in five cities"
+    lookback: true
+    sources:
+      - { url: "https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/", publisher: "Acronis Threat Research Unit", date: "2026-11-04", role: "primary" }
+    discovery_trace: "first seen at: acronis-tru bonus sweep (not in the S3 slice; rotation lookback 146 h, last attempted 2026-11-01), URL https://www.acronis.com/en-us/tru/feed.xml (feed) -> primary: Acronis TRU article, URL https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/ . WebSearch ('BOSSAI Acronis AI agent mesh Taiwan emergency services Hualien operator') found no independent coverage."
+    summary: |
+      Acronis TRU reports that it found an open attack workstation, 90,000 files and 9 GB of logs, agent conversations and operator histories, and describes BOSSAI, a mesh of 12 AI agents (nine active) run by one operator, using Hermes Agent as the main offensive harness and open-source agentic pentest platforms, with commands typed in Traditional Chinese. In the 12 days TRU watched, the mesh targeted hundreds of organisations in eleven countries, among them government emergency services, banks and lenders, universities and military systems; TRU confirms data exfiltration or access at about ten targets in three countries and active attacks without confirmed compromise at about fifteen more. The emergency-services harm is the part that matters for this constituency: a Taipei fire-department patient-care records platform exposed ECG readings, ambulance video and vital signs without credentials back to 2018; a city 119 dispatch system's API yielded case records (times, response types, status, street-level locations) across seven districts; an emergency-management system showed a hardcoded AES-256 key in front-end JavaScript that exposed session-cookie contents including an administrator identity; a fire-dispatch vendor's database administration panel opened with default root credentials; a national fire agency single sign-on portal was brute-forced without confirmed access; and fire-department systems in five cities were fingerprinted. TRU also records what failed: the agents hallucinated a critical Apache flaw at a disaster-response centre (the port was filtered), commercial models refused offensive work so the operator fell back on locally run abliterated models, and TRU says the agents failed where authentication was enforced. TRU attributes the operation with high confidence to a single individual in Taiwan, from operational-security failures; this entry carries no personal identifiers.
+    region_nexus: "Taiwan (heaviest), Mexico, Thailand and others; transferable to Swiss emergency-services web platforms and cantonal dispatch vendors"
+    primary_sector_nexus: "direct (emergency services: dispatch, patient-care records, fire services)"
+    sector: "public-sector (emergency services), education, finance"
+    cves: []
+    techniques: [T1595.002, T1190, T1078.001, T1110, T1119, T1090]
+    affected_products: []
+    entity_keys: ["tool:hermes-ai-agent"]
+    new_entities:
+      - { key: "campaign:bossai-ai-attack-mesh-2026-11", type: campaign, name: "BOSSAI", aliases: [], summary: "Acronis TRU name for a single operator's mesh of 12 AI agents (Hermes Agent as main offensive harness, open-source agentic pentest platforms, abliterated local models) that targeted hundreds of organisations in eleven countries, among them Taiwanese emergency services, banks, universities and military systems, over the 12 days TRU observed it (Acronis TRU, 2026-11-04)." }
+    relation_suggestions:
+      - { subject: "campaign:bossai-ai-attack-mesh-2026-11", object: "tool:hermes-ai-agent", basis: "Acronis TRU: the most prolific of BOSSAI's offensive agents used Hermes Agent as its agentic harness (Acronis TRU, 2026-11-04)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B / 2: vendor research with first-hand evidence (exposed operator server); no independent corroboration found, attribution to an individual is TRU's own."
+    novelty: new
+    evidence:
+      - quote: "Using the BOSSAI mesh, the operator targeted hundreds of organizations spanning government emergency services, banks and lenders, universities, military systems, phone directories, e-commerce platforms, and gambling sites in eleven countries."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/"
+      - quote: "A fire-dispatch technology vendor's database administration panel was logged into with default root credentials, exposing 18 or more database tables."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/"
+      - quote: "The agents failed where authentication was enforced, where paywalls required valid sessions and where endpoints were properly filtered."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/"
+    extended_notes: |
+      Exposure: web platforms of emergency services and their vendors that are reachable without strong authentication: patient-care record systems, dispatch case APIs, vendor admin panels with default credentials, SSO portals without lockout, front-end bundles that hold keys. TRU's own lesson: "obscurity is no longer a valid defense" because an agent can examine hundreds of targets in parallel; properly configured systems gave the agents little.
+      Detection: web and API logs showing a burst from one source that enumerates dozens of subdomains and then runs concurrent directory and parameter discovery (TRU names nmap, nikto, ffuf, gobuster, dirsearch) followed by SQL-injection tooling (sqlmap, boolean-blind) against a legacy host, routed through a commercial proxy matched to the target's country; authentication logs showing credential brute-forcing of an SSO portal; admin-panel logins with default accounts.
+      Triage: a scheduled authorised scan or red-team exercise looks alike; the discriminators are no change ticket, residential or commercial-proxy egress geolocated to the victim country, and terse, error-driven retries.
+      Hardening: inventory every dispatch, patient-record and vendor-managed web interface and API for pre-auth data access; remove default credentials on vendor panels (ask the supplier); no secrets or cryptographic keys in front-end JavaScript; rate-limit and lock out SSO brute force.
+  # ------------------------------------------------------------------ 5
+  - title: "Kaspersky GERT: two ESXi and Proxmox ransomware cases in which a monitoring platform's stored root credential and plaintext admin notes, not a VM escape, gave the attackers the hypervisor layer"
+    sources:
+      - { url: "https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/", publisher: "Kaspersky GERT (Securelist)", date: "2026-11-06", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist feed, URL https://securelist.com/feed/ -> primary: Securelist article, URL https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/ . WebSearch ('Kaspersky GERT ESXi Proxmox ransomware PRTG monitoring root credential BlackNevas The Gentlemen') found no independent coverage."
+    summary: |
+      Kaspersky's Global Emergency Response Team describes two ransomware investigations in virtualised estates. In case 1 BlackNevas ransomware activity surfaced on a Windows host in a virtualised domain-controller segment where AnyDesk and the GMER anti-rootkit tool had been run; the estate's PRTG Network Monitor held VMware credentials with broad reach to the ESXi hosts and the same root password was reused across several nodes, so the attacker used it to connect by SSH, upload the encryptor, disable the ESXi execInstalledOnly setting with esxcli (the first execution attempt had been blocked by it), run the binary and delete logs, on two hosts at once in October 2025. In case 2 a ransomware incident by The Gentlemen group, the actor used what it collected during the dwell time: on a compromised system administrator workstation it found Proxmox root credentials and access details in plaintext notes, logged in as root@pam, opened the VNC web socket to reach the other hosts and ran the ransomware across the cluster (the log timestamps are ambiguous between day and month, so no date is given). GERT's point is that no VM escape was needed: monitoring that holds recoverable hypervisor credentials, password reuse, direct root SSH that bypasses vCenter role controls, a security setting that the same credential can switch off, and credentials in notes each turned one foothold into the management plane. Its remediation list is concrete and platform-neutral: a dedicated least-privilege monitoring identity per platform, no recoverable host root passwords on monitoring or general servers, ESXi administration through vCenter with Lockdown Mode and SSH and the ESXi Shell stopped by default, execInstalledOnly with Secure Boot, alerting on changes to those settings, isolated management networks behind jump hosts, and remote log storage and separate backup identities.
+    region_nexus: "global; VMware and Proxmox virtualisation is standard in Swiss federal, cantonal and communal data centres"
+    primary_sector_nexus: "direct"
+    sector: "cross-sector (hypervisor administration plane)"
+    cves: []
+    techniques: [T1078.003, T1021.004, T1021.005, T1552.001, T1685, T1685.006, T1486, T1219]
+    affected_products: ["VMware ESXi", "Proxmox VE", "Paessler PRTG Network Monitor"]
+    entity_keys: ["actor:thegentlemen"]
+    new_entities:
+      - { key: "actor:blacknevas", type: actor, name: "BlackNevas", aliases: [], summary: "Ransomware name Kaspersky GERT gives to the encryptor deployed on ESXi hosts in an October 2025 case in which the attacker used a root password reused across hosts and stored in PRTG Network Monitor (Kaspersky GERT, 2026-11-06)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B / 2: vendor incident-response cases, first-hand; no independent corroboration; victim and sector not named."
+    novelty: new
+    evidence:
+      - quote: "The available evidence showed that the PRTG deployment had broad access to the ESXi hosts and that the same root password was reused across several nodes."
+        attribution: "Kaspersky GERT (Securelist)"
+        source_url: "https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/"
+      - quote: "On a compromised system administrator workstation, the actor discovered administrative credentials and access details stored in notes in plain text."
+        attribution: "Kaspersky GERT (Securelist)"
+        source_url: "https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/"
+      - quote: "No VM escape was required."
+        attribution: "Kaspersky GERT (Securelist)"
+        source_url: "https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/"
+    extended_notes: |
+      Exposure: any estate where a monitoring, backup or automation system stores or can retrieve a hypervisor root credential, where ESXi hosts share a root password, where SSH or the ESXi Shell is left running, or where the Proxmox or vCenter admin interface is reachable from general server networks. Check by listing every credential store in monitoring tools, scripts and scheduled tasks and attempting direct SSH and API access to a host with a routine account.
+      Detection (telemetry class first): hypervisor and vCenter audit logs: SSH service started or enabled, root SSH logins from a monitoring or workstation source, changes to the execInstalledOnly advanced setting, Secure Boot or Lockdown Mode changes, local-account and exception-user list changes, firewall-rule changes, log-forwarding changes; Proxmox API logs showing root@pam requests to the vncwebsocket endpoint across many nodes; on the monitoring server, process creation of ssh or esxcli parented by the monitoring service.
+      Triage: legitimate maintenance also enables SSH and root logins; the discriminators are no change ticket, a source that is the monitoring server or an admin workstation rather than the jump host, execInstalledOnly switched off, and a new binary written under a datastore path just before execution.
+      Hardening: as Kaspersky lists above; most valuable first steps are removing stored root passwords from monitoring tools and unique per-host credentials from a vault.
+  # ------------------------------------------------------------------ 6
+  - title: "cwpdoor: Qianxin X-Lab finds a passive, log-suppressing backdoor built into a recompiled cwpsrv, the web server of Control Web Panel, with about 340,000 panels exposed and the spread vector unknown"
+    lookback: true
+    sources:
+      - { url: "https://blog.xlab.qianxin.com/cwpdoor-the-invisible-backdoor-living-inside-control-web-panel/", publisher: "Qianxin X-Lab", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: xlab-qianxin feed, URL https://blog.xlab.qianxin.com/rss/ -> primary: X-Lab article (English slug), URL https://blog.xlab.qianxin.com/cwpdoor-the-invisible-backdoor-living-inside-control-web-panel/ . WebSearch ('cwpdoor Control Web Panel backdoor cwpsrv XLab') found no independent coverage."
+    summary: |
+      Qianxin X-Lab's telemetry caught a script on 2026-06-29 that replaces the cwpsrv binary of Control Web Panel (a free Linux hosting control panel; cwpsrv is its dedicated nginx-based web server) with a recompiled copy carrying a passive backdoor, which X-Lab names cwpdoor. The update script supports cwpsrv 1.24.0 and 1.15.10, needs root, backs up the original, restarts the service, rolls back if the health check fails and then restores the file and directory timestamps and clears shell history. The backdoor does nothing until a request carries three custom headers (a timestamp within plus or minus 300 seconds, an AES-256-CBC encrypted command and an RSA signature over both), after which a helper process runs the command and the encrypted answer returns as an HTTP 200 octet-stream, and the module swaps the logging context so that the request never reaches the access log. X-Lab says a 2026-09-30 VirusTotal upload from Brazil, which also contained an Ebury backdoor library, shows real victims exist and that the file had zero detections; it says the relationship to Ebury is unclear and that it does not yet know which vulnerability spreads cwpdoor. It counts more than 340,000 CWP instances exposed to the internet in the past month (potential targets, not infections). For defenders: access logs cannot reveal this backdoor, so detection rests on host integrity (the running cwpsrv binary against the vendor package, unexpected backup files beside it, a helper child process and a local Unix-domain socket for inter-process communication) and on network telemetry for the odd headers; X-Lab's advice is to treat a confirmed host as compromised and to rotate all control-panel credentials.
+    region_nexus: "global; Swiss exposure unknown (CWP is a hosting-provider and small-site panel; check web-hosting suppliers of communes and cantonal bodies)"
+    primary_sector_nexus: "indirect (hosting suppliers)"
+    sector: "cross-sector (web hosting)"
+    cves: []
+    techniques: [T1554, T1070.006, T1070.003, T1205, T1573.001, T1071.001]
+    affected_products: ["Control Web Panel", "CWP cwpsrv"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:cwpdoor", type: malware, name: "cwpdoor", aliases: [], summary: "Qianxin X-Lab's name for a passive backdoor compiled into the cwpsrv web server of Control Web Panel; it is triggered only by a signed request carrying three custom headers and suppresses logging for that request (Qianxin X-Lab, 2026-11-05)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B / 2: first-hand telemetry and reverse engineering by a research lab; single source; spread vector and operator unknown."
+    novelty: new
+    evidence:
+      - quote: "At the same time, it suppresses logging for that request, leaving no trace of the interaction in the access logs."
+        attribution: "Qianxin X-Lab"
+        source_url: "https://blog.xlab.qianxin.com/cwpdoor-the-invisible-backdoor-living-inside-control-web-panel/"
+      - quote: "We do not yet know which vulnerability cwpdoor uses to spread"
+        attribution: "Qianxin X-Lab"
+        source_url: "https://blog.xlab.qianxin.com/cwpdoor-the-invisible-backdoor-living-inside-control-web-panel/"
+      - quote: "making all of them potential targets for cwpdoor infection"
+        attribution: "Qianxin X-Lab"
+        source_url: "https://blog.xlab.qianxin.com/cwpdoor-the-invisible-backdoor-living-inside-control-web-panel/"
+    extended_notes: |
+      Exposure: Linux servers running Control Web Panel whose cwpsrv panel (web server on the panel port) is reachable from the internet; X-Lab's two captured samples target cwpsrv 1.15.10 and 1.24.0 (the update script supports only those two versions); X-Lab does not say how infection occurs.
+      Detection (telemetry class first): file-integrity monitoring or package verification on the cwpsrv binary and its directory (replaced binary with original timestamps restored; a backup file left beside it), process lineage (a helper child of cwpsrv), local Unix-domain socket listing for a socket whose name contains the word integrity (X-Lab's quick check), strings in the binary for the three custom header names; network or TLS-inspection telemetry for HTTP requests to the panel carrying X-Ngx-Integrity-prefixed headers and answered with a 200 octet-stream; none of this appears in web access logs by design.
+      Triage: a legitimate cwpsrv update also restarts the service and writes a backup; the discriminators are a binary that no longer matches the vendor package, a helper child process, and the Unix-domain socket.
+      Post-patch check: upgrading does not prove cleanliness; X-Lab says treat a confirmed host as compromised and rotate every control-panel credential.
+  # ------------------------------------------------------------------ 7
+  - title: "ANNUAL REPORT — ReliaQuest Ransomware and Cyber Extortion in Q3 2026: 43 first-time groups drove 93% of leak-site growth, ExfilSquad looks like credential scraping, and about 85% of the added victims were outside the US"
+    lookback: true
+    borderline: true
+    borderline_reason: "Quarterly vendor report; value is the method lesson (verify a leak-site claim against your own logs; do not read sector or country rankings as risk), not new attack detail. Independent counts (Comparitech, 2026-10-06) show the Q3 volume rise and a 36% quarter-on-quarter rise in government targets."
+    sources:
+      - { url: "https://reliaquest.com/blog/threat-spotlight-ransomware-and-cyber-extortion-in-q3-2026/", publisher: "ReliaQuest Threat Research", date: "2026-11-03", role: "primary" }
+      - { url: "https://www.comparitech.com/news/ransomware-roundup-q3-2026-stats-on-attacks-ransoms-and-active-gangs", publisher: "Comparitech", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: reliaquest sitemap, URL https://reliaquest.com/sitemap.xml (filtered to /blog/, lastmod 2026-11-04) -> primary: ReliaQuest article, URL https://reliaquest.com/blog/threat-spotlight-ransomware-and-cyber-extortion-in-q3-2026/ ; corroboration: WebSearch ('\"Q3 2026\" threat landscape report ransomware public sector government November 2026') -> Comparitech roundup, URL https://www.comparitech.com/news/ransomware-roundup-q3-2026-stats-on-attacks-ransoms-and-active-gangs"
+    summary: |
+      ReliaQuest's quarterly ransomware report (published 2026-11-03) says organisations named on data-leak sites rose 30% in Q3 2026 but that 43 groups with no earlier posts accounted for 93% of the increase, while groups active in both Q2 and Q3 added 1%; it judges that leak-site headcounts no longer measure attacks, that some listings are likely rebrands, recycled data or false claims, and that detection should rest on shared ransomware behaviours (abuse of remote services, identity compromise, lateral movement, exfiltration) rather than group names. It assesses that ExfilSquad, an exfiltration-extortion name first seen in July 2026, is likely an opportunistic actor that scrapes exposed credentials, takes only what those accounts reach, and uses a ransomware-style leak site to make limited access look like a breach, so a named organisation should verify the claim against its own logs before responding; the likeliest real harm is targeted phishing of the named staff. Manufacturing victims grew 70% because Qilin and The Gentlemen between them added about a quarter of the sector's listings, both using internet-facing flaws, vulnerable drivers to disable EDR and Group Policy changes to push the encryptor, and about 85% of the added victims were outside the US (US share of listed victims 55%, 49%, 41% across Q1 to Q3). ReliaQuest forecasts more fragmentation in Q4 2026. Comparitech's independent Q3 count (published 2026-10-06) reports the highest quarterly total it has recorded and a 36% quarter-on-quarter rise in attacks on government entities, which supports the volume rise but not ReliaQuest's reading of what the new names mean.
+    region_nexus: "global; US share falling, so non-US public bodies are a growing share of listings"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:exfilsquad", "actor:qilin", "actor:thegentlemen"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: "B / 2 (vendor telemetry; leak-site data are claims)."
+    novelty: new
+    evidence:
+      - quote: "Organizations named on data-leak sites rose 30%, but 43 groups that had never posted before Q3 drove 93% of that increase."
+        attribution: "ReliaQuest Threat Research"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-ransomware-and-cyber-extortion-in-q3-2026/"
+      - quote: "ExfilSquad is likely an opportunistic actor using exposed credentials to reach limited data, then using a ransomware-style leak site to make that access look like a major breach."
+        attribution: "ReliaQuest Threat Research"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-ransomware-and-cyber-extortion-in-q3-2026/"
+      - quote: "Education saw the biggest uptick with an increase of 50 percent, followed by healthcare (up 39 percent), government (up 36 percent), and businesses (up 27 percent)."
+        attribution: "Comparitech"
+        source_url: "https://www.comparitech.com/news/ransomware-roundup-q3-2026-stats-on-attacks-ransoms-and-active-gangs"
+    extended_notes: |
+      Defender takeaway: when a commune, canton or supplier is named on a new leak site, treat the post as an unverified claim and let internal telemetry decide (ReliaQuest's three questions: was the organisation compromised, does the evidence match the actor's account of how it got the data, is the name a distinct operation, a rebrand or an opportunistic poster). Useful alongside the many SafePay and similar claims in the store.
+  # ------------------------------------------------------------------ 8
+  - title: "Refrigeration-controller attacks: Unit 42 counts over 5,000 internet-exposed devices from the manufacturers in CERT-FR's alert and a falling exposure trend, and repeats that the NoName057(16) and Z-Pentest claims are unverified"
+    borderline: true
+    borderline_reason: "Exposure counts only; the existing entry already carries Censys and Forescout exposure figures, SentinelLABS' assessment and the NoName057(16) and Z-Pentest claims; the extracted text lacks the country figure, so a Swiss share cannot be read."
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/europes-refrigeration-systems-attacks/", publisher: "Unit 42 (Palo Alto Networks)", date: "2026-11-06", role: "primary" }
+    discovery_trace: "first seen at: unit42 feed, URL https://unit42.paloaltonetworks.com/feed/ -> primary: Unit 42 article, URL https://unit42.paloaltonetworks.com/europes-refrigeration-systems-attacks/"
+    summary: |
+      Unit 42 (2026-11-06) overviews the attacks from public reporting (first wave overnight 11 to 12 October with about 700 French supermarkets, second wave overnight 1 to 2 November across at least ten more European countries and 100 to 115 stores) and adds Cortex Xpanse exposure data: on 5 and 6 November it saw over 5,000 internet-exposed devices made by the manufacturers listed in the CERT-FR alert, and a falling exposure trend across three periods (1,853 from 1 to 15 October, 558 from 16 to 31 October, 316 from 1 to 6 November); Unit 42 says the counts do not show vulnerable versions, that the initial access vector remains unconfirmed with widespread speculation about vulnerable software or default credentials, and that the NoName057(16) and Z-Pentest claims of 3 November remain unverified. The extracted text does not state which country the trend covers (it follows a remark that the impact was mainly in France), so read it as indicative.
+    region_nexus: "Europe incl. Switzerland (Swiss cases already in the existing entry)"
+    primary_sector_nexus: "indirect"
+    sector: "retail, food, healthcare cold chain, public bodies with refrigeration"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Danfoss AK-SM", "Danfoss AK-SC", "Copeland XWEB", "Dixell XWEB"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_hint: "B / 2."
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - quote: "we identified the presence of over 5,000 devices exposed to the internet that were manufactured by companies listed in the"
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/europes-refrigeration-systems-attacks/"
+      - quote: "These statistics do not necessarily mean that the devices are running vulnerable versions of software that could’ve been exploited."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/europes-refrigeration-systems-attacks/"
+cross_domain_leads:
+  - "SANS NewsBites 28.83 (2026-11-06, https://www.sans.org/newsletters/newsbites/xxviii-83) relays, for S4/S2: Credit Mutuel Arkea (France) says about EUR 100 million was taken through an unidentified third-party service provider using the bank's own account (press release 2026-11-04); Amadeus IT Group breach now acknowledged by Cathay Pacific, Korean Air, Asiana, Singapore Airlines and Malaysia Airlines after Japan Airlines (WebSearch found no confirmation that SWISS or Edelweiss are affected); Norad (Norwegian aid agency) grants-portal breach, 20,000 people; mSecure (mSeven Software) told users on 2026-11-03 to change passwords, reset 2FA and remove passkeys after 'suspicious activity'; Belgian FPS Finance services offline since 2026-10-28 (SANS 28.82)."
+  - "Krebs 2026-11-05 'Want to Rent an Internet Address at the White House?' (https://krebsonsecurity.com/2026/11/want-to-rent-an-internet-address-at-the-white-house/) and Layer3 Intel's Residential Proxy Observatory: 28 residential proxy services exiting through six White House-registered addresses; dropped by the 26 h window (published 2026-11-05) and because the lesson (proxy SDKs on managed endpoints) is generic."
+  - "Dropped by the window although store-uncovered: Google/Mandiant XCPE set-top-box botnet takedown (2026-11-02, also Trend and Krebs), Mandiant LLMjacking (2026-11-02), Elastic threats-etc Q-report (2026-11-04, teaser page only, full report not read), Microsoft 'What exploited vulnerabilities have in common' (2026-11-02)."
+candidate_sources:
+  - id: layer3-intel
+    publisher: "Layer3 Intel (residential proxy research blog)"
+    url: "https://layer3intel.com/blog"
+    category: research
+    why: "Primary for the Residential Proxy Observatory finding that SANS NewsBites and Krebs relayed (28 proxy services exiting through White House-registered addresses); `extract https://layer3intel.com/blog` returns dated posts. Vendor with a detection product, so reliability C until corroborated."
+coverage_gaps:
+  - source_id: crowdstrike
+    reason: "Recipe change: `extract https://www.crowdstrike.com/en-us/blog/category/counter-adversary-operations/` returns a 'This page doesn't exist' shell; `python3 tools/fetch_source.py feed https://www.crowdstrike.com/en-us/blog/feed/ 20` returns dated items (newest 2026-11-05, nothing in the 26 h window). Suggest rss_url on the record."
+  - source_id: rapid7-research
+    reason: "Recipe change: the pinned feed https://www.rapid7.com/rss.xml is malformed (invalid token, line 433) on the direct transport and the reader returned no items; `url https://www.rapid7.com/blog/` returns 19 post hrefs in no date order, so read dates per post with `extract` (the Metasploit wrap-up carried 2026-11-06)."
+  - source_id: msft-ti
+    reason: "Recipe change: `extract` of the threat-intelligence topic listing drops the newest card's link (the featured card shows only its excerpt); raw `url https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/` carries `<time datetime>` and the href for every card, which exposed the 2026-11-06 ARTEX post that extract hid."
+  - source_id: unit42
+    reason: "`extract` of the article fell back to the jina reader (direct trafilatura failed); content was complete."
+  - source_id: blick-ch
+    reason: "Recipe update: https://www.blick.ch/news.xml (direct) now holds 293 dated entries back to 2026-10-28 (about 9 days), so the 168 h lookback is fully servable from it; rss.xml holds about 38 items (about 7 h)."
+  - source_id: zimbra-security-advisories
+    reason: "The wiki table carries no dates; the dated companion feed `feed https://blog.zimbra.com/feed/` gives release dates (10.1.21 = 2026-09-24; nothing newer). No in-horizon advisory."
+  - source_id: netcraft
+    reason: "`url https://www.netcraft.com/resources/blog` cards show date and title as text but slugs did not match a /blog/<slug> href pattern in this run's parse; titles and dates were read from the rendered text, nothing relevant in horizon."
+  - source_id: schneier
+    reason: "`extract https://www.schneier.com/blog/` is served via the reader (jina); atom feed not retried."
+  - source_id: ox-security
+    reason: "Not in the S3 slice (rotation gap): `url --direct https://www.ox.security/feed/` still returns full content:encoded; the page URLs answer empty on direct. Newest posts 2026-11-05 (*sshole, already covered) and 2026-11-04 (PolinRider npm packages with an Ethereum dead drop, about 1,400 weekly downloads, crypto-wallet focus; dropped as low relevance)."
+source_ledger:
+  - { id: socradar, tier: standard, attempted: true, transport: "extract (listing) + extract per article", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "KeyHunter (2026-11-04: US-university fraud and LLM-key theft by a Chinese-speaking operator) dropped as low relevance; Nova RaaS profile (2026-11-05) is a profile of an already-known family; refrigeration (2026-11-02 updated 2026-11-05, 2026-11-06), ARTEX, Zyxel, SonicWall and Ivanti posts are already covered" }
+  - { id: opensourcemalware, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Show #28 (2026-11-06) restates covered items (Cursor Claude Code extension, Binance, PolinRider); 'Why conventional reputation feeds miss supply chain attacks' (2026-11-03) is the vendor's own dataset (62.2% of 450 day-zero indicators had zero VirusTotal detections) - dropped as low relevance" }
+  - { id: ruby-lang-news, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-23 (regexp fixes for GitLab CVEs), already covered" }
+  - { id: netcraft, tier: standard, attempted: true, transport: "url (raw HTML cards)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "GTA VI lure post (2026-11-03) and Booking.com hospitality phishing (2026-11-06) are consumer-fraud themes with no public-sector transfer" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed (Zscaler blog feed)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-06 AI-governance-for-manufacturing post is marketing; the PHP2Shell playbook (2026-10-29) is outside the horizon" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "sitemap /blog/ filter + extract", horizon_hours: 168, in_horizon_items: 8, returned: 1, note: "Q3 2026 ransomware report kept as borderline periodic report; sector ransomware posts (2026-11-05), SOC-analyst and Mythos posts (2026-11-02 to 11-06) are marketing" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract (listing + issues 82 and 83)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "used as a lead roll-up: Node-RED CVE-2026-58115, Zyxel GS1900, refrigeration, Binance, Ivanti and the Linux TCP flaw are already covered; non-covered items passed to S4 in cross_domain_leads" }
+  - { id: schneier, tier: standard, attempted: true, transport: "extract (reader)", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "AI vulnerability finding, legal-system hacking, squid and geolocation posts; no defender-actionable item" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "2026-11-03 to 11-05 posts are product and AI-agent-risk pieces and the monthly briefing; the Node2Shell, PHP2Shell and ZDI-CAN-33367 posts (2026-10-28) are outside the horizon and covered" }
+  - { id: xlab-qianxin, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "cwpdoor English and Chinese posts (2026-11-05) kept as one item; nothing between 2026-07-29 and 2026-11-05" }
+  - { id: offseq, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22 (PHP2Shell honeypot), covered" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract + blog feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest advisory row is 10.1.21 (released 2026-09-24 per blog feed); no new CVE row" }
+  - { id: blick-ch, tier: standard, attempted: true, transport: "feed + news sitemap (direct)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Volg freezer story (2026-11-05) is covered; 'Smarthome' explainer (2026-11-06) is consumer advice" }
+  - { id: forescout-research, tier: standard, attempted: true, transport: "url (hrefs) + extract per post", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-03 cold-chain post restates the Vedere Labs exposure research and the CISA fact sheet already in the refrigeration entry" }
+majors_sweep:
+  # strict 26 h window from 2026-11-06T00:56Z; items older but inside 72 h or noted in the items above
+  - { id: msft-ti, transport: "url raw HTML (extract hid the newest card)", in_window: "2026-11-06T18:44-08:00 ARTEX/Storm-3358 (item 3)", note: "2026-11-05 exposed-secrets post and 2026-10-30 posts already covered" }
+  - { id: mandiant-gtig, transport: "feed", in_window: "none (newest 2026-11-02: XCPE botnet, LLMjacking)", note: "see cross_domain_leads" }
+  - { id: google-tag, transport: "feed", in_window: "none (newest 2026-10-21)" }
+  - { id: talos, transport: "feed", in_window: "none (newest 2026-11-05 it-sa lessons; 2026-10-31 VOLTA)" }
+  - { id: unit42, transport: "feed + extract", in_window: "2026-11-06 refrigeration (item 8, borderline)" }
+  - { id: checkpoint-research, transport: "feed + extract", in_window: "none in 26 h; 2026-11-05 ARTEX (item 3, inside 72 h); 2026-11-05 ChatGPT lockdown-mode bypass and 2026-11-03 prompt-adware not read" }
+  - { id: eset, transport: "feed", in_window: "none (newest 2026-11-04 SlippyNunchucks, 2026-11-03 Gorbag; neither Swiss-relevant)" }
+  - { id: kaspersky-securelist, transport: "feed + extract", in_window: "2026-11-06 virtualization security (item 5)", note: "2026-11-05 Storm-2603 SOC Files covered" }
+  - { id: sentinellabs, transport: "feed + extract", in_window: "none (2026-11-03 refrigeration assessment already cited in the entry)" }
+  - { id: proofpoint, transport: "feed", in_window: "none (newest 2026-10-14)" }
+  - { id: trendmicro-research, transport: "feed + extract", in_window: "2026-11-06 Adobe Commerce PolyShell and StyleSmuggler (both CVEs covered, no new fact); 2026-11-04 WordPress probing (entry already carries KEV and Wordfence figures)" }
+  - { id: elastic-seclabs, transport: "feed + extract", in_window: "none in 26 h; 2026-11-04 threats-etc quarterly teaser only" }
+  - { id: huntress, transport: "feed", in_window: "none (2026-11-06 product post)" }
+  - { id: volexity, transport: "feed", in_window: "none (newest 2026-10-16)" }
+  - { id: rapid7-research, transport: "url + extract (feed malformed)", in_window: "2026-11-06 Metasploit wrap-up (items 1 and 2)", note: "2026-11-04 BOD 26-04 post is vendor marketing on a June directive already in the store" }
+  - { id: sophos-xops, transport: "feed", in_window: "none relevant (2026-11-05 financial-services ransomware survey is sector-specific; 2026-11-04 fake-coding-test already covered)" }
+  - { id: crowdstrike, transport: "feed (blog feed; category page 404)", in_window: "none (newest 2026-11-05 vulnerability-ecosystem thought piece, product launches)" }
+bonus_sweep:
+  - { id: acronis-tru, transport: "feed + extract", in_horizon: "2026-11-04 BOSSAI (item 4, lookback)" }
+  - { id: akamai-sirt, transport: "feed", in_horizon: "2026-11-02 CVE-2026-98432 write-up (entry exists); rest marketing" }
+  - { id: blackfield-ch, transport: "feed", in_horizon: "none (single post 2026-10-21)" }
+  - { id: ox-security, transport: "direct feed", in_horizon: "see coverage_gaps" }

@@ -1,0 +1,295 @@
+# work/2026-11-07T0256Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-11-07T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-07T02:58:33Z
+ended_at: 2026-11-07T03:18:35Z
+duration_seconds: 1202
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 30
+  bridge_fetches: 75
+items:
+  # ---------------------------------------------------------------------------
+  - title: "ChimeraZ forum sales aimed at Switzerland: Solnet and Destination Davos Klosters confirm real data was taken, while the four communes of Ebikon, Gersau, Meggen and Wil say the offered sample is public open-data content and no intrusion occurred"
+    sources:
+      - { url: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106", publisher: "Inside IT (Derselbe Hacker verkauft erneut Schweizer Daten)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.inside-it.ch/provider-solnet-schildert-datenabfluss-20261104", publisher: "Inside IT (Provider Solnet schildert Datenabfluss)", date: "2026-11-04", role: "primary" }
+      - { url: "https://frenchbreaches.com/alertes/suisse-fuite-donnees-quatre-communes-ebikon-gersau-meggen-wil-mvwolian3fkl2e1adtg", publisher: "French Breaches", date: "2026-10-31", role: "corroborating" }
+    discovery_trace: "first seen at: backlog row (b) of the S4 spawn message, URL https://frenchbreaches.com/alertes/ebikon-gersau-meggen-et-wil-suisses-mvwolian3fkl2e1adtg (extract resolved it to the canonical https://frenchbreaches.com/alertes/suisse-fuite-donnees-quatre-communes-ebikon-gersau-meggen-wil-mvwolian3fkl2e1adtg) -> WebSearch (\"Gemeinde Ebikon Gersau Meggen Wil Websites Hackerangriff Daten\", no on-point hit) -> extract of the inside-it.ch front page, URL https://www.inside-it.ch/ (teaser 'Derselbe Hacker verkauft erneut Schweizer Daten', article hrefs read from `url --direct`) -> primary: Inside IT, URL https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106 (full body read from the embedded article JSON, the lede only is visible to extract because of the paywall) -> pivot: Inside IT Solnet article, URL https://www.inside-it.ch/provider-solnet-schildert-datenabfluss-20261104"
+    summary: |
+      Inside IT reports that one forum pseudonym offered three Swiss data packages for sale, and the victims' own statements split them into two confirmed incidents and one non-incident. French Breaches had flagged the commune listing on 2026-10-31 under the handle ChimeraZ as a credible but unconfirmed claim, noting that the visible sample resembled municipal event-calendar content that is public anyway.
+      Solnet, a Solothurn internet and solution provider: the seller claims about 6,800 entries on 5,000 people (customer data, transactions, failed logins). CEO Erich Hohermuth confirms that the published sample comes from log files of Solnet's webmail service, containing e-mail addresses, recipients, subject lines and connection data, with passwords only masked; he says an investigation found unauthorised access to the webmail send logs through a gap, covering 13 to 31 October 2026. He rules out the PHP2Shell flaw (a security update was applied the same day it became known, 21 October), says Solnet does not know who obtained the data or holds it, and says the Federal Office for Cybersecurity (BACS) and Switch-CERT drew attention to the listing. Affected customers were told on 2 November, the webmail environment was rebuilt, externally reviewed and back in operation since 2 November, and customers were advised to change their mail password and enable multi-factor authentication; Solnet sees no sign of mailbox or other system takeover.
+      Destination Davos Klosters, the cooperative behind the davos.ch tourism site: the seller claims about 19,600 people, mainly names, postal addresses and phone numbers, 13,000 of them in Switzerland. The organisation says it has known of the listing since 2 November, that the data date from April 2026 and must be assumed real (first name, last name, address, place, phone; no passwords, e-mail addresses or payment data), that it cannot tell who is affected because the data set holds tens of thousands more records, and that the PHP flaw was not the route. It says its developers identified and fixed the gap on Monday 2 November and that the federal data protection commissioner (EDÖB) was notified.
+      Ebikon (LU), Gersau (SZ), Meggen (LU) and Stadt Wil (SG): the seller claims 8,900 entries on about 5,000 people. The head of Stadt Wil's communications office answers for all four: their IT provider Seantis analysed the samples and found exclusively public data retrievable through the public, documented Open Government Data API, mostly entries of the public event calendar entered by the organisers themselves; no cyber incident is known to the communes, there was no direct contact from criminals, Seantis found no anomaly on its servers, the admin.digital solution is not written in PHP, and there are no indications of unauthorised access or data outflow. No source states how the Solnet logs or the Davos records were obtained.
+    extended_notes: |
+      Backlog row (b) disposition: Ebikon, Gersau, Meggen and Wil are NOT confirmed as an intrusion (the communes answered and explained the data as public open-data API content) so that part of the hold is closed as a non-incident; davos.ch is confirmed by the victim (Destination Davos Klosters, verified as the operator of davos.ch from the site metadata); the Belgian rescue zone Hainaut-Est (ZOHE) is still unconfirmed, no source mentioning it was found in French searches, keep the row to its 2026-11-17 expiry. The same pseudonym is the registry's actor:chimeraz (French SDIS fire-and-rescue campaign, Aveyron OnRecrute); Inside IT says 'unter demselben Pseudonym' for the three listings but does not itself name the handle, French Breaches names ChimeraZ for the commune listing only.
+      Defender angles. Exposure: Solnet webmail customers (public bodies that use a Solnet mailbox included, if any) should treat recipients, subject lines and connection metadata of mail sent 13 to 31 October as known to the criminal; the realistic follow-on is phishing or replies that quote real subject lines, so mail-flow monitoring for look-alike threads to those recipients is the hook, plus a password change and MFA as Solnet itself advises. Triage: a sample of 'stolen' municipal data made of event titles, organiser names and phone numbers that are already on the public site, in JSON, is the discriminator for an OGD-API scrape rather than a breach; ask the data owner whether the same fields are retrievable from the public interface before opening an incident. The commune case is also the lesson that forum posts naming a PHP flaw or a government domain need that check before escalation.
+      Sourcing: two Inside IT articles carrying direct victim statements plus French Breaches' independent review of the listing; the Inside IT article bodies are partly paywalled, the text used here was read from the page's embedded article data. Suggested rating B2. The Solnet article's URL date is 2026-11-04 (CEO interview 4 November), page metadata shows 2026-11-06.
+    region_nexus: "Switzerland: Solnet (Solothurn), Destination Davos Klosters (Graubünden), communes Ebikon, Meggen (Lucerne), Gersau (Schwyz), Stadt Wil (St. Gallen)"
+    primary_sector_nexus: "partial: the four-commune claim (public sector) was denied as public data; the confirmed cases are an ISP and a tourism cooperative"
+    sector: "public-sector, telecom, tourism"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Solnet webmail service"]
+    entity_keys: ["actor:chimeraz"]
+    new_entities:
+      - { key: "incident:chimeraz-swiss-data-sales-2026-11", type: incident, name: "ChimeraZ forum data sales against Swiss targets (Solnet, Destination Davos Klosters, four communes), October-November 2026", aliases: [], summary: "One forum pseudonym offered data of the Solothurn provider Solnet (webmail send logs, unauthorised access 13-31 October 2026, confirmed by its CEO), of Destination Davos Klosters (April 2026 customer records, confirmed by the organisation) and of Ebikon, Gersau, Meggen and Wil (sample the communes say is public open-data API content, no intrusion); Inside IT, 2026-11-04 and 2026-11-06." }
+    relation_suggestions:
+      - { subject: "incident:chimeraz-swiss-data-sales-2026-11", object: "actor:chimeraz", basis: "French Breaches names ChimeraZ as the seller of the Ebikon, Gersau, Meggen and Wil listing (2026-10-31) and Inside IT says the Solnet, Davos and commune listings came from the same forum pseudonym (2026-11-06)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    references_hint: ["2026-08-31/france-sdis-fire-rescue-data-leak-campaign", "2026-09-07/chimeraz-aveyron-onrecrute-breach"]
+    evidence:
+      - quote: "Es handelt sich ausschliesslich um öffentliche Daten, welche einfach über die öffentliche, dokumentierte API (Open Government Data) bezogen werden können."
+        attribution: "Inside IT (Derselbe Hacker verkauft erneut Schweizer Daten)"
+        source_url: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106"
+      - quote: "Es gibt keine Hinweise auf einen unbefugten Zugriff oder einen Datenabfluss"
+        attribution: "Inside IT (Derselbe Hacker verkauft erneut Schweizer Daten)"
+        source_url: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106"
+      - quote: "Wir müssen davon ausgehen, das die Daten real sind (Vorname, Nachname, Adresse, Ort, Telefonnummer), es sind keine Passwörter, E-Mail-Adressen und Zahlungsdaten betroffen."
+        attribution: "Inside IT (Derselbe Hacker verkauft erneut Schweizer Daten)"
+        source_url: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106"
+      - quote: "Wir konnten bestätigen, dass veröffentlichte Beispieldaten aus Protokolldateien unseres Webmail-Dienstes stammen."
+        attribution: "Inside IT (Provider Solnet schildert Datenabfluss)"
+        source_url: "https://www.inside-it.ch/provider-solnet-schildert-datenabfluss-20261104"
+      - quote: "Die betroffenen Versandprotokolle umfassen den Zeitraum vom 13. bis 31. Oktober 2026"
+        attribution: "Inside IT (Provider Solnet schildert Datenabfluss)"
+        source_url: "https://www.inside-it.ch/provider-solnet-schildert-datenabfluss-20261104"
+      - quote: "Revendication crédible, non confirmée"
+        attribution: "French Breaches"
+        source_url: "https://frenchbreaches.com/alertes/suisse-fuite-donnees-quatre-communes-ebikon-gersau-meggen-wil-mvwolian3fkl2e1adtg"
+  # ---------------------------------------------------------------------------
+  - title: "Refrigeration attacks, controller-level evidence: Ransom-ISAC publishes the event log of a 2026-11-02 compromise of an internet-reachable Copeland XWEB Pro 1.9.0 (two external Administrator sessions, 743 parameter writes across 31 devices, alarm mutes, keypad locks, defrost commands) and says the default Administrator credentials were used"
+    sources:
+      - { url: "https://ransom-isac.org/blog/the-copeland-incident/", publisher: "Ransom-ISAC (The Copeland Incident)", date: "2026-11-06", role: "primary" }
+    discovery_trace: "first seen at: ransom-isac, URL https://ransom-isac.org/blog/ (extract of the listing, newest post 2026-11-06) -> post href read from `url --direct https://ransom-isac.org/blog/` -> primary: Ransom-ISAC, URL https://ransom-isac.org/blog/the-copeland-incident/ (extract, full body). Context sources the post cites (CISA ICSA-26-057-10, Claroty Team82, Copeland bulletin) were not re-fetched in this slice: the existing entry already carries them."
+    summary: |
+      Ransom-ISAC (Massimo Giaimo and contributors) analyses a supplied event log from a commercial refrigeration site in Italy (labels translated from Italian, device names anonymised) whose Copeland XWEB Pro controller, reportedly running firmware 1.9.0, was reachable from a public address. The log shows two Administrator sessions from different external addresses in the early hours of 2 November 2026, the same night as the cold-room changes at the French blood service, but Ransom-ISAC states it has no evidence linking the case to NoName057(16), Z-Pentest Alliance or the French attacks.
+      First session: a read sweep of parameters across 31 listed assets (display cases, freezer cabinets, cold rooms, central plant) about five minutes before the first change, then 588 parameter writes across 26 devices in roughly six minutes, about 1.6 writes a second, a pace Ransom-ISAC reads as scripted or bulk-programming. Second session about 25 minutes later: more reads, then 155 writes across five cold rooms. Totals: 743 parameter writes on 31 devices. Setpoints were moved to 110 and 150 degrees C, alarm limits and delays to outlying values (often 150 or 255), other control settings to zero and defrost intervals, termination values and modes altered; the log also records keypad-lock commands, alarm-mute commands (one failed with 'no valid function') and two defrost commands. Routine scheduler-originated 'sent device command' events appear in the same log and are not attacker activity.
+      What it does not show: the log records administrator-level actions only, not how the attackers got in, the real temperatures reached, whether each write was accepted or persisted, or how long equipment ran unsafely. Ransom-ISAC says the controller was still on its default Administrator credentials so no exploit was needed; the post does not publish the evidence for that statement, and it names two critical XWEB Pro CVEs from CISA's advisory only as context ('does not prove that any specific published vulnerability was used'). Firmware 1.9.0 lies inside CISA's affected range (up to 1.12.1).
+    extended_notes: |
+      Update shape for 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack: the entry already says to confirm the factory Admin password on XWEB units and names exposure; the delta is the first public controller-log view of a compromise and the concrete alert patterns, all read from the controller's own event log. Sourcing is a single secondary-class lab (Admiralty C; the log is the site's, passed to Ransom-ISAC), so attribute every count and the default-credential statement to Ransom-ISAC.
+      Detection (telemetry class: the controller or supervisor event log, forwarded off-device if the model allows): Administrator login from outside the approved management networks, or a second Administrator session from another address within the hour; a read sweep across most of the fleet right after a login (earliest signal, about five minutes ahead of the first write); bulk 'wrote parameters' events (more than about 20 a minute from one account, or writes to more than three devices in five minutes; the first session ran near 98 a minute); keypad-lock, alarm-mute or defrost-on commands that do not come from the scheduler; implausible values for setpoint (110/150) and alarm thresholds (150/255). Triage: scheduler-originated device commands and maintenance-window writes from a named contractor account are the benign lookalikes; the discriminator is source address, account (the shared Administrator), burst rate and the combination of extreme setpoints with muted alarms. Hardening named by the post: change the default Administrator password, remove public reachability and port forwarding, brokered VPN with MFA and named accounts, independent temperature monitoring that does not depend on the controller, offline configuration backups. Swiss relevance: the entry already records the first Swiss cases (a Köniz butcher, three Volg stores), so the same exposure check applies to any Swiss site that runs an XWEB or comparable supervisor reachable from the internet.
+    region_nexus: "Italy (the logged site); campaign spans France, Germany, Benelux, Switzerland and others per the existing entry"
+    primary_sector_nexus: "indirect: cold-chain controllers; the same campaign reached the French blood service and, per the entry, Swiss retail"
+    sector: "retail, healthcare, food supply, ICS"
+    cves: []
+    techniques: [T1078.001]
+    affected_products: ["Copeland XWEB Pro"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "product:copeland-xweb"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - quote: "In this incident, the Administrator sessions came through the default credentials, so none of these vulnerabilities was needed."
+        attribution: "Ransom-ISAC (The Copeland Incident)"
+        source_url: "https://ransom-isac.org/blog/the-copeland-incident/"
+      - quote: "In total, the log records 743 parameter writes affecting 31 devices."
+        attribution: "Ransom-ISAC (The Copeland Incident)"
+        source_url: "https://ransom-isac.org/blog/the-copeland-incident/"
+      - quote: "The event log only records administrator-level actions, not the exploit itself or how the attackers got in."
+        attribution: "Ransom-ISAC (The Copeland Incident)"
+        source_url: "https://ransom-isac.org/blog/the-copeland-incident/"
+      - quote: "We have no evidence linking it to NoName057(16), Z-Pentest Alliance or the attacks in France."
+        attribution: "Ransom-ISAC (The Copeland Incident)"
+        source_url: "https://ransom-isac.org/blog/the-copeland-incident/"
+  # ---------------------------------------------------------------------------
+  - title: "Alala Message (Japan): compromise of a bulk-mail platform reaches about 81.3 million e-mail addresses and up to 380 customer companies, with up to 7.13 million phishing mails sent through the service itself and a ministry, a prefecture and municipalities among the affected list owners; entry route still unconfirmed"
+    sources:
+      - { url: "https://www.arara.com/news/info/20261106_arara", publisher: "Alala Inc. and Paycloud Holdings (joint notice, in Japanese)", date: "2026-11-06", role: "primary" }
+      - { url: "https://contents.xj-storage.jp/xcontents/AS71226/0d5f3847/6172/4bcc/bfab/73896dab795d/20261106211906670s.pdf", publisher: "Paycloud Holdings, third report (timely disclosure, in Japanese)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.paycloud.inc/news/info/20261022_paycloud", publisher: "Paycloud Holdings (PHP precaution notice, in Japanese)", date: "2026-10-22", role: "context" }
+      - { url: "https://piyolog.hatenadiary.jp/entry/2026/11/05/015717", publisher: "Piyolog (Alala summary, updated 2026-11-06, in Japanese)", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://piyolog.hatenadiary.jp/entry/2026/11/04/191450", publisher: "Piyolog (YumeLink Cuenote summary, in Japanese)", date: "2026-11-04", role: "context" }
+    discovery_trace: "first seen at: piyolog, URL https://piyolog.hatenadiary.jp/ (`url` listing; entry 2026/11/05/015717 carried an update stamp of 2026-11-06 PM) -> pivot: Piyolog entry, URL https://piyolog.hatenadiary.jp/entry/2026/11/05/015717 -> primary: Alala/Paycloud joint notice, URL https://www.arara.com/news/info/20261106_arara and the third-report PDF read with `fetch_source.py pdf`, URL https://contents.xj-storage.jp/xcontents/AS71226/0d5f3847/6172/4bcc/bfab/73896dab795d/20261106211906670s.pdf -> context: Paycloud notice of 2026-10-22, URL https://www.paycloud.inc/news/info/20261022_paycloud"
+    summary: |
+      Alala Inc., a subsidiary of Paycloud Holdings (Tokyo), runs the bulk e-mail service Alala Message. A third party got into the service in late October 2026; the companies' joint notice of 2026-11-06 and Paycloud's third timely disclosure of the same day put the number of e-mail addresses taken, de-duplicated across three categories, at 81,329,467, of which about 34.3 million are address-only and about 47.0 million carry attributes such as name, sex, birth date, phone number, member number or address for some customers. Up to about 380 contracting companies are estimated affected (still under review), and between 28 and 30 October up to about 7.13 million mails posing as a credit-card company were sent through the service itself; the service holds no card numbers. All Alala Message services were stopped on 31 October and the restart date is undecided. Police, the Personal Information Protection Commission and the Kanto bureau of the Ministry of Internal Affairs and Communications (MIC) were told.
+      As Piyolog reads the three reports: reconnaissance-like access on 27 October; on 28 October a third party logged in to the administration console of the shared environment and used its data-export function; between 28 and 31 October the attacker moved through the service's servers and the databases of 97 servers in contracting companies' environments were read; a second cloud environment ('B', 3.25 million address-only records, added in the third report) was reached with misused credentials in the same period. The first report blamed a web-server vulnerability in part of the environment, the second added problems in the system environment, and the companies say the start and route of the intrusion are still under investigation. Paycloud's notice of 2026-10-22 shows the group suspended or put into maintenance parts of its services on 21 to 22 October for the two critical PHP flaws (the PHP2Shell pair); no source ties the Alala intrusion to those flaws, so the timing is a hypothesis to check, not a finding.
+      Public-sector exposure, per Piyolog's table of customer notices (customer pages not fetched in this run): MIC says 775 e-mail addresses and 21 names from an English-language newsletter that Alala handled for it were taken; Osaka Prefecture and Higashi-Osaka say an e-application provider's mail service was breached (press reports name Alala for Osaka); the towns of Eniwa and Tobe warned residents about suspicious mail from the vendor's sender. A sibling incident documented in Piyolog's separate summary: YumeLink's Cuenote service was compromised from 16 October through a library or program vulnerability plus a support-staff credential, followed by planted code, database export and session theft, and several municipalities suspended disaster-information and safety e-mail services.
+    extended_notes: |
+      PD-11 basis: global scale (81 million addresses, hundreds of corporate and public list owners), public-sector customers, and a transferable access-to-abuse chain (supplier admin console and export function, stolen account and key reused across 97 customer-environment servers, then the supplier's own sending identity used to phish at volume). No Swiss nexus is claimed; the lesson is for any Swiss body that sends newsletters, e-application confirmations or alert mails through a third-party mailer.
+      Exposure: you are in scope if a vendor sends mail on your behalf from its own domain or infrastructure and holds your recipient lists (newsletters, citizen notifications, alert services, e-government application confirmations); the vendor's incident exposes your recipients' addresses even when your own systems are untouched, and the vendor's sending identity can then carry phishing that passes sender checks. Detection: mail-flow logs for inbound and outbound messages from your notification vendors' sender domains with unusual lure themes, sending times or volumes, and recipient reports of mail from a vendor they only know as a newsletter sender; check the vendor status page and ask for the vendor's own indicator guidance. Triage: ordinary newsletters from the same vendor are the benign lookalike; the discriminator is theme (card-statement style confirmation requests), timing (28 to 30 October here) and lists the recipient never registered for.
+      Sourcing: company primary notices (A) with the numbers being the company's own estimates; the customer-by-customer facts come through Piyolog's compilation (B) and were not re-read at each customer. Suggested rating A2. Out of window note: the first report is 2026-10-29, the in-window facts are the 2026-11-06 third report, the joint notice and the Piyolog update.
+    region_nexus: "Japan; no Swiss nexus claimed, transferable supplier lesson"
+    primary_sector_nexus: "indirect: public-sector list owners (a ministry, a prefecture, municipalities) among about 380 customers"
+    sector: "public-sector, retail, finance, media, SaaS"
+    cves: []
+    techniques: [T1190, T1078, T1199, T1566.002]
+    affected_products: ["Alala Message"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:alala-message-bulk-mail-platform-compromise-2026-10", type: incident, name: "Alala Message bulk-mail platform compromise, October 2026", aliases: ["アララ メッセージ 不正アクセス"], summary: "Third-party access to Alala Inc.'s bulk e-mail service between 27 and 31 October 2026: 81,329,467 e-mail addresses taken (Alala and Paycloud Holdings third report, 2026-11-06), up to about 380 customer companies, up to about 7.13 million phishing mails sent through the service, all services stopped on 31 October; entry route under investigation." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "持ち出されたメールアドレスは、重複を除いて81,329,467件（約8,100万件）です"
+        attribution: "Alala Inc. and Paycloud Holdings (joint notice, in Japanese)"
+        source_url: "https://www.arara.com/news/info/20261106_arara"
+      - quote: "対象となるご契約企業は、最大約380社と推計しております（精査中）"
+        attribution: "Alala Inc. and Paycloud Holdings (joint notice, in Japanese)"
+        source_url: "https://www.arara.com/news/info/20261106_arara"
+      - quote: "10月31日に「アララメッセージ」のすべてのサービスを停止いたしました。"
+        attribution: "Alala Inc. and Paycloud Holdings (joint notice, in Japanese)"
+        source_url: "https://www.arara.com/news/info/20261106_arara"
+      - quote: "アララは第1報でシステムの一部の環境におけるWebサーバーの脆弱性を第三者に悪用されたものとし"
+        attribution: "Piyolog (Alala summary, updated 2026-11-06, in Japanese)"
+        source_url: "https://piyolog.hatenadiary.jp/entry/2026/11/05/015717"
+      - quote: "侵入の開始時期と経路は調査中としている"
+        attribution: "Piyolog (Alala summary, updated 2026-11-06, in Japanese)"
+        source_url: "https://piyolog.hatenadiary.jp/entry/2026/11/05/015717"
+      - quote: "持ち出しを確認したのは契約企業の環境のサーバー97台"
+        attribution: "Piyolog (Alala summary, updated 2026-11-06, in Japanese)"
+        source_url: "https://piyolog.hatenadiary.jp/entry/2026/11/05/015717"
+      - quote: "識別番号：CVE-2026-109618、CVE-2026-109619"
+        attribution: "Paycloud Holdings (PHP precaution notice, in Japanese)"
+        source_url: "https://www.paycloud.inc/news/info/20261022_paycloud"
+  # ---------------------------------------------------------------------------
+  - title: "DigiCert: after a February 2025 migration an internal archive system became reachable from the internet and self-registered accounts without MFA read customer identity-validation records between 2026-06-27 and 2026-07-02; no certificate issuance or validation impact"
+    sources:
+      - { url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2084460", publisher: "DigiCert incident report on Mozilla Bugzilla (CA Program, updated 2026-11-06)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/digicert-data-breach-exposes-customer-information-identity-documents/", publisher: "BleepingComputer", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/feed/ (item 'DigiCert data breach exposes customer information, identity documents', 2026-11-06, drilled via extract at https://databreaches.net/2026/11/06/digicert-data-breach-exposes-customer-information-identity-documents/) -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/digicert-data-breach-exposes-customer-information-identity-documents/ -> primary: DigiCert's CA-compliance incident report, URL https://bugzilla.mozilla.org/show_bug.cgi?id=2084460"
+    summary: |
+      DigiCert's own incident report to the Mozilla CA Program (full report due by 2026-11-03, last updated 2026-11-06) says an internal business system that archives information customer representatives supplied to validate their identity was moved on 2025-02-04 from a VPN-restricted segment to another availability zone, and that this migration inadvertently made it reachable externally. A self-registration feature meant for other applications became available on it; accounts created that way were not subject to the MFA DigiCert otherwise requires, got read-only mode by default and, through an authorisation flaw, could read archived data. DigiCert saw non-DigiCert accounts on 2026-06-18, learned of the account-creation path on 2026-06-21 from its managed security research programme, deployed an authorisation fix on 2026-07-02 without realising archived data had been read, first suspected data access on 2026-10-12 and confirmed on 2026-10-19 that one unauthorised account read a subset of archived data between 2026-06-27 and 2026-07-02.
+      The records are mostly names, business e-mail addresses, phone numbers and business addresses of customer representatives, and for a small minority a customer-provided document such as a driver's licence, passport or utility bill. DigiCert says the access could not write records, act as a validation approver or issue certificates, that its CA services, CertCentral and DigiCert ONE were not affected, and that no action is needed on active certificates; customer notifications are going out and identification documents are still being reviewed to find who is affected. Remediation listed: self-registration disabled everywhere, all endpoints moved to private-IP load balancers, a security sign-off rule for network access changes on internal tools, least-privilege review, extra monitoring on file access and request volumes.
+    extended_notes: |
+      Why a borderline return: DigiCert is one of the largest public CAs and its customers include public bodies, but the scale is stated only as 'a small proportion' of archived data and nothing in the sources links a Swiss body. Transferable lesson (hence worth a short entry if shipped): an infrastructure migration silently exposed an internal tool, and a leftover self-registration endpoint combined with a missing authorisation check handed read access to whoever found it; the first handling treated it as an account-creation issue and not a data-access event, which is why the confirmation took until October.
+      Exposure: any organisation that bought OV, EV, code-signing or document-signing validation from DigiCert and sent identity documents for its representatives may be in the affected subset; check for the DigiCert notification, expect targeted phishing or identity-fraud attempts that cite certificate orders or the named representatives, and brief those representatives. No certificate revocation or reissue is advised by DigiCert. Detection: for your own estate, the hook is configuration-change review for any workload moved between network segments (external reachability scan after each migration), and authentication-log alerts on newly self-registered accounts on internal tools.
+      Sourcing: vendor primary (A) plus BleepingComputer; the incident report is self-reported to the browser root programmes. Suggested rating A1. Distinct from the registry's older incident:digicert-support-portal-2026 (a different event).
+    region_nexus: "global CA vendor; no Swiss nexus stated"
+    primary_sector_nexus: "indirect: supplier whose customers include public bodies (not stated by the sources)"
+    sector: "PKI / trust services"
+    cves: []
+    techniques: [T1190, T1136, T1213]
+    affected_products: ["DigiCert archived customer-validation business system"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:digicert-validation-archive-exposure-2026-06", type: incident, name: "DigiCert validation-archive business system exposure, June-July 2026 (disclosed October-November 2026)", aliases: [], summary: "An internal DigiCert archive system exposed to the internet by a 2025-02-04 migration let a self-registered account read customer identity-validation records between 2026-06-27 and 2026-07-02; DigiCert's Mozilla CA Program incident report, updated 2026-11-06; no certificate issuance or validation impact." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "global-CA supplier incident with a clear root cause and a post-incident detection lesson, but scale unstated ('small proportion') and no Swiss or public-sector link in the sources; recommend a short notable entry at most"
+    evidence:
+      - quote: "This migration inadvertently allowed this internal business system to be accessible externally."
+        attribution: "DigiCert incident report on Mozilla Bugzilla (CA Program, updated 2026-11-06)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2084460"
+      - quote: "accounts registered through this endpoint were not subject to the multi-factor authentication (MFA) that DigiCert otherwise requires, and were assigned read-only mode by default."
+        attribution: "DigiCert incident report on Mozilla Bugzilla (CA Program, updated 2026-11-06)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2084460"
+      - quote: "On 2026-10-19, DigiCert confirmed unauthorized access to a subset of archived data and determined this to be a reportable event."
+        attribution: "DigiCert incident report on Mozilla Bugzilla (CA Program, updated 2026-11-06)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2084460"
+      - quote: "The access could not write records, act as a validation approver, or issue certificates."
+        attribution: "DigiCert incident report on Mozilla Bugzilla (CA Program, updated 2026-11-06)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2084460"
+      - quote: "DigiCert says its certificate authority services, CertCentral, and DigiCert ONE platforms were not compromised"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/digicert-data-breach-exposes-customer-information-identity-documents/"
+  # ---------------------------------------------------------------------------
+  - title: "Eye-Able (German web-accessibility SaaS used by public and private websites, Swiss customers included): unauthorised access to its customer dashboard detected on 2026-10-27, customer and user data possibly viewed"
+    sources:
+      - { url: "https://www.inside-it.ch/unbefugte-zugriffe-auf-kundendaten-bei-eye-able-20261104", publisher: "Inside IT (Unbefugte Zugriffe auf Kundendaten bei Eye-Able)", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: inside-it.ch front-page teaser seen while sweeping Swiss press for the ChimeraZ backlog row, URL https://www.inside-it.ch/pensionskasse-zuerich-sistiert-softwaremigration-20261103 (teaser 'Unbefugte Zugriffe auf Kundendaten bei Eye-Able') -> primary: Inside IT, URL https://www.inside-it.ch/unbefugte-zugriffe-auf-kundendaten-bei-eye-able-20261104 (body read from the embedded article data; it relays a customer e-mail from Eye-Able). WebSearch (three queries in German) and probing of eye-able.com found no vendor-published notice and no second outlet."
+    summary: |
+      Inside IT reports, from a customer e-mail it has seen, that the German software company Eye-Able detected unauthorised access to parts of its 'Eye-Able Dashboard' IT system on 2026-10-27, during which the attackers could temporarily reach certain customer and user data. Possibly affected are e-mail addresses, user-account information, company names and other information stored while using the platform; the notice does not say which data were actually viewed or copied. By Eye-Able's own account it recognised and stopped the attack the same day, attempts to delete data, change passwords or upload files failed, no further access has been seen since the morning of 28 October, external forensic and cybersecurity experts were engaged and the competent data protection authority was informed.
+      Eye-Able sells accessibility overlays, audits and monitoring for websites; Inside IT names the disability association Procap Schweiz and Swiss Tennis as Swiss users and says the vendor lists Roche as a customer. The access route is not stated.
+    extended_notes: |
+      Borderline: a supplier whose overlay script and dashboard sit on many websites (the vendor's own homepage, which is not a citable source, claims over 20,000 and markets audit-ready reports for authorities; public-body customers in Germany exist but were not verified here), but single-source via a customer e-mail relayed by one outlet, the access vector is unknown, and the Inside IT piece (published 2026-11-05T09:53Z, about 41 h before this run) lies outside the 26 h window, inside the 72 h developing window. The vendor says upload attempts failed, which is the question that matters for any site embedding the overlay script: ask Eye-Able to confirm in writing that the delivered script and customer configuration were not altered, and check the integrity of the script your sites load. Exposure: Eye-Able dashboard accounts (webmaster and agency contact e-mail addresses) are the exposed population; expect phishing to those addresses; rotate dashboard passwords and enable MFA if offered. No technique mapped because no vector is stated.
+    region_nexus: "Germany (vendor); Swiss customers named by Inside IT"
+    primary_sector_nexus: "indirect: website-accessibility supplier to public and private sites; no Swiss public body named"
+    sector: "SaaS supplier to public and private websites"
+    cves: []
+    techniques: []
+    affected_products: ["Eye-Able Dashboard"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:eye-able-dashboard-unauthorised-access-2026-10", type: incident, name: "Eye-Able dashboard unauthorised access, October 2026", aliases: [], summary: "Eye-Able (Web Inclusion GmbH, Germany) detected unauthorised access to its customer dashboard on 2026-10-27 and stopped it the same day; customer and user data possibly viewed; Inside IT, relaying a customer e-mail, 2026-11-05." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "supplier to public-sector websites with named Swiss customers, but single-source relay of a customer e-mail, no vector or data scope, and the source is about 41 h old (outside the 26 h window, inside the 72 h developing window)"
+    evidence:
+      - quote: "Nach eigenen Angaben erkannte und stoppte Eye-Able den Angriff noch am selben Tag."
+        attribution: "Inside IT (Unbefugte Zugriffe auf Kundendaten bei Eye-Able)"
+        source_url: "https://www.inside-it.ch/unbefugte-zugriffe-auf-kundendaten-bei-eye-able-20261104"
+      - quote: "Versuche der Angreifer, Daten zu löschen, Passwörter zu ändern oder Dateien hochzuladen, seien gescheitert."
+        attribution: "Inside IT (Unbefugte Zugriffe auf Kundendaten bei Eye-Able)"
+        source_url: "https://www.inside-it.ch/unbefugte-zugriffe-auf-kundendaten-bei-eye-able-20261104"
+# ---------------------------------------------------------------------------
+backlog_dispositions:
+  - row: "(a) ARX Group SA / Aurora leak-site claim of 2026-10-23 (Ceneri Base Tunnel documentation)"
+    disposition: "UNCONFIRMED at expiry (2026-11-07): recommend the row is closed with no entry"
+    detail: |
+      Searched in German, French, Italian and English (five WebSearch queries naming ARX, Aurora, Ceneri, SBB and ASTRA/USTRA, plus a Ticino-focused Italian query): the only hits are tracker re-listings of the leak-site post (SOCRadar, Breachsense) and company directories; no ARX statement, no SBB or ASTRA statement and no Swiss press report. ARX's own site (home page and the news page, which is a LinkedIn feed wrapper) carries no incident notice. The Ransomware.live record has press: null and shows the claim text (9,510 fee structures, 8 GB of Ceneri documentation, 881,205 time entries) with the leak-site post as the only source. The Swiss press sweep this run (inside-it.ch front page 2026-11-06, netzwoche.ch cyberattack tag listing of 2026-11-05, WebSearch for Swiss communal and cantonal incidents) shows no ARX item. Hold condition not met; the claim stays a leak-site claim attributed to Aurora and is not publishable under the PD-6 rule.
+    sources_fetched:
+      - "https://www.ransomware.live/id/QVJYIEdyb3VwIFNBQGF1cm9yYQ"
+  - row: "(b) ChimeraZ forum-sale claims of 2026-10-31 (Ebikon, Gersau, Meggen, Wil, Davos.ch, ZOHE)"
+    disposition: "PARTLY RESOLVED: communes denied (public Open Government Data content, no intrusion); davos.ch confirmed by the operator Destination Davos Klosters (shipped inside item 1); ZOHE unconfirmed, keep until the 2026-11-17 expiry"
+    detail: |
+      Ebikon, Gersau, Meggen and Stadt Wil answered through Stadt Wil's head of communications (Inside IT, 2026-11-06): the sample is public data from the open-data API of the communes' event calendars, no cyber incident known, their IT provider Seantis saw no anomaly. Destination Davos Klosters (operator of davos.ch) confirms the April 2026 customer records are real and notified the EDÖB. The same Inside IT article also covers a third listing from the same pseudonym, Solnet, which confirms unauthorised access to its webmail send logs. No source mentioning the Belgian rescue zone Hainaut-Est was found (French WebSearch, French Breaches listing); treat as unconfirmed.
+    sources_fetched:
+      - "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106"
+      - "https://www.inside-it.ch/provider-solnet-schildert-datenabfluss-20261104"
+      - "https://frenchbreaches.com/alertes/suisse-fuite-donnees-quatre-communes-ebikon-gersau-meggen-wil-mvwolian3fkl2e1adtg"
+# ---------------------------------------------------------------------------
+# Candidates examined and NOT returned as items (log as borderline-drop). Only URLs actually fetched in this run.
+borderline_drops:
+  - { subject: "Holcim (Swiss building-materials group) and the new Emperador gang", source_url: "https://www.inside-it.ch/holcim-bestaetigt-cyberangriff-20261103", reason: "home-region corporate victim, Holcim confirms 'limited access to data' while Emperador claims about 360 GB; no access vector, no public-sector nexus; routine impact-only (borderline-drop)" }
+  - { subject: "Medizinisches Zentrum Gleis D and Medi Porta, Chur (Cloak claim, 87 GB)", source_url: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106", reason: "victim-confirmed data outflow at a private Swiss medical centre, no vector, no actor beyond the Cloak claim, ransom question declined; private-sector health, routine (borderline-drop)" }
+  - { subject: "Myriad Genetics 8-K Item 8.01 (unauthorised access detected 2026-11-02, testing and order systems suspended, credentials reset)", source_url: "https://www.sec.gov/Archives/edgar/data/899923/000162828026070659/mygn-20261102.htm", reason: "US company, no vector or actor, scope under investigation, no Swiss or public-sector nexus; the sec-edgar 1.05 sweep for 2026-11-04 to 2026-11-07 returned 0 hits (borderline-drop)" }
+  - { subject: "Maileva (Docaposte) letter platform: customers Inovie laboratories and Flandre Opale Habitat report possible exposure of names, postal addresses and, for the housing landlord, ten years of letters", source_url: "https://frenchbreaches.com/alertes/flandre-opale-habitat-fuite-donnees-maileva-locataires-mw3ltx0iuevuslsihe", reason: "French supplier incident (platform halted 23-29 September after account-abuse attempts to send forged letters per Solutions Numeriques), second-hand through French Breaches reading customer notices, vector unknown, no Swiss nexus; possible later update if Docaposte publishes; borderline-drop" }
+  - { subject: "Grand Paris Grand Est / Wastreet (SEPUR) flaw of 2026-09-28; CCAS Dunkerque data re-posted by a forum seller; Forum-Pompier.com claim of 65,694 accounts with MD5 hashes", source_url: "https://frenchbreaches.com/alertes/forum-pompier-com-piratage-fuite-donnees-65000-comptes-mw3torgolvlit23wfc9", reason: "French public-service or firefighter-community claims: Grand Paris Est confirmed but minimal (contact details), CCAS data are a January 2026 re-post, Forum Pompier is a credible but unconfirmed claim by one seller; none has a Swiss link or a stated access vector (borderline-drop)" }
+  - { subject: "Swiss leak-site claims: Erowa (Akira, 2026-11-04), Labatec and HighTec (The Gentlemen, 2026-11-05)", source_url: "https://api.ransomware.live/v2/countryvictims/CH", reason: "Ransomware.live countryvictims/CH listings only, no victim statement or Admiralty A/B journalism found in this sweep, private-sector manufacturers; PD-6 not met (borderline-drop)" }
+  - { subject: "PixelLeaks claim against an unnamed Italian hosted-mail and IT provider (more than 24,000 client mailboxes, deadline 2026-11-09)", source_url: "https://api.ransomware.live/v2/recentvictims", reason: "leak-site claim with no named victim and no confirmation, Italian; watch for a victim statement before the 2026-11-09 deadline because a hosted-mail provider's clients may include public bodies" }
+  - { subject: "Japan Ministry of Foreign Affairs: external-connection network accessed through stolen mail-service credentials, detected 2026-07-27, disclosed 2026-10-30", source_url: "https://piyolog.hatenadiary.jp/entry/2026/11/04/132901", reason: "disclosure of 2026-10-30 and the Piyolog summary of 2026-11-04 are outside the 50 h lookback; about 3,600 records, no Swiss nexus; only a transferable 'mail-service credential theft' pattern (borderline-drop)" }
+  - { subject: "XCPE botnet takedown (Google with Japan's National Police Agency, 2026-11-02): pre-installed backdoor in Android TV set-top boxes, also seen in telemedicine devices and digital signage, 1.3 million devices", source_url: "https://piyolog.hatenadiary.jp/entry/2026/11/05/095634", reason: "law-enforcement and research lane (S2/S3) rather than an incident, Google's primary not fetched in this slice, underlying disclosure dated 2026-11-02 (outside the window); hand to S3 as a lead" }
+  - { subject: "Equipple parent-teacher booking app, Northern Ireland (about 50,000 users); Royal Cornwall Hospitals Trust hidden-spreadsheet exposure of 7,715 staff", source_url: "https://databreaches.net/2026/11/06/ni-parents-warned-to-be-on-alert-after-school-data-breach/", reason: "UK education-supplier breach with no vector stated and a UK health-trust disclosure about a 2023 to 2025 spreadsheet exposure; routine, no Swiss nexus (borderline-drop)" }
+  - { subject: "PKZH suspends its PK Softech migration (Inside IT, 2026-11-03) and the Vaud pupil arrest (Netzwoche listing 2026-11-05)", source_url: "https://www.inside-it.ch/pensionskasse-zuerich-sistiert-softwaremigration-20261103", reason: "no delta: both are already carried by 2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow and 2026-11-01/vaud-school-it-support-platform-data-theft-teachers-pupils" }
+# ---------------------------------------------------------------------------
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "supplier watchlist is empty for this deployment; sweep is a no-op"
+candidate_sources: []
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "HTTP 403 on every rung again (fourth consecutive run): `url --direct`, `extract`, the reader fallback and WebFetch all failed on https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/. Two WebSearch queries for ICO announcements surfaced nothing dated inside the 145 h lookback. Not a demotion case; WebSearch stays the only route."
+  - source_id: inside-it-ch
+    reason: "RECIPE (works, report for the record's notes): `extract <article>` shows only the lede of Plus (paywalled) articles; `python3 tools/fetch_source.py url --direct <article URL>` returns the full body inside the embedded article JSON (blocks with a 'text' and 'type' key), and the same call on the front page gives the article hrefs that `extract` drops. Used this run for the ChimeraZ, Solnet and Eye-Able articles."
+  - source_id: ransomware-live
+    reason: "`/v2/countrycyberattacks/CH` is stale: its newest 'added' value is 2026-10-08 (PK Softech), so it cannot serve as the Swiss press-confirmation filter this run; `/v2/countryvictims/CH` (263 records, newest 2026-11-05) and `/v2/recentvictims` (100 records, 2026-11-04T12:23Z to 2026-11-06T21:21Z, i.e. about 2.4 days) were the working lists. `/v2/recentcyberattacks` newest 'added' is 2026-11-06 with only one record after 2026-10-31."
+  - source_id: frenchbreaches
+    reason: "https://frenchbreaches.com/alertes is a 404; the working list is the feed https://frenchbreaches.com/feed.xml (25 items, direct) and each alert reads cleanly with `extract` (the short slug in a feed link resolves to a longer canonical slug in the page metadata)."
+  - source_id: databreaches-net
+    reason: "`feed https://databreaches.net/feed/ 20` returned only 10 items (2026-11-05 12:40Z to 2026-11-06 20:28Z) directly; `extract` of the posts fell back to the reader this run (reader key had credit)."
+  - source_id: piyolog
+    reason: "RECIPE confirmed again: `url https://piyolog.hatenadiary.jp/` lists entry URLs with JST dates in the path; `extract` reads each entry; entries are living documents (the Alala entry was updated 2026-11-06 PM although created 2026-11-04), so check the 'update history' block. Third productive S4 sweep in a row (Amadeus-JAL, Japan MOFA, Alala); promotion from candidate to active is warranted."
+  - source_id: zaufana-trzecia-strona
+    reason: "Reachable (`url` and `extract`) but the listing is stale in the cache: newest post on the home page is 2026-10-31 (Weekendowa Lektura 700); nothing inside the 50 h horizon. Quiet-day observation, not a failure."
+  - source_id: regulators-cnil-edpb-edoeb
+    reason: "CNIL news listing (2026-11-06) shows only guidance items (internal health research, session-replay recommendation, EDPB Privacy for Kids), no sanction or breach notice in the window; EDPB news page returned an empty listing and its next plenary is on 2026-11-10; EDÖB press page shows nothing after 2026-09-16. No enforcement item returned."
+# ---------------------------------------------------------------------------
+source_ledger:
+  - { id: ico-uk, tier: standard, attempted: true, transport: "url --direct, extract, WebFetch (all HTTP 403) + WebSearch x2", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "403 on every rung, fourth run in a row; no ICO item found by search" }
+  - { id: divd-csirt, tier: standard, attempted: true, transport: "feed (direct, 20 items)", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-09 (DIVD-2026-00014 case update)" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed (direct, 10 items) + extract per post", horizon_hours: 50, in_horizon_items: 10, returned: 1, note: "DigiCert returned as borderline; NI school app, Royal Cornwall and others logged as drops; OpenSSH item belongs to S1 and is already covered" }
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "extract listing + url --direct for hrefs + extract post", horizon_hours: 50, in_horizon_items: 1, returned: 1, note: "The Copeland Incident (2026-11-06) returned as an update of the refrigeration entry; the 2026-11-02 Prince-code ransomware-kit post is outside the horizon" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "api via url --direct: countrycyberattacks/CH, countryvictims/CH, recentcyberattacks, recentvictims, searchvictims/ARX", horizon_hours: 50, in_horizon_items: 4, returned: 0, note: "Swiss claims Labatec, HighTec (in horizon), On, Erowa (2 h and 10 h before it); ARX handled as backlog row (a), claim only" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "sec-edgar 8k 2026-11-04 2026-11-07 1.05 (0 hits) + url --direct full-text supplement (74 metadata hits) + url --direct filing", horizon_hours: 50, in_horizon_items: 1, returned: 0, note: "only cyber-relevant filing is Myriad Genetics Item 8.01 (US, no vector), logged as a drop" }
+  - { id: troyhunt, tier: standard, attempted: true, transport: "feed (direct, 15 items)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post Weekly Update 528 on 2026-11-01" }
+  - { id: venarix, tier: standard, attempted: true, transport: "extract", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-08-24 (staleness allowance still holds)" }
+  - { id: zaufana-trzecia-strona, tier: standard, attempted: true, transport: "url (relative hrefs) + extract", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-31" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "url listing + extract per entry (JST)", horizon_hours: 50, in_horizon_items: 4, returned: 1, note: "Alala Message returned; XCPE takedown handed to S3 as a lead; MOFA entry (2026-11-04) outside the horizon; OpenSSH CVE-2026-123158 entry already covered" }

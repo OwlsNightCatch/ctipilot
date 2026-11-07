@@ -1,0 +1,371 @@
+# work/2026-11-07T0256Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-07T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-07T02:58:32Z
+ended_at: 2026-11-07T03:18:26Z
+duration_seconds: 1194
+today: 2026-11-07
+window_hours: 26
+developing_window_hours: 72
+watchlist_duty: sector-lens
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 21
+  bridge_fetches: 100
+items:
+
+  # ------------------------------------------------------------------
+  - title: "Refrigeration controllers: NCSC Switzerland updated its advisory on 2026-11-06 to acknowledge the Swiss incidents, add Copeland/Dixell XWEB and the blood-service case, and set a four-point checklist for any cooling plant including supplier-managed ones"
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13054", publisher: "NCSC Switzerland (Security Hub advisory 13054, edited 2026-11-06T10:54Z)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.ictjournal.ch/news/2026-11-06/les-cyberattaques-contre-les-congelateurs-font-une-victime-en-suisse-update", publisher: "ICTjournal", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub (ncsc-csh recent 25 via python3 tools/fetch_source.py), post 13054 lastModified 2026-11-06T10:54:22Z with history reason 'Update: 6 November 2026, added Swiss incidents, Copeland/Dixell XWEB and healthcare attacks.' -> primary (no pivot needed); Swiss-case corroboration: ICTjournal feed https://www.ictjournal.ch/rss.xml -> https://www.ictjournal.ch/news/2026-11-06/les-cyberattaques-contre-les-congelateurs-font-une-victime-en-suisse-update (relays SRF 2026-11-05, already cited in the entry)"
+    summary: |
+      Delta for the existing entry, not a new finding. NCSC Switzerland's own advisory (published 2026-10-13, which the entry already cites as corroborating) was edited on 2026-11-06 10:54 UTC; the hub's edit history records the reason as "added Swiss incidents, Copeland/Dixell XWEB and healthcare attacks". What the update states, as facts: Swiss media report manipulation of refrigeration controllers in Switzerland; the updated CERT-FR alert also names Copeland/Dixell XWEB next to Danfoss AK-SM and AK-SC, and Copeland's guidance addresses end-of-service XWEB EVO systems (migrate to a supported platform) while supported XWEB PRO systems must still be kept off direct internet access; healthcare is hit too, with refrigeration settings altered at three sites of France's national blood service after an incident at a refrigeration equipment provider. NCSC adds an explicit evidential limit: the public information it reviewed does not establish a common attack method across the incidents or confirm exploitation of the specific Danfoss CVEs (CVE-2025-41450/41451/41452) it lists as "alleged as potentially related". Its summary widens the audience beyond food supply, to healthcare and other users of specialised cooling equipment.
+      The Swiss authority's four actions go further than the entry's current NCSC reference and are the defender-relevant new content: (1) review refrigeration management systems across all relevant operations, expressly including equipment managed by external service providers; (2) remove direct internet access to management interfaces and provide remote access only through a secure VPN or protected network; (3) check temperature settings, defrost schedules, alarm thresholds, notification recipients and user accounts, verify actual temperatures and test alarm delivery; (4) apply the latest supported firmware and manufacturer hardening guidance and plan replacement of equipment that no longer gets updates. For suspected compromise it says to coordinate containment and recovery with the refrigeration provider and the security team, and that a factory reset alone is insufficient if the system remains vulnerable and directly reachable from the internet.
+      Main-agent checks before composing the record: the entry currently says no source names make, route or maintenance provider in the Swiss cases (consistent with NCSC, which names none); verify whether `actions[]` already carries the alarm-delivery test, notification-recipient and supplier-managed-equipment review (those are the new points for healthcare and for any public body whose cooling plant is run by a contractor); NCSC's "alleged as potentially related" wording for the Danfoss 2025 CVEs is consistent with the entry's empty cves[].
+    region_nexus: "Switzerland: national authority acknowledging Swiss cases; Europe-wide campaign"
+    primary_sector_nexus: "direct: Swiss public-sector bodies that operate or contract cooling plant; NCSC states the relevance reaches healthcare and other users of specialised cooling equipment"
+    sector: "healthcare, retail, public-sector"
+    cves: []
+    techniques: [T1190, T1133, T1078]
+    affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355", "Danfoss AK-SM 800A", "Copeland xweb", "Dixell xweb"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "product:copeland-xweb", "product:dixell-xweb"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Swiss media report manipulation of refrigeration controllers in Switzerland."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13054"
+      - quote: "The public information reviewed does not establish a common attack method across these incidents or confirm exploitation of the specific Danfoss CVEs listed above."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13054"
+      - quote: "Check temperature settings, defrost schedules, alarm thresholds, notification recipients and user accounts. Verify actual temperatures and test alarm delivery."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13054"
+      - quote: "A factory reset alone is insufficient if the system remains vulnerable and directly accessible from the internet."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13054"
+    extended_notes: |
+      Admiralty suggestion for the record: A for the NCSC update (own-jurisdiction authority), credibility 1 for the existence of Swiss incidents (SRF, Keystone-SDA, ICTjournal), 2 for the "no common method established" assessment (NCSC's own reading of public information).
+      The hub post is a hash-routed SPA page (https://security-hub.ncsc.admin.ch/#/posts/13054); the text above was read from the hub's own JSON through `ncsc-csh recent`, which is the authoritative fetch. The citation URL is already in the entry's sources, so this record supplies a dated delta and verbatim quotes only.
+
+  # ------------------------------------------------------------------
+  - title: "Canton Aargau: the Regierungsrat adopts the information-security ordinance (InfoSiV) and sets 1 January 2027 for the information-security law and ordinance, with a Fachstelle holding directive and enforcement powers and a cantonal cyber coordination office at the cantonal police"
+    novelty: new
+    sources:
+      - { url: "https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/", publisher: "Aargauer Politik (carries the Departement Finanzen und Ressourcen communiqué)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.inside-it.ch/aargau-staerkt-informationssicherheit-20261106", publisher: "Inside IT", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://www.netzwoche.ch/news/2025-02-24/kanton-aargau-will-cybersicherheit-staerken", publisher: "Netzwoche (2025 consultation outcome, background)", date: "2025-02-24", role: "background" }
+    discovery_trace: "first seen at: inside-it-ch feed https://www.inside-it.ch/rss.xml -> https://www.inside-it.ch/aargau-staerkt-informationssicherheit-20261106 (body read from the page's __NEXT_DATA__ JSON) -> WebSearch (\"Aargau Informationssicherheitsverordnung InfoSiV Regierungsrat Cyber-Koordinator Kantonspolizei\" and an extended re-query) -> pivot: https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/ (reproduces the cantonal department's communiqué; ag.ch media portal https://www.ag.ch/de/aktuelles/medienportal returned 404 and aargauerzeitung.ch returned 403, so the ag.ch primary page was not located) -> background: https://www.netzwoche.ch/news/2025-02-24/kanton-aargau-will-cybersicherheit-staerken"
+    summary: |
+      Cantonal implementation of the information-security regime, which the standing policy watch tracks. The Aargau Regierungsrat (government) adopted the Verordnung über die Informationssicherheit (InfoSiV) and set the entry into force of the information-security legislation (InfoSiG and InfoSiV) for 1 January 2027. The department's communiqué (Departement Finanzen und Ressourcen) says the law anchors uniform standards and a holistic information-security system in the cantonal administration; a Fachstelle für Informationssicherheit is to advise cantonal bodies and carry directive (Weisungs-) and enforcement powers so that one detection-and-defence strategy applies; a second Fachstelle runs personnel security vetting; and a cantonal Cyber-Koordinationsstelle is being built to protect authorities, businesses and the population. The vetting Fachstelle and the cyber coordination office sit at the Kantonspolizei Aargau, and the government elected Bernhard Droz, currently head of IT forensics and cybercrime at the cantonal police, as cyber coordinator from 2027-01-01.
+      What changes for defenders, as stated: from 2027-01-01 Aargau cantonal bodies fall under one standard with a central unit that can issue binding instructions, which turns cantonal information-security governance into a concrete implementation task for 2026 (the sources describe the Fachstelle's powers, not detailed duties). What the sources do not state: the final scope towards communes and other bearers of public tasks. In the 2025 consultation outcome (Netzwoche, relaying the canton's communiqué) a majority approved including communes and other public-task bodies in the law's scope, so communal IT owners should read the final text; the 2026 communiqué relays do not say whether that proposal survived. The planned start has also moved: the 2025 report targeted 1 July 2026.
+      Why it matters beyond Aargau: it follows the Bern ICSG law (in force 2026-11-01, already covered) as a second cantonal law that sets up a central body with directive powers, which shapes which office Swiss cantonal defenders will take instructions from.
+    region_nexus: "Switzerland: canton Aargau (cantonal administration; communal scope unconfirmed)"
+    primary_sector_nexus: "direct: cantonal public administration, cantonal police"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:aargau-infosig-infosiv-2027", type: policy, name: "Canton Aargau information-security law (InfoSiG) and ordinance (InfoSiV)", aliases: ["InfoSiG", "InfoSiV", "Gesetz über die Informationssicherheit Aargau", "Verordnung über die Informationssicherheit Aargau"], summary: "Aargau cantonal information-security law and ordinance, ordinance adopted by the Regierungsrat on 2026-11-06 with entry into force on 2027-01-01; creates a Fachstelle für Informationssicherheit with directive and enforcement powers and a cyber coordination office at the Kantonspolizei Aargau (Departement Finanzen und Ressourcen communiqué, 2026-11-06)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    evidence:
+      - quote: "The Regierungsrat has adopted the ordinance on information security (InfoSiV) and at the same time decided that the information-security legislation (InfoSiG and InfoSiV) enters into force on 1 January 2027."
+        original: "Der Regierungsrat hat die Verordnung über die Informationssicherheit (InfoSiV) verabschiedet und gleichzeitig die Inkraftsetzung der Informationssicherheitsgesetzgebung (InfoSiG und InfoSiV) auf den 1. Januar 2027 beschlossen."
+        attribution: "Aargauer Politik, relaying the Departement Finanzen und Ressourcen"
+        source_url: "https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/"
+      - quote: "A Fachstelle für Informationssicherheit is to advise the cantonal bodies and be equipped with directive and enforcement powers."
+        original: "Eine Fachstelle für Informationssicherheit soll die kantonalen Stellen beraten und mit Weisungs- und Durchsetzungsbefugnissen ausgestattet werden"
+        attribution: "Aargauer Politik, relaying the Departement Finanzen und Ressourcen"
+        source_url: "https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/"
+      - quote: "Both the Fachstelle for personnel security vetting and the cyber coordination office are located at the Kantonspolizei Aargau (KAPO)."
+        original: "Sowohl die Fachstelle für Personensicherheitsprüfungen als auch die Cyber-Koordinationsstelle sind bei der Kantonspolizei Aargau (KAPO) verortet."
+        attribution: "Aargauer Politik, relaying the Departement Finanzen und Ressourcen"
+        source_url: "https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/"
+      - quote: "A majority approved the proposal that communes and other bearers of public tasks should fall under the scope of the law."
+        original: "Mehrheitlich gutgeheissen habe man den Vorschlag, dass Gemeinden und andere Träger öffentlicher Aufgaben unter den Geltungsbereich des Gesetzes fallen sollen."
+        attribution: "Netzwoche (2025 consultation outcome)"
+        source_url: "https://www.netzwoche.ch/news/2025-02-24/kanton-aargau-will-cybersicherheit-staerken"
+    sourcing_note: "Cantonal government's own communiqué, read through two relays (Inside IT, Aargauer Politik); the ag.ch page itself was not located. Two relays of one communiqué are one source."
+    extended_notes: |
+      Policy-watch item: it changes what Aargau cantonal bodies are obliged to do from 2027-01-01 and who can instruct them. No defender action is derivable beyond reading the final InfoSiV text and, for communes, confirming scope; so `actions[]` should be empty. Admiralty suggestion: reliability B (cantonal government communiqué via regional relays), credibility 2.
+
+  # ------------------------------------------------------------------
+  - title: "Phishing in the name of the federal commercial-register office (EHRA): fake 'data update' mails with a six-working-day deadline lead to a Confederation look-alike site that collects company, person and IBAN data; BACS warns after numerous reports"
+    novelty: new
+    borderline: true
+    borderline_reason: "Federal-authority brand abuse with an in-window BACS warning (two independent Swiss authorities), but the targets are companies and the data collected feeds later fraud, not a compromise of administrations; the main agent decides whether a Swiss-authority warning without a public-sector victim clears the bar."
+    sources:
+      - { url: "https://www.bacs.admin.ch/de/warnung-ehra-de", publisher: "BACS / NCSC Switzerland (Aktuelle Vorfälle)", date: "2026-11-06", role: "primary" }
+      - { url: "https://cybercrimepolice.ch/de/faelle/gefaelschte-ehra-mail-fordert-zur-aktualisierung-von-handelsregisterdaten-auf", publisher: "Cybercrimepolice.ch (Kantonspolizei Zürich)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-incidents, URL https://www.bacs.admin.ch/de/aktuelle-vorfaelle (card dated 6. November 2026) -> primary: https://www.bacs.admin.ch/de/warnung-ehra-de (also first card on ncsc-ch-focus https://www.bacs.admin.ch/de/im-fokus) -> corroboration: cybercrimepolice.ch RSS https://cybercrimepolice.ch/de/rss-feed -> https://cybercrimepolice.ch/de/faelle/gefaelschte-ehra-mail-fordert-zur-aktualisierung-von-handelsregisterdaten-auf (2026-11-04, two days earlier)"
+    summary: |
+      BACS (NCSC Switzerland) says it is currently receiving numerous reports about an allegedly necessary data update in the commercial register (EHRA, the Federal Commercial Registry Office) and that these are phishing messages; its advice is to delete them. The Kantonspolizei Zürich's cybercrimepolice.ch had described the same mail on 2026-11-04: it claims to come from the EHRA, says changes to the register entry showed the company data may be wrong, sets a deadline of six working days for the correction and threatens administrative measures, temporary deletion of the entry and difficulties in business transactions. It greets the "Geschäftsleitung" (management) in Swiss German ("Grüezi, sehr geehrte Geschäftsleitung"). The link leads to a site imitating the Swiss Confederation's appearance and staging the process as an official review: after a reference number it asks for personal, company and contact details, then claims to verify authorisation by IBAN and asks for the bank name, with progress bars and a final success message that make the inputs look like one administrative process. The police read the harvested data as the basis for later targeted fraud (spear-phishing by mail or vishing by phone, possibly again posing as the EHRA or as staff of the named bank); that is the police's assessment, not an observed follow-up.
+      Defender relevance: the lure borrows a federal authority's identity and a statutory-sounding deadline, so the first line of defence is that the sender is not who it claims (BACS advises verifying the sender over an independent channel such as a separately researched official phone number or website, and watching for look-alike addresses such as info@firma-schweiz.com instead of info@firma.ch). For companies with little online presence BACS recommends a simple official website as the primary information source, a periodic online search for the company name, and staff awareness of third parties posing as partners or customers. Report to BACS; file a complaint with the cantonal police where money was lost.
+    region_nexus: "Switzerland (federal authority impersonated; Swiss companies targeted; German-language lure)"
+    primary_sector_nexus: "indirect: impersonates a federal authority; targets businesses; public bodies fielding enquiries and staff receiving the mail"
+    sector: "public-sector, business"
+    cves: []
+    techniques: [T1598.003, T1566.002]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:ehra-handelsregister-phishing-ch-2026-11", type: campaign, name: "EHRA Handelsregister phishing (Switzerland, November 2026)", aliases: ["Phishing-E-Mails im Namen des Handelsregisters (EHRA)", "Gefälschte EHRA-Mail"], summary: "Phishing mails impersonating the Swiss Federal Commercial Registry Office (EHRA) that demand a register data update within six working days and lead to a Confederation look-alike site collecting company, person and IBAN data; warned about by Kantonspolizei Zürich's cybercrimepolice.ch (2026-11-04) and by BACS (2026-11-06)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "The BACS is currently receiving numerous reports about an allegedly necessary data update in the commercial register (EHRA). These are phishing messages."
+        original: "Das BACS erhält derzeit zahlreiche Meldungen bezüglich einer angeblich notwendigen Datenaktualisierung im Handelsregister (EHRA). Es handelt sich dabei um Phishing-Nachrichten."
+        attribution: "BACS / NCSC Switzerland"
+        source_url: "https://www.bacs.admin.ch/de/warnung-ehra-de"
+      - quote: "The link in the mail leads to a fake authority website that asks for contact and personal data as well as IBAN and bank name."
+        original: "Der enthaltene Link führt zu einer gefälschten Behördenwebsite, die Kontakt- und Personendaten sowie IBAN und Bankname abfragt."
+        attribution: "Cybercrimepolice.ch (Kantonspolizei Zürich)"
+        source_url: "https://cybercrimepolice.ch/de/faelle/gefaelschte-ehra-mail-fordert-zur-aktualisierung-von-handelsregisterdaten-auf"
+      - quote: "A deadline of six working days is set for the correction."
+        original: "Für die Korrektur wird eine Frist von sechs Arbeitstagen gesetzt."
+        attribution: "Cybercrimepolice.ch (Kantonspolizei Zürich)"
+        source_url: "https://cybercrimepolice.ch/de/faelle/gefaelschte-ehra-mail-fordert-zur-aktualisierung-von-handelsregisterdaten-auf"
+    extended_notes: |
+      The BACS page carries no technical indicators (by design, none are reproduced here). Admiralty suggestion: A for BACS and the police statement in their own jurisdiction, credibility 1 (two independent Swiss authorities).
+      Detection concept: inbound mail claiming to be from a federal register office whose link domain is not a *.admin.ch address; web-proxy or DNS telemetry for staff visits to look-alike "Eidgenossenschaft" pages that post a form containing IBAN fields. Triage (inference from the lure's mechanics; the sources do not describe what a genuine EHRA contact looks like): the discriminators are the link domain, the demanded deadline and the request for bank data through a web form.
+
+  # ------------------------------------------------------------------
+  - title: "Oneconsult: the File System Access API as an initial-access and persistence channel in Chrome and Edge, with the Chromium blocklist gaps that leave .vscode, PowerShell profile folders, the public desktop, SMB shares and OneDrive writable once a user clicks twice"
+    novelty: new
+    lookback: true
+    sources:
+      - { url: "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/", publisher: "Oneconsult AG (Switzerland)", date: "2026-11-02", role: "primary" }
+      - { url: "https://danieloz147.github.io/2026/07/05/rogue-sandbox-when-the-scan-is-the-payload/", publisher: "Daniel Oz (Rogue Sandbox, original technique write-up)", date: "2026-07-05", role: "corroborating" }
+    discovery_trace: "first seen at: oneconsult-ch feed https://www.oneconsult.com/en/feed/ (item dated Mon 02 Nov 2026 15:45 UTC; the page's own metadata reads 2026-11-04) -> primary: https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/ (extract) -> its cited prior work: https://danieloz147.github.io/2026/07/05/rogue-sandbox-when-the-scan-is-the-payload/"
+    summary: |
+      Lookback item from the Swiss pen-test firm Oneconsult's research blog (record lookback 121 h). The post analyses the Chromium source (tests July 2026 on Windows 11 with Chrome and Edge 150.0.7871.101) to show what a website can reach through the File System Access API (showDirectoryPicker, readwrite) after the user selects a folder and confirms a second permission prompt: with one call the site gets read and write access to almost every file and subdirectory in that folder, the handle does not expire while the tab is open and can be restored from IndexedDB after the tab is closed with one re-confirmation. Chrome's per-platform blocklist (generated once, cached, "nearest ancestor wins") blocks AppData, Program Files, Windows, .ssh, .gnupg and the browser profile, but its kDontBlockChildren rule on the home, Desktop, Documents and Downloads directories leaves their subfolders selectable. The attack paths the post demonstrates: credential and secret theft from .Azure token caches, .vscode .env files and similar; persistence by dropping a fake extension into .vscode\extensions (Node.js ignores Mark of the Web, and the code runs inside the normal code.exe process); persistence through the PowerShell profile or a module entry point in Documents\WindowsPowerShell, which only works where the execution policy is Bypass or Unrestricted because the API stamps every written file with ZoneId=3; file drops on C:\Users\Public\Desktop and into SMB shares (new executables and scripts trigger the Mark-of-the-Web warning, "a certain percentage of users" acknowledge it); and an interactive "file proxy" over WebSocket that lets an operator browse and edit the selected tree in real time from a still-open tab with no process on the host. OneDrive Known Folder Move produces a stale-blocklist bypass: if Desktop is redirected into OneDrive after Chrome has started, the new path is not in the cached blocklist (observed for Desktop, not for Documents); the post says it was reported to Google and that Google made the issue public. A separate drag-and-drop path returns handles to individual files in blocked directories, which Google classed as not a security issue.
+      Defender levers named by the post: Chrome and Edge enterprise policies for file system read and write access (FileSystemReadAskForUrls, FileSystemWriteAskForUrls and the respective AskForUrls policies), AppLocker or WDAC for script control, awareness training on sites that ask the user to pick a folder, and detection of unexpected writes to PowerShell profiles and VS Code extension folders plus monitoring of the Zone.Identifier stream, whose ReferrerUrl and HostUrl fields keep the origin of the page that wrote a file. The post stresses that EDR sees only the browser reading and writing files, which is normal for web editors, so, following from that mechanism, the useful discriminators are the origin page in Zone.Identifier and writes into persistence locations rather than the file activity itself. The base technique is from Daniel Oz's July 2026 "Rogue Sandbox" write-up; the blocklist analysis and attack-path catalogue are Oneconsult's.
+    region_nexus: "Swiss research firm; technique class is global (Chromium-based browsers on Windows)"
+    primary_sector_nexus: "indirect: the technique class applies wherever Chromium-based browsers and OneDrive Known Folder Move are deployed; the source carries no Swiss estate data"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1204.001, T1176.002, T1546.013, T1552.001, T1005, T1080]
+    affected_products: ["Google Chrome", "Microsoft Edge", "Microsoft OneDrive"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    sourcing_note: "The attack paths and blocklist observations are Oneconsult's own testing (single source); only the base technique (folder-level readwrite permission turned into a write surface) is corroborated by the earlier Rogue Sandbox write-up. The Chromium issue tracker entries cited by Oneconsult were not fetched."
+    evidence:
+      - quote: "When called in readwrite mode, the website gains full read and write access to (almost) every file and subdirectory in the selected folder with a single call."
+        attribution: "Oneconsult"
+        source_url: "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/"
+      - quote: "The beacon runs within the VSCode process. EDR solutions that monitor process creation only see the normal code.exe process."
+        attribution: "Oneconsult"
+        source_url: "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/"
+      - quote: "The ReferrerUrl and HostUrl fields in the Zone.Identifier ADS contain the origin of the page that wrote the file."
+        attribution: "Oneconsult"
+        source_url: "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/"
+      - quote: "The bypass has been reported to Google."
+        attribution: "Oneconsult"
+        source_url: "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/"
+    extended_notes: |
+      Owner note for the main agent: this is S3-class research surfaced through a Swiss-lab record in the S2 slice; compose it as `research` only if S3 has not returned the same post. Mapping caution: T1204.001 is a best fit for "user is lured to a page and grants folder access", not an exact definition.
+
+  # ------------------------------------------------------------------
+  - title: "Technical University of Munich: attackers harvested central-login passwords of every myTUM user through a legacy portal, obtained a TUMonline system administrator's credentials and attacked the campus-management system; MFA-protected accounts were safe"
+    novelty: new
+    borderline: true
+    borderline_reason: "Public university in a neighbouring jurisdiction (Bavaria) with no Swiss victim; included for the transferable pattern (legacy portal in front of central SSO as a password-harvest point, administrator credentials reached through it, MFA as the discriminator) relevant to cantonal schools, universities and portals. S4 may return the same incident; the main agent decides under the incident relevance filter."
+    sources:
+      - { url: "https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum", publisher: "Technische Universität München (own incident page, status 2026-11-06 12:20)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.heise.de/news/Plattformen-offline-Cyberangriff-auf-TU-Muenchen-11515734.html", publisher: "heise online", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed https://www.heise.de/security/feed.xml (2026-11-06T14:06Z) -> https://www.heise.de/news/Plattformen-offline-Cyberangriff-auf-TU-Muenchen-11515734.html -> primary: https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum (linked from the heise article)"
+    summary: |
+      TUM's own incident page (status Friday 2026-11-06, 12:20) says unknown attackers attacked the myTUM portal and captured the passwords used for central sign-in to TUM systems (login.tum.de, TUMonline and others) from all persons who had signed in at myTUM, among them the credentials of a TUMonline system administrator; with those the attackers attacked the central campus-management system TUMonline, which TUM took off the network. Data possibly reached: for everyone the TUM-account password, name, private address and date of birth; for staff also the service address and work phone number; for students possibly matriculation number, course of study and number of semesters. TUMonline's own access logs were largely recorded, and on that evaluation TUM currently assumes no further TUMonline data such as grades or applications is affected (still being checked). TUM blocked the affected accounts, reported to the Bavarian data-protection commissioner and filed a criminal complaint. The university says accounts with multi-factor authentication were protected in this attack and asks users to change the password and then enable MFA. heise, quoting a TUM spokesperson, reports that the attackers entered through the legacy system myTUM, that about 60,000 students and employees are in scope, that password reset and MFA enrolment are impaired until TUMonline returns over the next days, and, citing "university circles", that the old system served as the entry point to current campus administration rather than being the target. The exact mechanism of the capture at myTUM is not stated by TUM.
+      Transferable lesson, marked as such: a retired or secondary portal that still accepts the central directory password is a credential-harvest and pivot point into the primary identity and administration systems; an administrator account whose password was typed into that portal gave the step to the main system; and per TUM only MFA-protected accounts held. For Swiss cantonal schools, universities and public portals this maps to inventorying legacy sign-in portals that still validate against the central directory, requiring MFA on administrator accounts for campus and school-management systems, and checking whether a legacy front end ever saw administrator sign-ins. The Vaud school IT-support platform case already in the store is a related education-sector pattern.
+    region_nexus: "Germany (Bavaria), neighbouring jurisdiction; DACH higher-education sector"
+    primary_sector_nexus: "indirect: public higher-education institution; same sector family as Swiss cantonal universities, schools and ETH-domain institutions"
+    sector: "education, public-sector"
+    cves: []
+    techniques: [T1190, T1078]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:tum-mytum-credential-theft-2026-11", type: incident, name: "TU München myTUM credential theft and TUMonline attack (November 2026)", aliases: ["IT-Sicherheitsvorfall an der TUM", "myTUM password theft"], summary: "TUM reported on 2026-11-06 that attackers captured central-login passwords of all myTUM users through the legacy myTUM portal, obtained a TUMonline administrator's credentials and attacked the campus-management system TUMonline; MFA-protected accounts were protected (TUM incident page; heise)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Unknown persons attacked the myTUM portal. In doing so they captured passwords for central sign-in to TUM systems (e.g. login.tum.de, TUMonline, etc.) from all persons who had signed in at myTUM."
+        original: "Unbekannte haben das Portal myTUM angegriffen. Dabei haben sie Passwörter für die zentrale Anmeldung an TUM-Systemen (z.B. login.tum.de, TUMonline, usw) erbeutet, und zwar von allen Personen, die sich bei myTUM angemeldet haben."
+        attribution: "Technische Universität München"
+        source_url: "https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum"
+      - quote: "Among them were the access credentials of a system administrator for TUMonline."
+        original: "Hierunter befanden sich auch die Zugangsdaten eines Systemverwalters für TUMonline."
+        attribution: "Technische Universität München"
+        source_url: "https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum"
+      - quote: "User accounts with MFA were protected in this attack."
+        original: "Benutzerkonten mit MFA waren bei diesem Angriff geschützt."
+        attribution: "Technische Universität München"
+        source_url: "https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum"
+      - quote: "Attackers had entered through a legacy system."
+        original: "Angreifer seien über ein Altsystem eingedrungen"
+        attribution: "heise online, quoting a TUM spokesperson"
+        source_url: "https://www.heise.de/news/Plattformen-offline-Cyberangriff-auf-TU-Muenchen-11515734.html"
+    extended_notes: |
+      Admiralty suggestion: A for the university's statement about its own incident, credibility 2 (statement of the victim, corroborated by heise's spokesperson quote, not independently verified). No attribution or actor is stated by any source.
+
+  # ------------------------------------------------------------------
+  - title: "Canonical LXD and MicroCloud: the API mutual-TLS check compares every certificate in the client's chain to the trust store, so anyone holding a registered user's public certificate can authenticate as that user (CVE-2026-112816, CVSS 4.0 10.0)"
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Pre-authentication, network-reachable, CVSS 10.0 and fixed, so it fits the S1 pre-auth-critical question, but it needs the HTTPS API reachable and a public certificate of a registered client, and no exploitation or public exploit is reported; S1 holds the vulnerability gates and may already have it."
+    sources:
+      - { url: "https://discourse.ubuntu.com/t/security-advisory-critical-vulnerability-found-in-canonical-lxd-and-microcloud/90557", publisher: "Canonical / Ubuntu Discourse (security advisory)", date: "2026-10-28", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-critical-authentication-vulnerability-canonical-lxd-and-microcloud-patch", publisher: "Centre for Cybersecurity Belgium", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (raw `url` fetch exposes /advisories/<slug> hrefs; page dated 03/11/2026) -> https://ccb.belgium.be/advisories/warning-critical-authentication-vulnerability-canonical-lxd-and-microcloud-patch -> primary: https://discourse.ubuntu.com/t/security-advisory-critical-vulnerability-found-in-canonical-lxd-and-microcloud/90557 (cited by the CCB page)"
+    summary: |
+      Lookback item (CCB record lookback 97 h; the CCB warning is dated 2026-11-03, Canonical's advisory 2026-10-28 with point releases from 2026-10-29). Canonical's own advisory states the flaw was referred by the Incus project and confirmed to affect LXD: the remote API's mutual-TLS logic compared all peer certificates sent by the client to the known trust-store entries, although only the leaf certificate proves possession of the signing key, so an attacker who can reach the LXD HTTPS API and holds the public certificate of a trusted client places it as an intermediate certificate in the chain and is authenticated as that identity; depending on the victim's privilege this reaches full cluster and VM control and possibly root on the host. In MicroCloud, an attacker able to intercept the public certificate of a joining cluster member can authenticate as that member. CCB's CVSS 4.0 vector is network, no privileges, no user interaction, with high impact and subsequent-system impact (10.0), weakness CWE-295.
+      Affected and fixed versions as given: LXD below 4.0.15, 5.0.11, 5.21.9 and 6.10.1 (fixed 4.0.15, 5.0.11, 5.21.9, 6.10.1 on the respective channels) and MicroCloud below 2.1.5 and 3.4.1 (fixed 2.1.5, 3.4.1); Canonical says all point releases were in progressive roll-out from candidate to stable and instructs `snap refresh lxd` and `snap refresh microcloud`. Neither Canonical nor CCB reports exploitation; CCB adds that patching does not remediate historic compromise. Exposure check: Canonical frames the precondition as an attacker who is able to reach the LXD HTTPS API, so instances whose API is reachable from untrusted networks are the exposed ones. Mechanically, clients presenting a chain longer than one certificate to the LXD API are the anomalous pattern; neither source offers a detection recipe, so treat that as inference from the stated mechanism.
+    region_nexus: "global; open-source container and VM management used in private-cloud and hosting estates"
+    primary_sector_nexus: "indirect: relevant only where Swiss public-sector or supplier estates run LXD or MicroCloud with the API exposed"
+    sector: "public-sector"
+    cves: [CVE-2026-112816]
+    techniques: [T1190, T1078]
+    affected_products: ["Canonical LXD", "Canonical MicroCloud"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:canonical-lxd", type: product, name: "Canonical LXD", aliases: ["LXD"], summary: "Canonical's system-container and virtual-machine manager with a remote HTTPS API; CVE-2026-112816 (mutual-TLS chain check) fixed in 4.0.15, 5.0.11, 5.21.9 and 6.10.1." }
+      - { key: "product:canonical-microcloud", type: product, name: "Canonical MicroCloud", aliases: ["MicroCloud"], summary: "Canonical's multi-node LXD cluster product; CVE-2026-112816 fixed in 2.1.5 and 3.4.1." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "The vulnerability allows an attacker that is able to reach the LXD HTTPS API to authenticate as any trusted TLS client, for which the attacker has the public certificate."
+        attribution: "Canonical (Ubuntu Discourse security advisory)"
+        source_url: "https://discourse.ubuntu.com/t/security-advisory-critical-vulnerability-found-in-canonical-lxd-and-microcloud/90557"
+      - quote: "The API mTLS authentication logic compares all certificates in the TLS chain sent by the client to known trust store entries instead of only comparing the leaf certificate."
+        attribution: "Centre for Cybersecurity Belgium"
+        source_url: "https://ccb.belgium.be/advisories/warning-critical-authentication-vulnerability-canonical-lxd-and-microcloud-patch"
+      - quote: "Depending on the user they can impersonate, this gives them full access to the cluster and virtual machines, possibly allow root access."
+        attribution: "Centre for Cybersecurity Belgium"
+        source_url: "https://ccb.belgium.be/advisories/warning-critical-authentication-vulnerability-canonical-lxd-and-microcloud-patch"
+    extended_notes: |
+      CVE id taken from the CCB page; Canonical's advisory page text as fetched does not repeat the identifier, so the id rests on CCB (A-reliability authority). NVD was not consulted (per-CVE NVD pages are not citable and the id comes from an authority advisory).
+
+  # ------------------------------------------------------------------
+  - title: "Veeam Management Pack for Microsoft System Center: unauthenticated RCE in the Virtualization Extensions service (CVE-2023-22793, CVSS 4.0 9.3) and two authenticated RCEs, fixed only in 13.1.0.334 with no fix for version 9.x"
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Unauthenticated network RCE at CVSS 9.3 in a widely deployed vendor's product family, but in a niche System Center companion rather than Backup & Replication, no exploitation reported, and the unusual 2023 CVE prefix on a 2026 fix; S1 owns the vendor-release sweep and may have it."
+    sources:
+      - { url: "https://www.veeam.com/kb4961", publisher: "Veeam (KB4961, published 2026-10-29)", date: "2026-10-29", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-veeam-management-pack-microsoft-system-center-could", publisher: "Centre for Cybersecurity Belgium", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (page dated 03/11/2026) -> https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-veeam-management-pack-microsoft-system-center-could -> primary: https://www.veeam.com/kb4961 (cited by the CCB page)"
+    summary: |
+      Lookback item (CCB record lookback 97 h; CCB warning 2026-11-03, Veeam KB 2026-10-29). Veeam's KB4961 lists three flaws resolved in Veeam Management Pack for Microsoft System Center 13.1: CVE-2023-22793, an unauthenticated remote code execution on servers running the Veeam Virtualization Extensions service (Critical, CVSS 4.0 9.3, vector network, no privileges, no user interaction); CVE-2026-107238, remote code execution as LocalSystem by an authenticated domain user on servers running the Collector service (High, 8.7; CCB describes it as insecure deserialization); and CVE-2026-107239, remote code execution by a member of the Veeam Virtualization Extensions Users group on the Collector service (High, 8.8; CCB calls it relative path traversal). Veeam says all three were found in internal testing. Affected: Management Pack 9.1 and all earlier version 9 builds, including the Backup & Replication 13 compatibility patch; Veeam states no fix will be provided for version 9.x and customers must upgrade to 13.1.0.334, and that unsupported versions were not tested but are likely affected. Neither Veeam nor CCB reports exploitation.
+      Defender angle: Veeam names the Virtualization Extensions service and the Collector service as the vulnerable components, so servers running them are the ones to identify and keep off untrusted networks until upgraded to 13.1.0.334. The CVE-2023-22793 identifier is as printed by both Veeam and CCB; it predates the 2026 fix, which is unusual and worth checking against the CVE record before filing it. Patching does not remediate historic compromise (CCB).
+    region_nexus: "global; Veeam is widely deployed, no Swiss-specific reporting"
+    primary_sector_nexus: "indirect: only where Swiss public-sector estates run SCOM with the Veeam Management Pack"
+    sector: "public-sector"
+    cves: [CVE-2023-22793, CVE-2026-107238, CVE-2026-107239]
+    techniques: [T1190, T1078]
+    affected_products: ["Veeam Management Pack for Microsoft System Center"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:veeam-management-pack-for-microsoft-system-center", type: product, name: "Veeam Management Pack for Microsoft System Center", aliases: ["Veeam MP for System Center", "Veeam Management Pack"], summary: "Veeam's System Center Operations Manager companion; KB4961 (2026-10-29) resolves three RCE flaws in 13.1.0.334 with no fix for 9.x." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "A vulnerability allowing an unauthenticated attacker to perform remote code execution (RCE) on servers running the Veeam Virtualization Extensions service of Veeam Management Pack"
+        attribution: "Veeam (KB4961)"
+        source_url: "https://www.veeam.com/kb4961"
+      - quote: "A fix will not be provided for version 9.x. Customers running version 9.x should upgrade to 13.1.0.334."
+        attribution: "Veeam (KB4961)"
+        source_url: "https://www.veeam.com/kb4961"
+      - quote: "CVE-2023-22793 is an insecure deserialization vulnerability. Successful exploitation could allow an unauthenticated remote attacker to execute arbitrary code on the affected server."
+        attribution: "Centre for Cybersecurity Belgium"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-veeam-management-pack-microsoft-system-center-could"
+
+dropped_leads:
+  - lead: "Medizinisches Zentrum Gleis D / Medi Porta, Chur: ransomware group Cloak claims 87 GB; centre confirms the attack and a data outflow (names, addresses, prescriptions, X-rays), reported to BACS and the EDÖB"
+    source: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106"
+    reason: "private medical centre, no public-sector nexus and no transferable TTP stated; S4 owns incident leads; the Cloak claim is attributed to the criminals and the victim confirms only the intrusion"
+  - lead: "Same hacker offers Swiss data again: Solnet, Destination Davos Klosters, and four communes (Ebikon, Gersau, Meggen, Wil)"
+    source: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106"
+    reason: "S4 holds the same article; the commune sample is, per the provider Seantis (admin.digital), public Open Government Data from the documented API with no incident, and Davos Klosters says its sample is from April 2026 and not via the PHP flaw; earlier runs dropped Solnet on the incident floor"
+  - lead: "SiK-N motion to include digital-dependency risks in procurement criteria for critical state tasks (including AI services), sent to the National Council with 16 to 5 votes, expected in the winter session"
+    source: "https://www.netzwoche.ch/news/2026-11-06/politiker-wollen-weniger-digitale-abhaengigkeiten-fuer-kritische-staatsaufgaben"
+    reason: "pending parliamentary motion, no obligation or advice for defenders yet; revisit if the Nationalrat adopts it in the Wintersession"
+  - lead: "SolarWinds Dameware CVE-2026-28336 (CVSS 3.0 9.9, fixed 2026.3.1), CCB warning 2026-11-04"
+    source: "https://ccb.belgium.be/advisories/warning-critical-command-injection-vulnerability-solarwinds-dameware-patch-immediately"
+    reason: "authentication required (PR:L), no exploitation reported by vendor or CCB; below the S1 pre-auth gate; S1 may still carry it as a remote-support-tool row"
+  - lead: "Calif.io iOS Lockdown Mode bypass: heise 2026-11-06 gives the first technical details (PDF-parser entry, MTE bypass, persistence surviving the iOS 27.0.1 to 27.2 update, persistence bug not yet reported to Apple)"
+    source: "https://www.heise.de/news/iOS-Blockierungsmodus-umgangen-Wie-der-juengste-Exploit-von-Calif-io-arbeitet-11513469.html"
+    reason: "S3/S1 domain, single outlet quoting the researcher, no vendor or Calif.io primary reachable; relevant to Lockdown Mode advice for at-risk officials after the BSI/Apple spyware-notification case (earlier runs dropped both); hand-off note, not an S2 item"
+  - lead: "NCSC Security Hub relays on 2026-11-06: SonicWall GMS EOL (post 13157), OpenSSH sshole (13155, edited), Barracuda ESG (13144, edited to add the watchTowr analysis and PoC)"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/13157"
+    reason: "all three findings are already entries (2026-11-05 SonicWall GMS, 2026-11-06 OpenSSH, 2026-11-04 Barracuda, which already cites watchTowr's analysis and PoC); the hub posts add no new facts"
+  - lead: "Pluxee Belgium possible data breach (Safeonweb 2026-11-06); Swiss Basketball data theft via Basketplan (ICTjournal 2026-11-06); Truesec refrigeration insight (2026-11-02); NCSC-IE refrigeration advisory (2026-11-03); BACS press release on the Digital Switzerland advisory board (2026-11-05)"
+    source: "https://safeonweb.be/en/news/possible-data-breach-pluxee-watch-out-fraudulent-messages"
+    reason: "no Swiss public-sector nexus, repeat of covered ground, or outside the window without an obligation change"
+
+developments_checked_no_delta:
+  - "Vaud M365 device-code phishing: vd.ch actualites checked, no follow-up in window"
+  - "PK Softech/Publica, Camping.Care/TCS, Vaud school IT platform (arrest already in the entry), privatim cloud Merkblatt (feed newest 2026-10-13), Bern ICSG (in force 2026-11-01): no in-window development found"
+  - "Apple threat notifications to Bundestag and government (BSI 2026-11-02): no Swiss recipient or Swiss authority statement found; earlier runs dropped it"
+  - "EU NIS2 / CRA, e-ID (swiyu), Council of Europe cybercrime convention, sanctions and law-enforcement actions: WebSearch and feeds found no in-window item; CRA Single Reporting Platform launch (ENISA, 2026-09-11) is older than the window; Europol newsroom is a SPA with no readable listing"
+
+watchlist_sweep:
+  duty: sector-lens
+  note: "sector-lens: no product or supplier sweep; Swiss public-sector lens applied to every source and to the home-region media sweep"
+
+candidate_sources:
+  - id: aargauerpolitik-ch
+    publisher: "Aargauer Politik (aargauerpolitik.ch)"
+    url: "https://www.aargauerpolitik.ch/"
+    category: "ch-eu / gov relay"
+    why: "Regional political news site that republishes canton Aargau government communiqués in full; it was the only readable carrier of the 2026-11-06 InfoSiV decision when the ag.ch media portal URL returned 404 and aargauerzeitung.ch returned 403. Useful as a cantonal-communiqué relay for Aargau policy items; reliability C (relay), cite the communiqué attribution."
+
+coverage_gaps:
+  - source_id: "ag.ch (canton Aargau media portal, beyond slice)"
+    reason: "https://www.ag.ch/de/aktuelles/medienportal returned 404 via extract and WebFetch; the Aargau government communiqué was read through Inside IT and aargauerpolitik.ch. No working listing recipe for cantonal press pages found."
+  - source_id: "cert-at (HTML pages)"
+    reason: "extract of https://www.cert.at/de/aktuelles/ returns 403 (jina relayed the nginx block). The RSS feeds (warnings and current) work and are the recipe; nothing in window (newest warning 2026-10-21, newest current 2026-10-20)."
+  - source_id: "prodaft"
+    reason: "https://www.prodaft.com/reports extract returns a stale 'latest report' page (Wazawaka, metadata 2023) and /blog returns 403; WebSearch found nothing in window. Still no dated listing on any transport."
+  - source_id: "europol newsroom (beyond slice)"
+    reason: "https://www.europol.europa.eu/media-press/newsroom is a React SPA; extract returns the HTML shell with no items. The law-enforcement/sanctions part of the standing watch has no working listing route in S2; WebSearch does not index same-day stories."
+  - source_id: "ncsc-nl-php2shell-tracker"
+    reason: "Recipe note, not a failure: the tracker's commit Atom feed https://github.com/NCSC-NL/php2shell/commits/main.atom gives dated commits (newest 2026-11-04T08:32Z) and each commit's .patch shows the README status table and changelog rows added (948 products tracked, 215 vulnerable, 185 fixed as of 2026-11-04). It is a vendor-status roll-up, so it yields S1 vendor rows rather than home-region items."
+  - source_id: "inside-it-ch"
+    reason: "Recipe confirmed: `url <article>` then parse the page's __NEXT_DATA__ JSON (props, text/title/lead fields) returns the full body that `extract` truncates to the paywall teaser."
+  - source_id: "ncsc-ch-security-hub"
+    reason: "Recipe confirmed: `ncsc-csh recent 25` exposes `lastModified` and a `history[].reason` for each post, which is how the 2026-11-06 refrigeration update was found (the post's created date is 2026-10-13); sweep `lastModified`, not only `created`."
+
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warning 2026-10-21 (PHP), newest current 2026-10-20; nothing in window" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract listing + extract per item for dates", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item is the 2026-11-04 refrigeration joint statement, already in the refrigeration entry; CRA Single Reporting Platform (2026-09-11) and EUMSS consultation (2026-07-24) are older" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 6, returned: 1, note: "TU München incident returned (borderline); Calif.io Lockdown Mode details handed off in dropped_leads; Cisco UCS and eMudhra covered or S1" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + url with __NEXT_DATA__ parse", horizon_hours: 26, in_horizon_items: 8, returned: 1, note: "Aargau InfoSiV returned; refrigeration (Köniz) already covered; Gleis D and 'same hacker' recorded in dropped_leads" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "bridge url + card parse", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "EHRA phishing (2026-11-06); weekly review week 44 is 2026-11-03, outside the window" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "bridge url + card parse", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "same EHRA card; next newest is 2026-10-21 PHP" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "bridge url + card parse", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-05 Beiratstreffen Digitale Schweiz (outside window, no obligation); 2026-09-25 Federal Council cybersecurity-law release is older" }
+  - { id: ncsc-nl-php2shell-tracker, tier: standard, attempted: true, transport: "github commits Atom feed + commit .patch", horizon_hours: 168, in_horizon_items: 15, returned: 0, note: "vendor-status roll-up (commits through 2026-11-04); no home-region delta; see coverage_gaps recipe note" }
+  - { id: govcert-at, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "static institutional page; no advisory stream (as the 2026-08-02 note says)" }
+  - { id: infoguard-labs, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-28" }
+  - { id: jpcert, tier: standard, attempted: true, transport: "feed (jpcert-en.rdf)", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-14 (Microsoft October updates)" }
+  - { id: ncsc-ie, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "2026-11-03 Refrigeration_Security advisory is covered ground; newest otherwise 2026-10-30" }
+  - { id: oneconsult-ch, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 1, returned: 1, note: "FSA API research returned as lookback" }
+  - { id: openssf-policy, tier: standard, attempted: true, transport: "extract", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest blog 2026-10-22 (Gemara and CRA due diligence)" }
+  - { id: prodaft, tier: standard, attempted: true, transport: "extract + WebSearch", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "no dated listing on any transport; blog 403; WebSearch found nothing in window" }
+  - { id: safeonweb-be, tier: standard, attempted: true, transport: "url + extract", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "Pluxee Belgium breach and smart-fridge consumer advice: no Swiss public-sector nexus" }
+  - { id: synacktiv, tier: standard, attempted: true, transport: "extract listing", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest publication 2026-10-13" }
+  - { id: truesec, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "2026-11-02 refrigeration insight is covered ground and adds no fact beyond the entry" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "raw url listing + extract per advisory", horizon_hours: 97, in_horizon_items: 7, returned: 2, note: "LXD/MicroCloud and Veeam MP returned as lookback borderline; Dameware in dropped_leads; WordPress, Barracuda, WS_FTP and the refrigeration update are covered ground" }
+extra_sources_swept_beyond_slice:
+  - "ncsc-ch-security-hub via ncsc-csh recent 25 (found the refrigeration update)"
+  - "netzwoche, ictjournal-ch, srf-news (RSS 1646), nzz-technologie, nau.ch digital, rts regions/suisse/sciences-tech, blick RSS, 20min RSS, watson RSS, swisscybersecurity-net, cybercrimepolice-ch RSS, privatim-ch feed, news.admin.ch newnsb listing, edoeb sitemap, vd.ch actualites, cert-eu recent, cert-fr actu-recent, bsi-rss, swissinfo-ger listing"

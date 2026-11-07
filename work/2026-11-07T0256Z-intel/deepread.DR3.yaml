@@ -1,0 +1,1374 @@
+# DR3 deep read - run 2026-11-07T0256Z-intel (Phase 4 scoped deep read; no discovery, no triage; entries NOT composed)
+# Every claims[].passage is a contiguous verbatim substring of the saved body at sources_read[].saved_body
+# (verified programmatically with a Python `in` check; no ellipses, no newlines). Bodies live in
+# work/2026-11-07T0256Z-intel/bodies/. Table-cell passages are single cells; extractor markdown (backticks, **) is kept
+# only where noted. German passages are verbatim originals with an English `translation`.
+# Personal identifiers of the BOSSAI operator (handle, display name, email, business names, storefronts, IPs,
+# domains) are deliberately omitted; the one attribution passage names the city TRU names.
+domain: DR3
+run_id: 2026-11-07T0256Z-intel
+model: "Sonnet 5.5"
+model_id: "claude-sonnet-5-5"
+started_at: "2026-11-07T03:33:36Z"
+ended_at: "see work/2026-11-07T0256Z-intel/DR3.ended_at"
+clock_note: "DR3.started_at was captured by the first command of the DR3 run; the network-verified run start was 2026-11-07T02:56:04Z, so DR3 started ~37 min after the run."
+recipe_notes:
+  - "ag.ch media releases: /de/aktuell/medienmitteilungen is a 404; the portal's search-service API returns HTTP 500 without its custom 'Query' parameter; WORKING route = https://www.ag.ch/sitemap.xml -> https://www.ag.ch/content/export/api/v1/xml/medienmitteilungen (all release detail URLs, newest first, lastmod per item) then `extract <detail URL>` (trafilatura-direct reads the detail page). Suggest recording this in the ag.ch / Kanton Aargau source record notes."
+  - "inside-it.ch article bodies: `url --direct <article>` returns embedded __NEXT_DATA__ JSON (post.managed.published.elements[].text); extract cuts the body off, as the assignment said."
+  - "extract printed '# extract: served via jina' for one ag.ch 404 URL (the jina fallback answered with the 404 page content), i.e. the reader did respond for that fetch although the assignment says the pool is dead."
+items:
+  N3:
+    title: "Acronis TRU - BOSSAI: AI attack mesh that targeted Taiwan's emergency services"
+    sources_read:
+      - url: "https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N3-1.md"
+        publisher: "Acronis Threat Research Unit (TRU)"
+        publication_date: "2026-11-04 (page JSON-LD datePublished 2026-11-04T01:00:00Z; trafilatura metadata date 2026-11-04)"
+        fetch: "extract (trafilatura-direct); raw HTML re-fetched via url --direct to confirm the page ends at the IOCs block"
+    claims:
+      - claim: "TRU's mesh composition: 12 AI agents, nine active, three set up but unused at time of investigation, driven by a changing roster of LLMs."
+        source_url: &acr "https://www.acronis.com/en/tru/posts/bossai-inside-the-ai-attack-mesh-that-targeted-taiwans-emergency-services/"
+        passage: |-
+          At a high level, BOSSAI is a mesh of 12 AI agents (nine of which active, and three which were set up but unused at the time of our investigation), all driven by a varying (and often changing) roster of LLM models.
+      - claim: "Roles of the named agents: builders, attackers, and a scanning layer (HalberdStrike agentic + cracked Acunetix, which is not an LLM agent). The text names nine agents/tools in this passage; the three unused agents are not named."
+        source_url: *acr
+        passage: |-
+          Builders (Grok, OpenClaw, Claude Code, Codex) assembled and maintained the mesh: MCP wiring, DNS, proxy configuration, messaging-app gateways. Attackers (Hermes above all, plus Cursor, Trae and CyberStrike) scanned targets and built exploits. A dedicated scanning layer (the agentic HalberdStrike and a cracked Acunetix Web Vulnerability Scanner installation) fed structured vulnerability reports into the attack pipeline.
+      - claim: "Acunetix (AWVS) is explicitly not an AI agent."
+        source_url: *acr
+        passage: |-
+          AWVS is a traditional automated vulnerability scanner. It's not an AI agent and doesn't use an LLM.
+      - claim: "No agent-to-agent communication; the operator manually bridged agents."
+        source_url: *acr
+        passage: |-
+          Notably, no agent-to-agent communication was established. The operator was at the very center of the mesh, acting as a bridge between agents, often manually pasting the results of one agent's work into another.
+      - claim: "Operator commands were typed in Traditional Chinese; Hermes (primary offensive agent) had a WeChat gateway, OpenClaw a LINE integration."
+        source_url: *acr
+        passage: |-
+          Commands were issued by the operator in Traditional Chinese, primarily typed directly into each agent's interface.
+      - claim: "MCP stack: 13 MCP servers at peak (GitHub security, CVE lookup, OSINT, cloud audit, Ghidra/Radare2, Playwright, Kali wrapper exposing nmap, sqlmap, Metasploit, Hydra)."
+        source_url: *acr
+        passage: |-
+          At its peak the mesh loaded 13 MCP servers providing access to tools for GitHub security, CVE lookup, OSINT, cloud auditing, binary analysis via Ghidra and Radare2, browser automation via Playwright, and an MCP-wrapped Kali Linux instance exposing nmap, sqlmap, Metasploit, Hydra, and more.
+      - claim: "At time of investigation the MCP stack was trimmed to three servers."
+        source_url: *acr
+        passage: |-
+          By the time we'd investigated the MCP stack, this had been trimmed to three: HexStrike AI (a custom cybersecurity automation server), a Kali MCP server and a Ghidra bridge.
+      - claim: "Local GPU host serving abliterated models via llama.cpp."
+        source_url: *acr
+        passage: |-
+          a primary GPU host running RTX 4090s which served local abliterated models through llama.cpp
+      - claim: "Hermes was the most prolific offensive agent (~95 sessions)."
+        source_url: *acr
+        passage: |-
+          Across roughly 95 sessions, it generated 18,311 messages, 83.5% of which were direct tool calls and their results.
+      - claim: "Heaviest tool usage across the campaign."
+        source_url: *acr
+        passage: |-
+          The heaviest individual tool invocations were sqlmap (appearing in 561 messages across sessions), FOFA queries for asset discovery (432), nmap port scans (271), Shodan lookups (213), and nikto web-server audits (158)
+      - claim: "Most heavily used Hermes skill targeted Taiwanese government fire-dispatch and emergency-management APIs."
+        source_url: *acr
+        passage: |-
+          gov-api-penetration, the most heavily invoked skill at 51 uses and 57 iterative patches, targeted Taiwanese government fire-dispatch and emergency-management APIs
+      - claim: "Hermes ran in full autonomous mode with excessive autonomy; summary states models were told not to bother the operator."
+        source_url: *acr
+        passage: |-
+          Every session ran in full autonomous mode
+      - claim: "TRU summary bullet on autonomy."
+        source_url: *acr
+        passage: |-
+          The models were given excessive autonomy and instructed not to bother the operator.
+      - claim: "Offensive core ran on abliterated open-weight models; final default was an abliterated DeepSeek-V4 variant."
+        source_url: *acr
+        passage: |-
+          The offensive core, the agents that actually executed attacks, ran almost exclusively on abliterated models: stripped-down variants of DeepSeek, GLM, and Qwen with safety alignment removed.
+      - claim: "Final default model."
+        source_url: *acr
+        passage: |-
+          The final default was an abliterated DeepSeek-V4 variant the operator called DS4, running on locally hosted GPUs with 64K context.
+      - claim: "Hermes cycled through at least nine models over 19 days (config-backup based; different time base from the 12-day observation)."
+        source_url: *acr
+        passage: |-
+          The primary attack agent, Hermes, cycled through at least nine models over 19 days, with each rotation documented in dated configuration backups.
+      - claim: "Refusals: commercial models used for infrastructure repeatedly refused offensive work; Chinese commercial open models refused and lectured on cyber law; operator forced to local abliterated models."
+        source_url: *acr
+        passage: |-
+          While the BOSSAI mesh made use of commercial models for building infrastructure, these models repeatedly refused to engage in actual offensive activity.
+      - claim: "Chinese commercial open-source models also refused."
+        source_url: *acr
+        passage: |-
+          Chinese commercial open-source models refused hacking instruction as well and even lectured the operator on cyber laws.
+      - claim: "Consequence of refusals: local abliterated models, less effective and resource constrained."
+        source_url: *acr
+        passage: |-
+          As a result, the operator was forced to turn to locally run abliterated models, which were less effective and resource constrained.
+      - claim: "Commercial models asked for proof of legality and refused without it; TRU does not know whether a fake engagement letter would have changed that."
+        source_url: *acr
+        passage: |-
+          Multiple commercial models repeatedly asked the operator to prove that the requested action was legal, then refused to assist when proof was not provided. It is not clear how the models would have reacted had the operator simply generated a fake engagement letter.
+      - claim: "Grok and OpenClaw (MiniMax M3) refusals; Grok complied once to fix a broken PoC."
+        source_url: *acr
+        passage: |-
+          Grok (14 sessions, primarily infrastructure) refused all explicit attack requests, complying only once to fix a broken POC script, while OpenClaw (17 sessions, running commercial MiniMax M3) refused every offensive request, citing Computer Crime Law in response.
+      - claim: "Claude Code and Codex CLI were routed via shims to the abliterated DS4 model for infrastructure work."
+        source_url: *acr
+        passage: |-
+          Claude Code and OpenAI's Codex CLI were notable exceptions to the commercial-for-infrastructure pattern: The operator ran shims that intercepted their API calls and routed them to the same abliterated DS4 that powered the attack agents.
+      - claim: "TRU: reported frontier-model jailbreaks via pentester pretext did not pan out here."
+        source_url: *acr
+        passage: |-
+          This has not panned out in our investigation of this campaign.
+      - claim: "Observation period and breadth as worded in the Victims section: 12 days, 11 countries."
+        source_url: *acr
+        passage: |-
+          In the 12 days that we observed the BOSSAI mesh, the operator had managed to target organizations spanning government emergency services, banks and lenders, universities, military systems, phone directories, e-commerce platforms and gambling sites in 11 countries.
+      - claim: "Counts: ~10 targets with confirmed exfiltration or system access across three countries; ~15 actively attacked without confirmed compromise; eight further countries recon-only or staged."
+        source_url: *acr
+        passage: |-
+          Confirmed data exfiltration or system access occurred at roughly 10 distinct targets across three countries. Another 15 or so targets were actively attacked without confirmed compromise. Entities in eight additional countries were subjected to reconnaissance or had attacks staged against them that have not yet been executed at the time of this analysis.
+      - claim: "Introduction wording: hundreds of organizations in eleven countries, lone operator based out of Taiwan, 'in recent weeks'."
+        source_url: *acr
+        passage: |-
+          In recent weeks, the Acronis TRU team has identified and investigated an agentic, AI-driven campaign orchestrated by a lone operator based out of Taiwan, targeting hundreds of organizations in eleven countries and across several critical industries.
+      - claim: "AAT section wording uses 'dozens of organizations' (differs from 'hundreds')."
+        source_url: *acr
+        passage: |-
+          Using this infrastructure, the actor was able to attack dozens of organizations, all while relying on AI to handle much of the technical complexity.
+      - claim: "TRU on the gap between ambition and results, including hallucinated vulnerabilities."
+        source_url: *acr
+        passage: |-
+          The operator's ambition seems to have far outpaced the mesh's ability to deliver results, and the AI agents themselves contributed to the gap by hallucinating vulnerabilities, inflating findings, and stalling on tooling failures.
+      - claim: "Summary bullet: confirmed breaches at universities and emergency-services providers with confirmed exfiltration of medical data and PII."
+        source_url: *acr
+        passage: |-
+          Confirmed breaches occurred at universities and emergency services providers and resulted in confirmed data exfiltration of medical data and PII.
+      - claim: "Taiwan emergency-services targeting: emergency services, financial institutions, government portals, at least one fire-dispatch technology vendor."
+        source_url: *acr
+        passage: |-
+          The operator directed agents against emergency services, financial institutions, government portals, and at least one fire-dispatch technology vendor.
+      - claim: "EMERGENCY FINDING 1 (patient-care records platform): exposed medical data, year 2018 only, no credentials required."
+        source_url: *acr
+        passage: |-
+          A Taipei fire-department emergency patient-care records platform was found exposing various medical data, dated back to (and including only) the year 2018: ECG readings, ambulance video, and patient vital signs, all accessible without credentials.
+      - claim: "TRU's characterisation of the underlying weakness for that platform ('legacy medical-data port left open since 2018')."
+        source_url: *acr
+        passage: |-
+          a legacy medical-data port left open since 2018
+      - claim: "EMERGENCY FINDING 2 (119 dispatch): case records pulled from the system's API; seven Taipei districts; not real-time GPS; TRU calls it confirmed exfiltration."
+        source_url: *acr
+        passage: |-
+          Separately, agents accessed a city's 119 emergency dispatch system and pulled case records containing incident times, response types, status fields, and street-level locations across seven Taipei districts. These were dispatch case records from the system's API, not real-time GPS tracking of moving ambulances, but they still represent confirmed exfiltration of important emergency-response data.
+      - claim: "TRU's characterisation of the dispatch exposure (public-facing API); no authentication detail is stated."
+        source_url: *acr
+        passage: |-
+          dispatch records on a public-facing API
+      - claim: "EMERGENCY FINDING 3 (emergency management information system): hardcoded AES-256 key in front-end JavaScript exposing session-cookie contents incl. administrator identity; partial SSRF relay path; full compromise never confirmed."
+        source_url: *acr
+        passage: |-
+          An emergency management information system was attacked through multiple vectors by multiple agents: The agents surfaced one genuine cryptographic flaw (a hardcoded AES-256 key in frontend JavaScript that exposed session-cookie contents, including an administrator identity) and a partial SSRF relay path. Full system compromise was never confirmed, but the findings represented potential attack paths.
+      - claim: "FAILED / HALLUCINATED 1: national disaster-response center - fabricated Apache RCE; port filtered; re-examination downgraded every finding."
+        source_url: *acr
+        passage: |-
+          A national disaster-response center was scanned by the operator's autonomous vulnerability platform, which reported a critical Apache remote-code-execution flaw. The vulnerability was fabricated. The port in question was filtered; no Apache version was ever confirmed. The platform's own re-examination downgraded every finding to false positive or misclassified negative.
+      - claim: "EMERGENCY FINDING 4 (SSO brute force): national fire agency SSO portal brute-forced without confirmed access."
+        source_url: *acr
+        passage: |-
+          A national fire agency single sign-on portal was brute-forced without confirmed access.
+      - claim: "EMERGENCY FINDING 5 (five-city fingerprinting): recon tool scanned fire-department systems across five Taiwanese cities; fingerprinting only."
+        source_url: *acr
+        passage: |-
+          A custom reconnaissance tool scanned fire-department systems across five Taiwanese cities, fingerprinting technology stacks but achieving no confirmed compromise.
+      - claim: "EMERGENCY FINDING 6 (fire-dispatch vendor admin panel): DB admin panel logged into with default root credentials, 18+ tables exposed; webshell attempt via known CVE failed."
+        source_url: *acr
+        passage: |-
+          A fire-dispatch technology vendor's database administration panel was logged into with default root credentials, exposing 18 or more database tables. The agents attempted a webshell through a known CVE against the same vendor and failed.
+      - claim: "HalberdStrike usage, including a single Taiwanese emergency-services portal."
+        source_url: *acr
+        passage: |-
+          HalberdStrike was used across at least 20 distinct projects, from a single Taiwanese emergency-services portal to a batch of over 50 commercial websites
+      - claim: "Documented multi-agent chain on a Taiwanese emergency-services target: HalberdStrike report -> Hermes consolidation -> Cursor exploitation."
+        source_url: *acr
+        passage: |-
+          In one documented example, HalberdStrike scanned a Taiwanese emergency services target and generated a penetration-testing report documenting several misconfigurations.
+      - claim: "Cursor analysed the site and executed the attack path (same chain)."
+        source_url: *acr
+        passage: |-
+          Cursor analyzed the target's site, determined the correct attack path, and executed the attack.
+      - claim: "HalberdStrike false-positive rate as TRU words it."
+        source_url: *acr
+        passage: |-
+          In HalberdStrike's case, over half of high-severity and critical findings were false positives or misclassifications.
+      - claim: "TRU's summary of where weakness clustered."
+        source_url: *acr
+        passage: |-
+          Risk seems to cluster around data that was already weakly protected: a legacy medical-data port left open since 2018, dispatch records on a public-facing API, a bank with 16 SQL-injection points in production, universities running unpatched Oracle databases and semi-public phone directories.
+      - claim: "What failed: agents failed where authentication was enforced, where sessions were required, where endpoints were filtered."
+        source_url: *acr
+        passage: |-
+          The agents failed where authentication was enforced, where paywalls required valid sessions and where endpoints were properly filtered.
+      - claim: "TRU on gravest harm."
+        source_url: *acr
+        passage: |-
+          The gravest confirmed harm was the targeting of emergency-services data: patient-care records and dispatch case information from an organization that serves millions of residents.
+      - claim: "Thailand: 489 potential targets across 45 institutions; confirmed SQLi with data extraction at three universities."
+        source_url: *acr
+        passage: |-
+          Agents used infrastructure-search engines to identify 489 potential targets across 45 institutions, then ran automated SQL-injection testing against the highest-scored ones. Confirmed SQL injection with data extraction occurred at three universities
+      - claim: "Mexico: mass collection of residential PII."
+        source_url: *acr
+        passage: |-
+          The final deliverable contained approximately 206,800 residential phone records with associated names, addresses and postal codes.
+      - claim: "Honduras military air-force personnel system: characterized, not exploited; model self-declared out of scope."
+        source_url: *acr
+        passage: |-
+          The system was characterized but not exploited, as the model decided, mid-work, that it was out of scope, without consulting with the operator.
+      - claim: "How TRU found it: misconfigured-looking development environment; 90,000+ files, 9GB evidence."
+        source_url: *acr
+        passage: |-
+          TRU uncovered the campaign after identifying what initially appeared to be a misconfigured development environment.
+      - claim: "Evidence volume."
+        source_url: *acr
+        passage: |-
+          More than 90,000 files totaling 9GB of evidence provided end-to-end visibility, including attack orchestration logs, AI agent conversations, operator command histories, exploit tooling, credentials and victim data spanning multiple countries.
+      - claim: "TRU introduces the label 'AI-augmented threat (AAT)'."
+        source_url: *acr
+        passage: |-
+          which we have now begun to classify as an AI-augmented threat (AAT)
+      - claim: "Motivation/affiliation not established."
+        source_url: *acr
+        passage: |-
+          The diversity of targets does not establish a single political, financial, or ideological objective, further blurring traditional threat classifications.
+      - claim: "ATTRIBUTION wording and confidence (single individual, high confidence)."
+        source_url: *acr
+        passage: |-
+          TRU assesses with high confidence that the infrastructure and activity were operated by a single individual based in Hualien City, Taiwan.
+      - claim: "Attribution basis: OPSEC failures plus OSINT (infrastructure overlap with the operator's legitimate businesses)."
+        source_url: *acr
+        passage: |-
+          Analysis of the infrastructure revealed multiple OPSEC failures which, combined with OSINT, led directly to attribution.
+      - claim: "TRU's closest defensive messaging (no recommendations section exists)."
+        source_url: *acr
+        passage: |-
+          Obscurity is therefore no longer a valid defense when agents can easily and quickly investigate hundreds of targets at once. However, when a system is properly configured, there was substantially less that the agents could do.
+      - claim: "TRU's second implied defensive point."
+        source_url: *acr
+        passage: |-
+          Not every organization is highly secure, and obscurity no longer offers any kind of benefit when faced with autonomous agentic attackers.
+    structured:
+      mesh:
+        agents_total: 12
+        agents_active: 9
+        agents_set_up_unused: 3
+        named_in_text:
+          builders: [Grok, OpenClaw, "Claude Code", Codex]
+          attackers: [Hermes, Cursor, Trae, CyberStrike]
+          scanning_layer: ["HalberdStrike (agentic, PenTestGPT-based)", "Acunetix Web Vulnerability Scanner (cracked; NOT an LLM agent)"]
+          mcp_servers_remaining: ["HexStrike AI", "Kali MCP server", "Ghidra bridge"]
+        phone_integrations: {Hermes: "WeChat gateway", OpenClaw: "LINE"}
+        models: "abliterated DeepSeek/GLM/Qwen variants for offense (default DS4 = abliterated DeepSeek-V4 variant, 64K context, local RTX 4090 host); commercial models (Grok 4.5, MiniMax M3) for infrastructure; Claude Code and Codex CLI routed via shims to DS4"
+      victim_picture_as_worded:
+        observation_period: "12 days"
+        countries_headline: "eleven (11)"
+        confirmed_exfil_or_access: "roughly 10 distinct targets across three countries"
+        actively_attacked_no_compromise: "15 or so targets"
+        recon_or_staged_only: "entities in eight additional countries"
+        headline_scale_words: ["hundreds of organizations (summary, introduction)", "dozens of organizations (AAT section)"]
+      emergency_services_findings:
+        - {finding: "Taipei fire-department emergency patient-care records platform", weakness: "legacy medical-data port left open since 2018; data accessible without credentials", data: "ECG readings, ambulance video, patient vital signs (2018 only)", outcome: "exposed/accessed (TRU lists under confirmed harm)"}
+        - {finding: "city 119 emergency dispatch system", weakness: "dispatch records on a public-facing API (mechanism not further stated)", data: "case records: incident times, response types, status fields, street-level locations across seven Taipei districts; not real-time ambulance GPS", outcome: "confirmed exfiltration (TRU)"}
+        - {finding: "emergency management information system", weakness: "hardcoded AES-256 key in front-end JavaScript exposing session-cookie contents incl. an administrator identity; partial SSRF relay path", outcome: "full compromise never confirmed; potential attack paths"}
+        - {finding: "national disaster-response center", weakness: "none - reported Apache RCE was fabricated; port filtered", outcome: "false positive"}
+        - {finding: "national fire agency SSO portal", weakness: "brute force attempted", outcome: "no confirmed access"}
+        - {finding: "fire-department systems in five Taiwanese cities", weakness: "n/a - technology-stack fingerprinting", outcome: "no confirmed compromise"}
+        - {finding: "fire-dispatch technology vendor database administration panel", weakness: "default root credentials", data: "18 or more database tables exposed", outcome: "logged in; webshell attempt via known CVE failed"}
+      outbound_links_on_page:
+        - "https://www.anthropic.com/threat-intelligence-report-september-2026"
+        - "https://www.acronis.com/en/tru/posts/poisoning-the-well-ai-supply-chain-attacks-on-hugging-face-and-openclaw/"
+    status: "Campaign analysed over a 12-day observation window; TRU page dated 2026-11-04; the page does not say whether the exposed emergency-services systems were notified or remediated, and does not name the victim organisations."
+    exploitation_status: "As of 2026-11-04 (TRU): confirmed data exfiltration or system access at roughly 10 distinct targets across three countries; ~15 further targets actively attacked without confirmed compromise."
+    evidence_candidates:
+      - {quote: "BOSSAI is a mesh of 12 AI agents (nine of which active, and three which were set up but unused at the time of our investigation)", publisher: "Acronis TRU", source_url: *acr}
+      - {quote: "Confirmed data exfiltration or system access occurred at roughly 10 distinct targets across three countries.", publisher: "Acronis TRU", source_url: *acr}
+      - {quote: "The agents failed where authentication was enforced, where paywalls required valid sessions and where endpoints were properly filtered.", publisher: "Acronis TRU", source_url: *acr}
+    discrepancies:
+      - "NO DEFENSIVE RECOMMENDATIONS SECTION: the post (verified on raw HTML) has sections Summary, Introduction, AAT, mesh, infrastructure, Victims, Arsenal exposure and attribution, Attribution, IOCs - no recommendations/mitigations/detection section. The only defence-relevant statements are the two 'obscurity' passages and the 'agents failed where ...' passage above. The main agent must not attribute recommendations to TRU."
+      - "Country count: headline says eleven countries, but the body enumerates Taiwan, Mexico, Thailand (the three confirmed-compromise countries), Honduras, eight 'additional' recon-level countries (US, UK, Australia, Sri Lanka, Singapore, China, Vietnam, Japan), plus three queue-only countries (Hong Kong, Indonesia, Canada) - i.e. more than eleven. Use 'eleven countries (TRU)' attributed, do not recompute."
+      - "Scale wording is inconsistent within the post: 'hundreds of organizations' (summary, introduction) vs 'attack dozens of organizations' (AAT section) vs ~10 confirmed + ~15 actively attacked (Victims). Attribute each to TRU; prefer the Victims-section counts for confirmed outcomes."
+      - "Two time bases: 12 days observed (Victims section) vs Hermes cycling through at least nine models over 19 days (config-backup history). Not a contradiction but do not merge."
+      - "Summary bullet says 'a Honduran military base'; body says a military air-force personnel system / military host that was characterized but not exploited."
+      - "Emergency-services mapping to the lead: 'patient-care records platform' = Taipei fire-department emergency patient-care records platform (data 2018 only, no credentials); '119 dispatch API' = a city's 119 emergency dispatch system, case records from the system's API, seven Taipei districts. TRU does not state the authentication state of the 119 API beyond 'public-facing API'."
+      - "The hardcoded AES-256 key finding is described as exposing session-cookie contents including an administrator identity - TRU does not say the key was used to forge sessions or take over the system ('Full system compromise was never confirmed')."
+      - "The attribution passage names a city and (elsewhere) business/handle details of the operator; those personal identifiers are deliberately NOT reproduced here. Confidence word: 'high confidence'. TRU's attribution is to an individual, not a state; TRU states it is 'unclear' whether the operator has any specific affiliation or goal beyond monetisation ('presumably')."
+      - "trafilatura front-matter date (2026-11-04) matches the page JSON-LD datePublished (2026-11-04T01:00:00Z)."
+    unread: []
+  N4:
+    title: "Kaspersky GERT - ESXi and Proxmox ransomware cases (misconfigurations in virtual environments)"
+    sources_read:
+      - url: "https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N4-1.md"
+        publisher: "Securelist (Kaspersky GERT)"
+        publication_date: "2026-11-06 (page datePublished 2026-11-06T10:00:12+00:00, dateModified 2026-11-06T08:33:41+00:00 as read via url fetch; extract metadata date 2026-11-06); title 'How misconfigurations in virtual environments can lead to compromise'"
+        fetch: "extract (trafilatura-direct); raw HTML read via url (direct failed once, fallback transport) for dates only"
+    claims:
+      - claim: "Scope statement: two further GERT ransomware cases on ESXi and Proxmox; contributing factors."
+        source_url: &kas "https://securelist.com/virtualization-security-esxi-and-proxmox-ransomware-cases/121819/"
+        passage: |-
+          Kaspersky GERT recently investigated two more ransomware cases on ESXi and Proxmox environments in which weak access controls, insufficient network separation, exposed administrative services, and poor management of privileged credentials contributed to the impact.
+      - claim: "Key framing: monitoring system could reach the virtualization layer and exposed a reusable root credential; no VM escape needed."
+        source_url: *kas
+        passage: |-
+          A monitoring system that could reach the virtualization layer also exposed a reusable root credential. Once the attacker controlled that route, ordinary administrative access was enough to affect several hosts. No VM escape was required.
+      - claim: "CASE 1 start: BlackNevas ransomware activity on a Windows system in a virtualized domain-controller segment."
+        source_url: *kas
+        passage: |-
+          The investigation began with evidence of BlackNevas ransomware activity on a Windows system in a virtualized domain controller segment.
+      - claim: "CASE 1 artefacts: UserAssist records AnyDesk and GMER execution; environment used PRTG Network Monitor."
+        source_url: *kas
+        passage: |-
+          recorded execution of the AnyDesk RMM tool and GMER binaries. The environment also used PRTG Network Monitor to monitor its virtual infrastructure.
+      - claim: "CASE 1 root cause: PRTG had broad ESXi access; same root password reused across nodes; attacker used the ESXi credential over SSH."
+        source_url: *kas
+        passage: |-
+          The available evidence showed that the PRTG deployment had broad access to the ESXi hosts and that the same root password was reused across several nodes. After obtaining access to the monitoring environment, the attacker used the ESXi credential to connect over SSH to the hosts that shared the same password.
+      - claim: "PRTG can store VMware credentials at device or inherited group level (feature note)."
+        source_url: *kas
+        passage: |-
+          PRTG supports storing VMware credentials at the device or inherited group level.
+      - claim: "CASE 1 on-host action: root access, esxcli used to disable execInstalledOnly to run the encryption binary, plus anti-forensic log deletion."
+        source_url: *kas
+        passage: |-
+          The threat actor gained root access to the ESXi environment and used the `esxcli` command to bypass the system restriction by disabling the `execInstalledOnly` policy to execute the encryption binary and also perform anti-forensic log deletion.
+      - claim: "CASE 1 host A timeline (dates): connection attempts 2025-10-18; SSH root session and upload 2025-10-19."
+        source_url: *kas
+        passage: |-
+          2025-10-18 Connection attempts from IP address
+      - claim: "CASE 1 host A: file uploaded during root SSH session."
+        source_url: *kas
+        passage: |-
+          the file esx is uploaded to the system.
+      - claim: "CASE 1 host A: first execution blocked by execInstalledOnly."
+        source_url: *kas
+        passage: |-
+          User "root" attempts to execute the binary esx with the error "Execution of non-installed file prevented".
+      - claim: "CASE 1 host A: policy disabled via esxcli advanced setting, then malware executed (same day 2025-10-19)."
+        source_url: *kas
+        passage: |-
+          User "root" deactivates the execInstalledOnly option.
+      - claim: "CASE 1 host A: exact esxcli command shown."
+        source_url: *kas
+        passage: |-
+          esxcli system settings advanced set -o /User/execInstalledOnly -i 0
+      - claim: "CASE 1 host A: execution after policy change."
+        source_url: *kas
+        passage: |-
+          User "root" executes the malware esx.
+      - claim: "CASE 1 host B (second subnet, same root password): SSH root, execute and clear logs."
+        source_url: *kas
+        passage: |-
+          Now, at the same time, the following activities ensued on a different host with the same password for the `root` user:
+      - claim: "CASE 1 host B: malware execution and log clearing."
+        source_url: *kas
+        passage: |-
+          User "root" executes the malware esx and clears the logs.
+      - claim: "CASE 1 host B: command lines shown (selftest, then wipe over /vmfs/ depth 5 with log)."
+        source_url: *kas
+        passage: |-
+          nohup ./esx /p /vmfs/ /depth 5 /log /wipe
+      - claim: "CASE 2 actor: The Gentlemen; access to Proxmox gained using information collected during dwell time."
+        source_url: *kas
+        passage: |-
+          GERT responded to a ransomware incident by [The Gentlemen](https://securelist.com/the-gentlemen-raas/120447/) group, in which the threat actor gained access to Proxmox using information collected during the dwell time between initial access and visible impact.
+      - claim: "CASE 2 credential source: plaintext notes on a compromised system-administrator workstation provided root login details."
+        source_url: *kas
+        passage: |-
+          On a compromised system administrator workstation, the actor discovered administrative credentials and access details stored in notes in plain text. These records provided the information needed to log in to Proxmox using the root account.
+      - claim: "CASE 2 action: VNC web socket activated via the root account; ransomware downloaded and executed in the cluster; entire virtual environment encrypted."
+        source_url: *kas
+        passage: |-
+          The actor then activated the VNC web socket through the compromised root account, gaining extensive control over the Proxmox environment. This access was subsequently used to download and execute ransomware within the cluster, which resulted in the encryption of the entire virtual environment.
+      - claim: "CASE 2 log evidence: root@pam requests to the vncwebsocket API path on port 5900, dated 01/08/2026 around 00:28-00:44 -0400 (day/month order not stated)."
+        source_url: *kas
+        passage: |-
+          Below are the log records showing the root account being used to access other hosts via a VNC web socket.
+      - claim: "CASE 2 lesson: privileged credentials in notes; Kaspersky's immediate advice (password manager/PAM, MFA, rotate on workstation compromise)."
+        source_url: *kas
+        passage: |-
+          Privileged credentials should instead be stored in an approved password manager or privileged access management system, protected with multifactor authentication and rotated immediately if an administrator workstation is suspected of being compromised.
+      - claim: "Misconfiguration 1: monitoring inherited excessive privilege."
+        source_url: *kas
+        passage: |-
+          In Case 1, the monitoring platform could do more than collect health and performance data. It held or could use credentials with enough privilege to reach ESXi directly. A compromise of the monitoring system therefore became a compromise of the management plane.
+      - claim: "Misconfiguration 2: credential reuse turned one secret into farm-wide access."
+        source_url: *kas
+        passage: |-
+          Password reuse converted one recovered secret into farm-wide access.
+      - claim: "Misconfiguration 3: direct root SSH bypassed vCenter role controls."
+        source_url: *kas
+        passage: |-
+          Direct SSH access allowed the actor to authenticate as root, upload a binary, and change a security setting without first passing through vCenter role controls.
+      - claim: "Misconfiguration 4: execInstalledOnly blocked the first run but the attacker had enough privilege to disable it."
+        source_url: *kas
+        passage: |-
+          The initial execution attempt was blocked by `execInstalledOnly`, but the attacker had enough privilege to disable this policy.
+      - claim: "Kaspersky's patching-vs-configuration framing."
+        source_url: *kas
+        passage: |-
+          A fully patched hypervisor can still be compromised through a shared password, an overprivileged monitoring account, an open SSH path, or an administrator interface reachable from a general server network.
+      - claim: "Conclusion: no VM boundary break; the path was monitoring relationship, credential storage, reused root credential, broad management-network reachability, direct SSH."
+        source_url: *kas
+        passage: |-
+          GERT cases that we presented in this article did not require an attacker to break the VM boundary. The attack path was created by an overprivileged monitoring relationship, an insecure password storage approach, a recoverable and reused root credential, broad management-network reachability, and direct SSH administration.
+      - claim: "CASE 2 wording on dwell time: Kaspersky refers to the dwell time between initial access and visible impact (no duration or initial-access vector given - see discrepancies)."
+        source_url: *kas
+        passage: |-
+          information collected during the dwell time between initial access and visible impact
+      - claim: "Kaspersky REMEDIATION LIST - label 1 (verbatim bold lead)."
+        source_url: *kas
+        passage: |-
+          Separate monitoring from administration.
+      - claim: "Kaspersky REMEDIATION LIST - label 2."
+        source_url: *kas
+        passage: |-
+          Replace stored root passwords.
+      - claim: "Kaspersky REMEDIATION LIST - label 3."
+        source_url: *kas
+        passage: |-
+          Restrict direct host access.
+      - claim: "Kaspersky REMEDIATION LIST - label 4 (vendor product item; text is promotional)."
+        source_url: *kas
+        passage: |-
+          Use a specialized security solution.
+      - claim: "Remediation item 4 names Kaspersky's own product (KCWS) - vendor self-promotion, not a control."
+        source_url: *kas
+        passage: |-
+          is perfectly suited to address virtual environment risks
+      - claim: "Kaspersky REMEDIATION LIST - label 5."
+        source_url: *kas
+        passage: |-
+          Treat configuration changes as security events.
+      - claim: "Kaspersky REMEDIATION LIST - label 6."
+        source_url: *kas
+        passage: |-
+          Isolate the management network.
+      - claim: "Kaspersky REMEDIATION LIST - label 7."
+        source_url: *kas
+        passage: |-
+          Protect logs, backups, and recovery.
+      - claim: "Kaspersky REMEDIATION LIST item 1 - body text of 'Separate monitoring from administration' (bullet text after the bold lead; extractor markdown such as backticks is retained where the source used code formatting)."
+        source_url: *kas
+        passage: |-
+          Create a dedicated monitoring identity for each platform and restrict it to the smallest set of objects and actions that the monitoring sensors require. Do not use ESXi root or another emergency account for routine polling. Prevent monitoring servers from starting interactive administrator sessions unless a separately approved support workflow requires it. The same principle applies beyond VMware.
+      - claim: "Kaspersky REMEDIATION LIST item 2 - body text of 'Replace stored root passwords' (bullet text after the bold lead; extractor markdown such as backticks is retained where the source used code formatting)."
+        source_url: *kas
+        passage: |-
+          Locate every copy of hypervisor, management, storage, and backup credentials in monitoring tools, scripts, scheduled tasks, connection managers, and service configurations. Replace static passwords with vault retrieval, brokered identities, or limited API tokens where the platform supports them. Record every retrieval and rotate the secret after emergency use or compromise.
+      - claim: "Kaspersky REMEDIATION LIST item 3 - body text of 'Restrict direct host access' (bullet text after the bold lead; extractor markdown such as backticks is retained where the source used code formatting)."
+        source_url: *kas
+        passage: |-
+          Route normal ESXi administration through vCenter and enable an appropriate Lockdown Mode after testing monitoring, backup, and recovery dependencies. Keep ESXi Shell and SSH stopped by default. When support work requires SSH, enable it for a defined period, restrict the source, and alert on service activation, root login, and changes to the exception list of users who are allowed to connect via SSH.
+      - claim: "Kaspersky REMEDIATION LIST item 5 - body text of 'Treat configuration changes as security events' (bullet text after the bold lead; extractor markdown such as backticks is retained where the source used code formatting)."
+        source_url: *kas
+        passage: |-
+          Alert when `execInstalledOnly`, Secure Boot enforcement, Lockdown Mode, SSH, local accounts, exception users, firewall rules, or remote logging settings change. Baseline the expected state and test whether the security team can detect an unauthorized change. A secure configuration set once does not mean that the control remains active on the host.
+      - claim: "Kaspersky REMEDIATION LIST item 6 - body text of 'Isolate the management network' (bullet text after the bold lead; extractor markdown such as backticks is retained where the source used code formatting)."
+        source_url: *kas
+        passage: |-
+          Place hypervisor, monitoring, backup, storage, and cluster administration on restricted management networks. Permit only the exact source and destination services required. Administrative workstations should enter through hardened jump hosts with named identities and multifactor authentication.
+      - claim: "Kaspersky REMEDIATION LIST item 7 - body text of 'Protect logs, backups, and recovery' (bullet text after the bold lead; extractor markdown such as backticks is retained where the source used code formatting)."
+        source_url: *kas
+        passage: |-
+          Forward ESXi, vCenter, Proxmox monitoring, identity, and network logs to protected storage that a compromised administrator cannot erase. Backup platforms should use separate identities, restricted management paths, and recovery copies outside ordinary administrative reach.
+    structured:
+      case_1_esxi:
+        actor_as_written: "BlackNevas"
+        dates_as_written: ["2025-10-18 (connection attempts)", "2025-10-19 (SSH root session, upload, blocked execution, execInstalledOnly disabled, malware executed, logs cleared on second host)"]
+        steps_in_order:
+          - "evidence of BlackNevas ransomware activity on a Windows system in a virtualized domain-controller segment; UserAssist shows AnyDesk and GMER execution"
+          - "PRTG Network Monitor had broad access to ESXi hosts and stored/used an ESXi root credential; the same root password was reused across several nodes"
+          - "after obtaining access to the monitoring environment, attacker used the ESXi credential to SSH to the hosts sharing the password"
+          - "host A: root SSH session, file 'esx' uploaded, chmod 777, first run fails with 'Execution of non-installed file prevented'"
+          - "host A: root sets /User/execInstalledOnly to 0 via esxcli, then executes the binary"
+          - "host B (other subnet, same password): root SSH, binary run with self-test, then with path /vmfs/ depth 5 plus log and wipe switches; logs cleared"
+        note_on_source_ips: "Both timelines show root SSH from private-address sources (192.168.* on host A, 172.16.* on host B, redacted in the page); Kaspersky does not state that these addresses are the PRTG server."
+      case_2_proxmox:
+        actor_as_written: "The Gentlemen"
+        date_as_written: "log lines carry 01/08/2026 00:28:36 to 00:44:49 -0400 (day-month order not stated; no other incident date given)"
+        steps_in_order:
+          - "dwell time between initial access and visible impact (duration not stated)"
+          - "on a compromised system-administrator workstation the actor finds plaintext notes holding administrative credentials and access details"
+          - "login to Proxmox with the root account (log shows root@pam)"
+          - "VNC web socket activated through the root account (log shows repeated GET requests to /api2/json/nodes/<node>/vncwebsocket on port 5900 with a vncticket)"
+          - "ransomware downloaded and executed within the cluster; entire virtual environment encrypted"
+      remediation_headings_verbatim:
+        - "Separate monitoring from administration."
+        - "Replace stored root passwords."
+        - "Restrict direct host access."
+        - "Use a specialized security solution. (Kaspersky product item - promotional)"
+        - "Treat configuration changes as security events."
+        - "Isolate the management network."
+        - "Protect logs, backups, and recovery."
+      config_check_table_columns: "Control area | Safer state | Verification; rows: Monitoring identity, Credential storage, Network path, Direct host access, Configuration integrity, Evidence (see saved body N4-1.md 'Configuration checks for monitored virtualization')"
+      outbound_links_on_page:
+        - "https://securelist.com/the-gentlemen-raas/120447/"
+        - "https://securelist.com/userassist-artifact-forensic-value-for-incident-response/116911/"
+        - "https://csrc.nist.gov/pubs/sp/800/125/final"
+        - "https://knowledge.broadcom.com/external/article?legacyId=1008077"
+        - "https://knowledge.broadcom.com/external/article/373898"
+    status: "Two post-incident case write-ups published 2026-11-06 by Kaspersky GERT (Rauf Johari); incident dates given only as 2025-10-18/19 (Case 1) and log timestamps 01/08/2026 (Case 2)."
+    exploitation_status: "Not a vulnerability disclosure: both cases are credential/configuration abuse with no CVE and no VM escape ('No VM escape was required')."
+    evidence_candidates:
+      - {quote: "A fully patched hypervisor can still be compromised through a shared password, an overprivileged monitoring account, an open SSH path, or an administrator interface reachable from a general server network.", publisher: "Kaspersky GERT (Securelist)", source_url: *kas}
+      - {quote: "User \"root\" deactivates the execInstalledOnly option.", publisher: "Kaspersky GERT (Securelist)", source_url: *kas}
+      - {quote: "The actor then activated the VNC web socket through the compromised root account, gaining extensive control over the Proxmox environment.", publisher: "Kaspersky GERT (Securelist)", source_url: *kas}
+    discrepancies:
+      - "The lead's 'SSH from the monitoring host' is an inference: Kaspersky says 'After obtaining access to the monitoring environment, the attacker used the ESXi credential to connect over SSH to the hosts that shared the same password' and the timelines show root SSH from redacted private IPs, but it never states that the SSH source was the PRTG server itself."
+      - "Kaspersky does not say how the attacker first reached the Windows system / PRTG environment (Case 1) or the administrator workstation (Case 2); no initial-access vector and no dwell-time duration are given."
+      - "Case 2 has no explicit incident date; the only date evidence is the log timestamp 01/08/2026 (-0400), whose day/month order is not stated. Case 1 dates (2025-10-18/19) are stated in ISO form. The two incidents are therefore ~3 months apart if 01/08 means 8 January 2026, or ~9 months apart if 1 August 2026."
+      - "Case 2 'root@pam' evidence is a set of web-server style GET log lines for vncwebsocket requests, not a separate authentication-success log line; Kaspersky describes it as 'root account being used to access other hosts via a VNC web socket'."
+      - "The malware binary name and switches appear only as redacted command lines in the Case 1 timelines (binary 'esx'; switches /log, /selftest, /p, /depth 5, /wipe); Kaspersky does not link BlackNevas to that binary by hash or name beyond 'the malware esx'."
+      - "Remediation item 4 is a Kaspersky product recommendation (KCWS/KHCS/KCS); the other six items are vendor-neutral controls."
+      - "The article also covers general virtualization attack surface (VM escape CVE-2025-22224, Copy Fail CVE-2026-31431, runc CVE-2024-21626, Portainer GHSA-7fw3-x4r2-g7wc, Docker CVE-2026-41567/41568/42306); those are background, not part of the two cases."
+    unread: []
+  N5:
+    title: "Oneconsult - File System Access API: possible attacks (plus danieloz147 'Rogue Sandbox')"
+    sources_read:
+      - url: "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N5-1.md"
+        publisher: "Oneconsult AG"
+        publication_date: "WebPage JSON-LD datePublished 2026-11-02T15:45:33+00:00, dateModified 2026-11-04T11:05:40+00:00 (extract metadata date 2026-11-04 = the modified date)"
+        fetch: "extract (trafilatura-direct); code blocks of the page are not present in the extract (JavaScript/PowerShell snippets are stripped)"
+      - url: "https://danieloz147.github.io/2026/07/05/rogue-sandbox-when-the-scan-is-the-payload/"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N5-2.md"
+        publisher: "Daniel Oz Security Research (danieloz147)"
+        publication_date: "2026-07-05 (URL path and extract metadata)"
+        fetch: "extract (trafilatura-direct)"
+    claims:
+      - claim: "[Oneconsult] Test basis: July 2026, Windows 11, Chrome and Edge 150.0.7871.101; other OSes/configurations not covered."
+        source_url: &onec "https://www.oneconsult.com/en/blog/attack-simulation-red-teaming/fsa-api-possible-attacks-using-the-file-system-access-api/"
+        passage: |-
+          The analysis is based on tests conducted in July 2026 on Windows 11 using Chrome 150.0.7871.101 and Edge 150.0.7871.101.
+      - claim: "[Oneconsult] Other operating systems and browser configurations are out of scope."
+        source_url: *onec
+        passage: |-
+          Other operating systems and browser configurations may have different protection mechanisms and are not covered by this analysis.
+      - claim: "[Oneconsult] Basis of the analysis is public Chromium source (blocklist read from source, not only black-box tested)."
+        source_url: *onec
+        passage: |-
+          In this article, I analyze Chrome's Windows-specific protection mechanisms based on the publicly available Chromium source code.
+      - claim: "[Oneconsult] Handle lifetime: valid indefinitely (source text has a non-breaking space before the dash, so the sentence is split into two contiguous passages)."
+        source_url: *onec
+        passage: |-
+          What makes this unique is that the handle remains valid indefinitely
+      - claim: "[Oneconsult] Handle lifetime: no timeout or re-authentication needed."
+        source_url: *onec
+        passage: |-
+          without a timeout or the need for re-authentication
+      - claim: "[Oneconsult] Handle lifetime: as long as the tab is open."
+        source_url: *onec
+        passage: |-
+          as long as the tab is open.
+      - claim: "[Oneconsult] Two user clicks give a handle (red-team perspective)."
+        source_url: *onec
+        passage: |-
+          From a red-team perspective, however, this means that after just two user clicks (selecting the folder and granting permission) on the website, a handle to the files is obtained.
+      - claim: "[Oneconsult] Chrome blocks listed paths with 'This folder contains system files'."
+        source_url: *onec
+        passage: |-
+          If the selected path matches a blocked entry, Chrome rejects it with the error message "This folder contains system files".
+      - claim: "[Oneconsult] BlockType kDontBlockChildren semantics."
+        source_url: *onec
+        passage: |-
+          The directory itself cannot be selected, but its "children" (subdirectories, files) are allowed.
+      - claim: "[Oneconsult] BlockType kBlockAllChildren semantics."
+        source_url: *onec
+        passage: |-
+          The directory and everything below it is blocked. Access is not possible at any level.
+      - claim: "[Oneconsult] Blocklist is from GenerateBlockPaths() as of July 2026 and explicitly not exhaustive."
+        source_url: *onec
+        passage: |-
+          (as of July 2026; this list is not intended to be exhaustive)
+      - claim: "[Oneconsult] Gap rule: any path not in the table and not an ancestor of a blocked path is allowed. Source's example (written with a leading '...' shorthand) is AppData\\Local blocked but AppData\\LocalLow allowed."
+        source_url: *onec
+        passage: |-
+          If a path is not listed in this table and is not an ancestor of a blocked path, Chrome grants access to it.
+      - claim: "[Oneconsult] Gap rule example: LocalLow is allowed (second half of the source's example sentence)."
+        source_url: *onec
+        passage: |-
+          LocalLow is allowed.
+      - claim: "[Oneconsult] 'Nearest ancestor wins' creates holes in blocked subtrees."
+        source_url: *onec
+        passage: |-
+          If multiple block rules apply (a parent directory and a child directory both have rules), the most specific (deepest) rule takes precedence. This is how Chrome creates "holes" in otherwise blocked subtrees that attackers can exploit.
+      - claim: "[Oneconsult] Design intent of kDontBlockChildren under the user profile and the assumption behind it."
+        source_url: *onec
+        passage: |-
+          "don't let a website access everything, but let users share specific folders". The assumption is that a user who selects .Azure or .vscode understands what they are sharing.
+      - claim: "[Oneconsult] Paths confirmed accessible by manual testing on Windows 11 (Chrome and Edge 150.0.7871.101, July 2026)."
+        source_url: *onec
+        passage: |-
+          The paths listed below have been confirmed to be accessible on Windows 11 (Chrome 150.0.7871.101 and Edge 150.0.7871.101; July 2026) through manual testing.
+      - claim: "[Oneconsult] Accessible-path examples (table cells): .vscode, .Azure, .config contents."
+        source_url: *onec
+        passage: |-
+          Extensions, .env files, argv.json
+      - claim: "[Oneconsult] Accessible: Azure cached tokens and tenant/subscription IDs."
+        source_url: *onec
+        passage: |-
+          Cached Azure tokens, tenant/subscription IDs
+      - claim: "[Oneconsult] Accessible: C:\\Users\\Public (no rule applies) and SMB shares."
+        source_url: *onec
+        passage: |-
+          Not the active user profile; no rule applies
+      - claim: "[Oneconsult] Accessible: SMB network shares not under a blocked path."
+        source_url: *onec
+        passage: |-
+          Not under a blocked path
+      - claim: "[Oneconsult] Historic UNC-path bypass fixed in 2022."
+        source_url: *onec
+        passage: |-
+          Until 2022, it was possible to partially bypass the filter by using UNC paths for local directories. However, this bug has since been fixed (see https://issues.chromium.org/issues/40059686).
+      - claim: "[Oneconsult] ATTACK PATH exfiltration: recursive search of a user-selected folder; one click on a parent folder suffices."
+        source_url: *onec
+        passage: |-
+          As soon as a user selects a folder, the website can recursively search through all files and specifically exfiltrate high-quality content. Since the FSA API allows arbitrary navigation within the selected directory, a single click on a parent folder is all it takes.
+      - claim: "[Oneconsult] Exfiltration targets: Azure token cache, .vscode .env secrets."
+        source_url: *onec
+        passage: |-
+          Cached Azure access tokens, tenant IDs, and subscription IDs
+      - claim: "[Oneconsult] Exfiltration target: persistent Azure auth tokens."
+        source_url: *onec
+        passage: |-
+          Persistent Azure authentication tokens
+      - claim: "[Oneconsult] ATTACK PATH VS Code extension persistence: MotW irrelevant because Node.js does not check Zone.Identifier."
+        source_url: *onec
+        passage: |-
+          A MotW (Mark of the Web) has no effect on the execution, since Node.js simply does not check the Zone.Identifier Alternate Data Stream (ADS).
+      - claim: "[Oneconsult] VS Code extension runs in the VS Code process; process-creation EDR sees only code.exe."
+        source_url: *onec
+        passage: |-
+          The beacon runs within the VSCode process. EDR solutions that monitor process creation only see the normal code.exe process.
+      - claim: "[Oneconsult] VS Code persistence precondition: user must grant access to the .vscode/extensions/ folder specifically."
+        source_url: *onec
+        passage: |-
+          Of course, the user must grant access to the specific folder for this type of persistence. In this case, that would be the folder .vscode/extensions/.
+      - claim: "[Oneconsult] startIn reduces the clicks needed (lures the user to start at Documents)."
+        source_url: *onec
+        passage: |-
+          This allows the user to see, for example, the Documents folder as a starting point, which reduces the number of clicks required.
+      - claim: "[Oneconsult] ATTACK PATH PowerShell profile: precondition execution policy Bypass or Unrestricted."
+        source_url: *onec
+        passage: |-
+          The following persistence mechanism works only with the Execution Policy Bypass or Unrestricted.
+      - claim: "[Oneconsult] Documents\\WindowsPowerShell\\ reachable although Documents\\ itself is blocked (kDontBlockChildren)."
+        source_url: *onec
+        passage: |-
+          Documents\WindowsPowerShell\ is directly accessible via the FSA API, even though Documents\ itself is blocked as "system files".
+      - claim: "[Oneconsult] MotW handling for the profile: ZoneId=3 written; RemoteSigned (Windows 11 default) makes PowerShell refuse to execute it (PSSecurityException)."
+        source_url: *onec
+        passage: |-
+          The file written via the FSA API is automatically assigned the identifier ZoneId=3. Under the RemoteSigned execution policy (default on Windows 11), PowerShell refuses to execute the file, throwing a PSSecurityException with the following message:
+      - claim: "[Oneconsult] Profile vector therefore works only under Bypass/Unrestricted, which Oneconsult says is common on dev/build systems."
+        source_url: *onec
+        passage: |-
+          This attack vector therefore only works if the execution policy is set to Bypass or Unrestricted. However, this is common in development environments or on build servers.
+      - claim: "[Oneconsult] ATTACK PATH PowerShell module backdoor: same execution-policy precondition."
+        source_url: *onec
+        passage: |-
+          This also works only with the Execution Policy Bypass or Unrestricted.
+      - claim: "[Oneconsult] Module backdoor target: installed modules such as Az.Accounts, Microsoft.Graph under Documents\\WindowsPowerShell\\Modules\\."
+        source_url: *onec
+        passage: |-
+          In Documents\WindowsPowerShell\Modules\, there are installed PowerShell modules such as Az.Accounts, Microsoft.Graph, or custom modules.
+      - claim: "[Oneconsult] Module backdoor runs on import."
+        source_url: *onec
+        passage: |-
+          The Beacon runs as soon as the module is imported.
+      - claim: "[Oneconsult] ATTACK PATH public desktop drops: C:\\Users\\Public\\Desktop has no blocking rule; files appear on all users' desktops. (Source sentence is garbled by a German fragment in the page.)"
+        source_url: *onec
+        passage: |-
+          is accessible via the FSA API and is not subject to any blocking rules since it is not the profile directory of the active user. Files placed here appear on the desktop of all users.
+      - claim: "[Oneconsult] Public-desktop drops carry MotW warning; user acknowledgement rate is Oneconsult's experience claim."
+        source_url: *onec
+        passage: |-
+          All of these files trigger a warning when double-clicked, since FSA write operations always set a MotW. However, experience shows that a certain percentage of users acknowledge this warning, especially if the filename suggests a plausible business context.
+      - claim: "[Oneconsult] ATTACK PATH SMB shares: fully accessible, no 'system files' block, read and write to whole share."
+        source_url: *onec
+        passage: |-
+          SMB network shares are fully accessible via the FSA API. There is no "system files" block. When a user selects a network share in the file picker, the website gains read and write access to the entire share structure.
+      - claim: "[Oneconsult] MotW applied to every written file incl. on shares; intranet zone does not override."
+        source_url: *onec
+        passage: |-
+          The FSA API applies a MotW (ZoneId=3) to every file written, including those on network shares. The intranet zone of the share does not override the ADS that has already been stamped.
+      - claim: "[Oneconsult] Existing .ps1/.bat files modified on shares gain a MotW, which can break previously trusted scripts."
+        source_url: *onec
+        passage: |-
+          Modified existing files (such as .ps1 or .bat) now receive a MotW where none existed before. Under RemoteSigned, this can prevent previously trusted scripts from running and alert the user.
+      - claim: "[Oneconsult] Share lateral-movement risk is mainly exfiltration or dropping new scripts into trusted locations / permissive execution-policy environments (source writes 'Bypass or Unsigned')."
+        source_url: *onec
+        passage: |-
+          The lateral movement risk associated with network shares therefore lies primarily in the exfiltration of sensitive files or in the placement of new scripts in trusted locations and in environments with the Execution Policy Bypass or Unsigned.
+      - claim: "[Oneconsult] MotW on every FSA write is mandatory and cannot be removed through the API."
+        source_url: *onec
+        passage: |-
+          This is not optional and cannot be removed via the API (filenames containing a ":" are rejected with the error "Name not allowed").
+      - claim: "[Oneconsult] MotW impact summary: VS Code injection works under any policy."
+        source_url: *onec
+        passage: |-
+          Yes, under any policy
+      - claim: "[Oneconsult] MotW impact summary: profile under RemoteSigned throws PSSecurityException."
+        source_url: *onec
+        passage: |-
+          PSSecurityException under RemoteSigned
+      - claim: "[Oneconsult] Forensic artefact: ReferrerUrl/HostUrl in Zone.Identifier ADS record the writing page's origin."
+        source_url: *onec
+        passage: |-
+          The ReferrerUrl and HostUrl fields in the Zone.Identifier ADS contain the origin of the page that wrote the file. The C2 domain is permanently stored in the ADS of every written file and can be used as a clear forensic indicator.
+      - claim: "[Oneconsult] SPECIAL CASE OneDrive KFM: blocklist should block redirected folders but does not always."
+        source_url: *onec
+        passage: |-
+          Chrome should correctly block these redirected paths. However, this is not always the case, as shown below.
+      - claim: "[Oneconsult] KFM test result: OneDrive tenant Desktop ALLOWED via stale blocklist; root blocked by ancestry check; Documents blocked."
+        source_url: *onec
+        passage: |-
+          Ancestry check: includes blocked documents
+      - claim: "[Oneconsult] KFM test result label for Desktop."
+        source_url: *onec
+        passage: |-
+          Stale blocklist bypass (see below)
+      - claim: "[Oneconsult] Proof: test file written to the redirected Desktop via the browser and synced to OneDrive."
+        source_url: *onec
+        passage: |-
+          For example, a test file (fsa-proof.txt) was successfully written to the desktop via the browser and appeared both on the desktop and in the OneDrive sync.
+      - claim: "[Oneconsult] GOOGLE RESPONSE (KFM stale-blocklist bypass): reported to Google; Google made the issue public (tracker 534049460)."
+        source_url: *onec
+        passage: |-
+          The bypass has been reported to Google. Google has made the issue public (see https://issues.chromium.org/issues/534049460?pli=1).
+      - claim: "[Oneconsult] Root cause: blocklist generated once and cached; later known-folder path changes are unprotected."
+        source_url: *onec
+        passage: |-
+          The bypass can be reproduced and is based on a fundamental characteristic of the blocklist architecture: GenerateBlockPaths() is called once, and the result is cached. If the path of a known folder changes after the blocklist is created, the new path is not protected.
+      - claim: "[Oneconsult] Reproduction step: Desktop backup to OneDrive enabled while Chrome is running; picker called without restarting Chrome."
+        source_url: *onec
+        passage: |-
+          Without restarting Chrome, call showDirectoryPicker({ mode: 'readwrite' }) via the console
+      - claim: "[Oneconsult] Stale-list precondition state: Desktop backup initially disabled, then KFM moves Desktop."
+        source_url: *onec
+        passage: |-
+          Disable Desktop backup to OneDrive (Desktop is therefore located locally at C:\Users\alice\Desktop).
+      - claim: "[Oneconsult] Bypass observed for Desktop but not Documents, cause unknown."
+        source_url: *onec
+        passage: |-
+          For unknown reasons, this behavior was observed for Desktop but not for Documents.
+      - claim: "[Oneconsult] Impact of stale list: KFM enabled while Chrome is running leaves Desktop path with full read/write."
+        source_url: *onec
+        passage: |-
+          If KFM is enabled for Desktop while Chrome is running, Chrome has an outdated blocklist. The new Desktop path within the OneDrive folder is accessible with full read and write access.
+      - claim: "[Oneconsult] Without KFM / personal OneDrive and SharePoint libraries: no blocked descendants, always accessible."
+        source_url: *onec
+        passage: |-
+          Without KFM (or personal OneDrive): The OneDrive folder has no blocked descendants. Access is therefore permitted.
+      - claim: "[Oneconsult] SharePoint libraries synced into the profile root are always accessible."
+        source_url: *onec
+        passage: |-
+          Synchronized SharePoint libraries appear as separate folders in the profile root directory. These have no blocked descendants and are always accessible.
+      - claim: "[Oneconsult] Writes via FSA propagate to the cloud and can affect other users."
+        source_url: *onec
+        passage: |-
+          Changes written via the FSA API are synchronized back to the cloud. As a result, malicious software can also affect other users.
+      - claim: "[Oneconsult] SPECIAL CASE drag-and-drop: file handle obtained via getAsFileSystemHandle() bypasses ConfirmSensitiveEntryAccess() for files (not directories)."
+        source_url: *onec
+        passage: |-
+          When a user drags a file onto a website, the site can obtain a file handle via getAsFileSystemHandle(). For files (not directories), this code path completely bypasses ConfirmSensitiveEntryAccess().
+      - claim: "[Oneconsult] Drag-and-drop allows reading files from .ssh, Desktop, AppData and other blocked directories."
+        source_url: *onec
+        passage: |-
+          This allows files from .ssh, Desktop, AppData, and any other blocked directory to be read.
+      - claim: "[Oneconsult] GOOGLE RESPONSE (drag-and-drop file access): classified 'not a security issue' because the user explicitly imported the file."
+        source_url: *onec
+        passage: |-
+          Google has understandably classified this behavior as "not a security issue". The reasoning is that the user explicitly imported the file
+      - claim: "[Oneconsult] ATTACK PATH interactive file proxy / C2 over WebSocket: handle persisted in IndexedDB; user re-confirms once."
+        source_url: *onec
+        passage: |-
+          Furthermore, the handle can be persisted via IndexedDB. If the user closes the tab and reopens the page later, the stored handle can be restored. The user only needs to confirm once in a dialog that they wish to grant access again, without having to go through the file picker once more.
+      - claim: "[Oneconsult] File-proxy C2: no process on the target; all access inside the Chrome process."
+        source_url: *onec
+        passage: |-
+          The key advantage over traditional post-exploitation frameworks is that no process runs on the target system. All file access occurs within the Chrome process via a legitimate web API.
+      - claim: "[Oneconsult] File-proxy C2 EDR visibility: only Chrome reading/writing files."
+        source_url: *onec
+        passage: |-
+          EDR solutions only detect that Chrome is reading and writing files – an activity that is completely normal for web applications such as Google Docs or VSCode for Web.
+      - claim: "[Oneconsult] File-proxy C2 lasts as long as the tab stays open; pretext spinner keeps the user from closing it."
+        source_url: *onec
+        passage: |-
+          As long as the user does not actively close the tab, file access remains active.
+      - claim: "[Oneconsult] DETECTION ADVICE 1: monitor MotW (Zone.Identifier ADS) changes in .vscode\\extensions, PowerShell profile paths, OneDrive directories; ReferrerUrl clues."
+        source_url: *onec
+        passage: |-
+          Investigate changes to the Zone.Identifier Alternate Data Stream (ADS) in files located in relevant directories such as .vscode\extensions, PowerShell profile paths, and OneDrive directories. The ReferrerUrl field – if present – can provide clues about a file's origin.
+      - claim: "[Oneconsult] ENTERPRISE POLICIES named: FileSystemReadAskForUrls, FileSystemWriteAskForUrls and 'the respective AskForUrls policies' (only these are named; extractor retains backticks)."
+        source_url: *onec
+        passage: |-
+          Restrict file and directory access via Chrome Enterprise policies for read and write access. This includes, in particular, `FileSystemReadAskForUrls, FileSystemWriteAskForUrls`, and the respective AskForUrls policies.
+      - claim: "[Oneconsult] DETECTION ADVICE 3: rules for unexpected changes to PowerShell profiles, VS Code extensions; correlate browser activity with file changes where telemetry allows."
+        source_url: *onec
+        passage: |-
+          Develop detection rules for unexpected changes to PowerShell profiles, VSCode extensions, and other files suitable for persistence. If the telemetry in use allows it, suspicious browser activity and subsequent file changes should also be correlated.
+      - claim: "[Oneconsult] HARDENING: AppLocker/WDAC; rules must match the real execution environment; OneDrive location alone is not a blocking criterion."
+        source_url: *onec
+        passage: |-
+          Check AppLocker or Windows Defender Application Control (WDAC) to restrict unauthorized scripts and applications. The rules must match the actual execution environment. Simply being stored in a OneDrive directory is not a sufficient criterion for blocking.
+      - claim: "[Oneconsult] ORG ADVICE: awareness - folder-selection prompts as a social-engineering vector."
+        source_url: *onec
+        passage: |-
+          Include prompts from websites asking users to select a folder or grant access to local files as a potential social engineering vector in awareness training sessions.
+      - claim: "[Oneconsult] ORG ADVICE: central browser policy management for Chrome and Edge, tested and reviewed regularly."
+        source_url: *onec
+        passage: |-
+          Restrict file system access in Chrome and Edge in accordance with organizational requirements. Policies should be tested and reviewed regularly to ensure that security requirements and legitimate workflows remain compatible.
+      - claim: "[Oneconsult] ORG ADVICE: test detection and response (SOC visibility)."
+        source_url: *onec
+        passage: |-
+          Verify that the SOC can detect and appropriately handle suspicious file modifications, tampering with development environments, and unusual persistence mechanisms.
+      - claim: "[Oneconsult] Framing: Oneconsult says its summary of the researcher's lure is 'the web server uses Windows' File System Access API' (loose wording; the API is a browser API run client-side)."
+        source_url: *onec
+        passage: |-
+          In the background, the web server uses Windows' File System Access API to write to selected files.
+      - claim: "[danieloz147] Not a sandbox escape; trust-model abuse within browser boundaries."
+        source_url: &danz "https://danieloz147.github.io/2026/07/05/rogue-sandbox-when-the-scan-is-the-payload/"
+        passage: |-
+          Rogue Sandbox is not a sandbox escape; it is a trust-model abuse pattern inside legitimate browser boundaries.
+      - claim: "[danieloz147] Trigger: Check Point Research article (July 2026, 'Browser-Only Ransomware') showing a FSA-API-only attack path."
+        source_url: *danz
+        passage: |-
+          The trigger for this research was the Check Point Research article that demonstrated an attack path built entirely on the File System Access API, with no exploit and no local payload.
+      - claim: "[danieloz147] Check Point's technique: social engineering + user-granted permissions + native browser capabilities, no exploit/payload/OS bypass."
+        source_url: *danz
+        passage: |-
+          Their work demonstrated that combining social engineering, user-granted permissions, and native browser capabilities can result in local file modification without an exploit, without a local payload, and without bypassing operating system security mechanisms.
+      - claim: "[danieloz147] Lure choice: malware-scanner narrative."
+        source_url: *danz
+        passage: |-
+          Instead of an AI tool, I built a flow that looked like a malware scanner.
+      - claim: "[danieloz147] Platform scope: Chromium desktop and Chrome on Android; Firefox and Safari lack the same model."
+        source_url: *danz
+        passage: |-
+          By contrast, Chrome/Chromium on desktop and Chrome on Android are the environments where this question becomes practically relevant.
+      - claim: "[danieloz147] User gesture requirement does not prevent phishing."
+        source_url: *danz
+        passage: |-
+          In other words, the user-gesture requirement does not prevent phishing. It prevents automatic picker invocation without user action.
+      - claim: "[danieloz147] Sensitive directories blocked; ordinary user directories (Documents, Downloads, Pictures, project folders) remain accessible."
+        source_url: *danz
+        passage: |-
+          System directories, root locations, or browser profile paths may be blocked. But user-selected directories such as Documents, Downloads, Pictures, or a project folder may remain accessible.
+      - claim: "[danieloz147] The research does not bypass Chromium sensitive-directory checks."
+        source_url: *danz
+        passage: |-
+          This model does not bypass those checks; it leverages user-selected, non-blocked areas.
+      - claim: "[danieloz147] Core demo: an existing file is modified in place; no download moment."
+        source_url: *danz
+        passage: |-
+          The user did not download a new file. The user allowed a site to edit a file that was already present.
+      - claim: "[danieloz147] Demo payload is a MessageBox marker only; no full operational recipe published."
+        source_url: *danz
+        passage: |-
+          This article does not publish a full operational infection recipe.
+      - claim: "[danieloz147] Limitations: signed, complex, large or protected files may fail or break."
+        source_url: *danz
+        passage: |-
+          Signed files, structurally complex files, very large files, or files protected by security products may fail, be blocked, or break in a way that prevents execution.
+      - claim: "[danieloz147] Modifying signed files breaks signatures (limitation and detection signal)."
+        source_url: *danz
+        passage: |-
+          Modifying signed files is expected to break signatures. This can become both a detection signal and a technical limitation.
+      - claim: "[danieloz147] MotW view: editing by a website does not automatically reclassify a file as internet-downloaded (DIFFERS from Oneconsult's 'every written file receives ZoneId=3')."
+        source_url: *danz
+        passage: |-
+          Editing by a website does not automatically reclassify a file as internet-downloaded in the Windows trust model.
+      - claim: "[danieloz147] Safe Browsing / Download Protection can inspect some FSA writes in Chrome."
+        source_url: *danz
+        passage: |-
+          In some cases, when the site attempted to write back specific files through the File System Access API, Chrome triggered protections associated with Safe Browsing / Download Protection.
+      - claim: "[danieloz147] Evasion used in the lab: non-EXE extension with user told to restore the extension."
+        source_url: *danz
+        passage: |-
+          In my research scenario, this constraint was handled through narrative design: content was represented under a non-EXE extension, and users were socially guided to restore the extension afterward.
+      - claim: "[danieloz147] Edge behaved differently from Chrome in the lab."
+        source_url: *danz
+        passage: |-
+          In my lab tests, Edge did not block folder-file access and editing in the same way as Chrome.
+      - claim: "[danieloz147] Defensive advice: limit/control read-write filesystem site requests via browser policy; allow-list approved origins."
+        source_url: *danz
+        passage: |-
+          Configure browser policy to limit or control site requests for read/write filesystem access.
+      - claim: "[danieloz147] Defensive advice: allow File System Access only for approved origins with a business need."
+        source_url: *danz
+        passage: |-
+          Allow File System Access only for known and approved origins where business need is explicit.
+      - claim: "[danieloz147] Defensive advice: monitor browsers writing to many files or changing sensitive extensions."
+        source_url: *danz
+        passage: |-
+          Monitor browser processes writing to many files or changing sensitive extensions.
+      - claim: "[danieloz147] Enterprise policies exist in Chrome and Edge but the post names none."
+        source_url: *danz
+        passage: |-
+          Additionally, both Chrome and Edge provide enterprise policies to control how sites request filesystem read/write access.
+      - claim: "[danieloz147] EDR visibility: low-noise absent high-volume file churn."
+        source_url: *danz
+        passage: |-
+          However, absent rapid high-volume file churn, this activity may remain low-noise and under-classified.
+      - claim: "[danieloz147] Cloud-sync folders (OneDrive, Google Drive, Dropbox) listed as follow-up direction, not the primary case."
+        source_url: *danz
+        passage: |-
+          A relevant future direction is synced folders such as OneDrive, Google Drive, or Dropbox.
+      - claim: "[danieloz147] Research was lab-only on dedicated test files."
+        source_url: *danz
+        passage: |-
+          All demos, code samples, and projects presented in this article were developed strictly for research purposes and tested in a controlled lab environment on dedicated test files.
+    structured:
+      tested_versions:
+        oneconsult: "Windows 11; Chrome 150.0.7871.101 and Edge 150.0.7871.101; tests July 2026; Chromium source analysis as of July 2026"
+        danieloz147: "no browser or OS version numbers stated in the post (lab tests on Chrome and Edge; Windows PE modification demo)"
+      blocklist_windows_per_oneconsult_July_2026:
+        kBlockAllChildren: ["AppData\\Roaming", "AppData\\Local", "C:\\ProgramData", "C:\\Program Files", "C:\\Program Files (x86)", "C:\\Windows", "~\\.ssh", "~\\.gnupg", "Chrome install/module/assets/user-data dirs", "(runtime) parent of active profile path and Chrome user-data root"]
+        kDontBlockChildren: ["user home", "Desktop", "Documents", "Downloads"]
+        kBlockNestedDirectories: ["IE/Edge temporary Internet cache"]
+        kBlockWrite: ["every .git/hooks directory (enforced only for save operations)"]
+        gaps_named_by_oneconsult: ["children of home (.vscode, .Azure, .config, .dotnet, .nuget, .local, .ms-ad)", "Documents\\WindowsPowerShell\\ (and Modules)", "C:\\Users\\Public (incl. Public\\Desktop)", "SMB/network shares", "OneDrive and OneDrive - <TENANT> folders (SharePoint libraries have no blocked descendants)", "AppData\\LocalLow", "OneDrive KFM Desktop after a KFM change while Chrome runs (stale cached blocklist; reproduced for Desktop, not Documents)"]
+      attack_paths_with_preconditions:
+        - {path: "credential/secret exfiltration from a user-selected folder (e.g. .Azure token cache, .vscode .env)", precondition: "user picks a folder that contains the files (a parent such as the profile subfolder suffices) and grants readwrite/read access", motw_effect: "n/a (read)"}
+        - {path: "VS Code malicious extension in .vscode/extensions", precondition: "user must grant access to the .vscode/extensions folder itself (startIn can steer the picker)", motw_effect: "Node.js ignores MotW; works under any execution policy; runs inside the code.exe process"}
+        - {path: "PowerShell profile overwrite (Microsoft.PowerShell_profile.ps1 under Documents\\WindowsPowerShell)", precondition: "execution policy Bypass or Unrestricted (RemoteSigned, the Windows 11 default, blocks the MotW-stamped ZoneId=3 file with PSSecurityException)", motw_effect: "blocked under RemoteSigned"}
+        - {path: "PowerShell module .psm1 backdoor (Az.Accounts, Microsoft.Graph, custom)", precondition: "execution policy Bypass or Unrestricted (Authenticode + MotW block otherwise)", motw_effect: "blocked under RemoteSigned"}
+        - {path: "file drops on C:\\Users\\Public\\Desktop (.vbs/.bat/.exe)", precondition: "user grants access to the folder; victim must then double-click and acknowledge the MotW security warning", motw_effect: "warning dialog; works if the user confirms"}
+        - {path: "file drops / script placement on SMB shares", precondition: "user selects a network share in the picker; new files get ZoneId=3 and warn on execution; existing .ps1/.bat modified gain MotW", motw_effect: "warning or interrupted execution; Oneconsult says more dangerous for exfiltration and in Bypass-policy environments"}
+        - {path: "OneDrive KFM Desktop stale-blocklist bypass", precondition: "KFM Desktop backup enabled while Chrome is already running (blocklist cached at start); user then selects OneDrive - <TENANT>\\Desktop", motw_effect: "writes sync to the cloud and can affect other users"}
+        - {path: "drag-and-drop of individual files from blocked directories (.ssh, Desktop, AppData) via getAsFileSystemHandle()", precondition: "user drags the file onto the page (phishing pretext e.g. 'verification')", motw_effect: "n/a (read); Google classified as 'not a security issue'"}
+        - {path: "interactive file-proxy C2 over WebSocket using the persistent directory handle (IndexedDB restore)", precondition: "tab stays open (or user re-confirms once after reopening); no agent or executable on the host", motw_effect: "files written by the proxy still get ZoneId=3"}
+      enterprise_policies_named:
+        oneconsult: ["FileSystemReadAskForUrls", "FileSystemWriteAskForUrls", "'the respective AskForUrls policies'"]
+        danieloz147: "none named; says both Chrome and Edge provide enterprise policies for filesystem read/write site requests"
+      other_controls_named_by_oneconsult: ["AppLocker or WDAC (rules must match the actual execution environment)", "central review of Chrome/Edge policies", "awareness training on folder-selection prompts", "purple/red-team validation (Oneconsult service plugs)"]
+      detection_advice_oneconsult: ["Zone.Identifier ADS changes in .vscode\\extensions, PowerShell profile paths and OneDrive directories; ReferrerUrl/HostUrl as origin clue", "rules for unexpected PowerShell profile / VS Code extension changes; correlate browser activity with subsequent file changes", "SOC test of detection and response"]
+      detection_advice_danieloz147: ["browser processes writing to many files or changing sensitive extensions", "treat chrome.exe/msedge.exe file modifications as behavioural signals needing context"]
+      google_issue_trackers_cited_by_oneconsult:
+        - {issue: "534049460", topic: "OneDrive KFM stale-blocklist Desktop bypass", state_as_worded: "reported to Google; Google has made the issue public"}
+        - {issue: "516164715", topic: "drag-and-drop file handle bypassing ConfirmSensitiveEntryAccess", state_as_worded: "classified 'not a security issue' (user explicitly imported the file)"}
+        - {issue: "40059686", topic: "UNC-path filter bypass (historic)", state_as_worded: "fixed (per Oneconsult: 'Until 2022 ... since been fixed')"}
+      outbound_links_on_pages:
+        - "https://research.checkpoint.com/2026/browser-only-ransomware-from-llm-hallucinations-to-a-practical-attack-technique/"
+        - "https://github.com/danieloz147/rogue-sandbox"
+        - "https://github.com/danieloz147/Browser-Based-Ransomware"
+        - "https://issues.chromium.org/issues/534049460"
+        - "https://issues.chromium.org/issues/516164715"
+        - "https://issues.chromium.org/issues/40059686"
+        - "https://chromium.googlesource.com/chromium/src/+/main/docs/security/faq.md"
+    status: "Not a CVE: technique/design-gap research. danieloz147 post 2026-07-05; Oneconsult analysis page published 2026-11-02 and modified 2026-11-04 (tests July 2026). KFM stale-blocklist bypass: reported to Google and public in the Chromium tracker (no fix state stated by Oneconsult); drag-and-drop file read: classified not-a-security-issue by Google (per Oneconsult)."
+    exploitation_status: "No in-the-wild exploitation is stated by either source; both are red-team/lab research. danieloz147 states demos ran in a controlled lab on dedicated test files."
+    evidence_candidates:
+      - {quote: "The analysis is based on tests conducted in July 2026 on Windows 11 using Chrome 150.0.7871.101 and Edge 150.0.7871.101.", publisher: "Oneconsult AG", source_url: *onec}
+      - {quote: "This attack vector therefore only works if the execution policy is set to Bypass or Unrestricted.", publisher: "Oneconsult AG", source_url: *onec}
+      - {quote: "Google has understandably classified this behavior as \"not a security issue\".", publisher: "Oneconsult AG", source_url: *onec}
+    discrepancies:
+      - "Google-response attribution: the three Google outcomes in the lead map to DIFFERENT issues. 'Reported to Google / Google has made the issue public' applies to the OneDrive KFM stale-blocklist Desktop bypass (tracker 534049460). 'Not a security issue' applies to the drag-and-drop single-file read (tracker 516164715). The UNC bypass is a 2022 fix. Oneconsult does not state a fix, CVE or severity for the KFM bypass."
+      - "MotW semantics differ between the two sources: Oneconsult states that every file written through the FSA API receives ZoneId=3 and 'Modified existing files ... now receive a MotW where none existed before'; danieloz147 states 'Editing by a website does not automatically reclassify a file as internet-downloaded in the Windows trust model.' Hold both and attribute; do not merge."
+      - "Policy names: Oneconsult names only FileSystemReadAskForUrls / FileSystemWriteAskForUrls (+ 'the respective AskForUrls policies'). It does not name Blocked-for-URLs or default-setting policies; danieloz147 names no policy at all."
+      - "Oneconsult's phrase 'the web server uses Windows' File System Access API' misdescribes the mechanism; danieloz147 states the processing is client-side in the browser ('all meaningful processing happens client-side')."
+      - "Oneconsult page has a German sentence fragment embedded in the Public\\Desktop paragraph (extraction/page artefact) and 'Execution Policy Bypass or Unsigned' (likely meant Unrestricted); quoted as written."
+      - "Oneconsult dates: the page JSON-LD says published 2026-11-02 and modified 2026-11-04; extractor metadata shows only 2026-11-04. The lead's 'recent' should treat 2026-11-02 as first publication."
+      - "danieloz147 states no browser/OS versions; the only tested versions are Oneconsult's (Chrome and Edge 150.0.7871.101, Windows 11). danieloz147's Edge/Chrome behavioural difference (Safe Browsing vs SmartScreen) is lab-observed, not versioned."
+      - "Oneconsult's code blocks (JavaScript/PowerShell snippets) are not in the extracted text; only prose and tables were verified. The 'blocklist table' is Oneconsult's reading of Chromium source as of July 2026 and says it is not exhaustive."
+    unread: ["Check Point Research 'Browser-Only Ransomware: From LLM Hallucinations to a Practical Attack Technique' (July 2026) - cited by danieloz147, not in the assignment, not fetched", "Chromium issue tracker pages 534049460 / 516164715 / 40059686 - cited by Oneconsult, not in the assignment, not fetched (state of the KFM issue therefore unverified)"]
+  N6:
+    title: "Canton Aargau - Verordnung über die Informationssicherheit (InfoSiV) adopted; InfoSiG + InfoSiV in force 2027-01-01; Cyber-Koordinationsstelle at Kantonspolizei"
+    sources_read:
+      - url: "https://www.ag.ch/de/medien/medienmitteilungen?mm=bulletin-zur-regierungsratssitzung-b790d5a8-ec12-4162-98c6-daac664c6033_de"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N6-3.md"
+        publisher: "Kanton Aargau, Departement Finanzen und Ressourcen - 'Bulletin zur Regierungsratssitzung' (the canton's own communique; PRIMARY)"
+        publication_date: "2026-11-06 (extract metadata date 2026-11-06; ag.ch sitemap lastmod 2026-11-06T07:45:00Z). The text does not state the date of the Regierungsrat meeting itself."
+        fetch: "extract (trafilatura-direct). Found by enumerating https://www.ag.ch/sitemap.xml -> https://www.ag.ch/content/export/api/v1/xml/medienmitteilungen (12,324 release URLs, newest first)"
+      - url: "https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N6-1.md"
+        publisher: "Aargauer Politik (aargauerpolitik.ch)"
+        publication_date: "2026-11-06T13:17:51Z (page article:published_time)"
+        fetch: "extract (trafilatura-direct)"
+      - url: "https://www.inside-it.ch/aargau-staerkt-informationssicherheit-20261106"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N6-2.md"
+        publisher: "inside-it.ch"
+        publication_date: "2026-11-06T15:02:41Z (JSON-LD datePublished; created 2026-11-06T14:54:45Z)"
+        fetch: "url --direct; article text extracted from the embedded __NEXT_DATA__ JSON into N6-2.md (raw HTML kept as N6-2.html)"
+      - url: "https://www.netzwoche.ch/news/2025-02-24/kanton-aargau-will-cybersicherheit-staerken"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N6-4.md"
+        publisher: "netzwoche.ch (background; additional source found by search, not in the assignment)"
+        publication_date: "2025-02-24"
+        fetch: "extract (trafilatura-direct)"
+      - url: "https://www.bluewin.ch/de/news/schweiz/aargauer-parlament-kuerzt-kredite-fuer-informationssicherheit-li.2266621"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N6-5.md"
+        publisher: "blue News / Keystone-SDA (background; additional source found by search, not in the assignment)"
+        publication_date: "2024-07-02"
+        fetch: "extract (trafilatura-direct)"
+    claims:
+      - claim: "[ag.ch communique] Adoption of the ordinance and decision on entry into force of the information-security legislation on 1 January 2027."
+        source_url: &agc "https://www.ag.ch/de/medien/medienmitteilungen?mm=bulletin-zur-regierungsratssitzung-b790d5a8-ec12-4162-98c6-daac664c6033_de"
+        passage: |-
+          Der Regierungsrat hat die Verordnung über die Informationssicherheit (InfoSiV) verabschiedet und gleichzeitig die Inkraftsetzung der Informationssicherheitsgesetzgebung (InfoSiG und InfoSiV) auf den 1. Januar 2027 beschlossen.
+        translation: "The Government Council has adopted the ordinance on information security (InfoSiV) and at the same time decided that the information-security legislation (InfoSiG and InfoSiV) comes into force on 1 January 2027."
+      - claim: "[ag.ch communique] Release headline."
+        source_url: *agc
+        passage: |-
+          Informationssicherheit: Regierungsrat beschliesst Inkraftsetzung der Informationssicherheitsgesetzgebung und wählt Cyber-Koordinator
+        translation: "Information security: Government Council decides on entry into force of the information-security legislation and elects a cyber coordinator."
+      - claim: "[ag.ch communique] Canton's own characterisation of the legal basis."
+        source_url: *agc
+        passage: |-
+          Der Kanton Aargau verfügt damit über zukunftsweisende rechtliche Grundlagen zur Stärkung der Informations- und Cybersicherheit.
+        translation: "The canton of Aargau thus has forward-looking legal foundations for strengthening information and cyber security."
+      - claim: "[ag.ch communique] Rationale: rising cyber attacks; single legal basis; attacks can make statutory state tasks impossible."
+        source_url: *agc
+        passage: |-
+          Angesichts zunehmender Cyberangriffe ist die Schaffung einer einheitlichen Rechtsgrundlage für den ganzheitlichen Schutz von Informationen und Daten unabdingbar.
+        translation: "In view of increasing cyber attacks, creating a uniform legal basis for the holistic protection of information and data is indispensable."
+      - claim: "[ag.ch communique] Consequence of attacks as the canton words it."
+        source_url: *agc
+        passage: |-
+          Cyberangriffe können erhebliche finanzielle Folgen haben und in schwerwiegenden Fällen sogar die Erfüllung gesetzlicher Aufgaben des Staates verunmöglichen.
+        translation: "Cyber attacks can have considerable financial consequences and, in serious cases, even make it impossible for the state to fulfil its statutory tasks."
+      - claim: "[ag.ch communique] Scope as worded: uniform standards and an information-security system in the cantonal administration."
+        source_url: *agc
+        passage: |-
+          Das neue Informationssicherheitsgesetz sieht unter anderem vor, in der kantonalen Verwaltung einheitliche Standards und ein ganzheitliches Informationssicherheitssystem zu verankern.
+        translation: "The new information security act provides, among other things, for anchoring uniform standards and a holistic information-security system in the cantonal administration."
+      - claim: "[ag.ch communique] FACHSTELLE FÜR INFORMATIONSSICHERHEIT powers: advises cantonal bodies; to be equipped with directive (Weisungs-) and enforcement (Durchsetzungs-) powers (modality: 'soll ... ausgestattet werden')."
+        source_url: *agc
+        passage: |-
+          Eine Fachstelle für Informationssicherheit soll die kantonalen Stellen beraten und mit Weisungs- und Durchsetzungsbefugnissen ausgestattet werden, um eine schlagkräftige einheitliche Erkennungs- und Abwehrstrategie umsetzen zu können.
+        translation: "An information-security specialist unit is to advise the cantonal bodies and be equipped with powers to issue directives and to enforce, so that an effective, uniform detection and defence strategy can be implemented."
+      - claim: "[ag.ch communique] Second unit: Fachstelle für Personensicherheitsprüfungen (personnel security vetting)."
+        source_url: *agc
+        passage: |-
+          Eine weitere Fachstelle für Personensicherheitsprüfungen soll das Risiko einer Beeinträchtigung der Sicherheitsinteressen des Kantons identifizieren, das mit der Ausübung einer sicherheitsrelevanten Tätigkeit durch eine bestimmte Person bestehen könnte.
+        translation: "A further specialist unit for personnel security checks is to identify the risk of impairment of the canton's security interests that could arise from a particular person carrying out a security-relevant activity."
+      - claim: "[ag.ch communique] Cantonal Cyber-Koordinationsstelle being built; protection target 'authorities, economy and population'."
+        source_url: *agc
+        passage: |-
+          Um Behörden, Wirtschaft und Bevölkerung besser vor Cyber-Bedrohungen zu schützen, wird zudem eine kantonale Cyber-Koordinationsstelle aufgebaut.
+        translation: "To better protect authorities, businesses and the population against cyber threats, a cantonal cyber coordination office is also being set up."
+      - claim: "[ag.ch communique] PLACEMENT: the personnel-security unit and the cyber coordination office are located at Kantonspolizei Aargau (KAPO). The placement of the Fachstelle für Informationssicherheit is not stated."
+        source_url: *agc
+        passage: |-
+          Sowohl die Fachstelle für Personensicherheitsprüfungen als auch die Cyber-Koordinationsstelle sind bei der Kantonspolizei Aargau (KAPO) verortet.
+        translation: "Both the personnel-security-vetting unit and the cyber coordination office are located at the Cantonal Police Aargau (KAPO)."
+      - claim: "[ag.ch communique] APPOINTMENT: Government Council elected the head of the cyber coordination office / cyber coordinator as of 1 January 2027."
+        source_url: *agc
+        passage: |-
+          Der Regierungsrat hat für die Leitung der Cyber-Koordinationsstelle und somit für die Funktion als Cyber-Koordinator per 1. Januar 2027 Bernhard Droz gewählt.
+        translation: "For the head of the cyber coordination office, and hence the function of cyber coordinator, the Government Council has elected Bernhard Droz as of 1 January 2027."
+      - claim: "[ag.ch communique] Appointee's current role as stated."
+        source_url: *agc
+        passage: |-
+          Bernhard Droz ist zurzeit Dienstchef IT-Forensik und Cybercrime bei der KAPO und bringt aufgrund seiner Erfahrung und Vernetzung optimale Voraussetzungen für diese Funktion mit.
+        translation: "Bernhard Droz is currently head of service for IT forensics and cybercrime at KAPO and, owing to his experience and network, brings ideal prerequisites for this function."
+      - claim: "[aargauerpolitik.ch] Attribution line: the item reports the Departement Finanzen und Ressourcen's release (text otherwise identical to the ag.ch bulletin)."
+        source_url: &agp "https://www.aargauerpolitik.ch/regierung-wahlt-cyber-koordinator/"
+        passage: |-
+          Dies meldet das Departement Finanzen und Ressourcen.
+        translation: "This is reported by the Department of Finance and Resources."
+      - claim: "[aargauerpolitik.ch] Same adoption/entry-into-force sentence as the ag.ch bulletin."
+        source_url: *agp
+        passage: |-
+          Der Regierungsrat hat die Verordnung über die Informationssicherheit (InfoSiV) verabschiedet und gleichzeitig die Inkraftsetzung der Informationssicherheitsgesetzgebung (InfoSiG und InfoSiV) auf den 1. Januar 2027 beschlossen.
+        translation: "Same as the ag.ch bulletin sentence above."
+      - claim: "[aargauerpolitik.ch] Same placement sentence as the ag.ch bulletin."
+        source_url: *agp
+        passage: |-
+          Sowohl die Fachstelle für Personensicherheitsprüfungen als auch die Cyber-Koordinationsstelle sind bei der Kantonspolizei Aargau (KAPO) verortet.
+        translation: "Same as the ag.ch bulletin sentence above."
+      - claim: "[inside-it.ch] Adoption: ordinance (InfoSiV) adopted; 'the associated law' is to enter into force on 1 January 2027 (modality: 'soll ... in Kraft treten')."
+        source_url: &iit "https://www.inside-it.ch/aargau-staerkt-informationssicherheit-20261106"
+        passage: |-
+          Der Regierungsrat des Kantons Aargau hat die Informationssicherheitsverordnung (InfoSiV) verabschiedet. Das dazugehörige Gesetz soll am 1. Januar 2027 in Kraft treten.
+        translation: "The Government Council of the canton of Aargau has adopted the information security ordinance (InfoSiV). The associated law is to enter into force on 1 January 2027."
+      - claim: "[inside-it.ch] Goal wording (uniform security standards in the cantonal administration to detect and close gaps early)."
+        source_url: *iit
+        passage: |-
+          Dieses sieht vor, in der kantonalen Verwaltung einheitliche Sicherheitsstandards festzulegen, um Lücken und Schwachstellen frühzeitig zu erkennen und zu schliessen.
+        translation: "It provides for setting uniform security standards in the cantonal administration in order to detect and close gaps and vulnerabilities early."
+      - claim: "[inside-it.ch] Only inside-it states the government has dealt with the draft since early last year (i.e. early 2025); not in the ag.ch bulletin."
+        source_url: *iit
+        passage: |-
+          Seit Anfang letzten Jahres hat sich der Regierungsrat mit dem Gesetzentwurf befasst.
+        translation: "Since the beginning of last year the Government Council has been dealing with the draft law."
+      - claim: "[inside-it.ch] Fachstelle powers (inside-it uses the past tense 'wurde ... geschaffen' - 'was created'; the ag.ch bulletin says 'soll ... ausgestattet werden')."
+        source_url: *iit
+        passage: |-
+          Für eine koordinierte Erkennungs- und Abwehrstrategie wurde laut Mitteilung eine Fachstelle für Informationssicherheit mit Weisungs- und Durchsetzungsbefugnissen geschaffen.
+        translation: "For a coordinated detection and defence strategy, according to the release, an information-security specialist unit with directive and enforcement powers was created."
+      - claim: "[inside-it.ch] Fachstelle audience as inside-it words it: advise and support all cantonal administrative bodies."
+        source_url: *iit
+        passage: |-
+          Sie soll alle kantonalen Verwaltungsstellen beraten und unterstützen.
+        translation: "It is to advise and support all cantonal administrative bodies."
+      - claim: "[inside-it.ch] Cyber coordination office protects authorities, businesses and population; located at Kantonspolizei Aargau together with the personnel-security unit."
+        source_url: *iit
+        passage: |-
+          Die neu aufgebaute Cyber-Koordinationstelle soll laut Mitteilung Behörden, Unternehmen und Bevölkerung besser vor Cyberbedrohungen schützen. Sie ist zusammen mit der Fachstelle für Personensicherheit an der Kantonspolizei Aargau angesiedelt.
+        translation: "The newly established cyber coordination office is, according to the release, to better protect authorities, companies and the population against cyber threats. It is located at the Cantonal Police Aargau together with the personnel-security unit."
+      - claim: "[inside-it.ch] Appointment as inside-it words it ('ernannt'; takes the post from 1 January 2027)."
+        source_url: *iit
+        passage: |-
+          Dazu hat der Regierungsrat Bernhard Droz zum Leiter der Stelle und somit zum Cyber-Koordinator ernannt.
+        translation: "To this end the Government Council appointed Bernhard Droz head of the office and thus cyber coordinator."
+      - claim: "[inside-it.ch] Start of the appointment."
+        source_url: *iit
+        passage: |-
+          Er tritt seine Stelle ab 1. Januar 2027 an.
+        translation: "He takes up his post from 1 January 2027."
+      - claim: "[netzwoche.ch, Feb 2025, BACKGROUND] EARLIER PLANNED START: in February 2025 the planned law was due to enter into force on 1 July 2026 'if all goes to plan' (conditional)."
+        source_url: &nwo "https://www.netzwoche.ch/news/2025-02-24/kanton-aargau-will-cybersicherheit-staerken"
+        passage: |-
+          Verläuft alles nach Plan, soll das neue Informationssicherheitsgesetz am 1. Juli 2026 in Kraft treten.
+        translation: "If everything goes to plan, the new information security act is to enter into force on 1 July 2026."
+      - claim: "[netzwoche.ch, Feb 2025, BACKGROUND] COMMUNES / BEARERS OF PUBLIC TASKS: a consultation-stage proposal, approved by a majority, that communes and other bearers of public tasks fall within the law's scope. This is the draft stage (Feb 2025), not confirmed for the final law in the Nov 2026 sources."
+        source_url: *nwo
+        passage: |-
+          Mehrheitlich gutgeheissen habe man den Vorschlag, dass Gemeinden und andere Träger öffentlicher Aufgaben unter den Geltungsbereich des Gesetzes fallen sollen.
+        translation: "The proposal that municipalities and other bearers of public tasks should fall within the scope of the law was approved by a majority."
+      - claim: "[netzwoche.ch, Feb 2025, BACKGROUND] Legislative timeline then: to the Grosser Rat, deliberation in Q2 2025."
+        source_url: *nwo
+        passage: |-
+          Das Geschäft geht nun an den Grossen Rat. Dieser soll die Beratung des Entwurfs im zweiten Quartal 2025 aufnehmen.
+        translation: "The matter now goes to the Grand Council, which is to begin deliberating the draft in the second quarter of 2025."
+      - claim: "[netzwoche.ch, Feb 2025, BACKGROUND] The planned law would create the cantonal Cyber-Koordinationsstelle and uniform standards (same unit as in Nov 2026)."
+        source_url: *nwo
+        passage: |-
+          Zudem will der Aargauer Regierungsrat mit dem Gesetz auch eine kantonale Cyber-Koordinationsstelle aufbauen.
+        translation: "In addition, the Aargau Government Council wants to set up a cantonal cyber coordination office with the law."
+      - claim: "[bluewin/Keystone-SDA, July 2024, BACKGROUND] Grosser Rat approved information-security credits (one-off about CHF 6.6 million, recurring CHF 3.6 million per year), cut by almost CHF 900,000 against the government's wish."
+        source_url: &blw "https://www.bluewin.ch/de/news/schweiz/aargauer-parlament-kuerzt-kredite-fuer-informationssicherheit-li.2266621"
+        passage: |-
+          Der Grosse Rat hat einen einmaligen Kredit von knapp 6,6 Millionen Franken und einen jährlich wiederkehrenden Kredit von 3,6 Millionen Franken bewilligt.
+        translation: "The Grand Council approved a one-off credit of just under CHF 6.6 million and an annually recurring credit of CHF 3.6 million."
+    structured:
+      adopted_instrument: "Verordnung über die Informationssicherheit (InfoSiV) (ag.ch and aargauerpolitik); inside-it writes 'Informationssicherheitsverordnung (InfoSiV)'"
+      entry_into_force: "1 January 2027 for the information-security legislation (InfoSiG and InfoSiV) - ag.ch wording 'Inkraftsetzung ... auf den 1. Januar 2027 beschlossen'"
+      units:
+        - {unit: "Fachstelle für Informationssicherheit", role: "advises cantonal bodies; 'soll ... mit Weisungs- und Durchsetzungsbefugnissen ausgestattet werden' (ag.ch); placement not stated"}
+        - {unit: "Fachstelle für Personensicherheitsprüfungen", role: "assesses the risk from a person carrying out a security-relevant activity", placement: "Kantonspolizei Aargau (KAPO)"}
+        - {unit: "kantonale Cyber-Koordinationsstelle", role: "to better protect authorities, business and population against cyber threats", placement: "Kantonspolizei Aargau (KAPO)", head: "Bernhard Droz, elected/appointed as Cyber-Koordinator per 1 January 2027; currently Dienstchef IT-Forensik und Cybercrime at KAPO"}
+      dates:
+        communique_publication: "2026-11-06 (ag.ch bulletin; adoption/meeting date not stated)"
+        aargauerpolitik_published: "2026-11-06T13:17:51Z"
+        inside_it_published: "2026-11-06T15:02:41Z"
+        earlier_planned_start: "1 July 2026 per netzwoche (2025-02-24, conditional 'Verläuft alles nach Plan'); neither assigned source states an earlier date"
+    status: "Ordinance adopted and entry into force set for 2027-01-01 per the canton's own release dated 2026-11-06; cyber coordinator takes office 2027-01-01."
+    exploitation_status: "n/a (regulatory development, no threat/vulnerability content)."
+    evidence_candidates:
+      - {quote: "Der Regierungsrat hat die Verordnung über die Informationssicherheit (InfoSiV) verabschiedet und gleichzeitig die Inkraftsetzung der Informationssicherheitsgesetzgebung (InfoSiG und InfoSiV) auf den 1. Januar 2027 beschlossen.", publisher: "Kanton Aargau, Departement Finanzen und Ressourcen", source_url: *agc}
+      - {quote: "Sowohl die Fachstelle für Personensicherheitsprüfungen als auch die Cyber-Koordinationsstelle sind bei der Kantonspolizei Aargau (KAPO) verortet.", publisher: "Kanton Aargau, Departement Finanzen und Ressourcen", source_url: *agc}
+      - {quote: "Eine Fachstelle für Informationssicherheit soll die kantonalen Stellen beraten und mit Weisungs- und Durchsetzungsbefugnissen ausgestattet werden", publisher: "Kanton Aargau, Departement Finanzen und Ressourcen", source_url: *agc}
+    discrepancies:
+      - "CANTON COMMUNIQUE FOUND: ag.ch/de/aktuell/medienmitteilungen 404s and the portal's search API (https://www.ag.ch/app/search-service/api/v1/medienmitteilungen) returns HTTP 500 without its custom query parameter. Working route: https://www.ag.ch/sitemap.xml lists https://www.ag.ch/content/export/api/v1/xml/medienmitteilungen (all release URLs, newest first, ~2.5 MB); the 2026-11-06 'Bulletin zur Regierungsratssitzung' item (title/author 'Departement Finanzen; Ressourcen') carries the text and reads with `extract`. Recommend recording this recipe for sources.json (ag.ch media releases)."
+      - "ADOPTION DATE: no source states the date of the Regierungsrat decision. The only dates are publication dates (ag.ch bulletin 2026-11-06; aargauerpolitik 2026-11-06T13:17Z; inside-it 2026-11-06T15:02Z). Use 'announced 6 November 2026', not 'adopted on 6 November'."
+      - "NOT INDEPENDENT: aargauerpolitik.ch reproduces the ag.ch bulletin text (it even says 'Dies meldet das Departement Finanzen und Ressourcen'); inside-it.ch is a re-report of the same release ('laut Mitteilung'). All three trace to the canton's release - one source, not three."
+      - "MODALITY DIFFERENCES: (1) ag.ch: the Fachstelle 'soll ... beraten und mit Weisungs- und Durchsetzungsbefugnissen ausgestattet werden' (is to be equipped); inside-it: the Fachstelle 'wurde ... geschaffen' (was created). (2) ag.ch: Inkraftsetzung of InfoSiG and InfoSiV decided for 2027-01-01; inside-it: 'das dazugehörige Gesetz soll am 1. Januar 2027 in Kraft treten' (law only mentioned). (3) ag.ch: Fachstelle advises 'die kantonalen Stellen'; inside-it: 'alle kantonalen Verwaltungsstellen'. Prefer the ag.ch wording."
+      - "PLACEMENT GAP: the communique places only the Fachstelle für Personensicherheitsprüfungen and the Cyber-Koordinationsstelle at KAPO; it does not say where the Fachstelle für Informationssicherheit (the one with Weisungs-/Durchsetzungsbefugnisse) sits. inside-it likewise says only that the coordination office 'ist zusammen mit der Fachstelle für Personensicherheit an der Kantonspolizei Aargau angesiedelt'."
+      - "SCOPE GAP (communes / bearers of public tasks): none of the three Nov 2026 texts mentions Gemeinden or Träger öffentlicher Aufgaben; they speak of 'kantonale Verwaltung' / 'kantonalen Stellen'. Only the Feb 2025 netzwoche item (reporting the draft stage) says a consultation proposal to include communes and other bearers of public tasks was approved by a majority. Whether the final InfoSiG/InfoSiV covers communes is therefore NOT confirmed by the assigned sources. The Cyber-Koordinationsstelle's protection mandate is worded broadly ('Behörden, Wirtschaft und Bevölkerung')."
+      - "EARLIER START DATE: neither assigned source states one. netzwoche (2025-02-24) gave 1 July 2026 as the conditional planned entry into force; the 2027-01-01 date is therefore ~6 months later than that earlier plan (inference from two sources, not stated by any single source)."
+      - "LEGISLATIVE STATUS: the Nov 2026 communique speaks of 'Inkraftsetzung der Informationssicherheitsgesetzgebung (InfoSiG und InfoSiV)', implying the InfoSiG is already enacted, but none of the fetched texts states the Grosser Rat's final vote or its date."
+      - "Wording check: the ag.ch bulletin says the ordinance was 'verabschiedet' (adopted) and the coordinator 'gewählt' (elected); inside-it says 'ernannt' (appointed). The appointee is a named public official; the name is carried because the assignment asks for it."
+    unread: []
+  N7:
+    title: "TU München - IT security incident (myTUM credentials captured, TUMonline administrator account abused, TUMonline taken offline)"
+    sources_read:
+      - url: "https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N7-1.md"
+        publisher: "Technische Universität München (victim's own statement; signed by the CIO / Geschäftsführender Vizepräsident für IT-Systeme & Dienstleistungen)"
+        publication_date: "Visible status line 'Stand: Freitag, 06.11.2026, 12:20 Uhr'. Page metadata: JSON-LD datePublished 2026-11-06T12:16:05+01:00; article:published_time 2026-11-06T12:23:57+01:00; dateModified / article:modified_time 2026-11-06T15:27:46+01:00. As fetched on 2026-11-07 (~03:4xZ) the visible status line was still 12:20 Uhr."
+        fetch: "extract (trafilatura-direct); raw HTML re-fetched via url --direct for the metadata timestamps and to confirm the status line"
+      - url: "https://www.heise.de/news/Plattformen-offline-Cyberangriff-auf-TU-Muenchen-11515734.html"
+        saved_body: "work/2026-11-07T0256Z-intel/bodies/N7-2.md"
+        publisher: "heise online (Volker Briegleb)"
+        publication_date: "2026-11-06T15:06:00+01:00 (JSON-LD datePublished = dateModified)"
+        fetch: "extract (trafilatura-direct); raw HTML re-fetched via url --direct for the timestamp"
+    claims:
+      - claim: "[TUM] Status line of the incident page (time of the statement)."
+        source_url: &tum "https://www.tum.de/aktuelles/alle-meldungen/pressemitteilungen/details/it-sicherheitsvorfall-an-der-tum"
+        passage: |-
+          Stand: Freitag, 06.11.2026, 12:20 Uhr
+        translation: "Status: Friday, 6 November 2026, 12:20."
+      - claim: "[TUM] What happened - first step: unknown attackers attacked the myTUM portal."
+        source_url: *tum
+        passage: |-
+          Unbekannte haben das Portal myTUM angegriffen.
+        translation: "Unknown persons attacked the myTUM portal."
+      - claim: "[TUM] WHAT WAS CAPTURED AT myTUM: passwords for the central TUM login (e.g. login.tum.de, TUMonline), from all persons who had logged in to myTUM. Mechanism of capture not stated."
+        source_url: *tum
+        passage: |-
+          Dabei haben sie Passwörter für die zentrale Anmeldung an TUM-Systemen (z.B. login.tum.de, TUMonline, usw) erbeutet, und zwar von allen Personen, die sich bei myTUM angemeldet haben.
+        translation: "In doing so they captured passwords for the central login to TUM systems (e.g. login.tum.de, TUMonline, etc.), namely from all persons who had logged in to myTUM."
+      - claim: "[TUM] ADMIN-CREDENTIAL PIVOT: the captured credentials included those of a system administrator for TUMonline; with them the attackers attacked the central campus-management system TUMonline, which TUM then took off the network."
+        source_url: *tum
+        passage: |-
+          Hierunter befanden sich auch die Zugangsdaten eines Systemverwalters für TUMonline. Mit diesen haben die Angreifer unser zentrales Campus-Management-System TUMonline angegriffen. Dieses haben wir daraufhin vom Netz genommen.
+        translation: "Among these were also the access credentials of a system administrator for TUMonline. With these the attackers attacked our central campus management system TUMonline. We then took it off the network."
+      - claim: "[TUM] Lead-in to data categories: possible access during the attack ('möglicherweise')."
+        source_url: *tum
+        passage: |-
+          Während des Angriffs konnten die Angreifer möglicherweise auf folgende Daten zugreifen:
+        translation: "During the attack the attackers may have been able to access the following data:"
+      - claim: "[TUM] DATA - all affected: TUM account password, name, private address, date of birth."
+        source_url: *tum
+        passage: |-
+          bei allen Betroffenen: Passwort für Ihren TUM-Account, Ihren Namen, Ihre private Anschrift und Ihr Geburtsdatum
+        translation: "for all affected persons: password for your TUM account, your name, your private address and your date of birth."
+      - claim: "[TUM] DATA - staff additionally: business address and business telephone number."
+        source_url: *tum
+        passage: |-
+          bei Beschäftigten zusätzlich: Ihre Dienstanschrift und Ihre dienstliche Telefonnummer
+        translation: "for employees additionally: your business address and your business telephone number."
+      - claim: "[TUM] DATA - students additionally: possibly matriculation number, degree programme, number of subject semesters."
+        source_url: *tum
+        passage: |-
+          bei Studierenden zusätzlich: gegebenenfalls Ihre Matrikelnummer, Ihren Studiengang und die Anzahl Ihrer Fachsemester
+        translation: "for students additionally: where applicable your matriculation number, your degree programme and the number of your subject semesters."
+      - claim: "[TUM] Logging of attacker access in TUMonline and current assessment that no further TUMonline data (e.g. grades, study-place applications) is affected; still being checked."
+        source_url: *tum
+        passage: |-
+          Die Zugriffe der Angreifer innerhalb von TUMonline wurden weitgehend protokolliert. Nach Auswertung dieser Protokolle gehen wir derzeit davon aus, dass keine weiteren Daten aus TUMonline betroffen sind, etwa Noten oder Studienplatzbewerbungen. Wir prüfen dies weiter.
+        translation: "The attackers' accesses within TUMonline were largely logged. After evaluating these logs we currently assume that no further data from TUMonline is affected, e.g. grades or study-place applications. We are continuing to check this."
+      - claim: "[TUM] CONTAINMENT: affected accounts locked immediately; TUMonline temporarily deactivated; to TUM's current knowledge this prevented further spread."
+        source_url: *tum
+        passage: |-
+          Wir haben die betroffenen Accounts sofort gesperrt und TUMonline vorübergehend deaktiviert. Nach unserem derzeitigen Kenntnisstand konnten wir dadurch verhindern, dass sich der Angriff weiter ausbreitet.
+        translation: "We locked the affected accounts immediately and temporarily deactivated TUMonline. To our current knowledge this prevented the attack from spreading further."
+      - claim: "[TUM] AUTHORITY NOTIFICATIONS: reported to the Bavarian State Commissioner for Data Protection; criminal complaint filed."
+        source_url: *tum
+        passage: |-
+          Den Vorfall haben wir dem Bayerischen Landesbeauftragten für den Datenschutz gemeldet und Strafanzeige erstattet.
+        translation: "We have reported the incident to the Bavarian State Commissioner for Data Protection and filed a criminal complaint."
+      - claim: "[TUM] MFA STATEMENT: user accounts with MFA were protected in this attack (no mechanism given)."
+        source_url: *tum
+        passage: |-
+          Benutzerkonten mit MFA waren bei diesem Angriff geschützt.
+        translation: "User accounts with MFA were protected in this attack."
+      - claim: "[TUM] Action requested: change the TUM password (options provided by Monday), then enable MFA."
+        source_url: *tum
+        passage: |-
+          Ändern Sie Ihr TUM-Passwort. Wir stellen Ihnen dafür bis Montag mehrere Möglichkeiten zur Verfügung und informieren Sie, wie und bis wann Sie Ihr Passwort ändern müssen.
+        translation: "Change your TUM password. We will provide you with several options for this by Monday and will inform you how and by when you must change your password."
+      - claim: "[TUM] Password reuse advice."
+        source_url: *tum
+        passage: |-
+          Falls Sie Ihr TUM-Passwort auch bei anderen Diensten außerhalb der TUM benutzt haben, sollten Sie es dort unbedingt ändern.
+        translation: "If you have also used your TUM password for other services outside TUM, you should definitely change it there."
+      - claim: "[TUM] Phishing risk warning."
+        source_url: *tum
+        passage: |-
+          Mit Ihrem Namen, Ihrem Studiengang und Ihrer Anschrift könnten Betrüger glaubwürdig wirkende Nachrichten verfassen.
+        translation: "With your name, your degree programme and your address, fraudsters could write credible-looking messages."
+      - claim: "[TUM] TUM never asks for passwords by email, phone or letter."
+        source_url: *tum
+        passage: |-
+          Die TUM wird Sie niemals per E-Mail, Telefon oder Brief nach Ihrem Passwort fragen.
+        translation: "TUM will never ask you for your password by email, telephone or letter."
+      - claim: "[heise] SPOKESPERSON POINT 1 (entry system): attackers got in via a legacy system ('Altsystem'), potentially gaining access to student and staff data; whether data was also exfiltrated is still being investigated. Reported speech: 'bestätigte ein Sprecher der TUM gegenüber heise online'."
+        source_url: &hei "https://www.heise.de/news/Plattformen-offline-Cyberangriff-auf-TU-Muenchen-11515734.html"
+        passage: |-
+          Angreifer seien über ein Altsystem eingedrungen und hätten dabei potenziell Zugriff auf Daten von Studenten und Mitarbeitern erlangt, bestätigte ein Sprecher der TUM gegenüber heise online. Ob Daten dabei auch entwendet wurden, werde noch untersucht.
+        translation: "Attackers had penetrated via a legacy system and thereby potentially gained access to data of students and staff, a TUM spokesperson confirmed to heise online. Whether data was also exfiltrated is still being investigated."
+      - claim: "[heise] POINT 2 (about 60,000 users): heise's own sentence, not attributed to the spokesperson in the text: data of 'gut 60.000' students and employees."
+        source_url: *hei
+        passage: |-
+          Insgesamt geht es um Daten von gut 60.000 Studenten und Beschäftigten der Hochschule.
+        translation: "In total the data of well over 60,000 students and employees of the university is concerned."
+      - claim: "[heise] What was actually stolen is unclear; the university assumes damage is limited; blocking the platforms contained the attack for now."
+        source_url: *hei
+        passage: |-
+          Was davon tatsächlich entwendet wurde, ist zur Stunde noch unklar. Die Hochschule geht derzeit davon aus, dass sich der Schaden in Grenzen hält. Mit der Sperrung der Plattformen sei der Angriff zunächst eingedämmt worden.
+        translation: "What was actually taken is still unclear at present. The university currently assumes the damage is limited. By blocking the platforms the attack was initially contained."
+      - claim: "[heise] TUM statement quoted by heise: via the legacy system myTUM, attackers obtained passwords, names, private addresses, dates of birth, matriculation numbers, degree-programme information and number of subject semesters ('teilte die TUM dazu mit')."
+        source_url: *hei
+        passage: |-
+          Angreifern war es gelungen, über das Altsystem myTUM an Passwörter, Namen, private Anschriften und Geburtsdaten der Nutzenden sowie Matrikelnummern, Studiengangsinformationen und die Anzahl der jeweiligen Fachsemester zu kommen
+        translation: "The attackers had succeeded in obtaining, via the legacy system myTUM, users' passwords, names, private addresses and dates of birth as well as matriculation numbers, degree-programme information and the number of respective subject semesters."
+      - claim: "[heise] All myTUM user accounts are potentially affected; whether data actually left is unclear."
+        source_url: *hei
+        passage: |-
+          Potenziell betroffen sind alle Nutzerkonten von myTUM, ob dort aber tatsächlich Daten abgeflossen sind, ist noch unklar.
+        translation: "All myTUM user accounts are potentially affected, but whether data actually flowed out there is still unclear."
+      - claim: "[heise] UNOFFICIAL (university circles): attackers not interested in myTUM data; the old system was the entry point to current campus administration; they also obtained a TUMonline system administrator's credentials."
+        source_url: *hei
+        passage: |-
+          Nach bisherigen Erkenntnissen seien die Angreifer nicht an den Daten auf myTUM interessiert gewesen, heißt es aus Universitätskreisen. Vielmehr sei das alte System als Einfallstor für die aktuelle Campusverwaltung genutzt worden. Dabei haben die Angreifer den Angaben zufolge auch Zugangsdaten eines Systemverwalters für TUMonline erlangt.
+        translation: "According to findings so far the attackers were not interested in the data on myTUM, it is said from university circles. Rather, the old system was used as a gateway to the current campus administration. According to the information, the attackers also obtained access credentials of a system administrator for TUMonline."
+      - claim: "[heise] SPOKESPERSON QUOTE: with these (admin credentials) the attackers attacked the central campus-management system."
+        source_url: *hei
+        passage: |-
+          Mit diesen haben die Angreifer unser zentrales Campus-Management-System angegriffen
+        translation: "With these the attackers attacked our central campus management system."
+      - claim: "[heise] Harvested TUM identifiers have been locked."
+        source_url: *hei
+        passage: |-
+          Die erbeuteten TUM-Kennungen seien inzwischen gesperrt worden.
+        translation: "The captured TUM identifiers have meanwhile been locked."
+      - claim: "[heise] Not exfiltrated to current knowledge (heise's list): grades, exam results, applications, bank details."
+        source_url: *hei
+        passage: |-
+          Sensible Daten wie Noten, Prüfungsergebnisse, Bewerbungen oder Bankverbindungen seien nach derzeitigem Kenntnisstand nicht abgeflossen, betont die Hochschule.
+        translation: "Sensitive data such as grades, exam results, applications or bank details have, to current knowledge, not flowed out, the university stresses."
+      - claim: "[heise] AUTHORITY NOTIFICATIONS (heise)."
+        source_url: *hei
+        passage: |-
+          Die Technische Universität München hat den Angriff beim Bayerischen Landesbeauftragten für den Datenschutz gemeldet und Strafanzeige erstattet.
+        translation: "The Technical University of Munich has reported the attack to the Bavarian State Commissioner for Data Protection and filed a criminal complaint."
+      - claim: "[heise] POINT 3 (impaired password reset / MFA enrolment, per TUM-IT) and phased restoration of TUMonline over the next days."
+        source_url: *hei
+        passage: |-
+          Die Hochschule arbeitet den Angaben zufolge daran, TUMonline im Laufe der nächsten Tage schrittweise wieder ans Netz zu bringen. Bis dahin sind laut TUM-IT auch die Passwortrücksetzung und die MFA-Einrichtung beeinträchtigt.
+        translation: "According to the information, the university is working on bringing TUMonline back onto the network step by step over the next few days. Until then, according to TUM-IT, password reset and MFA setup are also impaired."
+      - claim: "[heise] MFA statement echoed: accounts secured that way were protected against the attack."
+        source_url: *hei
+        passage: |-
+          So gesicherte Konten seien gegen den Angriff geschützt gewesen.
+        translation: "Accounts secured in this way had been protected against the attack."
+      - claim: "[heise] Lead/teaser sentence - says attackers 'Daten entwendet haben' (data stolen), which the body then qualifies as still under investigation."
+        source_url: *hei
+        passage: |-
+          Die TUM hat ihr zentrales Campus-Management-System offline genommen, nachdem sich Angreifer unberechtigten Zugriff verschafft und Daten entwendet haben.
+        translation: "TUM has taken its central campus management system offline after attackers gained unauthorised access and stole data."
+      - claim: "[heise] Context: LMU München incident from September (600,000 records, ~50 years of data) - heise's comparison, not part of the TUM incident."
+        source_url: *hei
+        passage: |-
+          Dabei waren 600.000 Datensätze mit Stamm- und Immatrikulationsdaten von aktuellen und ehemaligen LMU-Studenten betroffen, die etwa 50 Jahre zurückreichen.
+        translation: "In that case 600,000 records with master and enrolment data of current and former LMU students, going back about 50 years, were affected."
+    structured:
+      timeline_as_stated:
+        - "2026-11-06 12:16 (+01:00): TUM page JSON-LD datePublished; 12:23:57 article:published_time; visible status 12:20 Uhr"
+        - "2026-11-06 15:06 (+01:00): heise article published"
+        - "2026-11-06 15:27:46 (+01:00): TUM page metadata dateModified (visible status line still 12:20 Uhr when fetched 2026-11-07)"
+        - "Monday 2026-11-09: password-change instructions/options promised by TUM (heise: password change possible from Monday, 9 November)"
+        - "attack date, time and duration: not stated by either source"
+      data_categories_possibly_accessed: {all_affected: ["TUM account password", "name", "private address", "date of birth"], staff_additional: ["business address", "business telephone number"], students_additional: ["matriculation number (gegebenenfalls)", "degree programme", "number of subject semesters"]}
+      containment_steps: ["affected accounts locked immediately", "TUMonline temporarily deactivated / taken off the network", "(heise) captured TUM identifiers locked", "phased restoration of TUMonline over the following days (heise)"]
+      authority_notifications: ["Bayerischer Landesbeauftragter für den Datenschutz (reported)", "criminal complaint (Strafanzeige) filed"]
+      user_actions_requested: ["change TUM password (instructions by Monday)", "then enable MFA", "change the password elsewhere if reused", "beware phishing; TUM never asks for passwords"]
+    status: "Ongoing as of the TUM statement 'Stand: Freitag, 06.11.2026, 12:20 Uhr': investigation continuing; TUMonline offline; password reset and MFA enrolment impaired (heise, per TUM-IT)."
+    exploitation_status: "Confirmed incident (victim's own statement). Credentials captured at myTUM from all persons who logged in; TUMonline administrator credentials among them and used to attack TUMonline. Exfiltration of anything beyond the credentials is NOT confirmed (TUM: 'möglicherweise'; heise: 'noch untersucht')."
+    evidence_candidates:
+      - {quote: "Hierunter befanden sich auch die Zugangsdaten eines Systemverwalters für TUMonline.", publisher: "Technische Universität München", source_url: *tum}
+      - {quote: "Benutzerkonten mit MFA waren bei diesem Angriff geschützt.", publisher: "Technische Universität München", source_url: *tum}
+      - {quote: "Angreifer seien über ein Altsystem eingedrungen und hätten dabei potenziell Zugriff auf Daten von Studenten und Mitarbeitern erlangt, bestätigte ein Sprecher der TUM gegenüber heise online.", publisher: "heise online", source_url: *hei}
+    discrepancies:
+      - "'Altsystem' (legacy system) appears ONLY in heise (as the spokesperson's reported words and in a quoted TUM statement 'über das Altsystem myTUM'); the TUM incident page as fetched does not use the word - it says 'Unbekannte haben das Portal myTUM angegriffen'. Hold as heise-reported."
+      - "About 60,000 users: heise's own sentence ('Insgesamt geht es um Daten von gut 60.000 Studenten und Beschäftigten'), NOT attributed to the spokesperson and absent from the TUM page. The lead's 'spokesperson-quoted about 60,000 users' is therefore not supported as a spokesperson quote."
+      - "Impaired password reset / MFA enrolment: attributed by heise to 'TUM-IT' ('laut TUM-IT'), not to the spokesperson, and absent from the TUM page; the TUM page only says password-change options come 'bis Montag' with instructions 'ab spätestens Montagabend'."
+      - "heise is internally inconsistent: the teaser says attackers 'Daten entwendet haben', the body says 'Ob Daten dabei auch entwendet wurden, werde noch untersucht' and 'was davon tatsächlich entwendet wurde, ist zur Stunde noch unklar'. TUM itself says the passwords were 'erbeutet' (captured) from all myTUM users while the wider data was 'möglicherweise' accessible."
+      - "heise's non-exfiltration list (Noten, Prüfungsergebnisse, Bewerbungen, Bankverbindungen) is broader than the TUM page's (Noten, Studienplatzbewerbungen, and only 'aus TUMonline ... keine weiteren Daten'); Prüfungsergebnisse and Bankverbindungen appear only in heise."
+      - "heise's 'Universitätskreisen' statement (attackers not interested in myTUM data; old system used as gateway to campus administration) is unofficial and unnamed."
+      - "Timestamp mismatch: the visible TUM status line is 12:20 but the TUM page metadata says modified 15:27:46 (+01:00); the body as fetched shows no later status, so either a non-substantive edit or a CMS-metadata effect. heise published 15:06 (+01:00), i.e. after the 12:20 status and before the 15:27 modification."
+      - "NOT STATED by either source: the technique used to take passwords at myTUM (no vulnerability, malware family or login-skimming description), the attack date/time/duration, attacker identity or claim (TUM says 'Unbekannte'), whether the administrator account was MFA-protected, how many accounts were actually used, and whether other systems besides myTUM/TUMonline were touched. Do not infer a mechanism from 'Altsystem'."
+      - "MFA claim mechanics: TUM says accounts with MFA 'waren bei diesem Angriff geschützt' and heise echoes it; neither explains whether the captured passwords alone were insufficient for MFA-enrolled accounts, nor whether the TUMonline administrator account had MFA."
+      - "Password-change date: TUM page says options 'bis Montag' / instructions 'ab spätestens Montagabend'; heise says change 'ab Montag, 9. November möglich'. Consistent (Monday = 2026-11-09) but only heise gives the calendar date."
+    unread: []

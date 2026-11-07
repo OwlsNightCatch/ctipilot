@@ -1,0 +1,510 @@
+# work/2026-11-07T0256Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-07T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-07T02:58:32Z
+ended_at: 2026-11-07T03:30:08Z
+duration_seconds: 1896
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 11
+  bridge_fetches: 190
+items:
+  # ---------------------------------------------------------------------------
+  # N1. SonicWall CVE-2026-19868 -- the one NOT COVERED KEV row of the window
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-19868, SonicWall SonicOS SSLVPN: a user with valid credentials for another authentication method bypasses SAML, MFA included; SonicWall investigated a report of exploitation and CISA lists it as exploited (Gen7 up to 7.3.3-7015, Gen8 up to 8.2.2-8015)"
+    suggested_priority: high
+    update_target: null
+    novelty: new
+    sources:
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014", publisher: "SonicWall PSIRT (SNWLID-2026-0014, read through the PSIRT's own JSON API)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/06/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA (KEV alert)", date: "2026-11-06", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118429", publisher: "ENISA EUVD (EUVD-2026-118429, exploitedSince 2026-11-06)", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-new-ssl-vpn-mfa-bypass-flaw-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://www.runzero.com/blog/sonicwall/", publisher: "runZero", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: kev-window.txt NOT COVERED row + python3 tools/fetch_source.py cisa-kev (catalogue 2026.11.06, dateAdded 2026-11-06, only addition in window) -> primary: KEV notes field URL https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014 (SPA; extract returned the text but not the affected/fixed tables) -> pivot: the SPA's own bundle names psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0014, fetched with `url --direct` (affected + fixed tables, credits, revision history) -> corroboration: ENISA EUVD exploited list https://euvdservices.enisa.europa.eu/api/exploitedvulnerabilities (EUVD-2026-118429), CISA alert https://www.cisa.gov/news-events/alerts/2026/11/06/cisa-adds-one-known-exploited-vulnerability-catalog (WebFetch), BleepingComputer https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-new-ssl-vpn-mfa-bypass-flaw-exploited-in-attacks/, runZero https://www.runzero.com/blog/sonicwall/"
+    summary: |
+      SonicWall advisory SNWLID-2026-0014 of 2026-11-06 covers seven SonicOS flaws on Gen7 and Gen8 firewalls, and one of them, CVE-2026-19868, is listed by CISA as exploited. It is an authentication enforcement weakness in the SSLVPN service (CWE-308, single-factor authentication): a user who holds valid credentials for an alternate authentication method can bypass the SAML authentication controls, which may also bypass SAML-enforced multi-factor authentication. SonicWall states the flaw only affects SSLVPN when SAML is enabled for SSLVPN logins. SonicWall says its PSIRT "investigated a report indicating potential exploitation"; CISA added CVE-2026-19868 to the KEV catalogue the same day "based on evidence of active exploitation" with a federal due date of 2026-11-20, and ENISA's EUVD marks it exploited since 2026-11-06. No source names an actor, a victim, a technique beyond the stated mechanism, or the scale; the catalogue entry marks ransomware use unknown.
+      Affected: Gen7 hardware firewalls (TZ 270, 270W, 370, 370W, 470, 470W, 570, 570W, 570P, 670; NSa 2700, 3700, 4700, 5700, 6700; NSsp 10700, 11700, 13700, 15700) and Gen7 NSv 270/470/870 on ESX, KVM, Hyper-V, AWS and Azure up to and including SonicOS 7.3.3-7015, fixed in 7.3.4-7013 and higher; Gen8 hardware (TZ 80, 280, 280W, 380, 380W, 480, 580, 680; NSa 2800, 3800, 4800, 5800) and Gen8 NSv XS/S/M/L up to and including 8.2.2-8015, fixed in 8.2.3-8015 and higher. SonicWall lists no workaround; Gen6 and the SMA product lines are not listed in this advisory. The discoverer is Ryan Harris of The Electronic Office. The score differs by source: SonicWall's own vector is CVSS 3.1 7.1 (AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:L/A:N), while ENISA's record and runZero carry 7.5 (PR:N).
+      The same advisory fixes six lower-profile flaws that no source reports as exploited: CVE-2026-107155 (permissive cross-domain policy) and CVE-2026-107154 (session validation, CWE-291 reliance on IP address for authentication) in the management interface, both 8.8 with user interaction required and credited to Pentest-Tools.com; CVE-2026-82308, a pre-authentication heap overflow in the SSL-VPN service (7.5, denial of service); CVE-2026-77708 and CVE-2026-77709, pre-authentication stack and heap overflows in the TACACS+ client (5.9, denial of service); and CVE-2026-19703, weak password hashing on virtual appliances (5.2, needs local access). It is a different product line from the SMA1000 flaws already covered (2026-10-08 entry) and from the end-of-life GMS entry of 2026-11-05.
+    region_nexus: "global; SonicWall Gen7/Gen8 firewalls with SAML-based SSL VPN. No Swiss-specific reporting yet (NCSC-CH Security Hub has no post on it at 2026-11-07 03:00Z)."
+    primary_sector_nexus: "indirect: perimeter VPN of the kind public administrations run; exposure depends on SAML being enabled for SSLVPN logins"
+    sector: "public-sector"
+    cves: [CVE-2026-19868, CVE-2026-107155, CVE-2026-107154, CVE-2026-82308, CVE-2026-77708, CVE-2026-77709, CVE-2026-19703]
+    techniques: [T1190, T1133, T1078]
+    affected_products: ["SonicWall SonicOS (Gen7 and Gen8 firewalls, Gen7/Gen8 NSv)", "SonicWall SSL VPN"]
+    entity_keys: ["product:sonicwall-sonicos", "product:sonicwall-ssl-vpn"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: "A1 on the flaw, versions and fix (vendor PSIRT, CISA and ENISA agree); the exploitation basis is A2 because SonicWall words it as a report of potential exploitation and CISA publishes no evidence"
+    evidence:
+      - quote: "SonicWall PSIRT has investigated a report indicating potential exploitation of this vulnerability. Customers are strongly urged to upgrade to the latest release as soon as possible to mitigate the associated risks."
+        attribution: "SonicWall PSIRT (SNWLID-2026-0014)"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014"
+      - quote: "NOTE: This vulnerability ONLY impacts the SonicOS SSLVPN interface or service if SAML is enabled for SSLVPN logins."
+        attribution: "SonicWall PSIRT (SNWLID-2026-0014)"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014"
+      - quote: "based on evidence of active exploitation"
+        attribution: "CISA (KEV alert of 2026-11-06)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/06/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "SonicWall fixed the issues in versions 7.3.4-7013 and 8.2.3-8015 and says no workarounds are available."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-new-ssl-vpn-mfa-bypass-flaw-exploited-in-attacks/"
+    extended_notes: |
+      Exposure: SonicWall Gen7 and Gen8 firewalls (and NSv) running SonicOS at or below 7.3.3-7015 / 8.2.2-8015 with the SSL VPN enabled and SAML configured as a login method for SSLVPN; the running build is the first check, SAML-for-SSLVPN the second (the vendor's stated precondition).
+      Detection (inference from the stated mechanism, not a vendor-published detection): the bypass uses valid credentials of a different authentication method, so compare successful SSL VPN logins on the firewall with the identity provider's sign-in log; a VPN session that has no matching SAML sign-in or MFA event at the IdP, or a SAML-enrolled user who authenticated through a local, LDAP or RADIUS path, is the signal. Patching does not evict an attacker already holding a session or reusing the credentials, so review VPN sessions since SAML was enabled and reset the credentials of any account that exists in both authentication paths. SonicWall publishes no indicators and CISA's catalogue marks forensic triage "No".
+      Triage: SAML-enforced MFA that is applied at the firewall's login page differs from MFA applied at the IdP; a legitimate user who signs in through the SAML path leaves an IdP event, an attacker using the alternate path does not (follows from the mechanism; no vendor discriminator published).
+      Defender takeaway: upgrade every Gen7/Gen8 firewall that serves SAML SSL VPN logins to 7.3.4-7013 / 8.2.3-8015 or later; there is no workaround, and the exploitation basis (a report, not published evidence) is thin, so treat reachable gateways as the priority.
+      Background (not sourced to this advisory): CISA's catalogue text names the weakness "Use of Single-factor Authentication".
+
+  # ---------------------------------------------------------------------------
+  # N2. Plex2Shell -- previously borderline-dropped, new in-window development (QNAP)
+  # ---------------------------------------------------------------------------
+  - title: "Plex2Shell (CVE-2026-96652, -96654, -96655, -96656), Plex Media Server 1.43.2 and earlier: QNAP says NAS devices are being compromised through the chain; CISA has listed all four since 2026-10-20 and Plex says the attacks are active and widespread (fix 1.43.3.10861)"
+    suggested_priority: notable
+    update_target: null
+    novelty: new
+    borderline: true
+    borderline_reason: "Prior fires borderline-dropped this chain (2026-10-21 and 2026-10-22 fires; the 2026-10-25 audit concurred; 2026-11-04 fire dropped the BACS week-44 review) because Plex is a consumer media server with no shown public-sector deployment. The new in-window fact is QNAP's own security notice of 2026-11-06 that customers' NAS devices running the Plex app were compromised, and QNAP NAS is a platform the store already tracks for PHP2Shell. The main agent decides whether that clears the constituency bar."
+    sources:
+      - { url: "https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately", publisher: "QNAP Systems (security notice)", date: "2026-11-06", role: "primary" }
+      - { url: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319", publisher: "Plex (security announcement, CVE and exploitation update)", date: "2026-10-20", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/10/20/cisa-adds-six-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert)", date: "2026-10-20", role: "primary" }
+      - { url: "https://zmain.info/blog/plex2shell", publisher: "Zach Main (discoverer write-up)", date: "2026-10-16", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/qnap-says-hackers-breaching-nas-devices-in-plex2shell-attacks/", publisher: "BleepingComputer", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cisa-hackers-chain-plex-flaws-in-plex2shell-attacks-to-breach-servers/", publisher: "BleepingComputer", date: "2026-10-21", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed https://www.bleepingcomputer.com/feed/ (item 'QNAP says hackers breaching NAS devices in Plex2Shell attacks', 2026-11-06 12:04) -> pivot: https://www.bleepingcomputer.com/news/security/qnap-says-hackers-breaching-nas-devices-in-plex2shell-attacks/ -> primary: QNAP notice https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately -> primary: Plex announcement https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319 -> primary: CISA alert found by WebSearch (cisa.gov allowed-domain search) and fetched at https://www.cisa.gov/news-events/alerts/2026/10/20/cisa-adds-six-known-exploited-vulnerabilities-catalog (KEV JSON from tools/fetch_source.py cisa-kev confirms dateAdded 2026-10-20 for all four) -> primary: https://zmain.info/blog/plex2shell"
+    summary: |
+      Plex2Shell is a chain of four Plex Media Server flaws fixed in 1.43.3.10861; CISA added all four to the KEV catalogue on 2026-10-20 and the store has carried it only as a borderline drop. The new development is QNAP's security notice of 2026-11-06: QNAP says it "has received reports from some users that Plex Media Server on their NAS appears to have been compromised" through the chain, that QNAP Technical Support is assisting them, and that QTS, QuTS hero and other QNAP operating systems are not themselves affected because the flaws sit in the Plex app. Plex's own announcement says the chain lets an unauthenticated remote attacker run code with the privileges of the Plex Media Server process, that a public proof of concept appeared on 2026-10-16, that the attacks are "actively and widely exploited" against internet-facing servers that were not updated, and that compromised servers ran cryptocurrency miners and proxy software that routes other people's traffic through the victim.
+      The discoverer's write-up (2026-10-16) describes the chain: an unauthenticated server-side request forgery in the player timeline endpoint makes the server call itself over loopback, which reaches the loopback-only plugin API, where an injected identifier forges a call to a networking function that attaches the server owner's admin token to a request whose host name starts with 127.0.0.1 but resolves to an attacker-controlled address; with the owner token the attacker points the transcoder at an attacker-hosted file and a transcoder preference writes it into the Codecs directory as a shared object that the next transcode loads, so code runs as the Plex service user. Plex's CVE list names -96652 the unauthenticated SSRF in the timeline endpoint, -96654 access to internal agent functions over loopback, -96655 disclosure of the owner's admin token and -96656 the arbitrary file write to the Codecs directory; CISA's catalogue text describes -96655 as an authenticated SSRF in the transcode path and -96656 as an admin-level file write, which fits the same chain from a different angle.
+      Affected: Plex Media Server 1.43.2 and earlier on every platform (Windows, macOS, Linux, Docker and NAS packages); fixed in 1.43.3.10861 and later. QNAP offers it through App Center and tells users to confirm the version under Plex Web Settings > General. QNAP advises treating a NAS as potentially compromised if Plex ran 1.43.2 or earlier and was reachable from the internet (Remote Access on, port 32400 forwarded, or opened by UPnP), because updating does not remove what an attacker installed, and recommends a clean reinstall of QTS or QuTS hero, resetting Plex and NAS credentials, and a VPN instead of port forwarding.
+    region_nexus: "global; any internet-reachable Plex Media Server, including on QNAP and other NAS. No Swiss-specific reporting found; the BACS week-44 review the store already dropped covered Plex among home-network compromises."
+    primary_sector_nexus: "indirect: staff or communal NAS devices running the Plex app; the product itself is a consumer media server"
+    sector: "public-sector"
+    cves: [CVE-2026-96652, CVE-2026-96654, CVE-2026-96655, CVE-2026-96656]
+    techniques: [T1190, T1129, T1496.001, T1090]
+    affected_products: ["Plex Media Server", "QNAP NAS (Plex Media Server app)"]
+    entity_keys: ["product:qnap-qts", "product:qnap-quts-hero"]
+    new_entities:
+      - { key: "product:plex-media-server", type: product, name: "Plex Media Server", aliases: ["Plex"], summary: "Plex Inc. media server, listens on port 32400 and is packaged for Windows, macOS, Linux, Docker and NAS platforms; subject of the Plex2Shell chain (Plex, 2026-10-20)." }
+      - { key: "tool:plex2shell", type: tool, name: "Plex2Shell", aliases: [], summary: "Name given by its discoverer Zach Main (2026-10-16) to a chain of four Plex Media Server flaws (CVE-2026-96652, -96654, -96655, -96656) giving unauthenticated remote code execution as the Plex service user; listed by CISA on 2026-10-20 and actively exploited per Plex (follows the tool:node2shell naming pattern)." }
+    relation_suggestions:
+      - { subject: "tool:plex2shell", object: "product:plex-media-server", basis: "Plex: the chain lets an unauthenticated remote attacker run code with the privileges of the Plex Media Server process (Plex, 2026-10-20)" }
+      - { subject: "tool:plex2shell", object: "product:qnap-qts", basis: "QNAP: users report Plex Media Server on their QNAP NAS compromised through the chain; QTS and QuTS hero themselves are not affected (QNAP, 2026-11-06)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: "A1 on the flaws, fix and exploitation (vendor, CISA, QNAP agree); no attacker, victim count or Swiss exposure is reported"
+    evidence:
+      - quote: "QNAP has received reports from some users that Plex Media Server on their NAS appears to have been compromised through these vulnerabilities, and QNAP Technical Support is assisting the affected users."
+        attribution: "QNAP Systems (security notice)"
+        source_url: "https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately"
+      - quote: "updating alone will not remove anything an attacker may have installed."
+        attribution: "QNAP Systems (security notice)"
+        source_url: "https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately"
+      - quote: "These vulnerabilities are being actively and widely exploited. A public proof of concept was released on October 16."
+        attribution: "Plex (security announcement)"
+        source_url: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319"
+      - quote: "Chained together, these issues let an unauthenticated remote attacker run code with the privileges of the Plex Media Server process."
+        attribution: "Plex (security announcement)"
+        source_url: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319"
+    extended_notes: |
+      Exposure: Plex Media Server 1.43.2 or earlier reachable from the internet (Remote Access enabled, port 32400 forwarded or opened by UPnP); version is shown in Plex Web under Settings > General.
+      Detection: after patching, look for what Plex itself lists: child processes of the Plex Media Server process that nobody installed (miner- or proxy-style names), unfamiliar shared-object or DLL files in the Codecs folder, transcoder options in Preferences.xml that the owner did not set, sustained high CPU with nothing playing, and outbound connections from the Plex host to proxy-service infrastructure. Telemetry classes: process creation with Plex as parent, file creation in the Plex Codecs directory, egress traffic from the NAS or server.
+      Triage: Plex legitimately loads codecs and spawns the transcoder; the discriminator is a shared object that was written by a transcode request rather than installed with the app, and a process the transcoder does not normally start.
+      Hardening: update to 1.43.3.10861 or later, turn Remote Access off if unneeded, do not forward 32400 (use a VPN), rebuild a possibly compromised host from a clean install and rotate Plex and NAS credentials; Plex adds that anything the Plex service account could reach (mounted shares, stored credentials) should be treated as exposed.
+      Prior dispositions: 2026-10-21/22 fires borderline-dropped (consumer product, no public-sector deployment shown); G1 audit 2026-10-25 concurred. Rescana's link to the AISURU proxyware botnet is a single secondary vendor claim and is not carried here.
+
+  # ---------------------------------------------------------------------------
+  # N3. Windows Paint CVE-2026-83844 -- Store-delivered fix, silently changed fixed build
+  # ---------------------------------------------------------------------------
+  - title: "CVE-2026-83844, Windows Paint: Microsoft's October remote code execution fix reaches Paint only through a Microsoft Store update, the fixed build named in the advisory changed from 11.2605.91.0 to 11.2609.401.0 without a revision note, and the CVE record still names the old one (CVSS 8.1, not exploited)"
+    suggested_priority: notable
+    update_target: null
+    novelty: new
+    borderline: true
+    borderline_reason: "Not exploited, not publicly disclosed, attack complexity high (CVSS 8.1, Microsoft: Exploitation Less Likely); the item is about a patch-delivery blind spot, not an attack. Relevant to managed Windows 11 estates that block or throttle the Microsoft Store, where Windows Update, WSUS and Configuration Manager will never deliver this fix. MSRC's latestRevisionDate for the Paint advisory is 2026-11-06T16:00Z, after the 2026-11-06 fire."
+    sources:
+      - { url: "https://getrff.com/blog/windows-paint-cve-2026-83844-store-fix-missing/", publisher: "RFF (Brian Vitko, lab test and update of 2026-11-06)", date: "2026-11-06", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-83844", publisher: "Microsoft MSRC (Security Update Guide data read through the SUG API: fixedBuildNumber 11.2609.401.0, customerActionRequired true)", date: "2026-11-06", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/microsoft-paint-rce-fix-now-available.html", publisher: "The Hacker News", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: NCSC-NL RSS via python3 tools/fetch_source.py ncsc-nl recent 40 (NCSC-2026-0470, 2026-11-06 08:10Z, 'Kwetsbaarheid verholpen in Windows Paint') -> pivot: python3 tools/fetch_source.py ncsc-nl csaf NCSC-2026-0470 (reference to the MSRC page) -> primary: MSRC SUG API python3 tools/fetch_source.py msrc cve CVE-2026-83844 and https://api.msrc.microsoft.com/sug/v2.0/en-US/affectedProduct?$filter=cveNumber eq 'CVE-2026-83844' (fixedBuildNumber 11.2609.401.0, latestRevisionDate 2026-11-06T08:00-08:00 from the revised-CVE sweep $filter=latestRevisionDate ge 2026-11-04) -> corroboration: The Hacker News https://thehackernews.com/2026/11/microsoft-paint-rce-fix-now-available.html -> primary lab test: https://getrff.com/blog/windows-paint-cve-2026-83844-store-fix-missing/"
+    summary: |
+      Microsoft published CVE-2026-83844 on 2026-10-13: an out-of-bounds read in Windows Paint, rated Important, CVSS 3.1 8.1 (AV:N/AC:H/PR:N/UI:N), remote code execution, "Exploitation Less Likely", not publicly disclosed and not known to be exploited, with Customer Action Required set to yes. Paint is a Microsoft Store app, so the fix does not come through Windows Update. The build Microsoft names as fixed changed once without a revision note: the advisory first named 11.2605.91.0, a build that never appeared in the Store, and by 2026-11-04 Microsoft's machine-readable October data named 11.2609.401.0; the public CVE record and NVD still list Paint as affected only below 11.2605.91.0, so a scanner that reads the CVE record would call 11.2605.91.0 fixed. RFF's lab test found the Store's newest Paint on 2026-11-05 was 11.2605.81.0 in six markets, so a Store update scan on managed machines had nothing to install; by 04:14Z on 2026-11-06 the Store offered 11.2609.401.0 and the lab machines picked it up through auto-update. The Hacker News checked ten countries on 2026-11-06 and found 11.2609.401.0 as the newest build in all of them.
+      Microsoft's FAQ says an unauthenticated attacker could exploit it "by sending a specially crafted packet to an affected service over the network", which RFF calls an odd description for an image editor; no source explains the real trigger. Microsoft lists no workaround. Paint is installed per user, and Windows keeps a provisioned copy for new profiles, so a check of the signed-in account alone misses older copies.
+    region_nexus: "global; every Windows 11 estate"
+    primary_sector_nexus: "direct in principle: managed Windows fleets in public administrations, especially where the Microsoft Store is blocked or app updates are controlled centrally"
+    sector: "public-sector"
+    cves: [CVE-2026-83844]
+    techniques: [T1190]
+    affected_products: ["Microsoft Paint (Windows)"]
+    entity_keys: ["product:microsoft-windows"]
+    new_entities:
+      - { key: "product:microsoft-paint", type: product, name: "Microsoft Paint", aliases: ["Windows Paint", "Microsoft.Paint"], summary: "Microsoft Store-delivered Paint app in Windows 11; fixed for CVE-2026-83844 in build 11.2609.401.0 (Microsoft MSRC, 2026-11-06)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: "B2: Microsoft's data and the lab test agree on the fixed build; the attack trigger is unexplained and nothing shows exploitation"
+    evidence:
+      - quote: "Paint is a Microsoft Store app, so the fix doesn’t come through Windows Update."
+        attribution: "RFF (Brian Vitko)"
+        source_url: "https://getrff.com/blog/windows-paint-cve-2026-83844-store-fix-missing/"
+      - quote: "A scanner that reads the CVE record would call 11.2605.91.0 fixed."
+        attribution: "RFF (Brian Vitko)"
+        source_url: "https://getrff.com/blog/windows-paint-cve-2026-83844-store-fix-missing/"
+      - quote: "Paint gets this fix only through a Store update, not through Windows updates."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/microsoft-paint-rce-fix-now-available.html"
+    extended_notes: |
+      Exposure: any Windows 11 machine with Microsoft Paint below 11.2609.401.0 for any user or in the provisioned copy. Read the build per machine with Get-AppxPackage -AllUsers -Name Microsoft.Paint and Get-AppxProvisionedPackage -Online (both elevated), as RFF documents; the Store update scan that Intune and other MDM tools trigger installs the fix once the Store offers it.
+      Detection: this is an inventory finding, not a telemetry hunt: software inventory that reports Store-app versions per user. Do not rely on a scanner that keys on the CVE record's affected range (below 11.2605.91.0).
+      Defender takeaway: verify the Paint build on every managed Windows 11 device and make sure the Store update path is open for Paint (or push the package another way) instead of waiting for Windows Update, because Microsoft's advisory says customer action is required.
+
+  # ---------------------------------------------------------------------------
+  # U1. OpenSSH sshole -- exploitation attempts now reported (update-of)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE CVE-2026-123158 (OpenSSH *sshole, musl without PAM): Previdian reports exploitation attempts from 2026-11-06 and a root login on an Alpine honeypot; the flaw is not in the CISA catalogue"
+    suggested_priority: notable
+    novelty: "update-of:2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole"
+    update_target: "2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole"
+    update_type: update
+    update_fields: [summary, headline, tags, cves, sources, evidence, actions, body]
+    update_notes: "The entry says 'no source reports attacks' in summary and body; that statement is now false. Exploitation rests on one telemetry vendor (Previdian, honeypot sensors), single-source for the exploitation claim; CISA has not listed it (Previdian page: 'Not in CISA KEV'). The entry's cves[].status should gain exploited only if the main agent accepts a telemetry-vendor basis; otherwise write 'exploitation attempts reported by Previdian' without the status."
+    sources:
+      - { url: "https://previdian.com/CVE-2026-123158", publisher: "Previdian (exploitation telemetry page for CVE-2026-123158)", date: "2026-11-06", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/hackers-exploited-openssh-sshole-flaw.html", publisher: "The Hacker News", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://alpinelinux.org/posts/2026-11-05-openssh-password-authentication-bypass/", publisher: "Alpine Linux (security advisory)", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: The Hacker News feed https://feeds.feedburner.com/TheHackersNews (item 'Hackers Target OpenSSH SSHole Flaw Within Hours of Disclosure, Gain Root on Honeypot', 2026-11-06 20:51) -> pivot: https://thehackernews.com/2026/11/hackers-exploited-openssh-sshole-flaw.html -> primary: Previdian page https://previdian.com/CVE-2026-123158 (fetched with extract) -> primary (detection guidance): https://alpinelinux.org/posts/2026-11-05-openssh-password-authentication-bypass/"
+    summary: |
+      The Hacker News reports, citing Previdian, that attackers began trying CVE-2026-123158 less than nine hours after the CVE was published and that Previdian confirmed a successful root login on an Alpine Linux honeypot; Previdian's own page now counts 14 exploitation attempts from 9 source addresses in 8 countries since 2026-11-06 and lists it as not in the CISA catalogue. Previdian describes the observed activity as oversized passwords followed by reconnaissance commands in non-interactive SSH sessions (an identity and host query), i.e. a confirmed bypass followed by hands-on checks, with no payload reported. This is one telemetry vendor's honeypot data; no vendor, CISA or NCSC source confirms attacks on production systems.
+      Alpine's advisory adds two points the entry can use: upgrading the openssh package alone does not replace the running daemon, so sshd must be restarted, and Alpine names the log check, 'Accepted password for' lines in /var/log/messages for accounts that should not accept passwords (alpine, root or any key-only user), together with a review of doas use and recently created users, files and authorized keys; if a login cannot be ruled out the machine is to be treated as compromised.
+    region_nexus: "global; Alpine/musl hosts, OpenWrt and containers built on Alpine with sshd and no PAM"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-123158]
+    techniques: [T1190, T1021.004]
+    affected_products: ["OpenSSH", "Alpine Linux", "OpenWrt"]
+    entity_keys: ["product:openssh", "product:alpine-linux", "product:openwrt"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: "B3 for the exploitation claim (one telemetry vendor, honeypot only); the flaw itself stays as already rated"
+    evidence:
+      - quote: "Threat intelligence firm Previdian said it observed the first exploitation attempt less than nine hours after the CVE publication, adding it has confirmed successful root access on a honeypot running Alpine Linux and OpenSSH."
+        attribution: "The Hacker News (citing Previdian)"
+        source_url: "https://thehackernews.com/2026/11/hackers-exploited-openssh-sshole-flaw.html"
+      - quote: "Yes. Previdian sensors have observed 14 exploitation attempts, 9 unique attacker IPs, and 8 countries targeting CVE-2026-123158."
+        attribution: "Previdian"
+        source_url: "https://previdian.com/CVE-2026-123158"
+      - quote: "Upgrading the package alone does not replace the running daemon."
+        attribution: "Alpine Linux"
+        source_url: "https://alpinelinux.org/posts/2026-11-05-openssh-password-authentication-bypass/"
+    extended_notes: |
+      Detection: successful password authentications in sshd logs for accounts whose password field is locked or '*' (key-only users), especially with very long passwords, then short non-interactive sessions running identity commands; on Alpine the log is /var/log/messages.
+      Defender takeaway: restart sshd after the package update and sweep the accepted-password log lines for key-only accounts on every exposed Alpine or musl host; Previdian's honeypot confirmation makes that sweep a live check rather than a precaution.
+
+  # ---------------------------------------------------------------------------
+  # U2. WordPress CVE-2026-119977 -- the first update to the fixed release is itself exposed (update-of)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE CVE-2026-119977 (WordPress core upgrade-window RCE): the update that installs 7.1.4 still unpacks with the old code, so the staging folder name can be predicted one last time; Picus advises blocking web access to wp-content/upgrade before updating"
+    suggested_priority: high
+    novelty: "update-of:2026-10-30/wordpress-core-7-1-4-unauthenticated-upgrade-window-rce-race"
+    update_target: "2026-10-30/wordpress-core-7-1-4-unauthenticated-upgrade-window-rce-race"
+    update_type: update
+    update_fields: [summary, actions, sources, evidence, body]
+    update_notes: "A hardening lever the entry lacks and a correction of its implicit assumption that updating to 7.1.4 closes the window: the first update from an unfixed release to a fixed one runs the old, vulnerable unpacking code. The entry's headline says to confirm 7.1.4 'ran on every site'; the new fact is that the run itself is the last exposed moment. Picus blog dated 2026-10-14 in page metadata but 'LAST UPDATED ON NOVEMBER 05, 2026' in its text; its guidance post-dates the 2026-11-03 KEV addition."
+    sources:
+      - { url: "https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability", publisher: "Picus Security (Umut Bayram, discoverer; last updated 2026-11-05)", date: "2026-11-05", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html", publisher: "The Hacker News", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: The Hacker News feed https://feeds.feedburner.com/TheHackersNews (item 'Installing the Fix for an Exploited WordPress Flaw Can Expose Some Sites One Last Time', 2026-11-06 21:38) -> pivot: https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html -> primary: https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability"
+    summary: |
+      Picus Security's Umut Bayram, who found the race, shows that the update which installs the fix still unpacks its files using the site's old, unpatched code. On a site on 5.9 or later that old code names the staging folder under wp-content/upgrade after the downloaded file, so the path is predictable (for example wp-content/upgrade/wordpress-7.1.4 on a 7.0.7 to 7.1.4 update) during that one update. The part of the fix that stops the live wp-config.php being overwritten already works in that update, because the copy step runs the new code, but an attacker who reaches the staged installer can still set it up with their own database, log in to the temporary copy and run PHP with the web server's permissions before the folder is deleted, from where the live site's files can be read or written. Exposure depends on the package: complete packages always carry the installer files, partial packages only if they happen to contain them; The Hacker News found the WordPress.org update service offered a partial package for in-branch updates such as 7.1.3 to 7.1.4, including for automatic updates, and only complete packages for moves from an older branch such as 7.0.7 to 7.1.4. After 7.1.4 or a branch fix is installed, later updates use a random folder name.
+      Picus's first recommendation, before updating: stop the web server serving wp-content/upgrade at all (WordPress reaches the folder through the filesystem, so blocking it does not break updates), confirm that /wp-content/upgrade/ answers 403, then update to 7.1.4 or the branch's fixed release; do not place an .htaccess file inside the folder because the old updater empties it before unpacking.
+    region_nexus: "global; every WordPress site with web-reachable wp-content/upgrade"
+    primary_sector_nexus: "direct: cantonal and communal sites run on WordPress; CISA lists the flaw as exploited"
+    sector: "public-sector"
+    cves: [CVE-2026-119977]
+    techniques: [T1190, T1505.003]
+    affected_products: ["WordPress core"]
+    entity_keys: ["product:wordpress-core"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: "B2 (discoverer's research plus independent press check of the update service; no reported exploitation of the update-window variant)"
+    evidence:
+      - quote: "This is why the first update from an unpatched release to a fixed one must be handled carefully. Only after 7.1.4 is installed do later updates use a random staging directory."
+        attribution: "Picus Security (Umut Bayram)"
+        source_url: "https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability"
+      - quote: "Denying web access to this directory makes the temporary installer unreachable, regardless of whether the staging path is predictable, and it does not break the update process."
+        attribution: "Picus Security (Umut Bayram)"
+        source_url: "https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability"
+      - quote: "The researcher advises blocking web access to the site's wp-content/upgrade folder before updating."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html"
+    extended_notes: |
+      Detection: web server access logs for requests to /wp-content/upgrade/ paths (especially the staged wp-admin/setup-config.php and install steps) at any time; a new administrator account or an unexpected plugin upload after an update window is the post-compromise sign.
+      Action candidate for the entry's actions[]: block /wp-content/upgrade/ in the web server (nginx 'location ^~ /wp-content/upgrade/ { deny all; }', Apache 'Require all denied', or an .htaccess RedirectMatch 403 in the WordPress root, never inside the folder) before running the update on any site still below 7.1.4 or its branch fix, and confirm the 403.
+
+  # ---------------------------------------------------------------------------
+  # U3. Brotli / Node2Shell vendor wave -- Cisco v1.8, Siemens, Mitel, Synology (update-of)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE CVE-2026-111497 (Brotli / Node2Shell, CISA-listed): Cisco's advisory (v1.8, 2026-11-06) now lists affected products with fixes into 2027, Siemens names Desigo CC and Industrial Edge, Mitel lists MiVoice Business and OpenScape products, Synology says its NAS packages are not affected"
+    suggested_priority: high
+    novelty: "update-of:2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    update_target: "2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi"
+    update_type: update
+    update_fields: [summary, affected_products, entities, cves, sources, evidence, actions, body]
+    update_notes: "The entry's latest update (2026-11-05) added Splunk and Citrix; Cisco, Siemens, Mitel and Synology are not in it. Cisco's cisco-sa-oct2026-node-js advisory is cited by the entry only for 'not aware of any malicious use'. Siemens SSA-045512 V1.2 and SSA-443410 V1.1 are dated 2026-11-06 (in window); the Mitel advisory MISA-2026-0010 reached revision 5.0 on 2026-11-04 and CERT-FR relayed it on 2026-11-06 (CERTFR-2026-AVI-1477); Cisco's page is revised almost daily (v1.8 on 2026-11-06, product lists change each revision, so re-read it on the day of composition)."
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u", publisher: "Cisco PSIRT (cisco-sa-oct2026-node-js, version 1.8)", date: "2026-11-06", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-045512.html", publisher: "Siemens ProductCERT (SSA-045512 V1.2)", date: "2026-11-06", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-443410.html", publisher: "Siemens ProductCERT (SSA-443410 V1.1)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0010", publisher: "Mitel PSIRT (MISA-2026-0010, revision 5.0)", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1477/", publisher: "CERT-FR (CERTFR-2026-AVI-1477)", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1467/", publisher: "CERT-FR (CERTFR-2026-AVI-1467, Cisco products)", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://www.synology.com/security/advisory/Synology_SA_26_15", publisher: "Synology PSIRT (Synology-SA-26:15)", date: "2026-10-30", role: "primary" }
+    discovery_trace: "first seen at: CERT-FR avis feed (python3 tools/fetch_source.py cert-fr avis-recent 25: CERTFR-2026-AVI-1477 'Vulnerabilite dans les produits Mitel', 2026-11-06; AVI-1467 Cisco, 2026-11-05) -> pivot: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1477/ and https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1467/ -> primary: Mitel https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0010 and Cisco https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u -> second lead: Siemens ProductCERT Atom feed https://cert-portal.siemens.com/productcert/rss/advisories.atom (SSA-045512 V1.2, SSA-443410 V1.1, 2026-11-06), read with `url --direct` for the product tables -> Synology listing https://www.synology.com/en-us/security/advisory (Synology-SA-26:15 'Ongoing')"
+    summary: |
+      The vendor wave around the exploited Brotli decoder flaw widened on 2026-11-06. Cisco's advisory (version 1.8, 2026-11-06) says Cisco PSIRT is "aware that proof-of-concept exploit code is available" and "not aware of any malicious use of these vulnerabilities against any Cisco product"; it was expanded on 2026-10-30 to cover Brotli outside Node.js and now lists priority products Catalyst SD-WAN, IOS XE, IOS XR, Secure Firewall ASA, FMC and FTD as not impacted and Identity Services Engine as under investigation. Affected products with fixes include Duo Network Gateway (fixed in 3.4.2) and Duo Authentication Proxy Local Manager for Windows (6.8.1, November 2026), Webex Connect (6.22.2, November 2026), Spaces (24.22.1), Packet Tracer (9.2.0, December 2026), Business Process Automation (5.0 in November 2026; 4.1.2 and 5.1 undated), Intersight and Intersight Virtual Appliance and Secure Endpoint Private Cloud Appliance (November 2026, release number to be determined), Secure Workload (February 2027), Smart PHY (March 2027), Catalyst Center (3.4.1, July 2027), Nexus 9000 in standalone NX-OS (Guest Shell), Virtualized Infrastructure Manager and RoomOS on Board, Desk and Room Series devices (on-premises 11.41.2.3 and 26.7.4.3; cloud builds 26.9.1 and later or 11.41.1 and later). CERT-FR's AVI-1467 relays the same list. Several Cisco fixes are dated well after today.
+      Siemens' SSA-045512 (V1.2, CVSS 3.1 9.8) lists the building-management platform Desigo CC V8 and V9 as affected in all versions, remediated by installing the latest .NET security updates through Windows Update, and Gridscale X DSA (fixed in 5.4) and Gridscale X PSS(R)E (36.8.0); SSA-443410 (V1.1) covers Industrial Edge: fixes for Cloud Connector Configurator (1.24.3), Data Flow Monitoring (3.0.18), Databus Configurator (4.0.1), DataXess Configurator (1.5.7), Edge OPC UA Server Configurator (2.3.10) and Flow Creator Configurator (1.15.1), no fix yet for Common Configurator (on Edge and on IEM) with 'uninstall all Management Applications and protect your IEM instance with a Firewall/WAF' as the interim measure, and Industrial Edge Hub and Management Cloud already fixed by Siemens in October. Mitel's MISA-2026-0010 (revision 5.0) rates it high (CVSS 3.1 8.1) and lists MiVoice Business 10.6.0.7 and earlier and MiVoice Business Solution Virtual Instance 2.1.0.9 and earlier (updates planned, KB000129034), OpenScape SBC V11R3.4.4 and earlier (V11R3.4.5 planned, workaround KB000129100), OpenScape Xpert V9 R0.2.0 and earlier, OpenScape SESAP V2 R1.1.9 and earlier (V2 R1.1.10 planned), OpenScape Contact Center V12R0 to V12R0FR7 (V12R0FR8 planned, workaround KB000129114) and OpenScape Endpoint Management V1 R2.5.1 and earlier, with several products still under investigation; CERT-FR relays it. Synology's SA-26:15 (2026-10-30, Moderate, ongoing) says its DSM packages (Drive, MailPlus, Chat Server, Photos and others), the SRM VPN Plus Server and Note Station Client are not affected and only the desktop Synology Chat Client is affected with a fix ongoing.
+    region_nexus: "global; Cisco Webex/Duo, Siemens building management (Desigo CC) and Mitel telephony are typical public-administration estates"
+    primary_sector_nexus: "direct in principle: Desigo CC building management, Mitel/OpenScape telephony and Webex room devices"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190]
+    affected_products: ["Cisco Duo Network Gateway", "Cisco Duo Authentication Proxy", "Cisco Webex Connect", "Cisco RoomOS", "Cisco Catalyst Center", "Cisco Secure Workload", "Cisco Intersight", "Siemens Desigo CC", "Siemens Gridscale X", "Siemens Industrial Edge", "Mitel MiVoice Business", "Mitel OpenScape SBC", "Mitel OpenScape Xpert", "Mitel OpenScape SESAP", "Mitel OpenScape Contact Center", "Mitel OpenScape Endpoint Management", "Synology Chat Client"]
+    entity_keys: ["tool:node2shell", "product:google-brotli", "product:siemens-desigo-cc", "product:cisco-duo-network-gateway"]
+    new_entities:
+      - { key: "product:mitel-mivoice-business", type: product, name: "Mitel MiVoice Business", aliases: [], summary: "Mitel IP telephony platform; affected by the Brotli flaw CVE-2026-111497 in 10.6.0.7 and earlier, update planned (Mitel MISA-2026-0010, 2026-11-04)." }
+      - { key: "product:mitel-openscape", type: product, name: "Mitel OpenScape (SBC, Xpert, SESAP, Contact Center, Endpoint Management)", aliases: ["Unify OpenScape"], summary: "Mitel/Unify OpenScape unified-communications product family; several members affected by CVE-2026-111497 (Mitel MISA-2026-0010, 2026-11-04)." }
+      - { key: "product:siemens-industrial-edge", type: product, name: "Siemens Industrial Edge", aliases: ["Industrial Edge Management"], summary: "Siemens Industrial Edge platform; Management Applications affected by CVE-2026-111497 (Siemens SSA-443410, 2026-11-06)." }
+    relation_suggestions:
+      - { subject: "tool:node2shell", object: "product:siemens-desigo-cc", basis: "Siemens: Desigo CC V8 and V9 are affected in all versions by CVE-2026-111497, remediated through the latest .NET updates (SSA-045512 V1.2, 2026-11-06)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: "A1 for the vendor product lists; no vendor reports exploitation against its own products"
+    evidence:
+      - quote: "The Cisco PSIRT is not aware of any malicious use of these vulnerabilities against any Cisco product."
+        attribution: "Cisco PSIRT (cisco-sa-oct2026-node-js, v1.8)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u"
+      - quote: "Install the latest .NET security updates via Windows Update."
+        attribution: "Siemens ProductCERT (SSA-045512)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-045512.html"
+      - quote: "Uninstall all Management Applications and protect your IEM instance with a Firewall/WAF until a fix is available"
+        attribution: "Siemens ProductCERT (SSA-443410)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-443410.html"
+      - quote: "Mitel is actively investigating the impact of CVE-2026-111497 on Mitel software and hardware appliances."
+        attribution: "Mitel PSIRT (MISA-2026-0010)"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0010"
+    extended_notes: |
+      Exposure: Desigo CC on any version (Windows .NET), Industrial Edge Management with Management Applications installed, Mitel MiVoice Business and the OpenScape products at the listed versions, Cisco Duo Network Gateway and RoomOS devices below the listed builds. Several Cisco and Mitel fixes are planned, not released: track the vendor pages.
+      Defender takeaway candidates: Desigo CC operators install the current .NET security updates; Industrial Edge operators remove Management Applications behind a firewall/WAF until Common Configurator is fixed; Mitel customers apply the workaround KB articles where a product has no fix yet (KB000129034, KB000129100, KB000129114 via the Mitel partner portal).
+
+  # ---------------------------------------------------------------------------
+  # U4. Siemens SIMATIC IoT2050 CVE-2026-58115 -- affected list widened (update-of; lookback record)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE CVE-2026-58115 (SIMATIC IoT2050 Node-RED, exploited per VulnCheck): Siemens SSA-834709 V1.1 of 2026-11-04 clarifies that the Advanced, Basic, M.2 and SM variants are all affected below V4.3.4-1, not only the Advanced"
+    suggested_priority: high
+    novelty: "update-of:2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root"
+    update_target: "2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root"
+    update_type: update
+    update_fields: [title, headline, summary, affected_products, entities, cves, sources, evidence, actions, body]
+    update_notes: "The entry's title, affected_products and cves[].affected name only 'SIMATIC IoT2050 Advanced'. Siemens revision V1.1 (2026-11-04: 'Clarified Affected products list. Updated title. Updated summary.') lists four variants and retitles the advisory 'Missing Authentication Vulnerability in Node-RED on SIMATIC IoT2050 with Industrial OS'. BSI relayed it as WID-SEC-2026-4382 on 2026-11-06. Siemens' fix version is written V4.3.4-1 in the table; the entry uses V4.3.4.1. Lookback hit from siemens-productcert (168 h horizon): the advisory revision is 2026-11-04, the BSI relay in window."
+    lookback: true
+    sources:
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html", publisher: "Siemens ProductCERT (SSA-834709 V1.1)", date: "2026-11-04", role: "primary" }
+    discovery_trace: "first seen at: bsi-rss (python3 tools/fetch_source.py bsi-rss, WID-SEC-2026-4382 '[NEU] [hoch] Siemens SIMATIC IoT2050', 2026-11-06 13:40, CVE-2026-58115 via bsi-csaf) and the Siemens ProductCERT Atom feed https://cert-portal.siemens.com/productcert/rss/advisories.atom (SSA-834709 V1.1, 2026-11-04) -> primary: https://cert-portal.siemens.com/productcert/html/ssa-834709.html (read with url --direct for the affected-product table)"
+    summary: |
+      Siemens revised SSA-834709 to V1.1 on 2026-11-04. The advisory now names SIMATIC IoT2050 Advanced, Basic, M.2 and SM (order numbers 6ES7647-0BA00-1YA2, 6ES7647-0BA00-0YA2, 6ES7647-0BB00-1YA2 and 6ES7647-0CA00-1AA2) as affected in all versions below V4.3.4-1 when running Industrial OS with Node-RED installed, with the update to V4.3.4-1 or later as the fix and, as interim mitigations, uninstalling Node-RED or hardening the Node-RED installation. The base entry carries only the Advanced model; owners of the other three variants have not been told they are in scope. Scores are unchanged: 10.0 on both CVSS 3.1 and 4.0.
+    region_nexus: "global; OT edge gateways"
+    primary_sector_nexus: "indirect (OT/building and utility edge devices)"
+    sector: "public-sector"
+    cves: [CVE-2026-58115]
+    techniques: [T1190, T1059]
+    affected_products: ["Siemens SIMATIC IoT2050 Advanced", "Siemens SIMATIC IoT2050 Basic", "Siemens SIMATIC IoT2050 M.2", "Siemens SIMATIC IoT2050 SM"]
+    entity_keys: ["product:siemens-simatic-iot2050-advanced"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    suggested_classification: "A1 (vendor advisory for its own product)"
+    evidence:
+      - quote: "Clarified Affected products list. Updated title. Updated summary."
+        attribution: "Siemens ProductCERT (SSA-834709, history data)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html"
+      - quote: "SIMATIC IoT2050 devices running Industrial OS with Node-RED installed contain a missing authentication vulnerability in the Node-RED HTTP interface that could allow an unauthenticated remote attacker to create malicious flows and execute arbitrary code on the underlying server with maximum privileges."
+        attribution: "Siemens ProductCERT (SSA-834709)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-834709.html"
+    extended_notes: |
+      Carry the product keys: the registry holds product:siemens-simatic-iot2050-advanced only; suggest extending its aliases or adding a family key for Basic, M.2 and SM.
+
+  # ---------------------------------------------------------------------------
+  # U5. Siemens PHP2Shell SSA-166980 V1.3 -- energy-sector products with no fix (update-of; lookback record)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE CVE-2026-109618 / CVE-2026-109619 (PHP2Shell): Siemens SSA-166980 V1.3 (2026-11-05) lists Spectrum Power 3, 4, 7 and TG, AMIS TS, Energy Engage and blueplanet products as affected, several with no fix available"
+    suggested_priority: notable
+    novelty: "update-of:2026-10-27/php2shell-ot-products-netmodule-nrsw-no-fix-macmon-schneider"
+    update_target: "2026-10-27/php2shell-ot-products-netmodule-nrsw-no-fix-macmon-schneider"
+    update_type: update
+    update_fields: [summary, affected_products, sources, evidence, actions, body]
+    update_notes: "Siemens' only PHP2Shell coverage in the store is the RUGGEDCOM APE1808 / PAN-OS advisory (SSA-566512). SSA-166980 (published 2026-10-26, V1.2 on 2026-10-29 added the grid products, V1.3 on 2026-11-05 updated the lists) and SSA-566435 (V1.6, 2026-11-04, a not-affected list for Siemens software) are absent. Lookback hit from siemens-productcert; the revision is two days outside the 26 h window and the content has not been covered at any date, so the main agent decides whether an energy-grid delta clears the constituency bar."
+    lookback: true
+    borderline: true
+    borderline_reason: "Energy-sector grid and metering software (Spectrum Power, AMIS TS, Energy Engage); no Swiss public-administration exposure shown, no exploitation reported against these products; the unfixed state is the reason to return it."
+    sources:
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-166980.html", publisher: "Siemens ProductCERT (SSA-166980 V1.3)", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: Siemens ProductCERT Atom feed https://cert-portal.siemens.com/productcert/rss/advisories.atom (SSA-166980 V1.3, SSA-566435 V1.6, SSA-566512 V1.2; 2026-11-04/05) -> primary: https://cert-portal.siemens.com/productcert/html/ssa-166980.html (read with url --direct for the product tables)"
+    summary: |
+      Siemens' PHP2Shell advisory for its software products (CVSS 3.1 9.8, CVSS 4.0 9.2) names these as affected: AMIS TS (all versions, no fix); blueplanet 360 NX3 M6 WM OD IISX and its -S variant (all versions, no fix); Energy Engage V2.0SP9 (no fix planned) and V3.1SP1 (upgrade PHP to V8.1.34 release 6); Local Monitoring bt-monitoring-vm (fixed in V20261103); Spectrum Power 3 with IHM on RHEL 7 (CVE-2026-109619 only; Red Hat patched PHP), Spectrum Power 4 with Nagios or Zabbix, Web Office Portal V3.0 to V3.2 or HISViews V1.0 (no fix), Spectrum Power 7 with IHM/NagiosXI (Red Hat PHP patch for RHEL 8 and 9) and Spectrum Power TG on Windows with WebConsole and WebQuery (upgrade PHP to V8.5.12). The advisory's history shows the grid products were added on 2026-10-29 (V1.2) and the lists updated on 2026-11-05 (V1.3). A companion advisory, SSA-566435, lists a long set of Siemens software products as not affected because PHP is not present.
+    region_nexus: "global; energy-sector control and monitoring software"
+    primary_sector_nexus: "indirect (utilities, municipal energy suppliers)"
+    sector: "energy"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Siemens Spectrum Power", "Siemens AMIS TS", "Siemens Energy Engage", "Siemens blueplanet 360 NX3 M6"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    suggested_classification: "A1 (vendor advisory for its own products)"
+    evidence:
+      - quote: "Added AMIS TS, Energy Engage V2.0SP9, Energy Engage V3.1SP1, Spectrum Power 3, Spectrum Power 4, Spectrum Power 7 and Spectrum Power TG to Affected Products and updated the list of known not affected"
+        attribution: "Siemens ProductCERT (SSA-166980, history data)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-166980.html"
+    extended_notes: |
+      Echoes the existing entry's frame (industrial and building products with no fix); no Siemens product of the building-automation range (Building X, Climatix, Connect X) is affected per the not-affected list.
+
+  # ---------------------------------------------------------------------------
+  # N4. UNC6671 / vishing data extortion -- restatement with two new authority sources (update-of)
+  # ---------------------------------------------------------------------------
+  - title: "UPDATE UNC6671 help-desk vishing extortion: the Canadian Cyber Centre alert AL26-028 (2026-10-28) and eSentire's advisory (2026-11-03) restate the campaign against legal, healthcare and financial targets, with Teams as a contact channel and a Zoom remote-control step"
+    suggested_priority: notable
+    novelty: "update-of:2026-08-07/unc6671-blackfile-multi-brand-passkey-vishing-aitm"
+    update_target: "2026-08-07/unc6671-blackfile-multi-brand-passkey-vishing-aitm"
+    update_type: update
+    update_fields: [summary, sources, evidence, body]
+    update_notes: "Restatement of a covered campaign; the delta is two further sources, one a national authority. The existing entry already carries the AiTM, MFA-registration and SharePoint exfiltration mechanics (2026-05-16 and 2026-08-07 entries). The CCCS alert is dated 2026-10-28 (outside the window) and found through eSentire's outbound links; eSentire's own advisory is within the 145 h lookback of the esentire record. The page's own outbound citation names GTIG's UNC6671 blog (already the entry's basis)."
+    lookback: true
+    borderline: true
+    borderline_reason: "Low-delta restatement. Kept only because a government authority (CCCS) now publishes the same help-desk vishing campaign with Teams, office phones and personal mobiles as contact channels and detection/hardening advice a Swiss M365 tenant can use."
+    sources:
+      - { url: "https://www.cyber.gc.ca/en/alerts-advisories/al26-028-ongoing-help-desk-voice-phishing-campaign-targeting-canadian-organizations", publisher: "Canadian Centre for Cyber Security (AL26-028)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.esentire.com/security-advisories/increase-in-impersonation-vishing-attacks-leading-to-data-extortion", publisher: "eSentire Threat Response Unit", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: eSentire security advisories listing (WebFetch https://www.esentire.com/security-advisories, item 'Increase in Impersonation Vishing Attacks Leading to Data Extortion', 2026-11-03) -> pivot: WebFetch of https://www.esentire.com/security-advisories/increase-in-impersonation-vishing-attacks-leading-to-data-extortion (outbound links) -> primary: https://www.cyber.gc.ca/en/alerts-advisories/al26-028-ongoing-help-desk-voice-phishing-campaign-targeting-canadian-organizations (fetched with extract; GTIG blog https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments read and confirmed already in the store)"
+    summary: |
+      The Canadian Cyber Centre's alert AL26-028 of 2026-10-28 says a financially motivated actor is running an ongoing help-desk vishing campaign against Canadian organizations, increasingly legal and financial since July and concentrated on the legal sector in October, with callers posing as internal IT and claiming an urgent passkey migration, MFA enrolment or password change; calls may reach personal mobiles, office phones or Microsoft Teams, may spoof help-desk numbers, and the callers may end the call if the employee tries to verify. The victim is sent to an organisation-branded adversary-in-the-middle sign-in page that relays credentials and MFA responses to the real identity provider; afterwards the actor registers attacker-controlled MFA methods or devices, deletes password-reset, MFA-change and security notifications, resets passwords for non-SSO applications, uses scripts and Microsoft Graph to take data from Microsoft 365 and connected SaaS, and sends extortion demands. The Cyber Centre says the tradecraft matches publicly reported operations of one actor and the lure domains rotate often enough to limit blocklists.
+      eSentire's Threat Response Unit (2026-11-03) says it sees an increase in vishing leading to data extortion against legal, healthcare and financial-services organizations, matching the Canadian alert and Google's UNC6671 reporting, with additional detail the base entry lacks: in one case 127 employees were contacted within one hour from the same number, OneDrive data was taken in under ten minutes, other cases moved data to Google Drive, and one user was persuaded during a Teams call to grant remote control through Zoom. eSentire's page was read through WebFetch's summariser; treat its case details as that summary.
+    region_nexus: "global; Canada-focused alert, sectors legal, healthcare, financial services"
+    primary_sector_nexus: "indirect: M365/Teams tenants of public administrations share the contact channels and the MFA-registration step"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.004, T1556.006, T1078.004, T1567]
+    affected_products: ["Microsoft Teams", "Microsoft 365", "Microsoft Entra ID"]
+    entity_keys: ["actor:unc6671", "product:microsoft-entra-id"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: "B2"
+    evidence:
+      - quote: "The campaign bypasses conventional multi-factor authentication (MFA) through real-time relay and frequently rotates lure domains, limiting the effectiveness of blocklists."
+        attribution: "Canadian Centre for Cyber Security (AL26-028)"
+        source_url: "https://www.cyber.gc.ca/en/alerts-advisories/al26-028-ongoing-help-desk-voice-phishing-campaign-targeting-canadian-organizations"
+      - quote: "Calls may target personal mobile phones, office phones or Microsoft Teams, and may spoof legitimate help desk numbers."
+        attribution: "Canadian Centre for Cyber Security (AL26-028)"
+        source_url: "https://www.cyber.gc.ca/en/alerts-advisories/al26-028-ongoing-help-desk-voice-phishing-campaign-targeting-canadian-organizations"
+    extended_notes: |
+      Detection: new MFA method or device registrations shortly after a help-desk-themed contact, deletion of security-notification mail, scripted or high-volume SharePoint/OneDrive access through Microsoft Graph by a newly authenticated session (Entra sign-in logs, M365 unified audit log, mailbox rules). Hardening (CCCS): phishing-resistant MFA (FIDO2, device-bound passkeys), Conditional Access requiring managed devices, restricted external Teams contact, independent callback verification of IT requests.
+
+cve_table:
+  - { cve: CVE-2026-19868, product: "SonicWall SonicOS SSLVPN (Gen7, Gen8, NSv)", cvss: "7.1 (SonicWall, CVSS 3.1 AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:L/A:N); 7.5 (ENISA EUVD and runZero, PR:N)", epss: null, kev: true, exploited: true, affected: "Gen7 firewalls and NSv up to and including SonicOS 7.3.3-7015; Gen8 firewalls and NSv up to and including 8.2.2-8015; only when SAML is enabled for SSLVPN logins", fixed: "7.3.4-7013 and higher (Gen7); 8.2.3-8015 and higher (Gen8); no workaround; Gen6 not listed", type: "authentication-bypass (CWE-308, SAML and SAML-enforced MFA)", vector: network, auth: "valid credentials for an alternate authentication method", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014 (KEV dateAdded 2026-11-06, due 2026-11-20)" }
+  - { cve: CVE-2026-107155, product: "SonicWall SonicOS management interface", cvss: "8.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H)", epss: null, kev: false, exploited: false, affected: "same Gen7/Gen8 ranges as CVE-2026-19868", fixed: "7.3.4-7013 / 8.2.3-8015", type: "permissive cross-domain policy (CWE-942)", vector: "network, user interaction", auth: "none", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014" }
+  - { cve: CVE-2026-107154, product: "SonicWall SonicOS management interface", cvss: "8.8 (AV:N/AC:L/PR:N/UI:R)", epss: null, kev: false, exploited: false, affected: "same Gen7/Gen8 ranges", fixed: "7.3.4-7013 / 8.2.3-8015", type: "session validation (CWE-291, reliance on IP address for authentication)", vector: "network, user interaction", auth: "none", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014" }
+  - { cve: CVE-2026-82308, product: "SonicWall SonicOS SSL-VPN service", cvss: "7.5 (AV:N/AC:L/PR:N/UI:N, A:H only)", epss: null, kev: false, exploited: false, affected: "same Gen7/Gen8 ranges", fixed: "7.3.4-7013 / 8.2.3-8015", type: "pre-authentication heap buffer overflow, application-level denial of service (CWE-122)", vector: network, auth: "none", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014" }
+  - { cve: CVE-2026-96652, product: "Plex Media Server", cvss: "not published by Plex; the discoverer scores the chain 9.8 (BleepingComputer)", epss: null, kev: true, exploited: true, affected: "Plex Media Server 1.43.2 and earlier", fixed: "1.43.3.10861 and later", type: "SSRF in the player timeline endpoint (unauthenticated per Plex; any X-Plex-Token value per CISA)", vector: network, auth: "none", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319 (KEV 2026-10-20)" }
+  - { cve: CVE-2026-96654, product: "Plex Media Server", cvss: "not published", epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861 and later", type: "access to internal agent functions over loopback / URI scheme handling", vector: network, auth: "none (reached through the SSRF)", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319" }
+  - { cve: CVE-2026-96655, product: "Plex Media Server", cvss: "not published", epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861 and later", type: "owner admin token disclosure (Plex) / authenticated SSRF in the transcode path (CISA)", vector: network, auth: "none per Plex; authenticated per CISA", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319" }
+  - { cve: CVE-2026-96656, product: "Plex Media Server", cvss: "not published", epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861 and later", type: "arbitrary file write to the Codecs directory through transcoder preferences, executed on load", vector: network, auth: "owner token (obtained through the chain)", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319" }
+  - { cve: CVE-2026-83844, product: "Microsoft Paint (Windows 11, Store app)", cvss: "8.1 (CVSS 3.1 AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H)", epss: null, kev: false, exploited: false, affected: "Microsoft Paint below 11.2609.401.0 (the CVE record and NVD still say below 11.2605.91.0)", fixed: "11.2609.401.0 through the Microsoft Store only (MSRC fixedBuildNumber)", type: "out-of-bounds read leading to remote code execution (CWE-125)", vector: network, auth: "none", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-83844" }
+
+dispositions:
+  - "KEV sweep: python3 tools/fetch_source.py cisa-kev (catalogue 2026.11.06, 1769 entries) shows exactly one addition in the window, CVE-2026-19868 (dateAdded 2026-11-06); the preceding additions are 2026-11-04 Apple CVE-2024-27834 and 2026-11-03 WordPress CVE-2026-119977, both COVERED. ENISA EUVD's exploited list (4 records) adds nothing new. CVE-2026-19868 -> item 1 (new, no SonicWall SSLVPN entry exists; the SMA1000 entry of 2026-10-08 and the GMS entry of 2026-11-05 are different products)."
+  - "KEV cross-check of the whole catalogue against the store's CVE index since 2026-08-15: absent from the store are the four Plex Media Server CVEs (item 2, previously borderline-dropped), EG Secure Solutions SiteGuard Server Edition CVE-2026-106931 (KEV 2026-10-20, Japanese WAF module, OS command injection; borderline-dropped by the 2026-10-21/22 fires, no new development) and four old CVEs added 2026-08-26 (Red Hat libuser CVE-2015-3246, ABRT CVE-2015-5287, Linux kernel CVE-2022-0995, SQL Server CVE-2019-1068); nothing else."
+  - "PHP2Shell vendor wave: Fortinet FG-IR-26-186 (FortiSOAR only, CVSS 5.3), Palo Alto, QNAP QSA-26-18/19 (2026-10-22) and Siemens SSA-566435 (a not-affected list) add nothing new; the one new delta is Siemens SSA-166980 V1.3 (item 8, update-of 2026-10-27/php2shell-ot-products-netmodule-nrsw-no-fix-macmon-schneider, borderline). CERT-FR AVI-1476 (Cisco Expressway/URWB/Duo Access Gateway) and AVI-1474 (VMware SDDC Manager) relay advisories already covered by existing entries."
+  - "Scheduled multi-product releases in the window: none landed (Microsoft Patch Tuesday, SAP Patch Day and Adobe are 2026-11-10; Oracle CPU is January). Releases that ended just before it and were handled by earlier fires: Android November bulletin (NCSC-NL 2026-0467: no reports of active exploitation), Chrome 157 (2026-11-03, 213 fixes, seven Critical: CVE-2026-121156, -121229, -121246, -121035, -121247, -121203, -121126; Google's notes carry no in-the-wild statement; borderline-dropped by the 2026-11-04 and 2026-11-05 fires), Next.js November security release (2026-11-03: one High and six Medium cache-isolation and disclosure issues, no RCE, fixed in 16.4.5 and 15.5.29; borderline-drop), Cisco UCS Central cisco-sa-cucs-rce (2026-11-04, authenticated, CVSS 7.6, drop), Splunk, Citrix CTX697256 (XenServer Workload Balancing and Conversion Manager), HPE Aruba AVI-1451, Mattermost, Foxit, IBM, MongoDB, OpenOffice, SPIP, Zookeeper, Ruby on Rails: nothing exploited or pre-auth network CVSS 9.0 and above that is new."
+  - "MSRC revised-CVE sweep (Security Update Guide API, latestRevisionDate on or after 2026-11-04, 1280 records, all paged): Microsoft-rated CVEs revised or released in the window are Paint CVE-2026-83844 (revised 2026-11-06, item 3), Entra Device Registration CVE-2026-109469 (released 2026-11-05, CVSS 3.1 10.0 Critical, Elevation of Privilege, CWE-639, exploited No, publicly disclosed No, Customer Action Required false: Microsoft states it 'has already been fully mitigated' and that the CVE exists for transparency; borderline-drop, no customer action) and Microsoft Edge CVE-2026-122518 (6.5, information disclosure). None is exploited or publicly disclosed. The same sweep returned about 1270 third-party and Linux-kernel CVE records, none Microsoft-rated."
+  - "Advisories revised after publication that a covered entry cites: Cisco cisco-sa-oct2026-node-js v1.8 (2026-11-06, daily revisions; item 6), Siemens SSA-045512 V1.2 and SSA-443410 V1.1 (2026-11-06; item 6), SSA-834709 V1.1 (2026-11-04; item 7), Mitel MISA-2026-0010 revision 5.0 (2026-11-04; item 6), Synology SA-26:15 (2026-10-30), Synology SA-26:16 (OpenSSH sshole, 2026-11-06: none of Synology's products affected; informational for the sshole entry), NCSC-CH Security Hub post 13144 (Barracuda; edited 2026-11-06 to add watchTowr's analysis and proof of concept, which the entry already carried from 2026-11-06 03:41Z) and post 13054 (refrigeration controllers; edited 2026-11-06 with the Swiss incidents, which the Danfoss entry already carries from 2026-11-06 03:44Z), Fortinet FG-IR-26-188 (Linux kernel TCP, 2026-11-02, products still under investigation; no revision in the window). The OpenSSH and WordPress developments are items 4 and 5."
+  - "Previously borderline-dropped and checked again, no new development, NOT resubmitted: Apache OFBiz 24.09.08 (oss-security 2026-11-04, 46 CVEs including pre-authentication RCE CVE-2026-68524, CVE-2026-73578 and CVE-2026-83542, hard-coded JWT key CVE-2026-105330 and REST authentication bypass CVE-2026-92887; the 2026-11-06 fire flagged it as an audit lead), Rails Active Storage GHSA-f3w6-w445-fwh9 (CVSS 9.8, ImageMagick MSL coder, fixed in activestorage 8.0.5.2 and 8.1.4.1; Debian and Ubuntu ImageMagick policies do not deny the coders per the advisory; the 2026-11-05 fire dropped it), Xen XSA-523 (CVE-2026-102703/-102704, guest-to-dom0 memory read/write, no mitigation, all Xen from 4.6), APT CVE-2026-109518 (Debian DSA-6607-1 and DLA-4880-1, Ubuntu USN-8996-1; Ubuntu's tracker now shows fixes for all eight releases including ESM; needs an on-path attacker), HPE Networking Fabric Composer HPESBNW05172 (CVE-2026-95731 9.8 hard-coded CLI password, two 9.6 adjacent). These are the strongest borderline candidates if the audit revisits the bar; none is exploited."
+  - "New low-priority drops: D-Link DGS-3130-30TS hardware rev B1 interim advisory SAP10523 (2026-11-02 disclosure, published 2026-11-06; DDP authentication, access-control and information-handling weaknesses, no CVE ids, no firmware date, no exploitation, adjacent-network; mitigations: disable DDP, remove default SNMP communities, restrict management access), Wazuh 4.14.x GHSAs of 2026-11-06 (eight CVEs: Windows-agent stack overflow in read_snortfull, manager analysisd memory exhaustion from repeated JSON fields, authenticated dashboard header override, execd out-of-bounds write; none pre-auth network at 9.0 or above), Apache ActiveMQ 2026-11-03 batch (six CVEs rated low, moderate or important), Sonatype Nexus Repository 3.98.0 (seven CVEs, none shown critical), HCL BigFix, MariaDB CVE-2026-102523, Gogs CVE-2026-123012 (authenticated DoS), Control Web Panel 'cwpdoor' backdoor (XLab; post-exploitation implant, entry vector unknown; S3/S4 material), CERT-PL KAMSOFT ZSIRep CLIENT (CVE-2026-113618, Polish pharmacy software), watchTowr and Fortinet, Palo Alto, CERT-EU and NCSC-UK listings (nothing in the window)."
+
+candidate_sources:
+  - id: picus-security-blog
+    publisher: "Picus Security (security research blog, Umut Bayram)"
+    url: "https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability"
+    category: research
+    why: "Discovering-researcher primary for CVE-2026-119977 (WordPress core upgrade race) and the source of the update-window finding in item 5, with full root-cause code paths and a vendor-neutral hardening lever; original research, not aggregation. Candidate only: one contributing item so far."
+
+coverage_gaps:
+  - source_id: connectwise-trust-center
+    reason: "https://www.connectwise.com/company/trust/advisories: `extract` gave direct HTTP 403 and the reader relayed the upstream block (all transports failed, 2026-11-07 03:20Z); still a gap, no recovered recipe."
+  - source_id: sygnia
+    reason: "https://www.sygnia.co/blog/ answers HTTP 403 on `url --direct`; not retried through the reader (pool exhausted: every jina key answered HTTP 402 during this run)."
+  - source_id: ox-security
+    reason: "RECIPE CONFIRMED, not a gap: `python3 tools/fetch_source.py url --direct https://www.ox.security/feed/` returned 10 items (newest 2026-11-05 20:03Z the *sshole post, 2026-11-04 PolinRider, 2026-10-30 Cursor/Claude Code extension); nothing S1-relevant that is not already covered."
+  - source_id: synology-security-advisories
+    reason: "RECIPE BROKEN: `feed https://www.synology.com/api/rssfeed/security/en-us` and the en-global variant now answer 404 (2026-11-07). Working recipe: `python3 tools/fetch_source.py url --direct https://www.synology.com/en-us/security/advisory` lists every advisory with its last-updated time in table rows (regex on <tr>), then `extract https://www.synology.com/security/advisory/Synology_SA_26_NN` reads one; `extract` of the listing returns only the newest advisory. Suggest fetch_method bridge again."
+  - source_id: sonicwall-psirt
+    reason: "RECIPE FOUND: the PSIRT SPA's own JS names `https://psirtapi.global.sonicwall.com/api/v1/feed/rss.xml` (feed works: `feed ... 8` returned SNWLID-2026-0014, -0019, -0018, -0017 with dates) and `https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-YYYY-NNNN` (JSON with affected_products and fixed_software HTML tables, credits, revision_history, read with `url --direct`). `extract` of the vuln-detail page via the reader returns the text but drops the affected/fixed tables. Suggest rss_url plus this drill recipe in the record notes."
+  - source_id: qnap-security-advisories
+    reason: "The QSA feed (`feed https://www.qnap.com/en/security-advisory/feed 20`) lists only advisories up to 2026-10-22 and missed the QNAP security notice about Plex2Shell published 2026-11-06 under https://www.qnap.com/en/security-news/2026/... (newsroom). Recipe: find such notices through BleepingComputer or `WebSearch`, then `extract` the newsroom URL (reads cleanly)."
+  - source_id: apple-security
+    reason: "WebFetch of https://support.apple.com/en-us/100100 returned a page that describes itself as published 2026-10-30 with the newest row 2026-10-29 (Xcode 27.2); it may be a cached copy. Nothing in the lookback horizon from this read; KEV and the store cover the one Apple item of the week (CVE-2024-27834)."
+  - source_id: esentire
+    reason: "`extract` of an advisory page returns only the site boilerplate; WebFetch of the same URL returns the article. Confirms the 2026-10-26 note."
+  - source_id: pwn-ai
+    reason: "https://pwn.ai/blog/ lists a single post dated 2025-12-26; no 2026 content visible through `extract`. Candidate record may be dormant."
+  - source_id: previdian
+    reason: "RECIPE: per-CVE telemetry pages read with `extract https://previdian.com/CVE-<id>` (CVE-2026-123158 read OK with counts and timeline); the 2026-11-06 fire logged the feed as 403."
+  - source_id: ncsc-ch-security-hub
+    reason: "Quiet-day observation, not a failure: the hub carries no post on CVE-2026-19868, Plex2Shell or the Paint fix at 2026-11-07 03:00Z; ncsc-csh recent 30 read fine."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "watchlists are empty for this deployment; the sweep is a no-op"
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "ncsc-nl recent 40 + ncsc-nl csaf NCSC-2026-0470", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "NCSC-2026-0470 (Windows Paint) led to item 3; 0469 OpenSSH already covered; 0468 Zyxel (2026-11-05) covered by the Zyxel entry" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 25 + alerte/cti feeds + extract of AVI pages", horizon_hours: 26, in_horizon_items: 12, returned: 1, note: "12 avis dated 2026-11-06 (AVI-1469 to 1480); AVI-1477 Mitel and AVI-1467 Cisco feed the Brotli update; AVI-1474 VMware, 1476 Cisco PHP2Shell covered; no new ALE alert" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 7, returned: 1, note: "[NEU] hoch items of 2026-11-06 read: IoT2050 (WID-SEC-2026-4382, item 7), Wazuh, ActiveMQ, Nexus, BigFix, MariaDB, JetBrains, OpenSSH; only the IoT2050 revision is a delta" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-018 of 2026-10-23" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "KAMSOFT ZSIRep CLIENT library CVE-2026-113618 (2026-11-06), Polish pharmacy software, dropped" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + WebFetch of two alerts + cisa csaf-recent", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "KEV alert of 2026-11-06 (item 1); ICS advisories: newest icsa-26-211-07 (Mitsubishi CC-Link, update B) released 2026-11-05, nothing in the window" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "catalogue 2026.11.06; only CVE-2026-19868; cross-check against the store found the Plex and SiteGuard gaps" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "url --direct euvdservices.enisa.europa.eu exploitedvulnerabilities + enisa-euvd recent criticals + enisaid", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "one new exploited record (EUVD-2026-118429, SonicWall), used as corroboration for item 1; criticals are two WordPress plugin CVEs and the Entra cloud CVE" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "ncsc-csh recent 30", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "posts 13157 (SonicWall GMS), 13155 (OpenSSH), 13144 (Barracuda, edited 2026-11-06), 13054 (refrigeration, edited 2026-11-06) all already covered by entries" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed all-rss-feed.xml 12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-11-03 (AI and cyber intrusion report, S3 material)" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed https://labs.watchtowr.com/rss/ 8 + extract of watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-05 21:19Z (Barracuda, already in the entry); the intelligence FAQs list shows no new item" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 12 + extract of FG-IR-26-186/-187/-188", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-188 (2026-11-02, Linux kernel TCP, under investigation)" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "msrc recent 60 + msrc cve + SUG API revised-CVE sweep (1280 records) + affectedProduct", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "Paint CVE-2026-83844 revised 2026-11-06 (item 3); Entra CVE-2026-109469 (2026-11-05) dispositioned as a fully mitigated cloud CVE; no exploited or publicly disclosed Microsoft-rated CVE" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed https://security.paloaltonetworks.com/rss.xml 12", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest CVE-2026-111497 (2026-10-31) already in the Brotli entry" }
+  - { id: apple-security, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest row 2026-10-29 (Xcode 27.2); cached-copy caveat in coverage_gaps" }
+  - { id: onapsis, tier: standard, attempted: true, transport: "WebFetch (extract returned a generic listing)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-03 SAP embedded security tools post is not a vulnerability item; SAP patch day is 2026-11-10" }
+  - { id: pwn-ai, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "single listed post dated 2025-12-26" }
+  - { id: searchlight-cyber, tier: standard, attempted: true, transport: "url --direct listing + extract per article for dates", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest article 2026-10-28 (AEM pre-auth RCE chain, php2shell scanner)" }
+  - { id: siemens-productcert, tier: standard, attempted: true, transport: "feed Atom 20 + url --direct SSA pages", horizon_hours: 168, in_horizon_items: 7, returned: 3, note: "SSA-045512/-443410 (Node2Shell) fold into item 6, SSA-834709 V1.1 item 7, SSA-166980 V1.3 item 8; SSA-566435 V1.6 and SSA-566512 V1.2 add nothing" }
+  - { id: atlassian-security-advisories, tier: standard, attempted: true, transport: "url index + extract of the newest bulletin", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest bulletin 2026-10-20 (Bamboo dependency CVEs)" }
+  - { id: nextjs-blog, tier: standard, attempted: true, transport: "feed https://nextjs.org/feed.xml 8 + extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "November 2026 security release (2026-11-03), no RCE, borderline-drop" }
+  - { id: qnap-security-advisories, tier: standard, attempted: true, transport: "feed https://www.qnap.com/en/security-advisory/feed 20 + extract of the newsroom notice", horizon_hours: 168, in_horizon_items: 0, returned: 1, note: "no new QSA in the feed; the Plex2Shell notice (item 2) sits in the QNAP newsroom, not the feed" }
+  - { id: synology-security-advisories, tier: standard, attempted: true, transport: "url --direct listing + extract SA-26:15/:16 (feed 404)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "SA-26:16 (2026-11-06) sshole not affected; SA-26:15 Node2Shell (2026-10-30) folded into item 6; feed recipe broken, see coverage_gaps" }
+  - { id: chrome-releases, tier: standard, attempted: true, transport: "extract of the blog and of the 2026-11-03 desktop post", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "Chrome 157 (2026-11-03): 213 fixes, seven Critical, no in-the-wild statement; previously borderline-dropped; ChromeOS 156.0.8078.93 (2026-11-06) minor" }
+  - { id: depthfirst, tier: standard, attempted: true, transport: "url --direct listing + article:published_time per article", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "newest dated article 2026-11-02 bon-vulnerability-discovery (method post, S3); the credited Chrome Dawn CVE-2026-121156 sits in the Chrome 157 notes" }
+  - { id: esentire, tier: standard, attempted: true, transport: "WebFetch listing + WebFetch advisory", horizon_hours: 145, in_horizon_items: 1, returned: 1, note: "2026-11-03 vishing advisory -> item 9 (borderline update-of UNC6671)" }
