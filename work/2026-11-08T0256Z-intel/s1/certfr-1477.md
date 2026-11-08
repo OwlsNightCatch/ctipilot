@@ -1,0 +1,42 @@
+---
+title: Avis du CERT-FR
+url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1477/
+hostname: gouv.fr
+sitename: cert.cyber.gouv.fr
+date: "2024-04-08"
+fingerprint: "2ed12f76e790eab7"
+---
+# Avis du CERT-FR
+
+Objet : Vulnérabilité dans les produits Mitel
+
+## Gestion du document
+
+Une gestion de version détaillée se trouve à la fin de ce document.
+
+## Risque
+
+- Exécution de code arbitraire à distance
+
+## Systèmes affectés
+
+- Mitel versions 10.6.0.7 et antérieures
+- MiVoice Business Solution Virtual Instance versions 2.1.0.9 et antérieures
+- OpenScape Contact Center versions 12R0 à 12R0FR7
+- OpenScape Endpoint Management versions 1 R2.5.1 et antérieures
+- OpenScape SBC versions antérieures à 11R3.4.5 (disponibilité du correctif non annoncé)
+- OpenScape SESAP versions 2 R1.1.9 et antérieures
+- OpenScape Xpert versions 9 R0.2.0 et antérieures
+
+## Résumé
+
+Une vulnérabilité a été découverte dans les produits Mitel. Elle permet à un attaquant de provoquer une exécution de code arbitraire à distance.
+
+## Solutions
+
+Se référer au bulletin de sécurité de l'éditeur pour l'obtention des correctifs (cf. section Documentation).
+
+## Documentation
+
+- Bulletin de sécurité Mitel 2026-0010 du 28 octobre 2026 [https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0010](https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0010)
+- Référence CVE CVE-2026-111497 [https://www.cve.org/CVERecord?id=CVE-2026-111497](https://www.cve.org/CVERecord?id=CVE-2026-111497)

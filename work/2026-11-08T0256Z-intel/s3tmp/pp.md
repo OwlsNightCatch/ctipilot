@@ -1,0 +1,1609 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en-us" dir="ltr" prefix="og: https://ogp.me/ns#" class="page-en">
+  <head>
+    <script src="https://layer.proofpoint.com/tags/app.js" async></script>
+<meta charset="utf-8" />
+<meta name="description" content="Browse Threat Insight information, resources, news, and blog posts. Gain the insights you need to prevent cybersecurity threats and protect your organization." />
+<link rel="canonical" href="https://www.proofpoint.com/us/blog/threat-insight" />
+<link rel="icon" href="/themes/custom/proofpoint/apps/drupal/favicon.ico" />
+<link rel="mask-icon" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon.svg" />
+<link rel="icon" sizes="16x16" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-16x16.png" />
+<link rel="icon" sizes="32x32" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-32x32.png" />
+<link rel="icon" sizes="96x96" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-96x96.png" />
+<link rel="icon" sizes="192x192" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-192x192.png" />
+<link rel="apple-touch-icon" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-60x60.png" />
+<link rel="apple-touch-icon" sizes="72x72" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-72x72.png" />
+<link rel="apple-touch-icon" sizes="76x76" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-76x76.png" />
+<link rel="apple-touch-icon" sizes="114x114" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-114x114.png" />
+<link rel="apple-touch-icon" sizes="120x120" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-120x120.png" />
+<link rel="apple-touch-icon" sizes="144x144" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-144x144.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-152x152.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-180x180.png" />
+<link rel="apple-touch-icon-precomposed" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-57x57.png" />
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-72x72.png" />
+<link rel="apple-touch-icon-precomposed" sizes="76x76" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-76x76.png" />
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-114x114.png" />
+<link rel="apple-touch-icon-precomposed" sizes="120x120" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-120x120.png" />
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-144x144.png" />
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-152x152.png" />
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/themes/custom/proofpoint/apps/drupal/images/favicons/favicon-180x180.png" />
+<meta property="og:url" content="https://www.proofpoint.com/us/blog/threat-insight" />
+<meta property="og:title" content="Threat Insight Information &amp; Resources | Proofpoint Blog US" />
+<meta property="og:description" content="Browse Threat Insight information, resources, news, and blog posts. Gain the insights you need to prevent cybersecurity threats and protect your organization." />
+<meta property="og:image" content="" />
+<meta property="og:image:url" content="" />
+<meta property="og:image:secure_url" content="" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:description" content="Browse Threat Insight information, resources, news, and blog posts. Gain the insights you need to prevent cybersecurity threats and protect your organization." />
+<meta name="twitter:title" content="Threat Insight Information &amp; Resources | Proofpoint Blog US" />
+<meta name="twitter:image" content="" />
+<link rel="alternate" hreflang="x-default" href="https://www.proofpoint.com/us/blog/threat-insight" />
+<link rel="alternate" hreflang="en-us" href="https://www.proofpoint.com/us/blog/threat-insight" />
+<link rel="alternate" hreflang="en-gb" href="https://www.proofpoint.com/uk/blog/threat-insight" />
+<link rel="alternate" hreflang="fr" href="https://www.proofpoint.com/fr/blog/threat-insight" />
+<link rel="alternate" hreflang="de" href="https://www.proofpoint.com/de/blog/threat-insight" />
+<link rel="alternate" hreflang="es" href="https://www.proofpoint.com/es/blog/threat-insight" />
+<link rel="alternate" hreflang="ja" href="https://www.proofpoint.com/jp/blog/threat-insight" />
+<link rel="alternate" hreflang="en-au" href="https://www.proofpoint.com/au/blog/threat-insight" />
+<link rel="alternate" hreflang="it" href="https://www.proofpoint.com/it/blog/threat-insight" />
+<link rel="alternate" hreflang="pt" href="https://www.proofpoint.com/br/blog/threat-insight" />
+<link rel="alternate" hreflang="ko" href="https://www.proofpoint.com/kr/blog/threat-insight" />
+<script data-cfasync="false" type="text/javascript" id="vwoCode">window._vwo_code=window._vwo_code || (function() {
+      var account_id=1002484,
+      version=1.3,
+      settings_tolerance=2000,
+      library_tolerance=2500,z
+      use_existing_jquery=false,
+      is_spa=1,
+      hide_element='body',
+      /* DO NOT EDIT BELOW THIS LINE */
+      f=false,d=document,code={use_existing_jquery:function(){return use_existing_jquery},library_tolerance:function(){return library_tolerance},finish:function(){if(!f){f=true;var e=d.getElementById('_vis_opt_path_hides');if(e)e.parentNode.removeChild(e)}},finished:function(){return f},load:function(e){var t=d.createElement('script');t.fetchPriority='high';t.src=e;t.type='text/javascript';t.innerText;t.onerror=function(){_vwo_code.finish()};d.getElementsByTagName('head')[0].appendChild(t)},init:function(){window.settings_timer=setTimeout(function(){_vwo_code.finish()},settings_tolerance);var e=d.createElement('style'),t=hide_element?hide_element+'{opacity:0 !important;filter:alpha(opacity=0) !important;background:none !important;}':'',i=d.getElementsByTagName('head')[0];e.setAttribute('id','_vis_opt_path_hides');e.setAttribute('nonce',document.querySelector('#vwoCode').nonce);e.setAttribute('type','text/css');if(e.styleSheet)e.styleSheet.cssText=t;else e.appendChild(d.createTextNode(t));i.appendChild(e);this.load('https://dev.visualwebsiteoptimizer.com/j.php?a='+account_id+'&u='+encodeURIComponent(d.URL)+'&f='+ +is_spa+'&vn='+version);return settings_timer}};window._vwo_settings_timer = code.init();return code;}());</script>
+<meta name="facebook-domain-verification" content="l349mr2tyecyl7w3a1146378lqxru1" />
+<meta name="MobileOptimized" content="width" />
+<meta name="HandheldFriendly" content="true" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preload" href="/themes/custom/proofpoint/dist/app-drupal/assets/fonts/proofpoint.woff2" as="font" crossorigin="anonymous" />
+
+    <title>Threat Insight Information &amp; Resources | Proofpoint Blog US</title>
+    <link rel="stylesheet" media="all" href="/sites/default/files/css/css_alO1wyL_8mWc37G4JRN4kanfWx8AyzlTFoIwoMzjwY4.css?delta=0&amp;language=en&amp;theme=particle&amp;include=eJxlj2sOwjAMgy-0sjOlnSnR0mVKOh63p4DEOvgTKZ8jx17JKifBGEXzsPZbcJClyy_coifjiI4baEq2leg7TGrdSRaNJAGCgqV2Z1k1C8JZD_TSDHnp8ggypUd4mYbk_id8_HvOy-xhMl2Fve68kM2o2h5aCceMK2WEyrXFaU3TvCvfzr_CFcYT03Jvflphgz-8ooyRHMOVcfPxPU9Fp03wBHqsjMA" />
+<link rel="stylesheet" media="all" href="/sites/default/files/css/css_2eArF2juvN0wGUMtO1iSalC0ECxnb1ZniWwcVyhDCsw.css?delta=1&amp;language=en&amp;theme=particle&amp;include=eJxlj2sOwjAMgy-0sjOlnSnR0mVKOh63p4DEOvgTKZ8jx17JKifBGEXzsPZbcJClyy_coifjiI4baEq2leg7TGrdSRaNJAGCgqV2Z1k1C8JZD_TSDHnp8ggypUd4mYbk_id8_HvOy-xhMl2Fve68kM2o2h5aCceMK2WEyrXFaU3TvCvfzr_CFcYT03Jvflphgz-8ooyRHMOVcfPxPU9Fp03wBHqsjMA" />
+
+    
+  </head>
+  <body class="path-blog user-anonymous">
+        <a href="#main-content" class="visually-hidden focusable">
+      Skip to main content
+    </a>
+    
+      <div class="dialog-off-canvas-main-canvas" data-off-canvas-main-canvas>
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+<header class="navigation navigation--us">
+  <nav class="flex-wrap navbar navbar-expand-lg w-100 p-0" aria-label="Primary navigation">
+    <div class="container d-flex main-navigation">
+      <div class="navigation__main-row w-100">
+        <a class="navbar-brand navigation__brand" href="/us" aria-label="Proofpoint">
+                      <img class="navigation__logo" src="/themes/custom/proofpoint/dist/app-drupal/assets/header-nav__logo-white.svg" alt="Proofpoint">
+                  </a>
+
+        <div class="navigation__mobile-controls">
+                      <a class="navigation__mobile-search" href="#veridianx-navigation-search-modal" aria-label="Search" data-bs-toggle="modal" data-bs-target="#veridianx-navigation-search-modal">
+              <span aria-hidden="true"></span>
+            </a>
+                    <button class="navbar-toggler navigation__toggle" type="button" aria-controls="veridianx-navigation" data-bs-target="#veridianx-navigation" data-bs-toggle="collapse" aria-expanded="false" aria-label="Toggle navigation" data-navigation-toggle>
+            <span class="navbar-toggler-icon"></span>
+          </button>
+        </div>
+
+        <div class="navigation__menu navbar-collapse flex-wrap collapse" id="veridianx-navigation" data-navigation-menu>
+
+
+                  <ul class="navbar-nav navigation__primary mx-auto">
+                                                                                  <li class="nav-item navigation__item has-megamenu dropdown"  data-group="Products" >
+                                  <a class="nav-link" role="button" href="#" aria-expanded="false" aria-haspopup="true" aria-label="Products" aria-controls="veridianx-navigation-dropdown-1" data-navigation-dropdown-toggle>
+                    Products
+                  </a>
+                  <div class="dropdown-menu megamenu navigation__mega-menu" id="veridianx-navigation-dropdown-1" data-navigation-dropdown>
+                    <button class="navigation__mobile-back" type="button" data-navigation-back>
+                      Back
+                    </button>
+                    <div class="container navigation__mega-container">
+                      <div class="navigation__mega-content navigation__mega-content--columns">
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-1-column-1">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-1-column-1">
+                                                                  <a class="navigation__mega-heading-link" href="/us/products/collaboration-security-prime">Collaboration Security</a>
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/email-protection">
+                                    <span class="navigation__mega-link-title">Core Email Protection</span>
+                                                                          <span class="navigation__mega-link-description">Get industry-leading threat protection via API or gateway</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/email-protection/email-fraud-defense">
+                                    <span class="navigation__mega-link-title">Email Fraud Defense</span>
+                                                                          <span class="navigation__mega-link-description">Protect your brand, increase deliverability, and identify lookalike domains</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/mitigate-human-risk">
+                                    <span class="navigation__mega-link-title">ZenGuide</span>
+                                                                          <span class="navigation__mega-link-description">Deliver targeted, risk-based security awareness training</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/secure-email-relay">
+                                    <span class="navigation__mega-link-title">Secure Email Relay</span>
+                                                                          <span class="navigation__mega-link-description">Secure application email and implement DMARC faster</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/account-takeover-protection">
+                                    <span class="navigation__mega-link-title">Account Takeover Protection</span>
+                                                                          <span class="navigation__mega-link-description">Detect, investigate, and respond to account takeovers</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-1-column-2">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-1-column-2">
+                                                                  <a class="navigation__mega-heading-link" href="/us/products/data-security-governance">Data Security</a>
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/data-security-for-ai">
+                                    <span class="navigation__mega-link-title">Data Security for AI</span>
+                                                                          <span class="navigation__mega-link-description">Secure data across shadow and approved AI</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/data-loss-prevention">
+                                    <span class="navigation__mega-link-title">Enterprise DLP</span>
+                                                                          <span class="navigation__mega-link-description">Prevent data loss across email, cloud, and endpoints</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/adaptive-email-dlp">
+                                    <span class="navigation__mega-link-title">Adaptive Email DLP</span>
+                                                                          <span class="navigation__mega-link-description">Prevent misdirected emails and hidden data exfiltration</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/insider-threat-management">
+                                    <span class="navigation__mega-link-title">Insider Threat Management</span>
+                                                                          <span class="navigation__mega-link-description">Get visibility into risky behavior by careless, malicious, and compromised users</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/data-security-posture-management">
+                                    <span class="navigation__mega-link-title">Data Security Posture Management</span>
+                                                                          <span class="navigation__mega-link-description">Discover, classify, and protect sensitive data across cloud and hybrid environments</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/digital-communications-governance">
+                                    <span class="navigation__mega-link-title">Digital Communications Governance</span>
+                                                                          <span class="navigation__mega-link-description">Intelligently capture, retain, and discover digital communications</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-1-column-3">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-1-column-3">
+                                                                  <a class="navigation__mega-heading-link" href="/us/platform/ai-security">AI Security</a>
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/ai-access-security">
+                                    <span class="navigation__mega-link-title">Secure AI Usage by People</span>
+                                                                          <span class="navigation__mega-link-description">Get visibility and control around employees&#039; use of AI</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/agentic-ai-security">
+                                    <span class="navigation__mega-link-title">Secure AI Usage by Agents</span>
+                                                                          <span class="navigation__mega-link-description">Understand AI agent intent and control their use of other AI tools</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/ai-mcp-security">
+                                    <span class="navigation__mega-link-title">Secure MCP Across Your Enterprise</span>
+                                                                          <span class="navigation__mega-link-description">Unify MCP discovery, authorization, and monitoring</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-1-column-4">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-1-column-4">
+                                                                  <a class="navigation__mega-heading-link" href="/us/platform">Our Platform</a>
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/platform/nexus">
+                                    <span class="navigation__mega-link-title">Proofpoint Nexus</span>
+                                                                          <span class="navigation__mega-link-description">Advanced AI and threat intel to detect threats and assess data risk</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/mitigate-human-risk">
+                                    <span class="navigation__mega-link-title">Proofpoint Zen</span>
+                                                                          <span class="navigation__mega-link-description">Integrated control points to protect people and data anywhere</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/platform/satori">
+                                    <span class="navigation__mega-link-title">Proofpoint Satori</span>
+                                                                          <span class="navigation__mega-link-description">The power behind agentic security operations</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/365-total-protection">
+                                    <span class="navigation__mega-link-title">Proofpoint 365 Total Protection</span>
+                                                                          <span class="navigation__mega-link-description">Enabling the channel, protecting humans and agents</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                              </div>
+                                              <a class="navigation__mega-footer-link" href="/us/products">
+                          <span>View All Products</span>
+                        </a>
+                                          </div>
+                  </div>
+                              </li>
+                                                                                  <li class="nav-item navigation__item has-megamenu dropdown"  data-group="Solutions" >
+                                  <a class="nav-link" role="button" href="#" aria-expanded="false" aria-haspopup="true" aria-label="Solutions" aria-controls="veridianx-navigation-dropdown-2" data-navigation-dropdown-toggle>
+                    Solutions
+                  </a>
+                  <div class="dropdown-menu megamenu navigation__mega-menu" id="veridianx-navigation-dropdown-2" data-navigation-dropdown>
+                    <button class="navigation__mobile-back" type="button" data-navigation-back>
+                      Back
+                    </button>
+                    <div class="container navigation__mega-container">
+                      <div class="navigation__mega-content navigation__mega-content--columns">
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-2-column-1">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-2-column-1">
+                                                                  By Use Case
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/ensure-acceptable-genai-use">
+                                    <span class="navigation__mega-link-title">Ensure Acceptable GenAI Use</span>
+                                                                          <span class="navigation__mega-link-description">Empower your workforce with safe GenAI practices</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/claude-compliance-api-integration">
+                                    <span class="navigation__mega-link-title">Govern Claude AI Activity</span>
+                                                                          <span class="navigation__mega-link-description">Integrate Proofpoint with Claude Compliance API</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/secure-microsoft-365">
+                                    <span class="navigation__mega-link-title">Secure Microsoft 365</span>
+                                                                          <span class="navigation__mega-link-description">Implement flexible security and compliance for M365</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/prevent-loss-from-ransomware">
+                                    <span class="navigation__mega-link-title">Ransomware Prevention</span>
+                                                                          <span class="navigation__mega-link-description">Stop attacks by securing ransomware&#039;s top vector</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/combat-email-and-cloud-threats">
+                                    <span class="navigation__mega-link-title">Combat Email and Cloud Threats</span>
+                                                                          <span class="navigation__mega-link-description">Protect your people with a smart, holistic approach</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/cloud-data-security">
+                                    <span class="navigation__mega-link-title">Cloud Data Security</span>
+                                                                          <span class="navigation__mega-link-description">Discover, govern, and protect sensitive data across cloud and SaaS</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/mitigate-human-risk">
+                                    <span class="navigation__mega-link-title">Change User Behavior</span>
+                                                                          <span class="navigation__mega-link-description">Help your users identify, resist, and report attacks</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/digital-communications-governance">
+                                    <span class="navigation__mega-link-title">Modernize Compliance and Archiving</span>
+                                                                          <span class="navigation__mega-link-description">Manage your risk and data retention requirements</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/email-authentication-with-dmarc">
+                                    <span class="navigation__mega-link-title">Authenticate Your Email</span>
+                                                                          <span class="navigation__mega-link-description">Protect your email deliverability with DMARC</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-2-column-2">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-2-column-2">
+                                                                  By Industry
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/federal">
+                                    <span class="navigation__mega-link-title">Federal Government</span>
+                                                                          <span class="navigation__mega-link-description">Enable your agency with FedRAMP certified security</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/higher-education-security">
+                                    <span class="navigation__mega-link-title">Higher Education</span>
+                                                                          <span class="navigation__mega-link-description">Protect your campus, people, data, and research</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/healthcare-cybersecurity">
+                                    <span class="navigation__mega-link-title">Healthcare</span>
+                                                                          <span class="navigation__mega-link-description">Protect clinicians, patient data, and intellectual property</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/email-security-solutions-for-service-providers">
+                                    <span class="navigation__mega-link-title">Internet Service Providers</span>
+                                                                          <span class="navigation__mega-link-description">Deliver leading email protection for your networks and customers</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/state-and-local-government">
+                                    <span class="navigation__mega-link-title">State and Local Government</span>
+                                                                          <span class="navigation__mega-link-description">Secure your institutions, services, and communities against cyberthreats</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/financial-services-and-insurance">
+                                    <span class="navigation__mega-link-title">Financial Services</span>
+                                                                          <span class="navigation__mega-link-description">Protect your institution while meeting compliance requirements</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/mobile-message-security-solutions-for-service-providers">
+                                    <span class="navigation__mega-link-title">Mobile Operators</span>
+                                                                          <span class="navigation__mega-link-description">Protect your messaging environments and subscribers at scale</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/solutions/cybersecurity-solutions-for-small-business">
+                                    <span class="navigation__mega-link-title">Small and Medium Businesses</span>
+                                                                          <span class="navigation__mega-link-description">Strengthen your business with enterprise-grade security built to grow with you</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-2-column-3">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-2-column-3">
+                                                                  Services
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/proofpoint-services">
+                                    <span class="navigation__mega-link-title">Proofpoint Services</span>
+                                                                          <span class="navigation__mega-link-description">Leverage our expertise to maximize your investment</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/advisory-services">
+                                    <span class="navigation__mega-link-title">Advisory Services</span>
+                                                                          <span class="navigation__mega-link-description">Maintain control with expert guidance and recommendations</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/products/applied-services">
+                                    <span class="navigation__mega-link-title">Applied Services</span>
+                                                                          <span class="navigation__mega-link-description">Get hands-on execution, guidance, and measurable impact</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                              </div>
+                                          </div>
+                  </div>
+                              </li>
+                                                                                  <li class="nav-item navigation__item has-megamenu dropdown"  data-group="Resources" >
+                                  <a class="nav-link" role="button" href="#" aria-expanded="false" aria-haspopup="true" aria-label="Resources" aria-controls="veridianx-navigation-dropdown-3" data-navigation-dropdown-toggle>
+                    Resources
+                  </a>
+                  <div class="dropdown-menu megamenu navigation__mega-menu" id="veridianx-navigation-dropdown-3" data-navigation-dropdown>
+                    <button class="navigation__mobile-back" type="button" data-navigation-back>
+                      Back
+                    </button>
+                    <div class="container navigation__mega-container">
+                      <div class="navigation__mega-content navigation__mega-content--columns">
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-3-column-1">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-3-column-1">
+                                                                  Learn
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/resources">
+                                    <span class="navigation__mega-link-title">Resource library</span>
+                                                                          <span class="navigation__mega-link-description">Research, insights, and resources from Proofpoint experts.</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/blog">
+                                    <span class="navigation__mega-link-title">Blog</span>
+                                                                          <span class="navigation__mega-link-description">Keep up with the latest news and expert insights</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/customer-stories">
+                                    <span class="navigation__mega-link-title">Customer Stories</span>
+                                                                          <span class="navigation__mega-link-description">Read how customers solve their toughest security challenges</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/cybersecurityacademy">
+                                    <span class="navigation__mega-link-title">Cybersecurity Academy</span>
+                                                                          <span class="navigation__mega-link-description">Become a Proofpoint Certified Guardian</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/events">
+                                    <span class="navigation__mega-link-title">Events</span>
+                                                                          <span class="navigation__mega-link-description">Connect and learn with peers at in-person events</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/webinars">
+                                    <span class="navigation__mega-link-title">Webinars</span>
+                                                                          <span class="navigation__mega-link-description">Browse our complete webinar library</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-3-column-2">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-3-column-2">
+                                                                  Threat Intelligence
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/threat-reference">
+                                    <span class="navigation__mega-link-title">Threat glossary</span>
+                                                                          <span class="navigation__mega-link-description">Learn about the latest security threats and techniques</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/podcasts">
+                                    <span class="navigation__mega-link-title">Podcasts</span>
+                                                                          <span class="navigation__mega-link-description">Stay informed with our renowned threat researchers</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link navigation__mega-link--external" href="https://go.proofpoint.com/PowerSeries?utm_source=pfpt-website&amp;amp;utm_medium=web&amp;amp;utm_campaign=EventsPage" target="_blank" rel="noopener">
+                                    <span class="navigation__mega-link-title">Power Series</span>
+                                                                          <span class="navigation__mega-link-description">Join our virtual event series on the industry&#039;s hottest topics</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/blog/threat-insight">
+                                    <span class="navigation__mega-link-title">Threat Insight Blog</span>
+                                                                          <span class="navigation__mega-link-description">Discover actionable threat intel and expert analysis</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-3-column-3">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-3-column-3">
+                                                                  Partners
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link navigation__mega-link--external" href="https://partners.proofpoint.com" target="_blank" rel="noopener">
+                                    <span class="navigation__mega-link-title">Partner Portal</span>
+                                                                          <span class="navigation__mega-link-description">Unlock tools with your partner credentials</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/channel-partners-and-distributors">
+                                    <span class="navigation__mega-link-title">Channel Partners &amp; Distributors</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/partners/technology-alliance-partners">
+                                    <span class="navigation__mega-link-title">Technology Partners</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/partners/msp">
+                                    <span class="navigation__mega-link-title">MSP Partners</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/partners/oem-security">
+                                    <span class="navigation__mega-link-title">OEM Partners</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column" aria-labelledby="veridianx-navigation-dropdown-3-column-4">
+                                                          <h2 class="navigation__mega-heading" id="veridianx-navigation-dropdown-3-column-4">
+                                                                  Support
+                                                              </h2>
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link navigation__mega-link--external" href="https://proofpoint.my.site.com/community/s/" target="_blank" rel="noopener">
+                                    <span class="navigation__mega-link-title">Support Portal</span>
+                                                                          <span class="navigation__mega-link-description">Access our knowledge base or file a support ticket</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/postmaster">
+                                    <span class="navigation__mega-link-title">IP Address Blocked?</span>
+                                                                          <span class="navigation__mega-link-description">Best practices for email delivery, authentication, and troubleshooting</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/support-services">
+                                    <span class="navigation__mega-link-title">Support Services</span>
+                                                                          <span class="navigation__mega-link-description">Get help with current incidents with Proofpoint products</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                              </div>
+                                          </div>
+                  </div>
+                              </li>
+                                                                                  <li class="nav-item navigation__item has-megamenu dropdown"  data-group="Company" >
+                                  <a class="nav-link" role="button" href="#" aria-expanded="false" aria-haspopup="true" aria-label="Company" aria-controls="veridianx-navigation-dropdown-4" data-navigation-dropdown-toggle>
+                    Company
+                  </a>
+                  <div class="dropdown-menu megamenu navigation__mega-menu" id="veridianx-navigation-dropdown-4" data-navigation-dropdown>
+                    <button class="navigation__mobile-back" type="button" data-navigation-back>
+                      Back
+                    </button>
+                    <div class="container navigation__mega-container">
+                      <div class="navigation__mega-content navigation__mega-content--flat">
+                                                  <section class="navigation__mega-column">
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/why-proofpoint">
+                                    <span class="navigation__mega-link-title">Why Proofpoint</span>
+                                                                          <span class="navigation__mega-link-description">Proofpoint provides intent-based protection for every human, every AI agent, across all data</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/company/leadership">
+                                    <span class="navigation__mega-link-title">Leadership</span>
+                                                                          <span class="navigation__mega-link-description">Learn about the executive team leading Proofpoint&#039;s strategy and vision</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/legal/esg">
+                                    <span class="navigation__mega-link-title">ESG</span>
+                                                                          <span class="navigation__mega-link-description">Learn about our environmental, social, and governance principles</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column">
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/compare">
+                                    <span class="navigation__mega-link-title">Comparing Proofpoint</span>
+                                                                          <span class="navigation__mega-link-description">Evaluating security vendors? Check out side-by-side industry comparisons</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/newsroom">
+                                    <span class="navigation__mega-link-title">News Center</span>
+                                                                          <span class="navigation__mega-link-description">Read press releases, news, and media highlights about Proofpoint</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/company/careers">
+                                    <span class="navigation__mega-link-title">Careers</span>
+                                                                          <span class="navigation__mega-link-description">Make a difference at one of the world&#039;s leading security companies</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                                  <section class="navigation__mega-column">
+                                                        <ul class="navigation__mega-list">
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/company/about">
+                                    <span class="navigation__mega-link-title">About</span>
+                                                                          <span class="navigation__mega-link-description">Learn more about the team driving human and agent-centric security</span>
+                                                                      </a>
+                                </li>
+                                                                                                                              <li class="navigation__mega-list-item">
+                                  <a class="navigation__mega-link" href="/us/legal/trust">
+                                    <span class="navigation__mega-link-title">AI, Privacy and Trust</span>
+                                                                          <span class="navigation__mega-link-description">Learn about our data handling, privacy, and compliance</span>
+                                                                      </a>
+                                </li>
+                                                          </ul>
+                          </section>
+                                              </div>
+                                          </div>
+                  </div>
+                              </li>
+                      </ul>
+        
+                  <ul class="navbar-nav ms-auto">
+                                        <li class="nav-item navigation__action">
+                <a class="nav-link" href="/us/products/how-to-buy">
+                  <span class="btn btn-outline-primary small mt-0">How to buy</span>
+                </a>
+              </li>
+                                        <li class="nav-item navigation__action">
+                <a class="nav-link" href="/us/free-demo-request">
+                  <span class="btn btn-primary small mt-0">Request a demo</span>
+                </a>
+              </li>
+                      </ul>
+        
+        <div class="navigation__utility-bar w-100">
+          <div class="container d-flex navigation__utility-container">
+                          <a class="navigation__search-link nav-link" href="#veridianx-navigation-search-modal" data-bs-toggle="modal" data-bs-target="#veridianx-navigation-search-modal">Search</a>
+            
+                          <ul class="navbar-nav navigation__utility ms-auto">
+                                                                      <li class="nav-item dropdown">
+                                          <a class="nav-link dropdown-toggle" href="#" id="veridianx-navigation-utility-dropdown-1" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        Partners
+                      </a>
+                      <ul class="dropdown-menu" aria-labelledby="veridianx-navigation-utility-dropdown-1">
+                                                                                                                              <li>
+                                                          <a class="dropdown-item" href="/us/channel-partners-and-distributors">
+                                Channel Partners and Distributors
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item" href="/us/partners/msp">
+                                MSP Partners
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item" href="/us/partners/technology-alliance-partners">
+                                Technology and Alliance Partners
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item" href="/us/partners/oem-security">
+                                OEM Partners
+                              </a>
+                                                      </li>
+                                              </ul>
+                                      </li>
+                                                                      <li class="nav-item dropdown">
+                                          <a class="nav-link dropdown-toggle" href="#" id="veridianx-navigation-utility-dropdown-2" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        Support
+                      </a>
+                      <ul class="dropdown-menu" aria-labelledby="veridianx-navigation-utility-dropdown-2">
+                                                                                                                              <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://proofpoint.my.site.com/community/s/" target="_blank" rel="noopener">
+                                Support Login
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://www.proofpoint.com/us/support-services" target="_blank" rel="noopener">
+                                Support Services
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item" href="/us/postmaster">
+                                IP Address Blocked?
+                              </a>
+                                                      </li>
+                                              </ul>
+                                      </li>
+                                                                      <li class="nav-item dropdown">
+                                          <a class="nav-link dropdown-toggle" href="#" id="veridianx-navigation-utility-dropdown-3" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        Login
+                      </a>
+                      <ul class="dropdown-menu" aria-labelledby="veridianx-navigation-utility-dropdown-3">
+                                                                                                                              <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://learningmanager.adobe.com/proofpointcybersecurityacademy" target="_blank" rel="noopener">
+                                Proofpoint Cybersecurity Academy
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://partners.proofpoint.com/English/" target="_blank" rel="noopener">
+                                Partner Hub
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://v1.us1.digitalrisk.proofpoint.com/users/sign_in" target="_blank" rel="noopener">
+                                Digital Risk Portal
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://threatintel.proofpoint.com" target="_blank" rel="noopener">
+                                ET Intelligence
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://app.emaildefense.proofpoint.com/login" target="_blank" rel="noopener">
+                                Email Fraud Defense
+                              </a>
+                                                      </li>
+                                                                                                      <li>
+                                                          <a class="dropdown-item dropdown-item--external" href="https://us1.proofpointessentials.com/app/login.php" target="_blank" rel="noopener">
+                                Proofpoint Essentials
+                              </a>
+                                                      </li>
+                                              </ul>
+                                      </li>
+                                                  
+
+<li class="nav-item dropdown">
+  <a class="nav-link dropdown-toggle" href="/us/blog/threat-insight" id="veridianx-navigation-language-dropdown" role="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+    EN: Americas
+  </a>
+  <ul class="dropdown-menu" aria-labelledby="veridianx-navigation-language-dropdown">
+    <li>
+      <span class="dropdown-header">Select Language</span>
+    </li>
+      <li>
+    <span class="dropdown-item is-active" aria-current="true">English: Americas</span>
+  </li>
+                  <li>
+        <a class="dropdown-item" href="/uk/blog/threat-insight">English: Europe, Middle East, Africa</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/au/blog/threat-insight">English: Asia Pacific</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/es/blog/threat-insight">Español</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/de/blog/threat-insight">Deutsch</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/fr/blog/threat-insight">Français</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/it/blog/threat-insight">Italiano</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/br/blog/threat-insight">Português</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/jp/blog/threat-insight">日本語</a>
+      </li>
+                <li>
+        <a class="dropdown-item" href="/kr/blog/threat-insight">한국어</a>
+      </li>
+      
+  </ul>
+</li>
+                              </ul>
+                      </div>
+        </div>
+
+        </div>
+      </div>
+    </div>
+
+  </nav>
+</header>
+
+  <div class="modal navigation__search-dialog" id="veridianx-navigation-search-modal" tabindex="-1" aria-label="Search" data-navigation-search-dialog>
+    <div class="modal-dialog navigation__search-dialog-shell">
+      <div class="modal-content navigation__search-panel">
+        <button class="navigation__search-close" type="button" aria-label="Close search" data-bs-dismiss="modal"></button>
+        <form class="navigation__search-form" action="/us/search" method="get" role="search" data-navigation-search-form>
+          <label class="visually-hidden" for="veridianx-navigation-search-input">Search</label>
+          <input class="navigation__search-input" id="veridianx-navigation-search-input" type="search" name="content[query]" placeholder="Search Proofpoint" autocomplete="off" data-navigation-search-input>
+          <button class="navigation__search-clear" type="reset" aria-label="Clear search" data-navigation-search-clear></button>
+          <button class="navigation__search-submit" type="submit" aria-label="Search">
+            <span aria-hidden="true"></span>
+          </button>
+        </form>
+                  <div class="navigation__search-suggestions">
+            <p class="navigation__search-suggestions-label">Top Suggestions:</p>
+            <ul class="navigation__search-suggestion-list">
+                              <li>
+                  <a class="navigation__search-suggestion" href="/us/search?content[query]=Email%20Security">Email Security</a>
+                </li>
+                              <li>
+                  <a class="navigation__search-suggestion" href="/us/search?content[query]=Data%20Security">Data Security</a>
+                </li>
+                              <li>
+                  <a class="navigation__search-suggestion" href="/us/search?content[query]=DLP">DLP</a>
+                </li>
+                              <li>
+                  <a class="navigation__search-suggestion" href="/us/search?content[query]=AI%20Security">AI Security</a>
+                </li>
+                              <li>
+                  <a class="navigation__search-suggestion" href="/us/search?content[query]=Phishing">Phishing</a>
+                </li>
+                          </ul>
+          </div>
+              </div>
+    </div>
+  </div>
+
+
+
+
+  <main class="layout-container" role="main">
+  <div data-drupal-messages-fallback class="hidden"></div>
+
+
+    <a id="main-content" tabindex="-1"></a>      
+
+<div class="block-region-top"><div>
+  
+    
+      <h1 class="page-title__hidden">Blog</h1>  <div class="blog-list__breadcrumbs">
+    
+
+
+
+  <div class="breadcrumbs _legacy_element _breadcrumbs"><div class="nav-crumbs container"><div class="breadcrumb__item"><a href="/us/blog" class="breadcrum__item-link">Blog Home</a></div><div class="breadcrumb__item">
+        Threat Insight      </div></div></div>  
+  </div>
+
+  </div>
+<div>
+  
+    
+      
+<div class="page-title-block _legacy_blocks _page_title_block">
+  <h1 class="page-title__title">Threat Insight</h1>
+</div>
+
+
+  </div>
+<div>
+  
+    
+      <div class="views-element-container"><div class="js-view-dom-id-af61b237fe5b18e3908e792dc135a587f836ef841a85cd03fd0698b8778bb6c3">
+  
+  
+  
+
+  
+  
+  
+
+  
+
+<div class="blog-mosaic container">
+  <div class="blog-mosaic__items _legacy_content _blog_mosaic">
+          
+
+
+  
+<div class="node--type--blog-post node--view-mode--featured-mosaic-banner blog-mosaic__item">
+  
+          
+        
+      
+  <a class="blog-mosaic__link _legacy_element _link"  class=""  href="/us/blog/threat-insight/disruption-targets-major-chinese-language-phishing-kits-japanese-focus">
+      <div class="blog-mosaic__image">    <img loading="lazy" src="/sites/default/files/styles/image_700_420/public/blog-banners/pfpt-blog-laptop-phishing.jpg.webp?itok=0kLl42Bg" width="700" height="420" alt="phishing" />
+
+
+
+</div>
+      <span class="blog-mosaic__category">  Threat Insight
+</span>
+      <div class="blog-mosaic__content">
+                            <div class="blog-mosaic__source blog-mosaic__source-author">
+                          <span class="blog-mosaic__info blog-mosaic__date">  <time datetime="2026-10-14T20:24:16Z">October 14, 2026</time>
+
+</span>
+                                      <span class="blog-mosaic__info blog-mosaic__author">      The Proofpoint Threat Research Team
+  </span>
+                                  </div>
+                <h3 class="blog-mosaic__title blog-mosaic__title--medium">Disruption Targets Major Chinese-Language Phishing Kits with Japanese Focus</h3>
+      </div>
+      </a>
+  
+</div>
+
+
+          
+
+
+  
+<div class="node--type--blog-post node--view-mode--featured-mosaic-banner blog-mosaic__item">
+  
+          
+        
+      
+  <a class="blog-mosaic__link _legacy_element _link"  class=""  href="/us/blog/threat-insight/Spraying-in-the-Andes-TeamFiltration-Returns">
+      <div class="blog-mosaic__image">    <img loading="lazy" src="/sites/default/files/styles/image_700_420/public/blog%20banners/Blog-bannar_building.png.webp?itok=jrF5qBwJ" width="700" height="420" alt="Blog bannar" />
+
+
+
+</div>
+      <span class="blog-mosaic__category">  Threat Insight
+</span>
+      <div class="blog-mosaic__content">
+                            <div class="blog-mosaic__source blog-mosaic__source-author">
+                          <span class="blog-mosaic__info blog-mosaic__date">  <time datetime="2026-09-22T15:00:00Z">September 22, 2026</time>
+
+</span>
+                                      <span class="blog-mosaic__info blog-mosaic__author">      Pavel Asinovsky
+  </span>
+                                  </div>
+                <h3 class="blog-mosaic__title blog-mosaic__title--medium">Spraying in the Andes: TeamFiltration Returns to Exploit Forgotten Service Accounts</h3>
+      </div>
+      </a>
+  
+</div>
+
+
+          
+
+
+  
+<div class="node--type--blog-post node--view-mode--featured-mosaic-banner blog-mosaic__item">
+  
+          
+        
+      
+  <a class="blog-mosaic__link _legacy_element _link"  class=""  href="/us/blog/threat-insight/once-bluemoon-multiple-state-aligned-threat-actors-rapidly-adopt-novel-exploit">
+      <div class="blog-mosaic__image">    <img loading="lazy" src="/sites/default/files/styles/image_700_420/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=wLN4Zrlv" width="700" height="420" alt="Europe connect" />
+
+
+
+</div>
+      <span class="blog-mosaic__category">  Threat Insight
+</span>
+      <div class="blog-mosaic__content">
+                            <div class="blog-mosaic__source blog-mosaic__source-author">
+                          <span class="blog-mosaic__info blog-mosaic__date">  <time datetime="2026-09-09T15:00:00Z">September 09, 2026</time>
+
+</span>
+                                      <span class="blog-mosaic__info blog-mosaic__author">      By Mark Kelly, Greg Lesnewich, Konstantin Klinger, Saher Naumaan, Julia Paluch, David Galazin, Stuart Del Caliz, and the Proofpoint Threat Research Team 
+  </span>
+                                  </div>
+                <h3 class="blog-mosaic__title blog-mosaic__title--long">Once in a BlueMoon: Multiple State-Aligned Threat Actors Rapidly Adopt Novel Exploit Chain Using Chrome and Windows Zero-Days </h3>
+      </div>
+      </a>
+  
+</div>
+
+
+      </div>
+</div>
+
+
+    
+
+  
+  
+
+  
+  
+</div>
+</div>
+
+  </div>
+<div>
+  
+    
+      <div id="blog-search" class="_legacy_blocks _blog_search container">
+  <div id="blog-search__filters" class="w-100 mt-6 mb-6">
+    <div id="blog-search__filters-form" class="position-relative d-flex flex-column flex-md-row justify-content-start align-items-md-end gap-6 gap-lg-9 mx-auto pb-6 mb-6">
+      
+
+<div class="blog-category-select has-value links-droplist _legacy_element _links_droplist">
+      <label class="links-droplist__label">
+      Browse by topic
+    </label>
+    <div class="links-droplist__selector">
+    <div class="links-droplist__default">
+      Threat Insight
+    </div>
+    <div class="links-droplist__links">
+              <div class="links-droplist__links-link">
+          <a href="/us/blog">All Categories</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/ai-security">AI Security</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/compliance-and-archiving">Compliance and Archiving</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/corporate-news">Corporate News</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/cyberthreats">Cyberthreats</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/data-security">Data Security</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/engineering-insights">Engineering Insights</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/human-resilience-security-awareness">Human Resilience &amp; Security Awareness</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/identity-security">Identity Security</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/insider-threat-management">Insider Threat Management</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/remote-workforce-security">Remote Workforce Security</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/thought-leadership">Thought Leadership</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/threat-insight">Threat Insight</a>
+        </div>
+              <div class="links-droplist__links-link">
+          <a href="/us/blog/threat-protection">Threat Protection</a>
+        </div>
+          </div>
+  </div>
+</div>
+
+
+      <div id="blog-search__filters-keys"></div>
+    </div>
+  </div>
+  <div id="blog-search__results" class="w-100 mb-9">
+    <div id="blog-search__hits"></div>
+    <div id="blog-search__pager"></div>
+  </div>
+</div>
+
+
+  </div>
+<div>
+  
+    
+      <div class="views-element-container"><div class="js-view-dom-id-97cab02e91aa3c2e27cf1cee88fdde224118a8266c835169ccfc78ad3f5d557e">
+  
+  
+  
+
+  
+  
+  
+
+  
+
+<div class="v3-light-bg v3-gray-bg">
+<div class="blog-popular">
+  <div class="blog-popular__wrapper _legacy_content _blog_popular container-xxl">
+    <h2 class="blog-popular__header-title">Most Popular</h2>
+    <div class="blog-popular__items">
+      
+
+
+
+  
+<div class="node--type--blog-post node--view-mode--teaser blog-teaser__item col-12 col-lg-6 col-xl-3">
+  
+          
+        
+      
+  <a class="blog-teaser__link _legacy_element _link"  class=""  href="/us/blog/corporate-news/cybersecurity-behavior-signal-intent-full-story">
+      <div class="blog-teaser__image">      <picture>
+                  <source srcset="/sites/default/files/styles/image_600_185/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=dC4-U9E2 1x, /sites/default/files/styles/image_600_185_2x/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=J_G1pUxU 2x" media="screen and (min-width: 1440px)" type="image/webp" width="600" height="185"/>
+              <source srcset="/sites/default/files/styles/image_440_150/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=eeXVU-7P 1x, /sites/default/files/styles/image_440_150_2x/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=IVaCVIse 2x" media="screen and (min-width: 1024px)" type="image/webp" width="440" height="150"/>
+              <source srcset="/sites/default/files/styles/image_600_185/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=dC4-U9E2 1x, /sites/default/files/styles/image_600_185_2x/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=J_G1pUxU 2x" media="screen and (min-width: 480px)" type="image/webp" width="600" height="185"/>
+                  <img loading="lazy" width="600" height="185" src="/sites/default/files/styles/image_600_185/public/blog-banners/cybersecurity-digital-risk-landscape-blog-banner.jpg.webp?itok=dC4-U9E2" alt="Abstract digital landscape representing connected data, cybersecurity, and evolving technology risks." />
+
+  </picture>
+
+
+</div>
+      <div class="blog-teaser__content">
+                            <div class="blog-teaser__source blog-teaser__source-author">
+                          <span class="blog-teaser__date">  <time datetime="2026-09-22T18:30:16Z">September 22, 2026</time>
+
+</span>
+                                      <span class="blog-teaser__author">      Sumit Dhawan
+  </span>
+                      </div>
+                <h3 class="blog-teaser__title">In Cybersecurity, Behavior is a Signal. Intent is the Full Story. </h3>
+      </div>
+      </a>
+  
+</div>
+
+
+
+
+
+  
+<div class="node--type--blog-post node--view-mode--teaser blog-teaser__item col-12 col-lg-6 col-xl-3">
+  
+          
+        
+      
+  <a class="blog-teaser__link _legacy_element _link"  class=""  href="/us/blog/threat-insight/once-bluemoon-multiple-state-aligned-threat-actors-rapidly-adopt-novel-exploit">
+      <div class="blog-teaser__image">      <picture>
+                  <source srcset="/sites/default/files/styles/image_600_185/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=XmKkxP6d 1x, /sites/default/files/styles/image_600_185_2x/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=VMCSJQ_j 2x" media="screen and (min-width: 1440px)" type="image/webp" width="600" height="185"/>
+              <source srcset="/sites/default/files/styles/image_440_150/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=3QcEp7gj 1x, /sites/default/files/styles/image_440_150_2x/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=_hbSnyzf 2x" media="screen and (min-width: 1024px)" type="image/webp" width="440" height="150"/>
+              <source srcset="/sites/default/files/styles/image_600_185/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=XmKkxP6d 1x, /sites/default/files/styles/image_600_185_2x/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=VMCSJQ_j 2x" media="screen and (min-width: 480px)" type="image/webp" width="600" height="185"/>
+                  <img loading="lazy" width="600" height="185" src="/sites/default/files/styles/image_600_185/public/blog-banners/pfpt-us-europe-connect.jpg.webp?itok=XmKkxP6d" alt="Europe connect" />
+
+  </picture>
+
+
+</div>
+      <div class="blog-teaser__content">
+                            <div class="blog-teaser__source blog-teaser__source-author">
+                          <span class="blog-teaser__date">  <time datetime="2026-09-09T15:00:00Z">September 09, 2026</time>
+
+</span>
+                                      <span class="blog-teaser__author">      By Mark Kelly, Greg Lesnewich, Konstantin Klinger, Saher Naumaan, Julia Paluch, David Galazin, Stuart Del Caliz, and the Proofpoint Threat Research Team 
+  </span>
+                      </div>
+                <h3 class="blog-teaser__title">Once in a BlueMoon: Multiple State-Aligned Threat Actors Rapidly Adopt Novel Exploit Chain Using Chrome and Windows Zero-Days </h3>
+      </div>
+      </a>
+  
+</div>
+
+
+
+
+
+  
+<div class="node--type--blog-post node--view-mode--teaser blog-teaser__item col-12 col-lg-6 col-xl-3">
+  
+          
+        
+      
+  <a class="blog-teaser__link _legacy_element _link"  class=""  href="/us/blog/corporate-news/proofpoint-introduces-soc-analyst-agent-powered-openai-daybreak-models-through">
+      <div class="blog-teaser__image">      <picture>
+                  <source srcset="/sites/default/files/styles/image_600_185/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=fb4txt86 1x, /sites/default/files/styles/image_600_185_2x/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=wgxzCzih 2x" media="screen and (min-width: 1440px)" type="image/webp" width="600" height="185"/>
+              <source srcset="/sites/default/files/styles/image_440_150/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=adLHC3J8 1x, /sites/default/files/styles/image_440_150_2x/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=T6bvYu_a 2x" media="screen and (min-width: 1024px)" type="image/webp" width="440" height="150"/>
+              <source srcset="/sites/default/files/styles/image_600_185/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=fb4txt86 1x, /sites/default/files/styles/image_600_185_2x/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=wgxzCzih 2x" media="screen and (min-width: 480px)" type="image/webp" width="600" height="185"/>
+                  <img loading="lazy" width="600" height="185" src="/sites/default/files/styles/image_600_185/public/pr-banners/PressReleaseBanner_820_348_OpenAI-Daybreak.jpg.webp?itok=fb4txt86" alt="PressReleaseBanner_820_348_OpenAI-Daybreak" />
+
+  </picture>
+
+
+</div>
+      <div class="blog-teaser__content">
+                            <div class="blog-teaser__source blog-teaser__source-author">
+                          <span class="blog-teaser__date">  <time datetime="2026-09-03T13:00:00Z">September 03, 2026</time>
+
+</span>
+                                      <span class="blog-teaser__author">      Daniel Rapp, Kevin Epstein, Duane Kuroda
+  </span>
+                      </div>
+                <h3 class="blog-teaser__title">Proofpoint Introduces SOC Analyst Agent, Powered by OpenAI Daybreak Models Through Daybreak Defense Network</h3>
+      </div>
+      </a>
+  
+</div>
+
+
+
+
+
+  
+<div class="node--type--blog-post node--view-mode--teaser blog-teaser__item col-12 col-lg-6 col-xl-3">
+  
+          
+        
+      
+  <a class="blog-teaser__link _legacy_element _link"  class=""  href="/us/blog/ai-security/collective-cyber-defense-frontier-labs">
+      <div class="blog-teaser__image">      <picture>
+                  <source srcset="/sites/default/files/styles/image_600_185/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=Owv4-qc6 1x, /sites/default/files/styles/image_600_185_2x/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=P8isS8A- 2x" media="screen and (min-width: 1440px)" type="image/webp" width="600" height="185"/>
+              <source srcset="/sites/default/files/styles/image_440_150/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=yjKSs84C 1x, /sites/default/files/styles/image_440_150_2x/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=LF1tpnck 2x" media="screen and (min-width: 1024px)" type="image/webp" width="440" height="150"/>
+              <source srcset="/sites/default/files/styles/image_600_185/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=Owv4-qc6 1x, /sites/default/files/styles/image_600_185_2x/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=P8isS8A- 2x" media="screen and (min-width: 480px)" type="image/webp" width="600" height="185"/>
+                  <img loading="lazy" width="600" height="185" src="/sites/default/files/styles/image_600_185/public/blog-banners/proofpoint-signing-collective-cyber-defense-blog.jpg.webp?itok=Owv4-qc6" alt="proofpoint-signing-collective-cyber-defense-blog" />
+
+  </picture>
+
+
+</div>
+      <div class="blog-teaser__content">
+                            <div class="blog-teaser__source blog-teaser__source-author">
+                          <span class="blog-teaser__date">  <time datetime="2026-09-03T13:20:58Z">September 03, 2026</time>
+
+</span>
+                                      <span class="blog-teaser__author">      Ryan Kalember
+  </span>
+                      </div>
+                <h3 class="blog-teaser__title">Why Proofpoint Is Signing On to Collective Cyber Defense with Frontier Labs</h3>
+      </div>
+      </a>
+  
+</div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+
+    
+
+  
+  
+
+  
+  
+</div>
+</div>
+
+  </div>
+<div>
+  
+    
+      
+
+
+
+
+  
+        
+<div class="subscribe-block blog-subscribe _legacy_blocks _subscribe-block subscribe-block--black blog-subscribe--black v3-dark-bg-only" data-animate="true">
+  <div class="subscribe-block__inner blog-subscribe__inner">
+    <div class="subscribe-block__copy">
+      
+
+      
+<h3 class="subscribe-block__heading">
+      Subscribe to the Proofpoint Blog
+  </h3>
+
+          </div>
+    <div class="subscribe-block__form">
+        <div class="mk-form">
+  <div class="mk-form__form-container _legacy_element _marketo_form">
+    <script type="IN/Form2"
+      data-data-form="mktoForm_19277"
+      data-field-firstname="FirstName"
+      data-field-lastname="LastName"
+      data-field-email="Email"
+      data-field-company="Company"
+      data-field-title="Title"
+      data-field-state="State"
+      data-field-country="Country"
+    ></script>
+    <form
+      id="mktoForm_19277"
+      data-mkto-id="19277"
+      data-mkto-base="//go.proofpoint.com"
+      data-munchkin-id="309-RHV-619"
+      data-submit-text=""
+      data-redirect-link=""
+      data-prefill=""
+      data-event-label=""
+      data-lang-code="us"
+      data-validate-email="1"
+      data-allow-personal-email-amer="false"
+      class="mk-form__form marketo-form-block__form"
+    ></form>
+  </div>
+</div>
+
+  
+
+
+    </div>
+  </div>
+</div>
+
+
+
+  </div>
+</div>
+
+
+  </main>
+
+      
+
+
+
+<footer class="veridianx-footer veridianx-footer--us">
+  <div class="container">
+    <div class="veridianx-footer__inner">
+              <nav class="veridianx-footer__nav" aria-label="Footer navigation">
+                                                        <div class="order-1 veridianx-footer__group">
+                                                              <section class="veridianx-footer__section" data-footer-section>
+                  <h2 class="veridianx-footer__heading">
+                    <span class="veridianx-footer__heading-link">Products</span>
+                    <button class="veridianx-footer__toggle" type="button" aria-label="Toggle Products footer links" aria-expanded="false" aria-controls="veridianx-footer-1-1" data-footer-toggle>
+                      <span class="veridianx-footer__toggle-icon" aria-hidden="true"></span>
+                    </button>
+                  </h2>
+
+                  <div class="veridianx-footer__section-body" id="veridianx-footer-1-1">
+                    
+                    <ul class="veridianx-footer__list">
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/platform">
+                            Platform Overview
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/products/collaboration-security-prime">
+                            Collaboration Security
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/products/data-security-governance">
+                            Data Security and Governance
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/platform/ai-security">
+                            AI Security
+                          </a>
+                        </li>
+                                          </ul>
+                  </div>
+                </section>
+                                                              <section class="veridianx-footer__section" data-footer-section>
+                  <h2 class="veridianx-footer__heading">
+                    <span class="veridianx-footer__heading-link">Partners</span>
+                    <button class="veridianx-footer__toggle" type="button" aria-label="Toggle Partners footer links" aria-expanded="false" aria-controls="veridianx-footer-1-2" data-footer-toggle>
+                      <span class="veridianx-footer__toggle-icon" aria-hidden="true"></span>
+                    </button>
+                  </h2>
+
+                  <div class="veridianx-footer__section-body" id="veridianx-footer-1-2">
+                    
+                    <ul class="veridianx-footer__list">
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/channel-partners-and-distributors">
+                            Channel Partners and Distributors
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/partners/msp">
+                            MSP Partners
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/partners/technology-alliance-partners">
+                            Technology and Alliance Partners
+                          </a>
+                        </li>
+                                          </ul>
+                  </div>
+                </section>
+                          </div>
+                                              <div class="order-1 order-md-3 order-xl-1 veridianx-footer__group">
+                                                              <section class="veridianx-footer__section" data-footer-section>
+                  <h2 class="veridianx-footer__heading">
+                    <span class="veridianx-footer__heading-link">Get Support</span>
+                    <button class="veridianx-footer__toggle" type="button" aria-label="Toggle Get Support footer links" aria-expanded="false" aria-controls="veridianx-footer-2-1" data-footer-toggle>
+                      <span class="veridianx-footer__toggle-icon" aria-hidden="true"></span>
+                    </button>
+                  </h2>
+
+                  <div class="veridianx-footer__section-body" id="veridianx-footer-2-1">
+                    
+                    <ul class="veridianx-footer__list">
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="https://proofpoint.my.site.com/community/s/" target="_blank" rel="noopener">
+                            Product Support Login
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/support-services">
+                            Support Services
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/postmaster">
+                            IP Address Blocked?
+                          </a>
+                        </li>
+                                          </ul>
+                  </div>
+                </section>
+                          </div>
+                                              <div class="order-1 order-md-2 order-xl-1 veridianx-footer__group">
+                                                              <section class="veridianx-footer__section" data-footer-section>
+                  <h2 class="veridianx-footer__heading">
+                    <span class="veridianx-footer__heading-link">More</span>
+                    <button class="veridianx-footer__toggle" type="button" aria-label="Toggle More footer links" aria-expanded="false" aria-controls="veridianx-footer-3-1" data-footer-toggle>
+                      <span class="veridianx-footer__toggle-icon" aria-hidden="true"></span>
+                    </button>
+                  </h2>
+
+                  <div class="veridianx-footer__section-body" id="veridianx-footer-3-1">
+                    
+                    <ul class="veridianx-footer__list">
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/company/about">
+                            About Proofpoint
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/why-proofpoint">
+                            Why Proofpoint
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/products/how-to-buy/collaboration-security">
+                            How to Buy
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/company/careers">
+                            Careers
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/company/leadership">
+                            Leadership Team
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/newsroom">
+                            News Center
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/legal/trust">
+                            AI, Privacy, and Trust
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="https://www.proofpoint-total-protection.com/" target="_blank" rel="noopener">
+                            Hornetsecurity
+                          </a>
+                        </li>
+                                          </ul>
+                  </div>
+                </section>
+                          </div>
+                                              <div class="order-1 order-md-4 order-xl-1 veridianx-footer__group">
+                                                              <section class="veridianx-footer__section" data-footer-section>
+                  <h2 class="veridianx-footer__heading">
+                    <span class="veridianx-footer__heading-link">Connect with Us</span>
+                    <button class="veridianx-footer__toggle" type="button" aria-label="Toggle Connect with Us footer links" aria-expanded="false" aria-controls="veridianx-footer-4-1" data-footer-toggle>
+                      <span class="veridianx-footer__toggle-icon" aria-hidden="true"></span>
+                    </button>
+                  </h2>
+
+                  <div class="veridianx-footer__section-body" id="veridianx-footer-4-1">
+                                            <ul class="veridianx-footer__social">
+          <li>
+        <a class="veridianx-footer__social-link veridianx-footer__social-link--facebook" href="https://www.facebook.com/proofpoint" target="_blank" rel="noopener">
+          <span class="visually-hidden">Facebook</span>
+        </a>
+      </li>
+          <li>
+        <a class="veridianx-footer__social-link veridianx-footer__social-link--x" href="https://x.com/proofpoint" target="_blank" rel="noopener">
+          <span class="visually-hidden">X</span>
+        </a>
+      </li>
+          <li>
+        <a class="veridianx-footer__social-link veridianx-footer__social-link--linkedin" href="https://www.linkedin.com/company/proofpoint" target="_blank" rel="noopener">
+          <span class="visually-hidden">LinkedIn</span>
+        </a>
+      </li>
+          <li>
+        <a class="veridianx-footer__social-link veridianx-footer__social-link--youtube" href="https://www.youtube.com/channel/UCIvtJgsrUzFo90NKeiVozhQ" target="_blank" rel="noopener">
+          <span class="visually-hidden">YouTube</span>
+        </a>
+      </li>
+          <li>
+        <a class="veridianx-footer__social-link veridianx-footer__social-link--instagram" href="https://www.instagram.com/proofpoint" target="_blank" rel="noopener">
+          <span class="visually-hidden">Instagram</span>
+        </a>
+      </li>
+      </ul>
+                    
+                    <ul class="veridianx-footer__list">
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="tel:+14085174710">
+                            +1 408 517 4710
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/events">
+                            Attend an Event
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/contact">
+                            Contact Us
+                          </a>
+                        </li>
+                                              <li class="veridianx-footer__item">
+                          <a class="veridianx-footer__link" href="/us/free-demo-request">
+                            Free Demo Request
+                          </a>
+                        </li>
+                                          </ul>
+                  </div>
+                </section>
+                          </div>
+                  </nav>
+      
+      <div class="veridianx-footer__bottom">
+        <a class="veridianx-footer__logo" href="/us">
+          <span class="visually-hidden">Proofpoint home</span>
+        </a>
+
+                  <ul class="veridianx-footer__legal">
+                          <li>
+                                  <a class="veridianx-footer__legal-link" href="/us/legal/license">
+                    Terms and Conditions
+                  </a>
+                              </li>
+                          <li>
+                                  <a class="veridianx-footer__legal-link" href="/us/legal/privacy-policy">
+                    Privacy Policy
+                  </a>
+                              </li>
+                          <li>
+                                  <a class="veridianx-footer__legal-link" href="/us/sitemap">
+                    Sitemap
+                  </a>
+                              </li>
+                          <li>
+                                  <button id="ot-sdk-btn" class="veridianx-footer__legal-link ot-sdk-show-settings" type="button">
+                    Cookie Settings
+                  </button>
+                              </li>
+                      </ul>
+        
+        <p class="veridianx-footer__copyright">
+          &copy; 2026. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+  
+  </div>
+
+    <script type="text/javascript">document.write(unescape("%3Cscript src='https://munchkin.marketo.net/munchkin.js' type='text/javascript'%3E%3C/script%3E")); </script> <script>Munchkin.init('309-RHV-619');</script><div class="element-invisible" style="clear:both;"><!-- Google Code for Remarketing Tag -->
+                <!--------------------------------------------------
+                Remarketing tags may not be associated with personally identifiable information or placed on pages related to sensitive categories. See more information and instructions on how to setup the tag on: http://google.com/ads/remarketingsetup
+                --------------------------------------------------->
+                <script type="text/javascript">
+                /* <![CDATA[ */
+                var google_conversion_id = 950296937;
+                var google_custom_params = window.google_tag_params;
+                var google_remarketing_only = true;
+                /* ]]> */
+                </script>
+                <script type="text/javascript" src="//www.googleadservices.com/pagead/conversion.js">
+                </script>
+                <noscript>
+                <div style="display:inline;">
+                <img height="1" width="1" style="border-style:none;" alt="" src="//googleads.g.doubleclick.net/pagead/viewthroughconversion/950296937/?value=0&amp;guid=ON&amp;script=0"/>
+                </div>
+                </noscript></div>
+    <div id="flyout-container"></div>
+    <script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/","pathPrefix":"us\/","currentPath":"blog\/10346","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en"},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"ajaxPageState":{"libraries":"eJxlkFFuAyEMRC-0FPWvt4kM67LWGoyMSZvbl02qLkl_kHhjjT1TQY0iow8saanzzzUEjdsr7KFFpYATV4Q1as-hnTCKTiOJJQA7ZMxYbBpLIonRfcoT3YYhlekexgTx5g5TF1v7Jzz8Z05lb25VqUzNTp5BdzQZCzW75xsrJHRGNs4ZSeN-Kn-ZX4UrKq0E5Xv4iaEutV7o_aN4hpL64beiYTS5K7-7fe4lbjuVgz069sBJmGAi3ejIUy-2jc68QSgQwlFKuzXD7AM0XK6EX83f37csa2f8Aek4sy4","theme":"particle","theme_token":null},"ajaxTrustedUrl":[],"vwo":{"id":1002484,"timeout_library":2500,"timeout_setting":2000,"usejquery":"false","testnull":null},"pp_i18n":{"language":"us"},"instantsearch":{"indexName":"content","path":"us\/search","appId":"UVWAXG6FKN","apiKey":"799411b73476846aa4902995845c8096","language":"en"},"node":{"contentType":"Blog post"},"blogSearchSettings":{"indexName":"blog","category":"10346"},"user":{"uid":0,"permissionsHash":"d2c690dc50aab9a747cb007581c42f03855e8fe2ed922e6706b178b00522f212"}}</script>
+<script src="/sites/default/files/js/js_gMtynKbFxywpe3cDoCuvTaVHwbLG-q0lEMoaXT7SC6k.js?scope=footer&amp;delta=0&amp;language=en&amp;theme=particle&amp;include=eJxNjFEOAjEIBS-0DfHP2xiK2OJSaFh6f7NGk_2cmZc3MVJIGciDt_mngbFzenl5jPI-tjkfcrsbKFpb2Lg8OZnS4yy_MYxl1Hex0x2MQR1Qm6vgxawU_f5l58GQWA1rFWsfXhg1KA"></script>
+<script src="/themes/custom/proofpoint/apps/drupal/../../dist/app-drupal/assets/js/app.js?q=kYA1SV1kYiw&amp;v=1"></script>
+<script src="//go.proofpoint.com/js/forms2/js/forms2.min.js"></script>
+<script src="/sites/default/files/js/js_BIPMdrdagH_dLbWU_9VXYtUHkfelWe3zlKlpNAg7rLs.js?scope=footer&amp;delta=3&amp;language=en&amp;theme=particle&amp;include=eJxNjFEOAjEIBS-0DfHP2xiK2OJSaFh6f7NGk_2cmZc3MVJIGciDt_mngbFzenl5jPI-tjkfcrsbKFpb2Lg8OZnS4yy_MYxl1Hex0x2MQR1Qm6vgxawU_f5l58GQWA1rFWsfXhg1KA"></script>
+<script src="https://geoip-js.com/js/apis/geoip2/v2.1/geoip2.js"></script>
+<script src="/sites/default/files/js/js_jVHTzI0xP2Y-MfM6hSvptIKsRsN5mspS0lShjNrgKgA.js?scope=footer&amp;delta=5&amp;language=en&amp;theme=particle&amp;include=eJxNjFEOAjEIBS-0DfHP2xiK2OJSaFh6f7NGk_2cmZc3MVJIGciDt_mngbFzenl5jPI-tjkfcrsbKFpb2Lg8OZnS4yy_MYxl1Hex0x2MQR1Qm6vgxawU_f5l58GQWA1rFWsfXhg1KA"></script>
+<script src="https://munchkin.marketo.net/munchkin.js"></script>
+<script src="/sites/default/files/js/js_HbgmepxbOfmSA09vGSLzxtxUIq6cLQ5E67P9ZeekdkU.js?scope=footer&amp;delta=7&amp;language=en&amp;theme=particle&amp;include=eJxNjFEOAjEIBS-0DfHP2xiK2OJSaFh6f7NGk_2cmZc3MVJIGciDt_mngbFzenl5jPI-tjkfcrsbKFpb2Lg8OZnS4yy_MYxl1Hex0x2MQR1Qm6vgxawU_f5l58GQWA1rFWsfXhg1KA"></script>
+
+  </body>
+</html>
