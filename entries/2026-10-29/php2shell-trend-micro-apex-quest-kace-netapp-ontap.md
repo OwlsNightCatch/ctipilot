@@ -8,7 +8,7 @@ summary: >
   are affected, with SMA 15.0 CU5 and 15.1 CU2 and the SDA 9.3 hotfix out and advice to block ports 80, 443 and 52230 until applied; and NetApp's advisory lists ONTAP 9 as affected only by CVE-2026-109618, with attacker access as the
   www user restricted to the PHP jail and hotfix builds from 9.12.1P20HF1 to 9.19.1P4. NetApp says it is aware of public discussion of the vulnerability and none of the three vendors reports an exploited case in what was read, although CISA lists both flaws as exploited.
 discovered_at: "2026-10-29T04:50:00Z"
-updated_at: "2026-11-03T03:47:17Z"
+updated_at: "2026-11-08T14:02:15Z"
 event_date: "2026-10-28"
 run_id: 2026-10-29T0255Z-intel
 priority: notable
@@ -28,7 +28,7 @@ cves:
     auth: pre-auth
     status: [cisa-kev, patch-available]
     affected: "Trend Micro Apex Central, Apex One on-premises server and Mobile Security for Enterprise (versions not given); Quest KACE SMA and SDA, all versions; NetApp ONTAP 9 (releases not enumerated)"
-    fixed: "Trend Micro: none yet for Apex Central and Apex One server, critical patches due 2026-11-11, and Mobile Security for Enterprise due 2026-11-17; Deep Discovery Inspector and Email Inspector critical patches listed as of 2026-10-30; Quest KACE SMA 15.0 CU5 (15.0.378) and 15.1 CU2 (15.1.177), SDA 9.3 hotfix 9.3.313 (9.3.312 where already installed); NetApp ONTAP 9.12.1P20HF1, 9.13.1P21HF1, 9.14.1P18HF1, 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.18.1P8HF1, 9.19.1P3HF1 and 9.19.1P4"
+    fixed: "Trend Micro: none yet for Apex Central and Apex One server, critical patches due 2026-11-11, and Mobile Security for Enterprise due 2026-11-17; Deep Discovery Inspector and Email Inspector critical patches listed as of 2026-10-30; Quest KACE SMA 15.0 CU5 (15.0.378) and 15.1 CU2 (15.1.177), SDA 9.3 hotfix 9.3.313 (9.3.312 where already installed); NetApp ONTAP 9.12.1P20HF1, 9.13.1P21HF1, 9.14.1P18HF1, 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.17.1P12, 9.18.1P8HF1, 9.19.1P3HF1 and 9.19.1P4"
   - id: CVE-2026-109619
     cvss: "9.2 (NetApp, CVSS 4.0)"
     epss: null
@@ -78,6 +78,10 @@ sources:
   - url: "https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021"
     publisher: "NetApp (NTAP-20261021-0021, advisory data, revision 11.0)"
     date: "2026-11-03"
+    role: primary
+  - url: "https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021"
+    publisher: "NetApp (NTAP-20261021-0021, advisory data, revision 12.0, final)"
+    date: "2026-11-04"
     role: primary
   - url: "https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities"
     publisher: "NetApp Knowledge Base"
@@ -151,6 +155,13 @@ updates:
       TWS Authentication Agent impacted with a mitigation and no patch date, and NetApp's revision 11.0
       adds ONTAP 9 hotfix builds 9.12.1P20HF1 and 9.13.1P21HF1.
     fields: [sources, body, summary, cves, sourcing_note]
+  - at: "2026-11-08T14:02:15Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: update
+    summary: >
+      NetApp's advisory reached its final revision, 12.0, on 2026-11-04 and adds ONTAP 9.17.1P12 to the
+      fixed builds.
+    fields: [body, cves, sources]
 migrated_from: null
 ---
 
@@ -158,7 +169,7 @@ Trend Micro's customer advisory KA-0024802, updated 2026-11-02, lists Apex Centr
 
 Quest's knowledge-base article says all versions of the KACE Systems Management Appliance (SMA) and Systems Deployment Appliance (SDA) are affected and that CVE-2026-115560 does not affect them; KACE SMA 15.0 CU5 (15.0.378) and 15.1 CU2 (15.1.177) with PHP 8.4.27 were published on 2026-10-23, the cumulative updates 15.0 Patch 4 and 15.1 Patch 1 do not contain the fix, and the SDA 9.3 hotfix 9.3.312 with PHP 8.3.36 followed ([Quest Software, 2026-10-29](https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell)); hotfix 9.3.313 of 2026-10-29 also covers systems on hotfix versions 9.3.305-9.3.111 and on GA version 9.3.304 ([Quest Software, 2026-10-29](https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell)). Until an appliance is updated Quest says to block all public internet access and, because a potentially exploitable communication path remains after the agent tunnel on port 52230 is established, to block inbound web traffic including ports 80, 443 and 52230 ([Quest Software, 2026-10-29](https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell)).
 
-NetApp's advisory lists ONTAP 9 as affected only by CVE-2026-109618, scored CVSS 4.0 9.2, where an unauthenticated attacker could potentially gain access as the www user but would be restricted to the PHP jail, and lists the hotfix builds 9.12.1P20HF1 and 9.13.1P21HF1 (added 2026-11-03), 9.14.1P18HF1, 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.18.1P8HF1, 9.19.1P3HF1 and 9.19.1P4 ([NetApp, 2026-11-03](https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021)). NetApp's knowledge-base article names all ONTAP web services as affected, System Manager, the SPI web portal, the REST API, ZAPI and HTTP and HTTPS access, and recommends upgrading and then undoing any workaround ([NetApp Knowledge Base, 2026-10-26](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities)). NetApp says it is aware of public discussion of the vulnerability ([NetApp, 2026-10-21](https://security.netapp.com/advisory/NTAP-20261021-0021)). CISA lists both PHP flaws as exploited since 2026-10-26, although none of the three vendors reports an exploited case ([CISA KEV, 2026-10-28](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)).
+NetApp's advisory lists ONTAP 9 as affected only by CVE-2026-109618, scored CVSS 4.0 9.2, where an unauthenticated attacker could potentially gain access as the www user but would be restricted to the PHP jail, and lists the hotfix builds 9.12.1P20HF1 and 9.13.1P21HF1 (added 2026-11-03), 9.14.1P18HF1, 9.15.1P20HF1, 9.16.1P16HF1, 9.17.1P11HF1, 9.17.1P12 (added 2026-11-04), 9.18.1P8HF1, 9.19.1P3HF1 and 9.19.1P4 ([NetApp, 2026-11-04](https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021)). NetApp's knowledge-base article names all ONTAP web services as affected, System Manager, the SPI web portal, the REST API, ZAPI and HTTP and HTTPS access, and recommends upgrading and then undoing any workaround ([NetApp Knowledge Base, 2026-10-26](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities)). NetApp says it is aware of public discussion of the vulnerability ([NetApp, 2026-10-21](https://security.netapp.com/advisory/NTAP-20261021-0021)). CISA lists both PHP flaws as exploited since 2026-10-26, although none of the three vendors reports an exploited case ([CISA KEV, 2026-10-28](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)).
 
 **Exposure:** a Trend Micro Apex Central, Apex One or Mobile Security for Enterprise server whose console or web endpoints a hostile network can reach; any KACE SMA or SDA, whose web ports and agent port 52230 are named; any ONTAP 9 cluster whose web services are reachable and that runs a release other than the fixed builds ([Trend Micro, 2026-11-02](https://success.trendmicro.com/en-US/solution/KA-0024802); [Quest Software, 2026-10-29](https://support.quest.com/kace-systems-management-appliance/kb/4385046/quest-kace-response-to-cve-2026-109618-and-cve-2026-109619-php2shell); [NetApp Knowledge Base, 2026-10-26](https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/How_to_apply_ONTAP_workarounds_for_PHP2SHELL_vulnerabilities)).
 
@@ -173,3 +184,7 @@ Trend Micro's customer advisory KA-0024802 now reads last updated 2026-10-30, wi
 ## Update — 2026-11-03T03:47:17Z
 
 Trend Micro's status table, last updated 2026-11-02, shows Trend Micro Web Security in the cloud fixed on 2026-10-30 and lists the TWS Authentication Agent as impacted, with a mitigation and no patch date; the on-premises gateway and enforcement agent are not impacted ([Trend Micro, 2026-11-02](https://success.trendmicro.com/en-US/solution/KA-0024802)). NetApp's revision 11.0 of 2026-11-03 adds the ONTAP 9 hotfix builds 9.12.1P20HF1 and 9.13.1P21HF1 ([NetApp, 2026-11-03](https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021)).
+
+## Update — 2026-11-08T14:02:15Z
+
+NetApp's revision 12.0 of 2026-11-04 adds ONTAP 9.17.1P12 to the fixed builds and gives the advisory final status ([NetApp, 2026-11-04](https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021)).

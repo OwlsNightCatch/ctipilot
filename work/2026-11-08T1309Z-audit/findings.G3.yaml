@@ -1,0 +1,303 @@
+# work/2026-11-08T1309Z-audit/findings.G3.yaml
+domain: G3
+run_id: 2026-11-08T1309Z-audit
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-08T13:12:24Z
+ended_at: 2026-11-08T13:32:31Z
+duration_seconds: 1207
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 10
+  bridge_fetches: 95
+window: "2026-11-01T13:12Z -> 2026-11-08T13:09Z (window_hours 168; every record lookback_hours 168)"
+sweep_method: >
+  Every RSS record's feed was pulled at depth 10-60 items and checked against the window by
+  publication date (feed depth reached back past 2026-11-01 for every feed except crowdstrike, whose
+  10-item feed starts 2026-11-03 and was cross-checked against its category page); listing-only records
+  (msft-ti, symantec, lumen, semperis, team-cymru, vulncheck, gambit, novee, swarmcha, nict, csa-labs,
+  previdian) were read through their listing and drilled for dates. Aggregator/news records
+  (darkreading, infosec-magazine, helpnetsecurity, technadu, cyberscoop, krebs) were scanned as leads only.
+items:
+  # ----------------------------------------------------------------------------------------------
+  - title: "ANNUAL REPORT - Elastic Security Labs 'threats, etc' quarterly report, November 2026 (Elastic Threat Command, April to September 2026): signed AI assistants as execution parents, RMM agents as the payload, ClickFix infostealers, ROPC and device-code identity abuse"
+    flag: "ANNUAL REPORT - Elastic Security Labs threats, etc quarterly report (November 2026 edition)"
+    suggested_kind: annual-report
+    sources:
+      - { url: "https://www.elastic.co/security-labs/reports/threats-etc-report-november-2026-trouble-with-trust", publisher: "Elastic Security Labs", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.elastic.co/pdf/elastic-threats-etc-elastic-security-threat-command-nov-2026.pdf", publisher: "Elastic Security Threat Command (full PDF report, 34 pages)", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.elastic.co/resources/security/report/threat-command-cybersecurity-report", publisher: "Elastic (report landing page with PDF link)", date: "2026-11-04", role: "corroborating" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs/rss/feed.xml (feed item 2026-11-04 'When trust becomes the payload: Inside the threats, etc quarterly report') -> extract of https://www.elastic.co/security-labs/reports/threats-etc-report-november-2026-trouble-with-trust (summary page; the 2026-11-0x fires dropped it as 'landing page only readable') -> raw url --direct of that page surfaced the link to https://www.elastic.co/resources/security/report/threat-command-cybersecurity-report -> extract of that page surfaced https://www.elastic.co/pdf/elastic-threats-etc-elastic-security-threat-command-nov-2026.pdf -> primary: tools/fetch_source.py pdf of the full report (47,565 characters decoded, per-font ToUnicode, 34 pages)"
+    summary: |
+      Elastic Threat Command (Elastic Security Labs) published the November 2026 edition of its quarterly 'threats, etc' report, covering Elastic telemetry, confirmed customer intrusions and first-party research between 2026-04-04 and 2026-09-08. This is a first-hand telemetry report; the counts are Elastic observations and Elastic itself states they are not market share. Its six themes are all behaviour-level and detection-relevant. (1) Signed AI assistants as execution parents: Elastic confirmed a Windows intrusion on 2026-08-05 in which an operator drove Claude Code through its VS Code extension over RDP to stage tooling through a SOCKS5 tunnel (PowerShell children of claude.exe, repeated curl calls with --socks5-hostname to port 1080), a macOS case five days later in which the ChatGPT desktop application acted as a shell-command proxy for a compound zsh pipeline that ended in a login-keychain dump, and two macOS coding-agent cases started with permission-bypass flags that stood up Cloudflare quick tunnels and installed LaunchAgent persistence. (2) RMM as the payload: 23 confirmed findings between 2026-06-15 and 2026-08-12, ScreenConnect named most often and delivered from freshly registered domains; the SILENTCONNECT chain (CAPTCHA-gated 'e-invite' page, VBS from object storage, PowerShell that compiles C# at runtime, a CMSTPLUA COM UAC bypass, a Defender exclusion for .exe files, then a silent ScreenConnect MSI that beacons on TCP 8041); a trojanized RMM agent on a healthcare endpoint injecting into other processes with WriteProcessMemory to harvest browser credentials; ScreenConnect driving MSBuild.exe hollowing; and TOLLBOOTH (REF3927), where ViewState deserialization on an IIS server using leaked ASP.NET machine keys led to a Godzilla-fork web shell and, after account creation failed, GotoHTTP as fallback persistence over ports 80 and 443. (3) ClickFix-style paste-and-run as the dominant infostealer on-ramp (27 confirmed findings), with Elastic reporting an average of eight minutes from infostealer infection to the actor logging in with the same credentials, one healthcare case from lure to MSI delivery with DLL sideloading in roughly 16 seconds, and a macOS chain that validates the prompted password with dscl before it harvests browser keys and the keychain. (4) Identity: valid credentials over the ROPC grant through the Azure AD PowerShell client to Azure Resource Manager from anonymized hosting addresses, which Conditional Access never evaluates; a Kali365 device-code compromise through the Microsoft Authentication Broker that ended in a registered virtual device and a primary refresh token; and Tycoon 2FA relays obtaining a PRT within minutes. (5) Supply chain: the CHAINDROP worm (return of Shai-Hulud via the keyv maintainer, spreading only through npm tokens carrying bypass_2fa, resolving C2 from an Ethereum contract, with SessionStart and folderOpen hooks that execute on workspace open), a Contagious Interview lure hiding payload fragments in SVG flags, and PHANTOMPULSE resolving C2 from blockchain transaction inputs. (6) Exploitation: the host footprint of the wp2shell WordPress pre-auth RCE (writes under wp-content/upgrade and wp-content/uploads, a transient plugin directory, and an INTO OUTFILE web shell under wp-content/cache) and auditd-level detection of the Copy Fail and DirtyFrag page-cache privilege escalations (AF_ALG and splice sequences from non-root processes). Elastic's forecast is blockchain-resolved C2 becoming standard in commodity loaders, agentic applications becoming a routinely abused execution path, post-consent behaviour in identity, and paste-based lures spreading to new platforms.
+    region_nexus: "global vendor telemetry; healthcare, education and cloud-tenant victims named without country; no Swiss case. Transferable to any Microsoft 365 / Windows / macOS estate"
+    primary_sector_nexus: "indirect (healthcare and university endpoints, Entra ID tenants, WordPress and IIS servers are all common in cantonal and communal estates)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1219, T1204.004, T1078.004, T1528, T1098.005, T1195.002, T1059.001, T1059.002, T1555.001, T1555.003, T1055.012, T1574.001, T1685, T1190, T1505.003, T1068, T1572, T1548.002]
+    affected_products: ["ConnectWise ScreenConnect", "Microsoft Entra ID", "Microsoft Azure Resource Manager", "Claude Code", "ChatGPT desktop application", "npm", "WordPress", "Microsoft IIS"]
+    entity_keys: ["campaign:shai-hulud-chaindrop-2026-08", "campaign:contagious-interview", "tool:ottercookie", "tool:castlestealer", "tool:telepuz-maas-malware", "tool:artex"]
+    new_entities:
+      - { key: "report:elastic-threats-etc-2026-11", type: report, name: "Elastic threats, etc quarterly report, November 2026", aliases: ["threats, etc (Elastic Threat Command, November 2026)"], summary: "Elastic Threat Command quarterly report (published 2026-11-04) covering 2026-04-04 to 2026-09-08: signed AI assistants as execution parents, RMM agents as the payload, ClickFix infostealers, ROPC and device-code identity abuse, CHAINDROP and wp2shell host footprints (Elastic, 2026-11-04)." }
+      - { key: "campaign:tollbooth-ref3927", type: campaign, name: "TOLLBOOTH (REF3927)", aliases: ["REF3927"], summary: "Elastic designation for a Chinese-speaking actor's IIS intrusion through ViewState deserialization with leaked ASP.NET machine keys, a Godzilla-fork web shell and GotoHTTP as fallback persistence (Elastic threats, etc, November 2026)." }
+      - { key: "tool:godzilla-webshell", type: tool, name: "Godzilla web shell", aliases: ["Godzilla"], summary: "Chinese-language web shell family; Elastic reports a Godzilla-forked web shell deployed by REF3927 (TOLLBOOTH) after ViewState deserialization on IIS (Elastic threats, etc, 2026-11-04); the registry mentions Godzilla only inside another actor's summary, without its own key." }
+      - { key: "campaign:silentconnect-screenconnect-einvite", type: campaign, name: "SILENTCONNECT", aliases: [], summary: "Elastic name for a straight-to-RMM chain: a CAPTCHA-gated e-invitation page leading through VBS and runtime-compiled PowerShell to a silent ScreenConnect MSI (Elastic threats, etc, November 2026)." }
+    relation_suggestions:
+      - { subject: "campaign:tollbooth-ref3927", object: "tool:godzilla-webshell", basis: "Elastic: REF3927 deployed a Godzilla-forked web shell after ViewState deserialization on IIS (Elastic threats, etc, 2026-11-04)" }
+      - { subject: "report:elastic-threats-etc-2026-11", object: "campaign:shai-hulud-chaindrop-2026-08", basis: "the report documents the CHAINDROP worm and its defender takeaway (Elastic, 2026-11-04)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    update_target: null
+    prior_drop_note: "2026-11-0x intel fire dropped this as 'S3-6 Elastic threats etc report: landing page only readable, claims not verifiable'. The full PDF is public (landing page links https://www.elastic.co/pdf/elastic-threats-etc-elastic-security-threat-command-nov-2026.pdf) and was read in full here, so the verifiability objection no longer holds."
+    evidence:
+      - quote: "Out of 23 confirmed RMM abuse findings this quarter, ScreenConnect was the product named most often."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/reports/threats-etc-report-november-2026-trouble-with-trust"
+      - quote: "In some cases, the average time from an infostealer infection to the threat actor logging in via the same credentials is only eight minutes."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/reports/threats-etc-report-november-2026-trouble-with-trust"
+      - quote: "RMM abuse is an inventory problem before it is a detection problem"
+        attribution: "Elastic Security Threat Command"
+        source_url: "https://www.elastic.co/pdf/elastic-threats-etc-elastic-security-threat-command-nov-2026.pdf"
+      - quote: "Treat maintainer credentials as production credentials."
+        attribution: "Elastic Security Threat Command"
+        source_url: "https://www.elastic.co/pdf/elastic-threats-etc-elastic-security-threat-command-nov-2026.pdf"
+    extended_notes: |
+      Detection and triage concepts the report itself states (no rule code): (a) coding agents and desktop AI clients as parent processes -- hunt PowerShell, curl with --socks5-hostname, or `security dump-keychain` as children of claude.exe or the ChatGPT desktop app, and sessions started with permission-bypass flags that create Cloudflare quick tunnels and LaunchAgents; Elastic says the same primitive is often both normal product behaviour and confirmed theft, so the discriminator is the outcome (proxy tunnel, keychain read), not the parent. (b) RMM: inventory the agents the organization pays for; a ScreenConnect client beaconing to an unknown host on TCP 8041, an RMM parent hollowing MSBuild.exe or reading browser credential stores, or an RMM upload right after failed account creation on a server is not administrator activity; certificate revocation state discriminated the trojanized-agent case. (c) Paste-and-run: detect the shell one-liner spawned from a browser or Run-dialog context, and curl output piped to osascript; on macOS the password prompt plus `dscl` validation fires before collection, bulk file access after; rotation scope is the vault contents, not only the browser profile. (d) Identity: authentication protocol, result and 'all sign-ins succeeded' are queryable in any tenant (ROPC with the Azure AD PowerShell client, BAV2RPOC user agents, anonymized hosting-provider sources); alert on unmanaged device registration and PRT issuance; a first-party application identifier is not a trust signal; scoping legacy authentication removes the cheapest observed route. (e) Supply chain: revoke npm automation tokens carrying bypass_2fa, enforce 2FA, npm 12 blocks preinstall hooks by default per Elastic, audit repositories for 'chore: update config' commits by author 'claude', and snapshot .npmrc to catch removed install cooldowns. (f) wp2shell: missing wp2shell_* plugin directory does not clear a host (the PoC deletes it); INTO OUTFILE webshells land under wp-content/cache. Items in the report already covered in the store: CHAINDROP (campaign:shai-hulud-chaindrop-2026-08), Contagious Interview, Tycoon 2FA and Kali365 device-code, Copy Fail and DirtyFrag. Elastic's own caution applies: counts are findings, not victims, and the window ends 2026-09-08, so several items predate the report by months.
+    suggested_actions: []
+
+  # ----------------------------------------------------------------------------------------------
+  - title: "Anubis ransomware affiliate (Symantec: Hawkmoth) with a new custom Lindnor backdoor, 13 security-killer executables and five vulnerable drivers within an hour, and AnyDesk registered for Safe Mode with Networking, stopped before encryption (US organization, October 2026)"
+    suggested_kind: threat
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware", publisher: "Symantec Threat Hunter Team (Broadcom) / Carbon Black", date: "2026-11-05", role: "primary" }
+    discovery_trace: "first seen at: symantec-security-com, URL https://www.security.com/threat-intelligence (undated listing of five posts; the headline entry 'New Lindnor Backdoor and Glut of Security Killers Used in Ransomware Attack on U.S. Org') -> primary (no pivot needed): extract of https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware, date field 2026-11-05. The other four listed posts were drilled for dates and predate the window (2026-10-20 Swallowtail, 2026-10-21 Skynet LLMjacking, 2026-10-22 PHP2Shell, 2026-10-29 unauthorized AI relays)."
+    summary: |
+      Symantec reports an October 2026 intrusion at a US organization by attackers using the Anubis ransomware, which Symantec says is run by a group it tracks as Hawkmoth (a RaaS that emerged in December 2024 as a rebrand of Sphinx, so affiliates differ between attacks). The first indicator was a previously undocumented custom backdoor, Backdoor.Lindnor, found as a service on the only two Microsoft SQL Servers among the affected machines, masquerading as a Chrome component unpacker folder on one and as a VMware file on the other; it reports host and domain identity to a primary and a fallback C2 over port 443, and Symantec saw it on two further unrelated organizations without ransomware activity. Within roughly an hour the attackers dropped at least 13 executables to terminate security services plus five signed, publicly known vulnerable drivers (BYOVD); two of the tools masqueraded as Symantec software and take a switch to list and another to remove kernel callbacks through a loaded driver. They also installed AnyDesk, created a local user, and ran a tool that registers AnyDesk as a service under the SafeBoot Network registry key so remote access survives Safe Mode with Networking, when security software is not fully running. The encryption payload (extension .anubis, optional wiper mode) was blocked before it ran, and Symantec did not identify initial access. Symantec says custom backdoors are rare in ransomware cases and BYOVD is now a standard part of the RaaS playbook; Symantec says the group has claimed about 96 victims in 12 months, 52 percent of them in the US.
+    region_nexus: "United States victim; Anubis is global RaaS; no Swiss case"
+    primary_sector_nexus: "indirect (ransomware affiliate tradecraft transferable to any Windows estate with SQL Servers; no public-sector victim stated)"
+    sector: "unspecified (US organization)"
+    cves: []
+    techniques: [T1685, T1068, T1219, T1688, T1543.003, T1036.005, T1136.001, T1486, T1485]
+    affected_products: ["Microsoft SQL Server", "AnyDesk"]
+    entity_keys: ["actor:anubis-raas", "product:anydesk"]
+    new_entities:
+      - { key: "tool:lindnor-backdoor", type: tool, name: "Backdoor.Lindnor", aliases: ["Lindnor"], summary: "Custom backdoor Symantec found on two SQL Servers in an October 2026 Anubis ransomware intrusion, installed as a service masquerading as a Chrome component or VMware file, C2 over port 443 with a fallback (Symantec, 2026-11-05)." }
+      - { key: "actor:hawkmoth", type: actor, name: "Hawkmoth", aliases: [], summary: "Symantec's name for the group that develops and runs the Anubis RaaS (emerged December 2024 as a rebrand of Sphinx) (Symantec, 2026-11-05)." }
+    relation_suggestions:
+      - { subject: "actor:hawkmoth", object: "actor:anubis-raas", basis: "Symantec: the Anubis ransomware is developed by a group Symantec tracks as Hawkmoth (Symantec, 2026-11-05)" }
+      - { subject: "actor:anubis-raas", object: "tool:lindnor-backdoor", basis: "Symantec: attackers using the Anubis ransomware deployed the new Lindnor backdoor (Symantec, 2026-11-05)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Detection-relevant malware-family and BYOVD tradecraft (kernel-callback listing and removal tools, AnyDesk registered under SafeBoot\\Network) but one vendor's single case, a US victim, initial access unknown and the encryptor blocked; no constituency nexus beyond ransomware tradecraft transfer. The week's fires dropped comparable single-victim malware write-ups (NetamLoader, camera-management intrusion); main agent to decide."
+    evidence:
+      - quote: "Attackers using the Anubis ransomware targeted a U.S. organization in October 2026 using a new custom backdoor that Symantec has called Backdoor.Lindnor."
+        attribution: "Symantec"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+      - quote: "Within roughly an hour, the attackers dropped at least 13 executables to help terminate security services, along with five publicly known vulnerable drivers."
+        attribution: "Symantec"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+      - quote: "The attackers also installed the legitimate remote access tool AnyDesk and a separate tool to run it in Safe Mode, likely to maintain access when security software was not fully running."
+        attribution: "Symantec"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+      - quote: "We did not identify how the attackers gained initial access."
+        attribution: "Symantec"
+        source_url: "https://www.security.com/threat-intelligence/lindnor-new-backdoor-anubis-ransomware"
+    extended_notes: |
+      Detection concepts the source supports: (1) service-install and process-creation events for executables running from folders that mimic a Chrome component unpacker or a VMware directory on SQL Server hosts; (2) a burst of a dozen executables from one directory followed by driver loads (kernel driver-load telemetry, signed-but-vulnerable drivers on a block list) and kernel-callback enumeration switches; (3) registry modification under HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Network\<name> with value 'Service' for a remote-access product (Symantec shows the reg.exe form for AnyDesk) together with a new local account; benign lookalike: IT-managed RMM registered for Safe Mode by the organization's own deployment, so discriminate on the creating process, the account and the absence of a change ticket. Hardening: driver block lists (HVCI / vulnerable-driver blocklist) and application control on SQL Server hosts. IOCs deliberately omitted.
+
+  # ----------------------------------------------------------------------------------------------
+  - title: "CERT-In advisory CIAD-2026-0058 names the actor behind the ARTEX-family attacks on Indian BFSI entities 'CRAFTY FALCON' and lists its attack pattern (cloud management channels, internet-exposed non-production environments, IP allow-list bypass through shared fetcher pools, altered client packages)"
+    suggested_kind: threat
+    sources:
+      - { url: "https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIAD-2026-0058&pageid=PUBVLNOTES02", publisher: "CERT-In (Indian national CERT), advisory CIAD-2026-0058", date: "2026-11-04", role: "primary" }
+      - { url: "https://blog.gitguardian.com/the-agents-have-now-found-your-secrets-on-github-artex-is-abusing-public-secrets-right-now/", publisher: "GitGuardian (links the advisory)", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/ (research note 'Crafty Falcon: Weaponized Pentest Agents Hit the Financial Sector', 2026-11-05, a Cloud Security Alliance re-report used as a lead only) -> WebSearch (\"CERT-In advisory Crafty Falcon autonomous offensive AI framework financial sector November 2026\") -> pivot: GitGuardian, URL https://blog.gitguardian.com/the-agents-have-now-found-your-secrets-on-github-artex-is-abusing-public-secrets-right-now/ (links the advisory URL) -> primary: extract of https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIAD-2026-0058&pageid=PUBVLNOTES02"
+    summary: |
+      CERT-In's finance unit CSIRT-Fin issued advisory CIAD-2026-0058 on 2026-11-04 (severity Critical), an update to CIAD-2026-0046 of 2026-10-09, naming the actor behind a campaign against Indian banking, financial-services and insurance entities 'CRAFTY FALCON' and calling it active and escalating. CERT-In says it found the 'ARTEX' family, 'PentAGI', the 'Cairn' attack search engine and the 'CyberStrikeAI' framework used against NBFCs, digital-lending platforms, fintechs, payment aggregators and crypto exchanges, and that entities were re-attacked after incomplete remediation and at holidays and weekends. The advisory's attack pattern is concrete: cloud management and serverless services (AWS Systems Manager, Lambda) abused to run commands and deploy files; internet-exposed UAT, staging and test environments as entry points with movement to production over shared credentials, tokens or network paths; application packages reverse-engineered and API calls made from altered packages; IP allow-listing bypassed by sending traffic from whitelisted third-party fetcher IP pools; micro-value test transactions before large transfers; newly published file-upload and deserialization flaws exploited as soon as they are public, leading to web shells in PHP and Node.js applications; and many tailored scripts generated in rapid succession, which CERT-In calls consistent with AI-generated code. CERT-In names no victims, loss figures or nation-state; the CSA note and press coverage disagree on whether China is linked, so attribution is not established by the primary. The advisory adds a government-authority naming and a transferable attack pattern to the ARTEX entry; the victims are Indian, so the nexus to Swiss public bodies is the shared hardening levers, not the target set.
+    region_nexus: "India (BFSI); ARTEX-family tooling is globally exposed"
+    primary_sector_nexus: "indirect (payment and disbursement APIs, non-production environments and cloud management planes exist in cantonal and communal e-government estates)"
+    sector: "financial-services (India)"
+    cves: []
+    techniques: [T1190, T1078, T1505.003, T1651, T1648]
+    affected_products: ["AWS Systems Manager", "AWS Lambda"]
+    entity_keys: ["tool:artex"]
+    new_entities:
+      - { key: "actor:crafty-falcon", type: actor, name: "CRAFTY FALCON", aliases: [], summary: "CERT-In / CSIRT-Fin designation for an AI-assisted financial threat actor that used ARTEX, PentAGI, Cairn and CyberStrikeAI against Indian BFSI entities by invoking victims' own payment and disbursement APIs (CERT-In CIAD-2026-0058, 2026-11-04)." }
+    relation_suggestions:
+      - { subject: "actor:crafty-falcon", object: "tool:artex", basis: "CERT-In: analysis identified the use of the ARTEX family, PentAGI, Cairn and CyberStrikeAI against affected entities (CIAD-2026-0058, 2026-11-04)" }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    update_target: "2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    borderline: true
+    borderline_reason: "Authority primary (A) with a transferable attack pattern, but Indian BFSI victims only and the hardening advice is generic; the ARTEX entry currently carries no CERT-In or CRAFTY FALCON mention (grep of the entry returned 0). Delta for the entry: a national CERT's cluster name, the tool list and the non-production-environment / allow-list-bypass / cloud-management-channel pattern."
+    evidence:
+      - quote: "CSIRT-Fin continues to receive reports of successful attacks, including from NBFCs and fintech entities that had already received the earlier restricted (TLP:AMBER) advisories and had undertaken remediation."
+        attribution: "CERT-In"
+        source_url: "https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIAD-2026-0058&pageid=PUBVLNOTES02"
+      - quote: "Internet-exposed non-production environments (UAT/staging/testing) used as entry points, followed by movement to production environments using shared credentials, tokens or network paths."
+        attribution: "CERT-In"
+        source_url: "https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIAD-2026-0058&pageid=PUBVLNOTES02"
+      - quote: "IP allow-listing bypassed by originating traffic from whitelisted third-party fetcher IP pools"
+        attribution: "CERT-In"
+        source_url: "https://www.cert-in.org.in/s2cMainServlet?VLCODE=CIAD-2026-0058&pageid=PUBVLNOTES02"
+    extended_notes: |
+      Detection concept CERT-In states: central real-time alerting on cloud audit events for remote command execution, serverless function code updates and creation of roles, users or access keys; alert on any access from non-production systems to production systems, credentials or data; file-integrity monitoring on application directories made read-only to the runtime user. The full indicator set and detection rules are in restricted (TLP:AMBER) versions that were not read; do not infer IOCs.
+
+# ------------------------------------------------------------------------------------------------
+# Items judged out (documented for the audit): each carries the source's publication date.
+borderline_only:
+  - title: "Microsoft: What exploited vulnerabilities have in common (data-driven analysis)"
+    source: { url: "https://www.microsoft.com/en-us/security/blog/2026/11/02/exploited-vulnerabilities-common-data-driven-analysis-real-world-attacks/", publisher: "Microsoft Security Blog (standard source msft-ti)", date: "2026-11-02" }
+    borderline: true
+    borderline_reason: "Statistical prioritization essay (about 2,000 of roughly 383,000 CVEs exploited; takeover classes 78 percent of exploited; median Windows-server patch over a month, network appliances over a year; mean CVE-to-KEV 20 days in 2026, median 3). No actor, product or technique, no constituency decision beyond 'patch takeover classes first'."
+  - title: "Microsoft: Fake-download campaign uses trojanized Inno installers to deliver monetization payloads"
+    source: { url: "https://www.microsoft.com/en-us/security/blog/2026/11/03/fake-download-campaign-uses-trojanized-installers-deliver-monetization-payloads/", publisher: "Microsoft Security Blog (standard source msft-ti)", date: "2026-11-03" }
+    borderline: true
+    borderline_reason: "Consumer cracked-software lure delivering proxyware, BOINC compute enrolment and adware-style utilities; PUA-class monetization, no espionage or ransomware path, no constituency nexus."
+  - title: "Check Point Research: ChatGPT Lockdown Mode bypass (nested-iframe window.open escaping the HTML-preview sandbox)"
+    source: { url: "https://research.checkpoint.com/2026/chatgpt-lockdown-mode-bypass-phishing-malware-delivery-and-silent-data-exfiltration/", publisher: "Check Point Research (standard source checkpoint-research)", date: "2026-11-05" }
+    borderline: true
+    borderline_reason: "Replaces the written primary the 2026-11-0x fire lacked ('Calif.io Lockdown Mode bypass: video only'), but OpenAI says it fixed the flaw by removing the allow-popups permissions on 2026-09-18 and Check Point confirmed the technique no longer works; hosted SaaS, no customer action."
+  - title: "CrowdStrike: How adversaries are turning the vulnerability ecosystem against defenders (POC-to-exploitation timelines Jan to Jul 2026)"
+    source: { url: "https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/", publisher: "CrowdStrike Counter Adversary Operations (standard source crowdstrike)", date: "2026-11-05" }
+    borderline: true
+    borderline_reason: "Vendor weaponization-time statistics (median under a day from public POC to exploitation, fastest 35 minutes, 91 percent within 48 hours) and the cPanel CVE-2026-41940 retrospective of April; supports 'patch faster' but names no new exposure. Its category page shows the other two CrowdStrike reports (agentic AI campaigns, Legal Threat Landscape) carry page dates of 2026-10-28 and 2026-10-29, before the window."
+  - title: "Recorded Future Insikt Group: October 2026 CVE Landscape (monthly periodic report)"
+    flag: "ANNUAL REPORT - Recorded Future Insikt Group October 2026 CVE Landscape (monthly)"
+    source: { url: "https://www.recordedfuture.com/blog/october-2026-cve-landscape", publisher: "Recorded Future Insikt Group (standard source recordedfuture-insikt)", date: "2026-11-06" }
+    borderline: true
+    borderline_reason: "Monthly recap (82 high-impact CVEs, 36 from KEV, 37 RCE); every named exploitation thread is already in the store (PHP2Shell and the Fragnesia chain, Longlegs/Storm-2603 SharePoint, PAN-OS CVE-2026-0257, CL-STA-0954 PEERSTITCH FortiManager and FortiOS, Integrity Technology). Only ClingSTUN, CyberXero and the Potassium Mirai-derived botnet are not tracked, and RF gives no detail on them in the public post."
+  - title: "Sophos: State of Ransomware in Financial Services 2026 (sixth annual survey, 177 respondents)"
+    flag: "ANNUAL REPORT - Sophos State of Ransomware in Financial Services 2026"
+    source: { url: "https://www.sophos.com/en-us/blog/the-state-of-ransomware-in-financial-services-2026", publisher: "Sophos (standard source sophos-xops)", date: "2026-11-05" }
+    borderline: true
+    borderline_reason: "Periodic survey for a sector outside the constituency; headline numbers (85 percent identity-based vectors vs 79 percent cross-sector, exploited vulnerabilities 12 percent vs 40 percent last year, 44 percent known security gap) are survey statistics, not defender-actionable behaviour. Survey ran January to March 2026."
+  - title: "ESET Research: SlippyNunchucks DNS hijacking of Sogou Input Method (DarkVigil/FDMTP implant), CVE-2026-120422"
+    source: { url: "https://www.welivesecurity.com/en/eset-research/slippynunchucks-hijacks-sogou-input-methods-brand-promotion-mechanism-to-distribute-malware/", publisher: "ESET Research (standard source eset)", date: "2026-11-04" }
+    borderline: true
+    borderline_reason: "China-aligned APT targeting Chinese-speaking users and organizations in Hong Kong, Thailand, Japan, Vietnam, Oman and Sri Lanka, occasionally individuals in Germany, Austria and the UK; fixed in Sogou Input Method 16.10 on 2026-10-30; the DNS-manipulation point is unknown; no constituency nexus."
+  - title: "Trend Micro Research: Matryoshka returns, targeting US midterm candidates with AI-generated fake claims"
+    source: { url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/matryoshka-targets-us-midterm-elections-disinformation", publisher: "TrendAI / Trend Micro Research (standard source trendmicro-research)", date: "2026-11-02" }
+    borderline: true
+    borderline_reason: "Russia-aligned influence operation (Matryoshka / Operation Overload / Storm-1679) against US midterm candidates, observed 2026-07-06 to 2026-10-07; disposable social-media accounts and emails to newsrooms, no intrusion technique and no Swiss target."
+  - title: "Censys: ARTEX exposure telemetry (1,465 exposed consoles, about 815 distinct deployments) and open directories on ARTEX hosts"
+    source: { url: "https://censys.com/blog/artex-agentic-asbestos/", publisher: "Censys (source censys-blog, not in this slice)", date: "2026-11-05" }
+    update_target: "2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    borderline: true
+    borderline_reason: "Attacker-infrastructure exposure counts (155 hosts, 10.6 percent, also run other C2 or attack frameworks; 32 open directories) that the ARTEX entry's Check Point exposure figures already stand in for; changes no defender action."
+  - title: "ESET Research: Gorbag (Russia-aligned) harvesting intelligence from Ukraine"
+    source: { url: "https://www.welivesecurity.com/en/eset-research/gorbag-orcs-border-harvesting-intelligence-ukraine/", publisher: "ESET Research (standard source eset)", date: "2026-11-03" }
+    borderline: true
+    borderline_reason: "Already dropped by the 2026-11-0x fires (Ukraine-only victims, WinRAR CVE-2025-8088 already covered); listed so the audit sees the sweep reached it."
+
+covered:
+  - { source: "unit42 https://unit42.paloaltonetworks.com/europes-refrigeration-systems-attacks/ (2026-11-06) and sentinellabs https://www.sentinelone.com/labs/defrost-and-disrupt-an-assessment-of-europe-s-refrigeration-attacks/ (2026-11-03)", entry: "2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack", note: "both URLs already in the entry's sources" }
+  - { source: "checkpoint-research https://research.checkpoint.com/2026/hacking-on-autopilot-inside-artex-cybercrime-campaigns/ (2026-11-05)", entry: "2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse", note: "cited three times in the entry" }
+  - { source: "gitguardian https://blog.gitguardian.com/inside-the-litellm-hack/ (2026-11-04)", entry: "2026-10-22/litellm-1-107-0-pypi-docker-credential-stealer-lookalike", note: "the October 21 compromise and its root cause (key committed 2026-05-27 and never revoked) are in the entry; the post's March-archive recap (Hudson Rock / CloudSEK counts, 2026-08) is not a new development" }
+  - { source: "gitguardian https://blog.gitguardian.com/the-agents-have-now-found-your-secrets-on-github-artex-is-abusing-public-secrets-right-now/ (2026-11-06)", entry: "2026-11-06/exposed-app-credentials-entra-signins-msp-clients-artex", note: "re-report of Microsoft's 2026-11-05 research" }
+  - { source: "msft-secblog: ARTEX abuse expands as cybercriminals target financial sector (2026-11-06, Storm-3358)", entry: "2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse", note: "folded in by the 2026-11-07 run (actor:storm-3358 registered)" }
+  - { source: "msft-secblog: Email threat landscape Q3 2026 (2026-11-05)", entry: "2026-11-06/microsoft-email-threat-landscape-q3-2026-security", note: "covered periodic report" }
+  - { source: "kaspersky-securelist: Virtualization security (2026-11-06) and SOC Files 5 Storm-2603 (2026-11-05)", entry: "2026-11-07/kaspersky-esxi-proxmox-ransomware-monitoring-root-password; 2026-11-06/storm-2603-fileless-toolshell-virtualpathprovider-shell", note: "both covered" }
+  - { source: "trendmicro-research: Exploited Adobe Commerce flaws (2026-11-06); Racing the Update WordPress (2026-11-04)", entry: "2026-09-08/stylesmuggler-cve-2026-75650-magento-adobe-commerce-rce; 2026-10-28/cve-2026-48356-adobe-commerce-magento-upload-flaw; 2026-10-30/wordpress-core-7-1-4-unauthenticated-upgrade-window", note: "recap posts on covered CVEs" }
+  - { source: "vulncheck https://www.vulncheck.com/blog (listing via WebFetch): Exploitation targeting Node-RED (2026-11-02)", entry: "2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root", note: "VulnCheck post already cited by the entry" }
+  - { source: "vulncheck: CWP2Shell Control Web Panel (2026-11-03)", entry: "none", note: "dropped by the 2026-11-0x fires as niche hosting panel without constituency nexus" }
+  - { source: "team-cymru: Cl0p second edition (2026-11-02)", entry: "none", note: "dropped by the fires as pattern recap of covered campaigns" }
+  - { source: "mandiant-gtig: The Rise of LLMJacking and Shutting the Door on the XCPE Botnet (both 2026-11-02); trendmicro-research set-top-box botnet takedown (2026-11-02)", entry: "none", note: "dropped by the fires (no constituency nexus)" }
+  - { source: "talos VOLTA (2026-10-31, before window), kaspersky CyberStrikeAI (2026-11-02), check-point Yoba and prompt adware (2026-11-03)", entry: "none", note: "dropped by the fires; reasons stand" }
+
+# Leads followed without a returnable item
+leads_dropped:
+  - "ThisBash (Claude Dispatch design weakness, Forever Security / The Register): single outlet, secondhand, Anthropic reportedly closed it as a duplicate; CSA note is a re-report; no second source read."
+  - "CSA Lab research notes 2026-11-02 to 2026-11-07 (34 notes): re-report pipeline (record reliability C); every note traced to a primary that is in the store or dropped above except ThisBash, the vendor-cloud remote-disablement note (solar inverters) and OpenAI's autonomous Linux LPE pipeline (2026-11-04, 'GPT-6 Cyber'), whose primaries were not fetched."
+  - "Arctic Wolf Teams external-chat research (400+ incidents) is dated 2026-10-26, before the window; the topic is carried by the Microsoft help-desk-impersonation entry of 2026-10-31."
+  - "Infosecurity Magazine 'Chinese Nation-State Threat Activity Falls Sharply' is the Trellix CyberThreat Report already dropped by the fires; ESET APT Activity Report Q2-Q3 2026 is dated 2026-10-28, before the window."
+
+watchlist_sweep:
+  duty: none
+
+candidate_sources:
+  - id: cert-in-advisories
+    publisher: "CERT-In (Indian national CERT) advisories"
+    url: "https://www.cert-in.org.in/s2cMainServlet?pageid=PUBVLNOTES02"
+    category: authority
+    why: "National-CERT primary for AI-driven offensive-framework campaigns (CIAD-2026-0058 CRAFTY FALCON, update of CIAD-2026-0046). Per-advisory pages read cleanly with `extract https://www.cert-in.org.in/s2cMainServlet?VLCODE=<CIAD-id>&pageid=PUBVLNOTES02` (trafilatura-direct); the advisory listing pageid=PUBVLNOTES01 returned only a 'Page Requested Currently Not available' shell, so advisory ids come from WebSearch or from vendor posts that link them. Reliability A for its own jurisdiction."
+
+coverage_gaps:
+  - source_id: sygnia
+    reason: "Retried once: extract failed on every rung (direct 403, trafilatura no readable body, reader relays the upstream challenge). WebSearch found no Sygnia publication dated November 2026 (newest 2026-08-30). fetch_method blocked stands; not logged as a fetch failure."
+  - source_id: previdian
+    reason: "The record URL is a per-CVE page; the front page features CVE-2026-123158 (covered). The /feed listing remains unreadable per the existing note, so the exploited-vulnerability list cannot be swept."
+  - source_id: vulncheck
+    reason: "Recipe change: `extract https://www.vulncheck.com/blog` returned a stale 2022 snapshot again today (752 characters, page date 2022-11-12), contradicting the 2026-11-03 note that extract now reads the blog. WebFetch of https://www.vulncheck.com/blog returned 15 dated posts with hrefs and works as the listing recipe; per-post `extract` is untested today."
+  - source_id: mandiant-gtig
+    reason: "Recipe note: the feedburner feed ends at 2026-11-02 but the HTML listing's order is not chronological (newest-listed 'From Prompting to Autonomy' AI Threat Tracker is dated 2026-09-08 on the article page) and cards carry no dates; `extract` of the listing returns 771 characters. Use the feed for window sweeps and drill any listing-only title for its date."
+  - source_id: nict-cynex-lettice
+    reason: "Spent one reader fetch (jina) as the record's note prescribes; newest library item 2026-10-13, nothing in window."
+  - source_id: sentinellabs
+    reason: "`extract` of the Defrost and Disrupt article was served by the metered jina reader; direct trafilatura failed there (one reader fetch spent)."
+  - source_id: elastic-seclabs
+    reason: "Recipe note: periodic reports are two-step. The /security-labs/reports/ page is a summary that links to the public landing page https://www.elastic.co/resources/security/report/threat-command-cybersecurity-report, which links the full PDF; `fetch_source.py pdf` reads it (34 pages, per-font ToUnicode decode). Earlier fires that stopped at the summary page lost the report."
+  - source_id: crowdstrike
+    reason: "Feed depth is 10 items (2026-11-03 to 2026-11-05) so it cannot show earlier window days; the category page https://www.crowdstrike.com/blog/category/counter-adversary-operations/ lists research posts with no dates, and the trafilatura 'date' field there is the last-modified date; the page JSON-LD datePublished (2026-10-28, 2026-10-29) is the reliable check."
+  - source_id: novee-security
+    reason: "Marketing and product posts only again (2026-11-03 to 2026-11-06: Google Cloud Marketplace, webinar, mass-assignment explainer); demotion candidate as the 2026-10-18 and 2026-10-23 notes already said."
+  - source_id: swarmcha-se
+    reason: "`url --direct` reads four dated posts, newest 2026-10-14; nothing in window."
+
+source_ledger:
+  - { id: msft-ti, tier: standard, attempted: true, transport: "msft-secblog recent 40 + url topic listing", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "ARTEX Storm-3358 and Email Q3 covered; exploited-vulnerabilities analysis and fake-download campaign borderline; on-prem investments is product news" }
+  - { id: mandiant-gtig, tier: standard, attempted: true, transport: "feed (feedburner) + WebFetch listing cross-check", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "LLMjacking and XCPE (both 2026-11-02) already dropped by fires" }
+  - { id: talos, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "it-sa lessons post only; VOLTA 2026-10-31 predates window" }
+  - { id: unit42, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "refrigeration post already cited; highlights digest generic" }
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "ARTEX cited by entry; Lockdown bypass borderline; prompt adware dropped; weekly bulletin items covered" }
+  - { id: eset, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "SlippyNunchucks borderline; Gorbag dropped; APT report 2026-10-28 predates window" }
+  - { id: kaspersky-securelist, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "virtualization and Storm-2603 covered; CyberStrikeAI dropped; MLEP product" }
+  - { id: sentinellabs, tier: standard, attempted: true, transport: "feed + extract (reader)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Defrost and Disrupt already cited by danfoss entry; VerifiedIDA tooling" }
+  - { id: proofpoint, tier: standard, attempted: true, transport: "feed + url listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14 on both" }
+  - { id: trendmicro-research, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 6, returned: 0, note: "Adobe Commerce and WordPress covered; Matryoshka borderline; botnet takedown dropped; two product posts" }
+  - { id: huntress, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 6, returned: 0, note: "product, marketing and podcast posts" }
+  - { id: sophos-xops, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 6, returned: 0, note: "State of Ransomware in Financial Services recorded as borderline periodic report; fake coding test post covered by the 2026-11-05 entry" }
+  - { id: crowdstrike, tier: standard, attempted: true, transport: "feed + extract + url JSON-LD check", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "vulnerability-ecosystem post borderline; the rest are product announcements" }
+  - { id: elastic-seclabs, tier: standard, attempted: true, transport: "feed + extract + url + pdf", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "threats etc report returned; AI-agent session monitoring post is detection-engineering method, not read as a finding" }
+  - { id: dfirreport, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-08-24, within the publisher's 1-2 per month cadence" }
+  - { id: recordedfuture-insikt, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "October CVE Landscape borderline (periodic); human-in-the-loop essay skipped" }
+  - { id: volexity, tier: standard, attempted: true, transport: "feed + extract listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "IRTF prize announcement only" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed + url listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-28" }
+  - { id: symantec-security-com, tier: standard, attempted: true, transport: "extract listing + extract per post", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "Lindnor/Anubis returned as borderline" }
+  - { id: lumen-black-lotus-labs, tier: standard, attempted: true, transport: "url --direct query-index.json", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "326 rows; newest 2026-10-29 is network-infrastructure marketing, no Black Lotus Labs post since 2026-08-24" }
+  - { id: group-ib, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Mirax (META banking) and infostealer banking-fraud posts: no constituency nexus" }
+  - { id: gitguardian, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 7, returned: 0, note: "LiteLLM recap and ARTEX secrets post covered; links the CERT-In advisory (used as pivot)" }
+  - { id: datadog-security-labs, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-29" }
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract (all rungs failed) + WebSearch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "blocked record; see coverage_gaps" }
+  - { id: previdian, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "front page shows covered CVE-2026-123158" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "extract listing", horizon_hours: 168, in_horizon_items: 34, returned: 0, note: "re-reports; used as leads, CERT-In advisory traced to its primary" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "news and policy; nothing returnable" }
+  - { id: darkreading, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 22, returned: 0, note: "scanned as leads; every security item traced to covered or dropped primaries" }
+  - { id: gambit-security, tier: standard, attempted: true, transport: "url listing + extract per post", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-02 resilience marketing post" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "scanned as leads; OpenSSH sshole covered" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 25, returned: 0, note: "scanned as leads; Trellix report and Gorbag dropped by fires" }
+  - { id: jpcert-eyes, tier: standard, attempted: true, transport: "feed (atom)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21" }
+  - { id: semperis-research, tier: standard, attempted: true, transport: "extract listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-22" }
+  - { id: nict-cynex-lettice, tier: standard, attempted: true, transport: "jina listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-13, already covered by the JPCERT/NICT entry" }
+  - { id: krebs, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "White House residential proxy and set-top-box botnet takedown: no constituency nexus" }
+  - { id: novee-security, tier: standard, attempted: true, transport: "extract listing", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "marketing; demotion candidate" }
+  - { id: team-cymru, tier: standard, attempted: true, transport: "extract listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Cl0p second edition 2026-11-02 already dropped by fires" }
+  - { id: technadu, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "commentary and weekly roundup only" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed + url listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-29" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "extract (stale) + WebFetch listing", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Node-RED exploitation covered by the CVE-2026-58115 entry; CWP2Shell dropped by fires" }
+  - { id: zimperium-zlabs, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "GhostBat targets 60 Indian banking and payment apps: no constituency nexus" }
+  - { id: expel, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "no threat research in window" }
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "url --direct", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-14" }
+
+recipe_updates_for_sources_json:
+  - "elastic-seclabs: periodic reports are two-step (report summary page -> landing page https://www.elastic.co/resources/security/report/threat-command-cybersecurity-report -> PDF https://www.elastic.co/pdf/elastic-threats-etc-elastic-security-threat-command-nov-2026.pdf); read the PDF with `fetch_source.py pdf` (34 pages, per-font ToUnicode decode, no OCR needed). Earlier fires stopped at the summary page."
+  - "vulncheck: `extract https://www.vulncheck.com/blog` returned the stale 2022 snapshot again on 2026-11-08; WebFetch of the listing returns dated posts with hrefs."
+  - "mandiant-gtig: HTML listing order is not chronological and cards carry no dates; use the feedburner feed for window sweeps (it showed every in-window post)."
+  - "crowdstrike: feed depth is only 10 items (about 3 days); check article JSON-LD datePublished with `url --direct` because trafilatura's date field on the category page is the last-modified date."
+  - "novee-security: marketing again (third consecutive sweep); demote."

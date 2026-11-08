@@ -44,6 +44,14 @@ sources:
     publisher: "Inside IT (relaying Keystone-SDA)"
     date: "2026-11-03"
     role: corroborating
+  - url: "https://www.vd.ch/actualites/actualite/news/26762-intrusion-dans-la-plateforme-de-support-informatique-de-lenseignement-postobligatoire-un-mineur-interpelle"
+    publisher: "Etat de Vaud (Vaud cantonal police communiqué, published on vd.ch)"
+    date: "2026-11-03"
+    role: primary
+  - url: "https://www.vd.ch/actualites/actualite/news/26754-la-plateforme-de-support-informatique-des-gymnases-et-des-ecoles-professionnelles-du-canton-victime-dun-vol-de-donnees"
+    publisher: "Etat de Vaud (education directorate release, published on vd.ch)"
+    date: "2026-10-31"
+    role: primary
 closed_sources: []
 evidence:
   - quote: "The names, first names and school e-mail addresses of about 3,500 teachers and 38,000 pupils were copied, as was the content of support requests. (translated from French)"
@@ -76,7 +84,7 @@ evidence:
     source_url: "https://www.letemps.ch/suisse/vaud/cyberattaque-contre-les-ecoles-vaudoises-un-adolescent-de-16-ans-a-ete-interpelle"
 verification: multi-source
 sourcing_note: >
-  The canton's press release is the victim's own statement. The arrest is the cantonal police's own announcement of 2026-11-03, read through the ATS and Keystone-SDA wire reports that Le Temps and Inside IT carry, with the education directorate's own note on the pupil's status in the same reports; the police communiqué itself was not read. A person arrested is a suspect, and the investigation has not said whether data left the suspect's hands. The canton gives no access method, actor or platform product.
+  The canton's press release is the victim's own statement. The arrest is the cantonal police's own announcement of 2026-11-03, read through the ATS and Keystone-SDA wire reports that Le Temps and Inside IT carry, with the education directorate's own note on the pupil's status in the same reports; the communiqué itself is also published on vd.ch. A person arrested is a suspect, and the investigation has not said whether data left the suspect's hands. The canton gives no access method, actor or platform product.
 confidence: high
 references: []
 deep_dive: false
@@ -106,6 +114,15 @@ updates:
       investigation into how the intrusion happened and whether data were downloaded or passed to third
       parties.
     fields: [title, headline, summary, tags, sources, evidence, sourcing_note, verification, body]
+  - at: "2026-11-08T14:09:58Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: improvement
+    summary: >
+      The police communiqué and the education directorate's release, both on vd.ch, add that the platform
+      was cut off from the internet at detection and secured with the canton's security operations centre,
+      and that the incident was reported to the Federal Office for Cybersecurity and the cantonal
+      data-protection authority.
+    fields: [sources, sourcing_note]
 migrated_from: null
 ---
 
@@ -120,3 +137,7 @@ The education directorate's deputy director said that at present much points to 
 ## Update — 2026-11-04T03:27:46Z
 
 Vaud's cantonal police announced on 2026-11-03 that a 16-year-old was arrested on Saturday 2026-10-31, suspected of intruding into the IT-support platform of the canton's post-compulsory schools and extracting data from it between 23 and 26 October 2026 (translated from French) ([Le Temps, 2026-11-03](https://www.letemps.ch/suisse/vaud/cyberattaque-contre-les-ecoles-vaudoises-un-adolescent-de-16-ans-a-ete-interpelle)). The education directorate says the suspect is one of its pupils and faces an administrative sanction, up to exclusion, that runs apart from the criminal case; he was questioned and released, his IT equipment was seized and is being analysed, and the investigation, led by the juvenile court, aims to establish the circumstances of the intrusion and whether data were downloaded or passed to third parties ([Le Temps, 2026-11-03](https://www.letemps.ch/suisse/vaud/cyberattaque-contre-les-ecoles-vaudoises-un-adolescent-de-16-ans-a-ete-interpelle); [Inside IT, 2026-11-03](https://www.inside-it.ch/16-jaehriger-hackte-wohl-waadtlaender-schulen-20261103)). The platform was disconnected from the internet on detection and then secured with the support of the canton's security operations centre, according to the police communiqué; the access method and the platform product are still not stated ([Le Temps, 2026-11-03](https://www.letemps.ch/suisse/vaud/cyberattaque-contre-les-ecoles-vaudoises-un-adolescent-de-16-ans-a-ete-interpelle)).
+
+## Improvement — 2026-11-08T14:09:58Z
+
+The police communiqué, published on vd.ch, says the platform was disconnected from the internet as soon as the access was detected and then secured with the support of the canton of Vaud's operational security centre, that a criminal complaint was filed, and that the suspect was identified quickly and released after questioning; the cyber investigation division of the criminal police leads the inquiry under the juvenile court (translated from French) ([Etat de Vaud, 2026-11-03](https://www.vd.ch/actualites/actualite/news/26762-intrusion-dans-la-plateforme-de-support-informatique-de-lenseignement-postobligatoire-un-mineur-interpelle)). The education directorate's release adds that the incident was reported to the Federal Office for Cybersecurity and to the cantonal data-protection authority (translated from French) ([Etat de Vaud, 2026-10-31](https://www.vd.ch/actualites/actualite/news/26754-la-plateforme-de-support-informatique-des-gymnases-et-des-ecoles-professionnelles-du-canton-victime-dun-vol-de-donnees)).

@@ -1,17 +1,17 @@
 ---
 schema: 1
 kind: vulnerability
-title: "CVE-2026-109618 / CVE-2026-109619, QNAP QTS, QuTS hero and QuTScloud: the PHP2Shell flaws reach the NAS web components before authentication; fixed builds of 2026-10-23, QVR Surveillance, TVR OS and Notes Station 3 now fixed, QNE (ADRA) still unfixed"
-headline: "PHP2Shell hits QNAP NAS before login: QTS, QuTS hero, QVR, TVR OS and Notes Station 3 fixed, QNE still unfixed"
+title: "CVE-2026-109618 / CVE-2026-109619, QNAP QTS, QuTS hero and QuTScloud: the PHP2Shell flaws reach the NAS web components before authentication; fixed builds of 2026-10-23, and QVR Surveillance, TVR OS, Notes Station 3 and QNE (ADRA) now fixed"
+headline: "PHP2Shell hits QNAP NAS before login: QTS, QuTS hero, QVR, TVR OS, Notes Station 3 and QNE all have fixed builds"
 summary: >
   QNAP's advisory QSA-26-18 says the PHP2Shell flaws CVE-2026-109618 and CVE-2026-109619 (CVSS 4.0 9.2) affect the PHP in the web
   components of QTS, QuTS hero, QuTScloud and several QNAP applications and can be triggered before authentication, and fixed builds dated
   2026-10-23 are out for QTS, QuTS hero and QuTScloud. As of 2026-10-28 (revision V1.2) the table lists QVR Surveillance (ARM32) 3.0.3.1756, TVR OS 1.0.5
-  and Notes Station 3 3.9.15 as resolved; QNE (ADRA) has its own advisory, QSA-26-19, with no fixed version and QNAP says to keep devices off the internet; QNAP has seen scanning and
+  and Notes Station 3 3.9.15 as resolved; QNE (ADRA) has its own advisory, QSA-26-19, which since 2026-11-02 lists QNE (ADRA) 1.0.7.q327 as the fix; QNAP has seen scanning and
   exploitation attempts in the wild but no reports of exploitation targeting its products, and CISA added both flaws to its Known Exploited
   Vulnerabilities catalog on 2026-10-26. Synology's advisory, revised on 2026-10-31, fixes its PHP packages (except the end-of-life PHP 7.3), Mail Station and Calendar, with builds for DSM 7.2 and above, DSM 7.0 to 7.1 and, for PHP 7.4, Mail Station and Calendar, DSM 6.2.
 discovered_at: "2026-10-25T14:10:55Z"
-updated_at: "2026-11-02T03:46:02Z"
+updated_at: "2026-11-08T13:55:30Z"
 event_date: "2026-10-22"
 run_id: 2026-10-25T1308Z-audit
 priority: notable
@@ -31,7 +31,7 @@ cves:
     auth: pre-auth
     status: [cisa-kev, patch-available]
     affected: "QTS 6.1.0 and 5.2.11 and earlier, QuTS hero h6.1.0, h6.0.x, h5.3.x and h5.2.11 and earlier, QuTScloud c5.2.9 and earlier, Notes Station 3 3.9.14 and earlier, QNE (ADRA) 1.0.7 and earlier, QVR Surveillance 3.0.3 and earlier (ARM32 models), TVR OS 1.0.4 and earlier; Synology PHP 7.3 to 8.4 packages, Mail Station and Synology Calendar"
-    fixed: "QTS 6.1.0.3656 and 5.2.11.3661, QuTS hero h6.1.0.3656, h6.0.2.3656 (also for h5.3.x) and h5.2.11.3661, QuTScloud c5.2.9.3661 (builds of 2026-10-23), QVR Surveillance 3.0.3.1756, TVR OS 1.0.5 and Notes Station 3 3.9.15 (listed as resolved as of 2026-10-28); no fix yet for QNE (ADRA), which has its own advisory QSA-26-19; Synology on DSM 7.2 and above PHP 7.4.33-0131, 8.0.30-0122, Mail Station 30000002.3.19-20333 and Calendar 3.0.4-21435; on DSM 7.0 to 7.1 PHP 7.4.33-0122, 8.0.30-0104, Mail Station 30000002.3.19-10333 and Calendar 2.4.8-10948; on DSM 6.2 PHP 7.4.33-0010, Mail Station 30000002.3.19-0333 and Calendar 2.4.8-0948 (the table lists no PHP 8.0 build for DSM 6.2); PHP 8.1.34-0120, 8.2.35-0171, 8.3.36-0051 and 8.4.27-0051 on every DSM; no fix for the end-of-life PHP 7.3 package"
+    fixed: "QTS 6.1.0.3656 and 5.2.11.3661, QuTS hero h6.1.0.3656, h6.0.2.3656 (also for h5.3.x) and h5.2.11.3661, QuTScloud c5.2.9.3661 (builds of 2026-10-23), QVR Surveillance 3.0.3.1756, TVR OS 1.0.5 and Notes Station 3 3.9.15 (listed as resolved as of 2026-10-28); QNE (ADRA) 1.0.7.q327 (advisory QSA-26-19, resolved on 2026-11-02); Synology on DSM 7.2 and above PHP 7.4.33-0131, 8.0.30-0122, Mail Station 30000002.3.19-20333 and Calendar 3.0.4-21435; on DSM 7.0 to 7.1 PHP 7.4.33-0122, 8.0.30-0104, Mail Station 30000002.3.19-10333 and Calendar 2.4.8-10948; on DSM 6.2 PHP 7.4.33-0010, Mail Station 30000002.3.19-0333 and Calendar 2.4.8-0948 (the table lists no PHP 8.0 build for DSM 6.2); PHP 8.1.34-0120, 8.2.35-0171, 8.3.36-0051 and 8.4.27-0051 on every DSM; no fix for the end-of-life PHP 7.3 package"
   - id: CVE-2026-109619
     cvss: "9.2 (CVSS 4.0, as stated by QNAP for the PHP flaw)"
     epss: null
@@ -40,7 +40,7 @@ cves:
     auth: pre-auth
     status: [cisa-kev, patch-available]
     affected: "QTS 6.1.0 and 5.2.11 and earlier, QuTS hero h6.1.0, h6.0.x, h5.3.x and h5.2.11 and earlier, QuTScloud c5.2.9 and earlier, Notes Station 3 3.9.14 and earlier, QNE (ADRA) 1.0.7 and earlier, QVR Surveillance 3.0.3 and earlier (ARM32 models), TVR OS 1.0.4 and earlier; Synology PHP 7.3 to 8.4 packages, Mail Station and Synology Calendar"
-    fixed: "QTS 6.1.0.3656 and 5.2.11.3661, QuTS hero h6.1.0.3656, h6.0.2.3656 (also for h5.3.x) and h5.2.11.3661, QuTScloud c5.2.9.3661 (builds of 2026-10-23), QVR Surveillance 3.0.3.1756, TVR OS 1.0.5 and Notes Station 3 3.9.15 (listed as resolved as of 2026-10-28); no fix yet for QNE (ADRA), which has its own advisory QSA-26-19; Synology on DSM 7.2 and above PHP 7.4.33-0131, 8.0.30-0122, Mail Station 30000002.3.19-20333 and Calendar 3.0.4-21435; on DSM 7.0 to 7.1 PHP 7.4.33-0122, 8.0.30-0104, Mail Station 30000002.3.19-10333 and Calendar 2.4.8-10948; on DSM 6.2 PHP 7.4.33-0010, Mail Station 30000002.3.19-0333 and Calendar 2.4.8-0948 (the table lists no PHP 8.0 build for DSM 6.2); PHP 8.1.34-0120, 8.2.35-0171, 8.3.36-0051 and 8.4.27-0051 on every DSM; no fix for the end-of-life PHP 7.3 package"
+    fixed: "QTS 6.1.0.3656 and 5.2.11.3661, QuTS hero h6.1.0.3656, h6.0.2.3656 (also for h5.3.x) and h5.2.11.3661, QuTScloud c5.2.9.3661 (builds of 2026-10-23), QVR Surveillance 3.0.3.1756, TVR OS 1.0.5 and Notes Station 3 3.9.15 (listed as resolved as of 2026-10-28); QNE (ADRA) 1.0.7.q327 (advisory QSA-26-19, resolved on 2026-11-02); Synology on DSM 7.2 and above PHP 7.4.33-0131, 8.0.30-0122, Mail Station 30000002.3.19-20333 and Calendar 3.0.4-21435; on DSM 7.0 to 7.1 PHP 7.4.33-0122, 8.0.30-0104, Mail Station 30000002.3.19-10333 and Calendar 2.4.8-10948; on DSM 6.2 PHP 7.4.33-0010, Mail Station 30000002.3.19-0333 and Calendar 2.4.8-0948 (the table lists no PHP 8.0 build for DSM 6.2); PHP 8.1.34-0120, 8.2.35-0171, 8.3.36-0051 and 8.4.27-0051 on every DSM; no fix for the end-of-life PHP 7.3 package"
 sources:
   - url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
     publisher: "QNAP PSIRT (QSA-26-18, revision V1.1)"
@@ -94,9 +94,6 @@ evidence:
   - quote: "Notes Station 3 3.9.14 and earlier Resolved Notes Station 3 3.9.15"
     publisher: "QNAP PSIRT (QSA-26-18, revision V1.2)"
     source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
-  - quote: "QNE (ADRA) 1.0.7 and earlier Fixing To be announced"
-    publisher: "QNAP PSIRT (QSA-26-19, QNE (ADRA))"
-    source_url: "https://www.qnap.com/en/security-advisory/qsa-26-19"
   - quote: "Until fixed versions are available, the most effective protection is to keep the device off the internet."
     publisher: "QNAP PSIRT (QSA-26-18, revision V1.1)"
     source_url: "https://www.qnap.com/en/security-advisory/qsa-26-18"
@@ -118,7 +115,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Update every QNAP NAS on QTS, QuTS hero or QuTScloud to the builds of 2026-10-23 (QTS 6.1.0.3656 or 5.2.11.3661, QuTS hero h6.1.0.3656, h6.0.2.3656 (h5.3.x included) or h5.2.11.3661, QuTScloud c5.2.9.3661), every QVR Surveillance (ARM32 models) to 3.0.3.1756, every TVR OS to 1.0.5 and every Notes Station 3 to 3.9.15, and take any QNAP device running QNE (ADRA) off the internet until QNAP lists a fix."
+  - "Update every QNAP NAS on QTS, QuTS hero or QuTScloud to the builds of 2026-10-23 (QTS 6.1.0.3656 or 5.2.11.3661, QuTS hero h6.1.0.3656, h6.0.2.3656 (h5.3.x included) or h5.2.11.3661, QuTScloud c5.2.9.3661), every QVR Surveillance (ARM32 models) to 3.0.3.1756, every TVR OS to 1.0.5 and every Notes Station 3 to 3.9.15, and every QNE (ADRA) to 1.0.7.q327."
 updates:
   - at: "2026-10-27T03:42:00Z"
     run_id: 2026-10-27T0256Z-intel
@@ -143,18 +140,26 @@ updates:
       to 7.1 and DSM 6.2 (PHP 7.4, Calendar and Mail Station only on 6.2), added in its revisions of
       2026-10-29 and 2026-10-31.
     fields: [summary, cves, sources, body]
+  - at: "2026-11-08T13:55:30Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: update
+    summary: >
+      QNAP revised advisory QSA-26-19 on 2026-11-02 and now lists QNE (ADRA) 1.0.7.q327 as the fix for the
+      PHP2Shell flaws, so QTS, QuTS hero, QuTScloud, QVR Surveillance, TVR OS, Notes Station 3 and QNE
+      (ADRA) all have fixed builds.
+    fields: [actions, body, cves, evidence, headline, summary, title]
 migrated_from: null
 ---
 
-QNAP's advisory QSA-26-18 says the PHP2Shell flaws CVE-2026-109618 and CVE-2026-109619 (CVSS 4.0 9.2) affect the PHP used in the web components of its operating systems and several of its applications, can be triggered before any application-level authentication, and could let an unauthenticated remote attacker execute code on the device ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)). Its revision of 2026-10-24 lists fixed builds dated 2026-10-23 for QTS (6.1.0.3656 and 5.2.11.3661), QuTS hero (h6.1.0.3656, h6.0.2.3656, which also covers h5.3.x, and h5.2.11.3661) and QuTScloud (c5.2.9.3661), while revision V1.2 of 2026-10-28 lists Notes Station 3 3.9.14 and earlier as resolved by 3.9.15 and the table lists QVR Surveillance 3.0.3 and earlier on ARM32 models as resolved by 3.0.3.1756 and TVR OS 1.0.4 and earlier as resolved by 1.0.5 ([QNAP, 2026-10-28](https://www.qnap.com/en/security-advisory/qsa-26-18)). QNE (ADRA) 1.0.7 and earlier has its own advisory, QSA-26-19, and its fixed version is still to be announced ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). QNAP's PSIRT says it has observed scanning and exploitation attempts against the flaws in the wild and blocked attempts against its own website, online store and cloud services ([QNAP, 2026-10-22](https://www.qnap.com/en/security-news/2026/qnap-statement-on-critical-php-vulnerabilities-php2shell-assessment-and-mitigation-guidance)), and its advisory says it has received no reports of exploitation targeting QNAP products ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)). PHP inside Container Station containers or third-party applications is not covered by QNAP's updates ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)).
+QNAP's advisory QSA-26-18 says the PHP2Shell flaws CVE-2026-109618 and CVE-2026-109619 (CVSS 4.0 9.2) affect the PHP used in the web components of its operating systems and several of its applications, can be triggered before any application-level authentication, and could let an unauthenticated remote attacker execute code on the device ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)). Its revision of 2026-10-24 lists fixed builds dated 2026-10-23 for QTS (6.1.0.3656 and 5.2.11.3661), QuTS hero (h6.1.0.3656, h6.0.2.3656, which also covers h5.3.x, and h5.2.11.3661) and QuTScloud (c5.2.9.3661), while revision V1.2 of 2026-10-28 lists Notes Station 3 3.9.14 and earlier as resolved by 3.9.15 and the table lists QVR Surveillance 3.0.3 and earlier on ARM32 models as resolved by 3.0.3.1756 and TVR OS 1.0.4 and earlier as resolved by 1.0.5 ([QNAP, 2026-10-28](https://www.qnap.com/en/security-advisory/qsa-26-18)). QNE (ADRA) 1.0.7 and earlier has its own advisory, QSA-26-19, which since its revision of 2026-11-02 lists QNE (ADRA) 1.0.7.q327 as the fixed version ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). QNAP's PSIRT says it has observed scanning and exploitation attempts against the flaws in the wild and blocked attempts against its own website, online store and cloud services ([QNAP, 2026-10-22](https://www.qnap.com/en/security-news/2026/qnap-statement-on-critical-php-vulnerabilities-php2shell-assessment-and-mitigation-guidance)), and its advisory says it has received no reports of exploitation targeting QNAP products ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)). PHP inside Container Station containers or third-party applications is not covered by QNAP's updates ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)).
 
 Synology's advisory Synology-SA-26:14 rates its PHP 7.3 to 8.4 packages, Mail Station and Synology Calendar critical and lists fixed releases for each except the end-of-life PHP 7.3 package, which gets no fix; revision 3 of 2026-10-29 added PHP 7.4 for DSM 6.2, 7.0 and 7.1 and PHP 8.0 for DSM 7.0 and 7.1, and revision 4 of 2026-10-31 added Calendar and Mail Station for DSM 6.2, 7.0 and 7.1 ([Synology, 2026-10-31](https://www.synology.com/en-global/security/advisory/Synology_SA_26_14)). Synology says the PHP built into DSM is not exposed to external attack surfaces and considers the risk of exploitation very low ([Synology, 2026-10-22](https://www.synology.com/security/advisory/Synology_SA_26_14)).
 
-**Exposure:** a QNAP NAS on QTS, QuTS hero or QuTScloud below the fixed builds, or a QNAP device running QVR Surveillance (ARM32 models) below 3.0.3.1756, TVR OS below 1.0.5, or Notes Station 3 below 3.9.15, whose management or web ports are reachable from outside, which QNAP ties to router port forwarding, UPnP and myQNAPcloud publishing; the management ports default to 8080 and 443 ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)). QNE (ADRA) 1.0.7 and earlier has its own advisory and the same exposure routes ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). On Synology, a DSM with one of the listed PHP packages, Mail Station or Calendar installed ([Synology, 2026-10-22](https://www.synology.com/security/advisory/Synology_SA_26_14)).
+**Exposure:** a QNAP NAS on QTS, QuTS hero or QuTScloud below the fixed builds, or a QNAP device running QVR Surveillance (ARM32 models) below 3.0.3.1756, TVR OS below 1.0.5, or Notes Station 3 below 3.9.15, whose management or web ports are reachable from outside, which QNAP ties to router port forwarding, UPnP and myQNAPcloud publishing; the management ports default to 8080 and 443 ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)). QNE (ADRA) below 1.0.7.q327 has its own advisory and the same exposure routes ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). On Synology, a DSM with one of the listed PHP packages, Mail Station or Calendar installed ([Synology, 2026-10-22](https://www.synology.com/security/advisory/Synology_SA_26_14)).
 
 **Detection:** QNAP's compromise check is a review of QuLog Center for unexpected logins or access and a Security Center and Malware Remover scan with current definitions; if compromise is suspected it says to disconnect the device and change all passwords ([QNAP, 2026-10-24](https://www.qnap.com/en/security-advisory/qsa-26-18)).
 
-**Defender takeaway:** update QTS, QuTS hero, QuTScloud, Notes Station 3, QVR Surveillance (ARM32 models) and TVR OS now ([QNAP, 2026-10-28](https://www.qnap.com/en/security-advisory/qsa-26-18)); for QNE (ADRA), which has no fix, remove internet exposure (port forwarding, UPnP, myQNAPcloud publishing), use a VPN for remote access and allow the management ports only from trusted subnets, which QNAP says reduces exposure without fixing the flaws and does not protect against local devices that are already compromised ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). On Synology, update the listed packages to the build for the installed DSM generation, DSM 6.2 and 7.0 to 7.1 included; the PHP 7.3 package gets no fix ([Synology, 2026-10-31](https://www.synology.com/en-global/security/advisory/Synology_SA_26_14)).
+**Defender takeaway:** update QTS, QuTS hero, QuTScloud, Notes Station 3, QVR Surveillance (ARM32 models) and TVR OS now ([QNAP, 2026-10-28](https://www.qnap.com/en/security-advisory/qsa-26-18)) and QNE (ADRA) to 1.0.7.q327 ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)); where a device has to wait, remove internet exposure (port forwarding, UPnP, myQNAPcloud publishing) and allow the management ports only over a VPN or from trusted subnets, which QNAP says reduces exposure without fixing the flaws ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). On Synology, update the listed packages to the build for the installed DSM generation, DSM 6.2 and 7.0 to 7.1 included; the PHP 7.3 package gets no fix ([Synology, 2026-10-31](https://www.synology.com/en-global/security/advisory/Synology_SA_26_14)).
 
 ## Update — 2026-10-27T03:42:00Z
 
@@ -167,3 +172,7 @@ QNAP revised advisory QSA-26-18 to V1.2 on 2026-10-28 ("Notes Station 3 Resolved
 ## Update — 2026-11-02T03:46:02Z
 
 Synology's advisory Synology-SA-26:14 now lists fixed builds for DSM 7.0 to 7.1 and DSM 6.2. Revision 3 of 2026-10-29 adds PHP 7.4 for DSM 6.2, 7.0 and 7.1 and PHP 8.0 for DSM 7.0 and 7.1, and revision 4 of 2026-10-31 adds Calendar and Mail Station for DSM 6.2, 7.0 and 7.1 ([Synology, 2026-10-31](https://www.synology.com/en-global/security/advisory/Synology_SA_26_14)). The fixed builds are PHP 7.4.33-0122, PHP 8.0.30-0104, Calendar 2.4.8-10948 and Mail Station 30000002.3.19-10333 on DSM 7.0 to 7.1, and PHP 7.4.33-0010, Calendar 2.4.8-0948 and Mail Station 30000002.3.19-0333 on DSM 6.2; the table lists no PHP 8.0 build for DSM 6.2, gives the PHP 8.1 to 8.4 builds without a DSM split and still offers no fix for PHP 7.3 ([Synology, 2026-10-31](https://www.synology.com/en-global/security/advisory/Synology_SA_26_14)).
+
+## Update — 2026-11-08T13:55:30Z
+
+QNAP revised advisory QSA-26-19 to V1.1 on 2026-11-02 ("Resolved Published"), and its table now lists QNE (ADRA) 1.0.7 and earlier as resolved by QNE (ADRA) 1.0.7.q327 ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)). The advisory still describes the network restrictions as steps that reduce exposure without fully fixing the flaws ([QNAP, 2026-10-22](https://www.qnap.com/en/security-advisory/qsa-26-19)).

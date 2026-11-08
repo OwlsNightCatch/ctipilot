@@ -1,0 +1,155 @@
+batch: TD
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-08T13:13:45Z'
+  ended: '2026-11-08T13:44:53Z'
+entries:
+- entry: 2026-10-14/cve-2026-104935-ivanti-connect-secure-zero-day-chain-kev
+  verdict: imprecision
+  findings:
+  - code: F16
+    claim_id: null
+    where: 'frontmatter priority: critical + immediate_action (low confidence)'
+    defect: 'priority: critical with an immediate_action block is retained on 2026-11-08, 26 days after disclosure and 10 days after the full-chain patch.'
+    ground_truth: 'Critical bar (prompts/cti-run.md Phase 4): newly disclosed or newly weaponised (in-window), time-critical to the hour or day; disqualifier "patches >=1 week old without new exploitation".
+      Volexity: "On October 29, 2026, Ivanti published a patch that addresses this vulnerability, which is tracked as CVE-2026-111357"; CISA KEV additions of the other two flaws are dated 2026-10-30; the
+      only in-window items (CERT-FR AVI-1442 of 2026-11-02 relaying Ivanti''s statement that all three are actively exploited; Ivanti CNA record of CVE-2026-118527 published 2026-11-03) are confirmations,
+      not new exploitation or weaponisation.'
+    ground_truth_url: https://www.volexity.com/blog/2026/10/13/a-series-of-unauthenticated-events-chained-exploitation-of-ivanti-connect-secure-zero-days/
+    fix: 'Judgement call: either keep as sticky-critical and say so in the audit, or re-rate to high (a decision within 7 days remains: upgrade to 25.1.1.3 / 25.1.3.1 / 22.8R2.6 and run the compromise check)
+      with immediate_action null. Everything else in the entry (63 claims, 3 CVE records, all quotes) checks out against fetched primaries.'
+  length_note: null
+- entry: 2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: d816fa716a
+    where: body, paragraph 4 (hardening-release paragraph), last sentence; this is the pre-pass citation-cve lead
+    defect: '"Upgrading to 15.5.5-014 or 16.5.0-780 closes the exploited flaw and the hardening CVEs together, while for a 16.0 appliance the hardening advisory names no fixed release and says to migrate,
+      so 16.0.4-302 closes CVE-2026-76461 only ([Cisco PSIRT, hardening-release advisory, 2026-09-14])" cites the hardening advisory for the whole clause.'
+    ground_truth: 'The hardening advisory (revision 1.1, 2026-OCT-14) carries only the fixed-release table "15.5 and earlier 15.5.5-014 / 16.0 Migrate to a fixed release. / 16.5 16.5.0-780" for the five
+      hardening CVEs; it never names CVE-2026-76461 or 16.0.4-302. The CVE binding is supported by another page the entry already cites: the SQL-injection advisory carries "CVE-2026-76461" in its CVE list
+      and the table "15.5 and earlier 15.5.5-014* / 16.0 16.0.4-302 / 16.5 16.5.0-780" (also KEV and NCSC-NL name the id). Lead decision: real defect (adjacency), fact is true, citation must be split.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm
+    fix: 'Split the sentence: cite the hardening advisory only for "names no fixed 16.0 release and says to migrate", and cite the SQL-injection advisory (cisco-sa-esa-inj-2bLVGmhX) for "15.5.5-014, 16.0.4-302
+      and 16.5.0-780 close CVE-2026-76461" and for the CVE id.'
+  - code: F3
+    claim_id: 6303226fae
+    where: section "Update — 2026-11-04T03:26:59Z", fourth sentence (same defect, not flagged mechanically because the clause says "the SQL injection", not the CVE id)
+    defect: '"For a 16.0 appliance the hardening advisory''s table names no fixed release and says to migrate to one, so 16.0.4-302 closes the SQL injection only ([Cisco PSIRT, hardening-release advisory,
+      2026-09-14])".'
+    ground_truth: The hardening page states only "16.0 Migrate to a fixed release."; the build 16.0.4-302 and its mapping to the SQL injection appear only on cisco-sa-esa-inj-2bLVGmhX ("16.0 16.0.4-302").
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-esa-dfCrfXkm
+    fix: 'Same split: hardening advisory for the "migrate" statement, SQL-injection advisory for 16.0.4-302 closing the SQL injection.'
+  - code: F8
+    claim_id: null
+    where: body labelled lines (low confidence)
+    defect: The exploited root-RCE entry has no **Exposure:** and no **Detection:** labelled line; exposure sits in paragraph 1 prose and detection only inside **Triage:** and actions[1].
+    ground_truth: 'The SQL-injection advisory supports both fields: "regardless of device configuration", Secure Email and Web Manager and Secure Web Appliance not affected, mail_logs grep "COPY.*TO PROGRAM",
+      cross-check network and firewall logs outside the device, cluster members and SSH keys, rebuild virtual appliances after recording forensics.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-inj-2bLVGmhX
+    fix: 'Add short **Exposure:** and **Detection:** lines (telemetry class first, post-patch compromise check: root access may have removed local log evidence; restore each member of a cluster with a compromised
+      appliance) carrying what the advisory already says.'
+  length_note: null
+- entry: 2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: null
+    where: 'title: "...with watchTowr''s full chain and a detection tool public since 2026-11-05..." (and the record summary "published the full chain on 2026-11-05 and a detection tool")'
+    defect: The detection tool is dated public since 2026-11-05.
+    ground_truth: 'watchTowr''s repository watchTowr-vs-Barracuda-RCE-CVE-2026-116606-CVE-2026-111560 was created and populated on 2026-11-03 (GitHub API: created_at 2026-11-03T19:20:25Z, three commits
+      19:20 to 19:26Z) and the org event stream shows a PublicEvent for it at 2026-11-03T19:20:25Z, two days before the 2026-11-05 blog post; the entry''s own sources[] record dates the README 2026-11-03.'
+    ground_truth_url: https://api.github.com/repos/watchtowrlabs/watchTowr-vs-Barracuda-RCE-CVE-2026-116606-CVE-2026-111560
+    fix: Say the detection tool has been public since 2026-11-03 and the full technical chain since 2026-11-05 (blog); the tool was public one day after the CVEs were published and before Barracuda changed
+      its advisory.
+  length_note: null
+- entry: 2026-11-07/cve-2026-19868-sonicwall-sonicos-sslvpn-saml-mfa-bypass-kev
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-05/sonicwall-gms-eol-unauthenticated-file-read-no-fix
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-05/seppmail-gateway-15-1-1-unauth-root-rce-and-file-access
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-09-22/cve-2026-7273-zyxel-gs1900-red-heron-kev-exploited
+  verdict: imprecision
+  findings:
+  - code: F13
+    claim_id: 52b6980490
+    where: actions[0] last clause ("... 564 of 996 exploited switches (57%) had never had theirs changed, which lets the actor re-enter even after the hashed credential set is rotated") and body paragraph
+      4 (", so for the majority of victims the unrotated default password alone gave durable re-entry") (low confidence)
+    defect: 'Asserts that factory-default credentials gave the actor durable re-entry / re-entry after credential rotation. The action clause is also internally muddled: a switch whose credentials were
+      rotated is no longer on its default.'
+    ground_truth: 'GreyNoise says only: "While the credentials were hashed, 564 of the victims had factory default credentials." Nothing on the page says the actor re-entered with, or relied on, default
+      credentials (grep for re-enter/persist/default returns that single sentence). 564/996 = 56.6% is the only supported figure.'
+    ground_truth_url: https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation
+    fix: State the source fact (564 of 996 victims were on factory-default credentials) and mark the consequence as the entry's inference ("a switch still on its default password is open to anyone who knows
+      the default"); drop "re-enter even after the hashed credential set is rotated".
+  - code: F4
+    claim_id: null
+    where: 'frontmatter techniques[]: T1078.001 (Default Accounts) (low confidence)'
+    defect: T1078.001 is mapped although no cited source says the actor used a default account; it rests only on the inference above (added by the internal 2026-09-27 mapping record).
+    ground_truth: GreyNoise describes the actor exploiting the CGI flaw, fetching a collector over TFTP and staging /tmp/info; the default-credential sentence describes victims' state, not actor behaviour.
+      All other mapped ids (T1190, T1105, T1059.004, T1005, T1074.001) are supported.
+    ground_truth_url: https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation
+    fix: Drop T1078.001 (or keep only if a source states default-account logins by the actor).
+  length_note: null
+- entry: 2026-11-05/apt29-watering-hole-ios-android-n-day-chains-kev
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-02/dahua-easy4ip-p2p-cloud-camera-takeover-cert-ua
+  verdict: imprecision
+  findings:
+  - code: F12
+    claim_id: null
+    where: 'frontmatter verification: single-source-national-cert and classification reliability A (low confidence)'
+    defect: CERT-UA is treated as a national-CERT carve-out and rated reliability A, but it is not on the profile's national-CERT single-source list and has no record in sources/sources.json.
+    ground_truth: 'Org-profile carve-out list: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. cti-run.md PD-5 carve-out is worded
+      generically ("high-reliability (A/B) national CERT ... for its own jurisdiction"), so the value is defensible under the prompt but not under the profile list. The CERT-UA alert itself was read this
+      pass (jina reader) and every CERT-UA claim holds; the other cited pages restate it.'
+    ground_truth_url: https://cip.gov.ua/ua/news/khakeri-mozhut-otrimati-kontrol-nad-kamerami-ta-videoreyestratorami-cherez-khmarnii-dostup
+    fix: 'Either set verification: single-source with the existing sourcing_note (and consider reliability B), or add CERT-UA to sources.json / the profile list so the carve-out is explicit.'
+  length_note: null
+lead_decisions:
+- lead: citation-cve on 2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce (hardening advisory cited for a clause naming CVE-2026-76461)
+  decision: Real defect, adjacency (F3), fact true. The clause binds CVE-2026-76461 and 16.0.4-302 to the hardening advisory, which carries neither (it says only "16.0 Migrate to a fixed release."). The
+    binding is supported by the SQL-injection advisory the entry already cites (CVE list header "CVE-2026-76461"; table "16.0 16.0.4-302"), and by KEV and NCSC-NL. The citation needs splitting; the same
+    clause in the 2026-11-04 section has the identical defect and was not flagged mechanically (it says "the SQL injection", not the id).
+  claim_ids:
+  - d816fa716a
+  - 6303226fae
+advisory_notes:
+- entry: 2026-10-14/cve-2026-104935-ivanti-connect-secure-zero-day-chain-kev
+  code: F11
+  note: Evidence quote for CERT-FR ALE-013 ("CERT-FR is aware of lateral movement using these secrets.") carries `original:` but not the "(translated from French)" marker the other translated quotes carry;
+    actions[1] bundles detection, isolation, snapshot and rotation in one item and repeats the Detection and Defender takeaway lines; the 2026-10-17 section says "no source read says whether any build now
+    fixes it" and "unfixed step", correct on its date and superseded by the 2026-10-31 section (dated, so not a defect).
+- entry: 2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce
+  code: F11
+  note: techniques[] holds only T1190 although the entry describes SQL injection ending in OS command execution as root (COPY ... TO PROGRAM); a command-execution id (the Barracuda entry maps T1059.004
+    for the same behaviour) is unmapped. Main analysis is exactly 550 words, at the bound.
+- entry: 2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce
+  code: F11
+  note: sourcing_note says the CVSS scores are NCSC Switzerland's; Barracuda's own advisory (9.3, 8.6) and Mandiant (CVSS 4.0 9.3 / 8.6) state them too, and the cves[] cvss fields do not say they are CVSS
+    4.0. The body labels the Barracuda advisory [Barracuda, 2026-11-05] (last-updated date) while the page says Advisory Published 2026-11-02.
+- entry: 2026-09-22/cve-2026-7273-zyxel-gs1900-red-heron-kev-exploited
+  code: F11
+  note: Body gloss "crafted HTTP request to the web-management interface" is attributed to Zyxel, whose advisory says only "CGI program ... crafted HTTP request"; Binarly and BleepingComputer supply "web
+    management interface". EPSS 0.02778 is a point-in-time value (0.02734 on 2026-11-07).
+- entry: 2026-11-05/seppmail-gateway-15-1-1-unauth-root-rce-and-file-access
+  code: info
+  note: priority notable is consistent with PD-11 high disqualifier (CVE-2026-114424 needs an active replacement rule using message-derived data, CVE-2026-114425 needs Large File Transfer, both non-default).
+- entry: 2026-11-05/sonicwall-gms-eol-unauthenticated-file-read-no-fix
+  code: info
+  note: priority routine is defensible (no exploitation, EOL product); the advisory scores availability high (A:H) for a file-read flaw, which the entry already notes.
+coverage_notes: '263 of 263 ledger claims have a row in truth-TD.claims.yaml (non-ok: d816fa716a F3, 6303226fae F3, 52b6980490 F13). Primaries fetched this pass: Cisco inj/hardening/AFW advisories (revisions
+  1.2 / 1.1, current), SonicWall PSIRT JSON API (SNWLID-2026-0014/0019/0011), ENISA EUVD API (7 records), Mandiant raw disclosures, Barracuda Trust page tables, NCSC-CH post 13144, NCSC-NL NCSC-2026-0368,
+  CISA KEV 2026.11.06, GitHub API (PR merge dates, watchTowr repo events), cveawg records (read only, not cited), CERT-FR ALE-013 and AVI-1442 (revision tables), CCCS AV26-1035, Zyxel advisories, Binarly
+  blog and BRLY-2026-057 (decoded from the Next.js payload), CERT-UA alert (jina reader). Unreadable: Ivanti hub advisory page (JS shell; the entry says so). The CCCS bulletin''s "updated 2026-10-16" for
+  Update 1 cannot be confirmed (Update 1 is undated on the live page; no other revision date is shown).'

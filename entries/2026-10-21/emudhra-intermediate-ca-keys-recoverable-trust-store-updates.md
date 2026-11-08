@@ -54,6 +54,15 @@ cves:
     status: [patch-available]
     affected: "CPython 3.15.0 before 3.15.2, 3.14.0 before 3.14.10, 3.13.0 before 3.13.18, 3.12.0 before 3.12.16, every release before 3.11.18, and 3.16.0a1 before 3.16.0 per ENISA's record"
     fixed: "Python 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18 carry the ssl denylist (Python Insider, 2026-10-26), which the post says makes normal uses of pip safe even if pip is not updated; Christian Heimes says in the announcement thread that pip before 26.2.2 keeps trusting the compromised intermediates whatever the system trust store holds, because it always loads its own vendored certifi"
+  - id: CVE-2026-111943
+    cvss: null
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Go before 1.27.3 and 1.26.10 (crypto/x509 chain verification); GitLab CE and EE before 19.5.3, 19.4.5, 19.3.7, 19.2.10, 19.1.10, 19.0.11 and 18.11.14"
+    fixed: "Go 1.27.3 and 1.26.10, which block the intermediates in chain verification; GitLab 19.5.3, 19.4.5, 19.3.7, 19.2.10, 19.1.10, 19.0.11 and 18.11.14 (2026-10-29), with GitLab Runner and the AI Gateway updated separately"
 sources:
   - url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/"
     publisher: "Google (Chrome Root Program and Android Security)"
@@ -132,11 +141,11 @@ sources:
     date: "2026-10-30"
     role: primary
   - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/"
-    publisher: "GitLab (patch release 19.5.3, date of its patch-release feed entry)"
+    publisher: "GitLab (patch release 19.5.3)"
     date: "2026-10-29"
     role: primary
   - url: "https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/"
-    publisher: "Python Insider (release post; the page carries no date, 2026-10-26 is the date of its blog feed entry)"
+    publisher: "Python Insider (release post)"
     date: "2026-10-26"
     role: primary
   - url: "https://emudhra.we-have-a-problem.com/"
@@ -206,8 +215,7 @@ sourcing_note: >
   The Chrome Root Program and Mozilla describe their own handling, the incident tracker is maintained by a Mozilla
   cryptography engineer, and the weak-key cause and eMudhra's explanation come through BleepingComputer's account of
   Mozilla's incident report. Google counts eight subordinate CAs and six TLS intermediates. Microsoft's own post states its block of
-  2026-10-20 and its removal of seven certificates from the Windows and Edge trust lists; Cisco's advisory is at version 1.8, and GitLab's page
-  carries no date, so 2026-10-29 is the date of its patch-release feed entry.
+  2026-10-20 and its removal of seven certificates from the Windows and Edge trust lists; Cisco's advisory is at version 1.8.
 confidence: high
 references: []
 deep_dive: false
@@ -277,6 +285,15 @@ updates:
       default certificates under emSign Root CA - G1 whose earliest SCT is after 2026-11-16, and Apple's
       page dates its blocks to 2026-10-19 and 2026-10-23.
     fields: [summary, affected_products, sources, actions, sourcing_note, body]
+  - at: "2026-11-08T14:08:21Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      CVE-2026-111943, which the title and analysis already name for Go and GitLab, now has its structured
+      record with the fixed Go and GitLab releases; the Python Insider and GitLab pages do carry their
+      dates, so the notes saying otherwise are removed.
+    fields: [cves, sources, sourcing_note]
 migrated_from: null
 ---
 

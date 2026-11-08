@@ -123,6 +123,13 @@ updates:
       only if it contains the installer files; he advises denying web access to the folder and confirming
       it answers 403 before updating.
     fields: [headline, summary, actions, sources, evidence, sourcing_note, body]
+  - at: "2026-11-08T14:08:41Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: improvement
+    summary: >
+      The wp-config.php check follows Picus's account of the attack, which copies a malicious
+      configuration over the live one and can point the site at an attacker-controlled database.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -132,7 +139,7 @@ Wordfence reports that its new firewall rule matched within nine minutes of depl
 
 **Exposure:** any WordPress site on 4.7 to 7.1.3 with `wp-content/upgrade/` reachable from the internet while a core update runs; the discoverer says the deciding factor is whether the updater already installed on the site has been fixed, so the update to 7.1.4 is exposed too, automatic updates included, although a partial package exposes the installer only if it contains the installer files ([The Hacker News, 2026-11-06](https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html)); on 5.9 or later the staging folder name can be predicted, on 4.4 to 5.8 a random suffix hides it unless the site leaks it, and 4.6 and earlier, which Picus counts as affected back to 2.7, get no fix ([Picus Security, 2026-11-05](https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability)). The fixed releases are 7.1.4 and the backport of each branch (7.0.8, 6.9.11 and so on down to 4.7.39) ([Wordfence, 2026-10-29](https://www.wordfence.com/blog/2026/10/wordpress-7-1-4-security-release-rce/)).
 
-**Detection:** in web server access logs, requests under `wp-content/upgrade/` and for `setup-config.php` inside a staging directory, repeated from one source against a few sites as Wordfence saw ([Wordfence, 2026-10-29](https://www.wordfence.com/blog/2026/10/wordpress-7-1-4-security-release-rce/)); between updates the directory holds only an `index.php` ([Patchstack, 2026-10-28](https://patchstack.com/articles/wordpress-7-1-4-security-release/)). Where an update ran while the site was unpatched and the directory was reachable, confirm that `wp-config.php` and the database it names are unchanged ([Picus Security, 2026-11-05](https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability)) and look for administrator accounts, plugins and PHP files under `wp-content/upgrade/` that nobody created ([The Hacker News, 2026-11-06](https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html)).
+**Detection:** in web server access logs, requests under `wp-content/upgrade/` and for `setup-config.php` inside a staging directory, repeated from one source against a few sites as Wordfence saw ([Wordfence, 2026-10-29](https://www.wordfence.com/blog/2026/10/wordpress-7-1-4-security-release-rce/)); between updates the directory holds only an `index.php` ([Patchstack, 2026-10-28](https://patchstack.com/articles/wordpress-7-1-4-security-release/)). Where an unpatched site updated with the directory reachable, check that `wp-config.php`, which the attack overwrites, still names your database ([Picus Security, 2026-11-05](https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability)) and look for administrator accounts, plugins and PHP files under `wp-content/upgrade/` that nobody created ([The Hacker News, 2026-11-06](https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html)).
 
 **Triage:** a request to a staging path outside an update window finds only an `index.php` and is probing, not compromise; a successful response from the staged installer during an update is the event that matters.
 
@@ -153,3 +160,7 @@ Umut Bayram of Picus Security, who found the flaw, shows that the update which i
 The order matters: Picus advises denying web access to wp-content/upgrade/ in the web server configuration first, confirming that the path answers 403, and only then updating; this does not break updates, because WordPress reaches the folder through the filesystem ([Picus Security, 2026-11-05](https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability)). An .htaccess file placed inside the folder does not work, because the old updater deletes the folder's contents before unpacking, and WP-CLI's wp core update is no substitute because it uses the same updater and folder ([Picus Security, 2026-11-05](https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability)). For sites that stayed on an affected version, Wordfence suggests looking for unexpected requests to PHP files under wp-content/upgrade, administrator accounts no one recognises, plugins no one installed and PHP files in wp-content/upgrade that no one put there ([The Hacker News, 2026-11-06](https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html)).
 
 Code that its authors describe as an exploit has appeared in public GitHub repositories since earlier this week, and whether it works has not been established; WordPress's own advisory rates the flaw low, against Wordfence's CVSS 8.1 and CISA's listing as exploited ([The Hacker News, 2026-11-06](https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html)). None of these sources reports a compromise through the update that installs the fix; CISA's listing and Wordfence's probing telemetry above are unchanged.
+
+## Improvement — 2026-11-08T14:08:41Z
+
+The configuration check in the Detection line follows from the mechanism Picus describes: an attacker creates a malicious wp-config.php inside the temporary update directory and has the updater copy it over the live configuration, which can redirect the site to an attacker-controlled empty database ([Picus Security, 2026-11-05](https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability)).

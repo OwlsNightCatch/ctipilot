@@ -26,7 +26,7 @@ cves: []
 sources:
   - url: "https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002"
     publisher: "Sophos (root-cause analysis INC-2026-002)"
-    date: "2026-11-04"
+    date: "2026-10-20"
     role: primary
   - url: "https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company"
     publisher: "Sophos (blog)"
@@ -43,7 +43,7 @@ evidence:
 verification: single-source-victim
 sourcing_note: >
   Sophos is the victim and the only source: its root-cause analysis carries the timeline and the lessons, and its blog adds the tradecraft match.
-  The analysis page is undated; the timeline dates are the analysis's own. Sophos says the actual actions on the device could not be fully recovered.
+  The analysis page is dated 20 October 2026 and the blog post of 2026-11-04 links to it; the timeline dates are the analysis's own. Sophos says the actual actions on the device could not be fully recovered.
 confidence: high
 references:
   - 2026-11-04/binance-theft-fake-recruiter-ai-tool-pivot-deploy-token
@@ -55,18 +55,29 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-11-08T14:05:56Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: correction
+    summary: >
+      Sophos's root-cause analysis INC-2026-002 is dated 20 October 2026, two weeks before the 4 November
+      blog post that links to it.
+    fields: [body, sources, sourcing_note]
 migrated_from: null
 ---
 
-On 2026-09-14 a Sophos employee cloned a public repository presented as a job-interview coding assignment and opened it as a workspace in VS Code; a weaponized workspace settings file replaced the editor's integrated terminal profile with a command that downloads and runs a remote script in a loop, delivery relied on the user opening the workspace as trusted, and no exploit or vulnerability was involved ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). Opening a terminal was enough: a shell script fetched a JavaScript component and a package manifest into a hidden directory in the user profile, a package-manager install ran, the JavaScript ran under Node.js and the final-stage backdoor lived in memory only, with no persistence found ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). SophosLabs identified the BeaverTail loader followed by the InvisibleFerret backdoor, able to steal browser-stored credentials, keychain data and SSH keys, and the JavaScript stage sent the process environment to an attacker web endpoint on a cloud application-hosting service ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
+On 2026-09-14 a Sophos employee cloned a public repository presented as a job-interview coding assignment and opened it as a workspace in VS Code; a weaponized workspace settings file replaced the editor's integrated terminal profile with a command that downloads and runs a remote script in a loop, delivery relied on the user opening the workspace as trusted, and no exploit or vulnerability was involved ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). Opening a terminal was enough: a shell script fetched a JavaScript component and a package manifest into a hidden directory in the user profile, a package-manager install ran, the JavaScript ran under Node.js and the final-stage backdoor lived in memory only, with no persistence found ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). SophosLabs identified the BeaverTail loader followed by the InvisibleFerret backdoor, able to steal browser-stored credentials, keychain data and SSH keys, and the JavaScript stage sent the process environment to an attacker web endpoint on a cloud application-hosting service ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
 
-Two gaps lengthened the exposure. The Sophos Endpoint agent was installed but its core services were not running, so it enforced nothing and reported nothing; the device was last seen in Sophos Central on 2026-06-11, the cause is still under investigation, and SophosLabs says a working agent would have blocked the chain at the first dropped file ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). A third-party application authorization on the employee's source-code platform account survived the session revocation and password reset of 2026-09-15 and made 27 read requests against two internal repositories from an address new to the user until it was revoked on 2026-09-16; Sophos found no other host, no cloud activity and no customer impact ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). The analysis names no group; Sophos CTU says the technique matches the tradecraft of NICKEL ALLEY, which it describes as running the Contagious Interview campaign of fake companies, fake recruiters and malicious code repositories ([Sophos blog, 2026-11-04](https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company)).
+Two gaps lengthened the exposure. The Sophos Endpoint agent was installed but its core services were not running, so it enforced nothing and reported nothing; the device was last seen in Sophos Central on 2026-06-11, the cause is still under investigation, and SophosLabs says a working agent would have blocked the chain at the first dropped file ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). A third-party application authorization on the employee's source-code platform account survived the session revocation and password reset of 2026-09-15 and made 27 read requests against two internal repositories from an address new to the user until it was revoked on 2026-09-16; Sophos found no other host, no cloud activity and no customer impact ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). The analysis names no group; Sophos CTU says the technique matches the tradecraft of NICKEL ALLEY, which it describes as running the Contagious Interview campaign of fake companies, fake recruiters and malicious code repositories ([Sophos blog, 2026-11-04](https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company)).
 
-**Exposure:** developer workstations whose users clone and open repositories from outside parties, recruitment pretexts included, in an editor that trusts the workspace; and any managed device that is compliant in identity and device management but does not report to the endpoint console, as Sophos's fleet review found ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
+**Exposure:** developer workstations whose users clone and open repositories from outside parties, recruitment pretexts included, in an editor that trusts the workspace; and any managed device that is compliant in identity and device management but does not report to the endpoint console, as Sophos's fleet review found ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
 
-**Detection:** in macOS process lineage, the code editor's integrated terminal launching a download-and-run command that a cloned workspace's settings define, followed by a hidden directory in the user profile and a package-manager install run from it ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). In identity telemetry, a device that still signs in but does not report to the endpoint console is a coverage gap; a third-party authorization reading repositories from an address new to the user is the second signal ([Sophos blog, 2026-11-04](https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company); [Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
+**Detection:** in macOS process lineage, the code editor's integrated terminal launching a download-and-run command that a cloned workspace's settings define, followed by a hidden directory in the user profile and a package-manager install run from it ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)). In identity telemetry, a device that still signs in but does not report to the endpoint console is a coverage gap; a third-party authorization reading repositories from an address new to the user is the second signal ([Sophos blog, 2026-11-04](https://www.sophos.com/en-us/blog/fake-coding-test-reaches-security-company); [Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
 
-**Triage:** a terminal profile normally launches a shell executable; this one launched a command that downloads and runs a remote script in a loop; it came from the settings of a freshly cloned repository ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
+**Triage:** a terminal profile normally launches a shell executable; this one launched a command that downloads and runs a remote script in a loop; it came from the settings of a freshly cloned repository ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
 
-**Defender takeaway:** treat a coding assignment or repository from a recruiter or interviewer as untrusted code, because here the compromise needed only a trusted workspace and an opened terminal. Sophos's lasting controls are to require the endpoint agent for device compliance, to monitor for managed devices that stop reporting, and to revoke application authorizations as part of credential containment, not only sessions and passwords ([Sophos RCA, 2026-11-04](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
+**Defender takeaway:** treat a coding assignment or repository from a recruiter or interviewer as untrusted code, because here the compromise needed only a trusted workspace and an opened terminal. Sophos's lasting controls are to require the endpoint agent for device compliance, to monitor for managed devices that stop reporting, and to revoke application authorizations as part of credential containment, not only sessions and passwords ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)).
+
+## Correction — 2026-11-08T14:05:56Z
+
+Sophos's root-cause analysis INC-2026-002 carries the dateline 20 October 2026 ([Sophos RCA, 2026-10-20](https://www.sophos.com/en-us/trust/root-cause-analyses/inc-2026-002)); 4 November 2026 is the date of the Sophos blog post that links to it. The facts drawn from the analysis are unchanged.

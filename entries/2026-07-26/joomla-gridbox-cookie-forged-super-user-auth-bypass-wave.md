@@ -5,7 +5,7 @@ title: >
   CVE-2026-61425 and the follow-up batch, Balbooa Gridbox for Joomla: a client-supplied cookie is
   accepted as proof of identity, giving anonymous Super User access
 headline: >
-  Balbooa Gridbox for Joomla: anonymous Super User flaws exploited since July; update to 2.20.4.2
+  Balbooa Gridbox for Joomla: anonymous Super User flaws exploited since July; update to 2.20.5.0
 summary: >
   The mySites.guru research campaign against Joomla third-party extensions produced six further
   disclosures between 2026-07-20 and 2026-07-23, and one of them changes technique class: the
@@ -14,9 +14,9 @@ summary: >
   that user with no password and no existing session. A Joomla Super User can edit templates,
   which is PHP execution, so this is full site compromise from a single anonymous request. Fixed
   in Gridbox 2.20.1; the researcher says the vulnerable code shipped for at least nine months. The same week added
-  unauthenticated SQL injection and order-forgery flaws in EasyStore, an invoice IDOR in Events Booking, and a critical unauthenticated upload in Membership Pro. A follow-up audit of Gridbox produced eleven more CVEs, fixed in 2.20.2, four of them exploited in the wild, and Gridbox 2.20.3.1 (21 September) fixes a further unauthenticated SQL injection present in every earlier build. Gridbox 2.20.4.2 (27 October) fixes two more unauthenticated SQL injections, CVE-2026-102788 and CVE-2026-102789, with no exploitation reported.
+  unauthenticated SQL injection and order-forgery flaws in EasyStore, an invoice IDOR in Events Booking, and a critical unauthenticated upload in Membership Pro. A follow-up audit of Gridbox produced eleven more CVEs, fixed in 2.20.2, four of them exploited in the wild, and Gridbox 2.20.3.1 (21 September) fixes a further unauthenticated SQL injection present in every earlier build. Gridbox 2.20.4.2 (27 October) fixes two more unauthenticated SQL injections, CVE-2026-102788 and CVE-2026-102789, with no exploitation reported, and Gridbox version 2.20.5.0 (4 November) fixes four more flaws, the worst an unauthenticated file deletion, also with no exploitation reported.
 discovered_at: "2026-07-26T14:08:00Z"
-updated_at: "2026-10-28T03:52:00Z"
+updated_at: "2026-11-08T14:11:24Z"
 event_date: 2026-07-20
 run_id: 2026-07-26T1308Z-audit
 priority: high
@@ -205,6 +205,14 @@ sources:
     publisher: mySites.guru
     date: 2026-10-27
     role: primary
+  - url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-5-0-security-deep-dive"
+    publisher: "Balbooa (Gridbox version 2.20.5.0 security deep dive)"
+    date: "2026-11-04"
+    role: primary
+  - url: "https://mysites.guru/blog/gridbox-2-20-5-0-security-fixes/"
+    publisher: "mySites.guru"
+    date: "2026-11-04"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: A critical unauthenticated authentication bypass in Gridbox let anyone become a Super User on a Joomla site by setting a single browser cookie
@@ -257,7 +265,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Inventory Joomla sites for the Balbooa Gridbox page builder and update every one to 2.20.4.2, which also closes two unauthenticated SQL injections, CVE-2026-102788 and CVE-2026-102789, and the unauthenticated blind SQL injection in the front-end blog author parameter fixed in 2.20.3.1, present in every earlier build, 2.20.3 and 2.20.2.3 included. Anything below 2.20.2 is also exposed to the exploited follow-up batch, which 2.20.1 does not close."
+  - "Inventory Joomla sites for the Balbooa Gridbox page builder and update every one to 2.20.5.0, which also closes an unauthenticated file deletion and three further flaws fixed on 2026-11-04 and, from 2.20.4.2, two unauthenticated SQL injections, CVE-2026-102788 and CVE-2026-102789, and the unauthenticated blind SQL injection in the front-end blog author parameter fixed in 2.20.3.1, present in every earlier build, 2.20.3 and 2.20.2.3 included. Anything below 2.20.2 is also exposed to the exploited follow-up batch, which 2.20.1 does not close."
   - "On any site that ran Gridbox 2.20.1 or earlier while internet-reachable, review the Super User list and administrator-group members, remove accounts that entered an admin group through self-registration rather than an explicit administrative action, and review template files and the web root for changes, with particular attention to files written since 20 July, when the cookie bypass was disclosed."
 updates:
   - at: "2026-07-31T04:09:14Z"
@@ -322,6 +330,14 @@ updates:
       impact, Balbooa's wording on web-server rules and the attribution of the read-side reading are
       corrected; the headline is current.
     fields: [actions, body, cves, headline, sourcing_note, summary, title]
+  - at: "2026-11-08T14:11:24Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: update
+    summary: >
+      Balbooa released Gridbox version 2.20.5.0 on 2026-11-04 with four more security fixes, the worst an
+      unauthenticated deletion of files by path, so 2.20.5.0 replaces 2.20.4.2 as the build to install; no
+      source reports exploitation of the four.
+    fields: [actions, body, headline, sources, summary]
 migrated_from: null
 ---
 
@@ -331,7 +347,7 @@ The rest of the week's batch is the same research campaign continuing on its ori
 
 The researcher's follow-up of 2026-07-29 prints the cookie, and the further Gridbox flaws its full audit found were exploited while the complete fix was still being finalised, so anything on 2.20.1 or earlier is still exposed ([mySites.guru, 2026-07-29](https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/)); the updates below carry that batch and the later fixes.
 
-**Defender takeaway:** inventory Joomla extensions and their versions, not only the Joomla core version, and treat every Gridbox below 2.20.4.2 as exposed; on a site that ran 2.20.1 or earlier while internet-facing, the account and template review matters as much as the update.
+**Defender takeaway:** inventory Joomla extensions and their versions, not only the Joomla core version, and treat every Gridbox below 2.20.5.0 as exposed; on a site that ran 2.20.1 or earlier while internet-facing, the account and template review matters as much as the update.
 
 **Triage:** a cookie-forgery bypass leaves little at the network layer to distinguish it: the request is perfectly well formed and contains no payload to detect ([mySites.guru, 2026-07-20](https://mysites.guru/blog/gridbox-critical-authentication-bypass/)). The observable is the mismatch between authentication and privilege: administrative actions in Joomla's action log attributed to a Super User account with no preceding successful login event for that account, and no session-establishment record. Legitimate administrator activity is preceded by an authentication event from a consistent source; forged-cookie access produces privileged actions that appear without one. On sites running affected Gridbox versions, template-file modifications with no corresponding administrator login are the artefacts worth reviewing.
 
@@ -370,3 +386,7 @@ mySites.guru reads both flaws as read-side, although the CNA's vector also rates
 ## Correction — 2026-11-01T13:48:38Z
 
 The analysis above still said there was no public exploitation signal and that the researcher withholds the cookie name; the researcher's 2026-07-29 follow-up prints the cookie and reports the follow-up batch exploited, so anything on 2.20.1 or earlier is exposed ([mySites.guru, 2026-07-29](https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/)). The October 2025 date is the release before the fix, not the start of exposure: the researcher says the vulnerable code shipped for at least nine months and probably far longer, and that the published CVE record scores CVE-2026-61425 9.4 on a high-privileges vector that does not match the anonymous attack it reproduced ([mySites.guru, 2026-07-20](https://mysites.guru/blog/gridbox-critical-authentication-bypass/)). Membership Pro's CVE-2026-62415 is rated 9.1 under CVSS 3.1 and, on a default configuration, is an anonymous file write rather than code execution ([mySites.guru, 2026-07-21](https://mysites.guru/blog/membership-pro-unauthenticated-file-upload/)). Balbooa's 2.20.2 notes address customers who added their own web-server rules against the attacks; they do not say Balbooa had advised them ([Balbooa, 2026-07-29](https://www.balbooa.com/blog/gridbox/gridbox-2-20-2-security-release)). The "read-side" reading of the 2.20.4.2 pair is mySites.guru's; the CNA's vector also rates integrity and availability High ([mySites.guru, 2026-10-27](https://mysites.guru/blog/gridbox-2-20-4-2-sql-injection-fixes/)). The compromise review now starts from 20 July, the cookie bypass's disclosure.
+
+## Update — 2026-11-08T14:11:24Z
+
+Balbooa released Gridbox version 2.20.5.0 on 2026-11-04 with four security fixes for version 2.20.4.2 and earlier, rated High and filed as CVE-2026-105607, CVE-2026-107129, CVE-2026-107130 and CVE-2026-107903, without saying which identifier belongs to which flaw ([Balbooa, 2026-11-04](https://www.balbooa.com/blog/gridbox/gridbox-2-20-5-0-security-deep-dive)). mySites.guru describes the worst as a front-end task for removing temporary comment and review attachments that, in version 2.20.4.2, needed no login and did not check that the file it was told to delete stayed inside the uploads folder; the other three are a second file deletion flaw on form submissions and two stored cross-site scripting flaws in the comment and review output ([mySites.guru, 2026-11-04](https://mysites.guru/blog/gridbox-2-20-5-0-security-fixes/)). mySites.guru says there is no public report of exploitation and that about 92% of the Gridbox sites it monitors are affected ([mySites.guru, 2026-11-04](https://mysites.guru/blog/gridbox-2-20-5-0-security-fixes/)).

@@ -6,7 +6,7 @@ headline: "Apple spyware alerts reached German MPs and ministry staff; BSI: assu
 summary: >
   Apple has sent a new round of mercenary-spyware threat notifications to users in 99 countries since 2026-10-29, and Germany's BSI says Bundestag members and other public figures are among the
   recipients; the digital minister said members of the federal government were also warned. BSI tells recipients to assume the device may be compromised, to update iOS at once unless a forensic
-  analysis is intended, to keep Lockdown Mode on permanently and to consider replacing the device where the risk looks high; neither Apple nor BSI names an actor, a spyware vendor or an infection vector.
+  analysis is intended, to consider enabling Lockdown Mode and keep it on permanently once enabled, and to consider replacing the device where the risk looks high; neither Apple nor BSI names an actor, a spyware vendor or an infection vector.
 discovered_at: "2026-11-08T03:29:00Z"
 updated_at: null
 event_date: "2026-10-29"
@@ -65,7 +65,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-11-08T14:07:37Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Summary wording aligned with BSI: it advises considering Lockdown Mode and keeping it on permanently
+      once enabled, as the body already says.
+    fields: [summary]
 migrated_from: null
 ---
 

@@ -1,0 +1,144 @@
+batch: TE
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-08T13:13:44Z'
+  ended: '2026-11-08T13:46:38Z'
+entries:
+- entry: 2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 62db259b59
+    where: cves[CVE-2026-98432].affected ("Ubuntu 22.04, 24.04, 26.04 and 26.10 (fix in progress)") and, dated 2026-11-04, the Ubuntu paragraph of the body, Defender takeaway and summary
+    defect: 'Entry states Ubuntu 26.10 is still "fix in progress" (undated in cves[].affected); the dated body/summary statements ("tracker last updated 2026-11-04") were true on that date (confirmed on a Wayback snapshot: "Last updated 4 November 2026 ... linux | 26.10 stonking | Vulnerable work in progress in 7.3.0-10.10").'
+    ground_truth: 'Canonical tracker, now "Last updated 7 November 2026": "linux | 26.10 stonking | Fixed in 7.3.0-10.10"; 26.04, 24.04, 22.04, 20.04, 18.04 and 16.04 remain "Vulnerable work in progress" (14.04 Not affected).'
+    ground_truth_url: https://ubuntu.com/security/CVE-2026-98432
+    fix: 'Add a changelog record: Ubuntu 26.10 fixed in linux 7.3.0-10.10 (tracker revision 2026-11-07), other releases still in progress; move 26.10 out of the "fix in progress" list in cves[].affected/fixed.'
+  - code: F10
+    claim_id: null
+    where: headline / summary / Fortinet sentences ("Fortinet still have none"; "Fortinet's advisory is unchanged")
+    defect: Fortinet FG-IR-26-188 was revised after the entry's last record and now carries a mitigation the entry does not mention; the "no fixed build" statements remain true but the "unchanged" statement (2026-11-05 section) no longer holds.
+    ground_truth: 'FG-IR-26-188 "Updated Date Nov 7, 2026"; Timeline "2026-11-07: Added IPS package info"; "Virtual Patch named ''Linux.Kernel.tcp_v4_syn_recv_sock.Use.After.Free.'' is available in FMWP db update 26.113"; "Virtual Patch: Yes"; the products-under-investigation list has grown to about 60 products; "Known Exploited: No" unchanged.'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-188
+    fix: Record the Fortinet IPS virtual patch (FMWP db update 26.113, 2026-11-07) in a changelog update; keep "no fixed build" wording.
+  - code: F10
+    claim_id: null
+    where: coverage of vendor fixes (body paragraph 3; actions[0])
+    defect: Sophos Firewall and SD-RED fixes released on 2026-11-06 are not covered; the entry names WatchGuard and Fortinet as the network-appliance vendors without a fix but is silent on Sophos (new vendor advisory, low severity).
+    ground_truth: 'sophos-sa-20261102-linux-kernel-tcp (first published 2 Nov, updated 6 Nov, version 3): "Sophos Firewall | Hotfix HF110626.1 released on November 6, 2026 for v23.0 GA, v23.0 EAP1 and v22.0 MR3 ... Sophos SD-RED 20 and SD-RED 60 | Fixed in SD-RED firmware 3.0.012, released on November 5, 2026".'
+    ground_truth_url: https://www.sophos.com/en-us/security-advisories/sophos-sa-20261102-linux-kernel-tcp
+    fix: 'Optional: add Sophos Firewall hotfix HF110626.1 and SD-RED 3.0.012 to the vendor-status paragraph and cves[].fixed.'
+  length_note: null
+- entry: 2026-10-30/wordpress-core-7-1-4-unauthenticated-upgrade-window-rce-race
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: 1d28e17828
+    where: 'body Detection line: "confirm that `wp-config.php` and the database it names are unchanged ([Picus Security, 2026-11-05])"'
+    defect: (low confidence) The clause is bound to the Picus post, which describes how the attacker overwrites the live wp-config.php but gives no compromise-check advice; the check is the entry's own inference from that mechanism.
+    ground_truth: 'Picus (last updated November 05, 2026): "an attacker can create a malicious wp-config.php inside the temporary update directory and have the updater copy it over the live configuration. The replacement file can redirect the site to an attacker-controlled empty database" - no instruction to verify wp-config.php or the database.'
+    ground_truth_url: https://www.picussecurity.com/resource/blog/cve-2026-119977-when-updating-wordpress-becomes-the-vulnerability
+    fix: Rephrase as the entry's inference ("the mechanism implies ...") or cite the mechanism sentence only; the Wordfence list of what to check (admin accounts, plugins, PHP files under wp-content/upgrade) is the sourced part.
+  length_note: null
+- entry: 2026-10-31/progress-ws-ftp-server-cve-2026-84295-unauth-cvss-10
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-09-22/cve-2026-13684-synology-dsm-unauth-file-read-write
+  verdict: imprecision
+  findings:
+  - code: F5
+    claim_id: ec1664c516
+    where: 'body Detection paragraph, second sentence: "the SCGI and login-logic surfaces sit behind the standard DSM web-management port, so file reads or writes outside a session''s own storage scope, or unauthenticated requests to the SCGI and login endpoints from outside the administrative source range, are the sharpest signal"'
+    defect: (low confidence) Presented as fact without a citation and without the "(an inference)" label other entries use; no cited source says the SCGI or login-logic code is reached through a particular port or endpoint.
+    ground_truth: 'NCSC Switzerland post 12960 states only "Prerequisites: Network access to the DSM management interface"; Synology SA-26:13 says "improper encoding or escaping of output vulnerability in SCGI" and "insufficient entropy vulnerability in login logic" with no port or endpoint detail.'
+    ground_truth_url: https://security-hub.ncsc.admin.ch/#/posts/12960
+    fix: Mark the sentence as an inference from the described flaws, or cite NCSC for "network access to the management interface" and drop the endpoint specifics.
+  length_note: null
+- entry: 2026-10-25/qnap-synology-php2shell-qts-quts-hero-fixed-others-unfixed
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: c2278b61b6, d0273cdf21, e5b990a915, 90c5051850, 7fa4a02997
+    where: title ("QNE (ADRA) still unfixed"), headline ("QNE still unfixed"), summary ("QNE (ADRA) ... with no fixed version"), actions[0] ("take any QNAP device running QNE (ADRA) off the internet until QNAP lists a fix"), cves[].fixed ("no fix yet for QNE (ADRA)")
+    defect: QNE (ADRA) is stated to have no fixed version; QNAP revised QSA-26-19 on 2026-11-02 and now lists a fix.
+    ground_truth: 'QSA-26-19 now reads "Status #### Resolved"; table "QNE (ADRA) 1.0.7 and earlier Resolved QNE (ADRA) 1.0.7.q327"; "Revision History: V1.0 (October 22, 2026) - Fixing Published; V1.1 (November 2, 2026) - Resolved Published".'
+    ground_truth_url: https://www.qnap.com/en/security-advisory/qsa-26-19
+    fix: 'Add a changelog update (QSA-26-19 V1.1, 2026-11-02): QNE (ADRA) fixed in 1.0.7.q327; replace title/headline/summary/actions/cves[].fixed wording and the "no fix" clauses in the main analysis; keep the QSA-26-18 and Synology content.'
+  - code: F3
+    claim_id: f86a379255, a88c55178e, 10837e3d48
+    where: 'body (QNE paragraph: "its fixed version is still to be announced"; Defender takeaway: "for QNE (ADRA), which has no fix"), and the 2026-10-31 section ("whose status is Fixing and whose fixed version is still to be announced")'
+    defect: The cited QSA-26-19 page no longer supports these statements (the 2026-10-31 section was accurate for that date and may stay as a dated section; the main-analysis sentences and the Defender takeaway are now false).
+    ground_truth: 'QSA-26-19: "Affected product Status Fixed version / QNE (ADRA) 1.0.7 and earlier Resolved QNE (ADRA) 1.0.7.q327"; V1.1 (November 2, 2026) - Resolved Published.'
+    ground_truth_url: https://www.qnap.com/en/security-advisory/qsa-26-19
+    fix: 'Fix the main-analysis and Defender-takeaway sentences through a correction/update record: QNE (ADRA) 1.0.7.q327 is the fixed build.'
+  - code: quote-literal (lead)
+    claim_id: null
+    where: 'evidence[6]: "QNE (ADRA) 1.0.7 and earlier Fixing To be announced" (QSA-26-19)'
+    defect: 'Lead decided: the quote is not a contiguous passage of the page today because QSA-26-19 was revised to V1.1 (Resolved) on 2026-11-02; when written it was a flattened table row (same row format confirmed on the QSA-26-18 page of 2026-10-26: "| QNE (ADRA) 1.0.7 and earlier | Fixing | To be announced |"), i.e. a table row quoted as prose, not a fabricated quote. No independent defect; it now supports a superseded state.'
+    ground_truth: 'Current QSA-26-19 table row: "QNE (ADRA) 1.0.7 and earlier Resolved QNE (ADRA) 1.0.7.q327"; Wayback 2026-10-26 snapshot of QSA-26-18 shows the earlier "Fixing | To be announced" row.'
+    ground_truth_url: https://www.qnap.com/en/security-advisory/qsa-26-19
+    fix: When the entry is corrected, replace this evidence quote with the current row ("QNE (ADRA) 1.0.7 and earlier Resolved QNE (ADRA) 1.0.7.q327") or drop it.
+  length_note: null
+- entry: 2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-10-29/php2shell-trend-micro-apex-quest-kace-netapp-ontap
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 3da40cdb10
+    where: cves[CVE-2026-109618].fixed (NetApp list) and the NetApp sentence of the body ("... 9.18.1P8HF1, 9.19.1P3HF1 and 9.19.1P4", [NetApp, 2026-11-03])
+    defect: NetApp fixed-build list stops at revision 11.0 (2026-11-03); the advisory has since been revised to 12.0 and the list omits ONTAP 9.17.1P12.
+    ground_truth: 'NTAP-20261021-0021 advisory data, kb_rev_history: {"comment":"ONTAP 9.17.1P12 added to Software Versions and Fixes, Final status","date":"20261104","version":"12.0"}; kb_status "Final"; kb_fixes include .../ontap9/downloads-tab/download/62286/9.17.1P12.'
+    ground_truth_url: https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021
+    fix: 'Add a changelog update: NetApp revision 12.0 (2026-11-04) adds ONTAP 9.17.1P12 and the advisory is Final; add 9.17.1P12 to cves[].fixed. (The body sentence dated 2026-11-03 stays accurate for that revision.) Trend Micro KA-0024802 has also been revised to "Last updated 2026/11/04" ("Current Status as of Nov. 4"); every status the entry names (Apex Central and Apex One server ETA Nov. 11, Mobile Security Nov. 17, DDAN Nov. 12, DDI/DDEI patches, TMWS cloud fixed Oct. 30) is unchanged, so no further mismatch.'
+  length_note: null
+- entry: 2026-11-02/xerox-fiery-php2shell-printers-fixes-due-6-to-23-november
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: 09ef84c07c, 8b7423f896, ad0d07d734, 061d019388, cd97efc614
+    where: title/headline/summary ("no fixed build is out"; "fixes due 6 to 23 November"; AltaLink/EC81xx/VersaLink "expected on 2026-11-06"; WorkCentre "in development"), actions[0], cves[].fixed ("none released as of 2026-11-03"), cves[].status [no-patch, mitigation-only], tags [no-patch]
+    defect: 'Xerox revised bulletin XRX26-016 to v6 on 2026-11-06 (the day the entry says fixes are expected): AltaLink 82xx/81xx, EC81xx and VersaLink C/B415, C/B625, C/B620 are Remediated; WorkCentre 3655/EC7836/EC7856 now have a patch; AltaLink C80xx/B80xx/EC80xx are newly listed as Affected with a patch. Only Fiery (due Nov 9-23) and the Worldwide Ticketing Tool remain open.'
+    ground_truth: 'v6 ("Updated: November 6, 2026"): "Xerox AltaLink 82xx, AltaLink 81xx and Xerox EC81xx products | Remediated | This release adds PHP 8.2.35 which contains the fixes ... Version 123.xxx.006.29800"; "VersaLink C/B415, C/B625, C/B620 | Remediated | ... Version 123.xxx.006.30100"; "AltaLink C8030/C8035, C8045/C8055, C8070; AltaLink B8045/B8055, B8065/B8075/B8090; EC8036, EC8056 | Affected | A System Software Patch to Reduce Exposure to PHP2Shell Vulnerabilities is available ... XRX26-018"; "WorkCentre 3655, EC7836, EC7856 | Affected | A System Software Patch ... is available ... XRX26-017"; "Fiery patches are scheduled for release November 9-23, 2026"; "Worldwide Ticketing Tool | Fix in development". Bulletin index lists v6 (November 6, 2026) and XRX26-017/-018 (November 5, 2026).'
+    ground_truth_url: https://securitydocs.business.xerox.com/wp-content/uploads/2026/11/Xerox-Security-Bulletin-XRX26-016-for-PHP2Shell-Vulnerabilities-CVE-2026-109618-and-CVE-2026-109619-v6.pdf
+    fix: 'Add a changelog update for bulletin v6 (2026-11-06): AltaLink 82xx/81xx, EC81xx, VersaLink remediated with PHP 8.2.35 firmware; patches for WorkCentre (XRX26-017) and AltaLink C80xx/B80xx/EC80xx (XRX26-018) that reduce exposure; Fiery still due Nov 9-23; ticketing tool in development. Rewrite title, headline, summary, actions[0], cves[].affected/fixed/status, tags and the main analysis (including "the bulletin does not give a PHP version") to the new state.'
+  - code: F4
+    claim_id: 00116df2ee, 315fea1c6d, 0270ef55a9
+    where: 'body: "No fixed build is out: ..."; Defender takeaway "install the fixes on release, 2026-11-06 for AltaLink, EC81xx and VersaLink"; "The bulletin does not give a PHP version"'
+    defect: Cited v5 supports these sentences for 2026-11-03 but they are false against the current bulletin.
+    ground_truth: 'v6: "This release adds PHP 8.2.35 which contains the fixes for the critical (RCE) vulnerabilities."; AltaLink/VersaLink "Remediated".'
+    ground_truth_url: https://securitydocs.business.xerox.com/wp-content/uploads/2026/11/Xerox-Security-Bulletin-XRX26-016-for-PHP2Shell-Vulnerabilities-CVE-2026-109618-and-CVE-2026-109619-v6.pdf
+    fix: Correct through the same changelog record; the 2026-11-05 section ("fix dates are unchanged") stays as a dated section.
+  length_note: null
+- entry: 2026-11-02/android-sms-of-death-wap-push-telephony-crash
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: ce1bc081b5, 55113190dc, 8f9c21f82d
+    where: actions[0] ("Install the October 2026 Android security update ..."), Exposure ("any Android phone on a patch level before October 2026"), Defender takeaway ("move every managed Android handset to the October 2026 patch level")
+    defect: The entry builds its patch-level guidance on the researcher's statement that the fix shipped in October; Google's own bulletins attach the CVE to the November 2026 bulletin, so the October patch level is not the vendor-stated fix level.
+    ground_truth: 'Android Security Bulletin November 2026 (Published November 2, Updated November 6), "2026-11-01 security patch level", System: "CVE-2026-58882 | A-517376969 | DoS | Critical | 14, 15, 16, 16-qpr2, 17"; the October 2026 bulletin lists no decodeWapPdu/WapPushOverSms issue (BleepingComputer: "the flaw is not listed in Google''s October security bulletin").'
+    ground_truth_url: https://source.android.com/docs/security/bulletin/2026/2026-11-01
+    fix: 'Add a changelog update: Google lists the flaw as CVE-2026-58882 (Critical DoS, Android 14 to 17) in the November 2026 bulletin, fixed at patch level 2026-11-01; change actions, Exposure and Defender takeaway to the 2026-11-01 patch level and note the researcher-vs-bulletin discrepancy (the researcher''s "October" claim stays attributed).'
+  - code: F4
+    claim_id: null
+    where: 'sourcing_note ("no CVE record by that number exists and the researcher names none") and cves: []'
+    defect: CVE-2026-58882 now exists as a published CVE record, assigned by Google (Android); the entry says no record exists and carries an empty cves[].
+    ground_truth: 'CVE record CVE-2026-58882: state PUBLISHED, assignerShortName google_android, datePublished 2026-11-02T19:54:02Z; "In decodeWapPdu of WapPushOverSms.java, there is a possible out of bounds read due to an integer overflow. This could lead to a remote denial of service ..."; affected Android 14, 15, 16, 16-qpr2, 17; references the 2026-11-01 Android bulletin; CISA ADP CVSS 3.1 7.5, SSVC Exploitation none.'
+    ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-58882
+    fix: Record CVE-2026-58882 in cves[] (status patch-available, Google bulletin 2026-11-01, Android 14 to 17) and replace the "no CVE record exists" sentence in sourcing_note (the CVE was published after the entry was written).
+  length_note: null
+- entry: 2026-11-06/cve-2026-116779-freeswitch-sip-message-api-command-execution
+  verdict: imprecision
+  findings:
+  - code: F8
+    claim_id: null
+    where: Exposure and cves[].affected/fixed (only "a SIP profile that accepts inbound MESSAGE" and sofia are named)
+    defect: (low confidence) The 1.11.3 release notes gate the api chat proto in mod_verto as well as mod_sofia; the entry names only the SIP profile surface. The GHSA text itself does not mention Verto, so whether Verto endpoints are exposed to the same selector is not stated by the advisory.
+    ground_truth: 'FreeSWITCH v1.11.3 release notes: "[mod_sofia] Add enable-chat-api-proto to gate the api chat proto" and "[mod_verto] Add enable-chat-api-proto to gate the api chat proto"; "[mod_sofia] Bound the To-user split in the inbound MESSAGE handler".'
+    ground_truth_url: https://github.com/signalwire/freeswitch/releases
+    fix: 'Optional: add that 1.11.3 also adds the enable-chat-api-proto gate to mod_verto (installations exposing Verto should treat it as in scope until the vendor says otherwise).'
+  length_note: null

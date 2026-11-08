@@ -1,0 +1,80 @@
+batch: TB
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-08T13:13:45Z'
+  ended: '2026-11-08T13:37:14Z'
+leads:
+- lead: 1
+  entry: 2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi
+  decision: quote was verbatim when captured, page edited since publication; the edit makes the entry statement stale (finding F3 below)
+  evidence: The run record bodies work/2026-11-05T0255Z-intel/bodies/fu4-splunk-svd-2026-1015.md (Last Updated 2026-11-04) carries "Splunk Enterprise versions 10.0 and lower are vulnerable." verbatim. The page fetched today (Last Updated 2026-11-06, changelog entries 2026-11-04, 2026-11-05, 2026-11-06 all "Updated Product Status section") reads "Splunk Enterprise version 10.0 is vulnerable. Splunk Enterprise versions 9.4 and 10.2 and higher are not affected."
+  url: https://advisory.splunk.com/advisories/SVD-2026-1015
+- lead: 2
+  entry: 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack
+  decision: confirmed, no re-quote needed; the AFP page carries the passage today
+  evidence: 'https://www.khaleejtimes.com/world/europe/french-supermarkets-refrigerator-shutdown-cyberattack (visible dateline Mon 12 Oct 2026 9:01 PM, JSON-LD datePublished 2026-10-12T21:01:21+04:00) reads: Danfoss told AFP in a statement that most of the affected equipment was "legacy" products which "no longer receive software or security updates". The evidence quote is a contiguous substring (trafilatura extract and raw HTML both). Independent confirmation: Cooling Post (Danfoss statement, "These no longer receive software or security updates") and Blick (Danfoss to Bloomberg).'
+  url: https://www.khaleejtimes.com/world/europe/french-supermarkets-refrigerator-shutdown-cyberattack
+entries:
+- entry: 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack
+  verdict: imprecision
+  findings:
+  - code: F13
+    claim_id: 10c36ea0b2
+    where: updates[] record 2026-10-25T03:37:30Z summary (reader-visible changelog line)
+    defect: (low confidence) The record summary says ANSSI said the elementary flaws were exploited "not vulnerabilities researchers had published, so a firmware update alone does not close the exposure".
+    ground_truth: Public Sénat attributes to ANSSI only that "ce sont des défauts de sécurisation élémentaire qui ont été exploités, à commencer par l’exposition directe sur Internet d’équipements frigorifiques et leur administration sans sécurisation particulière, des mots de passe faibles" and that it dismissed analyses citing published vulnerabilities; Le Monde Informatique likewise. Neither states that a firmware update would not close the exposure, and the 2026-10-25 section body does not carry the clause (it appears only in the record summary).
+    ground_truth_url: https://www.publicsenat.fr/actualites/politique/des-defauts-de-securisation-elementaire-et-des-mots-de-passe-faibles-ont-permis-la-cyberattaque-contre-les-frigos-de-supermarches
+    fix: Drop "so a firmware update alone does not close the exposure" from the record summary (records are append-only, so correct it through a new correction record) or attribute it as the entry's inference.
+  length_note: 'main analysis 711 words (bound 550, not a deep dive); title 510 characters; headline 100 characters (within bound). All 122 claims checked against freshly fetched primaries: CERT-FR (last version 2026-10-16), NCSC advisory 13054 (last modified 2026-11-06), Dixell PDF (Last-Modified 2026-10-18), EFS, ENISA, CISA, Ransom-ISAC, Unit 42 and every press source; no other mismatch found.'
+- entry: 2026-10-24/cve-2026-111497-node2shell-brotli-decoder-rce-nodejs-pypi
+  verdict: factual-error
+  findings:
+  - code: F3
+    claim_id: 7cdedb7f84
+    where: 'cves[CVE-2026-111497].affected; also summary (last sentence), actions[1], body Exposure, ## Update 2026-11-05T03:52:52Z, updates[] record 2026-11-05 summary, evidence[] Splunk quote (claims 6292805806, ab54d3b26a, 3d529e6d0b, 688ef615c7, 3210725b06, 5344eebfa7)'
+    defect: The entry states "Splunk Enterprise 10.0 and lower" is vulnerable and actions[1] says "Upgrade every Splunk Enterprise 10.0 and lower to 10.2 or higher"; the evidence quote "Splunk Enterprise versions 10.0 and lower are vulnerable." was verbatim on the 2026-11-04 revision.
+    ground_truth: 'Splunk revised SVD-2026-1015 on 2026-11-05 and 2026-11-06 (Last Updated 2026-11-06): "Splunk Enterprise version 10.0 is vulnerable. Splunk Enterprise versions 9.4 and 10.2 and higher are not affected. To address the Node.js runtime bundled with Splunk Enterprise 10.0, we recommend upgrading to Splunk Enterprise 10.2 or higher." The page now also lists Splunk Observability Cloud, Observability OpenTelemetry Collector, AppDynamics On-Premises and Galileo (remedied) and gives Splunk Synthetic Runner "Upgrade to 1.71.0 or higher". A Splunk 9.4 estate is now told to upgrade for no reason.'
+    ground_truth_url: https://advisory.splunk.com/advisories/SVD-2026-1015
+    fix: 'Correction record: scope Splunk Enterprise to 10.0 only (9.4 and 10.2 and higher not affected) in cves[].affected, summary, actions[1] and Exposure; replace the evidence quote with "Splunk Enterprise version 10.0 is vulnerable. Splunk Enterprise versions 9.4 and 10.2 and higher are not affected." (contiguous on today''s page); the Visual Exporter statement (every Splunk Enterprise version, disable or remove) and the 10.2 upgrade target for 10.0 stay correct.'
+  - code: F4
+    claim_id: null
+    where: sourcing_note, sentence "ELLIO's sensor telemetry is the only first-hand account of an attack found"
+    defect: The sourcing_note still says ELLIO is the only first-hand attack account and that Tenable relays it without confirming it.
+    ground_truth: 'The entry''s own ## Correction 2026-11-01T13:56:19Z says "ELLIO''s capture is not the only attack telemetry: Zscaler''s decoys recorded 402 events from 20 source addresses against 12 customers within a day of disclosure, 60% of them exploitation attempts"; Zscaler ThreatLabz: "Within the first 24 hours following public disclosure, Zscaler Deception’s global decoy mesh observed activity from 20 source IP addresses targeting 12 customers across 402 events. Of these events, 40% involved reconnaissance and 60% involved exploitation attempts." NCSC Switzerland also moved the status to Actively Exploited on 2026-10-29. The 2026-11-01 correction did not name sourcing_note in fields.'
+    ground_truth_url: https://www.zscaler.com/blogs/security-research/cve-2026-111497-node2shell-http2shell-vulnerability-may-allow-rce
+    fix: In the next correction record rewrite the sentence to name ELLIO and Zscaler decoy telemetry as first-hand attack observations, and declare sourcing_note in fields.
+  - code: F4
+    claim_id: 0a40922f5f
+    where: updates[] record 2026-10-27T03:43:51Z summary, last sentence
+    defect: (low confidence; append-only history already superseded by the 2026-11-01 correction) "Still no source reports exploitation outside Imperva's laboratory demonstration."
+    ground_truth: 'ELLIO page: "Update, 26 October 2026. ELLIO sensors have recorded CVE-2026-111497 exploit traffic in the wild" (15:08 UTC on 2026-10-26, before the record''s 03:43Z on 2026-10-27). The 2026-11-01 correction dates the 10-26 statement to the day it held but gives CISA''s 2026-10-27 listing as the end, not ELLIO''s earlier report.'
+    ground_truth_url: https://ellio.tech/en/blog/node2shell-cve-2026-111497-rce-on-stock-nodejs-builds/
+    fix: No edit to the record itself; when the Splunk correction is written, make the correction text say ELLIO reported exploit traffic on 2026-10-26.
+  length_note: main analysis 539 words (bound 550); headline 104 characters. Verified all 68 claims; every other fixed version, CVSS (9.2 CVSS 4.0), PAN-OS hotfix table (timeline 2026-10-27 to 2026-10-29), Broadcom VMSA-2026-0008.1, Citrix CTX697300, NCSC 13105, KEV entry (dateAdded 2026-10-27) matched the fresh primaries.
+- entry: 2026-11-07/cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo
+  verdict: imprecision
+  findings:
+  - code: F8
+    claim_id: 5db3f0833a
+    where: summary, cves[].affected, affected_products and body paragraph 2 ("Siemens' advisory SSA-045512, revised on 2026-11-06, lists Desigo CC V8 and V9") (claims 4683033f62, 804cd6f4ec)
+    defect: The entry names only Desigo CC V8 and V9 for SSA-045512 (and cites "revised on 2026-11-06"), omitting the two products that very revision added.
+    ground_truth: 'SSA-045512 history: "V1.2 (2026-11-06): Added Gridscale X DSA and PSSE to the list of affected products". Known Affected Products: "Gridscale X DSA All versions >= V5.3 < V5.4 affected by CVE-2026-111497 Update to V5.4 or later version"; "Gridscale X PSS®E All versions < V36.8.0 affected by CVE-2026-111497 Update to V36.8.0 or later version". The page is current (Last Update 2026-11-06, V1.2), and the entry was published 2026-11-07.'
+    ground_truth_url: https://cert-portal.siemens.com/productcert/html/ssa-045512.html
+    fix: 'Correction record: add Siemens Gridscale X DSA (V5.3 up to but excluding V5.4, fix V5.4 or later) and Gridscale X PSS®E (below V36.8.0, fix V36.8.0 or later) to the SSA-045512 sentence, cves[].affected and fixed, affected_products and, if worth a line, the Exposure paragraph (grid-planning software at transmission operators).'
+  length_note: 'main analysis 545 words (bound 550); headline 115 characters. Verified all 19 claims: Mitel rev 5.0 table (7 affected products, KB numbers, 8.1), Cisco v1.8 2026-NOV-06 fix table, SSA-443410 V1.1 (six fixed applications, Common Configurator no fix), CISA KEV listing.'
+- entry: 2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root
+  verdict: clean
+  findings: []
+  length_note: 'main analysis 504 words; headline 113 characters. All 25 claims verified against Siemens SSA-834709 V1.1 (fetched today, four variants, CVSS 10.0/10.0, CWE-306), CERT-FR and NCSC-NL (Advanced variant only), VulnCheck (16 events, /dev/shm drop, webshell flows) and The Register. CVE-2026-58115 is not in the CISA KEV catalogue as of 2026.11.06, consistent with the entry. Note, not a finding: evidence[] records 1 and 2 carry no source_url.'
+- entry: 2026-11-06/storm-2603-fileless-toolshell-virtualpathprovider-shell
+  verdict: clean
+  findings: []
+  length_note: main analysis 542 words (bound 550); headline 120 characters (at bound). All 16 claims and the three evidence quotes match the Securelist article (2026-11-05); every techniques[] id is active in the pinned ATT&CK v20.1 and the body describes the mapped behaviour.
+- entry: 2026-11-06/qilin-october-2026-build-vcenter-esxi-safe-mode-printers
+  verdict: clean
+  findings: []
+  length_note: main analysis 464 words; headline 114 characters. All 12 claims and both evidence quotes match the Seqrite post (2026-11-03). T1490 rests on the post's baseline-sample phase 8 (Volume Shadow Copy purge) which the body does not mention; supported by the source, left.
+- entry: 2026-11-07/kaspersky-esxi-proxmox-ransomware-monitoring-root-password
+  verdict: clean
+  findings: []
+  length_note: main analysis 469 words; headline 111 characters. All 13 claims and the three evidence quotes match the Securelist article (2026-11-06); sourcing_note counts (seven recommendations, 2025-10-18/19 timeline, ambiguous Proxmox log date) hold.

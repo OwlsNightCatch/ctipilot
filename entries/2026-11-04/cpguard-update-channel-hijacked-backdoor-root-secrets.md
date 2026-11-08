@@ -47,7 +47,7 @@ evidence:
 verification: single-source-victim
 sourcing_note: >
   OPSSHIELD's two documents are the victim vendor's own statements and the only first-hand sources; BleepingComputer restates the earlier advisory and adds a spokesperson's statement that 2,946 servers were affected. The later disclosure supersedes the earlier advisory's preliminary scope (32 retrieved files, which the advisory calls a preliminary count and not the total number of affected servers)
-  with about 2,950 servers and about 7,900 billing-portal accounts, and it names 5.88.26 where the advisory named 5.88.25. The vendor says its logs do not record the exact request that gave the attacker access, so the entry point is traced but not fully
+  with about 2,950 servers and about 7,900 billing-portal accounts, and it names 5.88.26 where the advisory named 5.88.25. The earlier advisory attributed the access to compromised credentials for the update distribution infrastructure (CDN), which BleepingComputer repeats; the later disclosure replaces that account with a customer sign-up and an exploit of the billing and licensing server. The vendor says its logs do not record the exact request that gave the attacker access, so the entry point is traced but not fully
   reconstructed. No actor is named.
 confidence: high
 references: []
@@ -60,7 +60,15 @@ classification:
 watchlist_hit: false
 actions:
   - "On every Linux server that ran cPGuard on 2026-11-02, update to the latest version (the disclosure names 5.88.26 as the clean update), confirm that the hidden root shell and the scheduled task the fake update left are gone, then reset root and local passwords from a trusted environment and rotate the root SSH keys, the MySQL root password, any cloud storage keys and every secret in root's shell history; rebuild from a clean backup taken before 1 November any server the vendor tells you the attacker logged in to by hand."
-updates: []
+updates:
+  - at: "2026-11-08T14:07:37Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Sourcing note now records that the vendor's earlier advisory, repeated by BleepingComputer,
+      described stolen CDN credentials as the access path, which its later disclosure replaced.
+    fields: [sourcing_note]
 migrated_from: null
 ---
 
