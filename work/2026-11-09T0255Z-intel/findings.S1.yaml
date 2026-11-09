@@ -1,0 +1,317 @@
+# work/2026-11-09T0255Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-09T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-09T02:57:26Z
+ended_at: 2026-11-09T03:19:41Z
+duration_seconds: 1335
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 12
+  bridge_fetches: 110
+window_note: >
+  Weekend window (2026-11-08T00:55Z to 2026-11-09T02:55Z). Every national-authority and vendor-PSIRT feed in the slice is quiet since
+  2026-11-06: CISA KEV catalogue 2026.11.06 (newest dateAdded 2026-11-06, SonicWall CVE-2026-19868, already covered), NCSC-NL newest NCSC-2026-0470 (2026-11-06),
+  CERT-FR newest AVI-1480 (2026-11-06), BSI WID CSAF changes.csv newest 2026-11-05T23:00Z, CERT-EU newest 2026-019 (2026-10-22), CERT.PL newest 2026-11-06,
+  NCSC-CH Security Hub newest post 13157 (2026-11-06), NCSC-UK newest 2026-11-03, CISA advisories listing newest 2026-11-06, Fortinet PSIRT newest 2026-10-13 on the listing,
+  PAN-OS newest 2026-10-31, MSRC SUG revision sweep (latestRevisionDate >= 2026-11-05) shows no exploited/publicly-disclosed flag and nothing relevant in-window.
+  Real in-window signal is the ENISA EUVD critical-score feed (2026-11-08/09), one SANS ISC diary and one rotational-lookback pair; the 72 h developing-story window adds two items of 2026-11-06.
+kev_check:
+  catalogue_version: "2026.11.06"
+  date_released: "2026-11-06T19:44:45Z"
+  additions_in_window: 0
+  newest_additions: "2026-11-06 CVE-2026-19868 (SonicWall, covered by entry 2026-11-07/cve-2026-19868-sonicwall-sonicos-sslvpn-saml-mfa-bypass-kev); 2026-11-04 CVE-2024-27834 (covered, APT29 entry); 2026-11-03 CVE-2026-119977 (covered, WordPress core entry)"
+  ransomware_flag_flips_on_covered_cves: "none (kev_window_diff reports no RANSOMWARE rows; the only covered CVEs flagged Known are CVE-2026-59310 and CVE-2025-8088, both flagged before this window)"
+  uncovered_older_kev: "Plex Media Server CVE-2026-96652/-96654/-96655/-96656 and EG Secure Solutions SiteGuard CVE-2026-106931 (all dateAdded 2026-10-20) are not in the store; Plex returned below as a borderline item because QNAP confirmed NAS compromises on 2026-11-06"
+scheduled_releases_check:
+  note: "No scheduled multi-product release inside the window. Microsoft Patch Tuesday and SAP Patch Day are 2026-11-10 (SAP november-2026 page returns 404 until then). Oracle: October CPU covered; the Oracle Security Alert for CVE-2026-109618 went to Rev 3 on 2026-11-06 (closure only, see dispositions); next Oracle CSPU 2026-11-17. Cisco bundle of 2026-11-04 (ISE, UCS Central, Unified CM) is outside the window, see dispositions. Fortinet: no new advisory since 2026-10-13 on the PSIRT listing. NCSC-NL / CERT-FR / BSI weekend bundles: none."
+items:
+  - title: "SANS ISC: sshole (CVE-2026-123158) exploit attempts reach its Cowrie honeypots from 2026-11-05, peak 2026-11-06, falling by 2026-11-08"
+    sources:
+      - { url: "https://isc.sans.edu/diary/33498", publisher: "SANS Internet Storm Center (Johannes Ullrich)", date: "2026-11-08", role: "primary" }
+    discovery_trace: "first seen at: sans-isc via feed, URL https://isc.sans.edu/rssfeed_full.xml (item 'Scans for Sshole Vulnerability (CVE-2026-123158)', 2026-11-08T15:44Z) -> primary (no pivot needed): https://isc.sans.edu/diary/33498"
+    summary: |
+      SANS ISC reports from its Cowrie SSH honeypots that attempts using over-long passwords rose after the sshole disclosure: the daily count of passwords that reach the honeypots' 255-character capture limit was 5 on 2026-11-03, 58 on 11-04, 232 on 11-05, 713 on 11-06, 246 on 11-07 and 51 on 11-08 (the last day partial). The 23 on 11-01 predate the flaw and, per ISC, are buggy brute-force scripts typing shell commands into the password field. ISC dates the first genuine sshole attempts to 2026-11-05, using an all-A password, from a spread of scanning sources on commercial ISP and hosting networks. Because ISC captures only the first 255 characters, it sees the leading part of the 257 to 1,024 byte passwords the flaw needs and cannot show success; ISC writes that it expects quite a few attempts succeeded on its honeypots and will follow up. The delta for the covered entry: a second, independent telemetry holder (alongside the Previdian sensor counts and The Hacker News honeypot report the entry already carries) confirms scanning and exploit attempts, with the wave already decaying by 2026-11-08; still no report of a compromised production host and CISA does not list CVE-2026-123158.
+    region_nexus: "global; Alpine Linux and OpenWrt on musl without PAM (Swiss estates: embedded routers, containers, jump hosts)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-123158]
+    techniques: [T1190, T1021.004]
+    affected_products: ["OpenSSH", "Alpine Linux", "OpenWrt"]
+    entity_keys: ["product:openssh", "product:alpine-linux", "product:openwrt"]
+    new_entities: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole"
+    suggested_record: { type: update, fields: [summary, sources, evidence] }
+    suggested_priority: "unchanged (notable)"
+    classification_suggestion: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "With the emergence of the \"sshole\" vulnerability last week, we are now seeing an increase in attempts to exploit the vulnerability."
+        attribution: "SANS Internet Storm Center (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33498"
+      - quote: "The first actual exploit attempt for sshole arrived on November 5th, with attempts that used an all \"A\" password."
+        attribution: "SANS Internet Storm Center (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33498"
+      - quote: "Our honeypots collect only the first 255 characters of SSH passwords."
+        attribution: "SANS Internet Storm Center (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33498"
+      - quote: "I expect quite a few of these login attempts were successful for our honeypots, and I will follow up with more details as I extract them."
+        attribution: "SANS Internet Storm Center (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33498"
+    extended_notes: |
+      Detection angle that follows from the mechanism the entry already describes: on musl/no-PAM sshd hosts, authentication log lines for a successful password login to an account whose password field is * (service or locked accounts) are the discriminating event; ISC's own sensor idea is a counter of password-auth attempts at or above the capture length. Benign lookalike per ISC: brute-force scripts that paste post-login shell commands into the password field (their Nov 1 spike), which are not exploit attempts. ISC's own wording limits the reading: attempts, not confirmed successes.
+
+  - title: "OpenAM before 16.1.4: unauthenticated session-token theft via the notification WebSocket (CVE-2026-123551), SAML service provider accepts unsigned assertions (CVE-2026-123550), self-registration creates administrators (CVE-2026-123549)"
+    sources:
+      - { url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-5c3q-hp86-xjr8", publisher: "OpenIdentityPlatform OpenAM project (GitHub security advisory)", date: "2026-10-22", role: "primary" }
+      - { url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-3j2f-qhrc-rjfj", publisher: "OpenIdentityPlatform OpenAM project (GitHub security advisory)", date: "2026-10-22", role: "primary" }
+      - { url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-jv8f-m88g-h6mm", publisher: "OpenIdentityPlatform OpenAM project (GitHub security advisory)", date: "2026-10-22", role: "primary" }
+      - { url: "https://github.com/OpenIdentityPlatform/OpenAM/releases/tag/16.1.4", publisher: "OpenIdentityPlatform OpenAM project (release 16.1.4)", date: "2026-10-22", role: "primary" }
+      - { url: "https://www.vulncheck.com/advisories/openam-before-16.1.4-saml-authentication-bypass-via-unsigned-assertions", publisher: "VulnCheck (CNA advisory for CVE-2026-123550)", date: "2026-11-07", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-119436", publisher: "ENISA EU Vulnerability Database (EUVD-2026-119436, CVE-2026-123551)", date: "2026-11-08", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-06&toDate=2026-11-09&size=100 (critical-score sweep: EUVD-2026-119434/-119435/-119436, published 2026-11-08T01:37Z, assigner VulnCheck) -> pivot: EUVD record references -> primary: https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-5c3q-hp86-xjr8 (+ GHSA-3j2f-qhrc-rjfj, GHSA-jv8f-m88g-h6mm) -> https://github.com/OpenIdentityPlatform/OpenAM/releases/tag/16.1.4 -> https://www.vulncheck.com/advisories/openam-before-16.1.4-saml-authentication-bypass-via-unsigned-assertions"
+    summary: |
+      The OpenIdentityPlatform OpenAM community edition (an open-source access-management server for web SSO, SAML 2.0 and OAuth 2.0) fixed a large security batch in 16.1.4 on 2026-10-22, and VulnCheck, as CNA, assigned CVE identifiers to the three critical advisories on 2026-11-07/08 (ENISA EUVD lists them 2026-11-08). The store carries no OpenAM coverage. (1) CVE-2026-123551, GHSA-5c3q-hp86-xjr8 (CVSS 4.0 10.0): OpenAM 14.0.0 to 16.1.3 with default settings publishes full session identifiers (the iPlanetDirectoryPro bearer value) on the agent notification WebSocket, and the agent-only check on that socket can be bypassed without credentials through an unvalidated internal request forward on legacy Liberty ID-FF endpoints; an unauthenticated attacker who can reach the OpenAM port holds a connection open and passively collects the session token of every user whose session is created, changed or ended, administrators included, with no failed logins or lockouts to see. (2) CVE-2026-123550, GHSA-3j2f-qhrc-rjfj (CVSS 4.0 9.3, GitHub 9.8): a hosted SAML 2.0 service provider accepts unsigned assertions on the ECP (PAOS) and HTTP-Artifact bindings; it needs the ECP assertion consumer service in the metadata (generated default), WantAssertionsSigned off (generated default) and an encryption key configured on the service provider (the one administrator choice), and then an unauthenticated attacker obtains a session as any user the provider maps the assertion to, administrators included; the same fix adds one-time-use enforcement on every binding. (3) CVE-2026-123549, GHSA-jv8f-m88g-h6mm (CVSS 4.0 9.3, GitHub 9.8): self-registration does not enforce the allowed-attribute list, so an anonymous user can register into administrative groups and gain full control; only realms with self-registration enabled are affected (off by default). Release 16.1.4 also fixes built-in accounts with publicly known passwords (demo user, anonymous, WS-Security agents) allowing unauthenticated login, open redirects, an unauthenticated deserialisation denial of service and further SAML 1.x and OAuth 2.0 device-flow flaws. Affected: all releases up to and including 16.1.3 (for the WebSocket flaw from 14.0.0, earlier releases have no notification WebSocket); the only fixed build the advisories name is 16.1.4. The project withholds technical detail and proof-of-concept code on purpose, and no source reports exploitation. Upgrade notes matter for SAML estates: after 16.1.4 a service provider refuses unsigned assertions (assertionNotSigned), including OpenAM-to-OpenAM and Fedlet federation over HTTP-Artifact with default metadata, so set WantAssertionsSigned in the service-provider metadata (the identity provider's copy included) before upgrading; Liberty ID-FF providers get a Relay State URL list and customised web.xml files must take over the new dispatcher elements.
+    region_nexus: "global; Swiss public-sector SSO / federation estates that run the OpenIdentityPlatform OpenAM fork (usage not established from sources)"
+    primary_sector_nexus: "direct if deployed: cantonal and municipal identity providers, web access management in front of e-government portals"
+    sector: "public-sector"
+    cves: [CVE-2026-123551, CVE-2026-123550, CVE-2026-123549]
+    techniques: [T1190, T1550.004, T1606.002]
+    affected_products: ["OpenAM (OpenIdentityPlatform community edition)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:openam", type: product, name: "OpenAM (OpenIdentityPlatform)", aliases: ["OpenIdentityPlatform OpenAM", "OpenAM community edition"], summary: "Open-source access-management server (web SSO, SAML 2.0, OAuth 2.0) maintained by the OpenIdentityPlatform project; release 16.1.4 of 2026-10-22 fixed three critical unauthenticated identity flaws (OpenAM project advisories)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Disclosure and fix date from 2026-10-22 (18 days before the window); only the CVE identifiers (VulnCheck 2026-11-07, EUVD 2026-11-08) are in-window; no exploitation reported; store has never covered OpenAM and a Swiss public-sector footprint is not established. Against that: three critical unauthenticated flaws in an SSO / SAML server, default-reachable session-token theft, and no earlier coverage; recommend a short notable entry if the main agent accepts the CVE-assignment date as the in-window development."
+    suggested_priority: "notable"
+    classification_suggestion: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "An unauthenticated attacker who can reach the OpenAM port and hold a connection to the notification WebSocket can passively collect the live session token of every user whose session is created, changed or ended while the connection is open"
+        attribution: "OpenIdentityPlatform OpenAM project (GitHub security advisory)"
+        source_url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-5c3q-hp86-xjr8"
+      - quote: "Technical details and proof-of-concept code are deliberately withheld for now, to give operators time to upgrade to OpenAM 16.1.4."
+        attribution: "OpenIdentityPlatform OpenAM project (GitHub security advisory)"
+        source_url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-5c3q-hp86-xjr8"
+      - quote: "its metadata advertises the ECP (PAOS) assertion consumer service, which the generated hosted service provider metadata does by default;"
+        attribution: "OpenIdentityPlatform OpenAM project (GitHub security advisory)"
+        source_url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-3j2f-qhrc-rjfj"
+      - quote: "Only realms where self-registration is enabled are affected. Self-registration is off by default in both the legacy and the current self-service settings."
+        attribution: "OpenIdentityPlatform OpenAM project (GitHub security advisory)"
+        source_url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-jv8f-m88g-h6mm"
+      - quote: "OpenAM before 16.1.4 contains an authentication bypass vulnerability in its SAML v2.0 service provider that accepts unsigned assertions on the ECP (PAOS) and HTTP-Artifact bindings when WantAssertionsSigned is false."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/openam-before-16.1.4-saml-authentication-bypass-via-unsigned-assertions"
+    extended_notes: |
+      Exposure: running version from the OpenAM console / server version string; the WebSocket flaw needs only network reach to the OpenAM port on a default install (agent notifications are on by default), the SAML flaw needs a hosted SAML 2.0 service provider with an encryption key, the self-registration flaw needs self-registration enabled in a realm. Interim mitigations from the project advisory: restrict /openam/notifications and /openam/ws/* at the reverse proxy to the policy-agent hosts, set the advanced server property org.forgerock.openam.notifications.agents.enabled to false where agents do not need it, block the legacy Liberty ID-FF endpoints (/openam/preLogin, /openam/postLogin) unless ID-FF is in use. Post-patch compromise check (project guidance): treat current administrator and user sessions as potentially exposed and rotate them, watch for WebSocket connections to the notifications path from hosts that are not policy agents, subscriptions to the session topic, and changes to the scripting-engine configuration; for SAML, review sessions created through the ECP or HTTP-Artifact bindings since deployment. Detection telemetry classes: reverse-proxy / web access logs for the notification and ID-FF paths, OpenAM audit and session logs (session creation by a federated user that was never authenticated at the IdP), identity-provider-side assertion logs for the SAML paths. Benign lookalike: policy agents legitimately subscribe to the notification socket; the discriminator is the source host. Not in CISA KEV; no exploitation reported by any source.
+
+  - title: "Contact Form 7 6.2 to 6.2.3: unauthenticated arbitrary file upload, fixed in 6.2.4 (CVE-2026-114432); code execution needs Apache that lists directories and maps .phar to PHP"
+    sources:
+      - { url: "https://contactform7.com/2026/10/29/contact-form-7-624/", publisher: "Contact Form 7 (release announcement 6.2.4)", date: "2026-10-29", role: "primary" }
+      - { url: "https://wpscan.com/vulnerability/6b0a5d1f-84fb-425f-8d37-ddde5703937c/", publisher: "WPScan (CNA record for CVE-2026-114432)", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://patchstack.com/database/wordpress/plugin/contact-form-7/vulnerability/contact-form-7-6-2-3-unauthenticated-arbitrary-file-upload", publisher: "Patchstack (vulnerability database)", date: "2026-10-31", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-119468", publisher: "ENISA EU Vulnerability Database (EUVD-2026-119468)", date: "2026-11-08", role: "corroborating" }
+      - { url: "https://contactform7.com/2026/10/06/contact-form-7-620/", publisher: "Contact Form 7 (release announcement 6.2)", date: "2026-10-06", role: "context" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-06&toDate=2026-11-09&size=100 (and `enisa-euvd recent criticals`; EUVD-2026-119468, CVE-2026-114432, published 2026-11-08T06:00Z, CVSS 3.1 9.8) -> pivot: WPScan record https://wpscan.com/vulnerability/6b0a5d1f-84fb-425f-8d37-ddde5703937c/ -> pivot: Patchstack https://patchstack.com/database/wordpress/plugin/contact-form-7/vulnerability/contact-form-7-6-2-3-unauthenticated-arbitrary-file-upload -> primary: https://contactform7.com/2026/10/29/contact-form-7-624/"
+    summary: |
+      Contact Form 7 6.2.4 of 2026-10-29 fixes an unauthenticated arbitrary file upload that affects only the 6.2 line, versions 6.2 to 6.2.3 (6.2 shipped 2026-10-06 and requires WordPress 7.1 or later and PHP 8.3 or later, so sites still on the 6.1 series are not affected). The vendor says attackers combine several flaws to upload files that validation should block and to keep files that should be deleted after submission, and that in theory every form with a file-upload field on an HTTP server configured to list directory contents publicly can be a target; the finders are Shinya Murakami and Jakub Herman, reported through WPScan. Patchstack's analysis: 6.2 dropped the file-type check from wpcf7_unship_uploaded_file(), so files land in a wpcf7_uploads subfolder named with a random ten-digit number before validation and rejected ones are never deleted, and the remaining blocklist misses phar, pht, phps and .htaccess; the trigger is an unauthenticated POST to the plugin's feedback REST route, and Patchstack rates attack complexity high because the random folder name is not disclosed. WPScan's record (published 2026-11-05) adds the code-execution condition: on a stock Debian or Ubuntu Apache configuration, which lists directory contents and maps .phar to the PHP handler, the stored file can be located and executed; on nginx and on Apache with .htaccess overrides enabled the result is an arbitrary file written to the uploads directory that can still be served as active content such as HTML or SVG from the site's own origin. The CVE identifier CVE-2026-114432 (WPScan as CNA, CVSS 3.1 9.8) reached ENISA EUVD on 2026-11-08, which is the in-window development; Patchstack scores the flaw medium priority (it lists "expected to become exploited"), the severities disagree because the CVSS vector ignores the web-server precondition. No source reports exploitation, a public proof of concept or a CISA KEV listing. The 6.2.4 hardening also changes behaviour: wpcf7_antiscript_file_name() now uses a safelist of extensions (audio, video, image, pdf and txt by default; extendable through the wpcf7_file_extension_safelist filter), so forms that accept other types such as zip need the filter after updating; 6.2.4.1 (a later point release) is an unrelated regression fix, current release is 6.2.4.1.
+    region_nexus: "global; WordPress sites of cantonal and municipal bodies (contact and application forms with attachments)"
+    primary_sector_nexus: "indirect: communal and cantonal WordPress sites, outsourced web agencies"
+    sector: "public-sector"
+    cves: [CVE-2026-114432]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Contact Form 7 (WordPress plugin)", "WordPress"]
+    entity_keys: ["product:wordpress"]
+    new_entities:
+      - { key: "product:contact-form-7", type: product, name: "Contact Form 7", aliases: ["Contact Form 7 WordPress plugin", "CF7"], summary: "WordPress contact-form plugin by Takayuki Miyoshi (Rock Lobster Inc.) with more than 10 million active installations per its wordpress.org listing; version 6.2.4 of 2026-10-29 fixes an unauthenticated arbitrary file upload in 6.2 to 6.2.3 (vendor announcement)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "The fix and vendor announcement are 2026-10-29; Patchstack published 2026-10-31 and WPScan 2026-11-05, so only the CVE record in EUVD (2026-11-08) is in-window; no exploitation reported, Patchstack rates it medium and the code-execution path needs a specific Apache configuration and the 6.2 line (WordPress 7.1+, PHP 8.3+). Against that: Contact Form 7 is on more than 10 million sites and file-upload fields on public forms are common on communal sites; recommend routine awareness entry or drop, main agent's call."
+    suggested_priority: "routine"
+    classification_suggestion: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "The issue is an unauthenticated arbitrary file upload."
+        attribution: "Contact Form 7 (release announcement 6.2.4)"
+        source_url: "https://contactform7.com/2026/10/29/contact-form-7-624/"
+      - quote: "Theoretically, all forms that have file uploading fields and are hosted on an HTTP server configured to list directory contents publicly can be a target."
+        attribution: "Contact Form 7 (release announcement 6.2.4)"
+        source_url: "https://contactform7.com/2026/10/29/contact-form-7-624/"
+      - quote: "the leftover blocklist misses phar/pht/phps/.htaccess. Unauth POST to the CF7 feedback REST route."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/database/wordpress/plugin/contact-form-7/vulnerability/contact-form-7-6-2-3-unauthenticated-arbitrary-file-upload"
+      - quote: "allowing unauthenticated users to upload arbitrary files to the site."
+        attribution: "WPScan"
+        source_url: "https://wpscan.com/vulnerability/6b0a5d1f-84fb-425f-8d37-ddde5703937c/"
+      - quote: "This vulnerability is moderately dangerous and expected to become exploited."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/database/wordpress/plugin/contact-form-7/vulnerability/contact-form-7-6-2-3-unauthenticated-arbitrary-file-upload"
+    extended_notes: |
+      Exposure: plugin version in the WordPress plugins list (6.2 to 6.2.3 is affected; 6.1.x and 6.2.4 or later are not) and at least one form with a file-upload field; web-server side, directory listing enabled plus a .phar-to-PHP handler mapping (stock Debian/Ubuntu Apache per WPScan) makes the upload executable. Detection telemetry classes: web server access logs (unauthenticated POSTs to the plugin's REST feedback route carrying a file part, followed by GET requests into the uploads/wpcf7_uploads tree), file-system integrity or EDR file-creation events for files with phar, pht, phps or .htaccess names under the WordPress uploads directory, and PHP worker processes spawning shells from the web user. Benign lookalike: legitimate form submissions with attachments also create files in wpcf7_uploads; the discriminator is the extension and the follow-up direct request to that file. Hardening beyond the update: disable directory listing for the uploads tree, deny script execution (PHP handler) under wp-content/uploads, and delete leftover files in wpcf7_uploads that are not images or documents. 6.2.4 safelist may reject attachment types users rely on.
+
+  - title: "QNAP confirms Plex2Shell compromises of NAS devices: Plex Media Server 1.43.2 and earlier, four chained CVEs listed by CISA KEV since 2026-10-20; updating to 1.43.3.10861 does not remove implants"
+    sources:
+      - { url: "https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately", publisher: "QNAP Systems (security notice)", date: "2026-11-06", role: "primary" }
+      - { url: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3", publisher: "Plex (security announcement, CVE details and active exploitation)", date: "2026-10-19", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/qnap-says-hackers-breaching-nas-devices-in-plex2shell-attacks/", publisher: "BleepingComputer", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed, URL https://www.bleepingcomputer.com/feed/ ('QNAP says hackers breaching NAS devices in Plex2Shell attacks', 2026-11-06T17:04Z; news lead, inside the 72 h developing-story window) -> primary: QNAP security notice https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately -> primary: Plex forum announcement https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3; KEV membership read from the cisa-kev bridge catalogue 2026.11.06 (dateAdded 2026-10-20 for all four CVEs)"
+    summary: |
+      Plex2Shell is a chain of four Plex Media Server flaws, CVE-2026-96652 (unauthenticated server-side request forgery in the player timeline endpoint), CVE-2026-96654 (access to internal agent functions over the loopback interface), CVE-2026-96655 (disclosure of the server owner's admin token) and CVE-2026-96656 (arbitrary file write to the Codecs directory through transcoder preferences) that together give an unauthenticated remote attacker code execution with the privileges of the Plex Media Server process; versions 1.43.2 and earlier are affected and 1.43.3.10861 or later is fixed. Plex says the chain is actively and widely exploited, with a public proof of concept since 2026-10-16, and CISA added all four CVEs to the KEV catalogue on 2026-10-20 (the store has no earlier coverage). On 2026-11-06 QNAP stated it has received reports from users whose NAS Plex appears compromised through Plex2Shell, that QTS and QuTS hero themselves are not affected, and that compromised servers have been used for cryptocurrency mining and proxy software per Plex; its notice says that where Plex was reachable from the internet (Remote Access, a forwarded port 32400 or automatic UPnP/router port opening) updating alone will not remove what an attacker installed, and prescribes a clean reinstall of QTS or QuTS hero, an indicator check and a reset of Plex and NAS credentials, with Plex on 1.43.3 available through the App Center. Plex's own check list names unfamiliar shared-library files in the Plex Codecs folder, unexpected outbound connections and sustained high CPU with nothing playing. The relevance to the constituency is indirect: Plex is consumer media software, but staff-managed QNAP NAS devices with Plex remote access can sit on administration networks or hold shared data.
+    region_nexus: "global; QNAP NAS in small administrations and staff-run media shares"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-96652, CVE-2026-96654, CVE-2026-96655, CVE-2026-96656]
+    techniques: [T1190, T1496, T1090]
+    affected_products: ["Plex Media Server", "QNAP QTS", "QNAP QuTS hero"]
+    entity_keys: ["product:qnap-qts", "product:qnap-quts-hero"]
+    new_entities:
+      - { key: "tool:plex2shell", type: tool, name: "Plex2Shell", aliases: [], summary: "Name for the chain of four Plex Media Server vulnerabilities (CVE-2026-96652, -96654, -96655, -96656) giving unauthenticated remote code execution in versions 1.43.2 and earlier, exploited since a public proof of concept of 2026-10-16 (Plex, QNAP)." }
+      - { key: "product:plex-media-server", type: product, name: "Plex Media Server", aliases: ["Plex"], summary: "Media-server software that also ships as a QNAP App Center application; Plex2Shell affects 1.43.2 and earlier, fixed in 1.43.3.10861 (Plex, QNAP)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "Developing story of 2026-11-06 (62 h old, outside the 26 h window, inside the 72 h developing window) on a KEV-listed chain the store has never covered; exploitation is confirmed by the vendor and QNAP, but Plex is consumer software and the constituency overlap is thin; drop if the main agent holds the bar at constituency-relevant estates."
+    suggested_priority: "routine"
+    classification_suggestion: { reliability: A, credibility: 1 }
+    evidence:
+      - quote: "These vulnerabilities are being actively and widely exploited. A public proof of concept was released on October 16."
+        attribution: "Plex"
+        source_url: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3"
+      - quote: "Plex has confirmed that these vulnerabilities are being actively and widely exploited."
+        attribution: "QNAP Systems"
+        source_url: "https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately"
+      - quote: "updating alone will not remove anything an attacker may have installed"
+        attribution: "QNAP Systems"
+        source_url: "https://www.qnap.com/en/security-news/2026/qnap-security-notice-plex-media-server-vulnerabilities-plex2shell-update-to-1-43-3-10861-or-later-immediately"
+      - quote: "CISA added all four flaws to its Known Exploited Vulnerabilities catalog on October 20, 2026"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/qnap-says-hackers-breaching-nas-devices-in-plex2shell-attacks/"
+    extended_notes: |
+      Exposure: version shown in Plex Web under Settings > General (1.43.3.10861 or later is fixed) or in QNAP App Center > My Apps; the exposed surface is Plex's port 32400 reachable from the internet, including through UPnP or router auto-configuration. Detection telemetry classes: file-creation events for shared libraries in the Plex Codecs directory by the Plex process, outbound connections and sustained CPU from the NAS or media-server host while idle, QNAP Plex logs (QNAP asks to preserve the Plex Logs folder before removal). Post-patch compromise check: this is the step that matters; QNAP says to treat the NAS as potentially compromised if Plex was internet-reachable on 1.43.2 or earlier, clean-reinstall the OS, then reset Plex and NAS credentials. Hardening: disable Plex Remote Access and do not forward 32400; use a VPN for remote access.
+
+  - title: "UgCS server before 6.2: empty login on the HCI port (TCP 3334) returns an authenticated session on single-user installs, allowing drone commands and route uploads (CVE-2026-59104)"
+    sources:
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118522", publisher: "ENISA EU Vulnerability Database (EUVD-2026-118522; ENISA is the CVE assigner)", date: "2026-11-06", role: "primary" }
+      - { url: "https://offseq.com/en/research/ugcs-cve-2026-59104/", publisher: "OffSeq (finder; coordinated by CERT.LV)", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-06&toDate=2026-11-09&size=100 (EUVD-2026-118522, published 2026-11-06T21:41Z, CVSS 4.0 9.3) -> primary: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118522 -> pivot: finder write-up https://offseq.com/en/research/ugcs-cve-2026-59104/ (OffSeq page metadata date reads 2026-06-30, the publication date of the write-up is not stated on the page)"
+    summary: |
+      ENISA, as CVE assigner, published CVE-2026-59104 on 2026-11-06 (CVSS 4.0 9.3; OffSeq also lists CVSS 3.1 9.8) for UgCS, SPH Engineering's drone ground-control software. The UgCS server's HCI (host-computer integration) login handler on TCP port 3334 treats a login request with empty user name and password as use the only user whenever the user database holds exactly one account, which is the default single-operator installation, and returns a fully authenticated session. By default the service listens on all interfaces without TLS, so any attacker with network access to port 3334 gets an authenticated session with no credential and can issue privileged commands, including commanding connected drones and uploading flight routes. Affected: UgCS for Windows, macOS and Linux before 6.2; fixed in UgCS 6.2 (OffSeq, finder; vulnerability coordinated by CERT.LV). No source reports exploitation, a CISA KEV listing or a public exploit; the sources name no vendor advisory page beyond the vendor homepage. Relevant to any police, fire-service or civil-protection drone programme that runs UgCS with the HCI interface reachable from a shared network.
+    region_nexus: "global; emergency-service and civil-protection UAV operations (use by Swiss services not established from sources)"
+    primary_sector_nexus: "indirect: drone-based emergency services"
+    sector: "public-sector"
+    cves: [CVE-2026-59104]
+    techniques: [T1190]
+    affected_products: ["UgCS (SPH Engineering)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:ugcs", type: product, name: "UgCS (SPH Engineering)", aliases: ["UgCS server"], summary: "Drone ground-control and mission-planning software from SPH Engineering with a server exposing an HCI protocol on TCP port 3334; versions before 6.2 allow an empty-credential login on single-user installs (ENISA EUVD, OffSeq)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "CVE published 2026-11-06 (53 h old, outside the 26 h window, inside the 72 h developing window); no exploitation, no vendor advisory page found, constituency use of UgCS is not established; the ENISA record is the CVE assigner's own text and OffSeq is the finder, so the facts are consistent but effectively one chain. Include only if the main agent weighs drone C2 for emergency services as constituency-relevant."
+    suggested_priority: "routine"
+    classification_suggestion: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "any attacker who can reach TCP port 3334 gets a fully authenticated session with no credential at all"
+        attribution: "OffSeq"
+        source_url: "https://offseq.com/en/research/ugcs-cve-2026-59104/"
+      - quote: "SPH Engineering fixed it in UgCS 6.2."
+        attribution: "OffSeq"
+        source_url: "https://offseq.com/en/research/ugcs-cve-2026-59104/"
+      - quote: "an unauthenticated remote attacker with network access to port 3334 can obtain an authenticated session without knowing any credential"
+        attribution: "ENISA EU Vulnerability Database"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118522"
+    extended_notes: |
+      Exposure: UgCS server version before 6.2 and TCP 3334 reachable from any network segment other than the operator workstation (listens on 0.0.0.0, no TLS by default). Detection telemetry classes: network flow or firewall logs for connections to TCP 3334 from hosts that are not the ground-control client, UgCS server logs for HCI logins with empty credentials and for route uploads or drone commands without a matching operator session. Hardening: update to 6.2, bind or firewall port 3334 to the operator host only, add a second user account (the empty-credential shortcut applies only while exactly one user exists, per the finder).
+
+cve_table:
+  - { cve: CVE-2026-123551, product: "OpenAM (OpenIdentityPlatform)", cvss: "10.0 (CVSS 4.0 per VulnCheck/EUVD; GitHub advisory 10.0)", epss: null, kev: false, exploited: false, affected: "14.0.0 through 16.1.3 (earlier releases have no notification WebSocket)", fixed: "16.1.4 (2026-10-22)", type: "information disclosure / session hijack", vector: "network, default settings, agent notifications on by default", auth: "none", source: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-5c3q-hp86-xjr8" }
+  - { cve: CVE-2026-123550, product: "OpenAM (OpenIdentityPlatform)", cvss: "9.3 (CVSS 4.0 per VulnCheck/EUVD; GitHub 9.8)", epss: null, kev: false, exploited: false, affected: "all releases up to and including 16.1.3; hosted SAML 2.0 SP with ECP ACS in metadata, WantAssertionsSigned off and an encryption key configured", fixed: "16.1.4", type: "authentication bypass (unsigned SAML assertions)", vector: "network", auth: "none", source: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-3j2f-qhrc-rjfj" }
+  - { cve: CVE-2026-123549, product: "OpenAM (OpenIdentityPlatform)", cvss: "9.3 (CVSS 4.0 per VulnCheck/EUVD; GitHub 9.8)", epss: null, kev: false, exploited: false, affected: "all releases up to and including 16.1.3; realms with self-registration enabled (off by default)", fixed: "16.1.4", type: "privilege escalation via self-registration attribute bypass", vector: "network", auth: "none", source: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories/GHSA-jv8f-m88g-h6mm" }
+  - { cve: CVE-2026-114432, product: "Contact Form 7 (WordPress plugin)", cvss: "9.8 (CVSS 3.1, WPScan via EUVD); Patchstack priority medium", epss: null, kev: false, exploited: false, affected: "6.2 through 6.2.3 (6.2 needs WordPress 7.1+ and PHP 8.3+)", fixed: "6.2.4 (2026-10-29); current 6.2.4.1", type: "arbitrary file upload (RCE on Apache with directory listing and .phar handler)", vector: "network", auth: "none", source: "https://contactform7.com/2026/10/29/contact-form-7-624/" }
+  - { cve: CVE-2026-96652, product: "Plex Media Server", cvss: null, epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861", type: "SSRF (player timeline endpoint), chain step", vector: "network", auth: "none", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3" }
+  - { cve: CVE-2026-96654, product: "Plex Media Server", cvss: null, epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861", type: "access to internal agent functions over loopback, chain step", vector: "network", auth: "none", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3" }
+  - { cve: CVE-2026-96655, product: "Plex Media Server", cvss: null, epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861", type: "disclosure of server owner's admin token, chain step", vector: "network", auth: "none", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3" }
+  - { cve: CVE-2026-96656, product: "Plex Media Server", cvss: null, epss: null, kev: true, exploited: true, affected: "1.43.2 and earlier", fixed: "1.43.3.10861", type: "arbitrary file write to Codecs directory via transcoder preferences, chain step", vector: "network", auth: "none", source: "https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319/3" }
+  - { cve: CVE-2026-59104, product: "UgCS (SPH Engineering)", cvss: "9.3 (CVSS 4.0, ENISA); OffSeq lists 9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "before 6.2", fixed: "6.2", type: "authentication bypass (empty credentials accepted on single-user install)", vector: "network, TCP 3334, no TLS by default", auth: "none", source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118522" }
+  - { cve: CVE-2026-123158, product: "OpenSSH Portable (musl, no PAM)", cvss: "8.1 (per the existing entry)", epss: null, kev: false, exploited: "attempts observed by Previdian, SANS ISC; honeypot root login per The Hacker News; no production compromise reported", affected: "before 10.6p2 on Linux with musl libc and no PAM", fixed: "10.6p2; Alpine packages per the existing entry", type: "authentication bypass", vector: "network", auth: "none", source: "https://isc.sans.edu/diary/33498" }
+
+dispositions:
+  - { item: "Windows Paint RCE CVE-2026-83844", disposition: "drop", reason: "Microsoft rates it Important, CVSS 3.1 7.0 after the 2026-11-07 revision (AV:L, AC:H, UI:R), exploited No, publicly disclosed No, exploitability rated 'Exploitation Less Likely' in the SUG record; published 2026-10-13, fixed build 11.2609.401.0 ships through the Microsoft Store only (revision 2 of 2026-11-06, The Hacker News 2026-11-06); out of window and below the do-now bar. Gotcha for managed estates: Store-blocked desktops will not get the fix from Windows Update." }
+  - { item: "D-Link DGS-3130 DDP zero-days (D-Link SAP10523, BleepingComputer 2026-11-06)", disposition: "drop", reason: "no CVE ids, no exploitation reported, needs access to the affected network (Discovery Protocol, SNMP, management plane), SMB/metro-Ethernet switch family, no firmware yet; 62 h old and constituency footprint not established" }
+  - { item: "Microsoft Entra Device Registration EoP CVE-2026-109469 (CVSS 3.1 10.0, SUG release 2026-11-05)", disposition: "drop", reason: "cloud-service CVE, customerActionRequired False, exploited No, publicly disclosed No, E:U (unproven exploit), official fix already applied by Microsoft; out of window" }
+  - { item: "Oracle Security Alert for CVE-2026-109618 / -109619, Rev 3 of 2026-11-06", disposition: "drop as update-of (optional closure note)", reason: "Rev 3 only removes the sentence promising further additions ('No further patches are planned for inclusion in this advisory'); the matrix of Oracle Secure Backup 19.1.0.0.0-19.1.0.1.0, eight Oracle Communications products and Solaris 11 is unchanged from Rev 2, which the entry 2026-10-27/php2shell-ot-products-netmodule-nrsw-no-fix-macmon-schneider already cites; if the main agent wants a closure record: Oracle's PHP2Shell alert is final, https://www.oracle.com/security-alerts/alert-cve-2026-109618.html" }
+  - { item: "Cisco advisories of 2026-11-04 (ISE authorization bypass cisco-sa-ise-cert-mE9BD5GO, UCS Central RCE cisco-sa-cucs-rce-LzHSFRDQ, Unified CM XSS cisco-sa-cucm-xss-5mQn2U5z)", disposition: "drop", reason: "outside the window; feed summaries show no exploitation flag (ISE: unauthenticated certificate issuance, UCS Central: authenticated RCE, CUCM: XSS); not read in full" }
+  - { item: "Cisco Secure Email Gateway CVE-2026-76461 advisory rev 1.2 (2026-11-03, 15.5.5-014 updated fix; Retro Remediation Engine 4.0.2 check)", disposition: "no delta", reason: "revision predates the window and the entry 2026-09-15/cve-2026-76461-cisco-secure-email-gateway-sqli-root-rce (updated 2026-11-07) already carries it" }
+  - { item: "Windows / Barracuda ESG / SonicWall SNWLID-2026-0014 / Palo Alto CVE-2026-109618 and CVE-2026-111497 / Fortinet FG-IR-26-188 revision sweeps", disposition: "no delta", reason: "Barracuda trust page last updated 2026-11-05, SonicWall SNWLID-2026-0014 first published and last updated 2026-11-06, PAN CVE-2026-109618 last revision 2026-10-29 and CVE-2026-111497 last revision 2026-10-31, Fortinet FG-IR-26-188 updated 2026-11-07 (already cited by the Linux TCP entry)" }
+  - { item: "mySites.guru Joomla extension posts 2026-11-04/05 (Gantry 5.6.7 file-picker upload, HikaShop 6.8.1, JReviews 6.7.0/5.13.0, Akeeba CSRF CVE-2026-105296, Tassos ACF/Smile Pack)", disposition: "drop", reason: "authenticated backend-role or niche extension flaws (Gantry needs Modules-manager rights, no CVE, no fix on Joomla 3/4), no exploitation reported; the exploited Gridbox stream is already covered" }
+  - { item: "Aikido 'Even gem list can run someone else's code' (2026-11-05), AWS security bulletins 2026-11-02..06 (Babelfish, Redshift JDBC, EKS network policy agent, APT, Trusted Remote Execution)", disposition: "drop", reason: "developer-tooling design issue with four old malicious gems / cloud-service bulletins without constituency exposure or exploitation" }
+  - { item: "OpenEMR before 8.3.0 (several critical CVEs), Craft CMS 5.0.0 to before 5.11.2 GraphQL scope bypass CVE-2026-124427, Kyverno CVE-2026-12444, imgproxy CVE-2026-12361, JetBrains CLion / Hub critical CVEs, WordPress plugin criticals (Userplace CVE-2026-110963, DynamiApps Frontend Admin CVE-2026-119506, Melapress Role Editor CVE-2026-109900, LatePoint, payever, Printcart), Totolink and Tenda router CVEs, IBM batches (API Connect already covered, Concert, DataStage, Optim, Process Mining, WebSphere eXtreme Scale)", disposition: "drop", reason: "EUVD critical-score records of 2026-11-06..09 reviewed by title and description: no exploitation flag, no KEV, niche or authenticated or consumer-class products; Craft CMS is the only widely used CMS item and its flaw is a read-only enumeration of withheld entries; list kept so the audit can re-sweep if any is later exploited" }
+  - { item: "Cisco PHP and Node.js/Brotli product advisories (2026-11-06), Keycloak 26.8.2, WordPress 7.1.4 / Picus follow-up, Zyxel GS1900, Barracuda ESG, SEPPmail, SonicWall GMS, Ivanti Connect Secure, Linux TCP, Android SMS of Death", disposition: "covered", reason: "already carried by entries (see prior_coverage); no in-window delta found" }
+  - { item: "Keycloak CVE-2026-120984 (Red Hat CNA, EUVD-2026-119254, published 2026-11-07, CVSS 3.1 9.1 PR:H)", disposition: "hold (possible update-of on 2026-11-08/cve-2026-117691-keycloak-saml-http-redirect-signature-bypass)", reason: "a user with a delegated client-management role can bypass the restriction on script-based authorization policies and have inline JavaScript executed in the server process (cross-realm code execution on multi-tenant deployments); Red Hat rates it Important rather than Critical, offers no mitigation, and its page (https://access.redhat.com/security/cve/CVE-2026-120984, read on 2026-11-09) names no fixed upstream build, so the delta is incomplete; not in the store (the entry carries CVE-2026-117691, -110931 and -111497 only). Recheck for the fixed Keycloak release before appending." }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no product watchlist; sweep is a no-op"
+
+candidate_sources:
+  - id: openam-security-advisories
+    publisher: "OpenIdentityPlatform OpenAM (GitHub security advisories)"
+    url: "https://github.com/OpenIdentityPlatform/OpenAM/security/advisories"
+    category: vendor-psirt
+    why: "Vendor primary for three critical unauthenticated identity flaws (session-token disclosure, SAML unsigned assertions, self-registration admin creation) in OpenAM 16.1.4 of 2026-10-22, about 30 advisories in one batch; the store had never read it. Per-advisory pages read with `extract`; `url --direct https://api.github.com/repos/OpenIdentityPlatform/OpenAM/security-advisories` returns the dated list as JSON and the release API (releases/tags/16.1.4) returns the notes."
+  - id: contactform7-releases
+    publisher: "Contact Form 7 (release announcements)"
+    url: "https://contactform7.com/category/releases/"
+    category: vendor-psirt
+    why: "Vendor primary for a plugin on more than 10 million WordPress sites; the 6.2.4 announcement of 2026-10-29 carries the security outline, finders and behaviour change that the CVE records and Patchstack only summarise. Release posts read with `extract` (e.g. https://contactform7.com/2026/10/29/contact-form-7-624/)."
+
+coverage_gaps:
+  - { source_id: fortinet-psirt, reason: "Recipe change: `feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 8` worked on 2026-11-09 (newest FG-IR-26-188, 2026-11-02, then -187 and -186; no in-window item) although the 2026-11-08 note records connection resets. The HTML listing (`extract` and WebFetch https://www.fortiguard.com/psirt) is stale or differently ordered: its first page lists FG-IR-26-182 (2026-10-13) as newest and omits -186, -187 and -188, so the listing cannot prove the absence of new advisories; use the RSS first and the per-advisory page (`extract https://fortiguard.fortinet.com/psirt/FG-IR-26-188` shows Published/Updated dates) for revisions." }
+  - { source_id: cisa-advisories, reason: "`feed https://www.cisa.gov/cybersecurity-advisories/all.xml` unreadable again (as noted 2026-11-08); WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories returned a clean 10-item listing with hrefs (newest 2026-11-06 KEV alert) and `cisa csaf-recent` listed ICS advisories (newest 2026-11-05). Working route unchanged." }
+  - { source_id: hadrian-labs, reason: "Low yield: all ten posts on the listing (via `url --direct https://hadrian.io/blog`) are marketing, pentest-guide and funding content, none vulnerability research or exploitation reporting; candidate for demotion or removal at the next audit." }
+  - { source_id: sap-security-notes, reason: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html returns 404 until the 2026-11-10 Patch Day; probe again on the day (the note recipe holds)." }
+  - { source_id: chrome-releases (not a slice record), reason: "chromereleases.googleblog.com Atom feed answers HTTP 302 and `feed` finds no items; `extract https://chromereleases.googleblog.com/` returned the page via the reader (jina key rotation seen: one key reported balance exhausted). Only a ChromeOS 156 stable update with no in-the-wild flag was current." }
+  - { source_id: connectwise-trust-center, reason: "Rotation-priority record not in the S1 slice; probed once: `url --direct https://www.connectwise.com/company/trust/advisories` and WebFetch both HTTP 403. Unchanged: still blocked." }
+  - { source_id: sygnia, reason: "Rotation-priority record not in the S1 slice; probed once: `extract https://www.sygnia.co/blog/` failed on every transport (direct 403, trafilatura no body, reader relayed the challenge). Unchanged: still blocked." }
+  - { source_id: bsi-de, reason: "Quiet, not a failure: bsi-rss lists 250 items ending 2026-11-06T13:41Z and the CSAF changes.csv has nothing newer than 2026-11-05T23:00Z; the weekend carried no BSI WID advisories." }
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "ncsc-nl recent 30 (RSS)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0470 (Windows Paint, 2026-11-06); NCSC-2026-0468 Zyxel, -0469 OpenSSH, -0466 WordPress, -0465 Barracuda, -0416 Ivanti already covered" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 25 / actu-recent 10 + alerte feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest AVI-1480 (2026-11-06), ALE-015 (2026-11-05), ACT-046 (2026-11-02)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "feed (250 items) + url --direct changes.csv", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-06T13:41Z; weekend quiet" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-018 PHP (2026-10-23)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-06 KAMSOFT ZSIRep (CVSS 5.3, not relevant)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + cisa csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest listing item 2026-11-06 KEV alert; ICS newest icsa-26-211-07 (2026-11-05)" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogue 2026.11.06, 1769 entries, no addition in window; Plex chain (2026-10-20) uncovered older KEV, see items" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent + url --direct search/exploitedvulnerabilities", horizon_hours: 26, in_horizon_items: 40, returned: 3, note: "126 critical-score records 2026-11-06..09 reviewed; exploited list unchanged (newest exploitedSince 2026-11-06 SonicWall); returned OpenAM (3 CVEs, one item), Contact Form 7, UgCS (developing window)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13157 (SonicWall GMS, 2026-11-06), all newer-than-2026-11-02 posts already covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-03 guidance, no advisory-shaped item" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest Barracuda ESG post (2026-11-05) already covered" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (works) + extract + WebFetch listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-188 (2026-11-02, updated 2026-11-07, already cited by the Linux TCP entry); see coverage_gaps for the recipe change" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "url --direct SUG API revised sweep (latestRevisionDate >= 2026-11-05, 100 rows) + msrc cve", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "only in-window revision CVE-2026-1502 (non-Microsoft); exploited/publicly-disclosed flags absent on everything; Paint CVE-2026-83844 revision 2.1 (2026-11-07) dropped, see dispositions" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + url --direct json/<CVE>", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no revision in window for CVE-2026-109618 (last 2026-10-29), CVE-2026-111497 (last 2026-10-31), CVE-2026-0322" }
+  - { id: balbooa-blog, tier: standard, attempted: true, transport: "url (listing text)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "latest post 'Gridbox 2.20.5.0. Security Deep Dive' (2026-11-04), flaw stream already covered by entry 2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "26.8.2 (2026-11-05) covered by 2026-11-08/cve-2026-117691-keycloak-saml-http-redirect-signature-bypass" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "one post visible, October (risk cohorts)" }
+  - { id: oracle-cpu, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Security Alert CVE-2026-109618 Rev 3 (2026-11-06) closure only; next CSPU 2026-11-17" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "extract november-2026 page", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "404 until 2026-11-10 Patch Day" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge url listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest bulletin dated 10-14-2026" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "gem-list and leaked-key posts (2026-11-05) dropped" }
+  - { id: aws-security-bulletins, tier: standard, attempted: true, transport: "feed", horizon_hours: 148, in_horizon_items: 12, returned: 0, note: "bulletins 2026-11-02..06, none constituency-relevant or exploited" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest dated posts are from October" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "url --direct listing", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "marketing content only, see coverage_gaps" }
+  - { id: karimi-honeypot-data, tier: standard, attempted: true, transport: "extract + GitHub contents API", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "reports directory holds only php2shell" }
+  - { id: morphisec, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest relevant post XLoader 2026-11-01 (outside lookback)" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 7, returned: 0, note: "Joomla extension posts 2026-11-03..05 dropped, see dispositions" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest article 2026-10-30; database page for Contact Form 7 used as corroboration" }

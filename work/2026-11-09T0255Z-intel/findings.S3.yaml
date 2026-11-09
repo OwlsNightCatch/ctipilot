@@ -1,0 +1,545 @@
+# work/2026-11-09T0255Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-09T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-09T02:57:25Z
+ended_at: 2026-11-09T03:15:05Z
+duration_seconds: 1060
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 3
+  bridge_fetches: 118
+window_note: >
+  window_hours 26 (to 2026-11-08T00:55Z) is nearly empty for research publishers: no major-lab feed
+  carries a post later than 2026-11-07T02:44Z (Microsoft) other than StepSecurity (2026-11-09T01:18Z) and
+  SANS ISC (2026-11-08). Items flagged lookback: true were found through slice records' 145 h lookback
+  (Dark Reading, Infosecurity, Help Net Security) or through non-slice publishers whose last successful sweep
+  in sources.json predates the post (StepSecurity 2026-10-29, SpecterOps 2026-11-05, Trellix 2026-10-29,
+  Mandiant/GTIG feed). The main agent applies the recency gate; each item states its real publication date.
+items:
+  - title: "LLMjacking: GTIG and Mandiant describe cloud-identity intrusions that switch on Bedrock, Gemini or Azure model services and resell the quota through proxy gateways, with per-cloud audit-log hunting guidance; Wiz and Datadog report the same GCP billing-hijack and AWS key-validation tradecraft"
+    kind_hint: research
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models", publisher: "Google Threat Intelligence Group and Mandiant", date: "2026-11-02", role: "primary" }
+      - { url: "https://threats.wiz.io/all-incidents/threat-actors-targeting-gcp-billing-accounts-for-llm-usage", publisher: "Wiz (Cloud Threat Landscape)", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://securitylabs.datadoghq.com/articles/beyond-valid-credentials-how-exposed-aws-keys-are-tested-for-amazon-bedrock-access/", publisher: "Datadog Security Labs", date: "2026-10-06", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine feed https://www.infosecurity-magazine.com/rss/news/ (title only: 'LLMJacking is Costing Some Businesses Up to $1m, Warns Google', 2026-11-03) and darkreading feed https://www.darkreading.com/rss.xml (title only: 'LLMjacking Emerges as Thriving Cybercriminal Enterprise', 2026-11-03) -> pivot: mandiant-gtig feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v -> primary: GTIG/Mandiant blog https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models/ -> corroboration: Wiz https://threats.wiz.io/all-incidents/threat-actors-targeting-gcp-billing-accounts-for-llm-usage and Datadog https://securitylabs.datadoghq.com/articles/beyond-valid-credentials-how-exposed-aws-keys-are-tested-for-amazon-bedrock-access/ (found via the datadog-security-labs slice feed)"
+    summary: |
+      GTIG and Mandiant report that in 2026 incident-response cases threat actors hijacked enterprise access to
+      large language models ("LLMjacking") in organizations in North America, South America and Asia Pacific
+      (financial services, retail, technology, transportation), with fraudulent charges above USD 100,000 a day
+      and cumulative bills up to USD 1 million before access was revoked. GTIG says the dominant initial access
+      has been exposed or stolen cloud identity tokens (IAM credentials, service-account keys, GitHub personal
+      access tokens, live session tokens), plus publicly exposed model endpoints (an Ollama endpoint tested by
+      script) and LLM API keys harvested from public GitHub repositories and validated with single-token
+      requests (max_tokens=1) that stay under EDR and volume-anomaly alerts. After the foothold, actors
+      enumerate cloud services and repositories, query warehouse metadata for credentials, create IAM and
+      service accounts (one disguised as a billing-optimisation utility), attach administrative policies to
+      service roles, inject SSH keys into compute instance metadata, and in one case a follow-on cluster
+      elevated LiteLLM virtual keys to proxy-admin. Monetisation uses "LLM Mixers", gateways that pool and
+      resell stolen quota; GTIG names UNC6993 (service-account-key and session-token hijack page, new-api and
+      gcli2api gateways) and a Jet Night token router that passed nearly USD 1 million to one victim. In several
+      cases the LLM services were not enabled at compromise time and the stolen keys enabled them. Wiz
+      independently reports GCP billing accounts hijacked through search-ad phishing: the actor removes the
+      iam.allowedPolicyMemberDomains guardrail, adds external billing admins, links foreign projects to the
+      victim billing profile, demotes legitimate admins and runs Gemini API calls from its own project so prompt
+      content is invisible to the victim; Datadog reports credential-harvesting platforms (KMON_NOC since
+      2026-08-31) that test stolen AWS keys with STS GetCallerIdentity and then for Bedrock access.
+      GTIG's hunting list is the actionable core: Bedrock Converse/InvokeModel*, ListFoundationModels,
+      PutUseCaseForModelAccess/CreateFoundationModelAgreement and Get/Put/DeleteModelInvocationLoggingConfiguration
+      in CloudTrail; Microsoft.CognitiveServices deployments/write plus diagnostic-setting changes in Azure; and,
+      for GCP, aiplatform Predict/GenerateContent calls that appear only if Data Access audit logs are enabled
+      (disabled by default), ServiceUsage.EnableService and sink reads.
+    region_nexus: "global; GTIG cases in North America, South America and Asia Pacific; no Swiss case stated; applies to any public-sector cloud tenant where Bedrock, Azure AI services or Vertex/Gemini can be enabled by a stolen identity"
+    primary_sector_nexus: "indirect (cloud tenants of public bodies adopting LLM services; GTIG's victims were financial services, retail, technology and transportation)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1078.004, T1528, T1098.001, T1098.003, T1136.003, T1098.004, T1496.004, T1552.001, T1190, T1583.008, T1566]
+    affected_products: ["Amazon Bedrock", "Google Cloud Gemini Enterprise Agent Platform", "Microsoft Azure AI services (Microsoft.CognitiveServices)", "LiteLLM", "Ollama"]
+    entity_keys: ["product:litellm"]
+    new_entities:
+      - { key: "actor:unc6993", type: actor, name: "UNC6993", aliases: [], summary: "GTIG cluster designation for a financially motivated LLMjacking actor that hijacked cloud service-account keys and session tokens and pooled stolen LLM access through new-api and gcli2api gateways (GTIG and Mandiant, 2026-11-02)." }
+      - { key: "trend:llmjacking", type: trend, name: "LLMjacking", aliases: ["LLM jacking", "LLMJacking"], summary: "Hijacking of enterprise cloud and LLM API access to run or resell model inference on the victim's bill; GTIG expects it to displace cryptojacking as the preferred cloud resource theft (GTIG and Mandiant, 2026-11-02)." }
+    relation_suggestions:
+      - { subject: "actor:unc6993", object: "trend:llmjacking", basis: "GTIG names UNC6993 as an operator of the LLMjacking activity it describes (GTIG and Mandiant, 2026-11-02)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    suggested_classification: "B2 (GTIG/Mandiant first-party incident-response telemetry; the general pattern is independently reported by Wiz and Datadog, individual cluster details are GTIG-only)"
+    evidence:
+      - quote: "the dominant initial access vector has been exposed or stolen cloud identity tokens—including IAM credentials, Service Account keys, GitHub Personal Access Tokens (PATs), and active session tokens"
+        attribution: "Google Threat Intelligence Group and Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models"
+      - quote: "In multiple incidents that Mandiant investigated, LLM services were not enabled at the time of compromise."
+        attribution: "Google Threat Intelligence Group and Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models"
+      - quote: "Monitor model gateway and API access logs for anomalous, low-volume requests"
+        attribution: "Google Threat Intelligence Group and Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models"
+      - quote: "Gemini Enterprise Agent Platform inference operations are contained within Data Access logs, which are disabled by default due to volume and ingestion costs."
+        attribution: "Google Threat Intelligence Group and Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models"
+      - quote: "Wiz identified threat actors hijacking Google Cloud Platform (GCP) billing accounts via search-ad phishing to fund unauthorized Gemini API usage."
+        attribution: "Wiz"
+        source_url: "https://threats.wiz.io/all-incidents/threat-actors-targeting-gcp-billing-accounts-for-llm-usage"
+      - quote: "Attackers use similar tactics when targeting LLM resources in AWS."
+        attribution: "Datadog Security Labs"
+        source_url: "https://securitylabs.datadoghq.com/articles/beyond-valid-credentials-how-exposed-aws-keys-are-tested-for-amazon-bedrock-access/"
+    exposure_note: "Exposed where a cloud identity (IAM user or role, service-account key, federated or session token) can enable or call Bedrock, Azure AI services or Vertex/Gemini endpoints, and where a self-hosted gateway (LiteLLM) or model endpoint (Ollama) is reachable. Check: whether model services are enabled at all per account/project, and whether model invocation logging (Bedrock), Azure data-plane diagnostic logs and GCP Data Access logs are on."
+    detection_note: "Telemetry class: cloud control-plane audit logs. Hunt: Bedrock/aiplatform/CognitiveServices enablement and deployment creation by identities that never used them; model-invocation spikes and ThrottlingException/ValidationException bursts; single-token (max_tokens=1) probes at the gateway; new IAM or service accounts, administrative policy attachments and SSH keys added to instance or project metadata; changes to logging configuration by non-IaC principals (treat as high severity per GTIG); on GCP, org-policy removal (iam.allowedPolicyMemberDomains), new external billing admins and foreign projects linked to the billing account. Rotating or revoking the key does not undo created accounts, SSH keys or enabled services: review those after revocation."
+    triage_note: "Benign lookalike: sanctioned AI development teams legitimately enable model services and call InvokeModel/Predict. Discriminators GTIG's guidance implies: caller identity and user agent (automation SDKs such as aws-sdk-go-v2 or rust from unfamiliar addresses), whether the service was enabled by the actor in the same session, multi-region reconnaissance before enablement, quota-increase requests, and logging being switched off."
+    extended_notes: |
+      Discrepancy to reconcile before composing: GTIG attributes a LiteLLM "user ID rebind" privilege escalation in
+      /key/regenerate to CVE-2026-40217, while the store's entry 2026-06-16/obsidian-security-a-three-cve-chain-turns-any-litellm-user-i
+      records CVE-2026-40217 as the Custom Code Guardrails exec() remote code execution (Obsidian Security); one source
+      mislabels the identifier. Do not repeat GTIG's CVE mapping without a LiteLLM advisory. Related store entry:
+      2026-10-22/litellm-1-107-0-pypi-docker-credential-stealer-lookalike (different issue). GTIG lists IOC domains and
+      the D1337-KAIROS persona; not carried (no IOCs).
+  - title: "Typos and expired domains in US government SPF, MX, NS and DMARC records: SH Consulting's scan of 25,964 government domains finds 43 that trust domains outside their control, some already abused"
+    kind_hint: research
+    sources:
+      - { url: "https://www.sh.consulting/blog/government-dangling-dns-records", publisher: "SH Consulting (Alex Shakhov)", date: "2026-11-05", role: "primary" }
+      - { url: "https://www.darkreading.com/cybersecurity-operations/us-government-email-systems-abuse-typos", publisher: "Dark Reading", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: darkreading feed https://www.darkreading.com/rss.xml ('US Government Email Systems Open to Abuse Thanks to Typos', 2026-11-05T21:35Z) -> pivot: Dark Reading article https://www.darkreading.com/cybersecurity-operations/us-government-email-systems-abuse-typos -> primary: SH Consulting study https://www.sh.consulting/blog/government-dangling-dns-records"
+    summary: |
+      SH Consulting scanned 25,964 government-related domains (16,984 .gov, 8,980 on other TLDs) twice, in June and
+      October 2026, and found 43 whose SPF, MX, NS or DMARC records point at expired, mistyped or repurposed
+      domains outside the owner's control; some are already being abused. SPF: a Michigan county's record includes a
+      one-letter typo of Amazon SES's include domain; the typo domain's include chain resolved to eight records
+      authorizing at least 32,066 IPv4 addresses, all of which evaluated SPF = pass and DMARC = pass, and the include
+      content has rotated every few days since at least March 2026 (snowshoe sending); SH Consulting says most of
+      the addresses are on blocklists and ties the operator to the group Abusix documented taking over dangling
+      CNAMEs. A Kentucky city's include is a domain re-registered in April 2026 after SubdoMailing publicity, 75 IPs.
+      NS: several municipalities still delegate former or typo nameserver domains; one Idaho city's retired domain
+      now serves a casino page from attacker-controlled nameservers that also send and receive mail as the old
+      domain (Infoblox counts about 1,100 domains on those nameservers since July 2025); an Illinois domain lists a
+      one-letter typo of a GoDaddy nameserver that was re-registered on 2026-08-27 and now resolves to AWS.
+      MX: about 27% of the scanned domains run self-hosted mail, hand-typed MX hostnames hide behind backup MX
+      records, so nothing visibly breaks; no confirmed interception. DMARC: eight unregistered reporting endpoints
+      covered 11 government institutions; the report data (sender IPs, volumes, authentication results, platforms,
+      and for Microsoft the recipient domains) maps the organisation's mail infrastructure for targeted phishing.
+      SH Consulting registered 17 of the dependencies defensively and reported to CISA and MS-ISAC. Remedies it
+      names: stop hand-typing DNS records, keep a map of where each record came from, register own misspellings, and
+      run a quarterly script that flags invalid domains or destinations. The data are US-only; the mechanism is
+      jurisdiction-independent.
+    region_nexus: "United States (study scope); the failure class is jurisdiction-independent, so Swiss cantonal and communal domains with legacy, renamed or merged-entity domains in SPF includes, NS delegations, MX hosts and DMARC rua/ruf targets are exposed the same way (analyst inference; no Swiss domain was examined)"
+    primary_sector_nexus: "direct (government domains)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1583.001, T1584.001, T1684.002, T1566, T1114]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    suggested_classification: "C2 (small consultancy, first-party DNS scan with checkable DNS facts; Dark Reading interviewed the same researcher and is not independent)"
+    sourcing_note: "SH Consulting is the only collector of the data; Dark Reading re-reports it from an interview with the same researcher. The DNS records are publicly checkable and the study names no Swiss entity. Attribution of the Livingston County operator to the Abusix-documented group is SH Consulting's statement, not independently verified."
+    evidence:
+      - quote: "When we scanned 25,964 government-related domains, we found 43 whose DNS records still reference expired, mistyped, and repurposed domains, leaving them at risk of abuse, and some of them are already being abused."
+        attribution: "SH Consulting"
+        source_url: "https://www.sh.consulting/blog/government-dangling-dns-records"
+      - quote: "Together, they authorized at least 32,066 unique IPv4 addresses, giving any of those IP addresses permission to send mail on behalf of Livingston County’s milivcounty.gov email addresses."
+        attribution: "SH Consulting"
+        source_url: "https://www.sh.consulting/blog/government-dangling-dns-records"
+      - quote: "We analyzed 25,964 government domains and found that around 27% point to their own self-hosted mail servers to process inbound mail."
+        attribution: "SH Consulting"
+        source_url: "https://www.sh.consulting/blog/government-dangling-dns-records"
+      - quote: "Those domains were set to receive reports for 11 government institutions."
+        attribution: "SH Consulting"
+        source_url: "https://www.sh.consulting/blog/government-dangling-dns-records"
+      - quote: "47% of the unregistered domains we found in SPF and DMARC records were typos, either of the organization's own domain or of a provider's."
+        attribution: "Alex Shakhov, quoted by Dark Reading"
+        source_url: "https://www.darkreading.com/cybersecurity-operations/us-government-email-systems-abuse-typos"
+    exposure_note: "Any organisation that publishes SPF includes, MX hosts, NS delegations or DMARC rua/ruf addresses on a domain it owns, including parked and retired domains; the exposure is invisible from inside (mail keeps flowing via the correct records). Check: resolve every domain named in every SPF include chain, MX, NS, CNAME and DMARC reporting address for each owned domain and flag any that is unregistered, registered recently, for sale or parked."
+    detection_note: "Telemetry class: DNS zone data plus mail-authentication reports. Enumerate and resolve all referenced domains on a schedule and alert on NXDOMAIN, changed registrant or registration date, or nameserver changes of a dependency; in DMARC aggregate reports look for sending IPs that pass SPF but belong to none of your providers, and for SPF include trees whose size or content changes every few days. There is no post-patch step: after correcting a record, review mail sent as your domain in the abuse window and the DMARC reports that went to the unregistered endpoint."
+    triage_note: "Benign lookalike: legitimate providers rotate the IP content behind a correctly spelled SPF include (Microsoft 365, Amazon SES, Google). Discriminator: the include domain is a misspelling of a provider's domain, is not owned by that provider, or the dependency's registration date is recent."
+    extended_notes: |
+      The URL-quoted typo domains and attacker nameserver names in the primary are not carried (no IOCs). SH Consulting
+      says more than 12,000 US government domains publish no spoofing protection at all; that is its claim from the same scan.
+  - title: "ANNUAL REPORT — Trellix CyberThreat Report, November 2026 (April to September 2026): government the most broadly targeted sector by unique ransomware campaigns, edge devices the front door, defences switched off first, ransomware share shifting to Europe"
+    kind_hint: annual-report
+    periodic_report_flag: "ANNUAL REPORT — Trellix CyberThreat Report, November 2026 (half-yearly, covers 2026-04-01 to 2026-09-30)"
+    sources:
+      - { url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/", publisher: "Trellix Advanced Research Center", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.trellix.com/blogs/research/the-speed-of-cyber-threats-is-changing-are-we-keeping-up/", publisher: "Trellix (John Fokker, Ilya Kolmanovich)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://www.infosecurity-magazine.com/news/chinese-nation-activity-falls/", publisher: "Infosecurity Magazine", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine feed https://www.infosecurity-magazine.com/rss/news/ ('Chinese Nation-State Threat Activity Falls Sharply in Q2 and Q3 2026', 2026-11-05T11:40Z) -> pivot: Infosecurity article https://www.infosecurity-magazine.com/news/chinese-nation-activity-falls/ -> pivot: Trellix blog https://www.trellix.com/blogs/research/the-speed-of-cyber-threats-is-changing-are-we-keeping-up/ -> primary: report page https://www.trellix.com/advanced-research-center/threat-reports/november-2026/"
+    summary: |
+      Trellix's half-yearly CyberThreat Report (Trellix telemetry, ATLAS campaign data and leak-site tracking,
+      April to September 2026; published 2026-11-04) carries a few findings a public-sector SOC can use. Ransomware:
+      by unique ransomware campaigns detected per sector, government is again the most broadly targeted, followed by
+      financial services and IT outsourcing and hosting; leak sites named government organisations 131 times and
+      education 118 times; The Gentlemen overtook Qilin as the most actively posting group and 55 new groups made up
+      22% of posts. The US share of leak-site victims fell to 41% while Europe took 26.4% of geo-identified victims
+      (UK 202, Germany 194, France 166, Italy 147, Spain 100; Switzerland is not broken out), driven by The Gentlemen,
+      LockBit 5.0 and DeadLock naming many European victims. Intrusion pattern: of 22 ransomware campaigns with a
+      known exploited vulnerability, 14 began with a VPN, firewall or other edge device (FortiOS, NetScaler, SonicWall
+      SMA, GlobalProtect, Check Point Remote Access VPN, Cisco FMC); defence impairment (ATT&CK Disable or Modify Tools)
+      appeared in 40 of 94 campaigns and 14 involved EDR killers or vulnerable drivers; Akira rebooted victims into
+      Safe Mode before encrypting in one August campaign; 13 campaigns targeted ESXi or other hypervisors; Cl0p's
+      Windchill campaign stole data without encrypting; the tools most often linked to ransomware were the Windows
+      command shell, PowerShell, PsExec, Net and Mimikatz. Nation-state: China-aligned detections fell 41.4% from
+      April to September while staying above Russia- and Iran-aligned volume, which Trellix itself says may reflect
+      targeting, infrastructure or detection visibility rather than reduced activity; Germany is the third most
+      targeted country (4.4% of APT detections) and the highest-exposure Western European one. AI: the report says
+      agents routinely move secrets from encrypted stores onto command lines, local files and external model context
+      windows, and recommends correlating credential access, use and egress back to the agent process. The
+      industry-reporting section (not Trellix detections) records developer-supply-chain campaigns rising from 9.1% to
+      11.9% of campaigns, device-code phishing from 1.3% to 2.7% and ClickFix lures from 6.3% to 9.1%.
+    region_nexus: "global with a European ransomware shift: Europe 26.4% of geo-identified leak-site victims; Switzerland not broken out; Germany 4.4% of APT detections"
+    primary_sector_nexus: "direct (government the most broadly targeted sector by unique ransomware campaigns in Trellix telemetry; 131 government leak-site posts)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1486, T1685, T1688, T1078, T1219]
+    affected_products: ["Fortinet FortiOS", "Citrix NetScaler", "SonicWall SMA", "Palo Alto Networks GlobalProtect", "Check Point Remote Access VPN", "Cisco Secure Firewall Management Center", "VMware ESXi"]
+    entity_keys: ["actor:thegentlemen", "actor:qilin", "actor:akira", "actor:clop"]
+    new_entities:
+      - { key: "report:trellix-cyberthreat-report-2026-11", type: report, name: "Trellix CyberThreat Report, November 2026", aliases: ["Trellix CyberThreat Report April-September 2026"], summary: "Trellix Advanced Research Center half-yearly threat report covering 2026-04-01 to 2026-09-30, published 2026-11-04 (ransomware, APT, agentic malware, AI credential exposure, exploited vulnerabilities)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    suggested_classification: "B2 (vendor telemetry report; Infosecurity re-reports the same numbers; counts reflect Trellix's own visibility, which Trellix itself caveats)"
+    sourcing_note: "All figures are Trellix's own telemetry and leak-site tracking; Infosecurity Magazine and Trellix's blog restate the report. The report says detection volumes may reflect visibility rather than activity, and its 'industry reporting' section is third-party reporting, not Trellix observation. Counts are not carried as headline numbers."
+    evidence:
+      - quote: "Measured by the number of unique ransomware campaigns detected in each sector, government is again the most broadly targeted, followed by financial services and IT outsourcing and hosting."
+        attribution: "Trellix Advanced Research Center"
+        source_url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/"
+      - quote: "Of the 22 ransomware campaigns in our Trellix ATLAS data with a known exploited vulnerability, 14 began with a VPN, firewall, or other edge device"
+        attribution: "Trellix Advanced Research Center"
+        source_url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/"
+      - quote: "appearing in 40 of 94 ransomware campaigns, and 14 campaigns involved EDR killers or vulnerable drivers."
+        attribution: "Trellix Advanced Research Center"
+        source_url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/"
+      - quote: "Akira went a step further in one August campaign, rebooting victim machines into Safe Mode, where most endpoint protection does not load, before encrypting."
+        attribution: "Trellix Advanced Research Center"
+        source_url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/"
+      - quote: "Europe took up much of the difference, with 26.4% of geo-identified victims."
+        attribution: "Trellix Advanced Research Center"
+        source_url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/"
+    exposure_note: "Applies to any organisation with internet-facing VPN, firewall or remote-access appliances and virtualisation hosts; the report's own recommendation is to patch those first and to treat devices exposed before patching as possibly compromised."
+    detection_note: "Telemetry class: endpoint and virtualisation-host telemetry plus edge-device audit logs. Report-derived hunt ideas: alert on unexpected Safe Mode reboots, new kernel drivers and attempts to stop security services; on PowerShell/PsExec use and new remote-management tools on servers; on large outbound transfers (extortion without encryption). Single events do not discriminate; the report's point is sequence correlation."
+    extended_notes: |
+      Government is also named as the most-broadly-targeted ransomware sector in Talos IR trends Q3 2026 (store entry
+      2026-10-30/cisco-talos-ir-trends-q3-2026-public-administration, public administration tied for most targeted), so the
+      Trellix report is an independent-telemetry data point for the same direction. The report's agentic-malware section
+      repeats items already in the store (ClosedQuorum, the Hermes/Strix/Cairn retail campaign, JadePuffer); not re-carried.
+  - title: "Third-party service principals in Entra ID: SpecterOps lays out why one vendor credential reached 100+ tenants in the ConnectWise Cloud Backup incident and gives a six-step audit-and-limit checklist"
+    kind_hint: research
+    sources:
+      - { url: "https://specterops.io/blog/2026/11/06/app-registrations-vs-service-principals/", publisher: "SpecterOps (Lee Robinson)", date: "2026-11-06", role: "primary" }
+    discovery_trace: "first seen at: specterops feed https://specterops.io/feed/ (2026-11-06T17:00Z; sources.json last_successful_fetch 2026-11-05 predates the post) -> primary (no pivot needed): https://specterops.io/blog/2026/11/06/app-registrations-vs-service-principals/"
+    summary: |
+      SpecterOps explains the model behind the ConnectWise Cloud Backup (SkyKick) incident already in the store: an app
+      registration lives in one home tenant and holds the credentials, while the service principal (Enterprise
+      applications) in every consenting tenant holds the permissions, so a credential stolen from the vendor's
+      app registration authenticates as the service principal in every customer tenant by swapping the directory ID.
+      SpecterOps notes that the ConnectWise app requested application permissions covering all mailboxes through
+      Exchange Web Services and full control of SharePoint site collections, plus Application.ReadWrite.All and
+      AppRoleAssignment.ReadWrite.All, which turn a data path into a possible tenant takeover, and that it does not
+      know how the actor obtained the credential. Attacker paths it lists: steal an existing secret or certificate
+      (code, config, CI/CD, federated identity credentials such as GitHub Actions workflows), add a credential to
+      the app registration (owners, Application Administrator, Cloud Application Administrator, any principal with
+      Application.ReadWrite.All), add one directly to the service principal through the addPassword endpoint (not
+      shown in the Entra admin center; app-instance property lock now defaults on for new app registrations), or
+      escalate from a principal already controlled. Defender steps: list service principals whose
+      appOwnerOrganizationId is neither your tenant nor Microsoft (the default Enterprise applications view hides some),
+      group them by owning tenant and review granted application permissions, disable (reversibly) what is unused;
+      audit app registrations and service-principal passwordCredentials/keyCredentials through Graph and who may add
+      credentials; limit user consent to low-risk permissions from verified publishers and enable the admin consent
+      workflow; ingest service-principal sign-in logs (a separate log, needs Entra P1/P2) and watch for a new source IP,
+      new credentials (two audit activity names: "Update application - Certificates and secrets management" and
+      "Add service principal credentials") and new consent grants, and enable MicrosoftGraphActivityLogs; consider
+      Conditional Access for workload identities, which needs the separate Workload ID Premium licence, supports only
+      IP, risk and authentication-context conditions, covers only single-tenant principals in your own tenant and
+      therefore does not stop a vendor compromise.
+    region_nexus: "global; relevant to every Microsoft 365 / Entra tenant that consented to third-party backup, migration or compliance apps, including Swiss public-sector tenants (no Swiss case stated)"
+    primary_sector_nexus: "indirect (public-sector Microsoft 365 tenants)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1078.004, T1528, T1550.001, T1098.001, T1552.001]
+    affected_products: ["Microsoft Entra ID", "Microsoft Graph"]
+    entity_keys: ["product:microsoft-entra-id", "incident:connectwise-cloud-backup-skykick-app-credential-abuse-2026-10", "campaign:exposed-app-credentials-entra-service-principal-signins-2026-11"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Explainer that restates the ConnectWise/SkyKick and exposed-app-credential findings already in the store; the delta is the third-party-service-principal audit checklist (appOwnerOrganizationId, direct SP credentials, log sources, Workload ID limits). Main agent may fold it into those entries as an improvement record instead of a new entry."
+    suggested_classification: "B2 (SpecterOps is a reputable identity-tradecraft lab; the technical statements match Microsoft documentation it links; no independent second report of the checklist)"
+    evidence:
+      - quote: "Each one is an identity in your tenant whose keys live somewhere else."
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/06/app-registrations-vs-service-principals/"
+      - quote: "Every one of them is a path to impersonating a service principal."
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/06/app-registrations-vs-service-principals/"
+      - quote: "Secrets added directly to a service principal do not show up in the Entra admin center"
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/06/app-registrations-vs-service-principals/"
+      - quote: "Policies only apply to single-tenant service principals registered in your own tenant, so they won’t protect you from a vendor compromise like ConnectWise, and they don’t cover managed identities."
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/06/app-registrations-vs-service-principals/"
+    exposure_note: "Any tenant with consented multi-tenant apps; the identity's credentials are held by the vendor. Check: Graph query for service principals where appOwnerOrganizationId differs from your tenant and is not Microsoft's, then the application permissions granted to each."
+    detection_note: "Telemetry class: Entra audit and sign-in logs. Service-principal sign-in logs (separate from user sign-ins), the two credential-change activity names above, new consent grants and MicrosoftGraphActivityLogs; BloodHound edges AZAddSecret, AZMGAddSecret, AZOwns and AZMGGrantAppRoles map who can add credentials. Disabling the vendor's service principal does not remove access already planted through other credentials, so review credentials and role assignments afterwards."
+  - title: "APT flaw CVE-2026-109518: an on-path attacker or malicious mirror or proxy can swap a package after apt has verified it and run code as root; Debian and Ubuntu fixed 2026-11-04"
+    kind_hint: vulnerability
+    sources:
+      - { url: "https://ubuntu.com/security/notices/USN-8996-1", publisher: "Ubuntu Security Notices (USN-8996-1)", date: "2026-11-04", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-109518", publisher: "Debian Security Tracker (DSA-6607-1, DLA-4880-1)", date: "2026-11-04", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/DSA-6607-1", publisher: "Debian Security Tracker (DSA-6607-1)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://www.stepsecurity.io/blog/cve-2026-109518-apt-package-swap-root", publisher: "StepSecurity", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: stepsecurity-blog feed https://www.stepsecurity.io/blog/rss.xml ('CVE-2026-109518: apt Flaw Lets Attackers Swap Packages After Verification and Run Code as Root', 2026-11-05) -> pivot: StepSecurity article https://www.stepsecurity.io/blog/cve-2026-109518-apt-package-swap-root (References: Debian advisory, USN-8996-1) -> primary: Ubuntu USN https://ubuntu.com/security/notices/USN-8996-1 and Debian tracker https://security-tracker.debian.org/tracker/CVE-2026-109518 (the lists.debian.org DSA page is behind a proof-of-work interstitial). The identifier and CVSS were read from the CNA (Canonical) CVE record via the MITRE CVE services API, not cited."
+    summary: |
+      CVE-2026-109518 (reporter Max Justicz) is a time-of-check to time-of-use flaw in apt's HTTP download retry
+      handling: an attacker who controls the HTTP traffic between an apt client and its archive (a compromised
+      network, a malicious or compromised mirror, or a proxy or package cache in the path) answers two package requests
+      with redirects to the same URL, forces retries with temporary HTTP errors and, because apt mishandles the hard
+      links it uses for the merged download, overwrites the file after the signature and hash check, so apt installs an
+      unverified package that runs maintainer scripts as root. It needs a non-zero Acquire::Retries (default 3 since
+      Debian 12 and Ubuntu 22.04; older releases are unaffected by default unless scripts raise it) and an
+      install or upgrade to trigger it; snap and FTP sources are not affected. Fixes: Debian bookworm apt 2.6.2
+      (DLA-4880-1), trixie 3.0.4 (DSA-6607-1), forky 3.3.6, sid 3.3.7; Ubuntu 26.10 3.3.3ubuntu0.1, 26.04 LTS
+      3.2.1ubuntu0.1, 24.04 LTS 2.8.4ubuntu0.1, 22.04 LTS 2.4.15ubuntu0.1, and ESM builds 2.0.12+esm1 (20.04),
+      1.6.19+esm1, 1.2.36+esm1, 1.0.1ubuntu2.24+esm4. The CNA scores it CVSS 4.0 7.7 (network, low complexity,
+      attack requirements present, passive user interaction) and the CISA ADP SSVC entry of 2026-11-04 records
+      exploitation none, not automatable, total technical impact; no exploitation is reported. StepSecurity's
+      emphasis is CI/CD: self-hosted runners on flat networks, caches and proxies, Docker builds and developer machines
+      that run apt-get install; patching only the proxy host does not patch its clients, and runner images and
+      container base images must be rebuilt, not just patched in place.
+    region_nexus: "global; Debian and Ubuntu servers, build hosts and workstations of any organisation, including Swiss public-sector Linux estates that install through an internal mirror, proxy or cache"
+    primary_sector_nexus: "indirect (Linux estates behind package proxies)"
+    sector: "cross-sector"
+    cves: [CVE-2026-109518]
+    techniques: [T1557, T1195.002]
+    affected_products: ["apt (Debian)", "apt (Ubuntu)"]
+    entity_keys: ["product:ubuntu"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Not exploited (CISA ADP SSVC: exploitation none) and needs an on-path position or a malicious mirror, but it is root code execution in the package manager of Debian and Ubuntu with default settings and fixes exist; S1 did not return it. Priority notable at most."
+    suggested_classification: "A1 (Canonical CNA record and distribution advisories for their own packages, Debian and Ubuntu independent trackers agree)"
+    cve_row: { cve: "CVE-2026-109518", product: "apt (Debian, Ubuntu)", cvss: "CVSS 4.0 7.7 (CNA Canonical)", epss: null, kev: false, exploited: "none reported (CISA ADP SSVC 2026-11-04: exploitation none)", affected: "Debian bookworm apt < 2.6.2, trixie < 3.0.4, forky/sid < 3.3.6; Ubuntu apt < 2.4.15ubuntu0.1 (22.04), < 2.8.4ubuntu0.1 (24.04), < 3.2.1ubuntu0.1 (26.04), < 3.3.3ubuntu0.1 (26.10) with Acquire::Retries non-zero", fixed: "bookworm 2.6.2; trixie 3.0.4; forky 3.3.6; sid 3.3.7; Ubuntu 26.10 3.3.3ubuntu0.1, 26.04 3.2.1ubuntu0.1, 24.04 2.8.4ubuntu0.1, 22.04 2.4.15ubuntu0.1, 20.04 2.0.12+esm1", type: "TOCTOU via hard-link reuse on redirect-and-retry (CWE-62, CWE-367)", vector: "network, on-path (malicious mirror or proxy)", auth: "none", source: "https://ubuntu.com/security/notices/USN-8996-1" }
+    evidence:
+      - quote: "an on-path attacker who can manipulate the HTTP traffic (including a malicious mirror or proxy) between an APT client and an archive server triggered by a package install can trick the client into installing an attacker-controlled unverified package and achieve remote code execution with root privileges"
+        attribution: "Debian Security Tracker"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-109518"
+      - quote: "the value 3 is the default starting with Debian 12 (bookworm) and Ubuntu 22.04 LTS (Jammy Jellyfish), so older releases are unaffected in a default configuration"
+        attribution: "Debian Security Tracker"
+        source_url: "https://security-tracker.debian.org/tracker/CVE-2026-109518"
+      - quote: "This is a time-of-check to time-of-use bug."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/cve-2026-109518-apt-package-swap-root"
+      - quote: "Update apt in your runner images, rebuild them, and roll out new pods or VMs."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/cve-2026-109518-apt-package-swap-root"
+    exposure_note: "Check: apt version and retry setting with apt list --installed '?source-package(^apt$)' and apt-config dump | grep Acquire::Retries (StepSecurity); anything that installs over plain HTTP or through a shared mirror, proxy or cache; CI runner images, Dockerfiles and base images that pin an old apt."
+    detection_note: "Telemetry class: package-manager and network telemetry. HTTP (port 80) package fetches from build and server hosts, redirect-and-retry bursts (repeated 3xx and 5xx answers) before an install, and dpkg-installed packages whose files differ from the archive (debsums/hash comparison against the mirror). A swapped package leaves no failed signature check in apt logs, so post-patch compromise checks mean comparing installed package hashes on hosts that installed through an untrusted path during the exposure window. Mitigation until patched: Acquire::Retries 0 and HTTPS mirrors."
+    triage_note: "Benign lookalike: flaky mirrors legitimately produce redirects, temporary errors and retries during installs. Discriminator: redirects that point two different package requests at one URL, followed by a retry and a different file hash than the archive's."
+  - title: "Update: OpenSSH 10.6p2 password bypass (CVE-2026-123158, sshole) now has exploit attempts in two independent in-the-wild datasets: SANS ISC honeypots saw the first real attempts on 2026-11-05 peaking 2026-11-06, Previdian counts 20 attempts from 13 addresses in 9 countries to 2026-11-08"
+    kind_hint: update
+    sources:
+      - { url: "https://isc.sans.edu/diary/33498", publisher: "SANS Internet Storm Center (Johannes Ullrich)", date: "2026-11-08", role: "primary" }
+      - { url: "https://previdian.com/CVE-2026-123158", publisher: "Previdian", date: "2026-11-08", role: "corroborating" }
+    discovery_trace: "first seen at: sans-isc feed https://isc.sans.edu/rssfeed.xml ('Scans for Sshole Vulnerability (CVE-2026-123158)', 2026-11-08T15:44Z) -> primary: https://isc.sans.edu/diary/33498 ; also previdian slice record -> https://previdian.com/CVE-2026-123158 (per-CVE telemetry page read with extract)"
+    summary: |
+      SANS ISC's Cowrie honeypots, which record only the first 255 characters of SSH passwords, show long-password
+      attempts rising from 2026-11-04 (58) to 232 on 11-05, 713 on 11-06, 246 on 11-07 and 51 on 11-08. The 11-01
+      entries are not exploit attempts: buggy brute-force scripts put post-login shell commands into the password
+      field. The first genuine sshole attempts arrived on 2026-11-05 using an all-"A" password; the leading sources
+      were spread over many hosting and telecom networks, and Ullrich expects several honeypot logins succeeded and
+      promises a follow-up. Previdian's CVE page, read 2026-11-09, reports 20 exploitation attempts from 13 unique
+      attacker addresses in 9 countries between 2026-11-06 and 2026-11-08, EPSS 1.0%, not in CISA KEV; the existing
+      entry (read 2026-11-07) carried 15 attempts from 10 addresses. Previdian notes its sensor counts are attempts, not proof of
+      a vulnerable target or a successful login.
+    region_nexus: "global; NCSC Switzerland issued the advisory already in the store"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2026-123158]
+    techniques: [T1190, T1021.004]
+    affected_products: ["OpenSSH", "Alpine Linux", "OpenWrt"]
+    entity_keys: ["product:openssh", "product:alpine-linux", "product:openwrt"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole"
+    suggested_classification: "B2 (honeypot and sensor telemetry from two independent collectors; neither proves exploitation succeeded against a production host)"
+    evidence:
+      - quote: "The first actual exploit attempt for sshole arrived on November 5th, with attempts that used an all \"A\" password."
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33498"
+      - quote: "I expect quite a few of these login attempts were successful for our honeypots, and I will follow up with more details as I extract them."
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33498"
+      - quote: "Yes. Previdian sensors have observed 20 exploitation attempts, 13 unique attacker IPs, and 9 countries targeting CVE-2026-123158. First observed Nov 06, 2026; last observed Nov 08, 2026."
+        attribution: "Previdian"
+        source_url: "https://previdian.com/CVE-2026-123158"
+    detection_note: "Telemetry class: SSH authentication logs. Long passwords (above 256 bytes) are unusual in genuine brute-force traffic; sshd on musl/no-PAM hosts that logs a successful password login for an account whose password field is * after an oversized password attempt is the compromise signal; patch is OpenSSH 10.6p2 or the Alpine package, or PasswordAuthentication no."
+    extended_notes: |
+      Honeypot IPs in the ISC table are not carried (no IOCs). The ISC series is a time-bound delta (peak on 11-06, falling
+      by 11-08); a follow-up diary with the successful-login details is promised and may land in the next window.
+  - title: "OpenAI says an AI pipeline turned a scan of the latest Linux kernel into 948 distinct local privilege escalation exploits with patches; 61 patched upstream and 299 under public discussion within ten days"
+    kind_hint: research
+    sources:
+      - { url: "https://openai.com/index/a-thousand-fewer-paths-to-root/", publisher: "OpenAI", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/11/05/openai-linux-kernel-root-exploits/", publisher: "Help Net Security", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: helpnetsecurity (home page https://www.helpnetsecurity.com/ listing; article https://www.helpnetsecurity.com/2026/11/05/openai-linux-kernel-root-exploits/) -> primary: OpenAI https://openai.com/index/a-thousand-fewer-paths-to-root/ (read through the reader fallback)"
+    summary: |
+      OpenAI's Cyber team ran a prototype on an upcoming cyber model against the latest Linux kernel master branch in
+      mid-October 2026: 2,308 candidate findings, 1,724 reproduced, 1,169 working local privilege escalation exploits
+      and 291 information-leak proofs of concept against a stock desktop distribution with default protections, which
+      after variant analysis and grouping became 948 distinct vulnerabilities with a patch each, at a cost of USD
+      1,213,430 in API credits. OpenAI says that when the scan and manual review ended after ten days, 61 of the LPEs
+      had been patched upstream, 43 had staging patches and 299 were being reported and discussed publicly, and that
+      hundreds of reports and patches had been sent with Linux maintainers' guidance, with the rest to follow through its
+      Patch the Planet partners. It says early exploitation-stage claims needed validation (20 of 200 claimed root
+      exploits had used a different zero-day than assigned) and that agents used 10 exploitation techniques it believes
+      are new, described only by class (Help Net Security says details are withheld for safety). Help
+      Net Security reports OpenAI's researchers warning that, near and medium term, a low-privileged account on a
+      kernel that is not up to date should be treated as functionally equivalent to root for a well-resourced actor,
+      and recommending layered isolation. The post does not list the flaws or CVE identifiers and does not say which
+      distributions or kernel versions are affected.
+    region_nexus: "global; Linux kernels in servers, workstations, containers and Android"
+    primary_sector_nexus: "indirect (Linux estates)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1068]
+    affected_products: ["Linux kernel"]
+    entity_keys: ["product:linux-kernel"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "A vendor research post with no CVE list and no exploitation observed; its value to the constituency is a patch-cadence signal (expect a stream of Linux kernel LPE fixes and public reports; treat unpatched kernels with local low-privilege access as root-equivalent). The store already tracks one public kernel LPE (2026-10-25/zdi-linux-kernel-reports-public-skb-zerocopy-root-exploit); OpenAI does not say whether its 299 public reports overlap it."
+    suggested_classification: "B3 (OpenAI first-party research on its own pipeline, figures self-reported and not independently reproduced; Help Net Security is a re-report)"
+    sourcing_note: "All numbers are OpenAI's own and unaudited; the Help Net Security quote about unpatched accounts being root-equivalent paraphrases OpenAI's researchers and was not found verbatim in the OpenAI post as fetched."
+    evidence:
+      - quote: "When the autonomous scan and manual analysis finished after 10 days, 61 LPEs had already been patched upstream, 43 had staging patches, and 299 were being reported and discussed publicly."
+        attribution: "OpenAI"
+        source_url: "https://openai.com/index/a-thousand-fewer-paths-to-root/"
+      - quote: "produced 948 local privilege escalation (LPE) exploits that could allow an unprivileged local user to gain root access"
+        attribution: "OpenAI"
+        source_url: "https://openai.com/index/a-thousand-fewer-paths-to-root/"
+      - quote: "should be considered functionally equivalent to root access for a well-resourced threat actor"
+        attribution: "Help Net Security, quoting OpenAI's researchers"
+        source_url: "https://www.helpnetsecurity.com/2026/11/05/openai-linux-kernel-root-exploits/"
+  - title: "Proxyware on endpoints: Layer3 Intel sees residential-proxy exits inside the White House network, and Microsoft documents the trojanized-installer chain that silently installs WorldProxyPool as SYSTEM scheduled tasks"
+    kind_hint: research
+    sources:
+      - { url: "https://layer3intel.com/blog/residential-proxies-white-house-network", publisher: "Layer3 Intel", date: "2026-11-04", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/11/03/fake-download-campaign-uses-trojanized-installers-deliver-monetization-payloads/", publisher: "Microsoft Threat Intelligence", date: "2026-11-03", role: "corroborating" }
+      - { url: "https://www.infosecurity-magazine.com/news/white-house-residential-proxy-exits/", publisher: "Infosecurity Magazine", date: "2026-11-05", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/11/06/white-house-residential-proxy-traffic/", publisher: "Help Net Security", date: "2026-11-06", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine feed https://www.infosecurity-magazine.com/rss/news/ ('Residential Proxy Traffic Traced to White House Network', 2026-11-05T16:00Z) -> pivot: Infosecurity article https://www.infosecurity-magazine.com/news/white-house-residential-proxy-exits/ -> primary: Layer3 Intel https://layer3intel.com/blog/residential-proxies-white-house-network ; thematic pivot (not a stated link between the two): Microsoft Security Blog index https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ -> https://www.microsoft.com/en-us/security/blog/2026/11/03/fake-download-campaign-uses-trojanized-installers-deliver-monetization-payloads/"
+    summary: |
+      Layer3 Intel reports that between 2026-10-05 and 2026-11-03 its residential-proxy enumeration pipeline exited
+      through AS2650, the network registered to the US Executive Office of the President, 236 times via six
+      addresses on 26 of 30 days across 28 public proxy services, with about half the exits between 17:00 and
+      midnight Eastern time. Layer3 reads the pattern as a person, not guest Wi-Fi, whose device carries a proxy SDK,
+      says its data shows the exits but not the device, reports no compromise of White House systems and notes that a
+      poorly secured proxy SDK could give an outsider reach into internal systems (it cites Synthient's Kimwolf
+      research). Synthient's attribution to a bundled streaming app comes only from posts on X and is not carried.
+      Separately, Microsoft documents a fake-download campaign (cracked software, game and plug-in lures) whose
+      trojanized Inno Setup-style installers run from %TEMP%\is-*.tmp, call back with a d=inno and r=offer_execution
+      pattern and install monetization payloads unattended; the proxy branch, WorldProxyPool, creates three
+      SYSTEM scheduled tasks (agent at startup, a hidden PowerShell watchdog every five minutes, an hourly updater) under
+      Program Files. Microsoft's preventive and hunting steps are software-source control, cloud-delivered protection,
+      tamper protection, reputation-based protection and ASR rules, plus review of new SYSTEM scheduled tasks and
+      software inventory for proxy and distributed-compute applications. Microsoft and Layer3 do not link their
+      findings; the shared point is that a proxy agent on a workstation makes the organisation's egress address a
+      resold exit node.
+    region_nexus: "United States (the government network observed); transferable to any government workstation fleet where users can install software; no Swiss case stated"
+    primary_sector_nexus: "indirect (government networks as proxy exits)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1090, T1053.005, T1204.002, T1105]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: LOW
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Low severity and the two sources are not linked by either publisher; the White House finding is a single small-vendor observation (Layer3, no device identified, device attribution only on X). Useful only as a hunt prompt: proxy agents and proxy SDKs on workstations, and checking your own egress ranges against residential-proxy detection datasets."
+    suggested_classification: "C3 for the White House observation (single small vendor, unverified device); B2 for Microsoft's installer-chain analysis (first-party telemetry)"
+    evidence:
+      - quote: "That pattern suggests a person rather than a public guest Wi-Fi network: someone regularly on the White House network late into the evening, whose device is infected with a proxy SDK."
+        attribution: "Layer3 Intel"
+        source_url: "https://layer3intel.com/blog/residential-proxies-white-house-network"
+      - quote: "Our data shows the exits, not the device or the person behind them."
+        attribution: "Layer3 Intel"
+        source_url: "https://layer3intel.com/blog/residential-proxies-white-house-network"
+      - quote: "WorldProxyPool also creates recurring SYSTEM scheduled tasks for agent startup, watchdog execution, and updater activity."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/03/fake-download-campaign-uses-trojanized-installers-deliver-monetization-payloads/"
+    detection_note: "Telemetry class: scheduled-task and process-creation events plus software inventory and egress traffic. Newly created SYSTEM scheduled tasks that run a hidden PowerShell watchdog every few minutes or an hourly updater (task-creation event 4698), execution from Inno temp directories, and installation of proxy or distributed-compute software nobody deployed. Outside view: look up your public egress addresses in residential-proxy detection datasets."
+# watchlist_duty none: no sweep block.
+candidate_sources:
+  - id: sh-consulting
+    publisher: "SH Consulting (independent DNS and email-infrastructure research, Alex Shakhov)"
+    url: "https://www.sh.consulting/research"
+    category: research
+    why: "Primary DNS-hygiene studies of government and university domains (dangling CNAMEs, expired DMARC reporting endpoints, SPF/MX/NS typos); the 2026-11-05 study is the primary for a returned item and its method transfers directly to cantonal and communal domains. Low cadence (five investigations published, no RSS feed: /rss.xml returns 404), so watch the index rather than rotate it. Reliability C until a second independent confirmation of one of its findings."
+coverage_gaps:
+  - source_id: rapid7-research
+    reason: "RSS https://www.rapid7.com/rss.xml is not well-formed XML (invalid token at line 433) and the reader fallback returned no items. Working recipe: `python3 tools/fetch_source.py extract https://www.rapid7.com/blog/` returns the listing with /blog/post/<slug>/ hrefs but no dates; `extract` each post gives the date field (date: reliable). Swept this way: no Rapid7 post in the window (newest relevant 2026-11-04, a BOD 26-04 policy post)."
+  - source_id: darkreading
+    reason: "`extract` on a Dark Reading article URL was served by the metered jina reader (1 article, https://www.darkreading.com/cybersecurity-operations/us-government-email-systems-abuse-typos) as already noted in the record; the RSS summary is enough to find the lead, then pivot to the primary the article names."
+  - source_id: helpnetsecurity
+    reason: "`url https://www.helpnetsecurity.com/` returns raw HTML whose newest article href is dated 2026-11-06; no 2026-11-07, -08 or -09 articles appeared (weekend gap or cached front page). The record's regex-then-extract recipe still works."
+  - source_id: previdian
+    reason: "Per-CVE pages read cleanly with `extract https://previdian.com/CVE-<id>` (CVE-2026-123158 read with counts and first/last observed dates); the exploited-vulnerability listing remains unsweepable, as the record notes."
+  - source_id: debian-security-announce
+    reason: "https://lists.debian.org/debian-security-announce/... answers with a Varnish proof-of-work interstitial ('I Challenge Thee') that no transport solved; `extract https://security-tracker.debian.org/tracker/CVE-<id>` and `.../tracker/DSA-<n>` read cleanly and carry fixed-version tables per release. Recipe worth adding to a Debian/Ubuntu advisory source record."
+  - source_id: cve-records
+    reason: "NVD per-CVE pages are JavaScript-only (WebFetch returns only the NVD home title). `python3 tools/fetch_source.py url https://cveawg.mitre.org/api/cve/<CVE>` returns the CNA record with CVSS, credits and the CISA ADP SSVC container as JSON; used for identifier and score verification only, not cited."
+  - source_id: openai-research
+    reason: "`extract https://openai.com/index/a-thousand-fewer-paths-to-root/` was served via the metered reader (one article); no direct transport tried succeeded."
+  - source_id: weekend-window
+    reason: "No major research lab (Microsoft, Google TI/Mandiant, Talos, Unit 42, Check Point, ESET, Securelist, SentinelLabs, Proofpoint, TrendAI, Elastic, Huntress, Sophos, Recorded Future, CrowdStrike, Volexity, Rapid7, watchTowr) published a post later than 2026-11-07T02:44Z (Microsoft); only StepSecurity (2026-11-09T01:18Z) and SANS ISC (2026-11-08) carry in-window posts. The 26 h window is genuinely empty for lab research; items returned are lookback items."
+source_ledger:
+  - { id: previdian, tier: standard, attempted: true, transport: "extract (front page + per-CVE page)", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "featured CVE-2026-123158 page folded into the sshole update-of item; listing /feed not tried (403 per record)" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed + extract /research/ listing", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest feed item 2026-11-03 is an award notice; research listing shows no report since the Serbia Pegasus note" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 25, returned: 0, note: "notes are re-reports; used as leads: 948 paths to root -> OpenAI item, LLMjacking/Black October -> GTIG item; ARTEX Docker backdoor, ChatGPT lockdown bypass, prompt adware, XCPE dropped; ThisBash (Claude Dispatch) and vendor-cloud off-switch (solar inverters) not followed" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 10, returned: 0, note: "policy and law-enforcement news, no technical research lead" }
+  - { id: darkreading, tier: standard, attempted: true, transport: "feed + extract (jina-served once)", horizon_hours: 145, in_horizon_items: 22, returned: 1, note: "SH Consulting DNS study lead; LLMjacking lead" }
+  - { id: datadog-security-labs, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-29 (Node2Shell, covered); the 2026-10-06 Bedrock key-validation post used as corroboration in the LLMjacking item" }
+  - { id: gambit-security, tier: standard, attempted: true, transport: "url blog + extract per post", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22 (PHP2Shell time-to-patch); five posts date-checked, none in lookback" }
+  - { id: group-ib, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "Mirax Android device takeover (META banks) and infostealers-in-banking-fraud: no constituency nexus" }
+  - { id: helpnetsecurity, tier: standard, attempted: true, transport: "url front page + extract per article", horizon_hours: 145, in_horizon_items: 30, returned: 1, note: "OpenAI Linux LPE lead; front page ends at 2026-11-06" }
+  - { id: infosec-magazine, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 145, in_horizon_items: 24, returned: 2, note: "Trellix report lead, residential-proxy lead; ARTEX-Censys and others covered or dropped" }
+  - { id: jpcert-eyes, tier: standard, attempted: true, transport: "feed (Atom)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 (covered)" }
+  - { id: nict-cynex-lettice, tier: standard, attempted: true, transport: "jina /library/ (reader credit, 1 call)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest library item 2026-10-13 (covered through the JPCERT/NICT entry)" }
+  - { id: semperis-research, tier: standard, attempted: true, transport: "extract /blog/", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest dated card 2026-10-22" }
+  - { id: cloudsek-triad, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "newest 2026-10-29" }
+beyond_slice_sweeps:
+  major_publishers: "feeds read for Check Point Research, CrowdStrike, Elastic Security Labs, ESET, Google Security blog, Huntress, Kaspersky Securelist, Mandiant/GTIG, Project Zero, Proofpoint, Recorded Future Insikt, SentinelLabs, Sophos, Cisco Talos, TrendAI, Unit 42, Volexity, watchTowr; Microsoft Threat Intelligence read through WebFetch listing plus feed; Rapid7 through extract (feed broken)"
+  additional_research_feeds: "37 further research feeds read to lookback (Swiss: InfoGuard, InfoGuard Labs, Oneconsult, Compass Security, scip; plus SANS ISC, Zscaler, Sysdig, Wiz, Expel, Malwarebytes, Intel 471, DFIR Report, SpecterOps, Wordfence, Socket, Sansec, Tenable, Cloudflare, Acronis TRU, Truesec, Zimperium, Trail of Bits, JFrog, Sonatype, Snyk, SafeDep, XLab, 0patch, Bishop Fox, Patchstack, OpenSourceMalware, Intrinsec, Seqrite, Calif, Exodus, StepSecurity)"
+dropped_leads:
+  - { lead: "ARTEX: trojanized Docker Hub image tomicdd/artex (CSA note 2026-11-06, reported by The Hacker News and the disclosing researcher) and Censys count of 1,465 exposed ARTEX hosts (Infosecurity 2026-11-06)", reason: "ARTEX is saturated in the store (entry 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse carries Microsoft, Wiz, GTIG, Check Point, CERT-EU); the delta concerns red-team tooling hygiene and attacker infrastructure counts, no constituency detection or hardening change; primaries not fetched" }
+  - { lead: "GTIG XCPE botnet takedown (2026-11-02; 1.3M pre-infected Android set-top boxes, Videostrong OEM)", reason: "OEM firmware backdoor with proxy and ad-fraud modules; no public-sector nexus stated; seven days old; the proxy-SDK angle is carried in the proxyware item only as a hunt prompt" }
+  - { lead: "ESET Gorbag (2026-11-03) and SlippyNunchucks (2026-11-04)", reason: "Gorbag targets Ukrainian justice, local administrations and defence only (WinRAR CVE-2025-8088 chain already covered by the MDaemon/ClamAV entry); SlippyNunchucks targets China-based users via Sogou; no Swiss nexus" }
+  - { lead: "Group-IB Mirax (2026-11-05) and Zimperium GhostBat (2026-11-06)", reason: "Android banking trojans against META and Indian banks; no constituency nexus" }
+  - { lead: "Check Point ChatGPT Lockdown Mode bypass (2026-11-05) and prompt adware 'Haiou' (2026-11-03)", reason: "consumer AI-product weakness fixed by the vendor and gray-market jailbreak bundles; no public-sector hunt or hardening delta" }
+  - { lead: "Bitdefender GhostMap Android parser DoS (Help Net Security 2026-11-05)", reason: "requires installing an app, denial of service only, Pixel 10/Android 17 reproduced, Google declined a security fix, no exploitation; marginal and no primary fetched" }
+  - { lead: "XLab CWPdoor passive backdoor in Control Web Panel cwpsrv (2026-11-05; 340,000 exposed CWP instances by XLab's count)", reason: "substantive implant analysis (signed-request trigger, log suppression, timestamp restoration) but a niche hosting panel with no Swiss public-sector nexus found; could be revisited if a CWP footprint is established" }
+  - { lead: "StepSecurity @ethersphere/bee-js 13.3.0 compromise (2026-11-09T01:18Z, in window)", reason: "npm release-identity misuse with valid SLSA provenance but a Swarm-wallet stealer for a niche package; the store already holds several npm supply-chain entries" }
+  - { lead: "Microsoft 'What exploited vulnerabilities have in common' (2026-11-02) and Recorded Future 'October 2026 CVE Landscape' (2026-11-06)", reason: "prioritisation statistics and a monthly CVE roll-up; no new tradecraft or hardening step (vanity-metric risk)" }
+  - { lead: "Sophos 'State of Ransomware in Financial Services 2026' (2026-11-05), Compass Security 'Security Monitoring of AI Agents in Microsoft Defender XDR' (2026-11-03), Intrinsec browser-extension overview (2026-11-05), Socket pull_request_target default block from 2026-12-02 (2026-11-05)", reason: "sector-specific survey, licence-dependent product how-to, summary-only report, and a platform change notice respectively; none clears the bar for this constituency" }
