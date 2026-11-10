@@ -1,0 +1,533 @@
+# work/2026-11-10T0255Z-intel/findings.S1.yaml  (domain S1: active threats and trending vulns)
+domain: S1
+run_id: 2026-11-10T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: "2026-11-10T02:57:53Z"
+ended_at: "2026-11-10T03:30:21Z"
+duration_seconds: 1948
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 15
+  bridge_fetches: 130   # approximate count from the tool trace
+window_note: >
+  window_hours 26 (anchor 2026-11-09T00:55Z). Lookback records (hpe, arista, watchguard, mikrotik, citrix, 0patch, tenable, vulncheck, checkpoint, projectzero)
+  were swept to their own lookback_hours. Clock at last fetch about 2026-11-10T03:25Z.
+items:
+
+  # ------------------------------------------------------------------ 1. sshole update
+  - title: "CVE-2026-123158 (OpenSSH sshole): CISA lists it as exploited since 2026-11-09, and GreyNoise records hands-on post-exploitation on its own sensor hosts from 2026-11-07, including a Python implant"
+    sources:
+      - { url: "https://sshole.events.greynoise.io/", publisher: "GreyNoise (SSHole event tracker)", date: "2026-11-10", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/09/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-09", role: "primary" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/openbsd-security-advisory-av26-1130", publisher: "Canadian Centre for Cyber Security (AV26-1130 Update 1)", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-117552", publisher: "ENISA EUVD", date: "2026-11-10", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-sshole-openssh-flaw-to-breach-linux-systems/", publisher: "BleepingComputer", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://www.securityweek.com/hackers-exploiting-sshole-authentication-bypass-in-openssh/", publisher: "SecurityWeek", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (https://www.cisa.gov/known-exploited-vulnerabilities-catalog) -> CVE-2026-123158 dateAdded 2026-11-09 -> pivot: cccs-alerts feed https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en -> AV26-1130 Update 1 https://cyber.gc.ca/en/alerts-advisories/openbsd-security-advisory-av26-1130 -> pivot: SecurityWeek https://www.securityweek.com/hackers-exploiting-sshole-authentication-bypass-in-openssh/ (names WatchTowr, GreyNoise, Defused) -> pivot: BleepingComputer https://www.bleepingcomputer.com/news/security/hackers-exploit-sshole-openssh-flaw-to-breach-linux-systems/ -> primary: GreyNoise tracker https://sshole.events.greynoise.io/ ; EUVD exploited list https://euvdservices.enisa.europa.eu/api/exploitedvulnerabilities (exploitedSince 2026-11-09)"
+    summary: |
+      FACTS. CISA added CVE-2026-123158 to the KEV catalog on 2026-11-09 (due date 2026-11-12, forensicTriage flag "Yes"); the catalog row cites the OpenSSH release notes, Alpine's advisory and the upstream commit, and ENISA's EUVD lists it as exploited since 2026-11-09. The Canadian Cyber Centre's AV26-1130 Update 1 of 2026-11-09 repeats the KEV listing. NCSC Switzerland's advisory 13155 (last edited 2026-11-06) still reads "Current exploitation status: UNKNOWN", so the Swiss authority text now lags the CISA listing.
+      CLAIMS (GreyNoise, telemetry-holding sensor operator). GreyNoise's event tracker, read 2026-11-10, says its first successful exploitation came on 2026-11-07 at 00:46 UTC, 1 day 8 h 29 min after the CVE reached NVD and about 40 h after the OpenSSH 10.6p2 release, against "a vulnerable GreyNoise gridpoint", that is, GreyNoise's own deliberately exposed sensor hosts, not customer or production systems; BleepingComputer's wording "networks protected by GreyNoise" and its count of 16 successful chains from six source addresses should be read in that light. Observed hands-on behaviour, in order: the login arrives as an sshd-session process that spawns `sh -c` running id, uname and a read of /etc/os-release; a container check; queries to the AWS, Azure and Alibaba Cloud metadata services; attempts to read root's SSH keys and the password hashes in /etc/shadow through doas without a password prompt; dropping of a Python runtime (the command history shows apk package-manager activity); writes to the authorized_keys files of root and of the default alpine user (one actor tagged its key with a marker comment); and, in one case, a single-file Python implant that GreyNoise names TAC Agent, started as an init-script startup service, which polls an HTTPS C2 that its code describes as a Cloudflare Worker every 150 s and supports shell execution, file listing/preview/download/upload and self-update. On the victim host the implant never enrolled and never received a task. GreyNoise reports the implant's comments and errors are in Chinese and that a missing-tool pre-check which replies with feedback looks like input for an automated planner; GreyNoise itself labels that last point an inference.
+      CLAIMS (others). watchTowr said on X (dated 2026-11-06 by BleepingComputer, "over the weekend" per SecurityWeek) that only botnets and crypto miners had picked the flaw up so far; Previdian counts 20 attempts from 13 addresses in 9 countries; Defused saw a small number of actors. The THN weekly recap of 2026-11-09 repeats Previdian's list and names Switzerland among the source countries (an attempt origin, not a victim).
+      ASSESSMENT / GAP. Still no source reports a compromised production host: every confirmed success is on honeypot or sensor infrastructure. That is the honest limit of the evidence, but a KEV listing means CISA holds evidence of exploitation it has not described.
+    region_nexus: "global; THN lists Switzerland among nine attempt-source countries (an origin, not a victim); musl/Alpine images are common in container fleets"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-123158]
+    techniques: [T1190, T1021.004, T1059.004, T1552.005, T1003.008, T1098.004, T1105, T1059.006, T1071.001]
+    affected_products: ["OpenSSH", "Alpine Linux", "OpenWrt"]
+    entity_keys: ["product:openssh", "product:alpine-linux", "product:openwrt"]
+    new_entities:
+      - { key: "tool:tac-agent", type: tool, name: "TAC Agent", aliases: [],
+          summary: "Single-file Python 3 standard-library implant named by GreyNoise (2026-11-10), dropped after SSHole exploitation on a GreyNoise sensor host: HTTPS polling every 150 s, shell execution, file transfer and self-update, started as a startup service; Chinese-language comments and errors." }
+    relation_suggestions:
+      - { subject: "tool:tac-agent", object: "product:openssh",
+          basis: "GreyNoise: the implant was dropped on a host after an attacker exploited CVE-2026-123158 in OpenSSH on its sensor (GreyNoise, 2026-11-10); the source states the sequence, not an actor" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-of:2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole
+    evidence:
+      - quote: "On November 9, 2026, Cybersecurity and Infrastructure Security Agency (CISA) added CVE-2026-123158 to their Known Exploited Vulnerabilities (KEV) Catalog"
+        attribution: "Canadian Centre for Cyber Security (AV26-1130 Update 1)"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/openbsd-security-advisory-av26-1130"
+      - quote: "based on evidence of active exploitation"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/09/cisa-adds-four-known-exploited-vulnerabilities-catalog"
+      - quote: "CVE-2026-123158 is trivial to exploit and working exploits are publicly available."
+        attribution: "GreyNoise"
+        source_url: "https://sshole.events.greynoise.io/"
+      - quote: "queried AWS, Azure and Alibaba Cloud metadata services"
+        attribution: "GreyNoise"
+        source_url: "https://sshole.events.greynoise.io/"
+      - quote: "On the victim system, enrollment never succeeded and the agent never received a task."
+        attribution: "GreyNoise"
+        source_url: "https://sshole.events.greynoise.io/"
+      - quote: "According to WatchTowr, only botnets and crypto miners have picked it up so far."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/hackers-exploiting-sshole-authentication-bypass-in-openssh/"
+    extended_notes: |
+      Existing entry carries cves[].status [poc-public, patch-available] and says "CISA does not list the flaw": needs the exploited and cisa-kev statuses and the KEV wording (an `update` record, PD-13 exploitation-status change). Its sourcing_note and the "no production host" sentence stay true.
+      Triage material for the entry's Detection and Triage lines (behavioural, no IOCs): (1) sshd authentication log: an "Accepted password" event for an account whose shadow password field is `*` (root, alpine, key-only users) has no benign explanation; (2) process creation with sshd-session as parent of `sh -c` running id/uname/os-release within seconds of the login, then `doas -n` invocations without a password; (3) a host that never ran Python suddenly installing it through apk from an interactive SSH session; (4) new or changed authorized_keys for root and the default alpine user, or a new init script for an unknown service; (5) a container or VM host that begins querying cloud instance-metadata endpoints from an SSH session; (6) outbound HTTPS from a server to a newly seen workers-style hostname with a fixed 150-second beacon. Benign lookalike: an administrator who logs in with a real password and runs id/uname; the discriminator is the account class (password field `*`) and the login method (password where only keys are expected). Hardening levers named by the sources: OpenSSH 10.6p2 or the distribution package plus sshd restart, `PasswordAuthentication no`, and, per Alpine's advisory already in the entry, reviewing doas use and recently created users, files and authorized keys on exposed machines. Suggested priority change: stays notable-to-high for musl hosts.
+      The Hacker News (2026-11-09) and Previdian are already cited by the entry; SecurityWeek and BleepingComputer are new reading of the same telemetry (not independent first-hand observations); GreyNoise and watchTowr are.
+
+  # ------------------------------------------------------------------ 2. Barracuda update
+  - title: "Barracuda Email Security Gateway CVE-2026-116606 / CVE-2026-111560: Barracuda now says it has seen exploitation affecting a small number of organizations (advisory updated 2026-11-09 21:00 EST); Canada's Cyber Centre attributes it to CVE-2026-116606"
+    sources:
+      - { url: "https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection", publisher: "Barracuda Trust Center", date: "2026-11-10", role: "primary" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/barracuda-networks-security-advisory-av26-1112", publisher: "Canadian Centre for Cyber Security (AV26-1112 Update 1)", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://labs.watchtowr.com/barracuda-networks-is-your-new-best-friend-barracuda-email-security-gateway-pre-auth-remote-root-rce-cve-2026-116606-cve-2026-111560/", publisher: "watchTowr Labs", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: cccs-alerts feed https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en -> AV26-1112 Update 1 (2026-11-09T14:45Z) https://cyber.gc.ca/en/alerts-advisories/barracuda-networks-security-advisory-av26-1112 -> primary: Barracuda Trust Center https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection (banner 'Updated November 9, 2026, at 9:00pm EST', body gains the exploitation sentence)"
+    summary: |
+      FACTS. Barracuda's own advisory for CVE-2026-116606 (pre-authentication authorization bypass, ESG, CVSS 9.3) and CVE-2026-111560 (command injection, six products, CVSS 8.6) now carries an update banner dated 2026-11-09 21:00 EST (= 2026-11-10 02:00 UTC): "We added information about exploitation activity that has been observed affecting a small number of organizations." The overview adds "We have identified exploitation activity affecting a small number of organizations." The earlier entry says no exploitation was reported, and that statement is no longer true. The Canadian Cyber Centre's AV26-1112 Update 1 (2026-11-09) says "Open source reporting indicates that CVE-2026-116606 is exploited in the wild", so CCCS saw reporting before Barracuda updated.
+      GAPS. Barracuda does not say which CVE or whether the chain was used, how many organizations, since when, what the attacker did afterwards, or give indicators; CCCS does not name the open source it relies on and I found none indexed (search engines and the BleepingComputer, SecurityWeek and THN feeds carry nothing newer than 2026-11-05/06 on this flaw). CISA's KEV catalog (release 2026.11.09, 19:54 UTC) does not list either CVE yet. Barracuda's 2026-11-05 edit stays: authentication is not required, the administrative UI must be reachable. Its guidance that administrative interfaces not reachable from the internet are less exposed is the main hardening lever; watchTowr's chain (public since 2026-11-05) needs only that reachability.
+    region_nexus: "global; Barracuda ESG is a common mail-security appliance in European public administrations (NCSC Switzerland advisory 13144 covers it, exploitation status still UNKNOWN as of its 2026-11-06 edit)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-116606, CVE-2026-111560]
+    techniques: [T1190, T1059.004]
+    affected_products: ["Barracuda Email Security Gateway", "Barracuda Load Balancer ADC", "Barracuda Message Archiver", "Barracuda WAF Control Center", "Barracuda Web Application Firewall", "Barracuda Web Security Gateway"]
+    entity_keys: ["product:barracuda-email-security-gateway"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-of:2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce
+    evidence:
+      - quote: "We have identified exploitation activity affecting a small number of organizations."
+        attribution: "Barracuda Trust Center"
+        source_url: "https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection"
+      - quote: "We added information about exploitation activity that has been observed affecting a small number of organizations."
+        attribution: "Barracuda Trust Center"
+        source_url: "https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection"
+      - quote: "Open source reporting indicates that CVE-2026-116606 is exploited in the wild."
+        attribution: "Canadian Centre for Cyber Security"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/barracuda-networks-security-advisory-av26-1112"
+      - quote: "Organizations whose administrative interfaces are not publicly accessible from the internet are less exposed to this attack path."
+        attribution: "Barracuda Trust Center"
+        source_url: "https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection"
+    extended_notes: |
+      Update-of record for the 2026-11-04 entry (priority high; consider raising to critical for operators with a reachable admin UI: public chain since 2026-11-05, vendor-confirmed exploitation, root on a mail-path appliance). cves[].status needs `exploited` on CVE-2026-116606 (Barracuda names no CVE; CCCS names this one) and the headline/summary/title lines "no exploitation is reported" must be corrected. Post-patch compromise check: a patched device may already be compromised; watchTowr recalls that the 2023 ESG zero-day (CVE-2023-2868, UNC4841 per Mandiant) ended in physical replacement of appliances; nothing in this advisory says replacement is needed. Detection concept: web/admin-UI access logs for the configuration-restore/backup-import endpoint and failed-then-successful password-change request sequences from non-administrator addresses (watchTowr's chain), unexpected configuration or timezone-field changes, new outbound connections from the appliance. Existing entry already carries watchTowr's chain description; nothing to add there.
+
+  # ------------------------------------------------------------------ 3. N-able N-central Able2Shell (NEW)
+  - title: "N-able N-central: a researcher published proof-of-concept exploits for more than 30 unpatched flaws on 2026-11-08, including an unauthenticated XXE-to-RCE chain; N-able took Hosted N-central offline and tells on-premises customers to keep servers offline until a hotfix (ETA mid-day 2026-11-10 EST)"
+    sources:
+      - { url: "https://uptime.n-able.com/", publisher: "N-able (N-central critical security incident status page)", date: "2026-11-10", role: "primary" }
+      - { url: "https://github.com/Oracle-Security/CVEs/tree/main/0-Days/N-Central%20N-Able", publisher: "Sean Bales (Oracle-Security/CVEs repository, N-central disclosures)", date: "2026-11-08", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/n-able-takes-cloud-platform-offline-after-30-plus-zero-days-published/", publisher: "BleepingComputer", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed https://www.bleepingcomputer.com/feed/ (item 'N-able takes cloud platform offline after 30+ zero-days published', 2026-11-09 21:26Z) -> pivot: article https://www.bleepingcomputer.com/news/security/n-able-takes-cloud-platform-offline-after-30-plus-zero-days-published/ -> pivot: researcher repository https://github.com/Oracle-Security/CVEs/tree/main/0-Days/N-Central%20N-Able -> primary: N-able status page https://uptime.n-able.com/ (JS single-page app; WebFetch returned an empty shell, read through `jina`, the only transport that rendered it)"
+    summary: |
+      FACTS (N-able, status page, read 2026-11-10). N-able opened a "N-central Critical Security Incident" on 2026-11-09 after a "public disclosure and non-responsible communication of critical vulnerabilities in N-central found by an independent researcher". It took Hosted N-central offline in the Americas, Europe and APAC and "strongly advises" on-premises customers to "take appropriate steps to secure their environments and temporarily take their N-central servers offline until further notice". Updates at 2026-11-09 19:59 UTC and 2026-11-10 00:02 UTC say the hotfix is still being built and validated, ETA "Mid-day on Nov. 10th (EST)", that N-able has "no evidence of active exploitation or unauthorized data access", and that "we have seen no indication that your environment has been impacted or compromised". Ecoverse services through N-able Login (n-able.app) stay up, including Asset View, patching, vulnerability management, scripting, and Take Control natively for Windows and Linux. N-able's last published hotfix, N-central 2026.4 HF1 of 2026-11-02, fixes the Linux, Brotli and one further CVE and is unrelated.
+      CLAIMS (researcher, GitHub README). More than 30 alleged zero-days with working PoCs, tested on "N-able N-central Appliance 2026.4.0.31", a pre-release build; the author believes most or all affect earlier builds and writes "At the time of posting all vulnerabilities work on the latest pre-release version and are unpatched." Chains named in the README: an anonymous service-import XXE chain (anonymous MMS2 write primitive, pre-authentication external-entity resolution, NCI local-session trust confusion, password reset, authenticated JSP execution) giving command execution as the `nable` user and able to create an enabled Default Administrator account; an anonymous stored-XSS chain through forged patch metadata that reaches an OGNL command sink when a ProductAdmin opens the patch detail view; the same XSS entry used with the administrator's session to inject syslog-ng grammar through Audit Export and obtain root; an SIS GenericFiles path traversal that places an executable JSP in Jetty, followed by a passwordless syslog installer helper that runs a `nable`-writable configuration as root; and a constrained, ProductAdmin-authenticated heap overwrite in the GenericTCP task scanner. BleepingComputer reports the researcher confirmed the discovery was AI-assisted and calls the unauthenticated XXE-to-RCE chain the most critical; BleepingComputer has not independently verified all the flaws, and N-able's hotfix work is the only independent signal that at least some are genuine.
+      GAPS. No CVE identifiers, CVSS scores, exact affected build ranges or fixed builds exist yet; the hotfix is unreleased; N-able has not said which released builds are affected. N-central is a repeat KEV product: CISA listed CVE-2026-18577 and CVE-2026-18556 in August 2026 and CVE-2026-86218 on 2026-09-08.
+    region_nexus: "global, N-able Europe hosted region offline; N-central is the RMM platform of many managed service providers that serve communal and cantonal administrations (supplier exposure)"
+    primary_sector_nexus: "indirect (supplier)"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1068, T1136.001, T1059]
+    affected_products: ["N-able N-central"]
+    entity_keys: ["product:n-able-n-central"]
+    new_entities:
+      - { key: "incident:n-able-n-central-able2shell-public-disclosure-2026-11", type: incident, name: "N-able N-central public disclosure of more than 30 unpatched flaws (Able2Shell, November 2026)", aliases: ["Able2Shell"],
+          summary: "On 2026-11-08 researcher Sean Bales published PoC exploits for more than 30 alleged N-central zero-days; on 2026-11-09 N-able took Hosted N-central offline and told on-premises customers to take servers offline pending a hotfix, saying it had seen no exploitation (N-able status page, BleepingComputer)." }
+    relation_suggestions:
+      - { subject: "incident:n-able-n-central-able2shell-public-disclosure-2026-11", object: "product:n-able-n-central",
+          basis: "N-able: the incident concerns critical vulnerabilities in N-central disclosed by an independent researcher (N-able status page, 2026-11-10)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "At this time, we have not seen any active exploitation of these vulnerabilities"
+        attribution: "N-able"
+        source_url: "https://uptime.n-able.com/"
+      - quote: "temporarily take their N-central servers offline until further notice from N-able"
+        attribution: "N-able"
+        source_url: "https://uptime.n-able.com/"
+      - quote: "ETA Timeline: Mid-day on Nov. 10th (EST)."
+        attribution: "N-able"
+        source_url: "https://uptime.n-able.com/"
+      - quote: "At the time of posting all vulnerabilities work on the latest pre-release version and are unpatched."
+        attribution: "Sean Bales (researcher)"
+        source_url: "https://github.com/Oracle-Security/CVEs/tree/main/0-Days/N-Central%20N-Able"
+      - quote: "One of the most critical exploit chains abuses an unauthenticated XXE vulnerability in N-central's service-import functionality to steal a trusted local session, reset an account password, and execute commands on the server as the nable user."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/n-able-takes-cloud-platform-offline-after-30-plus-zero-days-published/"
+    extended_notes: |
+      Suggested priority: high, with an immediate-action candidate for any organization (or supplier) that runs an on-premises N-central server: the vendor itself instructs switching the server off until further guidance, public PoCs exist, the bugs are pre-patch, and N-central is a repeat KEV product (CVE-2026-18556 and CVE-2026-18577 in August, CVE-2026-86218 on 2026-09-08). Exposure: an on-premises N-central server reachable beyond a management network; hosted tenants are already offline by N-able's action. The supplier angle is the Swiss lens: MSPs that manage communal and cantonal endpoints through N-central lose their RMM during the outage, and a compromised N-central server is a push channel (Take Control, scripts, patching) to every managed endpoint.
+      Detection concepts (follow the stated mechanism, no IOCs): N-central web/Jetty access logs for requests to service-import or MMS2 endpoints from non-agent addresses; creation of a new enabled administrative account or password resets on existing accounts with no ticket; patch-metadata records created by unauthenticated sources; shells or Java child processes under the `nable` account and any su/helper transition to root; syslog-ng or audit-export configuration changes; and on managed endpoints scripts, Take Control sessions or software pushes that the MSP did not schedule. Because N-able says it has seen no exploitation but PoCs are public and servers were reachable for hours (disclosure 2026-11-08 late, offline 2026-11-09), review those logs for the period before shutdown once the server comes back. Hardening levers named by the sources: keep on-premises servers offline or restricted to a management network until N-able's hotfix, then apply it; use N-able App / N-able Login (Ecoverse) for endpoint management in the interim (vendor statement). Re-check at next fire for the hotfix, CVE ids and any exploitation statement (status page updates every four hours).
+
+  # ------------------------------------------------------------------ 4. SAP November Patch Day CNA records (NEW)
+  - title: "SAP Security Patch Day 2026-11-10: SAP's CNA records for 40 CVEs are already public, among them four unauthenticated network CVSS 10.0 rows (NetWeaver ABAP SAML2 authentication bypass, Web Dispatcher and ABAP kernel memory corruption, SAP Gateway default ACL)"
+    sources:
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120700", publisher: "ENISA EUVD (SAP CNA record CVE-2026-120017)", date: "2026-11-10", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120674", publisher: "ENISA EUVD (SAP CNA record CVE-2026-89126)", date: "2026-11-10", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120662", publisher: "ENISA EUVD (SAP CNA record CVE-2026-89103)", date: "2026-11-10", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120656", publisher: "ENISA EUVD (SAP CNA record CVE-2026-76964)", date: "2026-11-10", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd bridge `enisa-euvd recent criticals` (https://euvd.enisa.europa.eu/ API) -> four records, three SAP rows at CVSS 9.1 to 10.0 and one D-Link row, published 2026-11-10 00:34 to 00:45 UTC -> pivot: EUVD search API with assigner=sap and the date filter (40 SAP records) -> per-record EUVD pages https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120700 (and -120674, -120662, -120656) -> cross-read: MITRE CVE Services JSON for each CVE (state PUBLISHED, assignerShortName sap, datePublished 2026-11-10T00:43:09Z for CVE-2026-120017; affected-version lists and CWE) -> recipe check: sap-security-notes `extract https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html` returned 404 at about 03:10 UTC (page not live)"
+    summary: |
+      FACTS. SAP, acting as CNA, published CVE records dated 2026-11-10 between 00:17 and 01:04 UTC; ENISA's EUVD mirrors 40 of them (assigner "sap"), ahead of SAP's Security Patch Day page for November, which was still a 404 at about 03:10 UTC. The note bodies (me.sap.com notes) are login-gated, so the CNA record text and the affected-version lists are the only public detail, and SAP's own priority labels (Hot News, Very High) are not yet visible. SAP names no exploitation and no public PoC; EUVD shows EPSS 0.0 on the records read, i.e. not yet scored.
+      Rows at CVSS 3.1 9.0 or higher, all network vector, scope changed, with SAP note numbers: (1) CVE-2026-120017, 10.0, NetWeaver AS ABAP and ABAP Platform (SAML2 Service Provider), "does not perform sufficient verification of incoming authentication assertions under certain configurations", CWE-347: an unauthenticated attacker "could submit specially crafted data to bypass authentication and impersonate arbitrary users, including privileged accounts"; affected SAP_BASIS 702, 731, 740, 750 to 758, 816, 920, 921, 922; note 3849308. (2) CVE-2026-89126, 10.0, SAP Web Dispatcher, heap-based buffer overflow (CWE-122) from crafted network traffic, unauthenticated, arbitrary code execution; WEBDISP 7.53, 7.54, 7.77, 7.93, 9.16, KERNEL 7.53, 9.18, 9.20, KRNL64UC 7.53, HDB 2.00, XS_ADVANCED_RUNTIME 1.00, SAP_EXTENDED_APP_SERVICES 1; note 3778556. (3) CVE-2026-76964, 10.0, NetWeaver AS ABAP (Internet Communication Manager) memory corruption (CWE-1287), unauthenticated, arbitrary code execution; KRNL64UC 7.53, KERNEL 7.53, 7.54, 7.77, 7.93, 9.16, 9.18, 9.20; note 3778530. (4) CVE-2026-89103, 10.0, SAP Gateway, "activates the default Access Control List with high privileges allowing categorization of external attacker as internal application server" (CWE-863), unauthenticated actions with high impact; KRNL64NUC 7.22, 7.22EXT, KRNL64UC 7.22, 7.53, 8.04, KERNEL 7.22 to 9.21 (7.22, 7.54, 7.77, 7.93, 9.16, 9.20, 9.21); note 3798345. Authenticated (low-privilege) rows at 9.9: CVE-2026-109803 (Knowledge Management XML Forms, XSL transformation to code execution, KMC-CM 7.50, note 3809153), CVE-2026-109795 (S4CRM / BBPCRM remote-enabled code injection, note 3834842) and CVE-2026-76965 (ABAP OS command execution through missing authorization, note 3792735); CVE-2026-89119 at 9.6 (Web Dispatcher/ICM administrative-function CSRF, needs a logged-on administrator to click, note 3804858); CVE-2026-109798 at 9.1 (BusinessObjects Web Intelligence XXE, authenticated, note 3799117); CVE-2026-76966 at 8.9 (ABAP kernel RFC memory corruption, AC:H, note 3769130).
+      Web Dispatcher and the Internet Communication Manager (CVE-2026-89119 names both) are typically the internet-facing tier of an SAP estate, and the Gateway row sits in the kernel's Gateway service, so internet-facing dispatchers and any reachable Gateway are the first exposure to check; the SAML2 row applies only where the SAML 2.0 service provider is configured ("under certain configurations").
+    region_nexus: "global; SAP NetWeaver/ABAP runs finance and HR across federal and cantonal administrations (source record sap-security-notes)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-120017, CVE-2026-89126, CVE-2026-76964, CVE-2026-89103, CVE-2026-109803, CVE-2026-109795, CVE-2026-76965, CVE-2026-89119, CVE-2026-109798, CVE-2026-76966, CVE-2026-120008]
+    techniques: [T1190, T1078]
+    affected_products: ["SAP NetWeaver Application Server ABAP", "SAP Web Dispatcher", "SAP Gateway", "SAP Kernel", "SAP NetWeaver Knowledge Management", "SAP BusinessObjects Business Intelligence Platform"]
+    entity_keys: ["product:sap-netweaver-as-abap", "product:sap-web-dispatcher", "product:sap-kernel", "product:sap-abap-platform"]
+    new_entities:
+      - { key: "product:sap-gateway", type: product, name: "SAP Gateway", aliases: [], summary: "SAP kernel component (RFC/Gateway server); CVE-2026-89103 default ACL row on the 2026-11-10 SAP Patch Day (SAP CNA record)." }
+      - { key: "product:sap-businessobjects-bi-platform", type: product, name: "SAP BusinessObjects Business Intelligence Platform", aliases: ["SAP BusinessObjects"], summary: "SAP BI platform; CVE-2026-109798 Web Intelligence XXE row on the 2026-11-10 SAP Patch Day (SAP CNA record)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated attacker could submit specially crafted data to bypass authentication and impersonate arbitrary users, including privileged accounts."
+        attribution: "SAP (CNA record via ENISA EUVD)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120700"
+      - quote: "An unauthenticated attacker could send specially crafted network traffic to trigger a memory corruption condition in the affected functionality."
+        attribution: "SAP (CNA record via ENISA EUVD)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120674"
+      - quote: "SAP Gateway activates the default Access Control List with high privileges allowing categorization of external attacker as internal application server."
+        attribution: "SAP (CNA record via ENISA EUVD)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120662"
+    extended_notes: |
+      SINGLE-SOURCE-OTHER here means one first-party origin (SAP as CNA, read through EUVD and MITRE CVE Services, two mirrors of the same record); SAP's Patch Day page and notes are not yet readable, so the composer should say "SAP's CVE records published 2026-11-10" and not claim a Patch Day summary. The spawn brief assumed Patch Day content appears after about 17:00 UTC; the CVE records did not wait. Re-read at the next fire via the sap-security-notes recipe (`extract .../security-notes-news/november-2026.html`) for the note table with SAP's own priorities, then compose the update. Suggested priority: high (four unauthenticated network CVSS 10.0 rows in components that front SAP estates; no exploitation reported). The CVE records give no fixed-version list: the fix is the SAP Security Note (SAP kernel patch levels or support package), content login-gated.
+      Detection concept: web-dispatcher/ICM access logs for oversized or malformed requests followed by worker restarts or crashes (memory corruption); SAML2 service-provider endpoint requests carrying assertions from unexpected issuers; Gateway connections from non-application-server addresses performing administrative RFC functions; ABAP security audit log and system log entries for impersonated privileged users. Hardening: SAP kernel updates per note, restrict the dispatcher/ICM/Gateway to required networks, review the Gateway ACL the CNA text names. The D-Link M60 row (EUVD-2026-120701, CVE-2026-125086) that surfaced in the same EUVD query is a VulDB-assigned consumer mesh-router hard-coded-credential report with a public write-up and is dropped (see dropped_leads).
+
+  # ------------------------------------------------------------------ 5. GPUStack (NEW, KEV disposition)
+  - title: "CVE-2026-102895, GPUStack before 2.2.0: unauthenticated admin takeover of the GPU cluster manager through a same-host reverse proxy or a forged X-GPUStack-Real-IP header, with RCE on workers; CISA lists it as exploited (CVSS 9.8); 2.2.2 also closes the SAML callback bypass CVE-2026-102894"
+    sources:
+      - { url: "https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr", publisher: "GPUStack project (GitHub Security Advisory GHSA-gj9m-f8ph-pmhr)", date: "2026-07-31", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/09/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-09", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-117124", publisher: "ENISA EUVD", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-117125", publisher: "ENISA EUVD (sibling CVE-2026-102894)", date: "2026-11-04", role: "corroborating" }
+      - { url: "https://dailysecurityreview.com/resources/gpustack-auth-bypass-cve-2026-102895-exploited-on-ai-servers/", publisher: "Daily Security Review", date: "2026-11-05", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CVE-2026-102895, dateAdded 2026-11-09, notes cite the GHSA) -> kev-window.txt NOT COVERED row -> primary: GitHub advisory https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr -> corroborating: EUVD exploited list https://euvdservices.enisa.europa.eu/api/exploitedvulnerabilities (exploitedSince 2026-11-09) and EUVD record -> pivot: WebSearch ('GPUStack CVE-2026-102895 exploited in the wild loopback authentication bypass inference-backends from-yaml') -> https://dailysecurityreview.com/resources/gpustack-auth-bypass-cve-2026-102895-exploited-on-ai-servers/ ; sibling CVE via EUVD search text=CVE-2026-102894 (read the aliases field)"
+    summary: |
+      FACTS (GPUStack maintainers' advisory). In GPUStack before v2.2.0, `get_current_user` in `gpustack/api/auth.py` promotes any request whose source is considered loopback to the built-in administrator when `force_auth_localhost` is False, the default. `client_ip_getter` can be made to report 127.0.0.1 without credentials in two ways: a same-host reverse proxy (`proxy_pass http://127.0.0.1:<port>` makes every remote request arrive from the loopback peer), or a forged `X-GPUStack-Real-IP: 127.0.0.1` header. Either gives full unauthenticated administrative access: enumerate and change users, models, workers and configuration, mint persistent admin API keys (scope `["*"]`, valid from any source address afterwards), read worker credentials and cloud/provider secrets, and, through admin-only `POST /v2/inference-backends/from-yaml`, run code on worker hosts. The advisory says the flaw "has been observed exploited in the wild against a v2.1.1 deployment (attacker-created custom backends running reverse shells)", credits Javier Sixto (ulex.fr) for that report, and fixes it in 2.2.0 by removing the loopback auto-admin path and hardening client-IP/forwarding-header handling. Workarounds: set `force_auth_localhost=true`, strip any client-supplied `X-GPUStack-Real-IP` at the edge, keep the API off untrusted networks.
+      CISA added the flaw to the KEV catalog on 2026-11-09 (due 2026-11-12) and ENISA lists it as exploited since the same day; EPSS 0.0033 (FIRST, 2026-11-09). Daily Security Review (2026-11-05) adds that the date of first attacks, the number of compromised servers and the route used are unstated, and that a second critical flaw, CVE-2026-102894 (CVSS 9.1; the `/auth/saml/callback` route trusts an unverified SAMLResponse, active by default even without SAML configured; affects 0.7.1 up to before 2.2.2), is fixed only in 2.2.2; ENISA's EUVD record confirms the affected range, and the same source reports no exploitation of it. The project's repository lists at least eight further advisories published 2026-10-26 (six rated High, two Moderate; cross-tenant and authorization flaws), so staying on current 2.x is the broader lever; its releases page lists v2.3.0.
+      GAPS. One exploitation observation by one researcher on one deployment, relayed by the maintainers; CISA's KEV evidence is not described; no hunt indicators published.
+    region_nexus: "global; GPU/AI inference clusters at universities, research institutes and public bodies running self-hosted model serving (Swiss footprint unknown)"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-102895, CVE-2026-102894]
+    techniques: [T1190, T1059, T1552, T1098]
+    affected_products: ["GPUStack"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:gpustack", type: product, name: "GPUStack", aliases: [], summary: "Open-source GPU cluster manager for AI model serving and GPU instance provisioning; CVE-2026-102895 loopback auto-admin bypass listed in CISA KEV on 2026-11-09 (GHSA-gj9m-f8ph-pmhr)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "KEV-listed unauthenticated admin takeover with RCE and persistent API-key creation clears the exploited/pre-auth bar, but GPUStack is a niche AI-infrastructure product with an unconfirmed Swiss public-sector footprint; compose short or drop if the main agent judges the footprint too thin"
+    evidence:
+      - quote: "This vulnerability has been observed exploited in the wild against a v2.1.1"
+        attribution: "GPUStack project"
+        source_url: "https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr"
+      - quote: "the loopback auto-admin path was removed and"
+        attribution: "GPUStack project"
+        source_url: "https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr"
+      - quote: "based on evidence of active exploitation"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/09/cisa-adds-four-known-exploited-vulnerabilities-catalog"
+      - quote: "Exploitation was observed in the wild against a 2.1.1 deployment."
+        attribution: "ENISA EUVD"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-117124"
+      - quote: "The date of the first attacks has not been stated"
+        attribution: "Daily Security Review"
+        source_url: "https://dailysecurityreview.com/resources/gpustack-auth-bypass-cve-2026-102895-exploited-on-ai-servers/"
+    extended_notes: |
+      Exposure check: GPUStack server version (before 2.2.2 is exposed to at least one critical flaw), whether `force_auth_localhost` is true, and whether a same-host reverse proxy fronts the API (that is the default canonical deployment, so most proxied installs are exposed without any header trick). Detection concept: GPUStack audit/API logs for admin-scoped calls with no session, creation of API keys with scope "*", new custom inference backends or `from-yaml` posts, and outbound connections or shells spawned from worker containers; reverse-proxy logs for `X-GPUStack-Real-IP` values supplied by clients. Post-patch: rotate cloud/provider secrets and worker credentials that GPUStack held, and revoke every admin API key created before the upgrade, because the key persists after the fix (advisory text). Generalisable lesson for the entry: trusting the TCP peer or a client header as an authentication signal behind a same-host proxy.
+
+  # ------------------------------------------------------------------ 6. IBM Aspera Faspex (NEW, KEV disposition)
+  - title: "CVE-2026-123218, IBM Aspera Faspex 5.0.0 to 5.0.19: a crafted message bypasses authorization and yields full administrator rights (CVSS 9.8); CISA lists it as exploited two days after IBM's bulletin; fix 5.0.19 PL1 for Linux, no workaround"
+    sources:
+      - { url: "https://www.ibm.com/support/pages/security-bulletin-ibm-aspera-faspex-has-addressed-vulnerability-could-allow-authorization-bypass", publisher: "IBM (Security Bulletin, node 7295921)", date: "2026-11-07", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/09/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-09", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118902", publisher: "ENISA EUVD", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CVE-2026-123218, dateAdded 2026-11-09, notes -> https://www.ibm.com/support/pages/node/7295921) -> kev-window.txt NOT COVERED row -> primary: IBM bulletin (node 7295921 resolves to https://www.ibm.com/support/pages/security-bulletin-ibm-aspera-faspex-has-addressed-vulnerability-could-allow-authorization-bypass) -> corroborating: EUVD exploited list https://euvdservices.enisa.europa.eu/api/exploitedvulnerabilities; WebSearch ('CVE-2026-123218 IBM Aspera Faspex 5 authorization bypass exploited') found only mirror sites and no technical write-up"
+    summary: |
+      FACTS (IBM bulletin, initial publication 2026-11-07, the only change-history entry). IBM Aspera Faspex 5.0.0 through 5.0.19 contains CVE-2026-123218: "IBM Aspera Faspex 5 could allow an authorized user to craft a specific message to bypass user authorization and gain full administrative privileges" (CWE-863). IBM scores it CVSS 3.1 9.8 with vector AV:N/AC:L/PR:N/UI:N, which sits oddly beside the description's "authorized user" (CISA's catalog text says "authenticated user"); the vector, not the prose, is what the 9.8 reflects. Fix: Faspex 5.0.19 PL1 on Linux, applied by patching the container images, with the check that the faspex-core image is 5.0.19 (1ce4b13, Fix Pack 1); "Workarounds and Mitigations: None". CISA added it to KEV on 2026-11-09 (due 2026-11-12; forensic-triage flag "Yes") and ENISA lists it as exploited since 2026-11-09; EPSS 0.0040 (FIRST, 2026-11-09). Faspex has been in KEV before (CVE-2022-47986, a Faspex 4 code-execution bug, 2023-02-21).
+      GAPS. IBM's bulletin does not mention exploitation; the exploitation basis is CISA's listing alone, undescribed. The "specific message" mechanism, the entry point (a Faspex user message or transfer API), whether an account is truly needed (PR:N versus "authorized"), who exploits it and since when are all unknown; no public PoC or independent write-up was found.
+    region_nexus: "global; Faspex is a high-volume file-exchange platform used by media, research and government organizations (Swiss footprint unknown)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-123218]
+    techniques: [T1190, T1068]
+    affected_products: ["IBM Aspera Faspex"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:ibm-aspera-faspex", type: product, name: "IBM Aspera Faspex", aliases: ["Aspera Faspex 5"], summary: "IBM file exchange and transfer platform (Faspex 5 on containers); CVE-2026-123218 authorization bypass to full administrator listed in CISA KEV on 2026-11-09." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "vendor fix plus CISA KEV exploitation listing make it a must-patch for any Faspex 5 operator, but the mechanism and exploitation basis are undisclosed and the Swiss footprint is unconfirmed; compose short"
+    evidence:
+      - quote: "IBM Aspera Faspex 5 could allow an authorized user to craft a specific message to bypass user authorization and gain full administrative privileges."
+        attribution: "IBM"
+        source_url: "https://www.ibm.com/support/pages/security-bulletin-ibm-aspera-faspex-has-addressed-vulnerability-could-allow-authorization-bypass"
+      - quote: "IBM Aspera Faspex 5.0.19 PL1 has addressed a vulnerability that could allow an authenticated user to craft a specific message to bypass authorization, causing privilege escalations."
+        attribution: "IBM"
+        source_url: "https://www.ibm.com/support/pages/security-bulletin-ibm-aspera-faspex-has-addressed-vulnerability-could-allow-authorization-bypass"
+      - quote: "based on evidence of active exploitation"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/09/cisa-adds-four-known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      Exposure: Faspex 5 on Linux at build 5.0.19 or earlier (the version is shown in the admin UI and by the faspex-core container image tag); an internet-facing Faspex portal is the priority. Detection concept (mechanism unknown, so generic): Faspex application and web logs for role or privilege changes, new administrator accounts and unusual message or package API calls by ordinary users; post-patch compromise check: review administrator accounts, API keys and shares created since the first exposure, because the fix does not undo an admin takeover. Hardening named by IBM: only the fix pack; no workaround. Classification hint: A2 (IBM first-party plus CISA catalog, exploitation undescribed).
+
+  # ------------------------------------------------------------------ 7. SonicWall update (workaround added)
+  - title: "SonicWall SNWLID-2026-0014 (CVE-2026-19868, exploited SonicOS SSLVPN SAML/MFA bypass): advisory revised 2026-11-09 to add a workaround, which corrects the earlier no-workaround guidance"
+    sources:
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014", publisher: "SonicWall PSIRT (SNWLID-2026-0014)", date: "2026-11-09", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/cisa-flags-sonicwall-sonicos-mfa-bypass.html", publisher: "The Hacker News", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: store review of high-priority entries (entries/2026-11-07/cve-2026-19868-sonicwall-sonicos-sslvpn-saml-mfa-bypass-kev.md, primary SNWLID-2026-0014) -> re-read the vendor page https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014 (metadata 'Last Updated 2026-11-09', 'Workaround true', new workaround section) -> corroborating context: THN 2026-11-09 https://thehackernews.com/2026/11/cisa-flags-sonicwall-sonicos-mfa-bypass.html (does not mention the workaround)"
+    summary: |
+      FACTS. SonicWall's advisory SNWLID-2026-0014, first published 2026-11-06, now shows "Last Updated 2026-11-09" and "Workaround true", with a workaround section for CVE-2026-19868 that did not exist when the entry was written: "If SAML authentication is in use and upgrading the firmware is not possible, disable or delete any active LDAP, RADIUS, and TACACS+ authentication server configured on the firewall", with the menu paths Device, Users, Settings, Authentication, Configure RADIUS / LDAP / TACACS+, Settings, then disable or delete the active servers. The advisory's other text is unchanged as far as read: the flaw lets a user with valid credentials for an alternate authentication method bypass SAML controls and SAML-enforced MFA, "ONLY" when SAML is enabled for SSLVPN logins, and SonicWall "investigated a report indicating potential exploitation". The stored entry says in several places that there is no workaround; that is now wrong. The reader capture does not include the advisory's affected/fixed-build table (script-rendered), so whether the fixed builds changed (the entry has Gen7 7.3.4-7013 and Gen8 8.2.3-8015) could not be re-checked.
+      INFERENCE (not stated by SonicWall). Removing the LDAP, RADIUS and TACACS+ servers removes the alternate authentication methods through which the bypass works; any administrator or VPN login that relies on those servers will stop working until SAML is the only method, so the workaround is an interim measure with an operational price. THN's 2026-11-09 article reports CISA's KEV listing (due 2026-11-20 for federal agencies) and does not mention the workaround.
+      READ NOTE. The SonicWall PSIRT page is a script-rendered application: `extract` served it through the jina reader and WebFetch returned only the page title; the quoted text and the metadata come from that single reader capture of the vendor page.
+    region_nexus: "global; SonicWall Gen7/Gen8 firewalls with SAML SSLVPN are common at communal and cantonal sites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-19868]
+    techniques: [T1190, T1133, T1078]
+    affected_products: ["SonicWall SonicOS", "SonicWall SSL VPN"]
+    entity_keys: ["product:sonicwall-sonicos", "product:sonicwall-ssl-vpn"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: update-of:2026-11-07/cve-2026-19868-sonicwall-sonicos-sslvpn-saml-mfa-bypass-kev
+    evidence:
+      - quote: "If SAML authentication is in use and upgrading the firmware is not possible, disable or delete any active LDAP, RADIUS, and TACACS+ authentication server configured on the firewall."
+        attribution: "SonicWall PSIRT"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014"
+      - quote: "Last Updated 2026-11-09"
+        attribution: "SonicWall PSIRT"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014"
+      - quote: "NOTE: This vulnerability ONLY impacts the SonicOS SSLVPN interface or service if SAML is enabled for SSLVPN logins."
+        attribution: "SonicWall PSIRT"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014"
+    extended_notes: |
+      Entry fields to change (correction-in-place with a changelog record): cves[0].fixed ("no workaround"), the summary/headline wording "no workaround", the `actions[0]` reason clause ("because SonicWall lists no workaround"), and the Defender takeaway ("there is no workaround"). The upgrade stays the primary action (fixed builds not re-verified, see summary); the workaround is for firewalls that cannot upgrade immediately. Detection and triage text stay valid, with one addition: after applying the workaround, successful VPN logins through the removed authentication methods should disappear from the firewall log, and any that continue are a sign the change did not take effect or that the session pre-dates it. Hardening lever: LDAP, RADIUS and TACACS+ server objects under Device, Users, Settings, Authentication (vendor).
+
+  # ------------------------------------------------------------------ 8. Danfoss / refrigeration: France attribution (update-of)
+  - title: "Refrigeration-controller attacks: France attributes the 11-12 October 2026 campaign (about 700 sites, at least 15 fires) to Iran's IRGC-CEC unit Shahid Kaveh; CERT-FR's report adds Modbus reconnaissance of Schneider Electric equipment at small French hydro plants"
+    sources:
+      - { url: "https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyber-attaques-visant-la-france", publisher: "French Ministry for Europe and Foreign Affairs (attribution statement)", date: "2026-11-09", role: "primary" }
+      - { url: "https://cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-009.pdf", publisher: "CERT-FR / C4 (CERTFR-2026-CTI-009, PDF)", date: "2026-11-09", role: "primary" }
+      - { url: "https://cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-009/", publisher: "CERT-FR (CERTFR-2026-CTI-009, summary page)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/france-blames-iranian-hackers-for-supermarket-attacks-that-sparked-fires/", publisher: "BleepingComputer", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed https://www.bleepingcomputer.com/feed/ (item 'France blames Iranian hackers for supermarket attacks that sparked fires', 2026-11-09 18:32Z) -> pivot: article https://www.bleepingcomputer.com/news/security/france-blames-iranian-hackers-for-supermarket-attacks-that-sparked-fires/ -> pivot: CERT-FR page https://cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-009/ (the BleepingComputer link is http, which the bridge refuses; the https form works) -> primary: report PDF https://cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-009.pdf (read with `pdf`, per-font ToUnicode decode, 5 pages) and the Quai d'Orsay statement https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyber-attaques-visant-la-france (translated from French)"
+    summary: |
+      FACTS / CLAIMS BY AUTHORITY (translated from French). On 2026-11-09 the French Ministry for Europe and Foreign Affairs stated that the night of 11 to 12 October 2026 saw a campaign against refrigeration controllers of supermarkets "deployed in more than 700 retail sites", causing considerable material damage, fires and food losses of several tens of millions of euros, "the first cyber-offensive campaign operated purely for sabotage purposes on national territory", and that France "is able to attribute to Iran these destructive actions, carried out by the cyber-offensive unit SHAHID KAVEH, affiliated with the electronic and cyber centre of the Islamic Revolutionary Guard Corps". France will summon Iran's ambassador and propose new EU sanctions. The C4 (ANSSI, DGSE, DGSI, DGA, COMCYBER) published CERT-FR report CERTFR-2026-CTI-009 the same day. The report calls this a "faisceau d'indices" (a body of indications) naming the IRGC as sponsor and Shahid Kaveh as executor, and lists four elements: the attack infrastructure was also used in the same period for reconnaissance of Schneider Electric equipment in small and medium energy and water production units, with Modbus on port 502, a technique Shahid Kaveh has used since at least April 2026; the operators used the FOFA scan tool, which this actor habitually uses; the attack was relayed on the CyberbanNews propaganda outlet associated with the unit from 13 October 2026; and traces of Farsi were found in the attack infrastructure. The C4 also observed, and links to the same attack, the concurrent targeting of several Schneider Electric devices at small hydroelectric installations in France with moderate effects on the equipment. The report profiles Shahid Kaveh as working mainly through hacktivist avatars (CyberAveng3rs, Soldiers of Solomon, Mr. Soul, Cyber Isnaad Front) and CyberbanNews, with scripts since at least June 2024 to scan, access and control Schneider Electric, Siemens and Rockwell industrial equipment and a claimed March to April 2026 sabotage campaign against Israeli and US industrial systems including Israeli refrigeration equipment.
+      LIMITS. BleepingComputer notes France attributes only the October attacks on French supermarkets, not the later November waves in six other countries, the French blood-service incident or the Swiss and German cases; the statement and the report, in the text I could read (the PDF decoded from 8 of 30 streams), give no initial-access method or vulnerability and do not name Danfoss, Copeland or Dixell products. The stored entry's statement that no official has attributed the activity (and that the 2026-10-30 Nextgov report of US suspicion has no on-record support) is superseded for the French campaign by this government attribution, which remains an authority's assessment on evidence it describes only in outline.
+    region_nexus: "Switzerland: first Swiss attack of this kind (Köniz, canton Bern, 2026-11-05) and NCSC Switzerland advisory 13054 already in the entry; France attribution covers only the French October campaign"
+    primary_sector_nexus: "indirect (critical-infrastructure, food and health cold chain; municipal and cantonal energy and water operators use the Schneider Electric equipment class the report names)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1595, T1596.005]
+    affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355", "Copeland xweb", "Dixell xweb", "Schneider Electric industrial controllers"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "actor:cyberav3ngers"]
+    new_entities:
+      - { key: "actor:shahid-kaveh", type: actor, name: "Shahid Kaveh", aliases: ["SHAHID KAVEH", "CyberbanNews (communication outlet)"],
+          summary: "Cyber-offensive unit of the IRGC's electronic and cyber centre (IRGC-CEC); French C4 (CERT-FR CERTFR-2026-CTI-009, 2026-11-09) names it as executor of the 11-12 October 2026 refrigeration-controller sabotage campaign against about 700 French retail sites, active through hacktivist avatars and with Schneider Electric, Siemens and Rockwell ICS tooling since at least June 2024." }
+      - { key: "actor:shahid-shoostari", type: actor, name: "Shahid Shoostari", aliases: ["Emennet Pasargad", "Iliyanet"],
+          summary: "IRGC-CEC unit documented by France's C4 (CERT-FR CERTFR-2026-CTI-009, 2026-11-09) behind 2020 and 2023 operations against Charlie Hebdo and a 2024 Paris Olympics video-display compromise; the French statement notes EU sanctions against Emennet Pasargad in March 2026. Background only for the refrigeration campaign." }
+    relation_suggestions:
+      - { subject: "incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", object: "actor:shahid-kaveh",
+          basis: "French C4 / MFA (2026-11-09): France attributes the 11-12 October 2026 refrigeration-controller campaign to Shahid Kaveh, on a 'faisceau d'indices'; covers only the French October attacks" }
+      - { subject: "actor:cyberav3ngers", object: "actor:shahid-kaveh",
+          basis: "CERT-FR CERTFR-2026-CTI-009 (2026-11-09) lists CyberAveng3rs among the hacktivist avatars through which Shahid Kaveh publicly claims attacks (persona of the unit, a part-of relation per the source)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack
+    evidence:
+      - quote: "la France est en mesure d’attribuer à l’Iran ces actions destructrices, mises en œuvre par à l’unité cyberoffensive SHAHID KAVEH"
+        attribution: "French Ministry for Europe and Foreign Affairs"
+        source_url: "https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyber-attaques-visant-la-france"
+      - quote: "ont observé plusieurs attaques à but de déstabilisation menées à l’encontre des intérêts français"
+        attribution: "CERT-FR / C4"
+        source_url: "https://cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-009/"
+      - quote: "ont utilisé l’outil de scan FOFA"
+        attribution: "CERT-FR / C4"
+        source_url: "https://cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-009.pdf"
+      - quote: "Des traces d’utilisation du farsi ont été retrouvées dans l’infrastructure"
+        attribution: "CERT-FR / C4"
+        source_url: "https://cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-009.pdf"
+      - quote: "French investigators also detected attacks against Schneider Electric industrial equipment at small hydroelectric installations during the same period, which they linked to the same campaign."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/france-blames-iranian-hackers-for-supermarket-attacks-that-sparked-fires/"
+    extended_notes: |
+      Update-of record for the 13-update Danfoss entry (this is a `type: update` candidate: it changes the actor picture and adds a second target class). Fields to move: summary/headline attribution line, entities (incident -> actor:shahid-kaveh), the Nextgov paragraph's "no official has attributed" statement, sources, evidence. Defender relevance beyond the retail cases, from the report: the same infrastructure scanned Schneider Electric equipment used in small energy and water plants over Modbus/502, so operators of Schneider Electric controllers in municipal energy, water and hydro installations (Swiss communal utilities included) should treat internet-exposed Modbus/502 and vendor web interfaces as targeted. Detection concept: inbound Modbus/TCP 502 and device web-interface connections from internet addresses in firewall or flow logs, especially bursts of reads across many devices (the report ties this recon to the unit), changes to setpoints or defrost parameters outside maintenance windows. Benign lookalike: a service provider's scheduled remote maintenance session; discriminator is source address, schedule and the breadth of devices touched. Hardening: remove direct internet exposure, restrict OT management to VPN/allowlists (the report gives no new technical hardening; NCSC Switzerland's checklist is already in the entry). Related registry note: `actor:cyberav3ngers` already exists; the new `actor:shahid-kaveh` record should carry the avatar names only as aliases the source states.
+
+  # ------------------------------------------------------------------ 9. Citrix NetScaler pre-announcement (borderline)
+  - title: "Citrix NetScaler: Cloud Software Group schedules the first planned monthly security bulletin of its new release program for Thursday 2026-11-12 at 12:00 UTC and asks customers to reserve a maintenance window"
+    sources:
+      - { url: "https://community.citrix.com/techzone-blogs/110_security-updates/plan-ahead-netscaler-security-release-program-begins-november-12-r1652/", publisher: "Cloud Software Group (NetScaler Security Updates blog)", date: "2026-11-09", role: "primary" }
+    discovery_trace: "first seen at: citrix-netscaler-security-bulletins feed https://community.citrix.com/rss/3-citrix-tech-zone-blogs.xml/ (item 'Plan ahead: NetScaler security release program begins November 12', 2026-11-09T16:00Z) -> article URL https://community.citrix.com/techzone-blogs/110_security-updates/plan-ahead-netscaler-security-release-program-begins-november-12-r1652/ returned HTTP 403 on direct, extract, jina and WebFetch, so the body was read from the full RSS item text (the feed carries the whole post); no pivot beyond that was possible"
+    summary: |
+      FACTS (vendor, read from the RSS item body because the page itself is walled on every transport). Cloud Software Group says: "On Thursday, November 12, we will publish the first planned security bulletin under our new NetScaler security release program", at 12:00 UTC, and tells customers to reserve a maintenance window starting that day, align security, network and operations teams to review the bulletin on release, and consider its Pre-Notification Program. Its Security Release and Disclosure Policy sets standard security updates on a monthly cadence announced in advance, aligned to Patch Tuesday where possible (November's date moves to Thursday; "dates are targets and may change"), and allows out-of-band releases for active exploits, zero-days or CISA KEV-listed flaws. The post notes the coming fixes reflect AI-assisted code analysis. The bulletin content, severity and exploitation status are unknown.
+      WHY IT MATTERS. NetScaler ADC and Gateway are among the most targeted internet-facing appliances (the store carries the exploited NetScaler SAML overflow CVE-2026-88779 and PHP2Shell GUI fixes of 2026-10-27); a dated heads-up lets defenders staff the window and check version and exposure ahead of time.
+    region_nexus: "global; NetScaler Gateway and ADC are widely deployed at federal, cantonal and communal administrations"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Citrix NetScaler"]
+    entity_keys: ["product:citrix-netscaler"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "pre-announcement only (no vulnerability content); worth a two-line heads-up with the 2026-11-12 12:00 UTC time because NetScaler is a top exploited edge product, or fold into the 2026-11-12 fire's real bulletin if the main agent prefers"
+    evidence:
+      - quote: "On Thursday, November 12, we will publish the first planned security bulletin under our new NetScaler security release program."
+        attribution: "Cloud Software Group"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/plan-ahead-netscaler-security-release-program-begins-november-12-r1652/"
+      - quote: "Our planned release time on November 12 is 12:00 UTC."
+        attribution: "Cloud Software Group"
+        source_url: "https://community.citrix.com/techzone-blogs/110_security-updates/plan-ahead-netscaler-security-release-program-begins-november-12-r1652/"
+    extended_notes: |
+      Fetch note for the verifier: the evidence quotes come from the feed item (https://community.citrix.com/rss/3-citrix-tech-zone-blogs.xml/ , fetched 200), not from the article page, which returned an anti-bot 403 on every transport tried; the check_run URL-liveness pass may report the article URL as 403 even though the content is the vendor's. Recipe note for sources.json: the feed item summary carries the full post text; use `feed ... 10` and read the `summary` field when the article page is blocked.
+
+  # ------------------------------------------------------------------ 10. Arista bulk-advisory pre-announcement (borderline)
+  - title: "Arista: advance notice of bulk security advisories for EOS, Wi-Fi access point software and DCA appliances, scheduled for publication on 2026-11-10"
+    sources:
+      - { url: "https://www.arista.com/en/support/advisories-notices/security-advisory/25024-security-advisory-0204", publisher: "Arista Networks (Security Advisory 0204)", date: "2026-11-03", role: "primary" }
+    discovery_trace: "first seen at: arista-security-advisories `extract https://www.arista.com/en/support/advisories-notices/security-advisory` (listing, newest item 'Security Advisory 0204', November 3, 2026) -> primary: https://www.arista.com/en/support/advisories-notices/security-advisory/25024-security-advisory-0204"
+    summary: |
+      FACTS (vendor, informational advisory 0204 of 2026-11-03, revision 1.0). "Arista expects multiple advisories to be included in this upcoming release, affecting EOS, Wi-Fi Access Point software, and software for certain DCA Appliance products." Arista says "recent enhancements to our vulnerability detection processes" produced a higher-than-usual volume of updates and that it is consolidating many discrete advisories into aggregated bulk releases so customers can use one maintenance window; on 2026-11-10 a set of advisories with CVE ids, severity scores, affected versions and remediation will appear on its Advisories and Notices page and this document will be updated with a summary reference. At about 03:20 UTC the listing still showed 0204 as the newest advisory, so the release had not landed. The notice gives no severity, no exploitation statement and no product subset.
+      Nothing in the notice ties the release to exploitation.
+    region_nexus: "global; Arista EOS switching is common in data-centre and campus networks of larger public institutions"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Arista EOS", "Arista Wi-Fi access point software", "Arista DCA appliances"]
+    entity_keys: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "advance notice with no vulnerability content; the real signal is the bulk advisory release later today (2026-11-10), so the main agent may prefer to hold this for the next fire and compose from the advisories themselves"
+    evidence:
+      - quote: "Arista expects multiple advisories to be included in this upcoming release, affecting EOS, Wi-Fi Access Point software, and software for certain DCA Appliance products."
+        attribution: "Arista Networks"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/25024-security-advisory-0204"
+    extended_notes: |
+      Re-check at the next fire: https://www.arista.com/en/support/advisories-notices/security-advisory and per-advisory CSAF at arista.com/assets/data/SecurityAdvisories/CSAF/arista_networks_security_advisory_<n>_CSAF.json (from the sources.json note). Pair the check with the day's other scheduled releases below.
+
+# -------------------------------------------------------------------- KEV rows handed to S1
+kev_dispositions:
+  - { cve: CVE-2026-102895, disposition: "item (GPUStack, borderline: true, new): vendor advisory GHSA-gj9m-f8ph-pmhr read from the project's own GitHub advisory page; sibling CVE-2026-102894 folded in" }
+  - { cve: CVE-2026-123218, disposition: "item (IBM Aspera Faspex, borderline: true, new): vendor bulletin read from IBM's own page (node 7295921); IBM says nothing about exploitation, the basis is CISA's listing only" }
+  - { cve: CVE-2026-123158, disposition: "item (update-of the sshole entry): KEV 2026-11-09, CCCS AV26-1130 Update 1, GreyNoise post-exploitation telemetry on its own sensors, watchTowr botnet/cryptominer statement; still no confirmed compromise of a production host" }
+  - { cve: CVE-2026-116779, disposition: "no item: already covered by 2026-11-06/cve-2026-116779-freeswitch-sip-message-api-command-execution; a WebSearch found no development beyond the KEV listing and the vendor's own exploitation statement" }
+
+# -------------------------------------------------------------------- scheduled multi-product releases (completeness duty 1)
+scheduled_releases:
+  - { release: "SAP Security Patch Day 2026-11-10", state: "CNA CVE records already public (40 records, 00:17 to 01:04 UTC); SAP Patch Day page november-2026.html returned 404 at about 03:10 UTC; notes login-gated", returned_as: "item 4" }
+  - { release: "Microsoft November 2026 Patch Tuesday (2026-11-10)", state: "not yet published at fetch time. MSRC SUG: 'November 2026 Early Security Updates' release (initial 2026-11-04) holds 134 items, none flagged exploited or publicly disclosed; revised-CVE sweep ($filter=latestRevisionDate ge 2026-11-08) returned 3 Mariner third-party rows; no out-of-band Microsoft fix found", returned_as: "none" }
+  - { release: "Arista bulk security advisories 2026-11-10 (EOS, Wi-Fi AP, DCA)", state: "advance notice 0204 only; advisories not yet on the listing", returned_as: "item 10 (borderline)" }
+  - { release: "Citrix NetScaler first monthly security bulletin 2026-11-12 12:00 UTC", state: "vendor pre-announcement 2026-11-09", returned_as: "item 9 (borderline)" }
+  - { release: "Fortinet, Ivanti, Adobe, Siemens, Schneider Electric monthly releases of 2026-11-10", state: "nothing published at fetch time: FortiGuard PSIRT RSS newest FG-IR-26-188 (2026-11-02, revised 2026-11-07, already covered by the Linux-kernel entry); CISA ICS CSAF newest 2026-11-05; Ivanti and Adobe pages not in this slice", returned_as: "none (recheck next fire)" }
+
+# -------------------------------------------------------------------- considered and dropped, with the reason
+dropped_leads:
+  - { lead: "Palo Alto Networks Brotli advisory CVE-2026-111497 (RSS item 2026-11-09 21:00 UTC)", reason: "revision adds Cortex XCor, IoT Security and Prisma SaaS to the remediated list; PAN still says it is not aware of malicious exploitation; PAN-OS fixed builds and the brotli-encoding workaround already in the 2026-10-24 entry" }
+  - { lead: "Plex2Shell exploited against QNAP NAS (QNAP notice 2026-11-06, SecurityWeek 2026-11-09; CVE-2026-96652/96654/96655/96656)", reason: "KEV-listed since 2026-10-20 and never in the store; consumer media server on NAS devices, miners and proxy software, no sector or constituency nexus found; QNAP notice is 4 days old. Optional gap-fill if the main agent wants KEV completeness for QNAP-hosted apps" }
+  - { lead: "Control Web Panel CWP2Shell, ten CVEs (VulnCheck, 2026-11-03; CVE-2026-73695, -73696, -73697, -77876 to -77881, -104080), fixed in CWP 1.29", reason: "disclosed 7 days ago (outside window and the VulnCheck lookback); pre-auth root RCE chain on a hosting panel with about 20,000 exposed user panels, no exploitation stated; CWPdoor trojanized cwpsrv (THN 2026-11-06, XLab) is a separate item; store has an older CWP entry (2026-07-03) but not these CVEs" }
+  - { lead: "WatchGuard AuthPoint Gateway 7.6.0, CVE-2026-121637 to -121640 (WatchGuard PSIRT 2026-11-04; three rated critical by SecurityWeek)", reason: "published before the WatchGuard lookback horizon (about 2026-11-05 03:00 UTC), no exploitation known per WatchGuard, MFA-gateway only with LDAP/AD/RADIUS/ADFS configurations; not in the store. Candidate for a short entry if the main agent wants MFA-gateway completeness" }
+  - { lead: "Debian/Ubuntu APT CVE-2026-109518 (2026-11-04)", reason: "out of window; needs on-path position and HTTP package sources with retries; no exploitation" }
+  - { lead: "INFINITT PACS CVE-2026-16305/16306 (CERT/CC VU#203719, 2026-11-02)", reason: "out of window; local privilege escalation and user-interaction URI handler" }
+  - { lead: "Microsoft Paint CVE-2026-83844 (Store-only fix, THN 2026-11-06)", reason: "local vector (AV:L), not exploited or disclosed per MSRC" }
+  - { lead: "Cisco UCS Central CVE-2026-76506", reason: "authenticated RCE, no exploitation (SecurityWeek 2026-11-05)" }
+  - { lead: "D-Link M60 hard-coded MQTT credentials CVE-2026-125086 (EUVD-2026-120701, VulDB, CVSS 4.0 10.0)", reason: "consumer mesh router, VulDB-assigned, public write-up but no exploitation reported" }
+  - { lead: "Chrome 157 stable (213 fixes, 7 critical, 2026-11-04)", reason: "Google does not report exploitation" }
+  - { lead: "SANS ISC 'Attackers Searching for SAP Netweaver Webshells' (2026-11-09)", reason: "scanning for artefacts of earlier exploitation; no new vulnerability" }
+  - { lead: "MikroTik RouterOS 7.25.1 (2026-11-02, includes CVE-2026-98432), HPE Networking hpesbnw05172/05173 (2026-11-03), Check Point sk185222 CVE-2026-18574 (2026-08-03)", reason: "outside the lookback horizons or already covered (Linux kernel entry)" }
+  - { lead: "LNbits operator shutdown call, Web3Auth flaw, Ethersphere bee-js, Qubole AWS access (THN 2026-11-09)", reason: "crypto or incident-domain items without constituency nexus (S4 territory)" }
+
+# -------------------------------------------------------------------- structured CVE data for cves[] and cves_seen
+cve_table:
+  - { cve: CVE-2026-123158, product: "OpenSSH Portable (Linux, musl libc, no PAM)", cvss: "8.1 (CVSS 3.1, MITRE CNA via EUVD)", epss: 0.01014, kev: true, exploited: true, affected: "before 10.6p2; accounts whose password field is `*` and at least one other account with a real hash", fixed: "OpenSSH Portable 10.6p2; Alpine per-branch packages (see existing entry); mitigation PasswordAuthentication no", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-117552" }
+  - { cve: CVE-2026-116606, product: "Barracuda Email Security Gateway", cvss: "9.3", epss: 0.01602, kev: false, exploited: "vendor-reported exploitation activity at a small number of organizations (Barracuda 2026-11-09 update, CVE not named); CCCS names this CVE", affected: "all ESG versions per Barracuda Campus; before 9.4.0.030 per Mandiant CVE record", fixed: "firmware 9.4.0.029 or later (Campus); patches BNSF-40425 (9.4.017+) and BNSF-40430 (earlier)", type: auth-bypass, vector: zero-click, auth: "pre-auth (Admin UI must be reachable)", source: "https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection" }
+  - { cve: CVE-2026-111560, product: "Barracuda ESG, Load Balancer ADC, Message Archiver, WAF Control Center, Web Application Firewall, Web Security Gateway", cvss: "8.6", epss: null, kev: false, exploited: "not stated for this CVE", affected: "ESG up to 9.4.0.27, ADC up to 6.4.0, WAF up to 11.0.1, WSG up to 16.1.100.100, BMA up to 5.5.4.0, WCC up to 2.2.1", fixed: "BNSF-40425/40430 (ESG), BNADC-16586, BNMA-32468, BNWF-60060, BNYF-24789 per the existing entry", type: command-injection, vector: zero-click, auth: "admin-required (chained pre-auth on ESG)", source: "https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection" }
+  - { cve: CVE-2026-102895, product: "GPUStack", cvss: "9.8", epss: 0.00331, kev: true, exploited: true, affected: "before 2.2.0 (loopback auto-admin, force_auth_localhost false by default)", fixed: "2.2.0; 2.2.2 or later recommended (also fixes CVE-2026-102894)", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr" }
+  - { cve: CVE-2026-102894, product: "GPUStack", cvss: "9.1", epss: null, kev: false, exploited: "no exploitation confirmed (Daily Security Review)", affected: ">= 0.7.1, < 2.2.2 (/auth/saml/callback trusts an unverified SAMLResponse)", fixed: "2.2.2", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-117125" }
+  - { cve: CVE-2026-123218, product: "IBM Aspera Faspex 5", cvss: "9.8 (IBM, AV:N/AC:L/PR:N/UI:N)", epss: 0.00396, kev: true, exploited: true, affected: "5.0.0 through 5.0.19", fixed: "5.0.19 PL1 (Linux; faspex-core container image 5.0.19, 1ce4b13, Fix Pack 1); no workaround", type: "incorrect authorization (CWE-863)", vector: network, auth: "description says authorized/authenticated user; IBM vector says PR:N", source: "https://www.ibm.com/support/pages/security-bulletin-ibm-aspera-faspex-has-addressed-vulnerability-could-allow-authorization-bypass" }
+  - { cve: CVE-2026-120017, product: "SAP NetWeaver AS ABAP and ABAP Platform (SAML2 Service Provider)", cvss: "10.0", epss: null, kev: false, exploited: false, affected: "SAP_BASIS 702, 731, 740, 750-758, 816, 920-922 (under certain configurations)", fixed: "SAP Security Note 3849308 (login-gated)", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120700" }
+  - { cve: CVE-2026-89126, product: "SAP Web Dispatcher", cvss: "10.0", epss: null, kev: false, exploited: false, affected: "WEBDISP 7.53, 7.54, 7.77, 7.93, 9.16; KERNEL 7.53, 9.18, 9.20; KRNL64UC 7.53; HDB 2.00; XS_ADVANCED_RUNTIME 1.00; SAP_EXTENDED_APP_SERVICES 1", fixed: "SAP Security Note 3778556 (login-gated)", type: "heap buffer overflow (CWE-122)", vector: zero-click, auth: pre-auth, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120674" }
+  - { cve: CVE-2026-76964, product: "SAP NetWeaver AS ABAP (Internet Communication Manager)", cvss: "10.0", epss: null, kev: false, exploited: false, affected: "KRNL64UC 7.53; KERNEL 7.53, 7.54, 7.77, 7.93, 9.16, 9.18, 9.20", fixed: "SAP Security Note 3778530 (login-gated)", type: "memory corruption (CWE-1287)", vector: zero-click, auth: pre-auth, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120656" }
+  - { cve: CVE-2026-89103, product: "SAP Gateway", cvss: "10.0", epss: null, kev: false, exploited: false, affected: "KRNL64NUC 7.22, 7.22EXT; KRNL64UC 7.22, 7.53, 8.04; KERNEL 7.22, 7.54, 7.77, 7.93, 9.16, 9.20, 9.21", fixed: "SAP Security Note 3798345 (login-gated)", type: "incorrect authorization / default ACL (CWE-863)", vector: zero-click, auth: pre-auth, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120662" }
+  - { cve: CVE-2026-109803, product: "SAP NetWeaver Knowledge Management (XML Forms)", cvss: "9.9", epss: null, kev: false, exploited: false, affected: "KMC-CM 7.50", fixed: "SAP Security Note 3809153 (login-gated)", type: "code injection via XSL transformation (CWE-94)", vector: network, auth: low-privilege, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120686" }
+  - { cve: CVE-2026-109795, product: "SAP S4CRM / BBPCRM (NetWeaver remote-enabled functionality)", cvss: "9.9", epss: null, kev: false, exploited: false, affected: "S4CRM 204-206, S4CEXT 107-109, BBPCRM 713-714", fixed: "SAP Security Note 3834842 (login-gated)", type: "code injection, missing authorization (CWE-94)", vector: network, auth: low-privilege, source: "SAP CNA record via MITRE CVE Services (cveawg.mitre.org/api/cve/CVE-2026-109795), EUVD search record" }
+  - { cve: CVE-2026-76965, product: "SAP NetWeaver AS ABAP and ABAP Platform", cvss: "9.9", epss: null, kev: false, exploited: false, affected: "KRNL64NUC 7.22, 7.22EXT; KRNL64UC 7.22, 7.53; KERNEL 7.22, 7.54, 7.77, 7.93, 9.16", fixed: "SAP Security Note 3792735 (login-gated)", type: "OS command injection, missing authorization (CWE-749)", vector: network, auth: low-privilege, source: "SAP CNA record via MITRE CVE Services (cveawg.mitre.org/api/cve/CVE-2026-76965), EUVD search record" }
+  - { cve: CVE-2026-89119, product: "SAP Web Dispatcher and Internet Communication Manager", cvss: "9.6", epss: null, kev: false, exploited: false, affected: "WEBDISP 7.93, 9.16; XS_ADVANCED_RUNTIME 1.00; KERNEL 7.93, 9.20, 9.21", fixed: "SAP Security Note 3804858 (login-gated)", type: "CSRF against administrative functions (CWE-352)", vector: user-interaction, auth: "pre-auth, logged-on administrator must click", source: "SAP CNA record via MITRE CVE Services (cveawg.mitre.org/api/cve/CVE-2026-89119), EUVD search record" }
+  - { cve: CVE-2026-109798, product: "SAP BusinessObjects BI Platform (Web Intelligence)", cvss: "9.1", epss: null, kev: false, exploited: false, affected: "ENTERPRISE 430, 2025, 2027", fixed: "SAP Security Note 3799117 (login-gated)", type: "XXE (CWE-611)", vector: network, auth: low-privilege, source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120682" }
+  - { cve: CVE-2026-76966, product: "SAP NetWeaver AS ABAP (kernel RFC)", cvss: "8.9", epss: null, kev: false, exploited: false, affected: "KRNL64NUC 7.22, 7.22EXT; KRNL64UC 7.22, 7.53, 8.04; KERNEL 7.22, 7.54, 7.77, 7.93, 9.16, 9.18, 9.20", fixed: "SAP Security Note 3769130 (login-gated)", type: "memory corruption through crafted RFC (AC:H)", vector: zero-click, auth: pre-auth, source: "SAP CNA record via MITRE CVE Services (cveawg.mitre.org/api/cve/CVE-2026-76966), EUVD search record" }
+  - { cve: CVE-2026-19868, product: "SonicWall SonicOS SSLVPN (SAML)", cvss: "7.1", epss: null, kev: true, exploited: true, affected: "Gen7 up to 7.3.3-7015, Gen8 up to 8.2.2-8015 (unchanged in the existing entry; table not re-read), only with SAML enabled for SSLVPN", fixed: "7.3.4-7013 (Gen7), 8.2.3-8015 (Gen8); workaround added 2026-11-09: disable or delete LDAP, RADIUS and TACACS+ servers", type: auth-bypass, vector: zero-click, auth: "valid credentials for an alternate method", source: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0014" }
+
+# -------------------------------------------------------------------- candidate sources, recipe news, gaps
+candidate_sources:
+  - id: n-able-status
+    publisher: "N-able status dashboard and security blog (uptime.n-able.com, status.n-able.com release notes, n-able.com/blog)"
+    url: "https://uptime.n-able.com/"
+    category: vendor-psirt
+    why: "First-party channel for N-central incidents and hotfixes (the product has been KEV-listed three times in 2026 and is the RMM of many MSPs). uptime.n-able.com is a script-rendered SPA: only `jina` rendered it; WebFetch got an empty shell; n-able.com/blog reads through the `extract` reader fallback."
+  - id: cert-fr-cti
+    publisher: "CERT-FR threat and incident reports (CTI series)"
+    url: "https://cert.cyber.gouv.fr/cti/"
+    category: gov
+    why: "Primary for French C4 attributions and threat reports (CERTFR-2026-CTI-009 of 2026-11-09 carried the IRGC attribution). The report page gives a summary; the full text is a PDF at cert.cyber.gouv.fr/uploads/<id>.pdf readable with `fetch_source.py pdf`. The existing anssi-fr record covers the avis/alerte series on the old cert.ssi.gouv.fr host."
+
+recipe_notes:
+  - { source_id: enisa-euvd, note: "`url --direct 'https://euvdservices.enisa.europa.eu/api/search?fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD&assigner=sap&size=100'` returns {items,total}; it exposed SAP's 40 Patch Day CNA records at 00:17-01:04 UTC before any SAP page was live; page=1 returns empty. The per-record URL https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-<id> is fetchable. exploitedvulnerabilities held only 4 rows today." }
+  - { source_id: sap-security-notes, note: "november-2026.html returned 404 at about 03:10 UTC on Patch Day; read the CNA records through EUVD/MITRE CVE Services (https://cveawg.mitre.org/api/cve/<CVE>) until the page is live." }
+  - { source_id: msrc-update-guide, note: "revised-CVE sweep works: `url --direct 'https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability?$filter=latestRevisionDate%20ge%20<ISO>&$orderby=latestRevisionDate%20desc&$top=200'` (returned 3 Mariner rows since 2026-11-08); `msrc release 2026-Nov 300` lists the early-release rows (134)." }
+  - { source_id: paloalto-psirt, note: "`url --direct https://security.paloaltonetworks.com/json/CVE-<id>` gives CVE JSON with timeline and exploits; the RSS item for a revised advisory carries the original title with the revision date." }
+  - { source_id: cisa-advisories, note: "WebFetch of the listing returns 10 items with dates and hrefs (newest 2026-11-09 KEV alert); `cisa csaf-recent` newest ICS advisory icsa-26-211-07 (2026-11-05). WebFetch of the alert page returns the CVE list and a paraphrase, not the full body." }
+  - { source_id: connectwise-trust-center, note: "no transport reads it this run: `url --direct` 403, `extract` (trafilatura and jina relay both blocked), WebFetch 403, security-bulletins listing path also 403; WebSearch found no November 2026 bulletin (latest: ScreenConnect 26.6.5 of 2026-09-08). Keep fetch_method blocked." }
+  - { source_id: watchtowr, note: "labs RSS newest item 2026-11-05 (Barracuda); `extract https://watchtowr.com/intelligence/` returned a snapshot dated 2026-09-27 with no new FAQ, so it is not a usable freshness signal today." }
+  - { source_id: citrix-netscaler-security-bulletins, note: "article pages return 403 on every transport; the RSS item `summary` field carries the full post text (verified for the 2026-11-09 pre-announcement), so read posts from the feed." }
+  - { source_id: watchguard-psirt, note: "`extract https://psirt.watchguard.com/` lists CVE rows with CVSS and affected ranges but no dates; each advisory page carries its date in the metadata (the AuthPoint pages date 2026-11-04, WGSA-2026-0033 2026-11-03)." }
+  - { source_id: sonicwall-psirt (not in slice), note: "psirt.global.sonicwall.com vuln-detail pages are script-rendered: `extract` serves them through jina (metadata block and workaround text, no affected/fixed table); WebFetch returns the title only. The revision date ('Last Updated') is the signal for update-of checks." }
+  - { source_id: uptime.n-able.com, note: "script-rendered status SPA: only `jina https://uptime.n-able.com/` renders the timeline; WebFetch/extract return an empty shell." }
+
+coverage_gaps:
+  - { source_id: connectwise-trust-center, reason: "every transport blocked (see fetch_failures); only WebSearch, no November bulletin found" }
+  - { source_id: sap-security-notes, reason: "Patch Day page not live before about 17:00 UTC; SAP notes are login-gated, so priorities (Hot News) and fixed support packages are not visible; item 4 rests on SAP's CNA records" }
+  - { source_id: cisa-advisories, reason: "RSS blocked; listing read through WebFetch: 10 rows, only the 2026-11-09 KEV alert in window; no AA-series or ICS advisory in window" }
+  - { source_id: watchtowr, reason: "labs RSS under-collects (vulnerability FAQs live at watchtowr.com/intelligence, whose extract is a stale snapshot); nothing new for 2026-11-09/10" }
+  - { source_id: citrix-netscaler-security-bulletins, reason: "article page 403; body read from the feed (covered)" }
+
+fetch_failures:
+  - id: connectwise-trust-center
+    url_tried: "https://www.connectwise.com/company/trust/advisories"
+    fetch_method: bridge:url
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: all transports failed for https://www.connectwise.com/company/trust/advisories: direct=(direct HTTP 403, 6068 B); trafilatura=(no readable body); jina=(reader proxy relayed an upstream block/challenge"
+    attempted_methods: [bridge:url --direct, bridge:extract, jina (auto-fallback), webfetch, bridge:url on /security-bulletins listing, websearch]
+    mitigation_applied: "WebSearch for a November 2026 ConnectWise bulletin found none (latest ScreenConnect 26.6.5, 2026-09-08); no coverage of the source this run"
+    covered_anyway: false
+
+# -------------------------------------------------------------------- one row per slice record
+source_ledger:
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "webfetch listing + bridge:cisa csaf-recent + webfetch alert page", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "the 2026-11-09 KEV alert is the primary for items 1, 5, 6; no ICS advisory newer than 2026-11-05" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 4, returned: 3, note: "GPUStack, Faspex, OpenSSH as items; FreeSWITCH already covered" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct exploitedvulnerabilities + enisa-euvd recent criticals/lastvulnerabilities + search API", horizon_hours: 26, in_horizon_items: 44, returned: 1, note: "4 exploited rows (all KEV rows) and 40 SAP CNA records; SAP set returned as item 4" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-05 Barracuda post (already covered by the 2026-11-04 entry); used as corroboration for item 2" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-188 (2026-11-02, revised 2026-11-07), covered by the Linux-kernel entry" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent/release/cve + SUG revised-CVE sweep", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "2026-Nov early release (134 rows) none exploited or disclosed; 3 revised Mariner rows; Patch Tuesday not yet published" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + url --direct json/CVE", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "Brotli advisory revision 2026-11-09 21:00 UTC, covered, dropped (see dropped_leads)" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "url --direct, extract(+jina), webfetch, websearch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "all transports blocked (fetch_failures); no November bulletin found by WebSearch" }
+  - { id: projectzero, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-27" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "bridge:url --direct (__NEXT_DATA__)", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "fixed page sk185222 (CVE-2026-18574) last modified 2026-08-03; no new sk id surfaced in CERT feeds this run" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-11-09 refrigeration post follows the CISA fact sheet already in the Danfoss entry" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "webfetch", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-11-08 Langflow canary post is research (S3); CWP2Shell of 2026-11-03 is outside the horizon (dropped_leads)" }
+  - { id: cccs-alerts, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 145, in_horizon_items: 2, returned: 2, note: "AV26-1112 Update 1 (Barracuda exploited) and AV26-1130 Update 1 (OpenSSH KEV) used as corroboration for items 1 and 2" }
+  - { id: hpe-networking-psirt, tier: standard, attempted: true, transport: "bridge:url --direct changes.csv", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest hpesbnw05172/05173 at 2026-11-03T16:00Z, 155 h before the run, outside the horizon" }
+  - { id: arista-security-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 0, returned: 1, note: "advance notice 0204 (2026-11-03) returned as borderline item 10; the bulk advisories land 2026-11-10" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract + per-advisory extract", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "AuthPoint Gateway rows (2026-11-04) and WGSA-2026-0033 (2026-11-03) predate the horizon; dropped_leads" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "bridge:url --direct NEWESTa7.stable + CHANGELOG", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "7.25.1 of 2026-11-02 (stability fix 'includes CVE-2026-98432'), outside the horizon and covered" }
+  - { id: citrix-netscaler-security-bulletins, tier: standard, attempted: true, transport: "feed (article pages 403 on extract, jina and WebFetch)", horizon_hours: 122, in_horizon_items: 1, returned: 1, note: "11-12 bulletin pre-announcement as borderline item 9; three WAF-signature posts are routine" }
