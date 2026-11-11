@@ -1,0 +1,2406 @@
+domain: S1
+run_id: 2026-11-11T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-11T02:57:59Z'
+ended_at: '2026-11-11T03:34:14Z'
+duration_seconds: 2175
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 8
+  bridge_fetches: 190
+items:
+- title: 'Xen Orchestra (Vates VSA-2026-062): a crafted empty-object login cookie bypasses authentication and the flaw is already exploited to take over XCP-ng hosts; fixed in xo-server 5.213.1 and 5.211.2,
+    no CVE assigned yet'
+  sources:
+  - url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/
+    publisher: Vates (VSA-2026-062)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.bleepingcomputer.com/news/security/critical-xen-orchestra-auth-bypass-flaw-exploited-to-hijack-vm-servers/
+    publisher: BleepingComputer
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: bleepingcomputer.com feed (python3 tools/fetch_source.py feed https://www.bleepingcomputer.com/feed/ 30) -> BleepingComputer article URL https://www.bleepingcomputer.com/news/security/critical-xen-orchestra-auth-bypass-flaw-exploited-to-hijack-vm-servers/
+    -> primary: Vates advisory VSA-2026-062, URL https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/ (fetched with extract)'
+  summary: 'Vates published VSA-2026-062 on 2026-11-10, rated Critical (CVE id and CVSS 4.0 score not yet assigned), for Xen Orchestra and the Xen Orchestra Appliance (XOA), the web management plane for
+    XCP-ng pools. Mechanism per Vates: the REST cookie parser turns authenticationToken=j:%7B%7D into an empty object, the REST authentication path hands that object to the XO token provider without requiring
+    a string, the token collection treats it as an unfiltered lookup and returns its first token, and the provider authenticates as that token''s owner if the token is unexpired; the authenticated /rest/v0/users/me/authentication_tokens
+    route then returns reusable login token ids. Impact per Vates: Admin privilege, arbitrary code execution on managed pools and root takeover of XCP-ng nodes. Vates states the flaw is being actively exploited
+    by one threat actor and lists the attacker''s artefacts; BleepingComputer relays the same IOCs. Affected: Xen Orchestra before 6.9.2 (stable) and before 6.10.1 (latest); fixes are xo-server 5.211.2
+    (stable channel) and 5.213.1 (latest channel); a source install must move to the latest master. BleepingComputer names releases 6.9.1 and 6.10.0 instead, which contradicts the Vates advisory (6.9.2
+    and 6.10.1); the xo-server package numbers agree, so verify the installed xo-server version rather than the XO release label. Prerequisite: network reach to the XO web/REST interface and at least one
+    unexpired token in the XO database; no credentials, no user interaction.'
+  region_nexus: global; XCP-ng/XOA is deployed by European hosting providers, public-sector IT shops and SMEs (Vates is French); no Swiss-specific exposure statement in the sources
+  primary_sector_nexus: indirect (virtualization management plane; footprint in Swiss public bodies not established by the sources)
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1190
+  - T1550.001
+  - T1053.003
+  affected_products:
+  - Xen Orchestra
+  - Xen Orchestra Appliance (XOA)
+  - XCP-ng
+  entity_keys: []
+  new_entities:
+  - key: product:xen-orchestra
+    type: product
+    name: Xen Orchestra
+    aliases:
+    - Xen Orchestra Appliance
+    - XOA
+    summary: Vates' web-based management platform for XCP-ng/XenServer pools and its appliance form XOA (Vates advisory VSA-2026-062).
+  - key: product:xcp-ng
+    type: product
+    name: XCP-ng
+    aliases: []
+    summary: Open-source Xen-based virtualization platform managed through Xen Orchestra (Vates).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Vendor advisory is first-hand for its own product and states exploitation; BleepingComputer restates it (not independent). No CVE, no third-party telemetry, no victim count.
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: This vulnerability is actively exploited by a threat actor
+    attribution: Vates (VSA-2026-062)
+    source_url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/
+  - quote: An adversary can bypass authentication and perform actions with 'Admin' privilege.
+    attribution: Vates (VSA-2026-062)
+    source_url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/
+  - quote: Xen Orchestra before 6.9.2 (stable) and 6.10.1 (latest)
+    attribution: Vates (VSA-2026-062)
+    source_url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/
+  - quote: In the case of a successful exploitation, there is no log to detect unauthenticated access.
+    attribution: Vates (VSA-2026-062)
+    source_url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/
+  - quote: A CVE identifier and CVSS score have not been assigned yet.
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/critical-xen-orchestra-auth-bypass-flaw-exploited-to-hijack-vm-servers/
+  extended_notes: 'Exposure: any XO or XOA instance whose web/REST port is reachable from an untrusted network and which runs xo-server below 5.213.1 (latest) or 5.211.2 (stable); Vates'' first mitigation
+    is a dedicated management network, never the internet. Detection (telemetry class first): successful exploitation writes no XO log, so detection is on the wire or reverse proxy: HTTP requests whose
+    authenticationToken cookie is an empty JSON object in either encoded or literal form (Vates warns a naive WAF regex can be bypassed by other encodings). On XCP-ng hosts the attacker left a virtual machine
+    whose platform parameter binds a file to the serial port (xe vm-list platform parameters; xensource.log lines with a serial file), a pivot VM, and new cron.d entries or an ld.so.preload change (T1053.003).
+    Vates says these artefacts cover only the known campaign; absence of IOCs does not prove absence of compromise. Post-patch compromise check: Vates recommends rotating every secret held by the Vates
+    stack (proxy, backup remotes NFS/S3/Azure/SMB, root and pool secret, user accounts, OTP secrets, mail-server config) and a full reinstall after confirmed compromise because cleanup cannot guarantee
+    backdoor removal. Triage: legitimate XO sessions carry a string token (or the XO session cookie); an empty-object value is never produced by the XO client, so any hit is hostile. Serial-to-file VM settings
+    are rare administrative changes and warrant review even when no cookie hit exists. Hardening: management-network only, block/alert on the cookie pattern at the reverse proxy, restrict egress from XO
+    hosts.'
+- title: Chrome 157.0.8103.50/.51 fixes CVE-2026-125350, a use-after-free in Chrome's XML component that Google says is exploited in the wild; CISA lists it in KEV (due 2026-11-24), Edge and other Chromium
+    browsers still to follow
+  sources:
+  - url: https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_018223192.html
+    publisher: Google Chrome Releases
+    date: '2026-11-09'
+    role: primary
+  - url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+    publisher: CISA (KEV alert)
+    date: '2026-11-10'
+    role: primary
+  - url: https://security-hub.ncsc.admin.ch/#/posts/13165
+    publisher: NCSC Switzerland (Security Hub post 13165)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://www.bleepingcomputer.com/news/security/google-patches-eighth-chrome-zero-day-exploited-in-attacks-this-year/
+    publisher: BleepingComputer
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://www.securityweek.com/chrome-update-patches-exploited-xml-zero-day-eighth-this-year/
+    publisher: SecurityWeek
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; CVE-2026-125350 added 2026-11-10; notes field links the Chrome Releases post) -> primary: Chrome Releases URL
+    https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_018223192.html -> corroboration: NCSC.ch Security Hub (ncsc-csh recent 25, post 13165), BleepingComputer, SecurityWeek'
+  summary: 'Google''s Stable-channel update to 157.0.8103.50/.51 (Windows, macOS) and 157.0.8103.50 (Linux) fixes nine vulnerabilities and says ''Google is aware that an exploit for CVE-2026-125350 exists
+    in the wild''. The flaw is a high-severity use-after-free in Chromium''s XML component, reported anonymously on 2026-11-06; Google shares no details of the attacks. CISA added it to KEV on 2026-11-10
+    (due date 2026-11-24, ransomware use unknown) describing code execution inside the sandbox through a crafted web page; assessment (not stated by the sources): a sandboxed renderer bug is normally the
+    first stage of a chain that still needs a sandbox escape. NCSC Switzerland rates the status as actively exploited and notes that other Chromium-based browsers (Microsoft Edge, Brave, Opera, Vivaldi)
+    were still working on their patches; Microsoft''s Security Update Guide returned no record for CVE-2026-125350 at the time of reading, so Edge is not yet confirmed fixed. SecurityWeek counts it as the
+    eighth Chrome zero-day of 2026. The same release also fixes a second XML use-after-free (CVE-2026-125346, reported by Neonix Security) and WebGL, FileSystem, compositing, GPU and V8 high-severity bugs
+    reported by Google.'
+  region_nexus: global; Chrome and Edge are the default browsers on administration desktops, so the whole Swiss public-sector estate is in scope
+  primary_sector_nexus: direct (browser on every administration workstation)
+  sector: public-sector
+  cves:
+  - CVE-2026-125350
+  techniques:
+  - T1189
+  - T1203
+  affected_products:
+  - Google Chrome
+  - Microsoft Edge
+  - Chromium-based browsers
+  entity_keys:
+  - product:google-chrome
+  - product:microsoft-edge
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: Google is aware that an exploit for CVE-2026-125350 exists in the wild.
+    attribution: Google Chrome Releases
+    source_url: https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_018223192.html
+  - quote: 'CVE-2026-125350: Use after free in XML. Reported by anonymous on 2026-11-06'
+    attribution: Google Chrome Releases
+    source_url: https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_018223192.html
+  - quote: Other chromium based browsers are working on the patches.
+    attribution: NCSC Switzerland
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13165
+  - quote: based on evidence of active exploitation
+    attribution: CISA
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+  - quote: no information appears to be available on the attacks exploiting CVE-2026-125350
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/chrome-update-patches-exploited-xml-zero-day-eighth-this-year/
+  extended_notes: 'Exposure: Chrome desktop below 157.0.8103.50 (Windows, macOS 157.0.8103.51 also), Chromium-based browsers (Edge, Brave, Opera, Vivaldi) until each vendor ships the Chromium 157 fix; check
+    chrome://version or the managed-browser inventory. Rollout ''over the coming days/weeks'' per Google, so the update may need a forced relaunch. Detection: Google and CISA publish no indicators; defender
+    telemetry is browser version inventory plus renderer-process crash reports and EDR alerts for a browser child process spawning an unexpected process after a visit to an unfamiliar site. A use-after-free
+    that only reaches the renderer sandbox normally shows as a renderer crash before a successful chain. Hardening: enforce the Chrome auto-update policy and a relaunch deadline; keep Edge on its own update
+    channel and re-check when Microsoft lists the CVE. Triage: a browser renderer crash is common and benign; weight it up when the same user then shows a browser-spawned shell, a new scheduled task or
+    an outbound connection to a freshly registered domain.'
+- title: 'CVE-2026-124194, Microsoft Outlook: opening a crafted message file makes Outlook reach an attacker-chosen network location without the usual warning and leak authentication material; exploited
+    as a zero-day, fixed in November 2026 updates and on CISA KEV (CVSS 6.5)'
+  sources:
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-124194
+    publisher: Microsoft MSRC (Security Update Guide record CVE-2026-124194, read through the SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+    publisher: CISA (KEV alert)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.bleepingcomputer.com/news/microsoft/microsoft-november-2026-patch-tuesday-fixes-1-235-flaws-outlook-zero-day/
+    publisher: BleepingComputer
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122310
+    publisher: ENISA EUVD (EUVD-2026-122310, exploited list)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; CVE-2026-124194 added 2026-11-10, CWE-356) -> primary: Microsoft Security Update Guide API (python3 tools/fetch_source.py
+    msrc release 2026-Nov / msrc cve CVE-2026-124194; human page https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-124194) -> corroboration: CISA alert https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog,
+    BleepingComputer, ENISA EUVD exploitedvulnerabilities list'
+  summary: 'Microsoft''s November 2026 Patch Tuesday fixes CVE-2026-124194, an Outlook spoofing flaw (CWE-356, product UI does not warn the user of an unsafe action; CVSS 3.1 6.5, vector AV:N/AC:L/PR:N/UI:R
+    with high confidentiality impact, temporal E:H) that Microsoft marks Exploited: Yes and Publicly disclosed: No, and that CISA added to KEV on 2026-11-10 (due 2026-11-24, ransomware use unknown, forensic
+    triage not required). Microsoft''s FAQ: an unauthenticated attacker sends a crafted message file and convinces the user to open it; Outlook then connects to an attacker-controlled network location without
+    showing the usual external-content warning, potentially disclosing authentication information that can be used to impersonate the user. The Preview Pane is not an attack vector, so the user has to open
+    the file. Affected and fixed per the Security Update Guide: Microsoft 365 Apps for Enterprise (32 and 64 bit; fixed through the Office security-update channel), Office LTSC 2024 fixed in 16.0.17932.21140
+    and Office LTSC 2021 fixed in 16.0.14334.21048 (32 and 64 bit each). No source names the actor, the victims or the exact credential type; the FAQ says only ''authentication information''. Assessment
+    (not stated by the sources): the described behaviour matches forced authentication to a remote SMB/WebDAV/HTTP location, which in a Windows domain means NTLM material that can be relayed or cracked;
+    treat that as the working hypothesis when hunting, not as a confirmed fact.'
+  region_nexus: global; Outlook desktop is the standard mail client of Swiss federal, cantonal and communal administrations
+  primary_sector_nexus: direct
+  sector: public-sector
+  cves:
+  - CVE-2026-124194
+  techniques:
+  - T1566.001
+  - T1204.002
+  - T1187
+  affected_products:
+  - Microsoft Outlook
+  - Microsoft 365 Apps for Enterprise
+  - Microsoft Office LTSC 2024
+  - Microsoft Office LTSC 2021
+  entity_keys:
+  - product:microsoft-outlook
+  - product:microsoft-365
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: Opening the file could cause Outlook to connect to an attacker-controlled network location without displaying the usual external-content warning, potentially disclosing authentication information
+      that could be used to impersonate the user.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-124194
+  - quote: Is the Preview Pane an attack vector for this vulnerability? No, the Preview Pane is not an attack vector.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-124194
+  - quote: Microsoft Office Outlook Missing User Interaction for Potentially Unsafe Action Vulnerability
+    attribution: CISA
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+  - quote: one actively exploited Microsoft Outlook zero-day vulnerability
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/microsoft/microsoft-november-2026-patch-tuesday-fixes-1-235-flaws-outlook-zero-day/
+  extended_notes: 'Exposure: Outlook for Microsoft 365 Apps, Office LTSC 2024 below 16.0.17932.21140 and Office LTSC 2021 below 16.0.14334.21048 (read the build under File > Office Account). Users must
+    open a message file (.msg-class attachment), so the delivery path is mail or download. Detection (telemetry class first): outbound SMB (445), WebDAV or HTTP(S) connections from OUTLOOK.EXE or from the
+    user''s session to non-corporate addresses shortly after a message-file attachment is opened; authentication events (Windows 4648/4624 type 3 and NTLM audit events) carrying the user''s identity from
+    an external address; mail-gateway logs for message-file attachments from unknown senders. Post-patch check: because credential material may already have been captured, review NTLM authentications to
+    external destinations since the earliest delivery you can find and reset affected accounts. Hardening (not from the sources, standard controls): block outbound SMB/WebDAV at the perimeter, restrict
+    NTLM, quarantine message-file attachments at the mail gateway. Triage: Outlook legitimately contacts SharePoint/OneDrive and corporate file servers; the discriminator is an external, non-corporate destination
+    and a preceding message-file open.'
+- title: 'Microsoft November 2026 Patch Tuesday: eight unauthenticated or near-unauthenticated network flaws rated CVSS 9.0 to 9.9 in domain infrastructure (Kerberos relay to domain controller, DNS, DHCP
+    Server, LDAP, Windows Search via Exchange mail, iSCSI, SQL Server, SharePoint), none exploited or disclosed'
+  sources:
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-85844
+    publisher: Microsoft MSRC (CVE-2026-85844, via SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-88218
+    publisher: Microsoft MSRC (CVE-2026-88218, via SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-116928
+    publisher: Microsoft MSRC (CVE-2026-116928, via SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-119958
+    publisher: Microsoft MSRC (CVE-2026-119958, via SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-88243
+    publisher: Microsoft MSRC (CVE-2026-88243, via SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-116945
+    publisher: Microsoft MSRC (CVE-2026-116945, via SUG API)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.bleepingcomputer.com/news/microsoft/microsoft-november-2026-patch-tuesday-fixes-1-235-flaws-outlook-zero-day/
+    publisher: BleepingComputer
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: msrc-update-guide (python3 tools/fetch_source.py msrc release 2026-Nov, paged with $skip through the SUG API: 1383 records) -> filtered for exploited, publicly disclosed
+    or CVSS >= 9.0 -> per-CVE SUG detail and affectedProduct tables (https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability/<CVE>, human pages https://msrc.microsoft.com/update-guide/en-US/vulnerability/<CVE>)
+    -> BleepingComputer https://www.bleepingcomputer.com/news/microsoft/microsoft-november-2026-patch-tuesday-fixes-1-235-flaws-outlook-zero-day/ for the headline counts'
+  summary: 'Microsoft''s Security Update Guide tags 1,383 records to the 2026-Nov release (BleepingComputer counts 1,235 on Patch Tuesday itself and 66 Critical); the only record Microsoft marks exploited
+    is the Outlook zero-day CVE-2026-124194 (separate item) and none is marked publicly disclosed. The rows that matter for a Windows estate are the CVSS 9.0 or higher network rows that need no credentials
+    (all carry temporal E:U, exploit code unproven): CVE-2026-85844 Windows Kerberos (9.8, CWE-288): an unauthenticated attacker sends crafted Kerberos authentication traffic and relays it to a domain controller
+    to gain SYSTEM, no user interaction; CVE-2026-88218 Windows DNS (9.8, double free), CVE-2026-88243 Windows DHCP Server (9.8, out-of-bounds read) and CVE-2026-88234 Windows iSCSI (9.8, release of invalid
+    pointer), all described only as code execution ''via an in-network attacker calling arbitrary endpoints''; CVE-2026-119958 Windows LDAP (9.8, out-of-bounds write): crafted LDAP calls give code execution
+    in the LDAP service context; CVE-2026-116928 Windows Search Component (9.8, out-of-bounds write, also described as Microsoft Exchange Server): an unauthenticated attacker emails a crafted attachment,
+    Exchange indexes it automatically, so the recipient does not need to open anything and code runs with the processing service''s permissions; CVE-2026-116945 SQL Server (9.8, heap overflow): an attacker
+    controlling a network endpoint used by an affected integration package returns a crafted response when the package connects; CVE-2026-120002 SharePoint Server Subscription Edition (9.9, scope changed):
+    authenticated, needs site read access plus membership in a Secure Store target application, so it is not pre-auth. Fixes are the November cumulative updates: KB5131291 (Windows Server 2016 and Windows
+    10 1607), KB5131085 (Server 2019), KB5131090 (Server 2022), KB5131080 and KB5131077 (Server 2025), KB5131087 (Windows 11 23H2), KB5132061 and KB5132043 (Windows 11 24H2/25H2/26H2), KB5132059 (26H1),
+    KB5131096 (Windows 10 22H2); Kerberos also has KB5126836 (Server 2012 R2) and KB5126835 (Server 2012); SQL Server GDR/CU updates KB5129299, KB5129300, KB5132745 to KB5132749 and KB5132751; SharePoint
+    Subscription Edition KB5002945. Not returned as items, with reasons: CVE-2026-109469 Entra Device Registration (10.0, cloud service, revised 2026-11-05, no customer action in the record), CVE-2026-119990
+    Azure OpenAI, CVE-2026-114160 Azure Managed Grafana and CVE-2026-114162 Microsoft Graph (cloud-side), CVE-2026-95962 VFP (9.0 but attack complexity high), CVE-2026-96157/96067/96078/95901/95882 (Media
+    Foundation, Color Management, DirectMusic file-format parsers, user-driven in practice), Xbox/GDK, VS Code (needs user interaction), Aspire, ASP.NET Core, Azure DevOps Server and SharePoint 80095/109454
+    (authenticated, XSS-class).'
+  region_nexus: global; every Swiss administration runs Windows domain controllers, DNS/DHCP, Exchange or SQL Server
+  primary_sector_nexus: direct
+  sector: public-sector
+  cves:
+  - CVE-2026-85844
+  - CVE-2026-88218
+  - CVE-2026-88243
+  - CVE-2026-88234
+  - CVE-2026-119958
+  - CVE-2026-116928
+  - CVE-2026-116945
+  - CVE-2026-120002
+  techniques:
+  - T1210
+  - T1557
+  - T1190
+  affected_products:
+  - Windows Kerberos
+  - Windows DNS Server
+  - Windows DHCP Server
+  - Windows LDAP
+  - Windows Search Component
+  - Microsoft Exchange Server
+  - Windows iSCSI Target Server
+  - Microsoft SQL Server
+  - Microsoft SharePoint Server Subscription Edition
+  entity_keys:
+  - product:microsoft-windows-server
+  - product:microsoft-exchange-server
+  - product:microsoft-sql-server
+  - product:microsoft-sharepoint
+  - product:microsoft-iscsi-target-server
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: An unauthenticated attacker could send specially crafted Kerberos authentication traffic and relay the resulting authentication to an affected domain controller.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-85844
+  - quote: Exchange automatically processes the attachment for indexing, so the recipient does not need to open the email or attachment.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-116928
+  - quote: Double free in Windows DNS allows an unauthorized attacker to execute code over a network.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-88218
+  - quote: An unauthenticated attacker who successfully exploited this vulnerability could gain code execution through a specially crafted set of LDAP calls to execute arbitrary code within the context
+      of the LDAP service.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-119958
+  - quote: The attacker does not need SQL Server credentials or additional user interaction when the package runs automatically.
+    attribution: Microsoft MSRC
+    source_url: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-116945
+  - quote: This Patch Tuesday addresses 66 "Critical" vulnerabilities
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/microsoft/microsoft-november-2026-patch-tuesday-fixes-1-235-flaws-outlook-zero-day/
+  extended_notes: 'Exposure: domain controllers (Kerberos, LDAP, DNS), DNS/DHCP servers, Exchange servers (Windows Search indexing of attachments), SQL Server hosts that run Integration Services packages
+    against external endpoints. Microsoft''s records list no mitigation or workaround for any of them. Detection: no exploitation observed, so detection is hardening-grade: crash or restart of dns.exe,
+    the DHCP Server service or lsass.exe on DCs after patch cycles; unusual Kerberos AP-REQ or LDAP bursts from workstation VLANs to DCs; Exchange transport or content-indexing worker crashes after inbound
+    mail with odd attachments; inventory of which DCs and Exchange servers have KB5131291/5131085/5131090/5131080 installed. Hardening: patch domain controllers and Exchange first; segment who can talk
+    Kerberos/LDAP/DNS/DHCP to DCs; Exchange hosts should not index attachments of untrusted senders any longer than the patch gap. Triage: Microsoft''s own phrasing for DNS, DHCP, iSCSI and Media Foundation
+    (''in-network attacker calling arbitrary endpoints'') says network adjacency or reach to the service is the precondition; the severity inflates the real-world risk where those services are not exposed
+    beyond the server VLAN.'
+- title: 'Fortinet''s 2026-11-10 PSIRT advisories disclose what its October hardening release fixed: unauthenticated FortiMail code-execution and account-takeover flaws (CVSS up to 9.8), a FortiAuthenticator
+    hard-coded-password bypass, a FortiOS OSPF flaw and a FortiManager FGFM code-execution flaw'
+  sources:
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-199
+    publisher: Fortinet PSIRT (FG-IR-26-199)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-200
+    publisher: Fortinet PSIRT (FG-IR-26-200)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-216
+    publisher: Fortinet PSIRT (FG-IR-26-216)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-208
+    publisher: Fortinet PSIRT (FG-IR-26-208)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-207
+    publisher: Fortinet PSIRT (FG-IR-26-207)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-271
+    publisher: Fortinet PSIRT (FG-IR-26-271)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-265
+    publisher: Fortinet PSIRT (FG-IR-26-265)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-267
+    publisher: Fortinet PSIRT (FG-IR-26-267)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-275
+    publisher: Fortinet PSIRT (FG-IR-26-275)
+    date: '2026-11-10'
+    role: primary
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    publisher: Fortinet PSIRT (FG-IR-26-244)
+    date: '2026-11-10'
+    role: primary
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-123051
+    publisher: ENISA EUVD (EUVD-2026-123051, CVE-2026-126261)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: fortinet-psirt RSS (python3 tools/fetch_source.py feed https://filestore.fortinet.com/fortiguard/rss/ir.xml 300; 50 advisories all dated 2026-11-10) -> per-advisory pages
+    https://fortiguard.fortinet.com/psirt/FG-IR-26-<n> (extract for the tables, url --direct for the raw HTML that carries CVE id and CVSS vector) -> ENISA EUVD record for the FortiManager CVE; links back
+    to the existing hardening-release entry through its 2026-11-10 disclosure date'
+  summary: 'Fortinet had announced on 2026-10-21 that the advisories for its coordinated hardening release would follow at Patch Tuesday, 2026-11-10; they are now published (the RSS carries 50, all dated
+    2026-11-10; the feed is capped at 50 so more may exist). The CVSS 9.0-plus rows, credited in the pages read to Fortinet''s own product-security team using frontier AI models (the FG-IR-26-275 page shows
+    no credit line): FortiMail unauthenticated path traversal to code or command execution, CVE-2026-126147, FG-IR-26-199, CVSS 9.8 (AV:N/AC:L/PR:N), fixed in 8.0.2, 7.6.7 and 7.4.9, 7.2 ''migrate to a
+    fixed release''; FortiMail unauthenticated command injection through HA join-request packets, CVE-2026-126148, FG-IR-26-200, 9.8, affects 8.0.0-8.0.1 and 7.6.0-7.6.6 only (7.4 and 7.2 not affected);
+    FortiMail unauthenticated SQL injection to code or command execution, CVE-2026-126164, FG-IR-26-216, 9.4; FortiMail IBE webmail: unauthenticated takeover of any IBE recipient account, CVE-2026-126156,
+    FG-IR-26-208, 9.1, and unauthenticated session as any IBE recipient to read or send their encrypted mail, CVE-2026-126155, FG-IR-26-207, 9.1; Fortinet says FortiMail Cloud was remediated on 2026-10-05;
+    FortiAuthenticator use of a hard-coded password lets an unauthenticated attacker bypass credential validation ''in certain circumstances outside of the attacker''s control'', CVE-2026-126257, FG-IR-26-271,
+    9.0 (vector AC:H, scope changed), fixed in 8.0.4 and 6.6.11, plus an incorrect-authorization authentication bypass, CVE-2026-126251, FG-IR-26-265, 9.1, whose CVSS temporal vector carries E:F (functional
+    exploit code) in Fortinet''s own record; FortiOS and FortiSASE OSPF daemon: an unauthenticated attacker can broadcast LSAs through a crafted request, CVE-2026-126253, FG-IR-26-267, 9.3 (adjacent network
+    vector, temporal E:P), fixed in FortiOS 8.0.2, 7.6.8, 7.4.13 and 7.2.14; FortiManager FGFM: an unauthenticated attacker who can reach the FGFM port can execute code or commands, CVE-2026-126261, FG-IR-26-275,
+    9.0, affecting 8.0.0 (fixed 8.0.1), 7.6.0-7.6.7 (7.6.8), 7.4.0-7.4.5 (7.4.6) and 7.2.0-7.2.8 (7.2.9); an authenticated-admin VDOM boundary bypass CVE-2026-126229, FG-IR-26-244, 9.1, in FortiManager/FortiAnalyzer
+    8.0.0-8.0.1, 7.6.0-7.6.7, 7.4.0-7.4.11 and 7.2 (migrate). No Fortinet page states exploitation; the FortiMail builds are the same ones that already fix the exploited CVE-2026-104286 (the existing entry''s
+    cross-reference), so FortiMail hosts at 8.0.2, 7.6.7 or 7.4.9 are fixed for all of the above.'
+  region_nexus: global; FortiGate/FortiOS, FortiMail, FortiAuthenticator and FortiManager are widely deployed in Swiss federal, cantonal and communal networks
+  primary_sector_nexus: direct
+  sector: public-sector
+  cves:
+  - CVE-2026-126147
+  - CVE-2026-126148
+  - CVE-2026-126164
+  - CVE-2026-126156
+  - CVE-2026-126155
+  - CVE-2026-126257
+  - CVE-2026-126251
+  - CVE-2026-126253
+  - CVE-2026-126261
+  - CVE-2026-126229
+  techniques:
+  - T1190
+  - T1078
+  - T1557
+  affected_products:
+  - Fortinet FortiMail
+  - Fortinet FortiAuthenticator
+  - Fortinet FortiOS
+  - Fortinet FortiSASE
+  - Fortinet FortiManager
+  - Fortinet FortiAnalyzer
+  entity_keys:
+  - product:fortinet-fortimail
+  - product:fortinet-fortiauthenticator
+  - product:fortinet-fortimanager
+  - product:fortinet-fortios
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Fortinet's own PSIRT pages are first-hand for its products (reliability A); one corroborating EUVD record (CVE-2026-126261) only. The RSS shows 50 advisories; the full month may be
+    larger.
+  confidence: HIGH
+  novelty: update-of:2026-10-23/fortinet-hardening-release-fortios-fortimanager-fortimail
+  evidence:
+  - quote: in FortiMail may allow an unauthenticated attacker to execute unauthorized code or commands via crafted requests
+    attribution: Fortinet PSIRT
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-199
+  - quote: may allow an unauthenticated attacker to bypass credential validation in certain circumstances outside of the attacker's control and gain unauthorized access
+    attribution: Fortinet PSIRT
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-271
+  - quote: may allow an unauthenticated attacker that can reach the FGFM port to execute code or commands via crafted FGFM packets
+    attribution: Fortinet PSIRT
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-275
+  - quote: may allow an unauthenticated attacker to broadcast LSA via specially crafted request
+    attribution: Fortinet PSIRT
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-267
+  - quote: to take over an arbitrary IBE recipient account via crafted HTTP requests
+    attribution: Fortinet PSIRT
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-208
+  - quote: Fortinet has remediated this issue on Oct 05, 2026 in FortiMail Cloud
+    attribution: Fortinet PSIRT
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-216
+  extended_notes: 'What the update changes for the existing entry: it can now carry CVE ids and per-flaw severity (it had none), move FortiMail, FortiAuthenticator and FortiManager from ''critical and high
+    fixes, details withheld'' to named unauthenticated rows, and tighten the action to the exposed management/IBE/FGFM/OSPF surfaces. Exposure: FortiMail on 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8 or any
+    7.2; FortiAuthenticator 8.0.0-8.0.3 and 6.6.0-6.6.10; FortiOS 8.0.0-8.0.1, 7.6.0-7.6.7, 7.4.0-7.4.12 and 7.2.0-7.2.13 (the advisory names the OSPF daemon; it does not say which configurations are exposed);
+    FortiManager 8.0.0, 7.6.0-7.6.7, 7.4.0-7.4.5, 7.2.0-7.2.8 with the FGFM port reachable; FortiSASE 26.2 and earlier branches ''migrate'' while 26.3.1 was remediated by Fortinet. Detection (telemetry
+    class first): FortiMail web access logs for unauthenticated requests to the IBE/webmail endpoints and the HA join port; FortiAuthenticator authentication logs for successful logins without a corresponding
+    credential check or from the hard-coded identity; FortiOS OSPF neighbour and LSA events from routers that are not configured neighbours; FortiManager FGFM connection logs from unknown device serials.
+    Post-patch: FortiMail 7.2 has no fix and must be replaced; because FortiMail IBE takeover exposes encrypted-mail content, treat IBE recipient mailboxes as possibly read on unpatched hosts. Assessment:
+    Fortinet''s use of AI-assisted discovery plus its earlier warning that AI helps adversaries diff patches means exploit development from the October builds is plausible, but no source reports it.'
+- title: 'SAP''s 2026-11-10 Patch Day page is out: nine CVSS 9.1 to 10.0 notes, Onapsis names the 10.0 flaws ICM2SHELL and ProxyGate, publishes the fixed kernel patch levels, and says a working unauthenticated
+    RCE exploit exists but no in-the-wild exploitation is seen'
+  sources:
+  - url: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+    publisher: SAP Security Patch Day, November 2026
+    date: '2026-11-10'
+    role: primary
+  - url: https://onapsis.com/blog/icm2shell-cve-2026-76964-cve-2026-89126-sap-netweaver-web-dispatcher-threat-advisory/
+    publisher: Onapsis Research Labs (ICM2SHELL)
+    date: '2026-11-10'
+    role: primary
+  - url: https://onapsis.com/blog/proxygate-cve-2026-89103-sap-netweaver-gateway-threat-advisory/
+    publisher: Onapsis Research Labs (PROXYGATE)
+    date: '2026-11-10'
+    role: primary
+  - url: https://onapsis.com/blog/sap-security-patch-day-nov-2026/
+    publisher: Onapsis Research Labs (Patch Day analysis)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://security-hub.ncsc.admin.ch/#/posts/13167
+    publisher: NCSC Switzerland (Security Hub post 13167)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://www.securityweek.com/sap-patches-critical-icm2shell-proxygate-vulnerabilities/
+    publisher: SecurityWeek
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: ncsc-ch-security-hub (python3 tools/fetch_source.py ncsc-csh recent 25; post 13167 ''SAP: Multiple Critical Pre-Auth RCE Flaws'') -> primary: SAP Patch Day page https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+    -> Onapsis ICM2SHELL and PROXYGATE advisories (URLs above) -> SecurityWeek https://www.securityweek.com/sap-patches-critical-icm2shell-proxygate-vulnerabilities/'
+  summary: 'SAP''s November Patch Day page lists 35 new notes plus 4 GitHub advisories and nine Critical rows, the four CVSS 10.0 notes the entry already covers (3849308 SAML2, 3778556 Web Dispatcher, 3778530
+    ICM, 3798345 Gateway) and five more: CVE-2026-109803 NetWeaver Knowledge Management XML Forms code injection (9.9, authenticated, note 3809153), CVE-2026-76965 ABAP application server OS command injection
+    (9.9, low-privileged, note 3792735, kernel 7.22 to 9.16), CVE-2026-109795 S4CRM missing authorization check (9.9, low privileges through remote-enabled function modules, note 3834842), CVE-2026-89119
+    and CVE-2026-120014 CSRF in Web Dispatcher and ICM (9.6, note 3804858) and CVE-2026-109798 BusinessObjects Web Intelligence XXE (9.1, authenticated, note 3799117). Onapsis counts 43 new and updated
+    notes with 12 HotNews notes, including two earlier Business AI Platform notes (PHP2Shell note 3846599 and the Node.js Brotli note 3843368, both CVSS 9.8). New technical facts from Onapsis, which found
+    and reported the 10.0 flaws: ICM2SHELL (CVE-2026-76964 ICM and CVE-2026-89126 Web Dispatcher) is a memory corruption in the shared kernel code that reassembles fragmented WebSocket messages (size and
+    length fields of WebSocket control frames are not validated), reachable over the HTTP/HTTPS port with no credentials; WebSocket support is on by default whether or not it is used, and SAP S/4HANA ships
+    ICF services that accept WebSocket connections without authentication; Onapsis gave SAP a working end-to-end unauthenticated exploit that runs commands as <sid>adm, and the denial of service reproduced
+    on every kernel tested. It applies to any ABAP system on kernel 7.40 or higher and to every Web Dispatcher including the one embedded in HANA XS; AS Java alone is not affected, dual-stack is; kernel
+    7.22 is not affected; unmaintained kernels (7.40, 7.41, 7.42, 7.45, 7.49, 7.73, 7.81, 7.85, 7.89) are affected and may get no fix. Fixed patch levels: 7.53 PL 1616/1617, 7.54 PL 710, 7.77 PL 914, 7.93
+    PL 401 or 420 (PL 419 is still affected), 9.16 PL 111, 9.18 PL 37, 9.20 PL 11 or 13; HANA 2.00.079.11 and 2.00.089.05; XS Advanced SP05 patch 4. ProxyGate (CVE-2026-89103) abuses the SAP Gateway''s
+    CPI-C layer so an outside caller is treated as an internal application server; whether it is exploitable depends on the proxy ACL: a permissive prxyinfo file, or no prxyinfo file with gw/acl_mode_proxy
+    at its default 0 (allow all), leaves the system exposed, so a kernel patch alone is not enough; SAP''s fix combines the kernel patch with gw/acl_mode_proxy = 1 (kernels 7.93 and 9.16 already support
+    the parameter). Required minimum patches: 7.22 EXT/EX2/EX3 PL 1612, 7.53 PL 1625, 7.54 PL 718, 7.77 PL 915, 8.04 PL 244, 9.20 PL 16, 9.21 PL 4; Gateway also runs in AS Java, dual-stack and standalone
+    installations. Exploitation: NCSC Switzerland lists the status as unknown and Onapsis says it has not observed in-the-wild exploitation of either; no public exploit code is reported.'
+  region_nexus: global; SAP ERP/S4 is the finance and HR backbone of many cantonal and federal administrations
+  primary_sector_nexus: direct
+  sector: public-sector
+  cves:
+  - CVE-2026-76964
+  - CVE-2026-89126
+  - CVE-2026-89103
+  - CVE-2026-120017
+  - CVE-2026-109803
+  - CVE-2026-76965
+  - CVE-2026-109795
+  - CVE-2026-89119
+  - CVE-2026-109798
+  techniques:
+  - T1190
+  - T1059
+  affected_products:
+  - SAP NetWeaver AS ABAP
+  - SAP Web Dispatcher
+  - SAP Gateway
+  - SAP Kernel
+  - SAP S4CRM
+  - SAP BusinessObjects Business Intelligence Platform
+  entity_keys:
+  - product:sap-web-dispatcher
+  - product:sap-gateway
+  - product:sap-kernel
+  - product:sap-netweaver-as-abap
+  - product:sap-abap-platform
+  new_entities:
+  - key: tool:icm2shell
+    type: tool
+    name: ICM2SHELL
+    aliases: []
+    summary: Onapsis Research Labs' name for the WebSocket reassembly memory corruption in the SAP kernel (CVE-2026-76964 ICM, CVE-2026-89126 Web Dispatcher), fixed on SAP Patch Day 2026-11-10.
+  - key: tool:proxygate
+    type: tool
+    name: PROXYGATE
+    aliases:
+    - ProxyGate
+    summary: Onapsis Research Labs' name for CVE-2026-89103, the SAP Gateway proxy-ACL flaw that lets an unauthenticated caller be treated as an internal application server (SAP note 3798345).
+  relation_suggestions:
+  - subject: tool:icm2shell
+    object: product:sap-web-dispatcher
+    basis: 'Onapsis: ICM2SHELL affects the SAP ICM and the SAP Web Dispatcher through the shared kernel code (Onapsis, 2026-11-10)'
+  - subject: tool:proxygate
+    object: product:sap-gateway
+    basis: 'Onapsis: PROXYGATE (CVE-2026-89103) is a pre-authentication RCE in the SAP Gateway (Onapsis, 2026-11-10)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-11-10/sap-november-2026-cna-records-four-unauth-cvss-10-rows
+  evidence:
+  - quote: SAP security patch day saw the release of 35 new security notes and 4 GitHub security advisories
+    attribution: SAP
+    source_url: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+  - quote: WebSocket support is enabled by default, whether or not it is used, and SAP S/4HANA systems even ship with ICF services that accept WebSocket connections without authentication.
+    attribution: Onapsis Research Labs
+    source_url: https://onapsis.com/blog/icm2shell-cve-2026-76964-cve-2026-89126-sap-netweaver-web-dispatcher-threat-advisory/
+  - quote: The Onapsis Research Labs provided SAP a working exploit that achieves full, unauthenticated remote code execution end to end
+    attribution: Onapsis Research Labs
+    source_url: https://onapsis.com/blog/icm2shell-cve-2026-76964-cve-2026-89126-sap-netweaver-web-dispatcher-threat-advisory/
+  - quote: As of the date of this publication, the Onapsis Research Labs have not observed active in-the-wild exploitation of this vulnerability.
+    attribution: Onapsis Research Labs
+    source_url: https://onapsis.com/blog/proxygate-cve-2026-89103-sap-netweaver-gateway-threat-advisory/
+  - quote: neither a version check nor patching alone tells you whether you are safe
+    attribution: Onapsis Research Labs
+    source_url: https://onapsis.com/blog/proxygate-cve-2026-89103-sap-netweaver-gateway-threat-advisory/
+  - quote: Successful exploitation allows unauthenticated attackers to execute arbitrary operating system commands with <sid>adm privileges via network access
+    attribution: NCSC Switzerland
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13167
+  extended_notes: 'Detection (from Onapsis, ICM2SHELL): every exploitation attempt is likely to crash the ICM or Web Dispatcher at least once, so unexpected restarts logged in the work-directory dev_icm
+    or dev_webdisp files and a changing process id of icman outside maintenance deserve investigation; check whether WebSocket is in use by looking for status 101 in the ICM/WD HTTP log (enabled by default
+    from kernel 7.73 and in XS Advanced, explicit configuration on 7.54 and lower and XS Classic) before disabling it. Workarounds from SAP FAQ note 3778788: icm/HTTP/support_websocket_upgrade=FALSE plus
+    restart (significant impact on interactive scenarios), or a Web Dispatcher on 7.53 PL 1629, 7.54 PL 723, 7.93 PL 430 or 9.16 PL 200 shielding backends reached only through it (not with PROT=ROUTER).
+    ProxyGate has no official workaround; restrict prxyinfo and set gw/acl_mode_proxy=1. Hardening order from Onapsis: internet-facing Web Dispatchers and ICMs first, then production systems, every application
+    server and every Web Dispatcher needs the kernel; standalone Web Dispatchers, HANA XS Web Dispatchers and unmaintained kernels are the ones that get missed. Fixed releases and notes still require an
+    SAP login; the kernel levels above come from Onapsis, not SAP''s public page. Assessment: the entry''s earlier statement that the fixed releases were not publicly stated is now answered; its ''SAP''s
+    Patch Day page was not yet published'' caveat is obsolete.'
+- title: N-able ships N-central 2026.4 Hotfix 2 (build 2026.4.1.26) with CVE ids for the Able2Shell disclosure; hosted servers are updated, on-premises servers must upgrade and every Agent and Probe must
+    be upgraded too
+  sources:
+  - url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/
+    publisher: N-able (N-central 2026.4 HF2 release notes)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    publisher: Huntress (update of 2026-11-10 5:30 PM ET)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122942
+    publisher: ENISA EUVD (EUVD-2026-122942, CVE-2026-125883)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122961
+    publisher: ENISA EUVD (EUVD-2026-122961, CVE-2026-125881)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: enisa-euvd search (python3 tools/fetch_source.py url ''https://euvdservices.enisa.europa.eu/api/search?vendor=N-able&fromDate=2026-11-08&toDate=2026-11-12&size=100'':
+    eight N-able CNA records published 2026-11-10 21:19-21:26Z) -> primary: N-able HF2 release notes https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/ -> corroboration: Huntress update
+    https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains'
+  summary: 'N-able published N-central 2026.4 Hotfix 2, build 2026.4.1.26, on 2026-11-10 (20:48 UTC) as a critical security update that supersedes 2026.4 (2026.4.0.27) and Hotfix 1 (2026.4.0.32): it strengthens
+    authentication and permission checks, removes legacy mobile device management, adds validation for file upload and log handling, hardens server components, Agent-Probe communication and web/sign-in
+    protections, and updates the server OS and third-party components. Hosted N-central servers are upgraded by N-able; on-premises customers must upgrade their own servers; all customers, hosted and on-premises,
+    must upgrade Agents and Probes (Agents first, then Probes; a Probe on 2026.4.1.26 cannot talk to Agents or PME below that level, so the offline patch cache stops until both are upgraded). Known issue:
+    the built-in remote control is temporarily disabled; Take Control still works. N-able''s CNA records (CVE ids now assigned) name: CVE-2026-125883 multiple XXE (CVSS 9.3), CVE-2026-125881 schema-hint
+    SSRF via service-import schema validation (9.3), CVE-2026-125878 multiple OGNL injection flaws leading to RCE (8.7), CVE-2026-125882 RCE via file-repository upload path traversal (8.6, credited to Sprocket
+    Security), CVE-2026-125879 local privilege escalation to root via a writable syslog-ng config (8.6), CVE-2026-125880 stored XSS via MMS3 patch metadata (8.3), CVE-2026-91000 insecure IPC channels leading
+    to local privilege escalation (8.4) and CVE-2026-125958 root RCE via unsigned NSP upgrade package upload (7.5, ''through 24.6.1''). The CNA text says ''before 26.4.1'' for most (one says 2026.4.1),
+    the build number is 2026.4.1.26, so verify by build. These eight records do not map one-to-one to the 33 flaws the researcher published, so the public CVE list is likely a consolidation; N-able and
+    Huntress still report no active exploitation (the last stated check is 2026-11-09 15:15 UTC), and the public proof-of-concept code from the researcher remains available.'
+  region_nexus: global; N-central is the RMM of managed service providers that serve Swiss communes and SMEs (indirect supplier exposure)
+  primary_sector_nexus: indirect (MSP/supplier control plane)
+  sector: technology
+  cves:
+  - CVE-2026-125883
+  - CVE-2026-125881
+  - CVE-2026-125878
+  - CVE-2026-125882
+  - CVE-2026-125879
+  - CVE-2026-125880
+  - CVE-2026-91000
+  - CVE-2026-125958
+  techniques:
+  - T1190
+  - T1068
+  - T1059
+  affected_products:
+  - N-able N-central
+  entity_keys:
+  - product:n-able-n-central
+  - incident:n-able-n-central-able2shell-disclosure-2026-11
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline
+  evidence:
+  - quote: N-central 2026.4 Hotfix 2 is a critical security update.
+    attribution: N-able
+    source_url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/
+  - quote: All customers, both hosted and on-premises, must upgrade their Agents and Probes.
+    attribution: N-able
+    source_url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/
+  - quote: This release supersedes N-central 2026.4 (build 2026.4.0.27) and N-central 2026.4 Hotfix 1 (build 2026.4.0.32).
+    attribution: N-able
+    source_url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/
+  - quote: Improper restriction of XML external entity reference vulnerability in N-able N-central allows XML Schema Poisoning.
+    attribution: N-able (CNA record via ENISA EUVD)
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122942
+  - quote: Server-Side request forgery (SSRF) vulnerability in N-able N-central allows Server Side Request Forgery.
+    attribution: N-able (CNA record via ENISA EUVD)
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122961
+  extended_notes: 'What changes for the existing entry: ''no patch, power down'' becomes ''patch available, upgrade then restore''; CVE ids, severity and fixed build are now known; action moves to upgrading
+    on-premises servers to 2026.4.1.26 and then Agents and Probes. Post-patch compromise check: because public PoC code for an unauthenticated XXE-to-RCE chain existed for one to two days before the fix,
+    treat any on-premises N-central server that was online and reachable between 2026-11-08 and the upgrade as possibly compromised: review administrator accounts created, scripts deployed to endpoints,
+    remote-control sessions and audit-log gaps (Huntress notes earlier N-central exploitation led to spraying of downstream environments with unauthorized scripts and new admin accounts). Detection concept:
+    unexpected child processes of the N-central Java server (Tomcat/OGNL execution as the nable user), outbound connections from the server to internal addresses (SSRF), new files in the file-repository
+    upload path, new local admin accounts on managed endpoints created through N-central.'
+- title: CISA adds both Barracuda flaws, CVE-2026-116606 and CVE-2026-111560, to KEV on 2026-11-10 with a three-day deadline (2026-11-13) and a forensic-triage requirement
+  sources:
+  - url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+    publisher: CISA (KEV alert of 2026-11-10)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+    publisher: CISA Known Exploited Vulnerabilities Catalog (catalogVersion 2026.11.10)
+    date: '2026-11-10'
+    role: primary
+  - url: https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection
+    publisher: Barracuda Trust Center (advisory, last updated 2026-11-09)
+    date: '2026-11-09'
+    role: corroborating
+  - url: https://www.bleepingcomputer.com/news/security/hackers-exploit-barracuda-email-security-gateway-flaws-to-get-root-access/
+    publisher: BleepingComputer
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; CVE-2026-111560 and CVE-2026-116606 both dateAdded 2026-11-10, dueDate 2026-11-13, forensicTriage Yes) -> primary:
+    CISA alert https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog (WebFetch, cisa.gov walled out of the container) -> Barracuda advisory https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection
+    re-read for changes since 2026-11-09 (none)'
+  summary: 'CISA''s 2026-11-10 KEV alert adds CVE-2026-116606 (Barracuda ESG authentication bypass using an alternate path or channel) and CVE-2026-111560 (OS command injection in the ESG, Load Balancer
+    ADC, Message Archiver, WAF Control Center, WAF and Web Security Gateway) ''based on evidence of active exploitation''; the KEV records give a due date of 2026-11-13, only three days, mark both ''forensicTriage:
+    Yes'' and ransomware use ''Unknown'', and describe the two as chainable. This answers the open point in the entry: Barracuda''s own 2026-11-09 text says only ''exploitation activity affecting a small
+    number of organizations'' without naming a flaw, and the Canadian Cyber Centre named only CVE-2026-116606; CISA now lists both, so CVE-2026-111560 moves to exploited. Barracuda''s advisory was not changed
+    after the 2026-11-09 update. BleepingComputer''s statement that both flaws are exploited and that the second one is unauthenticated rests on Barracuda''s unnamed statement plus its own reading and conflicts
+    with Barracuda''s table, which lists CVE-2026-111560 as needing administrative access (reachable unauthenticated only through the chain with CVE-2026-116606). FIRST EPSS on 2026-11-10: 0.016 (CVE-2026-116606)
+    and 0.011 (CVE-2026-111560).'
+  region_nexus: global; Barracuda ESG is a common mail gateway at Swiss public bodies
+  primary_sector_nexus: direct
+  sector: public-sector
+  cves:
+  - CVE-2026-116606
+  - CVE-2026-111560
+  techniques:
+  - T1190
+  - T1059.004
+  affected_products:
+  - Barracuda Email Security Gateway
+  - Barracuda Load Balancer ADC
+  - Barracuda Message Archiver
+  - Barracuda WAF Control Center
+  - Barracuda Web Application Firewall
+  - Barracuda Web Security Gateway
+  entity_keys:
+  - product:barracuda-email-security-gateway
+  - product:barracuda-load-balancer-adc
+  - product:barracuda-message-archiver
+  - product:barracuda-waf-control-center
+  - product:barracuda-web-application-firewall
+  - product:barracuda-web-security-gateway
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  verification_note: CISA (national authority carve-out) for the KEV listing; Barracuda and BleepingComputer corroborate the exploitation theme but not the per-CVE attribution.
+  confidence: HIGH
+  novelty: update-of:2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce
+  evidence:
+  - quote: Barracuda Networks Multiple Products OS Command Injection Vulnerability
+    attribution: CISA
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+  - quote: Barracuda Networks Email Security Gateway (ESG) Authentication Bypass Using an Alternate Path or Channel Vulnerability
+    attribution: CISA
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+  - quote: based on evidence of active exploitation
+    attribution: CISA
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+  - quote: We have identified exploitation activity affecting a small number of organizations.
+    attribution: Barracuda
+    source_url: https://trust.barracuda.com/security/pre-authentication-authorization-bypass-command-injection
+  extended_notes: 'Entry changes: move CVE-2026-111560 status to exploited; add the KEV due date (2026-11-13) and CISA''s forensic-triage flag; keep Barracuda''s wording on exploitation unchanged. The KEV
+    catalogue record text (catalogVersion 2026.11.10) says CVE-2026-111560 ''could allow an authenticated administrator to inject OS commands that execute with root privileges when the crafted timezone
+    value is subsequently processed'' and that it ''can be chained with CVE-2026-116606''. Detection and post-patch checks already in the entry stand; CISA''s forensic-triage flag is the cue to preserve
+    appliance state (configuration, backup-restore history, process list) before reimaging rather than only patching.'
+- title: 'Brotli decoder flaw CVE-2026-111497: Apple''s 2026-11-09 updates, Siemens SSA-242944 and SSA-678870 (SIMATIC WinCC and others) and Cisco advisory revision 1.11 add affected products'
+  sources:
+  - url: https://support.apple.com/en-us/149715
+    publisher: Apple (iOS 27.2.1 and iPadOS 27.2.1 security content)
+    date: '2026-11-09'
+    role: primary
+  - url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1495/
+    publisher: CERT-FR (CERTFR-2026-AVI-1495, Siemens SIMATIC)
+    date: '2026-11-10'
+    role: primary
+  - url: https://cert-portal.siemens.com/productcert/csaf/ssa-feed-tlp-white.json
+    publisher: 'Siemens ProductCERT (CSAF feed: SSA-242944, SSA-678870 of 2026-11-10)'
+    date: '2026-11-10'
+    role: primary
+  - url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u
+    publisher: Cisco PSIRT (cisco-sa-oct2026-node-js, version 1.11)
+    date: '2026-11-10'
+    role: primary
+  - url: https://security.paloaltonetworks.com/json/CVE-2026-111497
+    publisher: Palo Alto Networks PSIRT (CVE-2026-111497 portfolio status, update of 2026-11-09)
+    date: '2026-11-09'
+    role: corroborating
+  discovery_trace: 'first seen at: anssi-fr (python3 tools/fetch_source.py cert-fr avis-recent 30: CERTFR-2026-AVI-1495 and -1487 list CVE-2026-111497) -> https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1495/
+    -> primaries: Siemens ProductCERT CSAF feed (python3 tools/fetch_source.py url --direct https://cert-portal.siemens.com/productcert/csaf/ssa-feed-tlp-white.json), Apple HT https://support.apple.com/en-us/149715
+    (listing https://support.apple.com/en-us/100100), Cisco PSIRT revision history'
+  summary: 'Three vendors added CVE-2026-111497 (out-of-bounds write in the Brotli decoder, the Node2Shell/Broccoli2Shell flaw with public exploit code) to their affected lists on 2026-11-09 and 2026-11-10.
+    Apple''s iOS 27.2.1 and iPadOS 27.2.1 bulletin of 2026-11-09 lists a ''brotli'' fix for processing maliciously crafted input leading to memory corruption (CVE-2026-111497, out-of-bounds write); CERT-FR''s
+    avis AVI-1487 lists the same CVE across Apple''s nine bulletins of that day (iOS and iPadOS 27.2.1, 26.7.3 and 18.7.12, macOS Golden Gate 27.2.1, Tahoe 26.7.3 and Sequoia 15.8.3, watchOS 27.2.1 and
+    26.6.1, visionOS 27.2.1; I read only the first bulletin in full), and Apple''s release listing shows no exploited flag for any of the nine. Siemens'' bulletins of 2026-11-10 are SSA-242944 for industrial
+    products and SSA-678870 for software products (Teamcenter and Polarion are pointed to field bulletins), with some fixes released and others pending; CERT-FR''s reading of Siemens'' three SIMATIC bulletins
+    of that day lists, for CVE-2026-111497, SIMATIC WinCC V7.5 and V7/V8, WinCC Runtime Professional, WinCC Unified PC Runtime, WinCC Unified for Industrial Edge, WinCC Unified SIQENCE, WinCC OA V3.21,
+    WinCC Companion and the Profiling Tool, for which Siemens states no security fix will be provided. Cisco''s combined Node.js and Brotli advisory reached version 1.11 on 2026-11-10: ISE and ISE-PIC remain
+    ''under investigation'', standalone NX-OS on Nexus 3000 and 9000 Guest Shell is listed as affected with no fixed release (CSCwx76654), Duo Network Gateway is fixed in 3.4.2, RoomOS on-premises in 11.41.2.3
+    and 26.7.4.3, Webex Contact Center and Intersight Virtual Appliance have November dates; Cisco states it knows of public proof-of-concept code and no malicious use against a Cisco product. Palo Alto''s
+    portfolio page added Cortex XCor, IoT Security and Prisma SaaS to the remediated section on 2026-11-09. Not an exploitation change: no new in-the-wild report was found in these vendors'' text.'
+  region_nexus: global; Apple devices and Cisco infrastructure are in Swiss administrations, Siemens SIMATIC WinCC/PCS 7 appears in water, energy and building-automation systems of public operators
+  primary_sector_nexus: direct (endpoints and network gear) and indirect (industrial control)
+  sector: public-sector
+  cves:
+  - CVE-2026-111497
+  techniques:
+  - T1190
+  - T1203
+  affected_products:
+  - Apple iOS
+  - Apple iPadOS
+  - Apple macOS
+  - Apple watchOS
+  - Apple visionOS
+  - Siemens SIMATIC WinCC
+  - Siemens SIMATIC WinCC Unified
+  - Siemens Teamcenter
+  - Cisco NX-OS
+  - Cisco Identity Services Engine
+  entity_keys:
+  - tool:node2shell
+  - product:google-brotli
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-11-07/cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo
+  evidence:
+  - quote: 'Impact: Processing maliciously crafted input may lead to memory corruption'
+    attribution: Apple
+    source_url: https://support.apple.com/en-us/149715
+  - quote: Bulletin de sécurité Siemens SSA-242944 du 10 novembre 2026
+    attribution: CERT-FR
+    source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1495/
+  - quote: is aware that proof-of-concept exploit code is available for the vulnerabilities described in this advisory.
+    attribution: Cisco PSIRT
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u
+  - quote: The Cisco PSIRT is not aware of any malicious use of these vulnerabilities against any Cisco product.
+    attribution: Cisco PSIRT
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u
+  extended_notes: 'Siemens SSA text (from the CSAF feed summary): ''This advisory covers the status of impact of various Siemens products. Siemens has released new versions for several affected products
+    and recommends to update to the latest versions. Siemens is preparing further fixes and recommends specific mitigations for products where fixes are not or not yet available.'' CERT-FR lists SIMATIC
+    WinCC V7.5, V7/V8 and WinCC Runtime Professional ''toutes versions'' for CVE-2026-111497. Borderline value: mostly an inventory update for an entry already tracking the flaw; the action-relevant deltas
+    are Apple''s patch levels (iOS 27.2.1, 26.7.3, 18.7.12), Siemens'' no-fix Profiling Tool, and Cisco''s unfixed Nexus Guest Shell.'
+  borderline: true
+  borderline_reason: inventory-style update to an entry already tracking the flaw; worth a short changelog record only because Apple patch levels and Siemens/Cisco unfixed products are new
+- title: 'SonicWall SNWLID-2026-0021: SonicOS firewalls with Client DPI-SSL kept trusting the compromised eMudhra chains and re-signed them for clients; fixed in SonicOS 7.3.4-7015 and 8.2.3-8015'
+  sources:
+  - url: https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0021
+    publisher: SonicWall PSIRT (SNWLID-2026-0021)
+    date: '2026-11-10'
+    role: primary
+  - url: https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021
+    publisher: SonicWall PSIRT API (SNWLID-2026-0021 record)
+    date: '2026-11-10'
+    role: primary
+  discovery_trace: 'first seen at: sonicwall-psirt RSS (python3 tools/fetch_source.py feed https://psirtapi.global.sonicwall.com/api/v1/feed/rss.xml 10) -> advisory https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0021
+    -> structured record via url --direct https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021'
+  summary: 'SonicWall''s informational advisory of 2026-11-10 (no CVE, no CVSS, no workaround) says SonicOS appliances with Client DPI-SSL enabled kept trusting certificate chains issued by the compromised
+    eMudhra intermediate CAs because the firewall''s local store trusted the underlying roots; the firewall then re-signed traffic from impacted servers with the local SonicWall DPI-SSL CA certificate,
+    so client browsers could not reject connections that carried an untrusted intermediate. SonicWall removed the affected root certificates from the SonicOS certificate store and added blocking logic for
+    the compromised intermediate chain. Affected: Gen7 hardware firewalls (TZ 270 to TZ 670, NSa 2700 to 6700, NSsp 10700 to 15700) and Gen7 NSv up to 7.3.4-7013, fixed in 7.3.4-7015 and higher; Gen8 hardware
+    (TZ 80 to TZ 680, NSa 2800 to 5800) and Gen8 NSv up to 8.2.2-8015, fixed in 8.2.3-8015 and higher. This is a firewall-side trust gap: the intermediates can be forged by anyone, so a DPI-SSL firewall
+    without the fix would have hidden a forged certificate from users behind it.'
+  region_nexus: global; SonicWall NGFWs with DPI-SSL are used in Swiss administrations and schools
+  primary_sector_nexus: direct
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1557
+  affected_products:
+  - SonicWall SonicOS
+  entity_keys:
+  - product:sonicwall-sonicos
+  - incident:emudhra-intermediate-ca-key-compromise-2026-10
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: SonicWall PSIRT is first-hand for its own product; informational advisory.
+  confidence: HIGH
+  novelty: update-of:2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates
+  evidence:
+  - quote: the firewall re-signed traffic from impacted servers with the local SonicWall DPI-SSL CA certificate
+    attribution: SonicWall PSIRT
+    source_url: https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021
+  - quote: SonicWall has remediated this issue by removing the affected root certificates from the SonicOS certificate store
+    attribution: SonicWall PSIRT
+    source_url: https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021
+  extended_notes: 'Entry change: add SonicWall SonicOS (Client DPI-SSL) to the affected list with fixed builds 7.3.4-7015 and 8.2.3-8015; the existing action to update trust stores gets one more product
+    class (TLS-inspecting firewalls). Detection concept: certificates in inspected traffic whose chain contains an eMudhra intermediate but is presented to clients under the firewall''s DPI-SSL CA.'
+  borderline: true
+  borderline_reason: single product addition to an existing entry; modest on its own
+- title: 'Veeam KB4966 (updated 2026-11-10): the Linux kernel use-after-free CVE-2026-98432 (CVSS 9.8) reaches Veeam Software Appliance, Infrastructure Appliance roles, workers, helper appliances and recovery
+    media; the patched kernel ships through Veeam Updater or a private fix'
+  sources:
+  - url: https://www.veeam.com/kb4966
+    publisher: Veeam Knowledge Base (KB4966, last modified 2026-11-10)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.veeam.com/services/open/kb/rss-feed
+    publisher: Veeam KB RSS feed (KB4966 listed 2026-11-06)
+    date: '2026-11-06'
+    role: corroborating
+  discovery_trace: 'first seen at: veeam-kb-security RSS (python3 tools/fetch_source.py feed https://www.veeam.com/services/open/kb/rss-feed 10; KB4966 ''CVE-2026-98432 Impact Statement'', 2026-11-06) ->
+    primary: https://www.veeam.com/kb4966 (extract; Last Modified 2026-11-10)'
+  summary: 'Veeam''s impact statement for the TCP/IPv4 connection-setup use-after-free CVE-2026-98432 (CVSS 9.8; denial of service or memory corruption) says every Veeam component that bundles a Linux kernel
+    is affected until the kernel is updated: Veeam Software Appliance 13.1; Veeam Infrastructure Appliance 13.1 with any role (backup proxies, CDP proxy, cache and backup repositories including Linux and
+    hardened repositories, NFS share, scale-out extents, guest-interaction proxy, gateway, mount server, WAN accelerator, log shipping, Cloud Connect gateway); workers deployed by the hypervisor plug-ins;
+    Linux-based helper appliances of Veeam Backup & Replication 13.1 and 12.3 (guest OS restore mount server, virtual lab proxy appliance, restore of Linux workloads to Azure, restore to EC2 and Google
+    Compute Engine); Veeam Recovery Media for the Agent for Linux; and the public-cloud plug-in appliances. Kasten for Kubernetes is not affected (its images carry no kernel). Delivery: since 2026-11-02
+    the fixed kernel (5.14.0-570.60.1+27.2.el9_6_ciq, a CIQ build) is in the Veeam repository; Veeam Updater checks every 12 hours and by default installs mandatory updates on the nearest Sunday at 14:00
+    in the backup server''s time zone, a restart may be required; Windows-based Backup & Replication 13.1 and 12.3 need the private fix for helper appliances; virtual labs and Azure helper appliances that
+    stay deployed must be redeployed; recovery media created before the update must be replaced.'
+  region_nexus: global; Veeam backup infrastructure is widespread in Swiss public bodies and a standard ransomware target
+  primary_sector_nexus: direct (backup infrastructure)
+  sector: public-sector
+  cves:
+  - CVE-2026-98432
+  techniques:
+  - T1190
+  - T1068
+  affected_products:
+  - Veeam Software Appliance
+  - Veeam Infrastructure Appliance
+  - Veeam Backup & Replication
+  - Veeam Agent for Linux
+  entity_keys:
+  - product:veeam-software-appliance
+  - product:veeam-backup-replication
+  - product:veeam-agent-for-linux
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: 'Veeam KB is the vendor''s first-hand impact statement (reliability A); the underlying flaw is corroborated in the existing entry. lookback: the KB page was published 2026-11-06 and
+    modified 2026-11-10.'
+  confidence: HIGH
+  novelty: update-of:2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root
+  lookback: true
+  evidence:
+  - quote: Veeam components that include a Linux kernel are affected.
+    attribution: Veeam
+    source_url: https://www.veeam.com/kb4966
+  - quote: Veeam Updater checks the repository every 12 hours.
+    attribution: Veeam
+    source_url: https://www.veeam.com/kb4966
+  - quote: Since November 2, 2026, an update that contains the fix for CVE-2026-98432 has been available in the Veeam repository
+    attribution: Veeam
+    source_url: https://www.veeam.com/kb4966
+  extended_notes: 'Entry change: add Veeam to the affected-vendor list with the component table and the delivery path; the existing action list gets ''install the Veeam Updater kernel update on every Veeam
+    appliance and helper appliance now (do not wait for the Sunday window), apply the private fix on Windows-based B&R, redeploy long-lived helper appliances and recreate recovery media''. Detection concept:
+    Veeam Host Management console History tab shows whether the kernel update is installed.'
+- title: 'Adobe Connect APSB26-191 (Windows on-premises, 12.12 and earlier): five unauthenticated CVSS 10.0 flaws among 24 fixes, plus Experience Manager APSB26-189 with four authenticated 9.9 code-execution
+    rows; Adobe knows of no exploitation'
+  sources:
+  - url: https://www.adobe.com/trust/security/products/connect/apsb26-191
+    publisher: Adobe PSIRT (APSB26-191, Adobe Connect)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.adobe.com/trust/security/products/experience-manager/apsb26-189
+    publisher: Adobe PSIRT (APSB26-189, Experience Manager)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.adobe.com/trust/security/bulletins-and-advisories.html
+    publisher: Adobe Trust Center (bulletin list, November 2026)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: enisa-euvd search (python3 tools/fetch_source.py url ''https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-09&toDate=2026-11-11&size=100'':
+    dozens of Adobe CNA records, Connect rows at 10.0) -> Adobe Trust Center listing (WebFetch of https://www.adobe.com/trust/security/bulletins-and-advisories.html; Adobe moved bulletins there after September
+    2026) -> primaries: APSB26-191 and APSB26-189 (extract and WebFetch for the version tables)'
+  summary: 'Adobe''s priority 2 (''act within 30 days'') bulletin APSB26-191 fixes 24 CVEs in Adobe Connect on Windows (12.12 and earlier; fixed in 12.12.a, 12.11.i, 12.10.f, 12.9.a and 12.8.a): five rated
+    10.0 with vector AV:N/AC:L/PR:N/UI:N/S:C, so unauthenticated and with changed scope (CVE-2026-121356 SSRF, CVE-2026-121351 path traversal, CVE-2026-121889 SSRF, CVE-2026-121352 incorrect authorization,
+    CVE-2026-121353 CRLF injection, all described as privilege escalation), two more unauthenticated rows at 9.4 (CVE-2026-121902 SQL injection to code execution) and 9.1 (CVE-2026-121355 incorrect authorization),
+    and nine authenticated rows at 9.9 to 9.6 (path traversal, XXE, code injection and four SQL injections leading to code execution, stored XSS), plus high and medium rows. Adobe says it is not aware of
+    any exploits in the wild; the bulletin gives no root cause detail, and 15 of the CVEs are credited to one researcher. The same day APSB26-189 fixes 14 Experience Manager CVEs: four critical 9.9 rows
+    (CVE-2026-114371 and CVE-2026-119017 authorization flaws, CVE-2026-113580 and CVE-2026-113579 code injection), all PR:L (a low-privileged account is needed), fixed in AEM Cloud Service 2026.10.29251
+    and by the GRANITE-75052 cumulative hotfix for AEM 6.5 SP23 to SP25 and 6.5 LTS SP1 to SP3, plus Forms add-on and quick-start hotfixes for ten medium XSS rows. Adobe is not aware of exploitation there
+    either.'
+  region_nexus: global; Adobe Connect (web conferencing) and AEM (content management) run in universities, cantonal and federal web platforms
+  primary_sector_nexus: direct where Connect or AEM is used; footprint not established by the sources
+  sector: public-sector
+  cves:
+  - CVE-2026-121356
+  - CVE-2026-121351
+  - CVE-2026-121889
+  - CVE-2026-121352
+  - CVE-2026-121353
+  - CVE-2026-121902
+  - CVE-2026-121355
+  - CVE-2026-114371
+  - CVE-2026-113580
+  - CVE-2026-113579
+  - CVE-2026-119017
+  techniques:
+  - T1190
+  affected_products:
+  - Adobe Connect
+  - Adobe Experience Manager
+  entity_keys:
+  - product:adobe-experience-manager
+  new_entities:
+  - key: product:adobe-connect
+    type: product
+    name: Adobe Connect
+    aliases: []
+    summary: Adobe's web-conferencing platform; on-premises builds run on Windows and are patched through Adobe Connect release notes (Adobe PSIRT).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Adobe PSIRT bulletins are first-hand for Adobe's products (reliability A); ENISA EUVD mirrors the CNA records. No independent technical analysis exists yet.
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: Adobe has released a priority 2 security update for Adobe Connect.
+    attribution: Adobe PSIRT
+    source_url: https://www.adobe.com/trust/security/products/connect/apsb26-191
+  - quote: Adobe is not aware of any exploits in the wild for any of the issues addressed in this update.
+    attribution: Adobe PSIRT
+    source_url: https://www.adobe.com/trust/security/products/experience-manager/apsb26-189
+  - quote: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N
+    attribution: Adobe PSIRT
+    source_url: https://www.adobe.com/trust/security/products/connect/apsb26-191
+  extended_notes: 'Exposure: on-premises Adobe Connect on Windows at or below 12.12 (not the hosted service); AEM 6.5 SP25 and earlier, AEM 6.5 LTS SP3 and earlier and AEM Cloud Service 2026.10.29023 and
+    earlier. Adobe''s page for Connect gives release notes at helpx.adobe.com/adobe-connect/kb/connect-on-prem-patches.html for the fix builds. Detection: none supplied; for Connect, web-server access logs
+    for unauthenticated requests to administrative or API paths that return content, outbound connections from the Connect server to internal addresses (SSRF), and unexpected files in web-served directories.
+    Triage: the 10.0 scores are CVSS scope-changed, privilege-escalation-class rows, so the realistic impact is takeover of another user''s or tenant''s context rather than proven code execution; the 9.9
+    rows (PR:L) need an account. Assessment (not in the sources): priority 2 plus five unauthenticated 10.0 rows from one prolific researcher suggests a patch within the 30-day window is the minimum and
+    an internet-facing Connect server should be first.'
+- title: 'Ivanti November 2026: unauthenticated SQL injection in Endpoint Manager Core leads to remote code execution (CVE-2026-121653, CVSS 9.8, before 2024 SU8) and the Cloud Services Application lets
+    anyone add or delete trusted EPM Core certificates (CVE-2026-121683, 9.4)'
+  sources:
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121248
+    publisher: Ivanti CNA record CVE-2026-121653, via ENISA EUVD
+    date: '2026-11-10'
+    role: primary
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121155
+    publisher: Ivanti CNA record CVE-2026-121683, via ENISA EUVD
+    date: '2026-11-10'
+    role: primary
+  - url: https://euvdservices.enisa.europa.eu/api/search?vendor=Ivanti&fromDate=2026-11-09&toDate=2026-11-12&size=100
+    publisher: ENISA EUVD (13 Ivanti records of the November cycle)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: enisa-euvd search (python3 tools/fetch_source.py url ''https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-09&toDate=2026-11-11&size=100'':
+    CVE-2026-121653 at 9.8) -> vendor-filtered EUVD search -> per-record pages https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121248 and -121155. Ivanti''s own advisory pages (hub.ivanti.com
+    Security-Advisory-Ivanti-Endpoint-Manager-EPM-November-2026 and Security-Advisory-Ivanti-CSA-CVE-2026-121683) are a JavaScript app that extract, WebFetch and the reader could not render, so the CNA
+    text is the primary'
+  summary: Ivanti's CNA records of 2026-11-10 describe CVE-2026-121653 as an SQL injection in the Core of Ivanti Endpoint Manager before version 2024 SU8 that allows a remote unauthenticated attacker to
+    achieve remote code execution (CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N), and CVE-2026-121683 as missing authentication in the Ivanti Cloud Services Application (CSA) version 5.0.8 that allows a remote unauthenticated
+    attacker to add and delete arbitrary trusted EPM Core certificate entries (9.4). The same cycle carries a 6.8 cleartext-transmission flaw in the EPM agent (CVE-2026-18128, man-in-the-middle can read
+    and modify HTTP traffic) and administrator-only issues in EPMM (fixed in 12.11.0.0, 12.10.0.1 and 12.9.0.3), Sentry (11.0.0, 10.8.3, 10.7.4) and User Workspace Manager (2026.4). The records state no
+    exploitation (ENISA shows none) and the affected-version wording for the CSA flaw does not say which build fixes it; the EPM fix is 2024 SU8 or later. Because the pages carrying Ivanti's own exploitation
+    statement, mitigations and the fixed CSA version could not be read, this item rests on the CNA text alone and the open points should be checked on Ivanti's advisory page before acting.
+  region_nexus: global; Ivanti Endpoint Manager is a common endpoint-management platform in public administrations
+  primary_sector_nexus: direct where EPM is deployed
+  sector: public-sector
+  cves:
+  - CVE-2026-121653
+  - CVE-2026-121683
+  - CVE-2026-18128
+  techniques:
+  - T1190
+  affected_products:
+  - Ivanti Endpoint Manager
+  - Ivanti Cloud Services Application
+  entity_keys:
+  - product:ivanti-endpoint-manager
+  new_entities:
+  - key: product:ivanti-cloud-services-application
+    type: product
+    name: Ivanti Cloud Services Application
+    aliases:
+    - Ivanti CSA
+    summary: Ivanti appliance that relays Endpoint Manager Core communication to the cloud; CVE-2026-121683 (missing authentication, 9.4) was published on 2026-11-10 (Ivanti CNA record).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Ivanti is the CNA and first-hand for its own flaws; ENISA mirrors the record text; Ivanti's advisory pages could not be read on any transport.
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: SQL injection in the Core of Ivanti Endpoint Manager before version 2024 SU8 allows a remote unauthenticated attacker to achieve remote code execution.
+    attribution: Ivanti (CNA record via ENISA EUVD)
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121248
+  - quote: Missing authentication in Ivanti Cloud Services Application version 5.0.8 allows a remote unauthenticated attacker to add and delete arbitrary trusted EPM Core certificate entries.
+    attribution: Ivanti (CNA record via ENISA EUVD)
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121155
+  extended_notes: 'Exposure: any Ivanti Endpoint Manager Core server below 2024 SU8 whose web/Core service is reachable by an attacker (the record does not state which port or interface); the record names
+    no other EPM branch. A trusted-certificate store that an unauthenticated caller can edit (CSA) undermines the trust the Core places in appliances and agents. Detection concept (not from the sources):
+    web-server logs of the Core for SQL syntax in request parameters, new trusted-certificate entries nobody approved, and child processes of the Core''s web service. Triage: an unauthenticated SQL injection
+    that reaches code execution on an endpoint-management server is the kind of flaw that gives a domain-wide software-distribution channel, which is why the CVSS rating of 9.8 deserves a rapid patch even
+    without a reported exploit.'
+- title: 'Synology DSM (SA-26:19): a pre-authentication SQL injection in the Auth API (CVE-2026-76954, CVSS 9.8) gives file read and write, and an rsync authentication bypass (CVE-2026-85101, 8.6); fixed
+    in DSM 7.4.1-90080-1, 7.3.2-86009-5, 7.2.2-72806-10 and 7.2.1-69057-13'
+  sources:
+  - url: https://www.synology.com/en-global/support/security/Synology_SA_26_19
+    publisher: Synology (Synology-SA-26:19)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.synology.com/en-global/support/security/Synology_SA_26_18
+    publisher: Synology (Synology-SA-26:18)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4430
+    publisher: BSI WID-SEC-2026-4430 (read from the CSAF record)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1493/
+    publisher: CERT-FR (CERTFR-2026-AVI-1493)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: anssi-fr (python3 tools/fetch_source.py cert-fr avis-recent 30: CERTFR-2026-AVI-1493 ''Multiples vulnérabilités dans Synology DSM'', 2026-11-10) and bsi-de (changes.csv
+    + bsi-csaf WID-SEC-2026-4430, ''hoch'') -> primary: Synology advisories https://www.synology.com/en-global/support/security/Synology_SA_26_19 and _26_18 (extract)'
+  summary: 'Synology''s advisory SA-26:19 of 2026-11-10 (severity Critical, no mitigation) fixes two DSM flaws reachable without credentials: CVE-2026-76954 (CVSS 9.8, CWE-89) is an SQL injection in the
+    Auth API that lets remote attackers read or write arbitrary files and cause denial of service, and CVE-2026-85101 (8.6, CWE-288) is an authentication bypass in the rsync service that lets remote attackers
+    read specific files, write arbitrary files and cause limited denial of service. Fixed releases: DSM 7.4.1-90080-1, 7.3.2-86009-5, 7.2.2-72806-10 and 7.2.1-69057-13 or later. The companion advisory SA-26:18
+    (Important) bundles authenticated flaws in the SSO authentication, Sharing API and Auth API (CVE-2026-13672, CVE-2026-18792, CVE-2026-74857 at 8.8 and an alternate-path authentication bypass CVE-2026-18596
+    at 8.1) fixed in DSM 7.4 and 7.3 only. Credits go to Viettel Cyber Security and a second researcher. No exploitation or public proof of concept is mentioned. The existing store entry on DSM unauthenticated
+    file read and write covers different CVEs (CVE-2026-13684 and CVE-2026-13639) from September.'
+  region_nexus: global; Synology NAS is used in communal administrations, schools and small offices in Switzerland
+  primary_sector_nexus: direct where Synology NAS holds administration data
+  sector: public-sector
+  cves:
+  - CVE-2026-76954
+  - CVE-2026-85101
+  - CVE-2026-13672
+  - CVE-2026-18792
+  - CVE-2026-74857
+  - CVE-2026-18596
+  techniques:
+  - T1190
+  affected_products:
+  - Synology DiskStation Manager (DSM)
+  entity_keys:
+  - product:synology-diskstation-manager-dsm
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: An improper neutralization of special elements used in an SQL command vulnerability in the Auth API in Synology DiskStation Manager (DSM) before 7.2.1-69057-13, 7.2.2-72806-10, 7.3.2-86009-5,
+      and 7.4.1-90080-1 allows remote attackers to read or write arbitrary files and conduct denial-of-service attacks.
+    attribution: Synology
+    source_url: https://www.synology.com/en-global/support/security/Synology_SA_26_19
+  - quote: An authentication bypass using an alternate path or channel vulnerability in the rsync in Synology DiskStation Manager (DSM)
+    attribution: Synology
+    source_url: https://www.synology.com/en-global/support/security/Synology_SA_26_19
+  extended_notes: 'Exposure: DSM 7.2.1, 7.2.2, 7.3 and 7.4 below the fixed releases with the management/Auth API reachable (and rsync enabled for CVE-2026-85101); DSM 6 is not named. Synology lists no mitigation,
+    so restricting DSM and rsync to trusted networks and updating are the levers; assessment (not in the advisory): a DSM interface reachable from the internet is the exposed population. Detection concept:
+    DSM web-server and Auth API access logs for SQL syntax or errors in authentication requests, unexpected rsync sessions from outside the backup partners, new files in shared folders or system paths after
+    such requests. Post-patch: an SQLi with file write on a NAS can plant persistence, so check scheduled tasks and unknown users on any device that was internet-reachable.'
+- title: 'Confluence Data Center CVE-2026-90436: remote code execution through the bundled Apache Axis 1 behind the Remote API (XML-RPC and SOAP) when that API is enabled; CVSS 9.3, fixed in 9.2.28, Confluence
+    10 not affected, no exploitation reported'
+  sources:
+  - url: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+    publisher: Atlassian (CVE-2026-90436)
+    date: '2026-11-10'
+    role: primary
+  - url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4427
+    publisher: BSI WID-SEC-2026-4427 (read from the CSAF record)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: bsi-de (python3 tools/fetch_source.py bsi-rss, then bsi-csaf WID-SEC-2026-4427 ''Atlassian Confluence: Schwachstelle ermöglicht Codeausführung'', hoch) and CERT-FR AVI-1492
+    -> primary: Atlassian advisory https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html (extract)'
+  summary: 'Atlassian''s advisory of 2026-11-09 22:00 PST says Confluence uses the third-party library Apache Axis in its XML-RPC and SOAP APIs and that Apache Axis published a critical vulnerability (CVE-2026-90436)
+    that allows remote code execution. A Confluence Data Center instance is vulnerable only if the ''Remote API (XML-RPC & SOAP)'' setting is enabled; the setting has been off by default for new installations
+    since Confluence 3.0 and the feature was removed in Confluence 10.0 (10.x is not impacted). Atlassian rates it 9.3 (CVSS 4.0, AV:N/AC:L/AT:N/PR:N/UI:N, high confidentiality, integrity and availability),
+    lists Confluence Data Center 1.x to 9.x as affected and 9.2.28 as the fixed version, and says Cloud sites are not affected. Mitigation if patching must wait: clear the ''Remote API (XML-RPC & SOAP)''
+    checkbox in General Configuration > Further Configuration (no restart); validate by requesting the soap-axis1 confluenceservice-v2 servlet path, which should answer HTTP 403. Atlassian says it cannot
+    confirm whether instances were affected and asks teams to check affected instances for compromise; no exploitation or public exploit code is reported. FIRST EPSS on 2026-11-10 is 0.0057.'
+  region_nexus: global; Confluence Data Center is widely used for internal wikis in administrations
+  primary_sector_nexus: direct where Confluence DC is deployed
+  sector: public-sector
+  cves:
+  - CVE-2026-90436
+  techniques:
+  - T1190
+  affected_products:
+  - Atlassian Confluence Data Center
+  entity_keys:
+  - product:atlassian-confluence-data-center
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  evidence:
+  - quote: Apache Axis has published a critical vulnerability (CVE-2026-90436) that allows remote code execution.
+    attribution: Atlassian
+    source_url: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+  - quote: Atlassian cannot confirm if your instances have been affected by this vulnerability.
+    attribution: Atlassian
+    source_url: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+  - quote: Confluence Data Center | 9.2.28
+    attribution: Atlassian
+    source_url: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+  extended_notes: 'Exposure check: in the admin UI, ''Remote API (XML-RPC & SOAP)'' enabled; or an HTTP request to the soap-axis1 confluenceservice-v2 servlet path that does not answer 403. Instances upgraded
+    from old versions or configured for third-party add-ons and scripts are the likely ones with the API still on. Detection concept: web access logs for requests to /plugins/servlet/soap-axis1/ and the
+    XML-RPC endpoint from unexpected sources, and Confluence JVM child processes. Inference, not stated by Atlassian: other software that bundles Apache Axis 1 may carry the same upstream flaw. BSI lists
+    a separate Apache Axis2 advisory (WID-SEC-2026-4415, ''mittel''), which is a different product.'
+- title: Roundcube Webmail 1.6.21 and 1.7.6 fix 17 security issues including Sieve script injection, IMAP command injection, mail header injection, SSRF filter bypasses and CSRF bypasses; the 1.6 branch
+    is four years old and close to end of life
+  sources:
+  - url: https://roundcube.net/news/2026/11/09/security-updates-1.6.21-and-1.7.6
+    publisher: Roundcube (security updates 1.6.21 and 1.7.6)
+    date: '2026-11-09'
+    role: primary
+  - url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1489/
+    publisher: CERT-FR (CERTFR-2026-AVI-1489)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: anssi-fr (python3 tools/fetch_source.py cert-fr avis-recent 30: CERTFR-2026-AVI-1489, 2026-11-10) -> https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1489/ -> primary:
+    https://roundcube.net/news/2026/11/09/security-updates-1.6.21-and-1.7.6 (extract)'
+  summary: 'Roundcube published security releases 1.6.21 (LTS) and 1.7.6 on 2026-11-09 with 17 fixes: an open redirect through IMAP error recovery on attachment fetch; trusted-host handling in the Received
+    header and in resolve_url(); managesieve destructive actions that could be triggered cross-site via GET; Sieve script injection through a rule operator and through set/include modifiers; mail header
+    injection via a message-disposition-notification subject; HTTP request injection through the spell-check ATD backend; IMAP command injection through CRLF in the _uid parameter when the messages cache
+    is enabled; an SSRF in the CSS proxy through an incomplete is_local_url() check (nip.io/sslip.io) and a second is_local_url() bypass using 6to4 addresses; CSRF validation bypasses for file-only POST
+    requests and for mail purge and expunge; a disabled_actions bypass; unsafe attachment content passed to ImageMagick; a CPU loop in session unserialisation; and stricter IMAP host validation. Most are
+    credited to one group of reporters. CERT-FR lists code execution, SSRF, CSRF, security-policy bypass and denial of service as risks for 1.6.x before 1.6.21 and 1.7.x before 1.7.6. The project ''strongly
+    recommends'' updating all production installations and warns that the four-year-old 1.6 branch is to be discontinued ''rather soon''. No exploitation is reported.'
+  region_nexus: global; Roundcube is the default webmail of many hosting providers and administration mail stacks, including self-hosted setups in Switzerland
+  primary_sector_nexus: direct where Roundcube is run
+  sector: public-sector
+  cves: []
+  techniques:
+  - T1190
+  affected_products:
+  - Roundcube Webmail
+  entity_keys:
+  - product:roundcube-webmail
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: We strongly recommend to update all productive installations of Roundcube 1.6.x and 1.7.x with this new versions.
+    attribution: Roundcube
+    source_url: https://roundcube.net/news/2026/11/09/security-updates-1.6.21-and-1.7.6
+  - quote: Fix Sieve script injection via a rule operator
+    attribution: Roundcube
+    source_url: https://roundcube.net/news/2026/11/09/security-updates-1.6.21-and-1.7.6
+  - quote: 'WARNING: The 1.6 branch is four years old.'
+    attribution: Roundcube
+    source_url: https://roundcube.net/news/2026/11/09/security-updates-1.6.21-and-1.7.6
+  extended_notes: 'Why borderline: no CVE ids in the sources, no severity ratings, no exploitation; included because webmail is a recurring post-patch exploitation target and a 1.6 end-of-life is announced.
+    Detection concept: managesieve and settings requests that create or change Sieve rules, IMAP errors tied to CRLF in uid parameters, ImageMagick child processes of the PHP worker.'
+  borderline: true
+  borderline_reason: 17 fixes but no CVE ids, scores or exploitation evidence; relevance rests on Roundcube's footprint and the 1.6 end-of-life warning
+- title: CISA lists Cisco BroadWorks CVE-2026-20320, an unauthenticated XML external entity flaw in the OCI-P service that reads configuration files, as exploited; Cisco's fix RI.2026.07 dates from 2026-08-19
+  sources:
+  - url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+    publisher: CISA (KEV alert of 2026-11-10)
+    date: '2026-11-10'
+    role: primary
+  - url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-bworks-xxe-uwUd7CEt
+    publisher: Cisco PSIRT (cisco-sa-bworks-xxe, version 1.0 of 2026-08-19)
+    date: '2026-08-19'
+    role: primary
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-62586
+    publisher: ENISA EUVD (EUVD-2026-62586, exploited list since 2026-11-10)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; CVE-2026-20320 added 2026-11-10) -> primary: Cisco advisory https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-bworks-xxe-uwUd7CEt
+    (extract; its revision history still shows only version 1.0) -> ENISA EUVD exploitedvulnerabilities (python3 tools/fetch_source.py url --direct https://euvdservices.enisa.europa.eu/api/exploitedvulnerabilities)'
+  summary: 'CISA added CVE-2026-20320 to KEV on 2026-11-10 (due 2026-11-24, ransomware use unknown, no forensic-triage flag); ENISA''s EUVD marks it exploited since the same day. Cisco''s advisory, published
+    2026-08-19 as version 1.0 and not revised since, describes an out-of-band blind XXE in the Open Client Interface (OCI) XML parser of Cisco BroadWorks (Application Delivery Platform, Application Server,
+    Profile Server and Xtended Services Platform) where external entity resolution is allowed by default: an unauthenticated remote attacker sends a crafted XML message to the OCI-P provisioning service
+    and reads files the BroadWorks user can read, i.e. configuration data (CVSS 3.1 7.5, confidentiality only). Fixed release RI.2026.07 and later; there is no workaround; Cisco''s text still says its PSIRT
+    is not aware of malicious use, which the KEV listing now overtakes. FIRST EPSS on 2026-11-10: 0.0039. No source names the actor, victims or campaign; CISA gives no detail beyond the listing.'
+  region_nexus: global; BroadWorks is carrier and hosted-telephony software run by telecom operators and UC service providers rather than by public bodies directly
+  primary_sector_nexus: indirect (telephony supplier)
+  sector: telco
+  cves:
+  - CVE-2026-20320
+  techniques:
+  - T1190
+  - T1005
+  affected_products:
+  - Cisco BroadWorks
+  entity_keys: []
+  new_entities:
+  - key: product:cisco-broadworks
+    type: product
+    name: Cisco BroadWorks
+    aliases:
+    - BroadWorks
+    summary: Cisco's carrier-grade hosted telephony and unified-communications platform; CVE-2026-20320 (OCI-P XXE) entered CISA KEV on 2026-11-10 (CISA, Cisco).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  verification_note: CISA (carve-out authority) for exploitation; Cisco first-hand for the flaw; no independent exploitation reporting found.
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: Cisco BroadWorks Improper Restriction of XML External Entity Reference Vulnerability
+    attribution: CISA
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+  - quote: The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory.
+    attribution: Cisco PSIRT
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-bworks-xxe-uwUd7CEt
+  - quote: Earlier than RI.2026.07
+    attribution: Cisco PSIRT
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-bworks-xxe-uwUd7CEt
+  extended_notes: 'Why borderline: exploited per KEV but the product is run by telecom and UC providers; a Swiss public body is exposed mainly through a hosted-telephony supplier. Exposure: BroadWorks releases
+    earlier than RI.2026.07 whose OCI-P service is reachable; ask the telephony provider for the release and whether OCI-P is exposed beyond provisioning systems. Detection concept: OCI-P XML requests containing
+    DOCTYPE or ENTITY declarations with SYSTEM identifiers, and outbound connections from the BroadWorks server triggered by them (out-of-band XXE).'
+  borderline: true
+  borderline_reason: KEV-listed exploitation but a carrier/UC-supplier product with no stated Swiss public-sector footprint; supplier question rather than a patch-now for administrations
+- title: 'AXIS Camera Station 5 and Pro: Axis fixes CVE-2026-13312 (CVSS 9.9, low privileges needed), a flaw ''that could allow an attacker to compromise a system'', in 5.59 SR2 and 6.17; no details, no
+    known exploitation'
+  sources:
+  - url: https://www.axis.com/dam/public/e4/2d/85/cve-2026-13312pdf-en-US-561251.pdf
+    publisher: Axis Communications (security advisory CVE-2026-13312 v1.0)
+    date: '2026-11-10'
+    role: primary
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120808
+    publisher: ENISA EUVD (EUVD-2026-120808)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: enisa-euvd search page 2 (python3 tools/fetch_source.py url ''https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-09&toDate=2026-11-11&size=100&page=1'':
+    EUVD-2026-120808, assigner Axis, 9.9) -> primary: Axis advisory PDF (python3 tools/fetch_source.py pdf https://www.axis.com/dam/public/e4/2d/85/cve-2026-13312pdf-en-US-561251.pdf)'
+  summary: Axis' advisory v1.0 of 2026-11-10 (found through the Axis bug-bounty programme for AXIS Camera Station Pro) covers AXIS Camera Station Pro below 6.17 and AXIS Camera Station 5 below 5.59 SR 2,
+    scores the flaw 9.9 Critical (CVSS 3.1 AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H, CWE-1287 improper validation of specified type of input) and says Axis will not provide more detail; to Axis' knowledge no
+    exploits exist publicly and it is not aware of exploitation. Axis recommends updating to Camera Station Pro 6.17 or Camera Station 5.59 SR 2.
+  region_nexus: global; AXIS Camera Station is a common video-management system for police, municipal CCTV and critical-infrastructure sites
+  primary_sector_nexus: direct for police and municipal video surveillance operators using Axis VMS
+  sector: public-sector
+  cves:
+  - CVE-2026-13312
+  techniques:
+  - T1190
+  affected_products:
+  - AXIS Camera Station Pro
+  - AXIS Camera Station 5
+  entity_keys: []
+  new_entities:
+  - key: product:axis-camera-station
+    type: product
+    name: AXIS Camera Station
+    aliases:
+    - AXIS Camera Station Pro
+    - AXIS Camera Station 5
+    summary: Axis Communications' video-management software for Axis camera estates; CVE-2026-13312 (9.9) fixed in 5.59 SR2 and 6.17 on 2026-11-10 (Axis).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  verification_note: Axis is first-hand for its product; EUVD mirrors the record. No technical detail published.
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: A vulnerability that could allow an attacker to compromise a system.
+    attribution: Axis Communications (CNA record via ENISA EUVD)
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120808
+  extended_notes: 'Why borderline: critical score but PR:L, no technical detail, no exploitation; relevant to police and municipal CCTV operators. Exposure: Camera Station servers reachable by any account
+    that can sign in (operator or integrated accounts); patch both product lines. Detection: none supplied; watch Camera Station server logs for unexpected service restarts or new administrative users.'
+  borderline: true
+  borderline_reason: 9.9 but low-privilege prerequisite, no detail, no exploitation; footprint among police/municipal CCTV operators plausible but not established
+- title: Red Hat ships Ruby fixes for the regular-expression compiler overflows behind GitLab's CVE-2026-97229 and CVE-2026-110264 (RHEL 10 ruby4.0, 2026-11-09) and a Metasploit exploit module for the GitLab
+    CI-lint path has been merged
+  sources:
+  - url: https://access.redhat.com/errata/RHSA-2026:96233
+    publisher: Red Hat (RHSA-2026:96233, ruby4.0 for RHEL 10)
+    date: '2026-11-09'
+    role: primary
+  - url: https://github.com/rapid7/metasploit-framework/pull/22017
+    publisher: Metasploit Framework (pull request 22017, merged)
+    date: '2026-10-14'
+    role: corroborating
+  - url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4416
+    publisher: BSI WID-SEC-2026-4416 (read from the CSAF record; rated 'kritisch')
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: 'first seen at: bsi-de (python3 tools/fetch_source.py bsi-csaf WID-SEC-2026-4416 ''Ruby: Mehrere Schwachstellen ermöglichen Codeausführung'', kritisch, 2026-11-10) -> references RHSA-2026:96233
+    and Metasploit pull request 22017 -> https://access.redhat.com/errata/RHSA-2026:96233 (extract) and https://github.com/rapid7/metasploit-framework/pull/22017'
+  summary: 'BSI rates a Ruby advisory ''kritisch'' for CVE-2026-97229, CVE-2026-110264 and CVE-2026-93577; the Red Hat errata RHSA-2026:96233 of 2026-11-09 (ruby4.0 for RHEL 10, Red Hat''s own severity
+    Moderate) lists the three Ruby fixes: ''integer overflow issue in regular expression compiler (CVE-2026-93577)'', ''integer overflow issue in CI/CD regular expression compiler (CVE-2026-97229)'' and
+    ''integer overflow issue in regular expression compiler (CVE-2026-110264)''. For the GitLab entry this means distribution Ruby packages are now being fixed (the entry says a self-managed GitLab on its
+    own Ruby needs Ruby 3.3.13, 3.4.12 or 4.0.9), and that an exploit module for CVE-2026-97229 through GitLab''s CI-lint API was merged into Metasploit Framework (pull request 22017, opened 2026-10-14),
+    which lowers the bar for exploitation of unpatched instances. The Metasploit module date is outside the window; the Red Hat errata is the in-window development.'
+  region_nexus: global; self-managed GitLab is common in Swiss federal and cantonal development teams
+  primary_sector_nexus: direct where GitLab self-managed or Ruby applications compile untrusted regular expressions
+  sector: technology
+  cves:
+  - CVE-2026-97229
+  - CVE-2026-110264
+  - CVE-2026-93577
+  techniques:
+  - T1190
+  affected_products:
+  - Ruby
+  - GitLab CE/EE
+  - Red Hat Enterprise Linux
+  entity_keys:
+  - product:ruby
+  - product:gitlab
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: update-of:2026-10-13/cve-2026-97229-gitlab-ci-regex-compiler-unauthenticated-rce
+  lookback: false
+  evidence:
+  - quote: 'ruby: integer overflow issue in CI/CD regular expression compiler (CVE-2026-97229)'
+    attribution: Red Hat
+    source_url: https://access.redhat.com/errata/RHSA-2026:96233
+  - quote: Add Exploit Module for GitLab RCE via CI Lint [CVE-2026-97229]
+    attribution: Metasploit Framework
+    source_url: https://github.com/rapid7/metasploit-framework/pull/22017
+  extended_notes: 'Why borderline: the entry is already complete on the GitLab path; the added value is distribution Ruby packages (RHEL 10 ruby4.0 fixes) and a public exploit module. Only RHEL 10''s ruby4.0
+    was read; other RHEL streams, Debian, Ubuntu were not checked.'
+  borderline: true
+  borderline_reason: incremental distribution-package and exploit-tooling signal on an entry that is already complete and KEV-listed
+cve_table:
+- cve: CVE-2026-125350
+  product: Google Chrome (Chromium XML component)
+  cvss: 8.8 (EUVD CVSS 3.1; Google rates High)
+  epss: null
+  kev: true
+  exploited: true
+  affected: Chrome before 157.0.8103.50; Chromium-based browsers until each vendor ships the Chromium 157 fix
+  fixed: 157.0.8103.50/.51 (Windows, macOS), 157.0.8103.50 (Linux)
+  type: memory-corruption
+  vector: user-interaction
+  auth: pre-auth
+  source: https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_018223192.html
+- cve: CVE-2026-124194
+  product: Microsoft Outlook (Microsoft 365 Apps, Office LTSC 2024/2021)
+  cvss: 6.5 (temporal 6.2, E:H)
+  epss: null
+  kev: true
+  exploited: true
+  affected: Microsoft 365 Apps for Enterprise (32/64 bit), Office LTSC 2024, Office LTSC 2021
+  fixed: Office LTSC 2024 16.0.17932.21140; Office LTSC 2021 16.0.14334.21048; Microsoft 365 Apps via the Office security-update release notes
+  type: info-disclosure
+  vector: user-interaction
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-124194
+- cve: CVE-2026-85844
+  product: Windows Kerberos (domain controller)
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Windows Server 2012, 2012 R2, 2016, 2019, 2022, 2025; Windows 10 and 11 clients
+  fixed: KB5131291 (Server 2016, Windows 10 1607), KB5131085 (Server 2019), KB5131090 (Server 2022), KB5131080/KB5131077 (Server 2025), KB5131087 (Windows 11 23H2), KB5132061/KB5132043 (Windows 11 24H2/25H2/26H2),
+    KB5132059 (26H1), KB5131096 (Windows 10 22H2); KB5126836 (Server 2012 R2), KB5126835 (Server 2012)
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-85844
+- cve: CVE-2026-88218
+  product: Windows DNS
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Windows Server 2016, 2019, 2022, 2025; Windows 10 and 11
+  fixed: KB5131291 (Server 2016, Windows 10 1607), KB5131085 (Server 2019), KB5131090 (Server 2022), KB5131080/KB5131077 (Server 2025), KB5131087 (Windows 11 23H2), KB5132061/KB5132043 (Windows 11 24H2/25H2/26H2),
+    KB5132059 (26H1), KB5131096 (Windows 10 22H2)
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-88218
+- cve: CVE-2026-88243
+  product: Windows DHCP Server
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Windows Server 2016, 2019, 2022, 2025
+  fixed: KB5131291, KB5131085, KB5131090, KB5131080/KB5131077
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-88243
+- cve: CVE-2026-88234
+  product: Windows iSCSI
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Windows Server 2016, 2019, 2022, 2025
+  fixed: KB5131291, KB5131085, KB5131090, KB5131080/KB5131077
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-88234
+- cve: CVE-2026-119958
+  product: Windows LDAP
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Windows Server 2016, 2019, 2022, 2025; Windows 10 22H2 and Windows 11
+  fixed: KB5131291 (Server 2016, Windows 10 1607), KB5131085 (Server 2019), KB5131090 (Server 2022), KB5131080/KB5131077 (Server 2025), KB5131087 (Windows 11 23H2), KB5132061/KB5132043 (Windows 11 24H2/25H2/26H2),
+    KB5132059 (26H1), KB5131096 (Windows 10 22H2)
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-119958
+- cve: CVE-2026-116928
+  product: Windows Search Component / Microsoft Exchange Server
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: 'Windows Server 2016, 2019, 2022, 2025 and Windows 10/11 (MSRC FAQ: reached through Exchange attachment indexing)'
+  fixed: KB5131291 (Server 2016, Windows 10 1607), KB5131085 (Server 2019), KB5131090 (Server 2022), KB5131080/KB5131077 (Server 2025), KB5131087 (Windows 11 23H2), KB5132061/KB5132043 (Windows 11 24H2/25H2/26H2),
+    KB5132059 (26H1), KB5131096 (Windows 10 22H2)
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-116928
+- cve: CVE-2026-116945
+  product: Microsoft SQL Server (integration package)
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: SQL Server 2017, 2019, 2022, 2025 (GDR and CU branches)
+  fixed: KB5129299 (2025 CU10), KB5129300 (2022 CU27), KB5132745 (2019 CU32), KB5132746 (2017 CU31), KB5132747 (2022 GDR), KB5132748 (2025 GDR), KB5132749 (2017 GDR), KB5132751 (2019 GDR)
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-116945
+- cve: CVE-2026-120002
+  product: Microsoft SharePoint Server Subscription Edition
+  cvss: '9.9'
+  epss: null
+  kev: false
+  exploited: false
+  affected: SharePoint Server Subscription Edition (authenticated, site read access plus Secure Store target application membership)
+  fixed: KB5002945
+  type: priv-esc
+  vector: zero-click
+  auth: post-auth
+  source: https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-120002
+- cve: CVE-2026-116606
+  product: Barracuda Email Security Gateway
+  cvss: '9.3'
+  epss: 0.01602
+  kev: true
+  exploited: true
+  affected: 'ESG before 9.4.0.030 per the CVE record (Barracuda: all versions before the fix)'
+  fixed: firmware 9.4.0.029 or later per Barracuda Campus; patches BNSF-40425 (9.4.017+), BNSF-40430 (earlier)
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+- cve: CVE-2026-111560
+  product: Barracuda ESG, Load Balancer ADC, Message Archiver, WAF Control Center, WAF, Web Security Gateway
+  cvss: '8.6'
+  epss: 0.0106
+  kev: true
+  exploited: true
+  affected: ESG up to 9.4.0.27, Load Balancer ADC up to 6.4.0, WAF up to 11.0.1, WSG up to 16.1.100.100, Message Archiver up to 5.5.4.0, WAF Control Center up to 2.2.1
+  fixed: BNSF-40425/40430 (ESG), BNADC-16586 (ADC and WAF), BNMA-32468, BNWF-60060, BNYF-24789
+  type: rce
+  vector: zero-click
+  auth: admin-required
+  source: https://www.cisa.gov/news-events/alerts/2026/11/10/cisa-adds-six-known-exploited-vulnerabilities-catalog
+- cve: CVE-2026-126147
+  product: Fortinet FortiMail
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, all 7.2
+  fixed: '8.0.2, 7.6.7, 7.4.9 (7.2: migrate)'
+  type: path-traversal
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-199
+- cve: CVE-2026-126148
+  product: Fortinet FortiMail (HA join)
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6 (7.4 and 7.2 not affected)
+  fixed: 8.0.2, 7.6.7
+  type: rce
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-200
+- cve: CVE-2026-126164
+  product: Fortinet FortiMail
+  cvss: '9.4'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, all 7.2
+  fixed: '8.0.2, 7.6.7, 7.4.9 (7.2: migrate)'
+  type: sqli
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-216
+- cve: CVE-2026-126156
+  product: Fortinet FortiMail (IBE)
+  cvss: '9.1'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, all 7.2
+  fixed: '8.0.2, 7.6.7, 7.4.9 (7.2: migrate)'
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-208
+- cve: CVE-2026-126155
+  product: Fortinet FortiMail (IBE webmail)
+  cvss: '9.1'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiMail 8.0.0-8.0.1, 7.6.0-7.6.6, 7.4.0-7.4.8, all 7.2
+  fixed: '8.0.2, 7.6.7, 7.4.9 (7.2: migrate)'
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-207
+- cve: CVE-2026-126257
+  product: Fortinet FortiAuthenticator
+  cvss: '9.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiAuthenticator 8.0.0-8.0.3, 6.6.0-6.6.10
+  fixed: 8.0.4, 6.6.11
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-271
+- cve: CVE-2026-126251
+  product: Fortinet FortiAuthenticator
+  cvss: '9.1'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiAuthenticator 8.0.0-8.0.3, 6.6.0-6.6.10
+  fixed: 8.0.4, 6.6.11
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-265
+- cve: CVE-2026-126253
+  product: Fortinet FortiOS and FortiSASE (OSPF daemon)
+  cvss: '9.3'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiOS 8.0.0-8.0.1, 7.6.0-7.6.7, 7.4.0-7.4.12, 7.2.0-7.2.13; FortiSASE 26.2 and earlier branches
+  fixed: FortiOS 8.0.2, 7.6.8, 7.4.13, 7.2.14; FortiSASE 26.3.2 (remediated by Fortinet)
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-267
+- cve: CVE-2026-126261
+  product: Fortinet FortiManager (FGFM)
+  cvss: '9.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiManager 8.0.0, 7.6.0-7.6.7, 7.4.0-7.4.5, 7.2.0-7.2.8
+  fixed: 8.0.1, 7.6.8, 7.4.6, 7.2.9
+  type: rce
+  vector: zero-click
+  auth: pre-auth
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-275
+- cve: CVE-2026-126229
+  product: Fortinet FortiManager / FortiAnalyzer (dmserver)
+  cvss: '9.1'
+  epss: null
+  kev: false
+  exploited: false
+  affected: FortiManager and FortiAnalyzer 8.0.0-8.0.1, 7.6.0-7.6.7, 7.4.0-7.4.11, 7.2 (all)
+  fixed: '8.0.2, 7.6.8, 7.4.12 (7.2: migrate)'
+  type: priv-esc
+  vector: zero-click
+  auth: admin-required
+  source: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+- cve: CVE-2026-76964
+  product: SAP NetWeaver AS ABAP (ICM) - ICM2SHELL
+  cvss: '10.0'
+  epss: 0.00431
+  kev: false
+  exploited: false
+  affected: SAP kernel 7.53, 7.54, 7.77, 7.93, 9.16, 9.18, 9.20 (ABAP systems on kernel 7.40+; unmaintained kernels 7.40-7.89 also affected)
+  fixed: SAP note 3778530; kernel 7.53 PL 1616/1617, 7.54 PL 710, 7.77 PL 914, 7.93 PL 401/420, 9.16 PL 111, 9.18 PL 37, 9.20 PL 11/13
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://onapsis.com/blog/icm2shell-cve-2026-76964-cve-2026-89126-sap-netweaver-web-dispatcher-threat-advisory/
+- cve: CVE-2026-89126
+  product: SAP Web Dispatcher - ICM2SHELL
+  cvss: '10.0'
+  epss: 0.00431
+  kev: false
+  exploited: false
+  affected: SAP Web Dispatcher incl. HANA XS; WEBDISP 7.53-9.16, KERNEL 7.53-9.20
+  fixed: SAP note 3778556 (same kernel levels as above; HANA 2.00.079.11 / 2.00.089.05; XS Advanced SP05 patch 4)
+  type: memory-corruption
+  vector: zero-click
+  auth: pre-auth
+  source: https://onapsis.com/blog/icm2shell-cve-2026-76964-cve-2026-89126-sap-netweaver-web-dispatcher-threat-advisory/
+- cve: CVE-2026-89103
+  product: SAP Gateway - PROXYGATE
+  cvss: '10.0'
+  epss: 0.00324
+  kev: false
+  exploited: false
+  affected: SAP kernel 7.22, 7.53, 7.54, 7.77, 7.93, 8.04, 9.16, 9.20, 9.21 (unmaintained 7.20-7.89 also affected)
+  fixed: 'SAP note 3798345: 7.22 EXT PL 1612, 7.53 PL 1625, 7.54 PL 718, 7.77 PL 915, 8.04 PL 244, 9.20 PL 16, 9.21 PL 4, plus gw/acl_mode_proxy = 1 or a restrictive prxyinfo'
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://onapsis.com/blog/proxygate-cve-2026-89103-sap-netweaver-gateway-threat-advisory/
+- cve: CVE-2026-120017
+  product: SAP NetWeaver AS ABAP SAML2 Service Provider
+  cvss: '10.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: SAP_BASIS 702, 731, 740, 750-758, 816, 920-922 under certain configurations
+  fixed: SAP note 3849308
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+- cve: CVE-2026-109803
+  product: SAP NetWeaver Knowledge Management (XML Forms)
+  cvss: '9.9'
+  epss: null
+  kev: false
+  exploited: false
+  affected: KMC-CM 7.50
+  fixed: SAP note 3809153
+  type: rce
+  vector: zero-click
+  auth: post-auth
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+- cve: CVE-2026-76965
+  product: SAP ABAP application server
+  cvss: '9.9'
+  epss: null
+  kev: false
+  exploited: false
+  affected: KERNEL 7.22-9.16
+  fixed: SAP note 3792735
+  type: rce
+  vector: zero-click
+  auth: post-auth
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+- cve: CVE-2026-109795
+  product: SAP S4CRM
+  cvss: '9.9'
+  epss: null
+  kev: false
+  exploited: false
+  affected: S4CRM 204-206, S4CEXT 107-109, BBPCRM 713-714
+  fixed: SAP note 3834842
+  type: rce
+  vector: zero-click
+  auth: post-auth
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+- cve: CVE-2026-89119
+  product: SAP Web Dispatcher and ICM
+  cvss: '9.6'
+  epss: null
+  kev: false
+  exploited: false
+  affected: WEBDISP 7.93, 9.16; KERNEL 7.93, 9.16, 9.20, 9.21
+  fixed: SAP note 3804858
+  type: logic-flaw
+  vector: user-interaction
+  auth: pre-auth
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+- cve: CVE-2026-109798
+  product: SAP BusinessObjects Web Intelligence
+  cvss: '9.1'
+  epss: null
+  kev: false
+  exploited: false
+  affected: ENTERPRISE 430, 2025, 2027
+  fixed: SAP note 3799117
+  type: info-disclosure
+  vector: zero-click
+  auth: post-auth
+  source: https://support.sap.com/en/my-support/knowledge-base/security-notes-news/november-2026.html
+- cve: CVE-2026-125883
+  product: N-able N-central (XXE)
+  cvss: '9.3'
+  epss: null
+  kev: false
+  exploited: false
+  affected: N-central before 2026.4.1 (CNA text says before 26.4.1)
+  fixed: 2026.4 HF2, build 2026.4.1.26
+  type: info-disclosure
+  vector: zero-click
+  auth: pre-auth
+  source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122942
+- cve: CVE-2026-125881
+  product: N-able N-central (SSRF)
+  cvss: '9.3'
+  epss: null
+  kev: false
+  exploited: false
+  affected: N-central before 2026.4.1
+  fixed: 2026.4 HF2, build 2026.4.1.26
+  type: ssrf
+  vector: zero-click
+  auth: pre-auth
+  source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122961
+- cve: CVE-2026-125878
+  product: N-able N-central (OGNL injection)
+  cvss: '8.7'
+  epss: null
+  kev: false
+  exploited: false
+  affected: N-central before 2026.4.1
+  fixed: 2026.4 HF2, build 2026.4.1.26
+  type: rce
+  vector: zero-click
+  auth: post-auth
+  source: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/
+- cve: CVE-2026-125882
+  product: N-able N-central (file upload path traversal)
+  cvss: '8.6'
+  epss: null
+  kev: false
+  exploited: false
+  affected: N-central before 2026.4.1
+  fixed: 2026.4 HF2, build 2026.4.1.26
+  type: path-traversal
+  vector: zero-click
+  auth: post-auth
+  source: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/
+- cve: CVE-2026-121356
+  product: Adobe Connect (SSRF)
+  cvss: '10.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Adobe Connect 12.12 and earlier (Windows)
+  fixed: 12.12.a, 12.11.i, 12.10.f, 12.9.a, 12.8.a
+  type: ssrf
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.adobe.com/trust/security/products/connect/apsb26-191
+- cve: CVE-2026-121351
+  product: Adobe Connect (path traversal)
+  cvss: '10.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Adobe Connect 12.12 and earlier (Windows)
+  fixed: 12.12.a, 12.11.i, 12.10.f, 12.9.a, 12.8.a
+  type: path-traversal
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.adobe.com/trust/security/products/connect/apsb26-191
+- cve: CVE-2026-121889
+  product: Adobe Connect (SSRF)
+  cvss: '10.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Adobe Connect 12.12 and earlier (Windows)
+  fixed: 12.12.a, 12.11.i, 12.10.f, 12.9.a, 12.8.a
+  type: ssrf
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.adobe.com/trust/security/products/connect/apsb26-191
+- cve: CVE-2026-121352
+  product: Adobe Connect (incorrect authorization)
+  cvss: '10.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Adobe Connect 12.12 and earlier (Windows)
+  fixed: 12.12.a, 12.11.i, 12.10.f, 12.9.a, 12.8.a
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.adobe.com/trust/security/products/connect/apsb26-191
+- cve: CVE-2026-121353
+  product: Adobe Connect (CRLF injection)
+  cvss: '10.0'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Adobe Connect 12.12 and earlier (Windows)
+  fixed: 12.12.a, 12.11.i, 12.10.f, 12.9.a, 12.8.a
+  type: logic-flaw
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.adobe.com/trust/security/products/connect/apsb26-191
+- cve: CVE-2026-121902
+  product: Adobe Connect (SQL injection)
+  cvss: '9.4'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Adobe Connect 12.12 and earlier (Windows)
+  fixed: 12.12.a, 12.11.i, 12.10.f, 12.9.a, 12.8.a
+  type: sqli
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.adobe.com/trust/security/products/connect/apsb26-191
+- cve: CVE-2026-114371
+  product: Adobe Experience Manager (authorization flaw)
+  cvss: '9.9'
+  epss: null
+  kev: false
+  exploited: false
+  affected: AEM Cloud Service 2026.10.29023 and earlier; AEM 6.5 SP25 and earlier; AEM 6.5 LTS SP3 and earlier
+  fixed: AEM Cloud Service 2026.10.29251; GRANITE-75052 cumulative hotfix for 6.5 SP23-25 and 6.5 LTS SP1-3
+  type: rce
+  vector: zero-click
+  auth: post-auth
+  source: https://www.adobe.com/trust/security/products/experience-manager/apsb26-189
+- cve: CVE-2026-121653
+  product: Ivanti Endpoint Manager (Core)
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Ivanti Endpoint Manager before 2024 SU8
+  fixed: 2024 SU8
+  type: sqli
+  vector: zero-click
+  auth: pre-auth
+  source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121248
+- cve: CVE-2026-121683
+  product: Ivanti Cloud Services Application
+  cvss: '9.4'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Ivanti CSA version 5.0.8 (record wording)
+  fixed: not stated in the CNA record
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121155
+- cve: CVE-2026-76954
+  product: Synology DSM (Auth API)
+  cvss: '9.8'
+  epss: null
+  kev: false
+  exploited: false
+  affected: DSM before 7.2.1-69057-13, 7.2.2-72806-10, 7.3.2-86009-5, 7.4.1-90080-1
+  fixed: 7.4.1-90080-1, 7.3.2-86009-5, 7.2.2-72806-10, 7.2.1-69057-13
+  type: sqli
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.synology.com/en-global/support/security/Synology_SA_26_19
+- cve: CVE-2026-85101
+  product: Synology DSM (rsync)
+  cvss: '8.6'
+  epss: null
+  kev: false
+  exploited: false
+  affected: DSM before 7.2.1-69057-13, 7.2.2-72806-10, 7.3.2-86009-5, 7.4.1-90080-1
+  fixed: same fixed builds as above
+  type: auth-bypass
+  vector: zero-click
+  auth: pre-auth
+  source: https://www.synology.com/en-global/support/security/Synology_SA_26_19
+- cve: CVE-2026-90436
+  product: Atlassian Confluence Data Center (Apache Axis, Remote API)
+  cvss: 9.3 (CVSS 4.0)
+  epss: 0.00567
+  kev: false
+  exploited: false
+  affected: Confluence Data Center 1.x-9.x with 'Remote API (XML-RPC & SOAP)' enabled; 10.x not affected
+  fixed: 9.2.28
+  type: rce
+  vector: zero-click
+  auth: pre-auth
+  source: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+- cve: CVE-2026-20320
+  product: Cisco BroadWorks (OCI-P XML parser)
+  cvss: '7.5'
+  epss: 0.00385
+  kev: true
+  exploited: true
+  affected: BroadWorks Application Delivery Platform, Application Server, Profile Server, Xtended Services Platform earlier than RI.2026.07
+  fixed: RI.2026.07
+  type: info-disclosure
+  vector: zero-click
+  auth: pre-auth
+  source: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-bworks-xxe-uwUd7CEt
+- cve: CVE-2026-111793
+  product: Openwave Messaging Webtop Media Transcoder
+  cvss: 4.3 (vendor; JVN rates the vulnerability Critical)
+  epss: 0.00274
+  kev: true
+  exploited: true
+  affected: Webtop Media Transcoder before 1.1.22.0
+  fixed: 1.1.22.0 (released 2021-12-06) or the latest Media Server 2.0 release
+  type: logic-flaw
+  vector: zero-click
+  auth: post-auth
+  source: https://jvn.jp/en/vu/JVNVU93403064/
+- cve: CVE-2026-13312
+  product: AXIS Camera Station Pro / AXIS Camera Station 5
+  cvss: '9.9'
+  epss: null
+  kev: false
+  exploited: false
+  affected: Camera Station Pro below 6.17; Camera Station 5 below 5.59 SR2
+  fixed: 6.17; 5.59 SR2
+  type: logic-flaw
+  vector: zero-click
+  auth: post-auth
+  source: https://www.axis.com/dam/public/e4/2d/85/cve-2026-13312pdf-en-US-561251.pdf
+kev_dispositions:
+- cve: CVE-2026-125350
+  disposition: 'new entry (item: Chrome 157 zero-day)'
+  reason: KEV 2026-11-10, Google confirms exploit in the wild, default browser of the constituency
+- cve: CVE-2026-124194
+  disposition: 'new entry (item: Outlook zero-day)'
+  reason: 'KEV 2026-11-10, Microsoft Exploited: Yes, Outlook is the standard client'
+- cve: CVE-2026-111560
+  disposition: 'update record on 2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce (item: Barracuda KEV)'
+  reason: 'COVERED-STALE: the entry''s cves[] record for CVE-2026-111560 still lacks exploited; CISA listing is the evidence, due 2026-11-13, forensicTriage Yes'
+- cve: CVE-2026-116606
+  disposition: covered (same entry; listing evidence returned in the Barracuda update item)
+  reason: already status exploited in the entry
+- cve: CVE-2026-20320
+  disposition: borderline item (Cisco BroadWorks) - main agent chooses a short entry or a borderline-drop
+  reason: KEV-exploited, unauthenticated, but a carrier/UC-supplier product with no stated Swiss public-sector footprint; Cisco advisory unchanged since 2026-08-19
+- cve: CVE-2026-111793
+  disposition: borderline-drop
+  reason: 'Openwave Webtop Media Transcoder: niche telecom webmail component, authenticated, vendor CVSS 4.3, advisory from Japan''s JVN and the vendor''s GitHub; the developer states attacks were observed
+    but no source gives a Swiss or European public-sector footprint'
+- cve: ransomware flags
+  disposition: none
+  reason: all six KEV rows of 2026-11-10 carry knownRansomwareCampaignUse 'Unknown'; GPUStack, OpenSSH, FreeSWITCH and IBM Aspera Faspex (2026-11-09) also 'Unknown'; the tool's RANSOMWARE rows were empty
+patch_tuesday_dispositions:
+- cve: CVE-2026-124194
+  disposition: new entry
+  reason: the only Microsoft-flagged exploited CVE in the 1,383 records; none publicly disclosed
+- cve: CVE-2026-85844, CVE-2026-88218, CVE-2026-88243, CVE-2026-88234, CVE-2026-119958, CVE-2026-116928, CVE-2026-116945
+  disposition: one new entry (pre-auth infrastructure rows)
+  reason: CVSS 9.8, no credentials, E:U
+- cve: CVE-2026-120002
+  disposition: inside the same entry
+  reason: 9.9 but authenticated with Secure Store membership
+- cve: CVE-2026-80095, CVE-2026-109454
+  disposition: drop
+  reason: SharePoint XSS-class rows, authenticated, UI required
+- cve: CVE-2026-109467
+  disposition: drop
+  reason: Azure DevOps Server RCE 9.9 needs an authenticated account (PR:L)
+- cve: CVE-2026-114146
+  disposition: drop
+  reason: ASP.NET Core 9.0, PR:L, UI:R
+- cve: CVE-2026-120779
+  disposition: drop
+  reason: Visual Studio Code RCE 9.6 needs user interaction (UI:R), developer tool
+- cve: CVE-2026-118740
+  disposition: drop
+  reason: Aspire dashboard security feature bypass, developer tooling
+- cve: CVE-2026-95962
+  disposition: drop
+  reason: Windows VFP 9.0 but attack complexity high
+- cve: CVE-2026-96157, CVE-2026-96067, CVE-2026-96078, CVE-2026-95901, CVE-2026-95882
+  disposition: drop
+  reason: Media Foundation, Color Management and DirectMusic parsers; MSRC phrases them as in-network or application-processed input, not a service listener
+- cve: CVE-2026-112967, CVE-2026-66801
+  disposition: drop
+  reason: Xbox Live Networking Service and Xbox GDK, consumer gaming components
+- cve: CVE-2026-109469, CVE-2026-119990, CVE-2026-114160, CVE-2026-114162
+  disposition: drop
+  reason: cloud-service records (Entra Device Registration 10.0, Azure OpenAI, Azure Managed Grafana, Microsoft Graph) with no customer action in the SUG record
+- cve: Edge (Chromium) CVE-2026-121xxx rows at 9.6
+  disposition: drop (covered by browser patching)
+  reason: 166 Edge Chromium records tagged to the release carry no Microsoft exploited flag; CVE-2026-125350 is not yet in the SUG
+revised_advisory_checks:
+- item: N-able N-central
+  result: 'revised in window: HF2 release notes and CVE ids published 2026-11-10 -> update item'
+- item: Barracuda ESG advisory
+  result: unchanged since the 2026-11-09 exploitation note; CISA KEV listing is the new evidence -> update item
+- item: SAP Patch Day / CNA records
+  result: Patch Day page published 2026-11-10 -> update item
+- item: Fortinet hardening release
+  result: advisories published 2026-11-10 -> update item
+- item: Cisco Node.js/Brotli advisory
+  result: version 1.11 on 2026-11-10 -> folded into the Brotli update item
+- item: Cisco PHP2Shell advisory (cisco-sa-php-october26)
+  result: last event in the RSS 2026-11-06 14:21Z (before the entry's 2026-11-08 update); no in-window revision seen
+- item: Trend Micro KA-0024802 (PHP2Shell)
+  result: 'page text read shows ''Last updated: 2026/11/04''; Deep Discovery Analyzer critical patch ETA Nov. 12; the Apex Central / Apex One patches due 2026-11-11 are not visible in the text read and
+    may land later today -> no in-window revision'
+- item: Ahsay CVE-2026-105133/105134
+  result: announcement text unchanged from the entry's content (hotfixes 10.3.4.45 and 9.15.2.70)
+- item: SonicWall SNWLID-2026-0014
+  result: v1.1 of 2026-11-09 (workaround section for CVE-2026-19868 and credits) precedes the entry's 2026-11-10 update; not diffed against the entry; new advisory SNWLID-2026-0021 -> eMudhra update item
+- item: Xerox PHP2Shell bulletins
+  result: XRX26-016 v6 (2026-11-06), -017 and -018 are already in the entry's 2026-11-08 update; XRX26-019 (2026-11-09) is a routine Solaris third-party patch cluster -> drop
+- item: Veeam KB4966
+  result: modified 2026-11-10 -> update item on the Linux kernel entry
+- item: Microsoft Security Update Guide revisions
+  result: 116 non-November records revised 2026-11-09/10 (mostly KB link refreshes); none exploited, none in the store's CVE index
+- item: Splunk SVD-2026-1015 (Node.js/Brotli) and SVD-2026-1014 (eMudhra)
+  result: updated 2026-11-09 and 2026-11-05; both topics already covered by existing entries
+dropped_candidates:
+- item: React Server Components CVE-2026-126187 (CNA CVSS 4.0 9.5; react-server-dom-webpack/parcel/turbopack 19.0.0 to 19.3.0, fixed 19.0.9, 19.1.10, 19.2.9, 19.3.1)
+  reason: 'borderline-drop: the advisory says it affects ''extremely rare cases'' (multiple typed arrays plus an attacker-controlled value); the GitHub advisory page carries a 2026-10-14 date, so the CVE
+    id (2026-11-10) is newer than the advisory; no exploitation; sources read: ENISA EUVD EUVD-2026-123052 and GHSA-xqc2-xf4c-x3h3'
+- item: Rails Active Storage CVE-2026-126082 (9.8; fixed 8.1.4.1 and 8.0.5.2)
+  reason: 'borderline-drop: library flaw needing an application that analyses uploads with ImageMagick; no exploitation; Swiss footprint unknown (ENISA EUVD-2026-122934)'
+- item: MongoDB Server CVE-2026-118383 (CVSS 4.0 9.5, replica-set use-after-free)
+  reason: 'drop: replica-set members only, unauthenticated trigger but no exploitation or fix detail read'
+- item: Arista EOS CVE-2026-121289 (BGP, 9.3), CVE-2026-121295 (S-BFD, 9.2), CVE-2026-121370 (PTP, 9.2)
+  reason: 'drop: platform-specific EOS agent crashes with possible RCE; no exploitation; vendor pages not read'
+- item: rConfig CVE-2026-124079 (9.3, unauthenticated Redis queue poisoning to RCE, fixed 8.2.19 / 8.4.1)
+  reason: 'borderline-drop: niche network-configuration manager, only reachable where Redis is exposed; VulnCheck CNA record, no exploitation'
+- item: mailcow dockerized SSTI CVE-2026-125757 (9.4)
+  reason: 'drop: needs a domain administrator'
+- item: Mozilla Firefox 160 / ESR 153.7 (MFSA-2026-125 to -129, sandbox-escape rows scored 9.6 by ENISA)
+  reason: 'drop: routine browser release, no exploitation noted; patched through normal channels'
+- item: OpenSSL advisory of 2026-11-10 (CVE-2026-88822, -88823, -95691, -95692, -107496)
+  reason: 'drop: all five rated Low by OpenSSL'
+- item: Apache HTTP Server 2.4.70 (2026-11-06)
+  reason: 'drop: routine release (mod_dav_lock heap overflow, mod_substitute overflow); CERT-FR gives no severity'
+- item: Cisco ISE authorization bypass advisory (cisco-sa-ise-auth-bypass-1, 2026-11-10, CVSS 4.3)
+  reason: 'drop: authenticated administrator, low impact, no exploitation; the unauthenticated ISE certificate issue (cisco-sa-ise-cert) and UCS Central RCE are dated 2026-11-04, outside the window'
+- item: Siemens SSA-970803 (SIMATIC SCADA and PCS 7 session takeover by an on-path attacker, CVE-2026-58114; no fix for several versions)
+  reason: 'borderline-drop: on-path precondition, ICS with mitigations only; CERT-FR AVI-1495 and BSI WID-SEC-2026-4441/4442 list it'
+- item: Siemens SSA-710379 Mendix Studio Pro MCP Server (CVE-2026-112136, 9.2)
+  reason: 'drop: developer tool local MCP server'
+- item: Exchange Server November updates (NCSC-NL NCSC-2026-0477, nine CVEs up to 8.8)
+  reason: 'drop: authenticated or user-interaction rows; the pre-auth row is CVE-2026-116928 in the Patch Tuesday item'
+- item: GPUStack CVE-2026-102894 (SAML callback, 9.1, fixed v2.2.2)
+  reason: 'drop: same niche AI-infrastructure product the previous run already dropped (CVE-2026-102895)'
+- item: CERT-PL WidzialniCMS CVE-2026-110468/110469 (10.0)
+  reason: 'drop: Polish municipal-CMS product with no Swiss footprint'
+- item: Palo Alto GlobalProtect app CVE-2026-0250
+  reason: 'drop: Nov 10 change is an ETA-only timeline update of a May advisory (adjacent-network, 7.7)'
+- item: Supply-chain package posts (SafeDep fragment-api-py, bee-js; JFrog Contagious Interview)
+  reason: lead for the research and incident domains, not vulnerability triage; no constituency nexus
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: product watchlist is empty in the org profile; the sweep is a no-op and general coverage rules applied
+candidate_sources:
+- id: vates-security-advisories
+  publisher: Vates VMS Documentation (security advisories)
+  url: https://docs.vates.tech/security-advisories/
+  category: vendor-psirt
+  why: First-party advisories for XCP-ng and Xen Orchestra (VSA-2026-062, an exploited management-plane authentication bypass, was on no slice source and reached the run only through BleepingComputer);
+    advisory pages read cleanly with extract.
+- id: onapsis-research
+  publisher: Onapsis Research Labs (SAP security blog)
+  url: https://onapsis.com/blog/
+  category: research
+  why: Discoverer of ICM2SHELL and ProxyGate; its Patch Day analysis and threat advisories carry the fixed kernel patch levels, exposure checks and workarounds that SAP's login-walled notes do not; extract
+    reads them.
+coverage_gaps:
+- source_id: connectwise-trust-center
+  reason: advisories page 403 on extract, url (direct + reader), url --direct and WebFetch; status.connectwise.com reads via url --direct and shows only operational incidents (x360Sync, x360Recover) and
+    no security incident; WebSearch found no bulletin after 2026-09-08 (ScreenConnect 26.6.5). Keep fetch_method blocked.
+- source_id: ivanti hub advisories (not a slice record)
+  reason: 'recipe gap: hub.ivanti.com advisory pages are a Salesforce JavaScript app; extract returned a 1 MB shell, WebFetch a loading placeholder, jina pool has a negative balance. Working substitute:
+    ENISA EUVD per-record pages carry Ivanti''s CNA text (python3 tools/fetch_source.py url ''https://euvdservices.enisa.europa.eu/api/search?vendor=Ivanti&fromDate=2026-11-09&toDate=2026-11-12&size=100'').'
+- source_id: n-able me.n-able.com security advisories (not a slice record)
+  reason: 'recipe gap: Salesforce JavaScript app (extract returns a 570 KB shell); substitute is status.n-able.com release notes (extract reads them) plus ENISA EUVD CNA records filtered with vendor=N-able.'
+- source_id: fortinet-psirt
+  reason: the RSS feed returns at most 50 items; the 2026-11-10 batch filled all 50, so advisories beyond them may exist; per-advisory pages read with extract (tables) and url --direct (raw HTML carries
+    the CVE id and CVSS vector, extract drops them).
+- source_id: msrc-update-guide
+  reason: human SUG pages are a JavaScript app; the SUG OData API (msrc release, paged with $skip 500 at a time because the helper caps $top at 500, plus affectedProduct and per-CVE detail) is the working
+    read; the November release has 1,383 records.
+- source_id: cisa-advisories
+  reason: no ICS advisory since 2026-11-05 in `cisa csaf-recent`; cisa.gov HTML read only through WebFetch (listing and the KEV alert).
+fetch_failures:
+- id: connectwise-trust-center
+  url_tried: https://www.connectwise.com/company/trust/advisories
+  fetch_method: bridge:extract
+  status_code: 403
+  error_class: transport-403
+  error_message: 'fetch_source: all transports failed ... direct=(direct HTTP 403, 6068 B); trafilatura=(no readable body); jina=(reader proxy relayed an upstream block/challenge)'
+  attempted_methods:
+  - bridge:extract
+  - bridge:url
+  - bridge:url --direct
+  - webfetch
+  - websearch
+  - status page via bridge:url --direct
+  mitigation_applied: read status.connectwise.com (no security incident) and WebSearch (latest bulletin 2026-09-08); no November bulletin found
+  covered_anyway: false
+source_ledger:
+- id: advisories-ncsc-nl
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-nl recent 40 + ncsc-nl csaf
+  horizon_hours: 26
+  in_horizon_items: 7
+  returned: 0
+  note: seven Microsoft advisories of 2026-11-10 (NCSC-2026-0353, 0472-0477) folded into the Patch Tuesday item; Exchange advisory read through csaf (nine CVEs up to 8.8)
+- id: anssi-fr
+  tier: essential
+  attempted: true
+  transport: bridge:cert-fr avis-recent 30 + feed alerte + extract per avis
+  horizon_hours: 26
+  in_horizon_items: 11
+  returned: 3
+  note: AVI-1487/1495 (Apple, Siemens) feed the Brotli update, AVI-1489 Roundcube, AVI-1493 Synology; no new ALE alert since 2026-11-05
+- id: bsi-de
+  tier: essential
+  attempted: true
+  transport: bridge:bsi-rss + changes.csv + bsi-csaf
+  horizon_hours: 26
+  in_horizon_items: 39
+  returned: 3
+  note: 39 new WID-SEC ids since 2026-11-09 22:00Z read for titles/severity; cited as corroboration for Synology, Confluence and Ruby; the feed itself reaches back only to 2026-11-10 11:02Z
+- id: cert-eu
+  tier: essential
+  attempted: true
+  transport: bridge:cert-eu recent 15
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest advisories 2026-018/019 dated 2026-10-22/23
+- id: cert-pl
+  tier: essential
+  attempted: true
+  transport: feed https://cert.pl/en/rss.xml
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 0
+  note: WidzialniCMS (2026-11-09) dropped as a Polish CMS
+- id: cisa-advisories
+  tier: essential
+  attempted: true
+  transport: webfetch listing + webfetch alert + bridge:cisa csaf-recent
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 3
+  note: KEV alert of 2026-11-10 read in full and cited by the Chrome, Outlook, Barracuda and BroadWorks items; no ICS advisory since 2026-11-05
+- id: cisa-kev
+  tier: essential
+  attempted: true
+  transport: bridge:cisa-kev
+  horizon_hours: 26
+  in_horizon_items: 6
+  returned: 4
+  note: catalogVersion 2026.11.10; six additions of 2026-11-10 plus four of 2026-11-09 (already handled by the previous run); dispositions in kev_dispositions
+- id: enisa-euvd
+  tier: essential
+  attempted: true
+  transport: bridge:url (exploitedvulnerabilities, search with score and vendor filters, enisaid)
+  horizon_hours: 26
+  in_horizon_items: 132
+  returned: 4
+  note: 132 records scored 9.0+ for 2026-11-09/11 read in two pages; four exploited-list records (BroadWorks, Barracuda CVE-2026-111560, Chrome, Outlook); records for Ivanti, N-able, Axis and FortiManager
+    used as sources
+- id: ncsc-ch-security-hub
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-csh recent 25
+  horizon_hours: 26
+  in_horizon_items: 4
+  returned: 2
+  note: posts 13167 (SAP) and 13165 (Chrome) used; 13163 N-able and 13155 OpenSSH already covered; no post on Xen Orchestra, Fortinet or Microsoft yet
+- id: ncsc-uk
+  tier: essential
+  attempted: true
+  transport: feed all-rss-feed.xml
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest items 2026-11-03 (guidance and blog); no advisory
+- id: watchtowr
+  tier: essential
+  attempted: true
+  transport: feed https://labs.watchtowr.com/rss/ + extract watchtowr.com/intelligence
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-11-05 (Barracuda, already covered); the intelligence page shows no new FAQ
+- id: fortinet-psirt
+  tier: essential
+  attempted: true
+  transport: feed ir.xml (50 items) + extract and url --direct per advisory
+  horizon_hours: 26
+  in_horizon_items: 50
+  returned: 1
+  note: all 50 dated 2026-11-10; ten CVSS 9.0+ advisories read in full; feed cap noted in coverage_gaps
+- id: msrc-update-guide
+  tier: essential
+  attempted: true
+  transport: bridge:msrc (release 2026-Nov paged, cve, affectedProduct, revised-CVE sweep)
+  horizon_hours: 26
+  in_horizon_items: 1383
+  returned: 2
+  note: 1,383 records filtered to exploited/disclosed/CVSS>=9.0 (48 rows); revised sweep found 116 older CVEs revised, none exploited
+- id: paloalto-psirt
+  tier: essential
+  attempted: true
+  transport: feed rss.xml + url --direct json/CVE-<id>
+  horizon_hours: 26
+  in_horizon_items: 2
+  returned: 0
+  note: CVE-2026-0250 ETA-only update and the CVE-2026-111497 portfolio update (folded into the Brotli update item)
+- id: connectwise-trust-center
+  tier: standard
+  attempted: true
+  transport: extract, url, url --direct, webfetch (all 403); status page via url --direct; websearch
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: advisories page blocked again on every transport; no security incident on the status page; no November bulletin found (fetch_failures)
+- id: bishopfox-blog
+  tier: standard
+  attempted: true
+  transport: feed blog.rss
+  horizon_hours: 168
+  in_horizon_items: 2
+  returned: 0
+  note: AI-security posts only; newest vulnerability post is the PHP2Shell responder guidance of 2026-10-27 (outside lookback)
+- id: ellio-threat-research
+  tier: standard
+  attempted: true
+  transport: webfetch listing
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-25 (Node2Shell, already covered)
+- id: jfrog-security-research
+  tier: standard
+  attempted: true
+  transport: feed rss.xml
+  horizon_hours: 168
+  in_horizon_items: 1
+  returned: 0
+  note: only Contagious Interview (2026-11-09) falls inside the lookback (the Reachy robot and Beta9 posts are 2026-11-01/03); no constituency nexus; lead for the research domain
+- id: censys-blog
+  tier: standard
+  attempted: true
+  transport: feed https://censys.com/feed/
+  horizon_hours: 146
+  in_horizon_items: 3
+  returned: 0
+  note: refrigeration-controller and ARTEX posts already covered by existing entries; the N-able advisory page of 2026-11-09 was read as part of the N-able update
+- id: flatt-security
+  tier: standard
+  attempted: true
+  transport: extract listing
+  horizon_hours: 146
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-21
+- id: horizon3-ai
+  tier: standard
+  attempted: true
+  transport: webfetch listing
+  horizon_hours: 146
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-22
+- id: trustwave-spiderlabs
+  tier: standard
+  attempted: true
+  transport: webfetch listing
+  horizon_hours: 146
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-30
+- id: sonicwall-psirt
+  tier: standard
+  attempted: true
+  transport: feed rss.xml + url --direct vulndetail API
+  horizon_hours: 148
+  in_horizon_items: 2
+  returned: 1
+  note: SNWLID-2026-0021 (new, eMudhra update item) and SNWLID-2026-0014 v1.1 (2026-11-09, already covered)
+- id: splunk-advisories
+  tier: standard
+  attempted: true
+  transport: extract listing
+  horizon_hours: 146
+  in_horizon_items: 2
+  returned: 0
+  note: 'SVD-2026-1015 (Node.js/Brotli, updated 2026-11-09) and SVD-2026-1014 (eMudhra, updated 2026-11-05): topics already covered; no new SVD id after 1015'
+- id: veeam-kb-security
+  tier: standard
+  attempted: true
+  transport: feed rss-feed + extract kb4966
+  horizon_hours: 146
+  in_horizon_items: 2
+  returned: 1
+  note: KB4966 (published 2026-11-06, modified 2026-11-10) returned as an update with lookback true; KB4825 Kasten fixes list (2026-11-05) not relevant
+- id: safedep
+  tier: standard
+  attempted: true
+  transport: feed rss.xml
+  horizon_hours: 146
+  in_horizon_items: 2
+  returned: 0
+  note: malicious-package posts (fragment-api-py, bee-js, antd-img-crop) are for the research and incident domains
+- id: xerox-security-bulletins
+  tier: standard
+  attempted: true
+  transport: url --direct index + bridge:pdf
+  horizon_hours: 148
+  in_horizon_items: 3
+  returned: 0
+  note: XRX26-016 v6 already in the entry's 2026-11-08 update; XRX26-019 (2026-11-09) is a Solaris third-party patch cluster
+- id: seppmail-gateway-revision-history
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 148
+  in_horizon_items: 0
+  returned: 0
+  note: newest release 15.1.1 (2026-11-03, already covered); no newer revision-history entry

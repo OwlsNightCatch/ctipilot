@@ -1,0 +1,1 @@
+PK Softech and the State Secretariat for Security Policy said on 2026-11-10 that no concrete ransom demand reached the supplier or the federal bodies, that the supplier never contacted the attackers, that the Confederation paid nothing and that there is still no indication of publication on the darkweb, which qualifies the press report that Akira demands ransom.

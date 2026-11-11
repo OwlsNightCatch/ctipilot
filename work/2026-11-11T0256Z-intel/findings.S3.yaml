@@ -1,0 +1,507 @@
+# work/2026-11-11T0256Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-11T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-11T02:57:59Z
+ended_at: 2026-11-11T03:22:45Z
+duration_seconds: 1486
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 8
+  bridge_fetches_approx: 130
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "CopperDragon: Check Point ties three China-nexus intrusion sets to one Sparrow-framework supplier, among them SilentDelivery watering holes on government, shipping, IT and research sites that show a fake Chrome certificate warning (Czech Republic, Germany, France in its telemetry)"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/", publisher: "Check Point Research", date: "2026-11-10", role: "primary" }
+      - { url: "https://medium.com/@dzaripova1177/the-sparrow-that-chirped-too-loud-famoussparrow-attacks-using-updated-sparrowdoor-and-the-new-29ac2d90544d", publisher: "Positive Technologies (Medium, independent first-hand report on the same watering-hole chain, SquawkDoor = SquadC)", date: "2026-08-21", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/three-china-nexus-espionage-campaigns.html", publisher: "The Hacker News (rewrite of the Check Point report; gives the SquadC = SquawkDoor alias)", date: "2026-11-10", role: "secondary" }
+    discovery_trace: "first seen at: checkpoint-research feed, URL https://research.checkpoint.com/feed/ (fetched via tools/fetch_source.py feed) -> primary: https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/ (extract) -> corroboration pivot: THN https://thehackernews.com/2026/11/three-china-nexus-espionage-campaigns.html -> pivot: Positive Technologies report on the same chain, URL https://medium.com/@dzaripova1177/the-sparrow-that-chirped-too-loud-famoussparrow-attacks-using-updated-sparrowdoor-and-the-new-29ac2d90544d (linked from the Check Point text)"
+    summary: |
+      Check Point Research's year-long investigation groups three intrusion sets under one malware-supply entity it calls CopperDragon, assessed as a possible "digital quartermaster" for China-nexus actors that use the cross-platform Sparrow framework (Check Point lists FamousSparrow, Earth Estries, TropicTrooper, UAT-9244 "and others"). Check Point itself cautions that shared backdoors or C2 infrastructure "does not necessarily mean" the same actor ran two intrusions, so CopperDragon is a supplier hypothesis, not an operator attribution.
+      SilentDelivery (since early 2026, Europe and Asia) is the part nearest the constituency: legitimate government, shipping, IT and research websites are compromised (one through XSS on an unsanitised input field) and injected with heavily obfuscated JavaScript that fingerprints the visitor, then replaces the page with a language-localised fake Google Chrome SSL warning urging a "Certificate Fix" utility. The MSI comes from compromised S3 buckets and installs the new SquadC backdoor (or a SparrowDoor variant); SquadC can be configured to run only while a browser process is alive, persists through a Run key named WindowsUpdateAssist, and offers directory listing, file write/delete, command execution, systeminfo and screenshots. Check Point telemetry names the Czech Republic, Germany, France, Taiwan, Nepal, Hong Kong and Indonesia; Check Point also found a second delivery route for SquadC, a spear-phishing RAR with an LNK that abuses ftp.exe (uploaded to VirusTotal from Indonesia, same C2 as the watering-hole chain). Positive Technologies independently documented the same fake-certificate chain (it calls the backdoor SquawkDoor) with victims in Taiwan, Germany, Indonesia and the Czech Republic.
+      OceanGate (Asia, 2025-2026) starts with exploitation of an internet-facing Linux server, then AnnobinDoor (Go) and SparrowShell (Linux counterpart of SparrowDoor, same C2 and RC4 keys, plugin loaded with dlopen, optional Reptile-derived kernel rootkit loaded through init_module), trojanised ssh/sshd that log passwords and key passphrases, FRP and Chisel, then RDP password attempts against Windows administrators and a custom Windows toolset (hidden local admin account creation with LocalAccountTokenFilterPolicy set to 1, an LSA security-package credential interceptor, a Raw Input keylogger). SparrowDoor variants embed the WinDivert driver to become a passive backdoor that shares an existing service port such as 443 and rewrites packets to a high internal port. Check Point assesses CopperDragon also maintains and supplies Melofee variants (rootkit code and self-signed certificate overlap). DarkWire (mid-2025, Latin America telecom and government incl. foreign affairs and justice) uses the in-memory CopperDoor (the backdoor ESET calls SparroWocky) and CopperDNS (DNS MX tunnelling) loaded by CopperLoader through DLL sideloading of uncommon signed executables, SoftEther VPN renamed to system-process names, an LSASS memory dumper registered as a security package, and wmiexec lateral movement.
+    region_nexus: "Europe (Czech Republic, Germany, France named in Check Point telemetry; Switzerland not named), Asia, Latin America"
+    primary_sector_nexus: "direct (government, military, research and critical-infrastructure targets; government websites used as watering holes)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1189, T1204.002, T1190, T1566.001, T1027, T1497.001, T1547.001, T1574.001, T1554, T1014, T1205, T1547.005, T1003.001, T1056.001, T1136.001, T1564.002, T1021.001, T1047, T1572, T1071.004, T1090, T1036.005, T1202]
+    affected_products: ["Microsoft Windows", "Linux", "OpenSSH"]
+    entity_keys: ["actor:famoussparrow", "malware:sparrowocky"]
+    new_entities:
+      - { key: "actor:copperdragon", type: actor, name: "CopperDragon", aliases: [], summary: "Check Point Research's name for the entity assessed as a possible digital quartermaster that develops and supplies the cross-platform Sparrow malware framework to several China-nexus actors (Check Point, 2026-11-10)." }
+      - { key: "malware:squadc", type: malware, name: "SquadC", aliases: ["SquawkDoor"], summary: "Windows backdoor delivered by fake 'Certificate Fix' MSI installers from compromised watering-hole sites; Check Point names it SquadC, Positive Technologies SquawkDoor (Check Point, 2026-11-10; Positive Technologies, 2026-08-21)." }
+      - { key: "malware:sparrowdoor", type: malware, name: "SparrowDoor", aliases: [], summary: "Windows backdoor of the Sparrow framework; variants (CrowDoor, HemiGate, TernDoor) are reported across several China-nexus actors, and recent builds embed the WinDivert driver to act as a passive backdoor (Check Point, 2026-11-10)." }
+      - { key: "malware:sparrowshell", type: malware, name: "SparrowShell", aliases: [], summary: "Modular Linux backdoor, the Linux counterpart of SparrowDoor with shared C2 and RC4 keys, optionally loading a modified Reptile kernel rootkit; Check Point finds code and certificate overlap with Melofee (Check Point, 2026-11-10)." }
+      - { key: "malware:melofee", type: malware, name: "Melofee", aliases: [], summary: "Linux backdoor first reported in 2023; Check Point assesses CopperDragon is also involved in maintaining and supplying Melofee variants (Check Point, 2026-11-10)." }
+      - { key: "campaign:silentdelivery-watering-hole-2026", type: campaign, name: "SilentDelivery", aliases: [], summary: "CopperDragon-linked 2026 watering-hole operation against Europe and Asia that serves a fake Chrome certificate warning and the SquadC backdoor from compromised government, shipping, IT and research sites (Check Point, 2026-11-10)." }
+      - { key: "campaign:oceangate-sparrow-asia-2025-2026", type: campaign, name: "OceanGate", aliases: [], summary: "2025-2026 CopperDragon-linked intrusions into Asian government and critical-infrastructure networks that start from an exposed Linux server and move to Windows with SparrowShell, SparrowDoor and AnnobinDoor (Check Point, 2026-11-10)." }
+      - { key: "campaign:darkwire-latam-2025-2026", type: campaign, name: "DarkWire", aliases: [], summary: "Mid-2025 onward CopperDragon-linked campaign against Latin American telecom operators and government bodies using CopperDoor and CopperDNS (Check Point, 2026-11-10)." }
+    relation_suggestions:
+      - { subject: "actor:copperdragon", object: "actor:famoussparrow", basis: "Check Point assesses CopperDragon may supply the Sparrow framework to FamousSparrow, Earth Estries, TropicTrooper, UAT-9244 and others; it warns shared tooling does not prove the same operator (Check Point, 2026-11-10)" }
+      - { subject: "malware:sparrowocky", object: "malware:sparrowocky", basis: "ALIAS: Check Point says CopperDoor 'also known as SparroWocky' was analysed by ESET; register CopperDoor as an alias of malware:sparrowocky (Check Point, 2026-11-10)" }
+      - { subject: "malware:sparrowshell", object: "malware:sparrowdoor", basis: "Check Point: SparrowShell is a Linux version of SparrowDoor with the same C2 infrastructure and RC4 keys (Check Point, 2026-11-10)" }
+      - { subject: "malware:sparrowshell", object: "malware:melofee", basis: "Check Point: overlapping rootkit code, hide/show arguments and self-signed certificates; assesses CopperDragon also supplies Melofee variants (Check Point, 2026-11-10)" }
+      - { subject: "campaign:silentdelivery-watering-hole-2026", object: "malware:squadc", basis: "Check Point: SilentDelivery distributes SquadC through trojanised MSI installers (Check Point, 2026-11-10)" }
+    related_entries: ["2026-09-18/famoussparrow-sparrowocky-backdoor-latam-gov", "2026-05-14/famoussparrow-three-wave-intrusion-of-an-azerbaijani-energy"]
+    registry_note: "Check Point lists FamousSparrow and UAT-9244 as separate actors that share the toolset, while entities/registry.yaml carries UAT-9244 as an alias of actor:famoussparrow; Positive Technologies equates FamousSparrow with Salt Typhoon and Earth Estries, Check Point says the Salt Typhoon link is unclear. Hold alias merges until the main agent decides."
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    admiralty_suggestion: "B2"
+    novelty: new
+    evidence:
+      - quote: "The fake warning blocked access to the website and instructed the user to install a “Certificate Fix” utility."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/"
+      - quote: "All the compromised websites we confirmed were related to the government, shipping, and IT and research sectors."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/"
+      - quote: "Based on Check Point telemetry, the operations primarily targeted organizations in countries such as the Czech Republic, Germany, France, Taiwan, Nepal, Hong Kong and Indonesia."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/"
+      - quote: "However, the use of the same backdoor or C2 infrastructure does not necessarily mean that two intrusions were conducted by the same actor."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/"
+      - quote: "Based on the samples we identified, we determined that the threat actor used an infection chain involving compromised websites and fake certificates in at least four locations: Taiwan, Germany, Indonesia, and the Czech Republic."
+        attribution: "Positive Technologies"
+        source_url: "https://medium.com/@dzaripova1177/the-sparrow-that-chirped-too-loud-famoussparrow-attacks-using-updated-sparrowdoor-and-the-new-29ac2d90544d"
+    extended_notes: |
+      EXPOSURE: Staff of public bodies, shipping, IT and research organisations who browse peer-organisation websites (the lure is a browser certificate error that a legitimate Chrome never resolves by offering an MSI), and web teams whose sites accept unsanitised input (one confirmed XSS foothold). Windows endpoints that let a standard user run an MSI from a browser download. Internet-facing Linux servers with SSH are the OceanGate entry point; Check Point does not name the exploited flaw.
+      DETECTION (telemetry class first): (1) Endpoint process and file telemetry: an MSI named like a certificate repair utility executed from the browser download directory shortly after a page-content replacement; a browser must be running for SquadC to execute, so the sequence browser -> msiexec -> new Run key value (WindowsUpdateAssist) is the anchor. (2) Module-load telemetry for DLL sideloading using rarely abused signed executables Check Point names (ncptrcw.exe, fsptool.exe, vlc.exe with libvlccore.dll, gethwid.exe, zCrashReport64.exe) and tool staging in existing system paths such as C:\Windows\debug and C:\ProgramData\USOShared. (3) Registry telemetry: LocalAccountTokenFilterPolicy set to 1, a new local administrator account plus an inbound firewall rule for TCP 445 in one burst. (4) Driver-load telemetry: WinDivert loaded by a process that is not a VPN, firewall or tunnelling product. (5) Linux: init_module calls from user-space backdoors, ssh and sshd binaries that differ from the package-manager hashes, frpc and chisel binaries, and unexpected cron or systemd units. (6) DNS telemetry: MX-query volume or unusual MX responses from servers that do not send mail (CopperDNS). Post-compromise: the actors are in place for long periods, so a clean patch state does not remove them.
+      TRIAGE (benign lookalikes where the mechanism supports them): WinDivert is legitimate in VPN and firewall tools; the discriminator is the parent (a backdoor or sideloaded DLL rather than the vendor's signed service) plus packet rewriting that forwards one source address's traffic from a shared service port to a high local port. SoftEther VPN is legitimate software; renamed to vmtoolsd.exe or csrss.exe in a non-system path it is not. A Chrome SSL warning cannot legitimately be dismissed by installing an MSI.
+      DEFENDER TAKEAWAY (concept, not rule code): treat a browser page that asks for a "certificate fix" installer as an incident trigger; restrict MSI execution for standard users; inventory which Linux servers expose SSH and verify ssh/sshd integrity; web teams of government and research sites should check for injected third-party script and input-handling flaws, because a compromised site becomes a delivery vehicle for peers.
+      ABSENCES / LIMITS: Check Point does not name the Linux server flaw, does not say any Swiss body was targeted, and gives CopperDragon as a hypothesis. IOCs exist in the report (hashes, domains, IPs) and are intentionally not carried.
+  # ------------------------------------------------------------------ 2
+  - title: "Turla's Cereal toolset turns a compromised on-premises Exchange server into the command channel and mail collector at Kazakh and Romanian government bodies, with no attacker infrastructure and no new transport agent registered (ESET)"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/", publisher: "ESET Research (WeLiveSecurity)", date: "2026-11-10", role: "primary" }
+      - { url: "https://web-assets.esetstatic.com/wls/en/papers/white-papers/turla-cereal-tricks.pdf", publisher: "ESET Research white paper", date: "2026-11-10", role: "primary" }
+      - { url: "https://securityaffairs.com/202800/apt/russia-linked-apt-turla-turned-exchange-servers-into-their-own-control-room.html", publisher: "Security Affairs (rewrite of the ESET post)", date: "2026-11-10", role: "secondary" }
+    discovery_trace: "first seen at: securityaffairs feed, URL https://securityaffairs.com/feed (fetched via tools/fetch_source.py feed) -> https://securityaffairs.com/202800/apt/russia-linked-apt-turla-turned-exchange-servers-into-their-own-control-room.html -> primary: ESET blog https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/ (extract; note the eset RSS feed was stale at 2026-11-04, the site listing https://www.welivesecurity.com/en/eset-research/ carried it) -> white paper PDF https://web-assets.esetstatic.com/wls/en/papers/white-papers/turla-cereal-tricks.pdf (tools/fetch_source.py pdf)"
+    summary: |
+      ESET found a previously undocumented .NET toolset, which it names Cereal, on a Kazakh government organisation's Exchange server on 2025-11-28 and, after tuning detections, on a Romanian government organisation's Exchange server compromised from 2025-12-23; in Romania the email-collection module was configured to select messages to or from NATO and European Union institutional addresses. ESET attributes Cereal to Turla (which ESET describes as widely assessed to be part of Russia's FSB; the registry carries it as Secret Blizzard) with high confidence, on the co-occurrence of another component publicly linked to Turla and conceptual similarity to the older Neuron backdoor. ESET could not determine the initial access method (white paper: "We were unable to determine the initial access method"; it suspects exploitation of the internet-facing Exchange servers is possible), so there is no CVE to patch against.
+      The command channel is the victim's own Exchange server: CerealNeuron runs on the compromised server and passively waits for requests on web paths made to look like Outlook Web Access, Autodiscover and ActiveSync traffic (observed paths include /owa/sdds/, /AUTODISCOVER/PROXYSERVICE/ and /MICROSOFT-SERVER-ACTIVESYNC/INTEGRATED/API/); a correctly encrypted, integrity-checked request is treated as a command, a bad one gets a normal-looking Exchange error page, and ESET found no operator-controlled server and could not identify ingress IP addresses. CerealHermit is a network-less variant that reads encrypted command files from disk, so some victims had two independent access paths. Each task is delivered as its own small compiled .NET assembly inside a CerealRunner (EWS mailbox retrieval, Active Directory queries, WMI queries, LSA secrets extraction, file listing, reading and deletion), which ESET reads as evidence of an automated build framework.
+      Execution tradecraft: CerealLoader, the only component written to disk in recognisable .NET form, abuses .NET VTable fixups so native code runs before any managed code, and is placed where trusted processes load it, such as ncobjapi.dll or wbemcomn.dll in C:\Windows\System32\wbem\ (loaded by WMI) and in the .NET native image cache under names such as Microsoft.Exchange.Search.Mdb.ni.dll (in one sample active only when the parent is the Exchange search service). CerealBox, which ESET calls a novel technique, is injected into EdgeTransport.exe, finds the transport agents already loaded, wraps their handlers with its own code and leaves the original flow intact, so no new agent appears in Exchange configuration; it keeps messages that carry .doc, .docx or .pdf attachments and match hard-coded sender, recipient, subject or attachment-name lists, then stages them compressed and encrypted on disk for later exfiltration through CerealNeuron commands.
+    region_nexus: "Europe and Central Asia (Romania, Kazakhstan confirmed); ESET's own profile notes Turla's 2014 breach of the Swiss defence company RUAG; no Swiss victim reported"
+    primary_sector_nexus: "direct (government mail infrastructure; correspondence with NATO and EU institutions targeted)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1505.002, T1574.001, T1055.001, T1620, T1027.009, T1027.013, T1140, T1070.004, T1078.002, T1003.004, T1114.002, T1119, T1560.002, T1087.002, T1069.002, T1047, T1071.001, T1573.001, T1041, T1036.005, T1587.001]
+    affected_products: ["Microsoft Exchange Server", "Microsoft .NET Framework"]
+    entity_keys: ["actor:secretblizzard"]
+    new_entities:
+      - { key: "malware:cereal", type: malware, name: "Cereal (CerealNeuron, CerealBox toolset)", aliases: [], summary: "Modular .NET toolset for compromised Microsoft Exchange servers: CerealNeuron passive backdoor on OWA/Autodiscover/ActiveSync-like paths, CerealHermit file-based variant, CerealRunner task carrier and CerealBox mail collector injected into EdgeTransport.exe; ESET attributes it to Turla with high confidence (ESET, 2026-11-10)." }
+    relation_suggestions:
+      - { subject: "actor:secretblizzard", object: "malware:cereal", basis: "ESET attributes the Cereal toolset to Turla with high confidence (ESET, 2026-11-10)" }
+    related_entries: ["2026-06-27/turla-s-stockstay-a-four-component-net-backdoor-for-diplomat"]
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "ESET is the telemetry holder and first-hand discoverer (blog plus white paper); BleepingComputer, The Hacker News, CyberScoop and Help Net Security (seen in the 2026-11-10 feeds, not cited) rewrite the ESET post and add no independent observation."
+    confidence: HIGH
+    admiralty_suggestion: "B2"
+    novelty: new
+    evidence:
+      - quote: "Instead – adding insult to injury – the victim’s compromised Exchange server is co-opted to act as the C&C infrastructure."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/"
+      - quote: "We attribute Cereal, with high confidence, to the Russia-aligned APT group Turla, based on the concurrent use of another component publicly linked to Turla and conceptual similarities to older Turla malware."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/"
+      - quote: "Once inside, CerealBox accesses Exchange’s internal structures, finds the existing transport agents, and wraps their handlers with malicious code."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/"
+      - quote: "No new agent appears anywhere in Exchange’s configuration."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/"
+      - quote: "it was configured to identify emails sent to, or received from, The North Atlantic Treaty Organization (NATO) and European Union (EU)."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/exchange-for-breakfast-turlas-cereal-tricks-are-not-for-kids/"
+    extended_notes: |
+      EXPOSURE: Any organisation that runs Microsoft Exchange on premises with the Mailbox or Edge Transport role reachable from the internet (the web paths are the control channel). ESET names no affected version and no vulnerability, so exposure is the deployment model, not a build number; a Swiss federal, cantonal or communal body with an internet-facing Exchange server is in the class ESET describes.
+      DETECTION (telemetry class first; items marked [inference] follow from the described mechanism rather than an ESET-stated rule): (1) File/integrity telemetry on the Exchange host: unexpected DLLs in %windir%\System32\wbem\ (ncobjapi.dll, wbemcomn.dll named by ESET) and files in the .NET native image cache whose hash or signature does not match the Microsoft originals (names such as Microsoft.Exchange.Search.Mdb.ni.dll, Microsoft.Exchange.Data.Transport.ni.dll) [inference on the integrity check]. (2) Module and injection telemetry for EdgeTransport.exe: unsigned or non-Microsoft assemblies loaded into the transport service, while Get-TransportAgent shows nothing new (this is the point of CerealBox) [inference]. (3) Web server telemetry: IIS or HTTP.sys log entries for the observed paths from clients with no corresponding legitimate mailbox flow; encrypted request bodies that return a generic Exchange error page; because there is no external C2, IP blocklists are of little use and ESET could not identify ingress addresses. (4) Mailbox and EWS audit telemetry: EWS calls that retrieve whole mailboxes from the server's own context, and staged compressed encrypted files on the server disk. (5) Outbound telemetry from the Exchange server itself (ESET saw no external C2, so unexpected egress would indicate a different tool). Post-patch note: there is nothing to patch, so a compromise assessment of every internet-facing Exchange server (and a fresh look at servers that were exposed during 2025) is the check.
+      TRIAGE: Legitimate third-party anti-spam, DLP and archiving products also inject into the transport service and register transport agents; the discriminator is that those are vendor-signed and appear in the Exchange transport-agent configuration, whereas CerealBox is unsigned, in memory only and absent from configuration. NGEN legitimately regenerates .ni.dll files after .NET updates, so a changed timestamp alone is not a signal; a file that does not hash-match the Microsoft binary or that loads only under one parent process is.
+      DEFENDER TAKEAWAY: treat internet-facing Exchange servers as Tier 0 with EDR coverage, restrict their egress, and baseline the native image cache and wbem directory; the lack of attacker infrastructure means network-only detection will not find this.
+      ABSENCES / LIMITS: initial access unknown (stated by ESET); no data on whether other European governments are affected beyond the two victims; ESET publishes hashes and other indicators on its GitHub repository (not carried here).
+  # ------------------------------------------------------------------ 3
+  - title: "GhostFrame: Recorded Future's Insikt Group finds an ESXi post-exploitation framework (vmhostd-core implant, VM control panel, VMkatz credential theft) used by TAG-218, whose activity overlaps Settra ransomware and which targeted SonicWall, Palo Alto Networks and Fortinet VPN appliances in the US and Europe"
+    sources:
+      - { url: "https://www.recordedfuture.com/blog/ghostframe-esxi-implant-settra-ransomware", publisher: "Recorded Future Insikt Group", date: "2026-11-10", role: "primary" }
+      - { url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/", publisher: "Palo Alto Networks Unit 42 (independent observation of the VPN-to-hypervisor pivot in CVE-2026-0257 intrusions, updated 2026-10-20)", date: "2026-10-20", role: "corroborating" }
+      - { url: "https://www.huntress.com/blog/new-settra-ransomware-variant", publisher: "Huntress (MeshAgent RMM in Settra intrusions, cited by Insikt)", date: "2026-09-17", role: "corroborating" }
+    discovery_trace: "first seen at: recordedfuture-insikt feed, URL https://www.recordedfuture.com/feed (fetched via tools/fetch_source.py feed) -> primary: https://www.recordedfuture.com/blog/ghostframe-esxi-implant-settra-ransomware (extract) -> pivot: Unit 42 page linked from the Insikt text, URL https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/ -> pivot: Huntress page linked from the Insikt text, URL https://www.huntress.com/blog/new-settra-ransomware-variant"
+    summary: |
+      Insikt Group describes GhostFrame, a previously undocumented command-and-control and post-exploitation framework for compromised VMware ESXi hosts. A web operator panel (Sessions and Builder) generates an ELF implant named vmhostd-core; operators must already hold root on the host, because the implant does not exploit a vulnerability. Persistence: the implant copies itself to /opt/vmhostd-core, edits the ESXi boot script /etc/rc.local.d/local.sh and /sbin/auto-backup.sh to survive reboots, masquerades as "vmhostd" (resembling VMware's vmware-hostd), and in a loop about every five seconds disables the ESXi firewall and the execInstalledOnly control (which restricts execution of unsigned binaries), so an administrator re-enabling them is undone. C2: the sample opens simultaneous TCP connections to one address on ports 53, 2222, 3389, 4444, 8443 and 9443, keeps the first that succeeds, and retries after a random 5 to 12 s delay; Insikt notes the six near-simultaneous SYNs are a network detection opportunity. The implant is mainly an in-memory shellcode loader with a /bin/sh reverse-shell fallback.
+      From the hypervisor the panel can enumerate registered VMs, change power state, create or delete snapshots, enable VNC on a guest and relay the graphical session, expose the ESXi HTML Host Client through an operator tunnel, run a SOCKS5 proxy component (gfsox) for pivoting, intercept ESXi logins with a credential interceptor (sdkmon), and run the open-source VMkatz against VM memory snapshots, virtual disks or all VMs on a datastore to recover NTLM hashes, WDigest, Kerberos tickets, SAM and LSA secrets and NTDS.dit data without running a stealer inside each guest.
+      Insikt links GhostFrame to TAG-218, a group whose operations overlap Settra ransomware: victim-facing TAG-218 servers targeted VPN appliances (predominantly SonicWall, Palo Alto Networks and Fortinet) in the US and Europe between late August and October 2026, four of those organisations later appeared on the Settra leak site, and on 2026-10-12 a victim Fortinet appliance beaconed to both a GhostFrame server and a MeshCentral server that Huntress had earlier tied to Settra. Insikt says available evidence does not show the framework is exclusive to Settra and assesses it "highly likely" other financially motivated actors adopt it (an assessment, not an observation). Unit 42, independently, reports that after CVE-2026-0257 exploitation attackers moved from the VPN gateway to vCenter and ESXi, disabled execInstalledOnly and dumped domain-controller credentials offline from its virtual disk; Insikt calls this consistent with GhostFrame but does not claim Unit 42's case used it.
+    region_nexus: "global; VPN-appliance targeting in the US and Europe"
+    primary_sector_nexus: "indirect (any organisation that runs ESXi behind a VPN edge; Swiss public bodies with VMware estates)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1190, T1037.004, T1685, T1686, T1036.005, T1620, T1571, T1090, T1021.005, T1003.002, T1003.003, T1003.004, T1219, T1486]
+    affected_products: ["VMware ESXi", "SonicWall VPN appliances", "Palo Alto Networks VPN appliances", "Fortinet VPN appliances"]
+    entity_keys: ["actor:settra"]
+    new_entities:
+      - { key: "malware:ghostframe", type: malware, name: "GhostFrame", aliases: [], summary: "Web-panel C2 and post-exploitation framework for root-compromised VMware ESXi hosts: vmhostd-core implant, VM control (snapshots, VNC), SOCKS5 pivot, ESXi credential interceptor and VMkatz-based guest credential theft; linked by Insikt to TAG-218 and Settra ransomware activity (Recorded Future Insikt Group, 2026-11-10)." }
+      - { key: "actor:tag-218", type: actor, name: "TAG-218", aliases: [], summary: "Recorded Future Insikt Group designation for a threat activity group whose operations overlap Settra ransomware; targeted VPN appliances in the US and Europe from late August 2026 and used GhostFrame and MeshCentral (Recorded Future Insikt Group, 2026-11-10)." }
+      - { key: "tool:vmkatz", type: tool, name: "VMkatz", aliases: [], summary: "Open-source tool that extracts Windows credentials from VM memory snapshots and virtual disk images; integrated into GhostFrame (Recorded Future Insikt Group, 2026-11-10)." }
+    relation_suggestions:
+      - { subject: "actor:tag-218", object: "actor:settra", basis: "Insikt: TAG-218's operations overlap Settra ransomware and four of the VPN-targeting victims appeared on the Settra leak site; Insikt does not claim the groups are identical (Recorded Future, 2026-11-10)" }
+      - { subject: "actor:tag-218", object: "malware:ghostframe", basis: "Insikt identified GhostFrame while monitoring TAG-218 operator infrastructure (Recorded Future, 2026-11-10)" }
+      - { subject: "malware:ghostframe", object: "tool:vmkatz", basis: "Insikt: GhostFrame integrates the open-source VMkatz for guest credential extraction (Recorded Future, 2026-11-10)" }
+    related_entries: ["2026-05-30/cve-2026-0257-palo-alto-pan-os-globalprotect-pre-auth-authen", "2026-11-07/kaspersky-esxi-proxmox-ransomware-monitoring-root-password", "2026-11-06/qilin-october-2026-build-vcenter-esxi-safe-mode-printers"]
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "GhostFrame specifics (implant behaviour, TAG-218 link) rest on Recorded Future Insikt's analysis of recovered frontend files and an ELF sample plus its network telemetry; Unit 42 corroborates the intrusion pattern (VPN gateway to ESXi, execInstalledOnly disabled) in separate CVE-2026-0257 cases, not GhostFrame itself."
+    confidence: HIGH
+    confidence_note: "HIGH for implant behaviour (sample analysis), MEDIUM for the TAG-218 to Settra link (infrastructure overlap, Insikt calls it overlap)."
+    admiralty_suggestion: "B2"
+    novelty: new
+    evidence:
+      - quote: "Insikt Group identified GhostFrame being used by TAG-218, a threat activity group whose operations overlap with Settra ransomware."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ghostframe-esxi-implant-settra-ransomware"
+      - quote: "Operators must already have root-level access to the ESXi host to deploy and execute the implant, as the implant does not exploit a vulnerability to gain access."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ghostframe-esxi-implant-settra-ransomware"
+      - quote: "These commands run approximately every five seconds, allowing the implant to disable the controls again if an administrator attempts to restore them."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ghostframe-esxi-implant-settra-ransomware"
+      - quote: "targeting virtual private network (VPN) appliances across the US and Europe between late August and October 2026, predominantly SonicWall, Palo Alto Networks, and Fortinet devices."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ghostframe-esxi-implant-settra-ransomware"
+      - quote: "The most significant evolution in tactics, techniques and procedures (TTPs) following successful exploitation of CVE-2026-0257 is the direct pivot to the virtualization layer."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/"
+    extended_notes: |
+      EXPOSURE: ESXi hosts whose root credentials, SSH or ESXi shell, or vCenter are reachable after an edge compromise; the entry chain Insikt observed starts at SonicWall, Palo Alto Networks and Fortinet VPN appliances, so an organisation that runs both and has not isolated hypervisor management is exposed. No ESXi vulnerability is involved (root is a precondition), so patching ESXi does not address it.
+      DETECTION (telemetry class first): (1) ESXi host file-integrity and shell-audit telemetry: changes to /etc/rc.local.d/local.sh and /sbin/auto-backup.sh, a file or directory /opt/vmhostd-core, a process named vmhostd, and repeated firewall-disable and execInstalledOnly resets at about five-second intervals (re-enabling the control without removing the persistence is futile, per Insikt). (2) Network telemetry from the ESXi management address: six near-simultaneous TCP SYNs to one destination on 53, 2222, 3389, 4444, 8443 and 9443, and any outbound C2-like traffic from a hypervisor at all. (3) vCenter and ESXi management logs: unexpected snapshot creation or deletion, VNC enablement on a guest, power-state changes outside change windows. (4) Datastore access telemetry for reads of VM memory snapshot and virtual-disk files by a non-backup identity, which is how VMkatz gets guest credentials without touching the guest. (5) VPN gateway telemetry: logins without MFA or from unexpected sources shortly before hypervisor administration activity.
+      TRIAGE: administrators legitimately edit local.sh, create snapshots and use VNC; the discriminators are a firewall-off plus execInstalledOnly=0 loop, a binary under /opt named vmhostd (the genuine daemon is vmware-hostd), and datastore reads of snapshot files by an account that is not the backup service.
+      DEFENDER TAKEAWAY: treat a VPN appliance compromise as a possible hypervisor compromise and check ESXi persistence files and execInstalledOnly state before declaring the incident closed; restrict ESXi and vCenter management to dedicated administration hosts, and keep execInstalledOnly enforced with monitoring for it being switched off.
+      LIMITS: Insikt does not say which VPN flaw TAG-218 used (its Fortinet, SonicWall and Palo Alto targeting is described as targeting; Unit 42's CVE-2026-0257 case is separate); technique T1190 is carried as the access class from the VPN-appliance targeting, an inference rather than an Insikt-stated mapping. IOCs and a sample hash exist in the Insikt post (not carried).
+  # ------------------------------------------------------------------ 4
+  - title: "Qubole: an attacker used vendor-account IAM credentials to assume dormant cross-account integration roles in dozens of customer AWS accounts, then harvested secrets and validated Entra ID and Okta client credentials (Wiz and Sentra, 14 to 26 October)"
+    sources:
+      - { url: "https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild", publisher: "Wiz (CIRT and Research)", date: "2026-11-09", role: "primary" }
+      - { url: "https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack", publisher: "Sentra (first detection, independent customer-side telemetry)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/", publisher: "BleepingComputer (notes no Qubole statement found)", date: "2026-11-10", role: "secondary" }
+    discovery_trace: "first seen at: securityweek feed, URL https://www.securityweek.com/feed/ ('Over a Dozen Organizations Hit in Qubole Supply Chain Attack') -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/ -> primary: Wiz, URL https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild -> second primary: Sentra, URL https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack (also surfaced in Risky Bulletin 2026-11-11, https://news.risky.biz/risky-bulletin-france-blames-iran-for-the-october-supermarket-fridge-hacks/)"
+    summary: |
+      Wiz, working with Sentra and Mandiant, reports that between 2026-10-14 and 2026-10-26 an actor used IAM credentials from an AWS account associated with the Qubole data platform to call sts:AssumeRole against integration roles that customers had created to trust Qubole. Two Qubole IAM users were used; every call carried the correct External ID and succeeded, and in most affected environments the roles were otherwise unused, so the trust policies still worked and the attacker's requests were the only AssumeRole activity from the vendor account in October. The traffic came from Mullvad VPN exits and an OVH VPS, not from AWS infrastructure where legitimate Qubole traffic originates.
+      Inside each account the actor enumerated broadly (role session names with a consistent prefix), read Lambda function configuration (environment variables), Secrets Manager and SSM Parameter Store, ran TruffleHog to test discovered AWS access keys, Entra ID service-principal client secrets and Okta client credentials, and downloaded S3 data opportunistically, sometimes whole buckets in one session. Sentra reports it made no write actions, collected about 100 passwords and keys in seven minutes, and counts dozens of customers affected; counts differ across outlets (Sentra "dozens"/"more than a dozen", BleepingComputer "tens of companies", SecurityWeek "over a dozen"), and Wiz does not give a number. Wiz also found a bootable ISO on the attacker's VPS that gathers host information and polls for shell commands for 90 minutes before a hard reboot, but has not seen it deployed, and a separate, unlinked set of October 8 to 11 activity using customer-owned AWS keys created for Qubole integrations. How the Qubole IAM users were compromised is not stated; BleepingComputer found no public Qubole statement. Wiz has not tied the activity to publicly reported actors and calls the targeting opportunistic.
+    region_nexus: "global; no country named"
+    primary_sector_nexus: "indirect (relevant to any public body that grants SaaS or data-platform vendors cross-account access in AWS)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1199, T1078.004, T1580, T1555.006, T1530]
+    affected_products: ["Amazon Web Services IAM", "AWS Secrets Manager", "AWS Systems Manager Parameter Store", "AWS Lambda", "Amazon S3", "Qubole", "Microsoft Entra ID", "Okta"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:qubole-aws-cross-account-trust-abuse-2026-10", type: incident, name: "Qubole cross-account AWS role abuse (October 2026)", aliases: [], summary: "Attacker used IAM credentials from an AWS account associated with Qubole to assume customer integration roles between 2026-10-14 and 2026-10-26, harvest secrets and exfiltrate S3 data; detected by Sentra and investigated by Wiz and Mandiant (Wiz and Sentra, 2026-11-09)." }
+      - { key: "tool:trufflehog", type: tool, name: "TruffleHog", aliases: [], summary: "Open-source secret scanner whose verification mode the Qubole attacker used to test stolen AWS, Entra ID and Okta credentials (Wiz, 2026-11-09)." }
+    relation_suggestions:
+      - { subject: "incident:qubole-aws-cross-account-trust-abuse-2026-10", object: "tool:trufflehog", basis: "Wiz: the actor used TruffleHog to validate AWS keys, Entra ID client secrets and Okta client credentials found in victim environments (Wiz, 2026-11-09)" }
+    related_entries: ["2026-10-18/connectwise-cloud-backup-skykick-m365-app-credential-abuse"]
+    verification: MULTI-SOURCE
+    sourcing_note: "Wiz CIRT investigation and Sentra's customer-side detection are independent first-hand observations; BleepingComputer adds that Qubole had not publicly commented."
+    confidence: HIGH
+    admiralty_suggestion: "B1"
+    novelty: new
+    overlap_note: "S4 (incidents) will likely surface the same story from the news side; the primaries here are the Wiz and Sentra write-ups."
+    evidence:
+      - quote: "Working with Sentra and Mandiant, Wiz observed a threat actor using IAM credentials from an AWS account associated with Qubole between October 14 and October 26, 2026."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild"
+      - quote: "Most of the roles the threat actor assumed were not otherwise in use."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild"
+      - quote: "In this activity, a source IP condition alone would have blocked every role assumption we observed."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild"
+      - quote: "CloudTrail management events record the role assumption and the bucket listing, but not the object reads that make up the data exfiltration."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild"
+      - quote: "Dozens of Qubole customers were impacted."
+        attribution: "Sentra"
+        source_url: "https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack"
+    extended_notes: |
+      EXPOSURE: Any AWS account holding an IAM role whose trust policy allows a Qubole account (or any other vendor account) to assume it, including roles left over from finished integrations. Check: list roles whose trust policy names an external account and note which have had no legitimate AssumeRole traffic for months (Wiz: dormant roles still accepted the attacker's calls). Wiz publishes the vendor account identifier, the two IAM principals and the attacker network ranges for a CloudTrail hunt back to 2026-10-01; reference the Wiz post rather than reproducing them.
+      DETECTION (telemetry class first): cloud control-plane audit logs (CloudTrail management events) for AssumeRole into integration roles from the vendor account where the source IP is not an AWS address; role session names with a consistent attacker-chosen prefix; GetCallerIdentity from a TruffleHog user agent paired with the same sources; identity-provider sign-in logs (Entra ID, Okta) showing the same user agent against service principals or OAuth clients; S3 data events or server access logs for object reads (management events do not show GetObject, so the exfiltration is invisible unless enabled). Post-incident: rotating a credential does not end temporary STS sessions already issued, so revoke role sessions as well, and rotate every secret, parameter and Lambda environment variable the role could read (Wiz).
+      TRIAGE: legitimate vendor traffic originates from the vendor's AWS infrastructure (Wiz saw nothing legitimate from other networks); the correct External ID does NOT discriminate, because Wiz notes it is logged in plaintext and often stored by the vendor. A vendor role assumed through a consumer VPN or a hosting provider the vendor has never used is the high-signal case.
+      DEFENDER TAKEAWAY: inventory third-party trust relationships; delete roles of ended integrations; pin the trust to the specific vendor principal and add an aws:SourceIp or aws:SourceVpce condition (Wiz: this alone would have blocked every observed assumption); keep integration roles away from Secrets Manager, SSM and Lambda configuration unless required; enable S3 data events on sensitive buckets.
+      LIMITS: the compromise route into the vendor is unknown; the number of victims is unknown; no government victim is reported; an unlinked October 8-11 customer-key activity cluster is also described by Wiz.
+  # ------------------------------------------------------------------ 5
+  - title: "Push Security: fake OpenAI, SpaceX and Anthropic event invitations chain Kali365 device-code phishing with VoidProxy session-cookie capture, delivered through Google short links, an X logout redirect and a Cloudflare challenge"
+    sources:
+      - { url: "https://pushsecurity.com/blog/ai-themed-fake-event-campaign-analysis", publisher: "Push Security", date: "2026-11-05", role: "primary" }
+      - { url: "https://cofense.com/blog/would-your-employees-join-a-fake-anthropic-ai-preview", publisher: "Cofense Intelligence (independent observation of the email side since September 2026)", date: "2026-10-29", role: "corroborating" }
+    discovery_trace: "first seen at: push-security slice record, URL https://pushsecurity.com/blog (WebFetch with a title/date/href prompt, since extract returns an undated list) -> primary: https://pushsecurity.com/blog/ai-themed-fake-event-campaign-analysis (extract) -> pivot: Cofense report linked from the Push text, URL https://cofense.com/blog/would-your-employees-join-a-fake-anthropic-ai-preview"
+    summary: |
+      Push Security detected and blocked visits (late October 2026) to fake event-registration pages for an OpenAI Academy livestream, a private SpaceX briefing and Anthropic at AWS re:Invent that ask for a work-account sign-in to claim a reward. The page offers two buttons: "Continue with Microsoft" starts a Microsoft device-code login through Kali365 (the visitor pastes a code into the genuine login.microsoftonline.com device-login page and Microsoft issues tokens to the operator's session), then hands the visitor to a VoidProxy Microsoft sign-in proxy for a second capture of password and session cookie; "Continue with Google" opens a VoidProxy reverse proxy of Google sign-in that captures password, MFA response and session cookie. Kali365 and VoidProxy are separate phishing-as-a-service platforms that Push says are both built to defeat MFA; the operator that builds the lure pages (tracked by Push as ZoomMock for the fake Zoom pages from May to October and MSDRoot from 2026-10-22) is, Push thinks, most likely a customer of both, and links the two kits at medium-high confidence through one shared domain.
+      Delivery evades reputation checks: invitations route through Google short links (c.gle, share.google), Zapier's zpr.io and an x.com logout redirect, earlier ones through GoTo Webinar's mail sender or real Zoom event pages; a Cloudflare managed challenge hides the lure domain from scanners and the Microsoft proxies show scanners real business news sites. The operator rotated brand lures (Zoom, Anthropic, OpenAI, SpaceX, Claude) between 2026-10-20 and 2026-10-30 and domains every few weeks; marketing staff are the stated target group. Cofense independently reports the Anthropic-themed email wave since September 2026, using GoTo Webinar and zpr.io, CAPTCHAs and a credential-harvesting Google/Microsoft sign-in.
+    region_nexus: "global; no country named (Swiss relevance: the same device-code technique is in the Vaud M365 campaign covered 2026-11-05)"
+    primary_sector_nexus: "indirect (marketing and communications staff in any organisation with Microsoft 365 or Google Workspace)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566.002, T1528, T1557, T1539, T1583.001]
+    affected_products: ["Microsoft Entra ID", "Microsoft 365", "Google Workspace"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:voidproxy", type: tool, name: "VoidProxy", aliases: [], summary: "Phishing-as-a-service reverse-proxy (adversary-in-the-middle) platform that captures passwords, MFA responses and session cookies for Microsoft and Google sign-ins (Push Security, 2026-11-05)." }
+      - { key: "campaign:ai-brand-fake-event-device-code-aitm-phishing-2026-10", type: campaign, name: "AI-brand fake event invitations (ZoomMock / MSDRoot)", aliases: ["ZoomMock", "MSDRoot"], summary: "May to November 2026 operator running fake Zoom, Anthropic, OpenAI and SpaceX event pages that chain Kali365 device-code phishing with VoidProxy capture (Push Security, 2026-11-05; Cofense, 2026-10-29)." }
+    relation_suggestions:
+      - { subject: "campaign:ai-brand-fake-event-device-code-aitm-phishing-2026-10", object: "tool:voidproxy", basis: "Push: the event pages hand sign-ins to VoidProxy proxies; Push believes the operator is a customer of both Kali365 and VoidProxy, not that their developers are linked (Push Security, 2026-11-05)" }
+    related_entries: ["2026-11-05/vaud-m365-device-code-phishing-campaign-romandie", "2026-05-23/fbi-psa260521-kali365-oauth-device-code-phaas-bypasses-m365"]
+    verification: MULTI-SOURCE
+    sourcing_note: "Push (browser telemetry on customer endpoints) and Cofense (email telemetry) describe the same lure family from different vantage points; the device-code to VoidProxy chain itself is Push-only."
+    confidence: MEDIUM
+    admiralty_suggestion: "B2"
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Delta on two themes already covered (Kali365 device-code phishing in the FBI PSA entry, the Vaud Microsoft 365 device-code campaign, 2026-11-05); the new content is the double-capture chain, trusted-redirect delivery and AI-brand event lures. Vendor-product-promotional in places; keep to two sentences or fold into the Vaud entry as an update if the main agent prefers."
+    evidence:
+      - quote: "Kali365 and VoidProxy are separate phishing-as-a-service (PhaaS) platforms, both designed to bypass or defeat MFA checks."
+        attribution: "Push Security"
+        source_url: "https://pushsecurity.com/blog/ai-themed-fake-event-campaign-analysis"
+      - quote: "We think this operator is most likely a customer of both."
+        attribution: "Push Security"
+        source_url: "https://pushsecurity.com/blog/ai-themed-fake-event-campaign-analysis"
+      - quote: "The operator moved from Zoom to Anthropic to OpenAI, SpaceX, and Claude between October 20 and October 30."
+        attribution: "Push Security"
+        source_url: "https://pushsecurity.com/blog/ai-themed-fake-event-campaign-analysis"
+      - quote: "Since September 2026, threat actors have been sending emails that appear to be an invitation to a private Anthropic AI meeting, but are actually attempts to steal Google and Microsoft login credentials."
+        attribution: "Cofense Intelligence"
+        source_url: "https://cofense.com/blog/would-your-employees-join-a-fake-anthropic-ai-preview"
+    extended_notes: |
+      EXPOSURE: Users able to complete a Microsoft device-code sign-in (the default unless Conditional Access blocks the device-code flow) and Google accounts without phishing-resistant MFA. Check: whether a Conditional Access policy blocks or limits the device-code authentication flow, and whether device-code sign-ins occur at all in sign-in logs.
+      DETECTION (telemetry class first): identity-provider sign-in logs with the device-code authentication protocol followed within minutes by a second interactive sign-in from a hosting-provider or unfamiliar network for the same user (the VoidProxy capture); token issuance to an unexpected client application after a device-code grant; web proxy or DNS logs for visits to look-alike event domains after a mail or chat link that passed through c.gle, share.google, zpr.io or an x.com logout redirect; browser-side detection of the device-code page or reverse-proxy rendering where a browser agent is deployed (Push's own approach). Post-incident: revoke refresh tokens and sessions, not only the password, since both a token and a cookie are captured.
+      TRIAGE: legitimate device-code logins exist for TVs, kiosks and CLI tools; the discriminator is a user on a managed laptop with a normal browser who was just on an event page, and a follow-on sign-in from a different network.
+      DEFENDER TAKEAWAY: block the device-code flow where unused; require phishing-resistant MFA for Google and Microsoft sign-ins; extend user awareness to "invitation to an AI event requiring a work-account sign-in".
+      LIMITS: single-vendor chain observation; Push is a product vendor (browser agent) and the post closes with its own product pitch; IOCs listed by Push are domain-rotating and not carried.
+  # ------------------------------------------------------------------ 6
+  - title: "ANNUAL REPORT — iVerify Advanced Mobile Threat Report 2026: criminals, not states, account for about 75% of its iPhone exploit-kit detections, including a DarkSword variant served through an Instagram ad, and an exploit toolkit shipped inside an App Store app (FomoPeek)"
+    sources:
+      - { url: "https://www.iverify.com/advanced-mobile-threat-report-2026", publisher: "iVerify (report landing page)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.iverify.com/blog/half-click-attacks-iphone-ads", publisher: "iVerify blog (half-click ad delivery case study)", date: "2026-11-10", role: "primary" }
+      - { url: "https://therecord.media/spyware-cyber-crime-iverify", publisher: "The Record (independent reporting with vendor interview)", date: "2026-11-10", role: "secondary" }
+    discovery_trace: "first seen at: iverify-blog slice record, URL https://www.iverify.com/blog (url --direct, relative ./blog/<slug> links; per-post extract for dates) -> https://www.iverify.com/blog/half-click-attacks-iphone-ads -> report landing page https://www.iverify.com/advanced-mobile-threat-report-2026 -> corroboration: The Record, URL https://therecord.media/spyware-cyber-crime-iverify (surfaced from the news-feed sweep, https://therecord.media/feed)"
+    summary: |
+      iVerify published its 2026 Advanced Mobile Threat Report (the full report sits behind a form; findings are taken from the landing page, the vendor's blog and The Record's interview). iVerify says about 75% of this year's detections were criminals using the leaked Coruna and DarkSword iOS exploit kits to steal credentials and cryptocurrency, the remainder mercenary spyware such as Pegasus, and that every enterprise case it confirmed involved an employee below managing-director level. Prevalence is reported as 1.07 infections per 1,000 consumer scans and 0.7 per 1,000 enterprise scans (the population iVerify monitors, not all iPhones; iVerify attributes the lower enterprise rate to enforced patching and on-device detection).
+      The delta for defenders: iVerify telemetry recorded a DarkSword variant served through an Instagram ad while the user was scrolling, with a second, different DarkSword variant reaching the same person later through a clicked link; ad platforms let a buyer target by device, OS version, location and interest, so the exploit is shown only to phones it works on. iVerify says every DarkSword-chain flaw was fixed by iOS 26.3 and most earlier, that DarkSword supports iOS 18.4 to 18.7, and that to its knowledge no confirmed Coruna or DarkSword victim received an Apple threat notification. The report also cites FomoPeek, an App Store app whose versions 1.1 and 1.2 (September) carried a hidden iOS exploitation toolkit (disclosed by SlowMist, not by iVerify), and three Android remote-access trojans (HyperRat, Cellik, Octagon) reported with Play Protect flagging fewer than half of the devices where iVerify found a malicious app. The ad-delivery mechanism and the expired-analytics-tag route are already in the store (Adfection/Candiru ad delivery, DeadTag); what is new here is iVerify's own telemetry on criminal ad-delivered use.
+    region_nexus: "global; no country named"
+    primary_sector_nexus: "indirect (employee iPhones, especially BYOD, in any organisation)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1189, T1203]
+    affected_products: ["Apple iOS", "Apple iPadOS"]
+    entity_keys: ["tool:darksword", "tool:coruna"]
+    new_entities:
+      - { key: "report:iverify-advanced-mobile-threat-report-2026", type: report, name: "iVerify Advanced Mobile Threat Report 2026", aliases: [], summary: "iVerify's 2026 mobile threat report: about 75% of detections are criminals using leaked Coruna and DarkSword iOS exploit kits, ad-delivered half-click exploitation, FomoPeek App Store toolkit and Android RAT kits (iVerify, 2026-11-09/10)." }
+    relation_suggestions: []
+    related_entries: ["2026-10-28/deadtag-expired-tag-domains-coruna-darksword-iphone-kits", "2026-10-16/adfection-candiru-spyware-zero-click-ad-delivery"]
+    verification: MULTI-SOURCE
+    sourcing_note: "The telemetry is iVerify's alone (vendor survey of its own scans, a self-selected population); The Record independently reports the headline figures from an interview, and the report's DarkSword/Coruna background matches GTIG's public analysis. Treat prevalence numbers as a vendor population statistic."
+    confidence: MEDIUM
+    admiralty_suggestion: "B3"
+    novelty: new
+    borderline: true
+    borderline_reason: "Periodic vendor report flagged per PD-9. Partly repeats covered ground (Adfection, DeadTag, APT29 DarkSword); the useful deltas are the Instagram ad-delivered DarkSword case, the 'no Apple threat notification' observation and the iOS 26.3 floor. Suggest a short entry or a changelog line on the DeadTag entry; drop the prevalence numbers."
+    evidence:
+      - quote: "iVerify recorded one served on Instagram while the user was simply scrolling."
+        attribution: "iVerify"
+        source_url: "https://www.iverify.com/advanced-mobile-threat-report-2026"
+      - quote: "To our knowledge, no device we confirmed as infected with DarkSword or Coruna received an Apple threat notification."
+        attribution: "iVerify"
+        source_url: "https://www.iverify.com/advanced-mobile-threat-report-2026"
+      - quote: "Every vulnerability in the DarkSword chain was fixed by iOS 26.3, and most were fixed earlier"
+        attribution: "iVerify"
+        source_url: "https://www.iverify.com/blog/half-click-attacks-iphone-ads"
+      - quote: "About 75% of detections involved criminal actors deploying Coruna or DarkSword exploit kits, the report said."
+        attribution: "The Record"
+        source_url: "https://therecord.media/spyware-cyber-crime-iverify"
+    extended_notes: |
+      EXPOSURE: iPhones and iPads running iOS below the DarkSword fix level (the chain targets iOS 18.4 to 18.7.x; fixed by iOS 26.3), especially unmanaged or BYOD devices that an MDM cannot force to update. Check: minimum OS version enforced for access to corporate resources. A page that serves nothing to datacentre or VPN addresses cannot be reproduced later, so evidence has to come from the phone (iVerify's point).
+      DETECTION: telemetry from on-device agents or MDM diagnostics for exploitation side effects; iVerify says some indicators exist on a device only briefly and that DarkSword has no persistence, so a reboot or update removes the running implant; collect device telemetry within about two hours (iVerify's recommendation). Network: ad-network and tag-domain categories are poor discriminators because the delivery is through legitimate ad exchanges.
+      DEFENDER TAKEAWAY: enforce an OS version floor for access to mail, SSO and VPN; treat a suspected iPhone infection as a credential incident (rotate credentials and revoke sessions held on the device); do not read an absent Apple threat notification as an all-clear.
+      LIMITS: full report not read (form-gated); prevalence figures come from vendor scans only; FomoPeek facts come via iVerify's summary of SlowMist, so cite SlowMist if the main agent wants that item.
+  # ------------------------------------------------------------------ 7
+  - title: "ANNUAL REPORT — Kaspersky IT threat evolution in Q3 2026 (non-mobile and mobile statistics): Qilin 15% of leak-site victims, 4,470 new ransomware variants"
+    sources:
+      - { url: "https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/", publisher: "Kaspersky Securelist", date: "2026-11-10", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist (feed unreadable; WebFetch of https://securelist.com/ listed the Q3 reports) -> primary: https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/ (extract)"
+    summary: |
+      Kaspersky's quarterly statistics for Q3 2026 (a companion mobile-statistics report, https://securelist.com/malware-report-q3-2026-mobile-statistics/121844/, was listed but not read). The desktop and IoT report counts 4,470 new ransomware variants (more than 1.5 times Q2), more than 81,000 users hit by ransomware, and says Qilin accounts for 15% of victims published on data leak sites ahead of The Gentlemen (7.89%) and the newcomer Deadlock (4.46%). It lists KEV-added ransomware-exploited flaws in SonicWall SMA1000, SharePoint Server, Windows, VMware vCenter, WatchGuard Firebox and JetBrains TeamCity, and three law-enforcement outcomes (sentences for members of Ransom Cartel, Ryuk and Conti operations). Everything is from Kaspersky Security Network detection verdicts and leak-site tallies; there is no new technique.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:qilin"]
+    new_entities:
+      - { key: "report:kaspersky-it-threat-evolution-q3-2026", type: report, name: "Kaspersky IT threat evolution in Q3 2026", aliases: [], summary: "Kaspersky quarterly malware statistics for Q3 2026 (non-mobile and mobile reports): 4,470 new ransomware variants and Qilin leading leak-site victim share at 15% (Kaspersky Securelist, 2026-11-10)." }
+    relation_suggestions: []
+    related_entries: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Kaspersky vendor statistics from its own telemetry and public leak-site counts."
+    confidence: MEDIUM
+    admiralty_suggestion: "B2"
+    novelty: new
+    borderline: true
+    borderline_reason: "Periodic statistics report flagged per PD-9. Counts and shares are the 'vanity metric' kind; the one reusable fact (Qilin share, newcomers) overlaps existing Qilin coverage. Recommend NOT writing an entry unless the main agent wants a one-line annual-report note."
+    evidence:
+      - quote: "15% of all ransomware victims whose data was published on threat actors’ data leak sites (DLSs) were victims of Qilin."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/"
+      - quote: "There were 4470 new ransomware variants discovered."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/"
+    extended_notes: |
+      No exposure, detection or triage content beyond what is in the entry store. Kept only so the periodic report is flagged per PD-9.
+  # ------------------------------------------------------------------ 8
+  - title: "NoName057(16) publishes a doxing bounty portal on the dark web and lists 18 EU politicians, prosecutors, police chiefs and journalists, among them Italy's foreign minister, the Eurojust president and Germany's BKA president"
+    sources:
+      - { url: "https://news.risky.biz/risky-bulletin-pro-kremlin-hacktivists-dox-eu-politicians-law-enforcement/", publisher: "Risky Bulletin (Catalin Cimpanu)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.ansa.it/sito/notizie/mondo/2026/11/07/taglia-degli-hacker-sul-dark-web-su-tajani-e-lo-voi.-cyberattacco-alla_2902e339-ba05-423b-b761-27735ead1323.html", publisher: "ANSA (Italian news agency; contains the underlying reporting and the Russian embassy reply)", date: "2026-11-07", role: "primary" }
+      - { url: "https://www.securityweek.com/italys-meloni-blames-pro-russian-hackers-for-leak-of-foreign-ministers-data-on-the-dark-web/", publisher: "SecurityWeek (Associated Press)", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://www.darkowl.com/blog-content/noname05716-telegram-activity-assessment/", publisher: "DarkOwl (background on the group's Telegram activity, to 2026-09-30)", date: "2026-11-05", role: "context" }
+    discovery_trace: "first seen at: risky-biz-news slice record, URL https://news.risky.biz/rss/ (fetched via tools/fetch_source.py feed) -> https://news.risky.biz/risky-bulletin-pro-kremlin-hacktivists-dox-eu-politicians-law-enforcement/ -> pivot: ANSA article linked from it, URL https://www.ansa.it/sito/notizie/mondo/2026/11/07/taglia-degli-hacker-sul-dark-web-su-tajani-e-lo-voi.-cyberattacco-alla_2902e339-ba05-423b-b761-27735ead1323.html -> corroboration: SecurityWeek/AP, URL https://www.securityweek.com/italys-meloni-blames-pro-russian-hackers-for-leak-of-foreign-ministers-data-on-the-dark-web/ -> context: DarkOwl, URL https://www.darkowl.com/blog-content/noname05716-telegram-activity-assessment/"
+    summary: |
+      Risky Bulletin reports that the pro-Russian hacktivist group NoName057(16) published, on a dark-web portal it launched this year after Europol seized its server infrastructure last year, the personal information of 18 people: Italian Foreign Minister Antonio Tajani, the Eurojust president, the head of Europol's European Cybercrime Centre, the German Federal Criminal Police Office (BKA) president, the chief of Italy's Postal Police, a Frankfurt prosecutor and three German journalists who investigated Russian hackers. ANSA (7 November) adds the Rome public prosecutor and the mayor of Aviano (the town hosting a US base) to those on whom the group had offered a payment for personal information for about two weeks, describes profiles with private phone numbers, e-mail and home addresses, and notes the Italian data-protection authority is monitoring circulation of the data; the Russian embassy in Italy denied involvement. Risky says the portal runs a bug-bounty-like programme asking others to contribute personal data on people involved in the takedown and on anti-Russia politicians across Europe. The Italian prime minister blamed pro-Russian hackers; Tajani said the data was being spread on the dark web and that he and his family were exposed to threats.
+      Context from Risky and DarkOwl: since the DDoSia botnet seizure the group shifted mainly to psychological operations and some ICS tampering of exposed control panels; Risky notes the group claimed the European refrigeration-controller attacks and that few experts believe the claim (France attributed the 11-12 October campaign to an Iranian IRGC-CEC unit; that is already covered). The group's own portal was not accessed.
+    region_nexus: "Europe (Italy, Germany, EU institutions); no Swiss person named in the sources; Swiss federal sites were DDoS targets of the group around the 2024 Bürgenstock summit (per the 2026-06-03 NCSC G7 entry in the store, citing ZENDATA)"
+    primary_sector_nexus: "adjacent (police, prosecutors, public officials are the targeted population; the bounty invites contributions on 'people involved in the takedown')"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:noname057-16", type: actor, name: "NoName057(16)", aliases: ["NoName057", "DDoSia operators"], summary: "Pro-Russian hacktivist collective active since March 2022, formerly DDoSia-based DDoS campaigns against governments, financial and transport targets; after a 2025 Europol takedown it shifted to psychological operations, ICS-panel tampering claims and, in November 2026, a dark-web doxing portal with a bounty for personal data on European officials (Risky Bulletin, ANSA, DarkOwl, 2026-11)." }
+    relation_suggestions: []
+    related_entries: ["2026-07-27/cybernox-chat-control-doxing-french-eu-officials", "2026-06-03/ncsc-switzerland-warns-of-cyber-operations-around-the-g7-via"]
+    verification: MULTI-SOURCE
+    sourcing_note: "ANSA (agency reporting incl. Italian-government statements) and AP via SecurityWeek corroborate Risky's list; the portal itself was not examined; the Aviano mayor and Rome prosecutor names rest on ANSA alone."
+    confidence: MEDIUM
+    admiralty_suggestion: "B2"
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Home-region adjacent hybrid-threat item that S2 (home region and sector) will probably also see in Italian and German press; no Swiss nexus stated. Worth carrying only if the main agent judges the bounty programme relevant to Swiss police and judiciary (the bounty explicitly invites data on people involved in the takedown of the group's infrastructure)."
+    evidence:
+      - quote: "A pro-Kremlin hacktivist group named NoName057(16) has published the personal information of 18 high-profile EU politicians and law enforcement officials."
+        attribution: "Risky Bulletin"
+        source_url: "https://news.risky.biz/risky-bulletin-pro-kremlin-hacktivists-dox-eu-politicians-law-enforcement/"
+      - quote: "The group set up a bug bounty-like program on the site, asking others to contribute with the personal information of people involved in the takedown and anti-Russia politicians across Europe."
+        attribution: "Risky Bulletin"
+        source_url: "https://news.risky.biz/risky-bulletin-pro-kremlin-hacktivists-dox-eu-politicians-law-enforcement/"
+      - quote: "Italian Foreign Minister Antonio Tajani said Saturday that his personal data had been disseminated on the dark web, an encrypted part of the internet"
+        attribution: "SecurityWeek (AP)"
+        source_url: "https://www.securityweek.com/italys-meloni-blames-pro-russian-hackers-for-leak-of-foreign-ministers-data-on-the-dark-web/"
+    extended_notes: |
+      EXPOSURE: officials, police and prosecutors involved in operations against pro-Russian cyber groups; personal data (home addresses, private phone numbers, family) is the exposed asset, not IT systems.
+      DEFENDER TAKEAWAY (concept): privacy and personal-security hygiene for named officials; monitor for doxing mentions of staff in public-facing roles; no technical detection applies.
+      LIMITS: portal not examined; no Swiss names reported; attribution of the refrigeration attacks to this group is a claim that Risky says few researchers believe (and France attributed them to Iran).
+  # ------------------------------------------------------------------ 9
+  - title: "iOS 'worse_query' sandbox escape: a public proof of concept lets an app read other apps' containers on iOS 26 and 27; Binance warns of seed-phrase exposure and Apple's iOS 27.2.1 notes list no fix"
+    sources:
+      - { url: "https://securityaffairs.com/202788/hacking/ios-sandbox-escape-is-public-and-apple-hasnt-confirmed-a-fix.html", publisher: "Security Affairs", date: "2026-11-10", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/binance-warns-of-ios-sandbox-escape.html", publisher: "The Hacker News", date: "2026-11-10", role: "corroborating" }
+      - { url: "https://github.com/forcequitOS/worse_query", publisher: "forcequitOS (researcher repository README)", date: "2026-11-08", role: "primary" }
+      - { url: "https://support.apple.com/en-us/149715", publisher: "Apple Security (iOS 27.2.1 and iPadOS 27.2.1 content)", date: "2026-11-09", role: "context" }
+    discovery_trace: "first seen at: securityaffairs feed, URL https://securityaffairs.com/feed -> https://securityaffairs.com/202788/hacking/ios-sandbox-escape-is-public-and-apple-hasnt-confirmed-a-fix.html -> pivot: researcher repository, URL https://github.com/forcequitOS/worse_query -> pivot: Apple security content, URL https://support.apple.com/en-us/149715 -> corroboration: THN, URL https://thehackernews.com/2026/11/binance-warns-of-ios-sandbox-escape.html"
+    summary: |
+      Binance warned on 10 November of a public iOS sandbox escape, 'worse_query', that lets one app read local files of other apps on iOS 26.7.1, 27.0.1 and 27.2 (seed phrases, keys and credentials in other apps' containers). The researcher forcequitOS published a proof of concept on GitHub (README: a sandbox escape for iOS 26 and 27, successor to bad_query; the code "isn't useful by itself" and needs an App Group container set up for the app). Other developers have already built installable tools on it (WQ Files, installed by sideloading with AltStore or SideStore). Apple released iOS and iPadOS 27.2.1 on 2026-11-09, the day before the Binance warning and after the PoC; the page text read here (about 5.6 KB, ten CVE rows) contains nothing that describes this issue (the nearest wording, 'An app may be able to access sensitive user data' under App Intents, is a different credited bug), and The Hacker News and Security Affairs both say Apple's updates list no fix, so no fix is confirmed. Neither Binance nor the researcher reports attacks or theft, and The Hacker News notes nobody has said whether an App Store app could use the technique. No CVE exists.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (iPhones with sideloaded or enterprise-signed apps)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1068]
+    affected_products: ["Apple iOS", "Apple iPadOS"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    related_entries: []
+    verification: MULTI-SOURCE
+    sourcing_note: "Two outlets plus the researcher's repository and Apple's own release notes (absence of a fix is read from the notes, a negative claim); Binance's warning itself was read through the outlets (an X post)."
+    confidence: MEDIUM
+    admiralty_suggestion: "C2"
+    novelty: new
+    borderline: true
+    borderline_reason: "Vulnerability lead with no CVE, no exploitation reported, and a precondition (a sideloaded or manually signed app) that managed fleets normally block; S1 may also see it. Included so the public PoC and Apple's missing fix statement are not lost; drop if S1 carries it or if sideloading is blocked by policy."
+    evidence:
+      - quote: "On 10 November, Binance warned users about a public iOS sandbox escape that lets one app read the files of other apps."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/202788/hacking/ios-sandbox-escape-is-public-and-apple-hasnt-confirmed-a-fix.html"
+      - quote: "The good news is that neither Binance nor the researcher has reported any attacks or data theft."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/202788/hacking/ios-sandbox-escape-is-public-and-apple-hasnt-confirmed-a-fix.html"
+    extended_notes: |
+      EXPOSURE: iOS 26.7.x, 27.0.x and 27.2 (tested versions named by Binance; the researcher gives a wider range); the technique needs an app with an App Group container, so the practical route is sideloading (AltStore, SideStore) or manually signed apps; whether an App Store app could do it is unconfirmed.
+      DEFENDER TAKEAWAY: confirm that sideloading and untrusted-developer profiles are blocked on managed iPhones; remove apps from untrusted sources (Binance's advice); watch Apple's security page for a later entry.
+      LIMITS: no CVE; no exploitation reported; Apple's non-confirmation is inferred from release notes.
+# watchlist duty for S3 is none: no sweep block.
+dropped_candidates:
+  - { what: "Sophos X-Ops 'ARTEX: Attackers apply agentic AI' (2026-11-10)", url: "https://www.sophos.com/en-us/blog/artex-attackers-apply-agentic-ai", why: "ARTEX already sits in about 23 entries (Microsoft, CrowdStrike, GTIG, Check Point coverage); Sophos adds product detections and a thin 'small number of customers' telemetry line. Only marginal deltas: the original ARTEX project was taken offline by its developer (per Censys) and a backdoored copy of the Docker image circulates (badbyte.io), and host hunt markers (artx file names, MARKER/ARTX command markers). Not worth an update unless the main agent wants one line on trojanised mirrors." }
+  - { what: "TrendAI 'Hermes Attack Workbench and Carbonato Model Gateway, Part 1' (2026-11-09)", url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/docker-ping-ai-command-plane-carbonato-hermes-attack-workbench-part-1-discovery", why: "Honeypot-only evidence (failed Docker API 2375 container creation), no victims, no new technique beyond an exposed Docker API; Trend itself says it cannot show AI made the attacks more effective." }
+  - { what: "Socket 'Malicious bee-js npm release and Swarm Desktop releases deliver SleepyDuck' (2026-11-09)", url: "https://socket.dev/blog/bee-js-compromise", why: "Niche Ethereum Swarm package (about 470 npm downloads a day), no constituency relevance; the transferable point (valid SLSA provenance does not prove the publishing identity was not compromised) is already carried by earlier supply-chain entries." }
+  - { what: "CrowdStrike 'Adversaries Turn the Vulnerability Ecosystem Against Defenders' (feed date 2026-11-05, page dateModified 2026-11-04T20:11Z)", url: "https://www.crowdstrike.com/en-us/blog/adversaries-turn-vulnerability-ecosystem-against-defenders/", why: "Statistics-led (median under one day from public PoC to exploitation, 91% within 48 h, fastest 35 minutes, Jan-Jul 2026) plus one cPanel example; publication date at the edge of the 146 h lookback; no new technique. Quotes verified in case the main agent wants a one-line patch-tempo remark." }
+  - { what: "FortiGuard Labs 'Analyzing an Illegal Android Gambling App Built with Flutter' (2026-11-09)", url: "https://www.fortinet.com/blog/threat-research/analyzing-an-illegal-android-gambling-app-built-with-flutter", why: "Consumer-fraud Android app (phone numbers, location, device data), no constituency relevance." }
+  - { what: "Microsoft Research 'Detecting sleeper agents hiding in AI model neurons' (2026-11-10)", url: "https://www.microsoft.com/en-us/security/blog/2026/11/10/detecting-sleeper-agents-hiding-in-ai-model-neurons/", why: "AI-model integrity research, no defender action for the constituency." }
+  - { what: "Recorded Future Insikt 'DoppelCart Fraud Network Grows to More Than 250,000 Domains' (2026-11-10)", url: "https://www.recordedfuture.com/blog/doppelcart-fraud-network-grows-domains", why: "Consumer shopping-fraud network impersonating US brands." }
+  - { what: "Check Point 'ChatGPT Lockdown Mode Bypass' (2026-11-05) and weekly threat-intelligence roundup (2026-11-09)", url: "https://research.checkpoint.com/2026/chatgpt-lockdown-mode-bypass-phishing-malware-delivery-and-silent-data-exfiltration/", why: "Vendor-AI-product weakness with no constituency exposure stated; the roundup is a digest." }
+  - { what: "Rapid7 research posts seen on the blog listing (BPFDoor/AVERAT 2026-09-29, Q3 threat update 2026-10-20, NetScaler intrusion analysis 2026-10-19, fraud ecosystem 2026-09-11)", url: "https://www.rapid7.com/blog/", why: "All dated before the window (per-post extract dates); N-able post is S1 territory." }
+  - { what: "Trellix CyberThreat Report November 2026 (page date 2026-11-04)", url: "https://www.trellix.com/advanced-research-center/threat-reports/november-2026/", why: "Periodic report but published 2026-11-04, before the window; mentioned here so the main agent can flag it if a later fire wants an ANNUAL REPORT note (April to September 2026 data)." }
+  - { what: "GTIG AI Threat Tracker 'From Prompting to Autonomy' (page date 2026-09-08)", url: "https://cloud.google.com/blog/topics/threat-intelligence/from-prompting-to-autonomy-the-evolution-of-adversarial-ai", why: "Listing page shows it first but it is a September report; GTIG feed has nothing since 2026-11-02." }
+candidate_sources:
+  - id: cofense-intelligence
+    publisher: "Cofense Intelligence blog"
+    url: "https://cofense.com/blog"
+    category: research
+    why: "First-hand email-telemetry phishing research with campaign-level detail (the Anthropic-preview invitation wave, 2026-10-29, fetched at https://cofense.com/blog/would-your-employees-join-a-fake-anthropic-ai-preview); independent corroboration for browser/identity-side reports such as Push Security's. Root page not fetched in this run."
+  - id: positive-technologies-esc
+    publisher: "Positive Technologies Expert Security Center (published on Medium by an ESC researcher)"
+    url: "https://medium.com/@dzaripova1177"
+    category: research
+    why: "Independent first-hand APT research with German and Czech victim telemetry (FamousSparrow SquawkDoor watering holes, 2026-08-21, fetched at https://medium.com/@dzaripova1177/the-sparrow-that-chirped-too-loud-famoussparrow-attacks-using-updated-sparrowdoor-and-the-new-29ac2d90544d); a vendor-site home for these reports should be located before promotion."
+coverage_gaps:
+  - source_id: sygnia
+    reason: "Still unreachable on every rung (fifth-plus consecutive run): www.sygnia.co/blog/ and sygnia.co/blog/ direct 403, /feed/ 403, /wp-json/wp/v2/posts 401, extract no readable body, jina relays the upstream challenge (and every jina key returned HTTP 402 balance exhausted during this run), WebFetch 403 on /blog/ and /threat-reports-and-advisories/, web.archive.org connection reset. WebSearch (three queries) shows only older Sygnia write-ups and press-release reprints (newest seen: an August 2026 Fire Ant release and a July 2026 AI-assisted cloud-intrusion release); no in-window Sygnia post is known. Recipe advice: keep fetch_method blocked and discover Sygnia output through WebSearch and press-release reprints."
+  - source_id: eset
+    reason: "Recipe change: the WeLiveSecurity RSS feed (https://www.welivesecurity.com/en/rss/feed/) lagged, newest item 2026-11-04 while the site already listed the 2026-11-10 Turla Cereal post; working listing: `extract https://www.welivesecurity.com/en/eset-research/` (dated, newest first). The page banner says 'Moving soon to the ESET Blog' (https://www.eset.com/blog/en/), so expect a host migration and re-check rss_url."
+  - source_id: kaspersky-securelist
+    reason: "Recipe change: feed https://securelist.com/feed/ unreadable (direct connection reset, jina returned no items); `url --direct` against securelist.com and its wp-json also resets. Working: `extract https://securelist.com/` lists recent titles without dates, WebFetch with a title/date/href prompt returns hrefs (dates mostly absent), and per-post `extract` returns the date."
+  - source_id: rapid7-research
+    reason: "Recipe change: feed https://www.rapid7.com/rss.xml is not well-formed XML (invalid token at line 461), so `feed` fails and the jina fallback returns no items. Working: WebFetch of https://www.rapid7.com/blog/ returns title and href lists without dates; per-post `extract https://www.rapid7.com/blog/post/<slug>/` returns the date."
+  - source_id: mandiant-gtig
+    reason: "Observation: feed items stop at 2026-11-02; the site listing (extract plus WebFetch) shows no dates and no obviously newer post, so no in-window GTIG post was found; a listing-order assumption was not relied on."
+  - source_id: jamf-threat-labs
+    reason: "Recipe note confirmed: https://www.jamf.com/blog/rss/category/jamf-threat-labs answers HTTP 301 and the jina fallback returns navigation links, so it is not a feed; `url` listing plus per-post `extract` (reliable date field) works; newest Threat Labs post 2026-09-30."
+  - source_id: securityweek
+    reason: "Observation: the WordPress feed is only 10 items deep (about one day), so a 146 h lookback needs WebFetch of the homepage (31 headlines; undated rows must be dated through per-article `extract`)."
+  - source_id: nau-ch
+    reason: "Quiet: `url https://www.nau.ch/news/digital` listed 38 articles and none was an in-window cyber item beyond already-covered stories (PHP flaws, SMS of Death, Apple spyware notifications)."
+fetch_failures:
+  - id: sygnia
+    url_tried: "https://www.sygnia.co/blog/"
+    fetch_method: "bridge:extract"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: all transports failed for https://www.sygnia.co/blog/: direct=(direct HTTP 403, 6026 B); trafilatura=(no readable body); jina=(reader proxy relayed an upstream block/challenge)"
+    attempted_methods: ["bridge:extract", "bridge:url --direct (www and apex host)", "bridge:feed /feed/", "bridge:url wp-json", "webfetch /blog/", "webfetch /threat-reports-and-advisories/", "bridge:url web.archive.org", "websearch x3"]
+    mitigation_applied: "none - coverage gap; WebSearch surfaced no in-window Sygnia posts"
+    covered_anyway: false
+source_ledger:
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract, url, feed, WebFetch, web.archive.org, WebSearch (all failed)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "unreachable; see fetch_failures" }
+  - { id: swarmcha-se, tier: standard, attempted: true, transport: "url --direct", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-14" }
+  - { id: elttam-blog, tier: standard, attempted: true, transport: "feed https://www.elttam.com/blog/rss.xml", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-09-23 (tac_plus)" }
+  - { id: iverify-blog, tier: standard, attempted: true, transport: "url --direct + extract per post", horizon_hours: 168, in_horizon_items: 3, returned: 1, note: "2026-11-06 Android RATs, 2026-11-09 FomoPeek commentary (SlowMist primary is from September), 2026-11-10 half-click post; folded into the report item" }
+  - { id: nau-ch, tier: standard, attempted: true, transport: "url /news/digital", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "no in-window cyber items beyond covered ones" }
+  - { id: crowdstrike, tier: standard, attempted: true, transport: "feed + extract + url --direct (JSON-LD dateModified)", horizon_hours: 146, in_horizon_items: 10, returned: 0, note: "nine product-launch posts and one statistics post (dropped); the 2026-11-10 Patch Tuesday analysis is S1 territory" }
+  - { id: dfirreport, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-08-24 (publisher cadence)" }
+  - { id: fortinet-fortiguard-blog, tier: standard, attempted: true, transport: "url (card regex)", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "2026-11-09 illegal Android gambling app, dropped; BITTER PapRAT 2026-11-02 is outside the horizon" }
+  - { id: ibm-xforce, tier: standard, attempted: true, transport: "url listing + extract per post", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest research 2026-10-14; the product-launch post is marketing" }
+  - { id: intel471, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-11-04 17:30Z, before the horizon (2026-11-05 00:57Z)" }
+  - { id: jamf-threat-labs, tier: standard, attempted: true, transport: "url listing + extract per post", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest threat post 2026-09-30" }
+  - { id: push-security, tier: standard, attempted: true, transport: "WebFetch (title/date/href prompt) + extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "one research post (2026-11-05), remaining recent posts are buyer guides; flagged lookback" }
+  - { id: risky-biz-news, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 146, in_horizon_items: 6, returned: 1, note: "France-blames-Iran fridge story is already in the Danfoss entry (updated 2026-11-10); doxing story returned; Qubole, Fireworks, NEAR AI items belong to S4/S1" }
+  - { id: securityweek, tier: standard, attempted: true, transport: "feed + WebFetch homepage + extract", horizon_hours: 146, in_horizon_items: 13, returned: 1, note: "headline lead for the Qubole item; AP article used as corroboration for the doxing item; patch-cycle and exploitation headlines belong to S1" }

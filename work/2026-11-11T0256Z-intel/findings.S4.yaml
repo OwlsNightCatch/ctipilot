@@ -1,0 +1,706 @@
+domain: S4
+run_id: 2026-11-11T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-11T02:57:59Z'
+ended_at: '2026-11-11T03:17:01Z'
+duration_seconds: 1142
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 25
+  bridge_fetches: 83
+items:
+- title: >-
+    Qubole: a stolen vendor AWS identity assumed customers' integration roles and bulk-read S3 data, secrets and Lambda configuration in more
+    than a dozen organisations (14 to 26 October 2026)
+  sources:
+  - url: https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild
+    publisher: Wiz
+    date: '2026-11-09'
+    role: primary
+  - url: https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack
+    publisher: Sentra
+    date: '2026-11-09'
+    role: primary
+  - url: https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/
+    publisher: BleepingComputer
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://www.securityweek.com/over-a-dozen-organizations-hit-in-qubole-supply-chain-attack/
+    publisher: SecurityWeek
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: bleepingcomputer feed, URL https://www.bleepingcomputer.com/feed/ (item 'Hackers exploit trusted AWS access to breach multiple
+    cloud environments') -> pivot: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/
+    -> primary: Wiz research post, URL https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild -> co-discoverer: Sentra post, URL
+    https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack -> corroborating: SecurityWeek, URL https://www.securityweek.com/over-a-dozen-organizations-hit-in-qubole-supply-chain-attack/.
+    Not in prior_coverage.json (no Qubole match).
+  summary: >-
+    Wiz, working with Sentra (which noticed the activity in its own customers' environments and reported it) and Mandiant, reports that between
+    14 and 26 October 2026 a threat actor used credentials of two IAM users in an AWS account associated with the big-data platform Qubole to
+    call sts:AssumeRole on the cross-account integration roles that customers had created to trust Qubole's account. Every request presented the
+    correct External ID and succeeded; in most affected environments the roles had otherwise been idle (Sentra: dormant since spring), and all
+    activity came from a rented hosting server and commercial VPN exits, not from the AWS infrastructure Qubole's platform normally uses. Inside
+    each environment the actor listed resources, pulled secrets from Secrets Manager and SSM Parameter Store, read Lambda environment variables
+    (Sentra adds EC2 user data), used TruffleHog to check harvested AWS keys, Entra ID client secrets and Okta client credentials, and then downloaded
+    S3 data opportunistically, in some cases whole buckets in one session; Sentra counts no write actions. Wiz finds no tie to other reported
+    activity and judges the targeting opportunistic rather than state-style, and it does not know how the Qubole IAM users were compromised. Sentra
+    counts 'dozens' of impacted customers in one passage and 'more than a dozen organizations' in another, BleepingComputer says tens of companies,
+    no victim is named, and BleepingComputer found no public Qubole statement. Wiz also reports a separate 8 to 11 October use of customer-owned
+    AWS access keys created for Qubole integrations, which it cannot link to the role-assumption activity, and a bootable Linux image on the actor's
+    server that polls for shell scripts, with no deployment seen.
+  region_nexus: global; no victim named, no stated Swiss or European public-sector victim
+  primary_sector_nexus: 'indirect: any public-sector AWS tenant that gave a data or analytics vendor a cross-account role (the exposure is dormant
+    integrations, not Qubole use as such)'
+  sector: technology; cloud supply chain
+  cves: []
+  techniques:
+  - T1199
+  - T1078.004
+  - T1580
+  - T1619
+  - T1555.006
+  - T1530
+  technique_notes: >-
+    T1199 trusted vendor account whose roles the customer trusts; T1078.004 sts:AssumeRole with valid vendor IAM credentials; T1580/T1619 ListBuckets,
+    ListObjects, HeadObject enumeration; T1555.006 Secrets Manager and SSM Parameter Store reads (Lambda environment variable reads are the same
+    credential-harvest behaviour); T1530 GetObject downloads.
+  affected_products:
+  - Qubole
+  - Amazon Web Services IAM cross-account roles
+  - AWS Secrets Manager
+  - AWS Systems Manager Parameter Store
+  - AWS Lambda
+  - Amazon S3
+  entity_keys:
+  - product:amazon-web-services
+  - product:microsoft-entra-id
+  - product:okta
+  new_entities:
+  - key: product:qubole
+    type: product
+    name: Qubole
+    aliases: []
+    summary: >-
+      Enterprise cloud big-data processing and analytics platform that integrates with customers' AWS accounts through cross-account IAM roles;
+      its AWS-account IAM credentials were abused in the October 2026 campaign (Wiz, Sentra, 2026-11-09).
+  - key: incident:qubole-aws-cross-account-role-abuse-2026-10
+    type: incident
+    name: Qubole cross-account AWS role abuse (October 2026)
+    aliases:
+    - Qubole supply chain attack
+    summary: >-
+      Between 14 and 26 October 2026 a threat actor used IAM credentials of an AWS account associated with Qubole to assume customers' integration
+      roles and steal S3 data, secrets and credentials in more than a dozen organisations (Wiz, Sentra, 2026-11-09).
+  - key: tool:trufflehog
+    type: tool
+    name: TruffleHog
+    aliases: []
+    summary: Open-source secret scanner and credential verifier; the Qubole-campaign actor used it to test harvested AWS, Entra ID and Okta credentials
+      (Wiz, 2026-11-09).
+  relation_suggestions:
+  - subject: incident:qubole-aws-cross-account-role-abuse-2026-10
+    object: product:qubole
+    basis: 'Wiz: the actor used IAM credentials from an AWS account associated with Qubole (Wiz, 2026-11-09)'
+  - subject: incident:qubole-aws-cross-account-role-abuse-2026-10
+    object: tool:trufflehog
+    basis: 'Wiz: the actor used TruffleHog to test credentials found in victim environments (Wiz, 2026-11-09)'
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  admiralty_suggestion:
+    reliability: B
+    credibility: '2'
+    why: >-
+      two telemetry-holding labs plus Mandiant observed it first-hand but Wiz and Sentra collaborated and Qubole has not confirmed; victim count
+      differs between passages
+  novelty: new
+  evidence:
+  - quote: >-
+      Working with Sentra and Mandiant, Wiz observed a threat actor using IAM credentials from an AWS account associated with Qubole between October
+      14 and October 26, 2026.
+    attribution: Wiz
+    source_url: https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild
+  - quote: Every AssumeRole request we attributed to the threat actor included an External ID, and every one succeeded.
+    attribution: Wiz
+    source_url: https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild
+  - quote: In this activity, a source IP condition alone would have blocked every role assumption we observed.
+    attribution: Wiz
+    source_url: https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild
+  - quote: Dozens of Qubole customers were impacted.
+    attribution: Sentra
+    source_url: https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack
+  - quote: BleepingComputer could not find a public announcement from Qubole about this incident.
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/
+  extended_notes: >-
+    Exposure: any AWS account holding an IAM role whose trust policy names the Qubole vendor account, including roles left behind after Qubole
+    stopped being used; read the roles' trust policies and last-used data. Detection: CloudTrail AssumeRole events whose calling identity is the
+    vendor account but whose source address is not AWS infrastructure (Wiz: all legitimate platform traffic came from AWS infrastructure); role-session
+    names with a fixed vendor-unrelated prefix (Wiz publishes it); sequences of ListBuckets, ListObjects, HeadObject, GetObject from an assumed
+    integration role; ListSecrets/GetSecretValue, SSM GetParameter and Lambda GetFunctionConfiguration bursts; GetCallerIdentity calls from many
+    keys within seconds and Entra ID or Okta sign-ins by service principals or clients right after (credential validation). Object reads are absent
+    from management events: S3 data events or S3 server access logs must be on, and in several victim environments missing logs meant responders
+    could not see what was read (Wiz). Wiz advises reviewing CloudTrail from 1 October 2026 in every account holding an integration role. Post-incident:
+    the actor harvested the victims' own AWS keys, Entra ID client secrets and Okta client credentials, so rotation has to cover those and the
+    External ID, not only the role. Hardening (Wiz): delete integration roles for vendors no longer used; narrow the trusted principal from the
+    account root to the vendor's specific principal; add aws:SourceIp or aws:SourceVpce conditions to the vendor's documented ranges; treat the
+    External ID as non-secret (it is logged in plaintext in CloudTrail); trim vendor-role permissions on Lambda configuration, Secrets Manager,
+    SSM and broad S3 read; alert on role assumption from a vendor account through a VPN or hosting provider; keep an organisation trail across
+    all accounts and regions. Swiss note: no Swiss or public-sector victim is named. The lesson transfers to any cantonal or communal cloud tenant
+    that granted a vendor or integrator a cross-account role, and to the supplier relationships (PK Softech pattern) where the vendor's own identity
+    is the weak point. The S3 sub-agent may also return Wiz's post; dedup on the Qubole entity.
+- title: >-
+    PK Softech / Publica: PK Softech and the federal security-policy secretariat say no concrete ransom demand has been received, the Confederation
+    has paid nothing, and no publication of the stolen data is known (2026-11-10)
+  sources:
+  - url: https://pksoftech.ch/de/newsreader/Information-zum-Cyberangriff-auf-die-PKSoftechAG
+    publisher: PK Softech AG
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker
+    publisher: Tio.ch (Keystone-ATS)
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: tio.ch topic listing, URL https://www.tio.ch/temi/attacco-informatico (url --direct) -> pivot: tio.ch article (Keystone-ATS),
+    URL https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker -> primary: PK Softech own statement,
+    found via https://pksoftech.ch/de/aktuelles listing, URL https://pksoftech.ch/de/newsreader/Information-zum-Cyberangriff-auf-die-PKSoftechAG.
+    Matches prior entry 2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow (update, not new).
+  summary: >-
+    PK Softech published on 2026-11-10, 'because of media speculation', that no concrete ransom demands have reached the company and that it never
+    contacted the attackers; its investigation continues. Keystone-ATS, relayed by tio.ch, reports that the spokesperson of the State Secretariat
+    for Security Policy (SEPOS), Ursina Bentele, said the federal authorities involved know of no concrete ransom demand addressed to them, that
+    the Confederation has paid no ransom, and that SEPOS has no indication that the stolen data has been published on the darknet. The same wire
+    report also says the supplier received a demand without amount or deadline, which contradicts PK Softech's own statement of the same day;
+    the supplier's statement is the first-hand one. The delta qualifies the existing entry's Tamedia-sourced claim that Akira holds about 100
+    GB and demands ransom: the supplier and SEPOS now publicly say no concrete demand is known to them, while the Akira attribution and the data
+    volume remain press-sourced and unconfirmed by the authorities.
+  region_nexus: Switzerland; federal pension fund Publica, cantonal and communal pension funds
+  primary_sector_nexus: 'direct: Confederation supplier case, cantonal and municipal pension bodies'
+  sector: public-sector; pension funds; software supplier
+  cves: []
+  techniques: []
+  technique_notes: No change to the existing entry techniques.
+  affected_products: []
+  entity_keys:
+  - incident:pk-softech-publica-cyberattack-2026-09
+  - actor:akira
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  admiralty_suggestion:
+    reliability: A
+    credibility: '2'
+    why: >-
+      supplier's own statement plus a wire-agency report of a federal spokesperson; the agency report is internally inconsistent on whether a
+      demand without amount was received
+  novelty: update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow
+  update_fields_suggested:
+  - summary
+  - sources
+  - evidence
+  - body
+  - sourcing_note
+  evidence:
+  - quote: Bei der PK Softech AG sind keine konkreten Lösegeldforderungen eingegangen.
+    attribution: PK Softech AG
+    source_url: https://pksoftech.ch/de/newsreader/Information-zum-Cyberangriff-auf-die-PKSoftechAG
+    english_gloss: No concrete ransom demands have been received at PK Softech AG.
+  - quote: Das Unternehmen hat zu keinem Zeitpunkt Kontakt zu den Angreifern aufgenommen.
+    attribution: PK Softech AG
+    source_url: https://pksoftech.ch/de/newsreader/Information-zum-Cyberangriff-auf-die-PKSoftechAG
+    english_gloss: The company has at no time made contact with the attackers.
+  - quote: non sono arrivate richieste concrete di riscatto né all'azienda coinvolta né alla Confederazione
+    attribution: Tio.ch (Keystone-ATS)
+    source_url: https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker
+    english_gloss: no concrete ransom demands have arrived either at the company involved or at the Confederation
+  - quote: Le autorità federali non hanno inoltre versato alcuna somma agli hacker.
+    attribution: Tio.ch (Keystone-ATS)
+    source_url: https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker
+    english_gloss: The federal authorities have also paid no sum to the hackers.
+  - quote: ha dichiarato di non avere elementi che facciano pensare alla pubblicazione nel darkweb dei dati sottratti durante l'incidente
+    attribution: Tio.ch (Keystone-ATS)
+    source_url: https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker
+    english_gloss: SEPOS said it has no evidence suggesting publication on the darkweb of the data stolen during the incident
+  extended_notes: >-
+    Contradiction to surface: tio.ch (Keystone-ATS) says in one paragraph that the supplier 'received a request, but without indication of amount
+    or deadlines' (Italian: 'ha ricevuto una richiesta, ma senza indicazioni sull'importo da pagare o su eventuali scadenze') and in another that
+    PK Softech restated it received no concrete ransom demand; PK Softech's own statement says no concrete demand and no contact. The existing
+    entry says the Akira ransom demand rests on press reports; this update narrows rather than overturns it. The existing entry already carries
+    the 2026-11-09 Pensionskasse Zug delta (Inside IT), so that is not repeated here.
+- title: >-
+    UZ Brussel and three other Belgian hospitals: failure of the hospital-developed electronic patient record takes down IT and telephony, scheduled
+    care is cancelled and ambulances are diverted; the hospital reports no indication of a cyberattack (2026-11-10)
+  sources:
+  - url: https://www.vrt.be/vrtnws/en/2026/11/10/uz-brussel-among-hospitals-experiencing-severe-network-problems/
+    publisher: VRT NWS
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.vrt.be/vrtnws/nl/2026/11/10/uz-brussel-jette-netwerkonderbreking/
+    publisher: VRT NWS (Dutch)
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.vrt.be/vrtnws/nl/liveblog/netwerkproblemen-nog-niet-opgelost-ziekenwagens-uz-brussel-no~1794313735503/
+    publisher: VRT NWS live blog
+    date: '2026-11-10'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: databreaches.net feed, URL https://databreaches.net/feed/ (item 'UZ Brussel among hospitals experiencing severe network problems',
+    post page itself blocked 403/challenge) -> pivot: VRT NWS English RSS, URL https://www.vrt.be/vrtnws/en.rss.articles.xml -> primary: VRT NWS
+    article via short link, URL https://www.vrt.be/vrtnws/en/2026/11/10/uz-brussel-among-hospitals-experiencing-severe-network-problems/; Dutch
+    article and live blog read via the Dutch VRT RSS, URL https://www.vrt.be/vrtnws/nl.rss.articles.xml. Several WebSearch queries (Dutch, English,
+    French) found nothing newer: the search index lags.
+  summary: >-
+    VRT NWS reports that on the afternoon of 2026-11-10 the Brussels university hospital UZ Brussel (Jette) was the first of several Belgian hospitals
+    to report network problems that hit its IT infrastructure and telephone system: the electronic patient record cannot be read or written, appointments
+    and phone contact fail, only urgent interventions run, and the emergency department is diverted until at least 2026-11-11, with ambulances
+    going to neighbouring hospitals (AZ Jan Portaels in Vilvoorde reported all emergency beds occupied). AZ Monica (Antwerp), Heilig Hart (Lier)
+    and Sint-Andries (Tielt) were affected because they run the same patient-record software, developed at UZ Brussel (PrimUZ, per the VRT live
+    blog) with data on UZ Brussel servers; AZ Monica diverted its mobile emergency and paramedic intervention teams, Lier and Tielt went to paper.
+    AZ Jan Palfijn (Ghent) says it was disconnected from UZ Brussel's servers in time and has no impact, and AZ Rivierenland and AZ Sint-Elisabeth
+    (Zottegem) host their own PrimUZ servers and are unaffected. The cause is unknown; UZ Brussel's spokesperson said repeatedly that there are
+    no indications of a cyberattack, and the hospital's IT staff were working through the night, with resolution by 2026-11-11 uncertain.
+  region_nexus: Belgium (neighbouring-region healthcare); no Swiss nexus
+  primary_sector_nexus: 'indirect: emergency medical services and hospital IT; ambulance diversion across a region'
+  sector: healthcare; emergency services
+  cves: []
+  techniques: []
+  technique_notes: No attacker behaviour established; the hospital reports no indication of a cyberattack.
+  affected_products:
+  - PrimUZ electronic patient record
+  entity_keys: []
+  new_entities:
+  - key: incident:uz-brussel-shared-ehr-network-outage-2026-11
+    type: incident
+    name: UZ Brussel shared patient-record network outage (November 2026)
+    aliases: []
+    summary: >-
+      Network failure of the electronic patient record developed at UZ Brussel took down IT and telephony at UZ Brussel and three other Belgian
+      hospitals on 2026-11-10; cause unknown, the hospital reports no indication of a cyberattack (VRT NWS, 2026-11-10).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  admiralty_suggestion:
+    reliability: B
+    credibility: '2'
+    why: public broadcaster relaying the hospitals own statements; one outlet; cause unconfirmed; databreaches.net only relays VRT
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    No confirmed malicious cause (the hospital says there is no indication of a cyberattack), no Swiss nexus and one outlet; kept for the emergency-service
+    impact (regional ambulance diversion) and the shared-record blast-radius lesson (hospitals that had decoupled from or self-host their PrimUZ
+    servers were unaffected). Revisit on the cause; drop if it proves a plain fault.
+  evidence:
+  - quote: UZ Brussel's spokesperson said on Tuesday afternoon that there were no indications this was a cyberattack.
+    attribution: VRT NWS
+    source_url: https://www.vrt.be/vrtnws/en/2026/11/10/uz-brussel-among-hospitals-experiencing-severe-network-problems/
+  - quote: Ambulances are being diverted to other hospitals.
+    attribution: VRT NWS
+    source_url: https://www.vrt.be/vrtnws/en/2026/11/10/uz-brussel-among-hospitals-experiencing-severe-network-problems/
+  - quote: Ze werken met dezelfde software als het UZ Brussel voor het delen, invoeren en opslaan van patiëntengegevens.
+    attribution: VRT NWS
+    source_url: https://www.vrt.be/vrtnws/nl/2026/11/10/uz-brussel-jette-netwerkonderbreking/
+    english_gloss: They work with the same software as UZ Brussel for sharing, entering and storing patient data.
+  - quote: Ons ziekenhuis is op tijd losgekoppeld van de servers van het UZ Brussel, waardoor er op dit moment geen impact is op onze werking
+    attribution: VRT NWS
+    source_url: https://www.vrt.be/vrtnws/nl/2026/11/10/uz-brussel-jette-netwerkonderbreking/
+    english_gloss: Our hospital was disconnected from the UZ Brussel servers in time, so there is currently no impact on our operations (AZ Jan
+      Palfijn)
+  extended_notes: >-
+    Defender lesson if it holds: a patient record hosted by one hospital for several others is a single failure domain for all of them, and the
+    hospitals that coped had either a prior decoupling or their own servers plus a paper fallback. Swiss counterpart question: which cantonal
+    hospitals, ambulance services and dispatch centres depend on another institution's hosted clinical system, and is there a tested disconnect
+    and paper procedure.
+- title: >-
+    Five Japanese bulk-email SaaS providers breached between 11 and 27 October 2026: tens of millions of recipient addresses taken and delivery
+    functions abused for millions of phishing emails; Cuenote's third report adds session theft and abuse of the legitimate CSV export
+  sources:
+  - url: https://www.cuenote.jp/support/news-incident.html
+    publisher: Ymir Link (Cuenote)
+    date: '2026-11-11'
+    role: primary
+  - url: https://info.blastmail.jp/information_20261021.html
+    publisher: RAX Light Cloud (Blastmail)
+    date: '2026-11-10'
+    role: primary
+  - url: https://raiden.site.ktaiwork.jp/archives/4597
+    publisher: Arcadia (SpeeCAN RAIDEN blog)
+    date: '2026-11-06'
+    role: primary
+  - url: https://piyolog.hatenadiary.jp/entry/2026/11/09/230435
+    publisher: Piyolog (Piyokango)
+    date: '2026-11-09'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: piyolog (slice record), URL https://piyolog.hatenadiary.jp/ (url bridge lists entry URLs) -> pivot: Piyolog compile, URL https://piyolog.hatenadiary.jp/entry/2026/11/09/230435
+    -> primary: Ymir Link Cuenote third report (updated 2026-11-11 10:00 JST), URL https://www.cuenote.jp/support/news-incident.html; RAX Light
+    Cloud Blastmail notice (updated 2026-11-10 18:40 JST), URL https://info.blastmail.jp/information_20261021.html; Arcadia SpeeCAN RAIDEN blog,
+    URL https://raiden.site.ktaiwork.jp/archives/4597. Alara Message and Y-Mail (Igreks) are cited through the Piyolog compile only (their own
+    notices were not read in full).
+  summary: >-
+    Five Japanese bulk-email and notification SaaS providers published breaches within about two weeks (first activity 11 to 27 October 2026);
+    per Piyolog's compile of their notices, none of the vendors relates its incident to the others. Ymir Link's third Cuenote report (2026-11-11)
+    says a program vulnerability let attackers plant malware, reach the database directly and move through the internal management network using
+    shared maintenance and QA accounts, and that a second method stole the session information of logged-in legitimate users and then used the
+    console's normal CSV download to take data, which looked like ordinary admin work and was found only by a retrospective session-log audit
+    that raised the affected Cuenote FC systems from 5 to 49; it counts 47,864,147 recipient-list records. RAX Light Cloud's notice of 2026-11-10
+    says the information of all Blastmail contractors was taken from its sales-management system, with some recipient lists also leaked, the service
+    has been down since 2026-10-21, the external investigation finished that day with no further leakage found, and the service restarts on 2026-11-11;
+    per Piyolog its earlier notice said two API servers were entered and commands run before the sales system and service database were reached.
+    Per Piyolog, Alara Message (web-server flaw plus an environment weakness) had its delivery function abused for up to about 7.13 million phishing
+    mails and lost about 81.3 million address records; Arcadia's SpeeCAN RAIDEN, a service that handles disaster information and sits alongside
+    its NET119 emergency-report system, lost its inter-service secret key through a directory-traversal flaw in a media server, was backdoored
+    through a WordPress plugin and sent 1,423,428 phishing mails on 13 October and again on 22 to 23 October through the send API; Igreks' Y-Mail
+    lost portal setup scripts that led into customers' delivery environments and sent about 1.34 million phishing mails. Cuenote applied IP restriction
+    to every console and API on 2026-10-18 after finding environments that had none, and Arcadia added two-factor login from 2026-10-22; Igreks
+    regenerated every customer's DKIM private key and moved to a DMARC reject policy (per Piyolog). Public-sector customers are among the affected
+    Japanese bodies (Blastmail and Alara arranged proxy reporting to the data-protection regulator for administrative bodies and local governments,
+    per Piyolog).
+  region_nexus: Japan; no Swiss or European nexus stated
+  primary_sector_nexus: 'indirect: public-sector and emergency-notification customers of the vendors in Japan; transferable SaaS-vendor TTP'
+  sector: technology; email and notification SaaS; public-sector customers
+  cves: []
+  techniques:
+  - T1190
+  - T1539
+  - T1078
+  - T1110
+  - T1505.003
+  - T1213
+  - T1566
+  technique_notes: >-
+    T1190 program, library, web-server and media-server directory-traversal flaws as entry; T1539 session-information theft; T1078 shared maintenance/QA
+    and stolen support accounts; T1110 brute force of account IDs (RAIDEN); T1505.003 backdoor via a WordPress plugin (RAIDEN); T1213 data taken
+    through the console's legitimate CSV export (Cuenote); T1566 phishing sent through the abused delivery functions.
+  affected_products:
+  - Cuenote FC
+  - Cuenote BASE
+  - Blastmail
+  - Alara Message
+  - SpeeCAN RAIDEN
+  - Y-Mail (ワイメール)
+  entity_keys: []
+  new_entities:
+  - key: incident:japan-bulk-email-saas-breaches-2026-10
+    type: incident
+    name: Japanese bulk-email SaaS provider breaches (October 2026)
+    aliases: []
+    summary: >-
+      Five Japanese email-delivery SaaS providers (Blastmail, Cuenote, Alara Message, SpeeCAN RAIDEN, Y-Mail) disclosed intrusions between 11
+      and 27 October 2026 with large recipient-list thefts and abuse of their delivery functions for phishing; no vendor links the incidents (Piyolog
+      compile, 2026-11-09).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  admiralty_suggestion:
+    reliability: B
+    credibility: '2'
+    why: >-
+      each vendor is first-hand for its own incident (A for that incident); the grouping into one wave is Piyolog's compile and no vendor asserts
+      a link, so the wave framing is B2
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    No Swiss nexus and all primaries are Japanese vendor notices; kept as a transferable TTP set for defenders (SaaS vendor consoles and APIs
+    without IP restriction or MFA, shared maintenance accounts, session theft followed by abuse of a legitimate export function, a delivery function
+    that sends authenticated phishing from the vendor's own domain) and for the emergency-notification and public-sector customer angle. Drop
+    if the day is judged to need no non-Swiss supplier case.
+  evidence:
+  - quote: プログラムの脆弱性をついて、当時ログイン中だった正規利用者の一時的なセッション情報を盗み取り、正規の利用者になりすまして管理画面へ入る手法です。
+    attribution: Ymir Link (Cuenote)
+    source_url: https://www.cuenote.jp/support/news-incident.html
+    english_gloss: >-
+      Exploiting a program vulnerability, steals the temporary session information of legitimate users logged in at the time and impersonates
+      them to enter the admin console.
+  - quote: 配信先情報：延べ 47,864,147件
+    attribution: Ymir Link (Cuenote)
+    source_url: https://www.cuenote.jp/support/news-incident.html
+    english_gloss: 'Recipient information: 47,864,147 records in total.'
+  - quote: 弊社の販売管理システムから、全てのお客様（ブラストメールのご契約者様）の情報が持ち出されたことを確認いたしました。
+    attribution: RAX Light Cloud (Blastmail)
+    source_url: https://info.blastmail.jp/information_20261021.html
+    english_gloss: We confirmed that the information of all customers (Blastmail contractors) was taken from our sales management system.
+  - quote: 各社の公表は自社のサービスの事案を扱っており、他の事業者の事案との関係には触れていない。
+    attribution: Piyolog (Piyokango)
+    source_url: https://piyolog.hatenadiary.jp/entry/2026/11/09/230435
+    english_gloss: Each company's notice covers its own service's incident and does not touch on any relation to other providers' incidents.
+  - quote: 送信数は2つの環境の合計で最大約713万通。
+    attribution: Piyolog (Piyokango)
+    source_url: https://piyolog.hatenadiary.jp/entry/2026/11/09/230435
+    english_gloss: The number sent was up to about 7.13 million in total across two environments (Alara Message).
+  extended_notes: >-
+    Exposure: organisations that send mail through a bulk-mail, newsletter or notification vendor should know what recipient data the vendor holds
+    and whether its console and API are IP-restricted and MFA-protected. Detection: mail that passes SPF/DKIM from a vendor-operated sending domain
+    but whose content or volume the sender never initiated (the Japanese vendors only learned of abuse after sends of up to millions); admin-console
+    CSV exports from sessions that never authenticated in the usual way; vendor-side shared maintenance accounts. Post-intrusion: Cuenote's second
+    finding shows that session theft plus normal export features can leave no malware or database trace, so logging console exports and session
+    origin matters. Swiss counterpart: municipal and cantonal newsletters, alert and notification services (including civil-protection alerting)
+    are typically outsourced; this is a prompt to ask those suppliers the same questions. Piyolog's compile is dated 2026-11-09 (inside the 73
+    h lookback for that record); the Cuenote and Blastmail primaries are inside the window.
+- title: >-
+    CNIL sanctions ten French local authorities and one public body for cybersecurity failings: no MFA for administrators, permanent or shared
+    supplier access, unused logs, flat networks, unsupported server systems (fines EUR 3,000 to 20,000)
+  sources:
+  - url: https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales
+    publisher: CNIL
+    date: '2026-11-09'
+    role: primary
+  - url: https://www.zataz.com/cybersecurite-la-cnil-sanctionne-dix-collectivites/
+    publisher: ZATAZ
+    date: '2026-11-09'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: zataz feed, URL https://www.zataz.com/feed/ (item 'Cybersécurité : la CNIL sanctionne dix collectivités') -> pivot: ZATAZ article,
+    URL https://www.zataz.com/cybersecurite-la-cnil-sanctionne-dix-collectivites/ -> primary: CNIL press release found on the CNIL news listing
+    (url bridge of https://www.cnil.fr/fr/actualites), URL https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales. Not in
+    prior_coverage.json.
+  summary: >-
+    The CNIL says that in November 2026 it pronounced ten simplified-procedure sanctions against territorial authorities and one public establishment
+    for cybersecurity failings under GDPR Article 32, after a 2025 inspection theme on local-authority security that also covered their suppliers.
+    The failings it lists: remote-access authentication too weak, notably no multi-factor authentication for administrators; software suppliers
+    with permanent access to the authority's network, not authorised case by case, or using accounts shared between employees; ineffective detection
+    (incomplete logging, no real-time or short-term use of logs); insufficient network segmentation that can spread a breach across segments;
+    server operating systems no longer maintained by the vendor; weak, plaintext-transmitted or insecurely stored passwords. Several decisions
+    also note that online-service systems had no security accreditation (RGS homologation) before go-live, and several authorities were sanctioned
+    for missing data-protection impact assessments for school-activity portals for parents and for public-road video surveillance. Fines range
+    from EUR 3,000 to 20,000, the legal maximum of the procedure; the CNIL says some inspected authorities had suffered breaches that adequate
+    measures could have prevented, and that it devotes half of its 2026 inspection and enforcement effort to data security.
+  region_nexus: France; no Swiss nexus stated, directly comparable communal and cantonal IT estate
+  primary_sector_nexus: 'indirect: regulator findings on local-authority security that mirror Swiss communal exposure'
+  sector: public-sector; local government
+  cves: []
+  techniques: []
+  technique_notes: Regulatory enforcement; no attacker behaviour.
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: HIGH
+  admiralty_suggestion:
+    reliability: A
+    credibility: '2'
+    why: the regulator is first-hand for its own decisions; ZATAZ only relays the release
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    Regulator enforcement abroad (France), dated 2026-11-09 by the CNIL page (page metadata 2026-11-10), at the edge of the 26 h window, and a
+    policy/obligations item that the S2 lane may also return; no Swiss link stated. Worth a place only if the brief carries a communal-security-baseline
+    item today.
+  evidence:
+  - quote: >-
+      En novembre 2026, la CNIL a prononcé dix sanctions simplifiées à l’encontre de collectivités territoriales et d’un établissement public,
+      pour des manquements relatifs à la cybersécurité.
+    attribution: CNIL
+    source_url: https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales
+    english_gloss: In November 2026 the CNIL pronounced ten simplified sanctions against territorial authorities and one public establishment
+      for cybersecurity failings.
+  - quote: absence d’authentification multifacteur pour les administrateurs
+    attribution: CNIL
+    source_url: https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales
+    english_gloss: no multi-factor authentication for administrators
+  - quote: >-
+      certains prestataires extérieurs (par exemple, des éditeurs de logiciels) pouvaient accéder au réseau des collectivités de manière permanente,
+      sans y être autorisés au cas par cas, ou via des comptes partagés entre plusieurs salariés
+    attribution: CNIL
+    source_url: https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales
+    english_gloss: >-
+      some outside providers (for example software vendors) could access the authorities' network permanently, without case-by-case authorisation,
+      or through accounts shared among several employees
+  extended_notes: >-
+    Why it matters to defenders: the CNIL list is a regulator-tested baseline for a commune or canton: MFA on every remote and privileged login,
+    supplier access that is per-intervention and attributable, logs that are read, segmentation, and no unsupported server systems. No Swiss enforcement
+    equivalent is claimed.
+- title: >-
+    Erowa (Büron LU, clamping and automation systems): ransomware encrypted parts of its servers on 12 October 2026 and data may have left; Akira
+    lists the company on its leak site
+  sources:
+  - url: https://www.inside-it.ch/erowa-bestaetigt-moeglichen-datenabfluss-20261110
+    publisher: Inside IT
+    date: '2026-11-10'
+    role: primary
+  - url: https://www.ransomware.live/id/RXJvd2FAYWtpcmE=
+    publisher: Ransomware.live (claim tracker)
+    date: '2026-11-04'
+    role: corroborating
+  discovery_trace: >-
+    first seen at: inside-it-ch feed, URL https://www.inside-it.ch/rss.xml (item 'Industriezulieferer Erowa bestätigt möglichen Datenabfluss')
+    -> primary: Inside IT article quoting Erowa's reply to its enquiry, URL https://www.inside-it.ch/erowa-bestaetigt-moeglichen-datenabfluss-20261110
+    -> corroborating claim: ransomware.live countryvictims/CH listing then victim page, URL https://www.ransomware.live/id/RXJvd2FAYWtpcmE= (Akira
+    listing discovered 2026-11-04).
+  summary: >-
+    Inside IT reports, on Erowa's own reply to its enquiry, that Erowa Systems (canton Lucerne) detected a cyberattack on 12 October 2026, that
+    parts of its server infrastructure were encrypted by ransomware, and that there are indications data left its systems; no entry vector or
+    actor is named by the company. Separately, ransomware.live recorded on 2026-11-04 that the Akira group listed Erowa on its leak site, with
+    a post announcing it would upload 538 GB of corporate data including employee identity documents, contracts, client information and NDAs;
+    this is the criminals' claim and Erowa has not confirmed the actor or the volume. The only link to the Swiss public sector is the actor: Akira
+    is the group the press associates with the PK Softech supplier case behind Publica and several cantonal pension funds (the authorities have
+    not confirmed that attribution).
+  region_nexus: Switzerland (canton Lucerne); private industrial supplier
+  primary_sector_nexus: 'indirect: Swiss supplier; same claimed actor as the PK Softech supplier case'
+  sector: manufacturing
+  cves: []
+  techniques:
+  - T1486
+  technique_notes: Ransomware encryption confirmed by the victim; exfiltration method not stated by any source, so no exfiltration technique is
+    mapped.
+  affected_products: []
+  entity_keys:
+  - actor:akira
+  new_entities:
+  - key: incident:erowa-ransomware-2026-10
+    type: incident
+    name: Erowa ransomware attack (October 2026)
+    aliases: []
+    summary: >-
+      Erowa Systems (Büron LU) confirmed ransomware encryption of parts of its servers on 12 October 2026 and possible data outflow; Akira listed
+      the company on 2026-11-04 (Inside IT, ransomware.live).
+  relation_suggestions:
+  - subject: incident:erowa-ransomware-2026-10
+    object: actor:akira
+    basis: 'ransomware.live: Erowa claimed by the Akira ransomware group on 2026-11-04; claim by the criminals, not confirmed by the victim'
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  admiralty_suggestion:
+    reliability: B
+    credibility: '2'
+    why: victim-confirmed incident through Inside IT; actor and data volume are the criminals' claim as tracked by ransomware.live
+  novelty: new
+  borderline: true
+  borderline_reason: >-
+    Swiss private manufacturer, not public sector, and no technique detail beyond encryption; the relevance rests on the claimed actor (Akira,
+    also behind the PK Softech case per the press) and on being a victim-confirmed Swiss ransomware case. Drop unless the brief tracks Akira's
+    Swiss activity.
+  evidence:
+  - quote: Am 12. Oktober 2026 hat Erowa Systems einen Cyberangriff auf seine Systeme festgestellt.
+    attribution: Inside IT
+    source_url: https://www.inside-it.ch/erowa-bestaetigt-moeglichen-datenabfluss-20261110
+    english_gloss: On 12 October 2026 Erowa Systems detected a cyberattack on its systems.
+  - quote: Nach aktuellem Erkenntnisstand bestünden zudem Anhaltspunkte dafür, dass Daten aus den Systemen abgeflossen seien.
+    attribution: Inside IT
+    source_url: https://www.inside-it.ch/erowa-bestaetigt-moeglichen-datenabfluss-20261110
+    english_gloss: According to current knowledge there are also indications that data flowed out of the systems.
+  - quote: Ransomware.live discovered on 2026-11-04 that Erowa has been claimed by Akira ransomware group
+    attribution: Ransomware.live
+    source_url: https://www.ransomware.live/id/RXJvd2FAYWtpcmE=
+dropped_leads:
+- lead: Vanderbilt University, BYOD ransomware (BleepingComputer 2026-11-09, The Record, The Register, 2026-11-10)
+  reason: >-
+    US university; the BYOD group victims on ransomware.live are US-centred education and technology with no European or Swiss victim; no technique
+    detail published; no nexus.
+- lead: Medizinisches Zentrum Gleis D / Apotheke Medi Porta, Chur (Cloak claims 87 GB; Inside IT 2026-11-06, swisscybersecurity.net 2026-11-09)
+  reason: Swiss private medical practice and pharmacy, victim-confirmed, but outside the 26 h window and no public-sector link.
+- lead: Holcim (Emperador claims 360 GB, Holcim confirms limited unauthorised access and data theft; tio.ch/Inside IT 2026-11-03)
+  reason: Swiss multinational, private, outside the window; no public-sector nexus.
+- lead: Fireworks AI second breach through a third-party cloud provider (BleepingComputer, The Register, 2026-11-10)
+  reason: AI inference vendor; LLMjacking context already covered by the 2026-11-09 entry; no nexus.
+- lead: Nitori 37.6M records, Iris Ohyama 7.7M records, Club Tourism (Japanese retail and travel, 2026-11-06 to 2026-11-10)
+  reason: Volume only; no technique detail, no Swiss or public-sector nexus.
+- lead: >-
+    Maileva (Docaposte/La Poste hybrid-mail platform) account compromise with downstream notices (Altéal 2026-11-09, via cyberattaque.org 2026-11-10)
+    and Softway Medical One Manager breach (2026-11-08)
+  reason: >-
+    French; only secondary relays reached (Altéal notice PDF not read); no new technique, no Swiss nexus; Maileva is a supplier-notification drip
+    like PK Softech but without a stated public-body core.
+- lead: Kreisverwaltung Oberspreewald-Lausitz (offline since 2026-10-20, restart work 2026-11-06/07)
+  reason: German district administration; no root cause or new in-window fact published; Kommunaler Notbetrieb listing cache stops at 2026-10-21.
+- lead: Santa Maria da Feira, La Laguna, SIKOA, Formosa, Seminole County and other ransomware.live press-confirmed rows added 2026-11-09/10
+  reason: Municipal incidents without published root cause or transferable detail; incident dates 2026-10-29 to 2026-11-05.
+- lead: >-
+    Danfoss/Copeland refrigeration campaign (France attributes to Iran: heise, Register, netzwoche, ictjournal, zataz, golem, dcod, VRT 2026-11-09/10)
+    and Ransom-ISAC Copeland XWEB log (2026-11-06)
+  reason: 'No delta beyond entry 2026-10-13/danfoss-...: it already carries the 2026-11-09 French attribution and the Ransom-ISAC event log.'
+- lead: Pensionskasse Stadt Zug / Libera (Inside IT 2026-11-09)
+  reason: Already in the PK Softech entry as the 2026-11-10 update.
+- lead: TUM myTUM credential harvest
+  reason: No official update after the 2026-11-06 statements found (heise-relayed); existing entry stands.
+- lead: eAutoIndex vehicle-keeper data harvest (Ticino confirmation surfaced by search)
+  reason: Existing entry 2026-08-29/swiss-cantons-eautoindex-vehicle-registry-data-harvesting.
+- lead: 'Piyolog entries: docomo online shop, teket, fake TikTok app, fake base station SMS, VOLTA infostealer, XCPE botnet takedown, NIKKE launcher'
+  reason: Japan-only; no nexus or new transferable TTP beyond the mail-delivery compile that was kept.
+- lead: Turla Cereal against government Exchange servers (BleepingComputer, The Hacker News, CyberScoop 2026-11-10)
+  reason: Research/APT lane (S3); government mailbox espionage with no victim in the constituency.
+- lead: SEC EDGAR 8-K Item 1.05 filings
+  reason: No Item 1.05 filing in 2026-11-06 to 2026-11-11 (sec-edgar 8k query, total 0).
+- lead: UK ICO enforcement
+  reason: 403 on every transport again; WebSearch found no in-window ICO action.
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: supplier watchlist is empty; sweep is a no-op (PK Softech was handled as a covered developing story, not a watchlist hit)
+candidate_sources:
+- id: vrt-nws
+  publisher: VRT NWS (Belgian public broadcaster)
+  url: https://www.vrt.be/vrtnws/en/
+  rss_url: https://www.vrt.be/vrtnws/nl.rss.articles.xml
+  category: news; ch-eu
+  why: >-
+    Neighbouring-region primary reporting with live blogs on hospital, refrigeration and critical-infrastructure incidents that English wires
+    lag on (UZ Brussel outage 2026-11-10, refrigeration-controller attacks in Belgium); feeds https://www.vrt.be/vrtnws/nl.rss.articles.xml and
+    https://www.vrt.be/vrtnws/en.rss.articles.xml return dated items on the direct transport and the short links https://vrtnws.be/p.<id> read
+    with extract.
+coverage_gaps:
+- source_id: ico-uk
+  reason: HTTP 403 on every transport for the eighth consecutive fire; WebSearch only, no in-window ICO notice found. A 403 never demotes.
+- source_id: databreaches-net
+  reason: >-
+    Feed reads, but article pages return an anti-bot challenge on extract, url (reader fallback) and WebFetch 403; the feed summary plus the originating
+    outlet (VRT) was enough this run.
+- source_id: divd-csirt
+  reason: Feed reachable; newest item is 2026-10-09, nothing in the 98 h lookback.
+- source_id: troyhunt
+  reason: Feed reachable; in-lookback posts (Weekly Update 529, bank-transfer payment post) carry no breach content relevant to the constituency.
+- source_id: web-search-index-lag
+  reason: >-
+    WebSearch did not surface any 2026-11-10 incident (UZ Brussel, Erowa and the PK Softech statements were all found through feeds and listings,
+    not search); feed and listing recipes remain the primary discovery route.
+- source_id: theregister-security-feed
+  reason: >-
+    extract of a Register article returned the sidebar navigation instead of the body for the Qubole piece; Wiz, Sentra, BleepingComputer and
+    SecurityWeek were read instead. WARNING: I once guessed a Register slug (404 via the metered reader, one credit wasted); the real link from
+    the feed carries a numeric suffix.
+source_ledger:
+- id: ico-uk
+  tier: standard
+  attempted: true
+  transport: WebSearch only (403 on every transport per the record notes; not re-probed this run)
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: no ICO enforcement found in the 168 h lookback via WebSearch
+- id: divd-csirt
+  tier: standard
+  attempted: true
+  transport: feed (direct)
+  horizon_hours: 98
+  in_horizon_items: 0
+  returned: 0
+  note: newest item 2026-10-09
+- id: ransom-isac
+  tier: standard
+  attempted: true
+  transport: extract of /blog/ listing
+  horizon_hours: 73
+  in_horizon_items: 0
+  returned: 0
+  note: newest posts 2026-11-06 (Copeland XWEB event log, already cited in the Danfoss entry) and 2026-11-02 are outside the 73 h lookback
+- id: troyhunt
+  tier: standard
+  attempted: true
+  transport: feed (direct) + extract
+  horizon_hours: 73
+  in_horizon_items: 2
+  returned: 0
+  note: 'Weekly Update 529 and a payment-method post: no breach content'
+- id: piyolog
+  tier: standard
+  attempted: true
+  transport: url (homepage lists entry URLs) + extract per entry
+  horizon_hours: 73
+  in_horizon_items: 6
+  returned: 1
+  note: mail-delivery SaaS compile returned (borderline); five other in-lookback entries Japan-only, dropped

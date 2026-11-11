@@ -1,0 +1,328 @@
+# work/2026-11-11T0256Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-11T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-11T02:57:59Z
+ended_at: 2026-11-11T03:14:04Z
+duration_seconds: 965
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 33
+  bridge_fetches: 75
+items:
+  # ---------------------------------------------------------------------------
+  # 1. UPDATE-OF the Danfoss/Copeland refrigeration entry: BACS public warning
+  # ---------------------------------------------------------------------------
+  - title: "BACS publishes a public warning on cold-chain controllers: identify them, update AK-SM 800A firmware, take end-of-life units off the internet"
+    sources:
+      - { url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de", publisher: "BACS / NCSC.ch (Im Fokus warning 'Kühl- und Kältesteuerungen: Systeme identifizieren, aktualisieren und schützen')", date: "2026-11-10", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-focus, URL https://www.bacs.admin.ch/de/im-fokus (url --direct, card list, dated 10. November 2026; the same card is on https://www.bacs.admin.ch/de/aktuelle-vorfaelle) -> primary: https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de (extract)"
+    summary: |
+      On 2026-11-10 the Swiss Federal Office for Cybersecurity (BACS) published a public-facing warning on its Im Fokus / current-incidents pages, the first BACS statement on the refrigeration campaign outside the Cyber Security Hub advisory 13054 that the entry already cites. BACS says the attacks of recent weeks show Switzerland is affected too, that it had already warned critical-infrastructure operators through the Cyber Security Hub after the French incidents, and that it is repeating the warning because the systems are widespread among small and medium-sized businesses. Per BACS, attackers reach management interfaces that are directly reachable from the internet and then change temperatures, defrost cycles, alarm thresholds or notification settings remotely, which can spoil food, medicines and other temperature-sensitive goods; health-sector incidents abroad are mentioned. Systems named: the end-of-life Danfoss AK-SM 800 System Manager and AK-SC 355, the current AK-SM 800A / 8xxA family when it runs outdated firmware, and later Copeland/Dixell XWEB. New against the entry: BACS states that security updates fixing the known flaws are available for the AK-SM 800A / 8xxA family and that newer firmware activates additional protections and enforces encrypted HTTPS communication; it widens the exposed population beyond retail to butchers and food producers, restaurants and hotels, pharmacies, doctors' practices and laboratories, logistics and warehouses, industry and farms, and notes that many operators do not know their cooling plants are reachable from the internet or run by external service providers. Recommendations: identify the controllers (including those run by contractors), install vendor updates, restrict unsupported systems to trusted networks or VPN, restrict remote access through one centrally managed access point and replace default passwords, and replace end-of-life products. BACS does not name an attacker, an exploited CVE or a count of Swiss victims here.
+    region_nexus: "Switzerland (national authority warning); the same controllers are in use across Swiss retail, health and logistics"
+    primary_sector_nexus: "indirect - pharmacies, doctors' practices and laboratories named as users; public-sector bodies running cold rooms (hospitals, blood and vaccine storage) fall in scope"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1133, T1078]
+    affected_products: ["Danfoss AK-SM 800 System Manager", "Danfoss AK-SC 355", "Danfoss AK-SM 800A / AK-SM 8xxA", "Copeland XWEB", "Dixell XWEB"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "product:danfoss-ak-sm-800a", "product:copeland-xweb"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    classification_hint: { reliability: A, credibility: 2 }
+    evidence:
+      - quote: "Die in den vergangenen Wochen bekannt gewordenen Angriffe auf Kühlsteuerungen zeigen, dass auch die Schweiz von dieser Bedrohung betroffen ist."
+        attribution: "BACS / NCSC.ch"
+        source_url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de"
+      - quote: "Den bisherigen Erkenntnissen zufolge verschaffen sich Angreifer Zugriff auf Managementschnittstellen, die direkt aus dem Internet erreichbar sind."
+        attribution: "BACS / NCSC.ch"
+        source_url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de"
+      - quote: "stehen Sicherheitsupdates zur Verfügung, welche die bekannten Schwachstellen beheben"
+        attribution: "BACS / NCSC.ch"
+        source_url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de"
+      - quote: "Neuere Firmware-Versionen aktivieren zudem zusätzliche Schutzmechanismen und erzwingen die verschlüsselte Kommunikation über HTTPS."
+        attribution: "BACS / NCSC.ch"
+        source_url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de"
+      - quote: "Vielen Unternehmen ist nicht bewusst, dass ihre Kälteanlagen direkt oder indirekt aus dem Internet erreichbar sind oder von externen Dienstleistern betrieben werden."
+        attribution: "BACS / NCSC.ch"
+        source_url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de"
+    extended_notes: |
+      Suggested changelog shape for the main agent: type update (reader-facing delta). Fields likely moved: summary/body (BACS public warning, 2026-11-10), sources, evidence. Defender angle: BACS gives the exposure check (identify controllers, including contractor-run ones, and test whether they are reachable from the internet) and one concrete patch fact the entry lacked (AK-SM 800A / 8xxA fixes exist and newer firmware enforces HTTPS). The BACS text does not say which Swiss incidents used which controller, and it still does not confirm exploitation of a specific CVE; the entry's existing statement that NCSC's public information does not establish a common attack method stays accurate. Detection hook BACS supports implicitly: review of temperature setpoints, defrost schedules, alarm thresholds and notification recipients (already in the entry from advisory 13054).
+
+  # ---------------------------------------------------------------------------
+  # 2. UPDATE-OF Publica / PK Softech: ransom-demand and darkweb statements
+  # ---------------------------------------------------------------------------
+  - title: "Publica / PK Softech: federal security-policy secretariat, supplier and pension fund say no concrete ransom demand reached them and no data is known on the darkweb"
+    sources:
+      - { url: "https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan", publisher: "watson.ch (Keystone-SDA wire text)", date: "2026-11-10", role: "primary" }
+      - { url: "https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker", publisher: "Ticinonline (Keystone-ATS wire text, Italian)", date: "2026-11-10", role: "corroborating" }
+    discovery_trace: "first seen at: tio-ch-attacco-informatico, URL https://www.tio.ch/temi/attacco-informatico (url --direct topic listing; headline 'Attacco hacker al fornitore di Publica: «Nessuna richiesta di riscatto»') -> Keystone-ATS article https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker -> WebSearch (\"PK Softech keine konkrete Lösegeldforderung Sepos Keystone-SDA Bentele Publica Darknet keine Hinweise\" and a domain-restricted follow-up) -> watson.ch German Keystone-SDA text https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan; PK Softech's own homepage notice of 2026-11-10 is cited only through the wire (its page at https://pksoftech.ch/de/newsreader/Cyberangriff-auf-die-PKSoftechAG still showed the 2026-10-08 text when fetched)"
+    summary: |
+      On Tuesday 2026-11-10 the Keystone news agency published statements from three first-hand parties about the extortion side of the PK Softech incident. A spokeswoman of the State Secretariat for Security Policy (Sepos, a VBS body), Ursina Bentele, said that no concrete ransom demands addressed to the federal bodies involved in handling the incident are known and that the Confederation paid no ransom; the software supplier, by contrast, did receive a demand, but one 'not made concrete with an amount or deadline'. Sepos also said it still has no indication that data from the attack was published on the darkweb. PK Softech said on its homepage that no concrete ransom demands reached it and that it never contacted the attackers, and that its investigation continues; Publica said it also received no ransom demand, is not in contact with the hackers, and that no insured person has come forward as contacted or harmed, and that it does not know whether other organisations or individuals are being extorted, which is the subject of the Federal Prosecutor's Office investigation. This is the first on-the-record statement by federal authorities and the supplier on the ransom question; it sits against Tamedia's earlier reporting (relayed by Inside IT) that Akira holds about 100 GB and demands ransom, which the covered entry attributes to Tamedia. The two accounts are not strictly contradictory: Sepos says the supplier received a demand without amount or deadline, while PK Softech says none that is concrete. Nothing here changes the confirmed facts (malware intrusion, data outflow, Federal Prosecutor's investigation including Akira, EDÖB formal investigation).
+    region_nexus: "Switzerland (federal administration, federally affiliated bodies, cantonal and city pension funds)"
+    primary_sector_nexus: "direct - pension fund of the federal administration and its supplier; cantonal and municipal pension funds share the supplier"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199, T1486, T1657]
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09", "actor:akira"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    classification_hint: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "sind keine konkreten Lösegeldforderungen an sie bekannt"
+        attribution: "watson.ch (quoting Sepos spokeswoman Ursina Bentele via Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan"
+      - quote: "nicht mit einem Betrag oder einer Frist konkretisiert"
+        attribution: "watson.ch (quoting Sepos via Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan"
+      - quote: "weiterhin keine Hinweise darauf vor, dass Daten aus dem Angriff im Darkweb veröffentlicht wurden"
+        attribution: "watson.ch (quoting Sepos via Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan"
+      - quote: "PK Softech teilte am Dienstag auf ihrer Homepage mit, dass bei ihr keine konkreten Lösegeldforderungen eingegangen seien."
+        attribution: "watson.ch (Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan"
+      - quote: "Ob im Zusammenhang mit dem Angriff andere Organisationen oder einzelne Personen erpresst würden, sei ihr nicht bekannt."
+        attribution: "watson.ch (Keystone-SDA, relaying Publica)"
+        source_url: "https://www.watson.ch/schweiz/datenschutz/664513749-nach-daten-klau-keine-loesegeldforderung-von-hackern-an-publica-softwarelieferan"
+    extended_notes: |
+      Independence: watson.ch and tio.ch both carry the same Keystone agency story (German and Italian), so this is one wire origin carrying first-hand statements by Sepos, PK Softech and Publica; I could not fetch PK Softech's updated homepage text itself (its newsreader page still shows the 2026-10-08 notice on the extract transport), so the PK Softech statement is cited through the wire. Suggested changelog shape: type update. Fields likely moved: summary/body (replace or qualify 'Akira ... demands ransom' with the 2026-11-10 statements; keep the Tamedia attribution), sources, evidence, sourcing_note. Sweep result for the rest of the Publica story: no further delta found since the entry's last update (2026-11-10T03:43Z, Pension Fund of the City of Zug); IPCT (Ticino), PK Post, BPK, Libera and PKZH are already in the entry.
+
+  # ---------------------------------------------------------------------------
+  # 3. UPDATE-OF Vaud school platform (borderline: political follow-up)
+  # ---------------------------------------------------------------------------
+  - title: "Vaud Grand Council interpellation asks whether the compromised school support platform ran outside the central IT directorate's perimeter"
+    sources:
+      - { url: "https://www.vd.ch/gc/seances-du-grand-conseil/point-seance/point/c8d4c90b-d8f0-4fc7-9190-c5d65d6a2a3e/meeting/1033715", publisher: "Etat de Vaud, Grand Conseil (interpellation 26_INT_155 Didier Lohri, agenda item of the 2026-11-10 session)", date: "2026-11-10", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Gymnases Vaud plateforme support informatique vol de données élève enquête Tribunal des mineurs\") -> vd.ch Grand Conseil agenda page https://www.vd.ch/gc/seances-du-grand-conseil/point-seance/point/c8d4c90b-d8f0-4fc7-9190-c5d65d6a2a3e/meeting/1033715 (extract)"
+    summary: |
+      A Vaud Grand Council deputy, Didier Lohri, filed an interpellation dated 2026-11-01 (agenda item 6 of the 2026-11-10 session, to be developed by him) on the cyberattack against the post-compulsory schools' IT-support platform. It raises governance questions, not new facts: whether the platform was run autonomously by the education directorate (DGEP) behind its own firewall or fell within the central digital directorate (DGNSI) perimeter; why the canton keeps three identity sources (cantonal authentication, edu-vd and eduvaud, the last open on the cantonal IAM portal only to teachers of six DGEP schools); whether DGEP and DGEO environments meet the same requirements as DGNSI ones (multifactor authentication, connection monitoring, audits); how much IT was bought without DGNSI validation in 2023 to 2025; how many cloud services run outside the validated catalogue; and whether the Conseil d'Etat will centralise them. The text also criticises the five-day gap between detection (2026-10-26) and the official release (2026-10-31) and gives about 41,500 pupils and teachers. The Conseil d'Etat has not answered yet. No source gives the platform product or the intrusion method; the arrested 16-year-old and the juvenile-court procedure are already in the entry.
+    region_nexus: "Switzerland / canton Vaud"
+    primary_sector_nexus: "direct - cantonal education administration"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1213]
+    affected_products: []
+    entity_keys: ["incident:vaud-dgep-it-support-platform-data-theft-2026-10"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-01/vaud-school-it-support-platform-data-theft-teachers-pupils"
+    classification_hint: { reliability: A, credibility: 3 }
+    borderline: true
+    borderline_reason: "A deputy's questions to the government (the platform's governance status is asked, not stated; the government's answer is pending). It adds no confirmed fact about the incident; keep only if the main agent wants the governance angle (possible shadow-IT platform outside central IT) recorded, ideally after the Conseil d'Etat answers."
+    evidence:
+      - quote: "Le communiqué officiel n'a été publié que cinq jours plus tard, le samedi 31 octobre."
+        attribution: "Interpellation by deputy Didier Lohri, Grand Conseil vaudois"
+        source_url: "https://www.vd.ch/gc/seances-du-grand-conseil/point-seance/point/c8d4c90b-d8f0-4fc7-9190-c5d65d6a2a3e/meeting/1033715"
+      - quote: "la plateforme de support visée était-elle exploitée par la DGEP de manière autonome avec pare-feu ou relevait-elle du périmètre de la DGNSI ?"
+        attribution: "Interpellation by deputy Didier Lohri, Grand Conseil vaudois"
+        source_url: "https://www.vd.ch/gc/seances-du-grand-conseil/point-seance/point/c8d4c90b-d8f0-4fc7-9190-c5d65d6a2a3e/meeting/1033715"
+    extended_notes: |
+      The interpellation text is the deputy's, so it is evidence of the question and of his figures only. If included: type improvement or update (no re-float needed for an improvement). Check the Conseil d'Etat's written answer in a later fire.
+
+  # ---------------------------------------------------------------------------
+  # 4. NEW (borderline): CNIL ten simplified sanctions against local authorities
+  # ---------------------------------------------------------------------------
+  - title: "CNIL fines ten French local authorities for cybersecurity failures: no admin MFA, permanent and shared vendor access, weak logging, flat networks, unsupported servers"
+    sources:
+      - { url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales", publisher: "CNIL (Commission nationale de l'informatique et des libertés)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.zataz.com/cybersecurite-la-cnil-sanctionne-dix-collectivites/", publisher: "ZATAZ", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: zataz, feed https://www.zataz.com/feed/ (item 'Cybersécurité : la CNIL sanctionne dix collectivités', 2026-11-09) -> ZATAZ article https://www.zataz.com/cybersecurite-la-cnil-sanctionne-dix-collectivites/ -> pivot: CNIL actualités listing https://www.cnil.fr/fr/actualites (url --direct) -> primary: https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales (extract)"
+    lookback: true
+    summary: |
+      In November 2026 (page dated 9 November) the French data-protection authority CNIL announced ten simplified-procedure sanctions against local authorities (communes, departments, regions) and one public establishment for cybersecurity failings found in its 2025 control theme on local-authority security. Fines run from 3,000 to 20,000 euros (20,000 is the legal maximum for this procedure; ZATAZ restates the range) and weigh the number and gravity of failings, data categories (minors, bank details), the authority's budget and the people affected. CNIL lists the sanctioned failings under GDPR article 32: remote authentication for staff, notably teleworkers, that was not robust enough, with no multifactor authentication for administrators; outside vendors such as software publishers with permanent network access that was not authorised case by case, or through accounts shared between several employees; ineffective anomaly detection (incomplete logs, or no real-time or short-term review); insufficient network segmentation that could extend a breach across several segments; servers on operating systems their publisher no longer maintains; weak passwords sent in clear text to users or stored unsafely. Several decisions add that systems used for online exchange with citizens had no security accreditation under the RGS before going live, and several authorities were fined for skipping a data-protection impact assessment (school and after-school parent portals, public-space video surveillance). CNIL says some inspected authorities had already suffered one or more breaches that proper measures could have prevented, that other procedures are open, and that it frames the work as preparation for NIS2, which will put new security requirements on local authorities.
+    region_nexus: "France (peer-authority enforcement); transferable to Swiss communal and cantonal administrations, which face the same supplier-access and unsupported-server patterns"
+    primary_sector_nexus: "indirect - French local government; no Swiss legal effect (Swiss data-protection law and cantonal laws differ)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:cnil-local-authority-cybersecurity-sanctions-2026-11", type: policy, name: "CNIL ten sanctions on local-authority cybersecurity (November 2026)", aliases: [], summary: "CNIL's announcement of 2026-11-09 of ten simplified GDPR sanctions (3,000 to 20,000 euros) against French local authorities and one public establishment for security failings found in its 2025 local-authority control theme (CNIL, 2026-11-09)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    classification_hint: { reliability: A, credibility: 2 }
+    borderline: true
+    borderline_reason: "Enforcement by a French regulator with no direct Swiss legal effect. It clears the bar only as a transferable audit list for communal and cantonal defenders (admin MFA, vendor access, logging, segmentation, unsupported servers); the main agent should drop it if it judges the Swiss lens not met. ZATAZ only restates CNIL, so the item is effectively single-source on the regulator's own page."
+    evidence:
+      - quote: "En novembre 2026, la CNIL a prononcé dix sanctions simplifiées à l’encontre de collectivités territoriales et d’un établissement public, pour des manquements relatifs à la cybersécurité."
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "absence d’authentification multifacteur pour les administrateurs"
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "certains prestataires extérieurs (par exemple, des éditeurs de logiciels) pouvaient accéder au réseau des collectivités de manière permanente, sans y être autorisés au cas par cas, ou via des comptes partagés entre plusieurs salariés"
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "le cloisonnement du réseau était insuffisant, ce qui pouvait étendre l’impact d’une violation à plusieurs segments du réseau"
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "D’autres procédures sont actuellement en cours et pourraient mener, en cas de manquements, à des sanctions, des mises en demeure ou des rappels aux obligations."
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+    extended_notes: |
+      Kind suggestion: policy. The CNIL page's metadata date is 2026-11-10 while its headline date is 09 novembre 2026; I used 9 November (older than window_hours, so lookback:true via the zataz record's 122 h lookback). The failings map to defensive controls rather than attacker behaviour, hence no techniques. Relevance hook for Swiss readers: vendor remote access (PK Softech and the Vétroz IT-provider cases are supplier-side incidents), admin MFA, log review and unsupported OS on servers are exactly what a cantonal or communal audit would check.
+
+  # ---------------------------------------------------------------------------
+  # 5. NEW (borderline): ENISA State of Cybersecurity in the Union 2026
+  # ---------------------------------------------------------------------------
+  - title: "ANNUAL REPORT - ENISA State of Cybersecurity in the Union 2026: EU Cybersecurity Index 71.53, national CVD policies up from 7 to 17"
+    sources:
+      - { url: "https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union", publisher: "ENISA", date: "2026-11-10", role: "primary" }
+    discovery_trace: "first seen at: enisa, URL https://www.enisa.europa.eu/news (extract of the listing, then extract of the item page for its date) -> primary: https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union"
+    summary: |
+      ENISA published the 2026 edition of its biennial Report on the State of Cybersecurity in the Union on 2026-11-10, prepared under article 18 of NIS2 with the European Commission and the NIS Cooperation Group. The Union-level assessment says the level of cyber threats to the EU remains substantial and that intrusion activity stayed significant and diverse in 2025 and 2026, ideology is the main driver of incidents, hacktivists dominate by volume and AI is accelerating vulnerability discovery and exploitation. The EU Cybersecurity Index, developed under NIS2 article 18(3), averages 71.53 points of 100: policy implementation 66.72, supply-chain management of essential and important entities 89.91, CSIRT maturity 54.76 (uneven), higher-education cybersecurity presence 73.59 versus 55.44 for primary and secondary, national certification ecosystems 55.56. The report sets five directions: effective implementation (smoothing cross-border and cross-legislation burdens), operational crisis capacity (the 2025 Blueprint, information sharing), critical-infrastructure preparedness (regulatory compliance is the main investment driver at 70%), EU-level supply-chain and cross-border risk (national coordinated-vulnerability-disclosure policies rose from 7 to 17 Member States), and long-term awareness and skills. ENISA's director names the refrigeration-system incidents as a sign of operational gaps. The 2026 ENISA Threat Landscape (2026-09-22, outside this window) found public administration the most targeted sector at 32% of incidents, 82% of which were ideology-driven DDoS.
+    region_nexus: "EU (Switzerland is not an EU Member State and is not covered by the index; useful as peer context for the NIS2-aligned obligations Swiss suppliers to EU entities meet)"
+    primary_sector_nexus: "indirect - public administration named among the lower-maturity targeted sectors in ENISA's NIS360 and threat-landscape work"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:enisa-state-of-cybersecurity-in-the-union-2026", type: report, name: "ENISA Report on the State of Cybersecurity in the Union 2026", aliases: ["State of Cybersecurity in the Union 2026", "ENISA NIS2 article 18 report 2026"], summary: "ENISA's biennial NIS2 article 18 report of 2026-11-10 with the EU Cybersecurity Index (EU average 71.53) and five policy directions (ENISA, 2026-11-10)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    classification_hint: { reliability: A, credibility: 2 }
+    borderline: true
+    borderline_reason: "Periodic EU policy report with no operational delta for Swiss defenders; flagged as an annual/biennial report per the S2 mission. The 2026 ENISA Threat Landscape (2026-09-22) found no matching entry in the store at all, which is a quality-audit lead for a published annual report, but it is outside this window."
+    evidence:
+      - quote: "The overall EU average value of the Index 2026 is 71.53 points"
+        attribution: "ENISA"
+        source_url: "https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union"
+      - quote: "Intrusion activity remained significant and diverse in 2025 and 2026, while the threat landscape is becoming more complex."
+        attribution: "ENISA"
+        source_url: "https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union"
+      - quote: "the share of countries with a national CVD policy has improved from 7 to 17"
+        attribution: "ENISA"
+        source_url: "https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union"
+    extended_notes: |
+      I read the ENISA news item (press text), not the report PDF itself; figures are ENISA's press-text figures.
+
+  # ---------------------------------------------------------------------------
+  # 6. NEW (borderline): Chur medical centre and pharmacy - Cloak claim
+  # ---------------------------------------------------------------------------
+  - title: "Chur medical centre Gleis D and pharmacy Medi Porta: patient and staff data copied from local storage; Cloak claims 87 GB"
+    sources:
+      - { url: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106", publisher: "Inside IT", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.swisscybersecurity.net/news/2026-11-09/cyberkriminelle-erbeuten-patienten-und-mitarbeiterdaten-von-churer", publisher: "SwissCybersecurity.net", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: swisscybersecurity-net, URL https://www.swisscybersecurity.net/ (extract of the home page; headline dated 09.11.2026) -> article https://www.swisscybersecurity.net/news/2026-11-09/cyberkriminelle-erbeuten-patienten-und-mitarbeiterdaten-von-churer (extract) -> pivot: Inside IT https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106 (url --direct, text from the __NEXT_DATA__ JSON). The centre's own notice was not located (WebSearch for it found only ransomware trackers)."
+    lookback: true
+    summary: |
+      The Medizinisches Zentrum Gleis D and the pharmacy Medi Porta in Chur (canton Graubünden) say they were hit by a cyberattack: the IT partner and external specialists stopped it and secured the systems, but an outflow of patient and staff data could not be fully prevented. According to the centre, as Inside IT and SwissCybersecurity.net relay it, local data storage was affected and names, addresses, prescriptions and X-ray images left, plus staff data; the electronic patient record, kept in a separate application, was spared; diagnosis and treatment were not affected and operations continue. The centre filed a criminal complaint and reported the incident to BACS and the Federal Data Protection and Information Commissioner (EDÖB), and warns patients of fraud attempts. The ransomware group Cloak claims the attack and says on the darknet it took 87 GB, including identity documents and financial records; the centre would not tell Inside IT whether a ransom is demanded. No source gives the access route, the date of the intrusion or whether files were encrypted; a ransomware tracker lists mediporta.ch as a Cloak claim dated about 24 October 2026 but that is not carried here as fact.
+    region_nexus: "Switzerland / canton Graubünden"
+    primary_sector_nexus: "indirect - private healthcare provider (outpatient centre and pharmacy), not a public body; held in the same extortion pattern as earlier Swiss health-provider cases"
+    sector: "healthcare"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:cloak-ransomware", type: actor, name: "Cloak", aliases: ["Cloak ransomware group"], summary: "Ransomware and data-extortion group that claims the Chur medical centre Gleis D / Medi Porta attack and 87 GB of data on its darknet site (Inside IT, 2026-11-06; SwissCybersecurity.net, 2026-11-09)." }
+      - { key: "incident:gleis-d-medi-porta-chur-cloak-2026-10", type: incident, name: "Medizinisches Zentrum Gleis D and Medi Porta (Chur) data theft, Cloak claim", aliases: ["Gleis D Chur cyberattack"], summary: "Cyberattack on a Chur medical centre and pharmacy with patient and staff data copied from local storage; the Cloak group claims 87 GB (Inside IT, 2026-11-06)." }
+    relation_suggestions:
+      - { subject: "actor:cloak-ransomware", object: "incident:gleis-d-medi-porta-chur-cloak-2026-10", basis: "Inside IT: Cloak claims the attack and says it holds 87 GB (a leak-site claim relayed by Inside IT, not an authority attribution)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    classification_hint: { reliability: C, credibility: 3 }
+    borderline: true
+    borderline_reason: "Private health provider with no public-sector tie, no stated vector or technique and a leak-site claim for the 87 GB figure; S4 may return it too. It matters to the Swiss health and pharmacy lens only if the main agent applies the precedent of the Groupe 3R entry. The victim's confirmation of the incident and data classes is first-hand but reached us through trade press (Admiralty C), and the two sources are one story."
+    evidence:
+      - quote: "Die Ransomware-Gruppe Cloak bekennt sich zu dem Cyberangriff auf das Gesundheitszentrum."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106"
+      - quote: "Auf die Frage, ob eine Lösegeldforderung vorliegt, äussert sich das Medizinische Zentrum auf Anfrage von inside-it.ch nicht."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106"
+      - quote: "Da der Angriff den lokalen Datenspeicher getroffen hat, seien die elektronischen Patientendokumentationen, die in einer separaten Umgebung gespeichert sind, verschont geblieben."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106"
+      - quote: "Die Ransomware-Bande Cloak behauptet, 87 Gigabyte an Daten gestohlen zu haben."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-11-09/cyberkriminelle-erbeuten-patienten-und-mitarbeiterdaten-von-churer"
+      - quote: "Das Gesundheitszentrum hat den Vorfall nach eigenen Angaben dem Bundesamt für Cybersicherheit (BACS) und dem Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) gemeldet sowie Strafanzeige erstattet."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-11-09/cyberkriminelle-erbeuten-patienten-und-mitarbeiterdaten-von-churer"
+    extended_notes: |
+      Technique mapping left empty on purpose: the sources say data left and a ransomware group claims it, but state neither encryption, nor an access method, nor an exfiltration channel. If the main agent must map, T1657 or T1486 would be inference from the actor type, not from the sources.
+
+# -----------------------------------------------------------------------------
+# Leads read and dropped (audit trail; none of these is an item)
+# -----------------------------------------------------------------------------
+dropped_leads:
+  - lead: "Belgian rescue zone Hainaut-Est (ZOHE), ChimeraZ forum-sale claim of 2026-10-31 (open backlog row, hold expires 2026-11-17)"
+    result: "NOT CONFIRMED. Five fresh queries in French and English (ZOHE + cyberattaque / piratage / ChimeraZ / revendication / frenchbreaches) found no statement by the zone, no Belgian press report (RTBF, DH, La Nouvelle Gazette, L'Avenir, Sudinfo) and no CCB or Belgian-authority notice. The only trace is the FrenchBreaches archive listing, 'Zone de secours Hainaut-Est (ZOHE), 31 oct. 2026, Revendiquée, Secteur public', i.e. still the single C-grade relay the hold row names; FrenchBreaches' own ZOHE alert page was not retrievable. The ChimeraZ handle's other claims (a French firefighters' federation platform, arms-owner files, AMF, La France insoumise) are secondary-aggregator reports only. Recommend the row stay held until 2026-11-17 and then be struck if nothing appears."
+  - lead: "BACS phishing warnings impersonating the Federal Tax Administration (ESTV, 2026-11-09) and the commercial register (EHRA, 2026-11-06); BACS weekly review week 45 (Black Friday fake shops)"
+    result: "Dropped: consumer and SME fraud notices with no technique, tool or public-sector exposure beyond brand impersonation; ESTV phishing harvests personal data (birth date, phone, bank account) for later fraud per BACS."
+  - lead: "Erowa AG (Büron LU, CNC clamping systems) ransomware, Akira claim, data outflow confirmed by company (Inside IT 2026-11-10)"
+    result: "Dropped for S2: private industrial supplier, no public-sector nexus, no vector; belongs to S4 if anywhere."
+  - lead: "National Council security-policy committee (SiK-N) motion on digital dependencies in public procurement (SwissCybersecurity.net 2026-11-06; vote 16:5:2, due in the 2026 winter session)"
+    result: "Dropped: a committee motion, not an obligation; the Curia Vista record is a JavaScript shell that no transport here could read (AffairId=20264717), so the only source is one trade-press outlet. Worth a re-check after the winter session."
+  - lead: "Swiss e-ID rollout"
+    result: "No in-window development. Latest primary I could reach by search is the Federal Office of Justice release of 2026-06-30 (new timetable, no date for the e-ID, trust infrastructure expected in the first half of 2027); not fetched in full, search-snippet level only."
+  - lead: "Swiss ISG / cybersecurity law (CSG) / NIS2 / CRA"
+    result: "Nothing new in window. The Federal Council's 2026-09-25 mandate (consultation draft by June 2027) is already an entry (2026-09-26/switzerland-cybersecurity-act-csg-federal-council-mandate); Bern ICSG and Aargau InfoSiG are covered; Zug's consultation on its own information-security law closed 2026-11-09 (adoption later); ENISA's CRA Single Reporting Platform went live 2026-09-11 and CRA reporting duties for manufacturers apply from the same date (older than window, already covered by the CRA reporting entry of 2026-08-29)."
+  - lead: "Swiss communal and cantonal incident announcements DE/FR/IT (Gemeinde, commune, comune; Spital, Schule, Polizei, Feuerwehr, Rettungsdienst)"
+    result: "No new public-sector incident announcement in window across Inside IT, SwissCybersecurity.net, Netzwoche, tio.ch, watson, nau, ICTjournal and eleven WebSearch queries (DE, FR, IT). Already covered and unchanged: Manno TI, ARA Region Lyss-Limpachtal, Vaud school platform, PK Softech. Holcim (360 GB claim, ~2026-11-03) and SRG staff data theft (~October) appear in tio.ch's topic list and are private or broadcaster incidents for S4."
+  - lead: "Vaud M365 device-code phishing campaign (covered entry)"
+    result: "No new delta: only the canton's own undated notice again; no victim count, no new organisations."
+  - lead: "Heise Delos sovereign cloud launch early 2027; CISA 'Enhanced Reporting Form' (2026-11-09); CISA/FBI cold-chain fact sheet (2026-11-05); NL Times DNB/AFM bank-attack warning (2026-11-10); EU investment-fraud server takedown (Eurojust, 2026-11-03)"
+    result: "Dropped: German/US/Dutch/EU items with no Swiss public-sector delta or already in the Danfoss entry (CISA fact sheet)."
+
+candidate_sources:
+  - id: watson-ch-digital
+    publisher: "watson.ch Digital / Datenschutz (Swiss news site)"
+    url: "https://www.watson.ch/digital"
+    category: "news"
+    why: "Carries the Keystone-SDA German wire text on federal and cantonal incidents the same day (here the Publica ransom statements of 2026-11-10) and runs its own Swiss cyber analyses (Schurter); article bodies read cleanly with `extract` and the listing with `url --direct`; not in sources.json. Reliability C (wire re-publisher plus own reporting)."
+
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "Not in this slice but named as a rotation-priority gap. Re-tried 2026-11-11 on every rung: `ico-uk enforcement 10` (sitemap.xml HTTP 403), `extract` of the news-and-blogs page (direct 403, trafilatura empty, reader relayed an upstream block), `feed` of the news RSS path (403 direct, reader block), and WebFetch of the news page (HTTP 403). Unreachable on all transports from this egress; WebSearch for ICO enforcement in November 2026 found nothing dated in window (latest hit May 2026, South Staffordshire Water). The record's `fetch_method: blocked` is accurate today."
+  - source_id: lab52
+    reason: "Recipe note confirmed and narrowed: `feed https://lab52.io/blog/feed/` fails (connection reset by peer, reader returns no items); `jina https://lab52.io/blog/ html` works (one reader credit) and the dated listing is in `<article>` blocks (`datetime=` attribute, href on the title link). Newest post 2026-10-05, so nothing in window."
+  - source_id: enisa-cnw
+    reason: "Recipe improvement, no gap: `extract` of the GitHub blob page returns only about 1 kB (no member-alert table). Working enumeration and read: `python3 tools/fetch_source.py url https://api.github.com/repos/enisaeu/CNW/contents/advisories/2026` lists the files (CNW-2026-01 Cisco SD-WAN, -02 Fortibleed, -03 Citrix, -04 PHP, -05 retail-incidents); `url 'https://api.github.com/repos/enisaeu/CNW/commits?path=advisories/2026&per_page=8'` shows what changed when (CNW-2026-05 last updated 2026-11-10T10:12Z, no new CNW file since); `url https://raw.githubusercontent.com/enisaeu/CNW/main/advisories/2026/CNW-2026-05_retail-incidents.md` returns the full member-alert table (no Swiss entry: Switzerland is not a CSIRTs Network member)."
+  - source_id: cisa-directives
+    reason: "WebFetch lists six directives with hrefs but no dates on the page, so in-window changes cannot be told from the listing; nothing new surfaced in the 122 h lookback by any other route. Not a transport failure."
+  - source_id: ncsc-ch-focus / ncsc-ch-incidents / bacs-press
+    reason: "Recipe confirmed unchanged: `url --direct <page>`, split on `class=\"card card--default card--clickable`, title in `class=\"card__title\"`, date in `meta-info__item\">`, href first `href=`. Im Fokus dates read '10. November 2026'. The refrigeration warning is on both Im Fokus and aktuelle-vorfaelle; bacs-press has nothing newer than 2026-11-05."
+  - source_id: inside-it-ch
+    reason: "Recipe confirmed: feed lists titles; article body via `url --direct <article>` and the `props.pageProps.post` text inside `__NEXT_DATA__` (extract stops at the paywall teaser)."
+  - source_id: ictjournal-ch / tio-ch-attacco-informatico
+    reason: "Not in my slice; read opportunistically. The tio.ch topic page's `extract` output is a stale capture (metadata date 2026-04-02) while `url --direct` of the same page is live and carries the current headlines (that is how the 2026-11-10 Publica article surfaced); use `url --direct`, not `extract`, for that record."
+  - source_id: probe note
+    reason: "I made one speculative request to a constructed ENISA publications URL (404, uncited) while looking for the State of Cybersecurity report PDF; the `extract` fallback spent a reader credit on it. Nothing from it is cited."
+
+watchlist_sweep:
+  duty: sector-lens
+  note: "No product or supplier watchlist is configured; the sector lens (Swiss public sector, federal/cantonal/communal, emergency services, armed forces, civil protection) was applied to every triage decision above."
+
+# One row per slice record (19), plus the extra rotation-priority record.
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current), 10 items each", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warning 2026-10-21 (PHP), newest current 2026-10-20; quiet" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract (listing + per-item extract for dates)", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "State of Cybersecurity in the Union 2026 (2026-11-10), borderline; ETL 2026 (09-22), SRP launch (09-11) and the refrigeration joint statement (11-04) are older" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed 20 items (3 days)", horizon_hours: 26, in_horizon_items: 10, returned: 0, note: "German/US/vendor items; Delos sovereign-cloud and Iran attribution items have no new Swiss delta" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed 20 items + url --direct article bodies (__NEXT_DATA__)", horizon_hours: 26, in_horizon_items: 9, returned: 0, note: "Erowa read and dropped (private supplier); Chur medical-centre article (11-06) used as source of item 6; Zug pension fund (11-09) already in the Publica entry" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "url --direct + card split, extract per card", horizon_hours: 26, in_horizon_items: 3, returned: 1, note: "refrigeration warning 11-10 returned as update-of; ESTV (11-09) and EHRA (11-06) phishing and week-45 review dropped" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "same cards as Im Fokus; counted once under ncsc-ch-focus" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-05 (Beirat Digitale Schweiz, digital sovereignty); nothing in window" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed 15 items", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21" }
+  - { id: nl-times, tier: standard, attempted: true, transport: "extract of data-breach and cybersecurity tag pages + rss.xml filtered", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "tag pages stale (newest 2026-10-19/21); RSS has a 2026-11-10 Dutch financial-watchdog bank-attack warning, no Swiss delta" }
+  - { id: vd-ch-press-releases, tier: standard, attempted: true, transport: "extract listing + url --direct hrefs", horizon_hours: 148, in_horizon_items: 10, returned: 0, note: "ten newest releases are non-security (geotopes, police academy, tax reorganisation, tram, salaries); the school-platform follow-up came from the Grand Conseil pages, not this listing" }
+  - { id: enisa-cnw, tier: standard, attempted: true, transport: "GitHub API contents + commits via url; raw file via url", horizon_hours: 148, in_horizon_items: 1, returned: 0, note: "CNW-2026-05 updated 2026-11-10, no new CNW advisory; already reflected in the Danfoss entry; recipe in coverage_gaps" }
+  - { id: ccn-cert-es, tier: standard, attempted: true, transport: "feed (atom) 10 items", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-11-03 (offensive-AI readiness), AL 11/26 PHP 2026-10-21" }
+  - { id: cisa-directives, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "six directives listed with no dates; nothing in window determinable" }
+  - { id: cisa-news, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 122, in_horizon_items: 2, returned: 0, note: "Enhanced Reporting Form (11-09, US-specific) and the CISA/FBI/HHS/USDA/DOT cold-chain release (11-05, already in the Danfoss entry)" }
+  - { id: compass-security, tier: standard, attempted: true, transport: "feed 10 items", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-11-03 (Defender XDR AI-agent monitoring), outside the 122 h horizon" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "WebFetch of ic3.gov/PSA", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest PSA 2026-10-23" }
+  - { id: lab52, tier: standard, attempted: true, transport: "feed failed (connection reset); jina listing html", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-05; recipe in coverage_gaps" }
+  - { id: swisscybersecurity-net, tier: standard, attempted: true, transport: "extract home + url --direct hrefs + extract per article", horizon_hours: 122, in_horizon_items: 8, returned: 1, note: "Chur medical centre (borderline); SiK-N motion, ESTV/EHRA phishing, Aargau (already covered), monthly threat radar read and dropped" }
+  - { id: zataz, tier: standard, attempted: true, transport: "feed 25 items", horizon_hours: 122, in_horizon_items: 10, returned: 1, note: "CNIL ten sanctions pivoted to the CNIL primary (borderline); NoName/Danfoss claims and EFS blood-service item add no Swiss delta" }
+  - { id: ico-uk, tier: "rotation-priority (not in slice)", attempted: true, transport: "ico-uk subcommand, extract, feed, WebFetch", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "HTTP 403 on every transport; see coverage_gaps" }

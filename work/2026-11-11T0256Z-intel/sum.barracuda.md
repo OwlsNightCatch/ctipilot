@@ -1,0 +1,1 @@
+CISA added both Barracuda flaws, CVE-2026-116606 and CVE-2026-111560, to its Known Exploited Vulnerabilities catalog on 2026-11-10, so the exploitation Barracuda reported without naming a flaw is now tied to both and CVE-2026-111560 moves to exploited; CISA marks both for forensic triage.
