@@ -1,0 +1,682 @@
+# work/2026-11-12T0255Z-intel/findings.S4.yaml — S4 Incidents & disclosures
+domain: S4
+run_id: 2026-11-12T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-12T02:57:43Z
+ended_at: 2026-11-12T03:20:58Z
+duration_seconds: 1395
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 20
+  bridge_fetches: 105   # approximate count read off the tool-use trace
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "ScreenConnect MSP compromise: an operator used cloud-hosted ScreenConnect panels to push a rogue second client and the SCKit worm kit to 288 managed endpoints at 48 organisations on 2026-11-11"
+    sources:
+      - { url: "https://www.huntress.com/blog/sckit-worm-rogue-screenconnect", publisher: "Huntress (Ben Nahorney, Susannah Matt)", date: "2026-11-11", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/active-screenconnect-attacks-breach-msps-impact-dozens-of-organizations/", publisher: "BleepingComputer (Lawrence Abrams; relays the ConnectWise advisory and Huntress statements)", date: "2026-11-11", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, feed https://www.bleepingcomputer.com/feed/ (item 'Active ScreenConnect attacks breach MSPs, impact dozens of organizations') → https://www.bleepingcomputer.com/news/security/active-screenconnect-attacks-breach-msps-impact-dozens-of-organizations/ (extract) → pivot: WebFetch https://www.huntress.com/blog (listing, newest post 'SCKit Worm Installs Rogue ScreenConnect Clients and Session Cookie Relays Across Hundreds of Endpoints') → primary: Huntress, https://www.huntress.com/blog/sckit-worm-rogue-screenconnect (extract). The ConnectWise advisory (posted 22:45 UTC on 2026-11-11, https://www.connectwise.com/company/trust/advisories) answered 403 on extract, jina and WebFetch, so its content is taken only as relayed by Huntress and BleepingComputer."
+    summary: |
+      Facts as Huntress states them: from about 17:47 UTC on 2026-11-11 an operator used access to several cloud-hosted ScreenConnect
+      panels to push the panels' Run Command, executed as SYSTEM, to groups of managed endpoints; 288 hosts at 48 Huntress-protected
+      organisations were hit within about 90 minutes, a third of them in the first ten. The pushed command checks for an existing
+      ScreenConnect client, downloads an attacker-controlled installer to C:\Windows\TEMP\sc.msi and installs it silently, writes a
+      base64 dropper (sckit-run.bat) and then fetches a host-keyed, encrypted 16-file toolkit, SCKit, whose decryption values the
+      server returns against the machine's UUID. On each host the kit unpacks to C:\ProgramData\RelayTrap, adds Microsoft Defender
+      exclusions, installs a second attacker ScreenConnect client, compiles a per-host RelayTrap.exe under a scheduled task named
+      TrapWatch, stops the legitimate ScreenConnect service and sets it to manual start so the attacker's copy replaces it, and sets a
+      Run-key value. Huntress reconstructed, from the code and not from observed cases, a second stage meant to spread from an infected
+      endpoint to a technician who connects through the relay: a file transfer retrieves a dropper, the technician workstation's
+      .aspxauth ScreenConnect session cookie is stolen and replayed against the panel, and a payload is uploaded to the panel's Shared
+      Toolbox and broadcast to every reachable session. Huntress says that console-takeover attempt failed in every recovered host log
+      it has checked, and that isolation alone does not remove the persistence (hosts were seen reinfecting after isolation was lifted).
+      ConnectWise, as relayed by Huntress and BleepingComputer: it confirmed unauthorised access to ScreenConnect partner accounts and
+      installation of unauthorised remote-access software in customer environments, disabled five third-party extensions (Labtech Plus,
+      RMM Plus, RMM+, RMM Plus Password Link, RMM+ Password Link) across about 400 cloud partner environments as a precaution, says
+      on-premises customers must disable them by hand, says disabling does not remove software or access already planted, has found
+      no initial access vector and is confirming reports of technician workstations compromised during interactive sessions.
+      Huntress told BleepingComputer it looks like abuse of legitimate functionality rather than a software flaw, with its telemetry
+      pointing to compromised credentials or hijacked operator sessions (Huntress's assessment; patient zero unknown), and that
+      sequential attacker tags suggest more MSPs were compromised earlier. No source names an actor. Indicators are published by
+      Huntress and deliberately omitted here.
+    region_nexus: "global; Huntress telemetry is US-centred, no Swiss victim is named"
+    primary_sector_nexus: "indirect: public bodies that outsource IT operations to an MSP running ScreenConnect are the exposed class; no public-sector victim is named in the sources"
+    sector: "technology (managed service providers)"
+    cves: []
+    techniques: [T1199, T1072, T1219, T1078, T1059.001, T1059.003, T1053.005, T1547.001, T1685, T1539, T1550.004, T1105, T1570, T1027.013]
+    affected_products: ["ConnectWise ScreenConnect"]
+    entity_keys: ["product:connectwise-screenconnect"]
+    new_entities:
+      - { key: "incident:sckit-screenconnect-msp-compromise-2026-11", type: incident, name: "SCKit ScreenConnect MSP compromise (2026-11-11)", aliases: [], summary: "Huntress (2026-11-11/12): an operator used cloud-hosted ScreenConnect panels to push rogue ScreenConnect clients and the SCKit toolkit to 288 hosts at 48 organisations; ConnectWise disabled five third-party extensions at about 400 partners; no initial access vector or actor named." }
+      - { key: "malware:sckit", type: malware, name: "SCKit", aliases: [], summary: "16-file PowerShell/batch toolkit (RelayTrap persistence, Panel-Lateral console-takeover and Toolbox-broadcast components) delivered through compromised ScreenConnect panels, documented by Huntress on 2026-11-11." }
+    relation_suggestions:
+      - { subject: "incident:sckit-screenconnect-msp-compromise-2026-11", object: "malware:sckit", basis: "Huntress: the operator pushed the SCKit toolkit to managed endpoints through compromised ScreenConnect panels (Huntress, 2026-11-11)" }
+      - { subject: "malware:sckit", object: "product:connectwise-screenconnect", basis: "Huntress: SCKit installs rogue ScreenConnect clients and is built to abuse technician sessions and the panel's Shared Toolbox to spread (Huntress, 2026-11-11)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On November 11, 2026, Huntress observed an operator using access to multiple cloud-hosted ScreenConnect panels to push commands to groups of managed endpoints."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/sckit-worm-rogue-screenconnect"
+      - quote: "An interactive session can trigger the malware to spread to the technician's workstation and then to other ScreenConnect panels available to that technician."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/sckit-worm-rogue-screenconnect"
+      - quote: "Isolation alone does not remove the persistence, and affected systems have been observed reinfecting shortly after isolation was lifted."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/sckit-worm-rogue-screenconnect"
+      - quote: "ConnectWise confirmed unauthorized access to ScreenConnect partner accounts and the installation of unauthorized remote-access software in customer environments."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/active-screenconnect-attacks-breach-msps-impact-dozens-of-organizations/"
+      - quote: "Huntress has not determined how the attackers are gaining access to affected MSP environments, but says its current telemetry points to compromised credentials or hijacked operator sessions."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/active-screenconnect-attacks-breach-msps-impact-dozens-of-organizations/"
+    extended_notes: |
+      Exposure (vendor/Huntress-documented checks): in the ScreenConnect administration interface list the installed extensions and look
+      for the five named above (ConnectWise says having one does not by itself mean compromise; on-premises instances must disable them
+      manually); read Run Command history, Toolbox records, extension-installation records and administrator activity for entries your
+      staff did not make; on endpoints look for a second ScreenConnect client service pointing at a relay that is not your instance.
+      Detection concept (telemetry class first): ScreenConnect instance audit logs; endpoint process-creation events with the
+      ScreenConnect client service as parent spawning cmd, PowerShell or msiexec; MSI-install and service-install events for a second
+      client; scheduled-task creation (task named TrapWatch), Defender exclusion changes, start-type change of the legitimate client
+      service, new Run-key value; egress from endpoints to a ScreenConnect relay outside your own instance.
+      Triage lookalike (follows from the documented chain): ordinary MSP Run Command use is one technician, one named endpoint or group,
+      and does not install a second ScreenConnect client or stop the legitimate one; here one operator action reached hundreds of
+      endpoints within minutes and left a silent sc.msi install plus a scheduled task.
+      Post-patch/containment: Huntress and ConnectWise both say disabling the extensions or isolating a host does not remove planted
+      clients or persistence; Huntress advises not opening interactive ScreenConnect sessions to suspect hosts, using EDR live response
+      or WinRM instead, treating a technician workstation that already connected as exposed, terminating web sessions, rotating
+      ScreenConnect credentials and revoking browser/IdP sessions.
+      Developing: the ConnectWise advisory text is only second-hand here; BleepingComputer's figures (six MSPs, 286+ endpoints) are the
+      earlier counts, Huntress's page later says 288 hosts / 48 organisations. BleepingComputer also found an earlier batch script
+      (VirusTotal first upload 2026-07-25) that references one of the rogue client IDs; Huntress declined to comment and the link is unclear.
+      Huntress's blog metadata date is 2026-11-12 (updated), the listing date is 2026-11-11. Suggested Admiralty: Huntress B, BleepingComputer B; credibility 2 until ConnectWise's advisory text is read.
+  # ------------------------------------------------------------------ 2
+  - title: "PowerFolder: the German file-sync vendor's cloud was breached on 2026-11-06 through a flaw in the server software's /wopi/ path that affects every on-premises PowerFolder Server version; fixed builds 28.2.100 and 26.4.100 shipped on 2026-11-11"
+    sources:
+      - { url: "https://www.powerfolder.com/news/2026-11-11-sicherheitsupdate-fuer-powerfolder-server-ist-verfuegbar.html", publisher: "PowerFolder (vendor news page)", date: "2026-11-11", role: "primary" }
+      - { url: "https://www.powerfolder.com/news/2026-11-07-korrektur-powerfolder-server-sind-betroffen-bitte-wopi-sofor.html", publisher: "PowerFolder (vendor news page)", date: "2026-11-07", role: "primary" }
+      - { url: "https://www.powerfolder.com/news/2026-11-06-update-angriff-gestoppt-ihre-dateien-sind-sicher-wiederanlau.html", publisher: "PowerFolder (vendor news page, carries the 2026-11-07 and 2026-11-09 corrections)", date: "2026-11-06", role: "primary" }
+      - { url: "https://www.powerfolder.com/news/2026-11-09-update-sicherheitsupdate-fuer-powerfolder-server-release-can.html", publisher: "PowerFolder (vendor news page)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.powerfolder.com/news/2026-11-08-update-so-laeuft-der-wiederanlauf-der-powerfolder-cloud-ab-s.html", publisher: "PowerFolder (vendor news page)", date: "2026-11-08", role: "corroborating" }
+      - { url: "https://www.powerfolder.com/news/2026-10-21-powerfolder-auf-der-sccon-2026-neue-impulse-fuer-souveraene.html", publisher: "PowerFolder (vendor news page, product positioning)", date: "2026-10-21", role: "context" }
+      - { url: "https://borncity.com/blog/2026/11/09/sicherheitsvorfall-beim-anbieter-powerfolder-drive/", publisher: "Borns IT- und Windows-Blog (relays the vendor's customer mailing)", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: borncity, feed https://borncity.com/blog/feed/ (item 'Sicherheitsvorfall beim Anbieter PowerFolder Drive') → https://borncity.com/blog/2026/11/09/sicherheitsvorfall-beim-anbieter-powerfolder-drive/ (extract) → WebSearch (\"PowerFolder Drive Sicherheitsvorfall Cloud abgeschaltet Schwachstellen 6. November 2026\", no on-point hit) → pivot: extract https://www.powerfolder.com/news (vendor news list, newest item the 2026-11-11 security update) → primary: the vendor's own notices of 2026-11-06, -07, -08, -09 and -11 listed in sources."
+    summary: |
+      Vendor statements (PowerFolder is the first-party source; its wording was corrected twice, so treat each point as the vendor's
+      claim as of its date). On 2026-11-06 PowerFolder shut its cloud after its monitoring flagged anomalies, blocked the attacker's
+      access at about 14:30, exchanged affected credentials, filed a criminal complaint and informed the data protection
+      authority; Borns IT-Blog, relaying the customer mailing, adds that LDI NRW and the BSI were notified and that the attacker
+      reportedly went for server configuration files. The vendor says the intruder reached parts of the cloud systems but not control of
+      the servers, through "a chain of several causes in our own operating infrastructure", and cannot exclude that names, e-mail
+      addresses and passwords (stored in encrypted form) were copied; on restart (planned 2026-11-10) all passwords, sessions and tokens
+      were invalidated. On 2026-11-07 the vendor reversed its earlier statement that self-operated servers were unaffected: the flaw
+      the attacker used affects all PowerFolder Server products in all versions, including installations where online document
+      editing is not set up or is switched off, and switching it off in the settings does not protect; the interim control is to block
+      every request to the path /wopi/ and its subpaths at the reverse proxy or firewall, or to take the server off the network.
+      On 2026-11-09 the vendor withdrew its earlier line that the attacker had downloaded no files as untenable. On 2026-11-11 it
+      released security updates 28.2.100 (line 28.2) and 26.4.100 (line 26.4) that close the exploited flaws plus further ones found in
+      a code review and add mandatory two-factor login for server administrators, shorter login-token lifetimes and logging of
+      administrator logins and configuration changes; the cloud already runs that state, and the /wopi/ block may be lifted after
+      installing. No CVE identifier is given and the vendor withholds vulnerability details until operators have had time to update.
+      Context from the vendor's own 2026-10-21 post: it is in talks with ZenDiS about fitting PowerFolder into the openDesk sovereign
+      workplace, lists WOPI among its integration interfaces and is in STACKIT ISV onboarding, i.e. it is positioned for public-administration
+      deployments; no source says a Swiss public body uses it.
+    region_nexus: "Germany (vendor in Monheim am Rhein; BSI and LDI NRW notified); DACH operators of on-premises servers; Swiss use not established"
+    primary_sector_nexus: "indirect: vendor positions the product for public-administration sovereign workplaces (openDesk/ZenDiS talks, Smart Country Convention); no public-sector victim named"
+    sector: "technology (file sync and share vendor); public-sector exposure indirect"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["PowerFolder Server", "PowerFolder Cloud"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:powerfolder-cloud-wopi-compromise-2026-11", type: incident, name: "PowerFolder cloud compromise and /wopi/ server flaw (2026-11)", aliases: [], summary: "PowerFolder shut its cloud on 2026-11-06 after an intrusion; on 2026-11-07 it said the flaw behind it affects all PowerFolder Server versions and told operators to block /wopi/; fixed builds 28.2.100 and 26.4.100 followed on 2026-11-11 (PowerFolder news pages)." }
+      - { key: "product:powerfolder-server", type: product, name: "PowerFolder Server", aliases: [], summary: "On-premises file sync and share server from the German vendor PowerFolder (dal33t GmbH per Borns IT-Blog); all versions affected by the /wopi/ flaw per the vendor, fixed in 28.2.100 and 26.4.100 (PowerFolder news pages, 2026-11)." }
+    relation_suggestions:
+      - { subject: "incident:powerfolder-cloud-wopi-compromise-2026-11", object: "product:powerfolder-server", basis: "PowerFolder: the flaw the attacker used affects all PowerFolder Server versions (PowerFolder, 2026-11-07)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Das Abschalten in den Einstellungen schützt nicht"
+        attribution: "PowerFolder"
+        source_url: "https://www.powerfolder.com/news/2026-11-07-korrektur-powerfolder-server-sind-betroffen-bitte-wopi-sofor.html"
+      - quote: "Die Schwachstelle, über die der Angreifer in unsere Cloud eingedrungen ist, betrifft alle PowerFolder Server und sämtliche Versionen."
+        attribution: "PowerFolder"
+        source_url: "https://www.powerfolder.com/news/2026-11-07-korrektur-powerfolder-server-sind-betroffen-bitte-wopi-sofor.html"
+      - quote: "Möglich wurde das durch eine Verkettung mehrerer Ursachen in unserer eigenen Betriebsinfrastruktur."
+        attribution: "PowerFolder"
+        source_url: "https://www.powerfolder.com/news/2026-11-06-update-angriff-gestoppt-ihre-dateien-sind-sicher-wiederanlau.html"
+      - quote: "Die ursprüngliche Aussage „der Angreifer hat keine Dateien heruntergeladen“ ist nach neuen Erkenntnissen nicht haltbar und wurde entfernt."
+        attribution: "PowerFolder"
+        source_url: "https://www.powerfolder.com/news/2026-11-06-update-angriff-gestoppt-ihre-dateien-sind-sicher-wiederanlau.html"
+      - quote: "Das Update schließt die beim Angriff ausgenutzten Schwachstellen."
+        attribution: "PowerFolder"
+        source_url: "https://www.powerfolder.com/news/2026-11-11-sicherheitsupdate-fuer-powerfolder-server-ist-verfuegbar.html"
+    extended_notes: |
+      Lookback item (swept via the 74 h Borns IT-Blog record): the vendor's first notice is 2026-11-06, but the in-window delta is the
+      2026-11-11 patch release, so the actionable news (fixed builds, block-then-patch) is fresh. Single source family: every fact is the
+      vendor's own, Borns IT-Blog only relays the customer mailing (its reader tip, not independent telemetry). Gaps: no CVE, no technical
+      detail of the /wopi/ flaw, no count of affected on-premises servers, and the vendor has changed its account twice (server
+      products first declared unaffected; "no files downloaded" withdrawn), so the data-loss scope is unsettled.
+      Exposure: PowerFolder Server (28.2.x and 26.4.x lines named for the fix; the vendor says all versions are affected) reachable from
+      the internet, or accounts on PowerFolder Cloud (drive.powerfolder.com, my.powerfolder.com, hosted customer systems). The vendor's
+      check: is /wopi/ blocked in front of the server, and is the server on 28.2.100 or 26.4.100.
+      Detection concept: reverse-proxy and web-server access logs for requests to /wopi/ paths on PowerFolder hosts before the block went
+      in; administrator-login and configuration-change records exist only from the fixed release on, so older servers carry no such
+      trail. My assessment, not stated by the vendor: because Borns IT-Blog relays that the attacker targeted server configuration files
+      and the vendor rotated every credential and key on its own side, an operator whose server was reachable on /wopi/ should treat
+      the configuration, keys and database credentials under ~/.PowerFolder as exposed and rotate them after updating.
+      Suggested Admiralty: vendor first-party A for its own incident, B for completeness given the reversals; credibility 2.
+  # ------------------------------------------------------------------ 3
+  - title: "PK Softech / Publica: Publica's own correction page says the supplier received general extortion letters right after the attack, and watson.ch reports the supplier ignores the attackers' negotiation-chat link"
+    sources:
+      - { url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten", publisher: "Publica (federal pension fund, 'Richtigstellung' of 2026-11-10 on its incident page)", date: "2026-11-10", role: "primary" }
+      - { url: "https://www.pksoftech.ch/de/newsreader/Information-zum-Cyberangriff-auf-die-PKSoftechAG", publisher: "PK Softech AG", date: "2026-11-10", role: "primary" }
+      - { url: "https://www.watson.ch/schweiz/digital/929554930-bund-verschwieg-details-zu-ransomware-attacke-von-akira-das-wissen-wir", publisher: "watson.ch (Daniel Schurter, own research)", date: "2026-11-11", role: "corroborating" }
+      - { url: "https://www.cash.ch/news/srf-losegeldforderung-nach-hackerangriff-auf-publica-lieferanten-984161", publisher: "cash.ch / AWP (relays the SRF report and the denials)", date: "2026-11-10", role: "corroborating" }
+    discovery_trace: "first seen at: tio-ch-attacco-informatico, url --direct https://www.tio.ch/temi/attacco-informatico → https://www.tio.ch/svizzera/cronaca/1962152/riscatto-attacco-publica-fornitore-richiesta-hacker (2026-11-10, already in the store) → Swiss sweep: url --direct https://www.watson.ch/digital (listing) → https://www.watson.ch/schweiz/digital/929554930-bund-verschwieg-details-zu-ransomware-attacke-von-akira-das-wissen-wir (2026-11-11) → primary: Publica incident page https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten (extract) and PK Softech https://www.pksoftech.ch/de/newsreader/Information-zum-Cyberangriff-auf-die-PKSoftechAG (extract)."
+    summary: |
+      Fresh facts on the entry's open question about the ransom demand. Publica's incident page, in a correction headed 'Stand 10.11.2026',
+      says the federal bodies know of no concrete ransom demand addressed to them, that the supplier "received general extortion letters
+      immediately after the attack" according to current knowledge, and that these have not since been made concrete with an amount or a
+      payment deadline; Publica says it is not in contact with the attackers and has itself received no demand. PK Softech's page of the same
+      day says no concrete ransom demand reached it and that it never contacted the attackers. watson.ch adds, from its own enquiry, that
+      PK Softech confirms it is ignoring the prompt the attackers left in its network to join an anonymous chat, that the company and the
+      Confederation therefore knew soon after the attack that Akira was behind it and that crisis communication omitted that a general
+      extortion note existed, and it reads the denials as meaning only that nobody opened the attackers' darknet link (watson's inference;
+      it also cites a 2025 FBI/CISA bulletin on Akira's practice of naming no sum in the first note, which was not checked here). The
+      day's media confusion is documented by watson: SRF reported at 05:58 on 2026-11-10 from anonymous sources that Akira demanded
+      ransom and that the Defence Department knew; Keystone-SDA first wrote of a demand to the supplier, then corrected itself after the
+      State Secretariat for Security Policy said no concrete demand was known; SRF's evening bulletins repeated the morning line without
+      the denials. Still open and press-sourced: the Akira attribution (per the store entry, Publica's own 2026-10-22 newsletter associates Akira), the data volume
+      and whether data of covert federal staff is included; no darknet publication is known (Publica, SEPOS).
+    region_nexus: "Switzerland (federal level: Publica, Federal Prosecutor's Office, SEPOS)"
+    primary_sector_nexus: "direct: federal administration pension fund and its software supplier; staff data of the federal administration"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486, T1657]
+    affected_products: ["PK Softech pension administration software"]
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09", "actor:akira"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    evidence:
+      - quote: "Der betroffene Softwarelieferant erhielt nach aktuellem Kenntnisstand unmittelbar nach dem Angriff allgemeine Erpresserschreiben."
+        attribution: "Publica"
+        source_url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten"
+      - quote: "Diese wurden seither weder mit einem Betrag noch mit einer Zahlungsfrist konkretisiert."
+        attribution: "Publica"
+        source_url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten"
+      - quote: "Auf Nachfrage bestätigt die Firma, dass sie die von Akira in ihrem Netzwerk hinterlassene Aufforderung, sich über einen anonymen Chat zu melden, ignoriere."
+        attribution: "watson.ch"
+        source_url: "https://www.watson.ch/schweiz/digital/929554930-bund-verschwieg-details-zu-ransomware-attacke-von-akira-das-wissen-wir"
+      - quote: "In der Krisenkommunikation wurde aber verschwiegen, dass ein (allgemeines) Schreiben der Erpresser vorliegt."
+        attribution: "watson.ch"
+        source_url: "https://www.watson.ch/schweiz/digital/929554930-bund-verschwieg-details-zu-ransomware-attacke-von-akira-das-wissen-wir"
+    extended_notes: |
+      Delta against the entry's 2026-11-11 record: that record quotes the SDA wording that the supplier's demand 'was not made concrete'
+      and leaves a non-specific demand open; Publica's own page now states first-hand that general extortion letters reached the supplier
+      immediately after the attack, which closes that point, and watson adds that the supplier has not opened the negotiation chat.
+      What the entry should keep attributed: the 'general extortion note' is Publica's statement, 'chat link ignored' is watson's report
+      of what PK Softech told it (PK Softech's own page does not say it), the Akira TTP argument is watson's. Not a new exposure for
+      defenders; the practical effect is on the entry's ransom-demand paragraph and on how to read the SRF report (a demand on the
+      Confederation is still unconfirmed). Blick (2026-11-10) repeats the SRF report and quotes a Dreamlab consultant that the attackers
+      may have lodged the demand directly with the Confederation; that is the same press line the denials qualify.
+  # ------------------------------------------------------------------ 4
+  - title: "eMudhra: a second batch of eight RSA intermediate CAs (G2B/G2C) was revoked on 2026-11-07 after the same key-ceremony script handled the keys in host memory, bringing the affected CA certificates to 16"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/", publisher: "BleepingComputer (Lawrence Abrams)", date: "2026-11-11", role: "corroborating" }
+      - { url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449", publisher: "Mozilla CA Certificate Compliance bug 2083449, comment 82 (eMudhra full incident report, 2026-11-10T18:35Z)", date: "2026-11-10", role: "primary" }
+      - { url: "https://emudhra.com/en/post/certificate-security-incident", publisher: "eMudhra (statement page, newest update on the emSign G1 phase-out)", date: "2026-11-10", role: "context" }
+    discovery_trace: "first seen at: bleepingcomputer, feed https://www.bleepingcomputer.com/feed/ (item 'eMudhra revokes 8 more CA certificates after private key mishap') → https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/ (extract) → primary: Mozilla Bugzilla bug 2083449 (page https://bugzilla.mozilla.org/show_bug.cgi?id=2083449 via extract; comment 82 read from https://bugzilla.mozilla.org/rest/bug/2083449/comment) → eMudhra statement https://emudhra.com/en/post/certificate-security-incident (extract)."
+    summary: |
+      eMudhra's full incident report (CCADB, posted 2026-11-10 18:35 UTC) extends the entry's scope. During one key-generation ceremony on
+      2025-04-30, sixteen subordinate CA key pairs of its B and C series were generated on an HSM and then pushed through a custom Python
+      wrap/unwrap script to migrate them between HSM vendors. For the eight ECDSA P-384 CAs (G3B/G3C) a defect truncated the private value,
+      so the keys are recoverable from public data; those eight were revoked on 2026-10-18 (already in the entry). For the eight RSA-4096
+      CAs (G2B/G2C) eMudhra says private-key integrity is intact and every signature verifies, but the same host-side read-and-re-create
+      pattern held the key material in the memory of a Python process on the ceremony host, so it cannot demonstrate compliance with its
+      CPS section 6.2.6; it identified that in early November and revoked all eight on 2026-11-07, with cessation of operation. Per
+      BleepingComputer, some of the affected RSA intermediates had issued certificates since May 2026 (last issuance 2026-11-03), the
+      report names DV, OV and EV TLS and OV code-signing certificates, and eMudhra says affected subscriber certificates have been
+      replaced or migrated. The report also lists eight Sectigo (AAA Certificate Services) cross-certificates of the ECDSA set. Not
+      stated by anyone: that the RSA keys leaked; the new revocations rest on a handling-policy breach, not on a proven weak key.
+    region_nexus: "global WebPKI (US university federation named as the main eMudhra customer base); Windows trust removal date 2026-11-16 already in the entry"
+    primary_sector_nexus: "indirect: any public body holding TLS or code-signing certificates that chain to an eMudhra emSign RSA G2 B/C issuer, or trusting such chains in pinned stores"
+    sector: "technology (certificate authority)"
+    cves: []
+    techniques: []
+    affected_products: ["eMudhra emSign CA"]
+    entity_keys: ["incident:emudhra-intermediate-ca-key-compromise-2026-10"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates"
+    evidence:
+      - quote: "The new revocations bring the total number of affected intermediate CA certificates to 16, including eight previously compromised certificates whose private keys were so weak that anyone could recover them almost instantly."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/"
+      - quote: "the company revoked the additional eight RSA intermediate CA certificates on November 7, including certificates used to issue TLS and code-signing certificates."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/"
+      - quote: "eMudhra therefore cannot positively demonstrate that this key material was in compliance with CPS §6.2.6."
+        attribution: "eMudhra (Mozilla bug 2083449, comment 82)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+      - quote: "07 November 2026 for the eight RSA issuers (revoked with cessation of operation)"
+        attribution: "eMudhra (Mozilla bug 2083449, comment 82)"
+        source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+    extended_notes: |
+      Verified against the store: the entry's text (checked for 'RSA intermediate', 'G2C', 'revok') covers the eight ECDSA G3 intermediates, the
+      trust-store actions and the 2026-11-04 Chrome/Firefox/Apple emSign G1 phase-out, and does not mention the eight RSA G2B/G2C intermediates
+      or the 16-CA total, so this is a genuine delta. The incident report's own statement is dated 2026-11-10 (before the previous fire), but
+      the entry did not carry it and BleepingComputer's report is dated 2026-11-11 (in window). A defender-side consequence the entry may want:
+      the existing replacement advice names emSign ECC Root CA - G3 chains; chains that terminate at the RSA G2 hierarchy through the G2B/G2C
+      issuers (TLS and OV code signing) are in the same revocation class, and the vendor says it already migrated subscribers, so the check is
+      to confirm no internal certificate or signed artefact still chains there. SwissSign (Swiss CA) shows up in the same Mozilla compliance
+      queue with an unrelated, resolved CRL-validity bug (2083791); not a security incident, not returned.
+      techniques note: no attacker behaviour is described in this delta (a CA operational key-handling failure), so no id is proposed; the
+      entry's existing mapping stands.
+      Suggested Admiralty: Mozilla CCADB incident report A (first-party disclosure), BleepingComputer B; credibility 1.
+  # ------------------------------------------------------------------ 5
+  - title: "CNIL imposes ten simplified sanctions (EUR 3,000 to 20,000) on French territorial authorities and a public body for cybersecurity failings: no MFA for administrators, permanent supplier access, unsupported server operating systems, weak segmentation and logging"
+    sources:
+      - { url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales", publisher: "CNIL (French data protection authority)", date: "2026-11-09", role: "primary" }
+      - { url: "https://next.ink/brief-article/manquements-relatifs-a-la-cybersecurite-des-services-publics-sanctionnes-par-la-cnil/", publisher: "Next (next.ink)", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://www.zataz.com/cybersecurite-la-cnil-sanctionne-dix-collectivites/", publisher: "ZATAZ", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: next-ink, feed https://next.ink/feed (item '[brief] Manquements relatifs à la cybersécurité : des services publics sanctionnés par la CNIL') → https://next.ink/brief-article/manquements-relatifs-a-la-cybersecurite-des-services-publics-sanctionnes-par-la-cnil/ (extract) → primary: CNIL, https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales (extract); second read: ZATAZ feed https://www.zataz.com/feed/ → https://www.zataz.com/cybersecurite-la-cnil-sanctionne-dix-collectivites/ (extract)."
+    summary: |
+      CNIL announced on 2026-11-09 that in November it issued ten simplified-procedure fines, between EUR 3,000 and 20,000 (the legal
+      maximum for that procedure), against territorial authorities (communes, departments, regions) and one public establishment, whom it
+      does not name, after the cybersecurity-of-local-authorities inspection theme it set for 2025. Failings it lists under GDPR Article 32:
+      remote-access authentication that was not robust, notably no multi-factor authentication for administrators; external providers such
+      as software vendors with permanent network access, not authorised case by case, or reaching the network through accounts shared by
+      several staff; ineffective detection of abnormal behaviour (incomplete logging or no short-term analysis of logs); insufficient network
+      segmentation, which could spread a breach across segments; servers on operating systems no longer maintained by the vendor; and weak
+      passwords, passwords sent in clear to users or stored without confidentiality guarantees. CNIL adds that some inspected authorities
+      suffered one or more data breaches that adequate measures could have prevented, that several online-service information systems went live
+      without the security accreditation the RGS requires, and that several authorities were also fined for missing impact assessments
+      (school and after-school parent portals, public-road video systems). Further procedures are open, and CNIL ties the work to the
+      transposition of NIS2, which will put new obligations on territorial authorities. Relevance: a regulator's concrete list of what
+      fails at local-government level, which maps one-to-one onto the controls Swiss communal and cantonal IT is audited against.
+    region_nexus: "France; home-region analogue for Swiss communes and cantons (same failure classes, different law)"
+    primary_sector_nexus: "direct analogue: communal, departmental and regional administrations"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:cnil-territorial-authorities-cybersecurity-sanctions-2026-11", type: report, name: "CNIL: ten cybersecurity sanctions against territorial authorities (2026-11-09)", aliases: [], summary: "CNIL announcement of ten simplified-procedure fines (EUR 3,000 to 20,000) against territorial authorities and one public body for GDPR Article 32 and Article 35 failings (CNIL, 2026-11-09)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "En novembre 2026, la CNIL a prononcé dix sanctions simplifiées à l’encontre de collectivités territoriales et d’un établissement public, pour des manquements relatifs à la cybersécurité."
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "absence d’authentification multifacteur pour les administrateurs"
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "certains prestataires extérieurs (par exemple, des éditeurs de logiciels) pouvaient accéder au réseau des collectivités de manière permanente, sans y être autorisés au cas par cas, ou via des comptes partagés entre plusieurs salariés"
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+      - quote: "Des amendes allant de 3 000 € à 20 000 € (maximum légal pour ce type de procédure) ont été prononcées."
+        attribution: "CNIL"
+        source_url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales"
+    extended_notes: |
+      Lookback item (CNIL page dated 2026-11-09, found through the 74 h Next record). The cnil-fr source belongs to another domain's slice,
+      so the main agent may receive the same item from S2; the fold is the main agent's call. Single first-party source: Next and ZATAZ
+      relay the CNIL page and add no independent observation. Policy-type item (no attacker behaviour, so no technique ids); the
+      defender value is the checklist, not a threat. Suggested Admiralty: CNIL A, credibility 1 (the regulator's own decisions).
+  # ------------------------------------------------------------------ 6
+  - title: "University of Tübingen: attackers retrieved about 3,900 employee records through internal-use functions that several vendor-recommended settings together left reachable"
+    sources:
+      - { url: "https://uni-tuebingen.de/universitaet/aktuelles-und-publikationen/pressemitteilung/it-sicherheitsvorfall-an-der-universitaet-tuebingen/", publisher: "Eberhard Karls Universität Tübingen (press release)", date: "2026-11-10", role: "primary" }
+      - { url: "https://www.heise.de/news/IT-Vorfall-an-Uni-Tuebingen-Tausende-Datensaetze-abgeflossen-11520090.html", publisher: "heise online (Dirk Knop)", date: "2026-11-11", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, feed https://www.heise.de/security/rss/news-atom.xml (item 'IT-Vorfall an Uni Tübingen: Tausende Datensätze abgeflossen') → https://www.heise.de/news/IT-Vorfall-an-Uni-Tuebingen-Tausende-Datensaetze-abgeflossen-11520090.html (extract) → primary: university press release https://uni-tuebingen.de/universitaet/aktuelles-und-publikationen/pressemitteilung/it-sicherheitsvorfall-an-der-universitaet-tuebingen/ (extract)."
+    summary: |
+      The university says in its press release of 2026-11-10 that unknown persons attacked its IT systems and took about 3,900 records of
+      employees: first and last names, dates of birth, work e-mail addresses, user names and department details; students are not affected and
+      no passwords left. Its stated cause is that several settings recommended by a software vendor together produced a security hole that
+      gave the attackers access to functions meant for internal use only, through which personal data could be retrieved as long as the
+      user name was known. The university does not name the software. Its central computing centre logged the attackers' access and, on
+      that evidence, currently assumes no further data was touched; the investigation continues. The university informed its own data
+      protection officer and the Baden-Württemberg state data protection commissioner and files a criminal complaint. heise places it in
+      a run of German university incidents (TU München shut its campus system the week before, Universität Leipzig went offline in
+      October, LMU München lost data of 600,000 students in September); no source links them.
+    region_nexus: "Germany (Baden-Württemberg state university); DACH higher-education peers"
+    primary_sector_nexus: "indirect: state university, the same institution class as Swiss cantonal universities and the ETH domain"
+    sector: "public-sector (education)"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:uni-tuebingen-employee-records-2026-11", type: incident, name: "Universität Tübingen employee-record retrieval (2026-11)", aliases: [], summary: "About 3,900 employee records retrieved through internal-use functions exposed by a combination of vendor-recommended settings; university press release 2026-11-10." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "public institution in the DACH region with a stated, transferable cause (a combination of vendor-recommended settings exposing internal functions keyed on a known user name), but the software is not named and heise only relays the press release; weak actionability"
+    evidence:
+      - quote: "Der Angriff war möglich, weil mehrere von einem Softwarehersteller empfohlene Einstellungen zusammen eine Sicherheitslücke erzeugt hatten."
+        attribution: "Universität Tübingen"
+        source_url: "https://uni-tuebingen.de/universitaet/aktuelles-und-publikationen/pressemitteilung/it-sicherheitsvorfall-an-der-universitaet-tuebingen/"
+      - quote: "Dadurch konnten die Angreifer auf Funktionen zugreifen, die nur für den internen Gebrauch vorgesehen sind."
+        attribution: "Universität Tübingen"
+        source_url: "https://uni-tuebingen.de/universitaet/aktuelles-und-publikationen/pressemitteilung/it-sicherheitsvorfall-an-der-universitaet-tuebingen/"
+      - quote: "Unbekannte haben Systeme der Universität Tübingen digital angegriffen. Dabei konnten sie etwa 3.900 Datensätze abgreifen."
+        attribution: "Universität Tübingen"
+        source_url: "https://uni-tuebingen.de/universitaet/aktuelles-und-publikationen/pressemitteilung/it-sicherheitsvorfall-an-der-universitaet-tuebingen/"
+    extended_notes: |
+      Stated by the university: functions intended for internal use were reachable by the attackers and returned personal data for any
+      known user name, and its computing centre logged the attackers' access. My assessment, not stated by the university: the
+      telemetry to read is the access log of whichever campus system exposes those functions, for lookups by user name from
+      unexpected sources. The vector mapping T1190 is inferred from "security hole ... access to functions" and is not named by the
+      university. Related store entry:
+      TUM myTUM legacy portal credential harvest (2026-11-07); heise treats the two as separate incidents. Suggested Admiralty: university
+      A (victim statement), heise B; credibility 2.
+  # ------------------------------------------------------------------ 7
+  - title: "Medizinisches Zentrum Gleis D and Apotheke Medi Porta (Chur): a 12 October attack copied patient and staff data from local storage; the Cloak ransomware group claims 87 GB"
+    sources:
+      - { url: "https://www.srf.ch/news/schweiz/it-sicherheit-cyberangriff-auf-churer-gesundheitszentrum", publisher: "SRF (Keystone-SDA, relays the centre's media release)", date: "2026-11-11", role: "corroborating" }
+      - { url: "https://www.watson.ch/wirtschaft/digital/217603350-zentrum-gleis-d-ransomware-attacke-gegen-medizinisches-zentrum-in-chur", publisher: "watson.ch (Daniel Schurter)", date: "2026-11-11", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106", publisher: "Inside IT (first report, carries the Cloak claim)", date: "2026-11-06", role: "primary" }
+    discovery_trace: "first seen at: srf-news, feed https://www.srf.ch/news/bnf/rss/1646 (item 'IT-Sicherheit – Cyberangriff auf Churer Gesundheitszentrum', 2026-11-11) → https://www.srf.ch/news/schweiz/it-sicherheit-cyberangriff-auf-churer-gesundheitszentrum (extract) → pivot: url --direct https://www.watson.ch/digital listing → watson article → pivot: Inside IT first report https://www.inside-it.ch/cyberangriff-auf-buendner-gesundheitszentrum-20261106 (url --direct, body from the page's __NEXT_DATA__ JSON); the centre's own media release itself was not found online."
+    summary: |
+      The centre's chairman Romano Cahannes says the attack happened on 2026-10-12 and was noticed quickly because systems in the practice
+      failed; internal IT and an external specialist took the affected systems offline and rebuilt them. Data was taken from 'local storage
+      locations' despite the fast response: names, addresses, prescriptions and X-ray images of patients, and data of employees; the count of
+      affected persons is still being evaluated. The centre says the electronic patient records, held in a separate application the attackers
+      could not reach (it holds most patient data), were spared, so diagnoses and treatment data were not stolen, and that care was never
+      interrupted. It filed a criminal complaint, reported to the Federal Office for Cybersecurity (BACS) and the Federal Data Protection and
+      Information Commissioner (EDÖB), warns patients of fraud attempts and declines to say how the attackers got in, who they are or whether a
+      ransom was demanded. Inside IT reports that the ransomware group Cloak claims the attack and says on a leak site it holds 87 GB,
+      including identity documents and financial records (a claim; the posting is dated 2026-10-24 per watson). Not a public body: a private
+      medical centre with a pharmacy.
+    region_nexus: "Switzerland (canton of Graubünden); BACS and EDÖB notified"
+    primary_sector_nexus: "indirect: healthcare provider, not a public body; same patient-data class as cantonal hospitals and emergency medical services"
+    sector: "healthcare"
+    cves: []
+    techniques: [T1486, T1005]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:gleis-d-medi-porta-chur-cyberattack-2026-10", type: incident, name: "Gleis D / Medi Porta (Chur) cyberattack (2026-10-12)", aliases: [], summary: "Data of patients and staff taken from local storage at a Chur medical centre and pharmacy on 2026-10-12; Cloak claims 87 GB (SRF, watson, Inside IT, 2026-11-06 to 11)." }
+      - { key: "actor:cloak-ransomware", type: actor, name: "Cloak", aliases: [], summary: "Ransomware and data-extortion group with a leak site; claims the Gleis D / Medi Porta attack in Chur (Inside IT, 2026-11-06); ransomware.live also lists earlier Swiss victims." }
+    relation_suggestions:
+      - { subject: "incident:gleis-d-medi-porta-chur-cyberattack-2026-10", object: "actor:cloak-ransomware", basis: "Inside IT: Cloak claims the attack on the Graubünden health centre and says it holds 87 GB; the centre does not confirm (Inside IT, 2026-11-06; watson, 2026-11-11)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "victim-confirmed Swiss incident with a disclosed containment lesson (clinical application kept separate from the file shares), but a private medical centre rather than a public body, no access vector, and the actor link is a leak-site claim the victim has not confirmed"
+    evidence:
+      - quote: "Entwendet wurden Personendaten wie Namen, Adressen, Rezepte und Röntgenbilder."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/it-sicherheit-cyberangriff-auf-churer-gesundheitszentrum"
+      - quote: "Dazu wollte sich Romano Cahannes mit Verweis auf die laufenden Ermittlungen nicht äussern."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/schweiz/it-sicherheit-cyberangriff-auf-churer-gesundheitszentrum"
+      - quote: "Die Ransomware-Bande Cloak bekennt sich gemäss «Inside-IT»-Bericht zu dem Cyberangriff auf das Graubündner Gesundheitszentrum."
+        attribution: "watson.ch"
+        source_url: "https://www.watson.ch/wirtschaft/digital/217603350-zentrum-gleis-d-ransomware-attacke-gegen-medizinisches-zentrum-in-chur"
+    extended_notes: |
+      Technique mapping is inferred (system outage plus a ransomware group's claim, data taken from local storage); the centre does not
+      say encrypted or exfiltrated in those words. ransomware.live's Swiss list carries a Cloak entry with a masked .ch domain and 87 GB,
+      first seen 2026-10-18 with status private; whether that is this victim is not confirmed, so it is not cited. The earlier Inside IT
+      report (2026-11-06) predates the window by five days and the store has no entry; the in-window trigger is the centre's media release
+      relayed by SRF and watson on 2026-11-11. Suggested Admiralty: victim statement relayed by B sources; credibility 2.
+  # ------------------------------------------------------------------ 8
+  - title: "INCERT eTourismus: a web-server compromise at the Austrian voucher and ticket-shop provider exposed buyer data of Zermatt Tourismus and Zell am See-Kaprun"
+    sources:
+      - { url: "https://www.blick.ch/wirtschaft/zermatt-tourismus-meldet-cyberangriff-kundendaten-geklaut/2pmj1w2", publisher: "Blick (Moritz Meister; quotes Zermatt Tourismus's letter to affected guests, sent from 2026-11-10)", date: "2026-11-11", role: "primary" }
+      - { url: "https://borncity.com/blog/2026/11/10/cybervorfall-bei-smartbox-geschenke-und-incert-etourismus-gmbh-co-kg/", publisher: "Borns IT- und Windows-Blog (relays the Zell am See-Kaprun notice)", date: "2026-11-10", role: "corroborating" }
+    discovery_trace: "first seen at: blick-ch, url --direct https://www.blick.ch/news.xml (news sitemap, slug 'zermatt-tourismus-meldet-cyberangriff-kundendaten-geklaut') → https://www.blick.ch/wirtschaft/zermatt-tourismus-meldet-cyberangriff-kundendaten-geklaut/2pmj1w2 (extract); second client found on borncity, feed https://borncity.com/blog/feed/ → https://borncity.com/blog/2026/11/10/cybervorfall-bei-smartbox-geschenke-und-incert-etourismus-gmbh-co-kg/ (extract). INCERT's own statement was not found: WebSearch (\"Incert eTourismus Sicherheitsvorfall Gutscheinshop Webserver Destinationen betroffen Zermatt Zell am See\" and a Zermatt-specific query) returned nothing, and the Zermatt media page and Zell am See-Kaprun incident page carry no notice."
+    summary: |
+      Two destination-marketing bodies in two countries report the same upstream event. Zermatt Tourismus's letter, quoted by Blick, says that on
+      2026-11-05 INCERT, the Austrian third party that runs its destination-voucher online shop, established that an attacker had gained
+      unauthorised access to a web server; INCERT says the flaw was closed at once and further measures taken, and confirmed that data was
+      copied from that server. Zermatt Tourismus cannot yet say whether its guests are among the copied records but cannot exclude it; data
+      named is name, date of birth, address, e-mail, phone, names and birth dates of gift recipients and voucher codes; card data is not
+      affected because payments go through external payment providers; vouchers stay valid and Zermatt Tourismus will monitor redemptions for
+      unusual activity and has informed the data protection authorities; its own systems are not affected. Zell am See-Kaprun (Austria),
+      per Borns IT-Blog's reading of its notice, says an unknown attacker accessed a web server of INCERT eTourismus GmbH & Co KG that also
+      hosts its online voucher shop and event-ticket sales; INCERT reported to the Austrian data protection authority and the police, secured
+      the server and cannot yet say whether that client's system was affected. Both notices warn that the order data makes fraudulent messages
+      credible. INCERT's own statement, the number of destinations it serves and the intrusion method are not public in the sources.
+    region_nexus: "Switzerland (Zermatt Tourismus) and Austria (Zell am See-Kaprun, INCERT, Austrian data protection authority)"
+    primary_sector_nexus: "indirect: destination-marketing organisations funded by municipalities and tourist taxes; Zermatt Tourismus's own systems are stated unaffected"
+    sector: "tourism (public-funded destination bodies)"
+    cves: []
+    techniques: [T1190]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:incert-etourismus-voucher-shop-webserver-2026-11", type: incident, name: "INCERT eTourismus voucher-shop web server compromise (2026-11-05)", aliases: [], summary: "Unauthorised access to a web server of the Austrian voucher and ticket-shop provider INCERT, found 2026-11-05; buyer data of Zermatt Tourismus and Zell am See-Kaprun possibly affected (Blick, Borns IT-Blog, 2026-11-10/11)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "a supplier compromise with two client notices across CH and AT and a stated cause class (web-server flaw), but the clients are tourism bodies rather than core public administration, INCERT's own statement was not found, and the exposure is order data without payment data"
+    evidence:
+      - quote: "Am 5. November 2026 stellte Incert fest, dass sich ein Angreifer unbefugten Zugriff auf einen Webserver verschafft hatte"
+        attribution: "Zermatt Tourismus (letter, quoted by Blick)"
+        source_url: "https://www.blick.ch/wirtschaft/zermatt-tourismus-meldet-cyberangriff-kundendaten-geklaut/2pmj1w2"
+      - quote: "Ein unbekannter Angreifer hatte gemäß der Mitteilungen Zugriff auf einen Webserver des Dienstleisters INCERT eTourismus GmbH & Co KG, der auch den Online-Gutscheinshop sowie den Verkauf von Eventtickets hostet."
+        attribution: "Borns IT- und Windows-Blog (summarising the Zell am See-Kaprun notice)"
+        source_url: "https://borncity.com/blog/2026/11/10/cybervorfall-bei-smartbox-geschenke-und-incert-etourismus-gmbh-co-kg/"
+    extended_notes: |
+      The technique mapping T1190 is inferred from 'web server' plus 'security flaw closed' (Blick's paraphrase of the letter); neither client
+      names the flaw. Defender takeaway if kept: a Swiss body that sells vouchers or tickets through a third-party shop should ask the provider
+      whether it is INCERT and whether its buyer base was on the server. Related backlog context: the 2026-10-31 ChimeraZ claim list named
+      Destination Davos Klosters; nothing connects it to INCERT. Suggested Admiralty: client notices B, credibility 3 until INCERT speaks.
+  # ------------------------------------------------------------------ 9
+  - title: "Maileva (La Poste / Docaposte mailing platform): the September account-takeover attempt now surfaces as correspondence history exposed at social landlords and a hospital"
+    sources:
+      - { url: "https://www.cyberattaque.org/le-bailleur-social-alteal-confirme-une-exposition-des-donnees-de-ses-locataires-apres-la-cyberattaque-de-maileva/", publisher: "Cyberattaque.org (Thomas Lazzaroni; relays Altéal's notice of 2026-11-09)", date: "2026-11-10", role: "primary" }
+      - { url: "https://frenchbreaches.com/alertes/h-pital-foch-mwc2c69j52j9n2rnqb6", publisher: "FrenchBreaches (Sébastien Forte; relays the Hôpital Foch notice)", date: "2026-11-11", role: "corroborating" }
+      - { url: "https://www.cyberattaque.org/maileva-filiale-de-la-poste-victime-dune-cyberattaque/", publisher: "Cyberattaque.org (first report, from Maileva's customer notice)", date: "2026-09-24", role: "context" }
+    discovery_trace: "first seen at: cyberattaque-org, feed https://www.cyberattaque.org/feed/ (item 'Le bailleur social Altéal confirme une exposition des données de ses locataires après la cyberattaque de Maileva') → https://www.cyberattaque.org/le-bailleur-social-alteal-confirme-une-exposition-des-donnees-de-ses-locataires-apres-la-cyberattaque-de-maileva/ (extract) → pivot: https://www.cyberattaque.org/maileva-filiale-de-la-poste-victime-dune-cyberattaque/ (2026-09-24) → pivot: frenchbreaches, feed https://frenchbreaches.com/feed.xml → https://frenchbreaches.com/alertes/h-pital-foch-mwc2c69j52j9n2rnqb6 (extract). Neither Maileva/Docaposte's own statement nor the victims' notices could be fetched (WebSearch for the Foch and Maileva notices found only unrelated pages)."
+    summary: |
+      Maileva, a Docaposte (La Poste group) service for printing and dispatching business and administrative letters, stopped its service on
+      2026-09-23 at 07:00 after detecting unauthorised access attempts on some customer accounts that aimed at sending letters in customers'
+      names; at that point it reported no data extraction (customer notice seen by Cyberattaque.org on 2026-09-24). Later victim notices show
+      that correspondence data was reached: the occupational-health service SPST Cornouaille said on 2026-10-09 that an unauthorised third
+      party accessed a Maileva mail-tracking database holding recipient details and shipment information; the social landlord Flandre Opale
+      Habitat said on 2026-11-03 that information in letters sent over the last ten years may have been viewed; Altéal (14,159 homes in
+      Occitanie) published a notice on 2026-11-09 without a count; and the Hôpital Foch (private non-profit hospital) told patients that
+      payment-reminder letters with names, postal addresses, invoice numbers, care dates and amounts due may have been consulted, without bank
+      details or the nature of the care. Laboratories of the Inovie group are also said to have reported consequences. Vector and scope are not
+      stated in the notices that were read. A separate October incident at the providers Atexo and Docaposte hit the Hauts-de-France region's
+      aid platforms; no source read links the two events. Reliability is low: all three read documents are relays by two community breach
+      trackers (Admiralty C) of victim notices that were not fetched.
+    region_nexus: "France (Docaposte customers: social housing, occupational health, hospitals, laboratories); no Swiss customer named"
+    primary_sector_nexus: "indirect: French public-interest bodies (social landlords, hospital) affected through an outsourced mail-dispatch provider; no Swiss public body named"
+    sector: "public-sector (social housing) and healthcare, via a postal-services supplier"
+    cves: []
+    techniques: [T1078]
+    affected_products: ["Maileva"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:maileva-docaposte-mail-platform-2026-09", type: incident, name: "Maileva (Docaposte) mail-dispatch platform compromise (2026-09)", aliases: [], summary: "Account takeover attempts on Maileva's letter-dispatch platform on 2026-09-23 followed by correspondence-data exposure reported by SPST Cornouaille, Flandre Opale Habitat, Altéal and Hôpital Foch (Cyberattaque.org, FrenchBreaches, 2026-09-24 to 2026-11-11)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: LOW
+    novelty: new
+    borderline: true
+    borderline_reason: "ongoing French supplier incident with fresh victim disclosures (supplier-held correspondence history is a transferable lesson), but no Swiss nexus, all sources are community trackers (Admiralty C), and the primary notices and vector are missing"
+    evidence:
+      - quote: "Altéal reconnaît qu’un incident de sécurité informatique est survenu chez Maileva"
+        attribution: "Cyberattaque.org (summarising Altéal's notice)"
+        source_url: "https://www.cyberattaque.org/le-bailleur-social-alteal-confirme-une-exposition-des-donnees-de-ses-locataires-apres-la-cyberattaque-de-maileva/"
+      - quote: "L'hôpital précise toutefois que les documents concernés ne contiennent ni coordonnées bancaires ni détails sur la nature des soins reçus."
+        attribution: "FrenchBreaches (summarising the Hôpital Foch notice)"
+        source_url: "https://frenchbreaches.com/alertes/h-pital-foch-mwc2c69j52j9n2rnqb6"
+    extended_notes: |
+      Technique T1078 is inferred from 'unauthorised access attempts on accounts' (the first report); the notices do not state how the platform
+      was entered. If kept, the defender angle is supplier hygiene: an outsourced print and mail provider retains years of correspondence and
+      its tracking database is a data store of its own; ask such providers for retention periods and access logging. Suggested Admiralty: C3.
+  # ------------------------------------------------------------------ 10
+  - title: "Fireworks AI breaches expose Notion AI chat transcripts: a vendor-held inference dataset kept customer conversations, some with pasted credentials"
+    sources:
+      - { url: "https://www.notion.com/security/advisories/security-incident-involving-a-third-party-ai-vendor-nov9", publisher: "Notion (security advisory, first published 2026-11-09)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/notion-says-fireworks-breach-exposed-customer-ai-chat-transcripts/", publisher: "BleepingComputer (Bill Toulas)", date: "2026-11-11", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/fireworks-ai-discloses-new-breach-after-cloud-provider-hack/", publisher: "BleepingComputer (Sergiu Gatlan; relays Fireworks' own bulletins)", date: "2026-11-10", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, feed https://www.bleepingcomputer.com/feed/ (item 'Notion says Fireworks breach exposed customer AI chat transcripts') → https://www.bleepingcomputer.com/news/security/notion-says-fireworks-breach-exposed-customer-ai-chat-transcripts/ (extract) → primary: Notion advisory https://www.notion.com/security/advisories/security-incident-involving-a-third-party-ai-vendor-nov9 (extract) → pivot: https://www.bleepingcomputer.com/news/security/fireworks-ai-discloses-new-breach-after-cloud-provider-hack/ (extract); Fireworks' own bulletins (fireworks.ai/security/bulletins) were not fetched."
+    summary: |
+      Fireworks AI, an inference platform that Notion uses as a general provider for open-weight models and for the Insights usage-analytics
+      feature, disclosed two incidents (via BleepingComputer, quoting its bulletins). In early October, environment variables holding API keys and
+      tokens were reached for a limited number of accounts; Fireworks says the evidence indicates a financially motivated group selling
+      unauthorised access to language models to illicit routing gateways (LLMjacking). On 2026-10-23 a third-party cloud provider that
+      hosted Fireworks R&D machines had an incident, on 2026-10-24 the unauthorised party used it to reach development machines and run an
+      unauthorised workload, exposing for some customers resource metadata, billing data and incomplete model weights and datasets; Palo Alto
+      Networks Unit 42 is helping. Notion's timeline: Fireworks alerted it on 2026-11-02 to a dataset of synthetic test data; Notion cut
+      traffic and deleted its data at Fireworks by 2026-11-03; on 2026-11-06 Fireworks said customer data may have been reached and on
+      2026-11-08 confirmed a dataset holding Notion AI chat transcripts used for Insights, mostly unattributable to a user or workspace and
+      without tool-call results; fewer than 1% of workspaces are involved, Insights is switched off, Notion no longer serves open-weight
+      models through Fireworks, and it advises affected workspaces to treat the data as exposed and rotate credentials pasted into chats.
+      BleepingComputer adds that Fireworks had contractually committed to zero retention of Notion data. No Swiss or public-sector victim is
+      named.
+    region_nexus: "global (US vendors); no Swiss nexus stated"
+    primary_sector_nexus: "indirect: a workspace tool and an AI inference supplier; relevant to any body that lets staff use hosted AI assistants"
+    sector: "technology (AI inference and workspace software)"
+    cves: []
+    techniques: [T1199, T1078.004]
+    affected_products: ["Notion AI", "Fireworks AI"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:fireworks-ai-security-incidents-2026-10", type: incident, name: "Fireworks AI security incidents and Notion AI transcript exposure (2026-10/11)", aliases: [], summary: "Two Fireworks AI incidents in October 2026 (API keys and tokens in environment variables; development machines reached through a third-party cloud provider) ended in exposure of Notion AI chat transcripts, confirmed 2026-11-08 (Notion advisory, BleepingComputer)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "no Swiss or public-sector victim and no new technique class; kept for the transferable point that an AI vendor's retained prompts and transcripts become the exposure even under a zero-retention contract, and for its link to the LLMjacking theme already in the store"
+    evidence:
+      - quote: "Upon analysis of the new data, we discovered that it included Notion AI chat transcripts used for the Insights feature, which for the vast majority of impacted workspaces were unattributable."
+        attribution: "Notion"
+        source_url: "https://www.notion.com/security/advisories/security-incident-involving-a-third-party-ai-vendor-nov9"
+      - quote: "We also recommend that affected customers treat this data as if it were exposed."
+        attribution: "Notion"
+        source_url: "https://www.notion.com/security/advisories/security-incident-involving-a-third-party-ai-vendor-nov9"
+      - quote: "A third-party cloud provider that hosted Fireworks R&D machines experienced a security incident on October 23."
+        attribution: "Fireworks AI (bulletin quoted by BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/fireworks-ai-discloses-new-breach-after-cloud-provider-hack/"
+    extended_notes: |
+      Technique ids are inferred: T1199 from the third-party cloud provider as the route to Fireworks' development machines, T1078.004 from
+      the misuse of exposed API keys by a group selling model access; Notion's own exposure is a vendor-side data store, not a technique.
+      The Notion advisory page states 'most current version' elsewhere; the fetched page is the 2026-11-09 first publication. Suggested
+      Admiralty: Notion A for its own incident, Fireworks claims relayed by B; credibility 2.
+  # ------------------------------------------------------------------ 11
+  - title: "Maersk confirms unauthorised access and data extraction from a legacy system inherited through an acquisition; the WhiteArmor ransomware group claims 100 GB and demands USD 5 million"
+    sources:
+      - { url: "https://www.maersk.com/news/articles/2026/11/11/it-security-incident", publisher: "A.P. Moller - Maersk (customer statement)", date: "2026-11-11", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million/", publisher: "BleepingComputer (Bill Toulas)", date: "2026-11-11", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, feed https://www.bleepingcomputer.com/feed/ (item 'Maersk confirms data breach as WhiteArmor ransomware demands $5 million') → https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million/ (extract) → primary: Maersk statement https://www.maersk.com/news/articles/2026/11/11/it-security-incident (extract)."
+    summary: |
+      Maersk says it identified unauthorised access and data extraction from one of its local legacy systems from a previous acquisition, that
+      its findings so far strongly suggest no sensitive data was disclosed, that the incident is isolated to that local system with no
+      indication of impact on other Maersk systems or on customer and partner systems connected through APIs and EDI, and that it expects no
+      operational disruption. It does not name the system, the data types or the intrusion date. Per BleepingComputer, the ransomware group
+      WhiteArmor listed Maersk on its leak site over the weekend, says it holds about 100 GB from the former LF Logistics OCF platform
+      (acquired in 2022), among it about 30,000 driver records, plaintext passwords and 33 super-administrator accounts, and gives Maersk 30
+      days to pay USD 5 million; those contents are the group's claims, not confirmed by Maersk. Both sides name the same inherited
+      platform as the affected system; my assessment, not stated by either, is that a platform kept from an acquisition and run outside
+      the group's main perimeter is the transferable lesson.
+    region_nexus: "global (Denmark; shipping and logistics); no Swiss nexus stated"
+    primary_sector_nexus: "indirect: logistics supplier class; no public-sector victim or Swiss customer named"
+    sector: "transport and logistics"
+    cves: []
+    techniques: [T1657]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:maersk-legacy-system-whitearmor-2026-11", type: incident, name: "Maersk legacy-system breach claimed by WhiteArmor (2026-11)", aliases: [], summary: "Maersk confirmed unauthorised access and data extraction from a legacy system from an earlier acquisition on 2026-11-11; WhiteArmor claims 100 GB from the OCF/LF Logistics platform and demands USD 5 million (Maersk; BleepingComputer)." }
+      - { key: "actor:whitearmor", type: actor, name: "WhiteArmor", aliases: [], summary: "Ransomware and data-extortion group with a leak site; claimed the Maersk legacy-system data theft and demanded USD 5 million within 30 days (BleepingComputer, 2026-11-11)." }
+    relation_suggestions:
+      - { subject: "incident:maersk-legacy-system-whitearmor-2026-11", object: "actor:whitearmor", basis: "WhiteArmor claims the attack on its leak site; Maersk confirms the incident but does not name the group (BleepingComputer, 2026-11-11)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "global-scale victim (criterion a) with a transferable acquired-legacy-system lesson, but no Swiss or public-sector nexus, no stated vector, and the claimed contents are the extortionists' assertions"
+    evidence:
+      - quote: "A.P. Moller – Maersk has identified an IT security incident involving unauthorised access and data extraction from one of our local legacy systems from a previous acquisition."
+        attribution: "Maersk"
+        source_url: "https://www.maersk.com/news/articles/2026/11/11/it-security-incident"
+      - quote: "Ransomware group WhiteArmor claimed the attack over the weekend, threatening that it would release about 100GB of information allegedly exfiltrated from the company's logistics and supply-chain platform."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million/"
+    extended_notes: |
+      The technique id T1657 reflects the extortion demand (USD 5 million, 30 days); the access vector is not stated by Maersk or the group. WhiteArmor is not in the entity registry (alias search on 'whitearmor' found nothing).
+      Suggested Admiralty: Maersk A for its own statement, BleepingComputer B; credibility 2 for the incident, 4 for the group's content claims.
+# --------------------------------------------------------------------- run-level blocks
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist is configured in config/org-profile.yaml, so the supplier sweep is a no-op; supplier-type incidents above (PowerFolder, INCERT, Maileva, Fireworks) cleared or were flagged on the general gate, not on a watchlist."
+backlog_recheck:
+  - row: "ChimeraZ forum-sale claims of 2026-10-31 — Belgian rescue zone Hainaut-Est (ZOHE) (state/coverage_backlog.md ## Open, held until 2026-11-17)"
+    result: "no source"
+    detail: |
+      Nothing from ZOHE, the Belgian authorities or Belgian press confirms an intrusion or the data. Searches run: four WebSearch queries in French,
+      Dutch and English ('zone de secours Hainaut-Est cyberattaque données ZOHE hackers'; 'hulpverleningszone Hainaut-Est cyberaanval hack gegevens
+      ChimeraZ'; '"Hainaut-Est" zone de secours piratage OR cyberattaque OR fuite novembre 2026'; 'frenchbreaches Zone de secours Hainaut-Est
+      ChimeraZ Belgique fuite de données') returned only unrelated Belgian items. The zone's own site https://www.zohe.be/ reads, but its RSS feed
+      https://www.zohe.be/feed/ ends with an item of 2025-10-10 and carries no incident notice. The FrenchBreaches alert for the Swiss communes
+      (https://frenchbreaches.com/alertes/suisse-fuite-donnees-quatre-communes-ebikon-gersau-meggen-wil-mvwolian3fkl2e1adtg, read via the redirect
+      from the backlog URL) contains no mention of Hainaut-Est, Davos or a rescue zone, so the ZOHE leg of the claim is not on that page and no
+      FrenchBreaches page for it was found. ransomware.live has no listing for it: `searchvictims/zohe` answers 404 (no match) and the Belgian list
+      (countryvictims/BE, 188 rows, newest 2026-11-08) holds no Hainaut-Est row; the only Hainaut-province hit is the municipality of Anderlues
+      (thegentlemen, 2026-04-19), which is unrelated. Recommendation: leave the row open to its 2026-11-17 expiry, then strike.
+dropped_leads:
+  - { lead: "Baker Tilly third-party breach notification (BleepingComputer, 2026-11-11)", reason: "US accounting-firm notification with an unnamed third-party platform provider; no Swiss, public-sector or transferable-TTP link" }
+  - { lead: "Chambourcy town hall (Yvelines) network shut after a 7-8 November attack (Cyberattaque.org, 2026-11-11)", reason: "small commune, no access vector or ransomware confirmation, below the incident floor; city statement already of 2026-11-08" }
+  - { lead: "Holcim data theft claimed by Emperador (tio.ch, 2026-11-03)", reason: "outside the window and the company is private sector; victim confirmation exists but no public-sector nexus" }
+  - { lead: "ransomware.live claims: Karlstorz (Vortex, 2026-11-10), AWO Bundesverband (bravox, 2026-11-10), ENERGREEN (settra, 2026-11-11)", reason: "leak-site claims with no victim statement or A/B journalism found (WebSearch for Karl Storz and AWO returned nothing on point); fails the PD-6 corroboration rule" }
+  - { lead: "Railway fraudulent AI charges (BleepingComputer, 2026-11-10 22:20Z), Nitori 37.6M records (2026-11-10)", reason: "outside the 26 h window start and no Swiss or public-sector nexus" }
+  - { lead: "French refrigeration-controller and Établissement français du sang wave (dcod.ch roundup of 2026-11-10; ZATAZ 2026-11-09)", reason: "already carried, blood-service impact included, by 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack; no in-window delta found" }
+  - { lead: "PK Softech 'Hacker forderten wohl Lösegeld vom Bund' (Blick, 2026-11-10) and the SRF report", reason: "already in the PK Softech entry (2026-11-11 record qualifies it); only the Publica/watson delta is returned as item 3" }
+  - { lead: "Région Hauts-de-France data leak via Atexo and Docaposte (next.ink, 2026-10-05)", reason: "outside the window by five weeks; named only as context in item 9" }
+  - { lead: "SEC EDGAR 8-K Item 1.05 filings", reason: "none: `fetch_source.py sec-edgar 8k` returned zero Item 1.05 filings for 2026-11-03 to 2026-11-12" }
+candidate_sources:
+  - id: mozilla-ca-compliance-bugzilla
+    publisher: "Mozilla CA Certificate Compliance (Bugzilla)"
+    url: "https://bugzilla.mozilla.org/rest/bug?product=CA%20Program&component=CA%20Certificate%20Compliance&order=changeddate%20DESC&limit=10&include_fields=id,summary,last_change_time,status"
+    category: research
+    why: "First-party venue for CA incident reports: eMudhra's full incident report (second batch of eight RSA intermediates) was posted there on 2026-11-10 and the three-week story reached the store only second-hand; the REST listing reads on `url --direct` with dated rows (verified this run: eMudhra, HARICA, SwissSign, Google Trust Services bugs changed on 2026-11-11) and comments read from /rest/bug/<id>/comment."
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "RECIPE CHANGE: the host answered again after seven 403 fires. `python3 tools/fetch_source.py url --direct https://ico.org.uk/sitemap.xml` returns the 5.2 MB sitemap with lastmod timestamps (filter /about-the-ico/media-centre/news-and-blogs/2026/ and /action-weve-taken/enforcement/2026/); the news listing page is a JavaScript shell (`extract` returns the raw HTML shell, WebFetch shows 'Loading...'), so the sitemap is the working listing route and each article page then reads with `extract`. Newest ICO news item in the sitemap is 2026-11-04 (solar firm nuisance calls) and newest enforcement page 2026-11-04 (Bluon Energy), both outside the 168 h lookback; nothing returned."
+  - source_id: connectwise-trust-center
+    reason: "https://www.connectwise.com/company/trust/advisories answers 403 on extract, jina and WebFetch, so the 2026-11-11 ScreenConnect advisory is cited only as relayed by Huntress and BleepingComputer; a read of the advisory text would lift item 1's credibility."
+  - source_id: inside-it-ch
+    reason: "RSS path https://www.inside-it.ch/feed returns 404 (the record's feed is elsewhere); `url --direct https://www.inside-it.ch/` lists article slugs with an 8-digit date suffix (for example -20261111) and article bodies are in the page's __NEXT_DATA__ JSON; nothing incident-shaped dated 2026-11-11 or 2026-11-12 on the front page."
+  - source_id: kommunaler-notbetrieb-de
+    reason: "quiet: `extract https://kommunaler-notbetrieb.de/` reads cleanly but its newest update is 2026-11-07 (Kreisverwaltung Oberspreewald-Lausitz); nothing in the 74 h lookback."
+  - source_id: websearch-freshness
+    reason: "WebSearch does not index same-day German, Swiss, French and Italian municipal incidents (six reformulated queries returned only older items); the working collection route for 2026-11-11/12 was the feeds, news sitemaps and tracker APIs (srf rss 1646, blick news.xml, cash sitemap-news.xml, watson digital, heise atom, ransomware.live countryvictims/<CC>)."
+  - source_id: ransomware-live
+    reason: "quiet, not a failure: `url --direct https://api.ransomware.live/v2/countryvictims/{CH,DE,AT,FR,IT,BE}` and `/v2/recentvictims` all returned JSON; newest Swiss claim is 2026-11-07 (Rhysida, Treuhand & Immobilien Abt AG, a private trustee), no Swiss, Belgian or Austrian public-sector claim in the window, and the DACH, French and Italian claims of the window are private-sector or unconfirmed (see dropped_leads)."
+source_ledger:
+  - { id: ico-uk, tier: standard, attempted: true, transport: "url --direct sitemap.xml (host reachable again); listing page JS shell", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest ICO news and enforcement pages dated 2026-11-04" }
+  - { id: borncity, tier: standard, attempted: true, transport: "feed 25 + extract", horizon_hours: 74, in_horizon_items: 4, returned: 2, note: "PowerFolder (item 2) and the INCERT/Zell am See notice (item 8); Barracuda ESG, N-able, Sophos and Microsoft Patchday posts are vulnerability items already covered or S1's" }
+  - { id: kommunaler-notbetrieb-de, tier: standard, attempted: true, transport: "extract", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest update 2026-11-07" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed 25 + extract", horizon_hours: 74, in_horizon_items: 2, returned: 1, note: "CNIL sanctions brief (item 5); the refrigeration-attack story is already in the store" }
+  - { id: tio-ch-attacco-informatico, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 74, in_horizon_items: 1, returned: 0, note: "one in-horizon article (PK Softech, 2026-11-10) already covered; used as the first-seen entry for the item 3 delta" }
+  - { id: venarix, tier: standard, attempted: true, transport: "extract", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-08-24" }
+  - { id: zaufana-trzecia-strona, tier: standard, attempted: true, transport: "url (bridge)", horizon_hours: 74, in_horizon_items: 0, returned: 0, note: "newest items 2026-11-08 (weekly reading roll-up) and 2026-11-03" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed 25 + extract", horizon_hours: 28, in_horizon_items: 8, returned: 4, note: "SCKit (item 1), eMudhra update (item 4), Notion/Fireworks (item 10), Maersk (item 11); Baker Tilly dropped; the rest are S1/S3 or already covered" }

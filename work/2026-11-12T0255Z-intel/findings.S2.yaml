@@ -1,0 +1,206 @@
+# work/2026-11-12T0255Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-12T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-12T02:57:42Z
+ended_at: 2026-11-12T03:17:11Z
+duration_seconds: 1169
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 29
+  bridge_fetches: 95
+window_note: >
+  window_hours=26 (horizon 2026-11-11T00:56Z). The home-region and policy signal in the window is genuinely thin:
+  two returned items, one new (Belgian CCB warning, lookback) and one update-of on a covered entry
+  (diplomatic response to the refrigeration attribution). Everything else surfaced by the Swiss authority,
+  press, cantonal and neighbouring-CERT sweeps was either already carried by the store (Publica / PK Softech,
+  Danfoss refrigeration incl. BACS warning of 2026-11-10, Vaud schools, Vaud M365 device-code, Bern ICSG,
+  Aargau InfoSiV, privatim Merkblatt, CERT-EU ARTEX blog) or fails the relevance bar (see dropped_leads).
+items:
+  - title: "Belgian CCB: attackers abuse Microsoft Entra ID SMS sign-in (phone number plus one-time code, no password) against multiple organisations; disable SMS as a first factor, hunt, and plan for Microsoft's 1 February 2027 SMS and voice retirement"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-multiple-belgian-organisations-compromised-through-sms-sign-disable-sms-first", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-11-10", role: "primary" }
+      - { url: "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sms-voice-retirement", publisher: "Microsoft Learn (Entra ID: passkeys by default, retirement of Microsoft-provided SMS and voice authentication)", date: "2026-09-23", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (raw `url` fetch exposed /advisories/<slug> hrefs, newest first) → primary (no pivot needed): https://ccb.belgium.be/advisories/warning-multiple-belgian-organisations-compromised-through-sms-sign-disable-sms-first (read with `extract`) → pivot via the advisory's own link: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sms-voice-retirement (read with `extract`; vendor timeline). WebSearch (\"CCB Belgium warning SMS sign-in Entra ID organisations compromised\", extended) surfaced no independent press or lab coverage of the attacks themselves."
+    summary: |
+      The Belgian national cybersecurity authority (CCB) published a warning on 2026-11-10 that "a trusted partner" observed
+      successful attacks against multiple Belgian organisations in which attackers abused Microsoft authentication with SMS as
+      the first factor, that is sign-in with a phone number and a one-time code and no password. The CCB gives no victim count,
+      sector, actor, intrusion chain or date range, and does not name how the attackers obtained or intercepted the code;
+      it only states that SMS and voice "can be phished, intercepted or SIM-swapped, whether used as a first or a second factor".
+      The advisory covers Microsoft Entra ID (SMS and voice for sign-in, MFA and self-service password reset) and any other
+      identity platform that allows SMS or voice as a first factor; the CCB types it as "Misconfiguration".
+      The remediation it prescribes, in order: assess dependency first (SMS sign-in, MFA, self-service password reset,
+      break-glass accounts, frontline or shared-device workers, external users, third-party systems) with Microsoft's
+      Entra SMS and voice usage analyzer and the Authentication methods activity report; treat SMS as first factor as the
+      priority, turning off "Use for sign-in" under Authentication methods, SMS, or restricting it to the smallest possible
+      group with close monitoring until then; remove SMS and voice from privileged accounts once a phishing-resistant method
+      works; roll out passkeys / FIDO2 with a pilot group; and hunt back through sign-in and audit logs as far as retention
+      allows for successful SMS-based sign-ins, phone-number or authentication-method changes, unusual locations or devices
+      and follow-on activity such as mailbox rules or app consents. It warns against switching SMS off blindly, because users
+      can be locked out or left with password-only sign-in.
+      Microsoft's own documentation (fetched separately) fixes the vendor clock: from 2026-09-01 passkeys become the default
+      sign-in experience and are auto-enabled for users enabled for SMS or voice; from 2027-02-01 Microsoft-provided
+      telephony delivery for SMS and voice is retired for all users except Global Administrators and external users, who
+      follow on 2027-07-01 (internal guest users stay on the February date); after those dates users whose only MFA method is
+      SMS or voice are forced to register a passkey at sign-in, with no opt-out, and customers who still need telephony can
+      configure a provider (Soprano, Telesign in private preview) through Microsoft Security Store from 2026-10-30.
+      Assessment boundary: the attack observation is the CCB's single-source claim relayed from an unnamed partner; the
+      Microsoft timeline is vendor-stated fact. No Swiss case is reported in the sources.
+    region_nexus: "Belgian observation by the national authority; the exposure is a tenant configuration, so Swiss public administrations on Microsoft Entra ID / Microsoft 365 hold the same exposure. No Swiss victim is reported in the fetched sources."
+    primary_sector_nexus: "direct (technology-class): federal, cantonal and communal administrations, emergency services, armed forces and civil-protection organisations running Entra ID / Microsoft 365 tenants; shared-device and frontline staff are the groups the CCB names as legitimate SMS users"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078.004, T1111]
+    affected_products: ["Microsoft Entra ID"]
+    entity_keys: ["product:microsoft-entra-id", "product:microsoft-365"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    classification_suggestion: { reliability: A, credibility: 2, note: "CCB is the national authority for its own jurisdiction; the observation is uncorroborated (no independent press or lab write-up found) and rests on an unnamed partner; the Microsoft retirement timeline is independently vendor-confirmed." }
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "A trusted partner observed successful attacks against multiple Belgian organisations in which attackers abused Microsoft authentication with SMS as the"
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-belgian-organisations-compromised-through-sms-sign-disable-sms-first"
+      - quote: "SMS and voice can be phished, intercepted or SIM-swapped, whether used as a first or a second factor."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-belgian-organisations-compromised-through-sms-sign-disable-sms-first"
+      - quote: "Look for successful SMS-based sign-ins, phone number or method changes, unusual locations or devices, and follow-on activity such as mailbox rules or app consents."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-belgian-organisations-compromised-through-sms-sign-disable-sms-first"
+      - quote: "From February 1, 2027, Microsoft-provided telephony delivery for SMS and voice will be retired for all users except Global Administrators and external users."
+        attribution: "Microsoft Learn"
+        source_url: "https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sms-voice-retirement"
+    extended_notes: |
+      Exposure (vendor-documented lever): Microsoft Entra admin center, Authentication methods policy, SMS, the "Use for sign-in" toggle
+      and the targeted groups; Microsoft's PowerShell analyzer (github.com/microsoft/entra-sms-voice-usage-analyzer, linked by both the
+      CCB and Microsoft) lists users enabled for SMS or voice. The exposure needs no network position: the sign-in portal is internet-facing
+      by design; what matters is whether SMS is enabled as a sign-in method and for whom.
+      Detection concept (telemetry class first): identity-provider sign-in logs filtered to successful sign-ins whose authentication method
+      is SMS (first-factor), joined to identity-provider audit logs for phone-number and authentication-method registration or change
+      events shortly before the sign-in, then mailbox-rule creation and OAuth app-consent events in the same session window (CCB's own
+      follow-on list). Post-patch style check: this is a configuration fix, so the compromise check is the retroactive log review the CCB prescribes.
+      Triage discriminator (only what the sources support): legitimate SMS sign-in exists for frontline / shared-device workers, break-glass
+      accounts and external users (CCB's dependency list), so the baseline population from the usage analyzer is the first discriminator;
+      a first-ever SMS sign-in for a user who normally authenticates another way, or a phone-number change followed by an SMS sign-in from an
+      unusual location or device, is the pattern the CCB names as worth hunting.
+      Candidate do-now action for the composer to weigh under the do-now bar: run the usage analyzer / Authentication methods activity
+      report to learn who still signs in with SMS and turn off "Use for sign-in" for everyone who has an alternative. The retirement dates
+      (2027-02-01 / 2027-07-01) are vendor-fixed and make the migration unavoidable regardless of the attack reporting.
+      Context the store already carries: Vaud's device-code phishing warning against Microsoft 365 accounts (entry 2026-11-05/vaud-m365-device-code-phishing-campaign-romandie) is a different technique (OAuth device flow); this item is the first-factor weakness, not a token or consent attack.
+  - title: "Refrigeration attribution: France summons Iran's ambassador and will propose new EU sanctions; Iran's foreign ministry rejects the attribution (update on the Danfoss / Copeland / Dixell refrigeration campaign)"
+    sources:
+      - { url: "https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france", publisher: "French Ministry for Europe and Foreign Affairs", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.aa.com.tr/en/middle-east/iran-denies-french-accusations-of-cyberattacks-on-supermarket-refrigeration-systems/4119026", publisher: "Anadolu Agency", date: "2026-11-10", role: "corroborating" }
+      - { url: "https://www.cash.ch/news/iran-weist-verantwortung-fur-cyberangriffe-auf-kuhlanlagen-zuruck-984149", publisher: "AWP / dpa via cash.ch", date: "2026-11-10", role: "corroborating" }
+      - { url: "https://www.aljazeera.com/news/2026/11/10/what-is-shahid-kaveh-%E2%81%A0the-iran-cyber-unit-tied-to-frances-fridge-hacking", publisher: "Al Jazeera", date: "2026-11-10", role: "corroborating" }
+    discovery_trace: "first seen at: cash-ch-awp, URL https://www.cash.ch/sitemap-news.xml (dated titles; 'Iran weist Verantwortung fuer Cyberangriffe auf Kuehlanlagen zurueck', 2026-11-10 14:39 UTC) → pivot: cash.ch article https://www.cash.ch/news/iran-weist-verantwortung-fur-cyberangriffe-auf-kuhlanlagen-zuruck-984149 → WebSearch (\"Iran rejects France attribution refrigeration cyberattacks Shahid Kaveh sanctions Barrot\" and \"Shahid Kaveh refrigeration attacks Iran denies France Araghchi ...\") → pivot: Anadolu https://www.aa.com.tr/en/middle-east/iran-denies-french-accusations-of-cyberattacks-on-supermarket-refrigeration-systems/4119026 and Al Jazeera explainer → primary: French foreign ministry statement https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france (already cited in the host entry for the attribution itself; the ambassador and sanctions paragraph is not yet carried)."
+    summary: |
+      Delta on the entry that already carries the French attribution of 2026-11-09 (Shahid Kaveh, the Revolutionary Guard's electronic and
+      cyber centre, campaign of 11 to 12 October). Two facts are not yet in that entry. First, the French statement itself announces the
+      response: France "va convoquer" Iran's ambassador, and "proposera à ses partenaires européens l'adoption de nouvelles sanctions contre
+      des entités et des individus iraniens" implicated in this attack and in other malicious cyber activity, reserving the right to further
+      public and non-public measures; it also recalls that the EU adopted sanctions in March 2026 against the Iranian entity it names as
+      having contributed to earlier attacks. Second, on 2026-11-10 Iran's Foreign Ministry rejected the accusation: Anadolu reports it "denied
+      any involvement" and called the allegations baseless; per the AWP/dpa wire (translated from German) Iran's foreign ministry called the charge an irresponsible
+      and ridiculous step meant to damage its standing and its relations with other states, and its minister mocked the French government on X;
+      Al Jazeera quotes the ministry as calling the accusations "baseless and biased" and a "highly irresponsible and contemptible action". The
+      wordings differ between outlets (translations of the same Persian statement), so only the denial itself is carried as fact; none of the
+      outlets reports Iranian evidence. Defender-side reading: the attribution stays a state claim that the accused rejects, so detection and
+      hardening decisions must continue to rest on the exposed-controller mechanics and not on the actor; a coordinated EU sanctions proposal
+      is announced, not adopted, and no formal listing exists in the sources. BACS's public warning of 2026-11-10, already in the entry, remains
+      the Swiss-side action text.
+    region_nexus: "Europe (France-led attribution and sanctions track); Switzerland affected by the same controller families per BACS (already in the host entry)"
+    primary_sector_nexus: "indirect: refrigeration controllers in food retail, pharmacies, practices, laboratories, logistics; public-sector relevance via cantonal hospitals, blood services and canteens that run the same controller classes"
+    sector: "retail, healthcare"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355", "Danfoss AK-SM 800A", "Copeland xweb", "Dixell xweb"]
+    entity_keys: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "actor:shahid-kaveh"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 1, note: "French MFA is the primary for its own announcement; Iran's denial is corroborated by three outlets; the underlying attribution remains a state claim the entry already frames as such." }
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    lookback: true
+    borderline: true
+    borderline_reason: "Low operational value: no new technical fact for defenders, only the diplomatic and sanctions track (policy-watch relevance) and the accused party's rejection; the main agent should ship it only as a short changelog record or drop it."
+    evidence:
+      - quote: "La France proposera à ses partenaires européens l’adoption de nouvelles sanctions contre des entités et des individus iraniens"
+        attribution: "French Ministry for Europe and Foreign Affairs"
+        source_url: "https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france"
+      - quote: "la France va convoquer l’Ambassadeur de la République islamique d’Iran en France"
+        attribution: "French Ministry for Europe and Foreign Affairs"
+        source_url: "https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france"
+      - quote: "In a statement, the Iranian Foreign Ministry denied any involvement and condemned what it described as France’s accusatory approach toward Tehran."
+        attribution: "Anadolu Agency"
+        source_url: "https://www.aa.com.tr/en/middle-east/iran-denies-french-accusations-of-cyberattacks-on-supermarket-refrigeration-systems/4119026"
+      - quote: "Iran pushed back against the accusations on Tuesday, calling them “baseless and biased”."
+        attribution: "Al Jazeera"
+        source_url: "https://www.aljazeera.com/news/2026/11/10/what-is-shahid-kaveh-%E2%81%A0the-iran-cyber-unit-tied-to-frances-fridge-hacking"
+    extended_notes: |
+      Suggested changelog shape if shipped: type update, fields summary/body, a short section naming (1) ambassador summons and the sanctions proposal
+      from the French statement, (2) Iran's rejection with the attributing outlets, (3) one sentence that the sanctions proposal is not an adopted
+      listing. Switzerland's own position on EU cyber sanctions is not stated in any fetched source and must not be inferred.
+dropped_leads:
+  - { lead: "BACS weekly review 26w45 (2026-11-10): Black Friday AI fake shops and parcel phishing", reason: "consumer-level, published 2026-11-10 (outside window), no public-sector defender consequence", url: "https://www.bacs.admin.ch/de/26w45-de" }
+  - { lead: "BACS warnings ESTV phishing (2026-11-09) and EHRA phishing (2026-11-06)", reason: "authority-brand impersonation aimed at the public and businesses; outside window; the ESTV warning repeats the 2026-09-22 federal tax administration notice", url: "https://www.bacs.admin.ch/de/warnung-estv-de" }
+  - { lead: "BACS refrigeration warning (2026-11-10)", reason: "already carried verbatim in the Danfoss entry's 2026-11-11T03:52:45Z record", url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de" }
+  - { lead: "Publica / PK Softech ransom-demand reporting (SRF, Keystone-SDA via cash.ch, 2026-11-10)", reason: "already carried in the entry's 2026-11-10/11-11 records (denials by PK Softech, Publica and SEPOS; no ransom demand confirmed; PKZH suspension of the 2027 migration)", url: "https://www.cash.ch/news/srf-losegeldforderung-nach-hackerangriff-auf-publica-lieferanten-984161" }
+  - { lead: "Zentrum Gleis D and Apotheke Medi Porta, Chur: attack of 2026-10-12, patient and staff data taken (SRF, 2026-11-11)", reason: "private medical centre, no public-sector nexus, intrusion vector undisclosed and under investigation; no transferable TTP", url: "https://www.srf.ch/news/schweiz/it-sicherheit-cyberangriff-auf-churer-gesundheitszentrum" }
+  - { lead: "Erowa Systems (Büron LU): ransomware 2026-10-12, Akira claim (inside-it, 2026-11-10)", reason: "private industrial supplier, no public-sector nexus; Akira is already tracked via the PK Softech entry", url: "https://www.inside-it.ch/erowa-bestaetigt-moeglichen-datenabfluss-20261110" }
+  - { lead: "Liechtenstein VwbP register breach: CHF 1.65 million external investigation, results expected H1 2027 (inside-it, 2026-11-11)", reason: "procurement follow-up on an existing entry (2026-08-04/liechtenstein-vwbp-beneficial-ownership-register-breach); no new mechanism or defender action", url: "https://www.inside-it.ch/nach-cyberangriff-liechtenstein-zahlt-1%252C6-millionen-fuer-externe-untersuchung-20261111" }
+  - { lead: "Hacker forum offers of Solnet, Destination Davos Klosters and four municipalities' data (inside-it, 2026-11-06)", reason: "outside window; the municipal sample is public open-government API data per Wil/Seantis, Solnet and Davos Klosters are private", url: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106" }
+  - { lead: "ENISA State of Cybersecurity in the Union 2026 (biennial, NIS2 Art. 18), 2026-11-10", reason: "outside window, EU-level maturity assessment, no obligation change for Swiss public bodies and no defender action; ENISA's CRA Single Reporting Platform launch is dated 2026-09-11", url: "https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union" }
+  - { lead: "CERT-EU ARTEX blog (dated 2026-11-05, relayed by heise 2026-11-11)", reason: "already cited by entry 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse" }
+  - { lead: "Uni Tübingen incident (3,900 staff records, vendor-recommended settings combining into an internal-function exposure; heise 2026-11-11)", reason: "German university, software unnamed, no TTP detail; the university wave is already covered by the TUM entry", url: "https://www.heise.de/news/IT-Vorfall-an-Uni-Tuebingen-Tausende-Datensaetze-abgeflossen-11520090.html" }
+  - { lead: "Post / Swisscom: e-voting infrastructure operation outsourced from 2028 (Netzwoche, 2026-11-11)", reason: "operating-model and procurement news, not a security event or obligation change; the Post states verifiability components stay in its own data centre", url: "https://www.netzwoche.ch/news/2026-11-11/swisscom-betreibt-kuenftig-teile-der-e-voting-infrastruktur-fuer-die-post" }
+  - { lead: "CERT-AGID fake INPS APK site (2026-11-11)", reason: "Italian social-security impersonation, no Swiss nexus", url: "https://cert-agid.gov.it/news/falso-sito-inps-in-allestimento-per-futura-distribuzione-di-apk-malevolo/" }
+  - { lead: "Policy watch: NCSC.ch / BACS, ISG, NIS2 / CRA, e-ID, CoE convention, sanctions and law enforcement", reason: "swept via bacs.admin.ch cards, security hub, news.admin.ch listing (Federal Council session of 2026-11-11 shows no cyber item) and in-language WebSearch; no in-window obligation change found. Last obligation-relevant items found are older than the window: Federal Council mandate for a standalone federal cybersecurity law (2026-09-25), e-ID launch postponed (2026-06-30), Bern ICSG in force 2026-11-01 (covered), Aargau InfoSiV (covered), ENISA CRA SRP (2026-09-11), EU cyber sanctions listing (2026-07-13); no Europol / Eurojust cyber takedown dated 2026-11-10 to 2026-11-12 surfaced." }
+candidate_sources: []
+coverage_gaps:
+  - { source_id: news-admin-ch, reason: "The listing returns only the newest 11 to 12 federal releases (about one day); the 146 h lookback is not reachable through this route. Substituted bacs.admin.ch cards, the security hub and WebSearch; no federal cyber release found in the visible window." }
+  - { source_id: srf-news, reason: "The RSS holds 40 items spanning about 1.5 days, shorter than the 146 h lookback; the only security-relevant item in range was the Chur medical-centre report (dropped)." }
+  - { source_id: swissinfo-ger, reason: "url --direct front page and alle-news-in-kuerze list no per-article dates and showed no security items; the Keystone-SDA copy of the same stories was read through cash.ch's dated news sitemap instead (https://www.cash.ch/sitemap-news.xml works as the dated route)." }
+  - { source_id: ncsc-ch-focus / ncsc-ch-incidents / bacs-press, reason: "Recipe note: card titles are not in class=\"card__title\" any more for the im-fokus and aktuelle-vorfaelle listings (the split on `class=\"card card--default card--clickable` yields hrefs and dates but empty titles); `extract` of each href returns title, date and body. Working route today: url --direct listing for hrefs and dates, then extract per new href." }
+  - { source_id: ictjournal-ch (not in slice), reason: "feed path https://www.ictjournal.ch/rss is not a feed (empty parse); the record's own URL /news lists items with dates through the raw `url --direct` route." }
+  - { source_id: jina-pool, reason: "Reader keys report balance exhausted (HTTP 402) during a feed attempt, as expected; no S2 read needed the reader." }
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 15", horizon_hours: 26, in_horizon_items: 6, returned: 0, note: "NCSC-2026-0478 to 0483 are vendor-vulnerability bulletins, left to S1" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:feed alerte/cti + cert-fr avis-recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest avis 2026-11-10, CTI-009 (2026-11-09) already carried" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss", horizon_hours: 26, in_horizon_items: 45, returned: 0, note: "about 45 [NEU] hoch/kritisch distribution batches of 2026-11-11, all vendor-vulnerability, left to S1" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21 and 2026-10-20" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-018 of 2026-10-23" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-09 (WidzialniCMS), Polish products only" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "webfetch listing (titles, dates, hrefs)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10 KEV alert (S1 ground truth); refrigeration fact sheet of 2026-11-05 already carried" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract /news + extract per article", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "State of Cybersecurity in the Union dated 2026-11-10, dropped (see dropped_leads)" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed 20", horizon_hours: 26, in_horizon_items: 12, returned: 0, note: "relays of covered items, Uni Tuebingen dropped" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed 20 + url --direct NEXT_DATA for four articles", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "Liechtenstein follow-up, Erowa and Urner Landrat IT posts reviewed and dropped" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "bridge:url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest card 2026-11-10 (refrigeration, carried)" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "bridge:url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest card 2026-11-10 (refrigeration, carried); ESTV 2026-11-09 and EHRA 2026-11-06 dropped" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 15", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "post 13169 Microsoft Patch Tuesday already covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "bridge:feed 15", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "2026-11-11 CyAS scheme news, UK-only" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "bridge:url --direct card listing", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest release 2026-11-05" }
+  - { id: bfv-verfassungsschutz-de, tier: standard, attempted: true, transport: "bridge:extract of the feed URL", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest item 2026-10-19; extract served the feed this run (the 2026-11-02 timeout did not recur)" }
+  - { id: cash-ch-awp, tier: standard, attempted: true, transport: "bridge:url --direct https://www.cash.ch/sitemap-news.xml + extract", horizon_hours: 146, in_horizon_items: 4, returned: 1, note: "Iran denial reached the refrigeration update; three Publica wires already carried" }
+  - { id: cert-agid, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 148, in_horizon_items: 3, returned: 0, note: "fake INPS APK site, weekly campaign summary, open-weight backdoor paper; Italy-specific" }
+  - { id: it-connect, tier: standard, attempted: true, transport: "feed 15", horizon_hours: 146, in_horizon_items: 15, returned: 0, note: "frigos / Teams IT-support items are relays of carried stories" }
+  - { id: news-admin-ch, tier: standard, attempted: true, transport: "bridge:url (Nuxt HTML cards)", horizon_hours: 146, in_horizon_items: 11, returned: 0, note: "Federal Council session of 2026-11-11: no cyber item (NDB deputy director appointment only); route limited to about one day" }
+  - { id: nextgov-fcw, tier: standard, attempted: true, transport: "bridge:extract listing", horizon_hours: 146, in_horizon_items: 9, returned: 0, note: "US-centric; refrigeration warning of 2026-11-05 carried" }
+  - { id: srf-news, tier: standard, attempted: true, transport: "feed 40", horizon_hours: 146, in_horizon_items: 40, returned: 0, note: "feed depth about 1.5 days; Chur medical-centre item dropped" }
+  - { id: swissinfo-ger, tier: standard, attempted: true, transport: "bridge:url --direct (front page + alle-news-in-kuerze)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "no dated security items on either listing; see coverage_gaps" }
+  - { id: transluce, tier: standard, attempted: true, transport: "bridge:extract", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "single report dated 2026-09-23" }
+  - { id: ag-ch-medienmitteilungen, tier: standard, attempted: true, transport: "bridge:url --direct sitemap.xml -> xml export (medienmitteilungen + medienmitteilungenkapo)", horizon_hours: 124, in_horizon_items: 0, returned: 0, note: "government and cantonal-police releases enumerated to 2026-11-11 13:10Z; none cyber-related" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "bridge:url listing + extract per warning", horizon_hours: 121, in_horizon_items: 2, returned: 1, note: "SMS first-factor warning (2026-11-10) returned; refrigeration update of 2026-11-03 carried by the Danfoss entry's coverage" }
+  - { id: govcert-at, tier: standard, attempted: true, transport: "bridge:extract homepage", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "institutional page only, no advisory stream (matches the record's note)" }
+extra_sources_read_outside_slice:
+  - "cybercrimepolice.ch RSS (Kantonspolizei Zuerich): newest 2026-11-11 consumer webshop fraud; EHRA mail 2026-11-04"
+  - "privatim.ch RSS: newest 2026-10-13 (Merkblatt already carried)"
+  - "netzwoche.ch RSS and inside-it NEXT_DATA reads: no further cyber items in window"
+  - "NZZ technologie RSS: no in-window security items"
+  - "edoeb.admin.ch media-release listing: newest 2026-09-16, nothing in window"
