@@ -165,6 +165,24 @@ def test_probe_timeout_raises_the_bridge_budget_only_when_set():
     assert sh._bridge_timeout({"probe_timeout": "bad"}, 12.0) == 45.0
 
 
+def test_direct_refusal_status_is_a_wall_but_a_404_is_not():
+    import types
+    real = sh.subprocess.run
+    def fake(stderr, rc=1):
+        return lambda *a, **k: types.SimpleNamespace(returncode=rc, stdout="", stderr=stderr)
+    try:
+        sh.subprocess.run = fake("fetch_source: upstream HTTP 403 for https://x.example/")
+        assert sh._direct_refused("https://x.example/", timeout=1.0)
+        sh.subprocess.run = fake("fetch_source: upstream HTTP 429 for https://x.example/")
+        assert sh._direct_refused("https://x.example/", timeout=1.0)
+        sh.subprocess.run = fake("fetch_source: upstream HTTP 404 for https://x.example/")
+        assert not sh._direct_refused("https://x.example/", timeout=1.0)
+        sh.subprocess.run = fake("", rc=0)
+        assert not sh._direct_refused("https://x.example/", timeout=1.0)
+    finally:
+        sh.subprocess.run = real
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

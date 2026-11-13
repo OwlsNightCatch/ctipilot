@@ -1,0 +1,425 @@
+# work/2026-11-13T0256Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-13T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-13T02:58:07Z
+ended_at: 2026-11-13T03:22:14Z
+duration_seconds: 1447
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 36
+  bridge_fetches: 100
+window_hours: 26
+window_start_utc: 2026-11-12T00:56:00Z
+items:
+
+  # ------------------------------------------------------------------ 1
+  - title: "ANSSI's second REACTIV situation report: 64 new data breaches at French state services in October, all through the weaknesses of the first report, with the education ministry hit at 25 of 30 académies and reuse of stolen credentials as the recurring technique"
+    sources:
+      - { url: "https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf", publisher: "ANSSI / CERT-FR (CERTFR-2026-CTI-010, report PDF)", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-010/", publisher: "ANSSI / CERT-FR (report page)", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.cyberattaque.org/education-nationale-25-academies-sur-30-visees-par-des-cyberattaques-lanssi-revele-lampleur-des-intrusions/", publisher: "Cyberattaque.org (press reading of the report, education ministry)", date: "2026-11-12", role: "corroborating" }
+      - { url: "https://www.cyberattaque.org/ministere-des-affaires-etrangeres-une-cyberattaque-expose-les-donnees-personnelles-dagents-et-dusagers/", publisher: "Cyberattaque.org (press reading of the report, foreign ministry portal)", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/cti/feed/ (feed recipe from the record note; item CERTFR-2026-CTI-010 dated 2026-11-12) → primary: https://www.cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-010/ (page carries only the intro) → report PDF https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf read with fetch_source.py pdf (9 pages, text extracted). Cross-read: cyberattaque.org (cyberattaque.org feed, record cyberattaque-org) press articles of 2026-11-12 on the education and foreign-ministry parts. WebSearch (REACTIV octobre 2026 ...) found no other outlet yet."
+    summary: |
+      ANSSI/CERT-FR's second REACTIV situation report (CERTFR-2026-CTI-010, published 2026-11-12, covering October) says 64 new data breaches were reported to the agency since the first report of 2026-09-30, five of them at ministries or bodies under their supervision, and notes a significant fall in breaches detected or claimed at ministry level. ANSSI states that every breach exploits weaknesses already listed in September (missing or weak MFA, subcontracting and supply chain, accounts compromised through infostealers, IDOR flaws, development and configuration defects) and that the new cases showed no other weakness. The recurring technique it names is the reuse of stolen secrets to log in to ministry applications and extract the data they host through legitimate access; the first containment step it gives is to renew compromised or suspected authentication secrets, followed by systematic strong authentication, strict control of privileged accounts and tighter access filtering against exfiltration.
+      Incident updates in the report: the education ministry reported incidents at 25 of 30 académies between July and September, with an iterative method (valid credentials, privileged accounts, new accesses, exfiltration of directories, application databases and mailboxes, and lateral movement towards other entities over the interministerial state network RIE), and no new breach since the September report. The foreign ministry's library portal was entered on 2026-10-20 with technical accounts stolen earlier from a compromised server (about 100 users' data accessed, privilege-escalation attempts blocked). The biodiversity office's hunting-licence portal exposed data of more than 1,000 people, minors included, through an IDOR on its payment API on 2026-10-04. At France Travail a sale of data of more than 60,000 agents and professionals was claimed on a criminal forum on 2026-10-08; the report states that the compromise of an agent account, with the second factor (SMS) validated, allowed the exfiltration on 2026-09-26. The family-allowance funds' VACAF platform lost about 1.2 million files between 2026-10-08 and 10-10 to partner-account credentials from infostealers without 2FA combined with an IDOR URL exposing dossier identifiers; the service is offline until a penetration test and 2FA are in place. At the agriculture ministry, VPN certificates identified as compromised after a marker share gave no access because MFA stopped the login. The agency for services and payment saw its DEFI portal compromised on 2026-09-30 through a spoofed account and a vulnerability (30,500 users notified), after PROFIL and PUMA in August. ANSSI says the figures are provisional and that the investigations are closely coordinated with the judicial inquiries. The report is the French national authority's account of root causes behind a wave of breaches at public bodies; the same weaknesses (partner and supplier accounts without MFA, infostealer credentials, IDOR in citizen portals, SMS as the only second factor) are the ones to check in cantonal and communal portals and supplier chains.
+    region_nexus: "France (neighbouring state); the root causes are transferable to Swiss federal, cantonal and communal portals and supplier chains"
+    primary_sector_nexus: "direct: public-sector administrations, their citizen portals and suppliers"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078, T1190, T1199, T1213, T1114.002]
+    technique_notes: "T1078 reuse of stolen secrets and valid accounts (infostealer credentials, privileged accounts, agent account with SMS second factor); T1190 IDOR and application vulnerabilities in exposed portals; T1199 subcontractor and partner accounts; T1213 and T1114.002 exfiltration of directories, application databases and mailboxes."
+    affected_products: []
+    entity_keys: ["report:anssi-reactiv-situation-report-2026-09"]
+    new_entities:
+      - { key: "report:anssi-reactiv-situation-report-2026-10", type: report, name: "ANSSI REACTIV situation report no. 2 (October 2026)", aliases: ["CERTFR-2026-CTI-010", "Point de situation de l'opération REACTIV - octobre 2026"], summary: "Second situation report of ANSSI's REACTIV operation, published 2026-11-12: 64 new data breaches reported against French state services since 2026-09-30, five at ministries or supervised bodies, all through the weaknesses of the first report (missing or weak MFA, supply chain, infostealer accounts, IDOR, development and configuration defects); names reuse of stolen secrets as the recurring technique and gives updates on the education, foreign affairs, agriculture, labour and family-allowance incidents (ANSSI / CERT-FR, 2026-11-12)." }
+    relation_suggestions:
+      - { subject: "report:anssi-reactiv-situation-report-2026-10", object: "report:anssi-reactiv-situation-report-2026-09", basis: "ANSSI calls the October document the second situation report of the REACTIV operation, following the one of 2026-09-30 (ANSSI / CERT-FR, 2026-11-12)" }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    classification_suggestion: "A2"
+    priority_hint: notable
+    novelty: "update-of:2026-10-02/anssi-reactiv-situation-report-99-state-data-breaches"
+    evidence:
+      - quote: "This document is the second situation report; it reflects ongoing investigations and incidents that are evolving. (translated from French)"
+        original: "Le présent document est le deuxième point de situation qui reflète des travaux d’investigation en cours et des incidents qui évoluent."
+        attribution: "ANSSI / CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-010/"
+      - quote: "Absence of two-factor authentication (MFA) or weak authentication (translated from French)"
+        original: "Absence de double authentification (MFA) ou authentification faible"
+        attribution: "ANSSI / CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf"
+      - quote: "with validation of the second factor (SMS), of an agent's account (translated from French)"
+        original: "avec validation du second facteur (SMS), du compte d’un agent"
+        attribution: "ANSSI / CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf"
+      - quote: "obtaining valid credentials, exploiting privileged accounts, looking for new accesses (translated from French)"
+        original: "obtention d’identifiants valides, exploitation de comptes à privilèges, recherche de"
+        attribution: "ANSSI / CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf"
+      - quote: "multi-factor authentication prevented the attacker from (connecting to the VPN) (translated from French)"
+        original: "l’authentification multifacteur a empêché l’attaquant de se"
+        attribution: "ANSSI / CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf"
+    extended_notes: |
+      Delta over the existing entry (first report, 99 breaches, Metabase CVE-2026-72898): the second report reports a drop at ministry level, no new weakness class, the named recurring technique (reuse of stolen secrets for legitimate extraction), the containment order (renew secrets first), and the incident updates above. The PDF text extraction breaks sentences across lines (the figure 64 is split across two lines in the extracted text); the page https://www.cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-010/ carries only the introduction and the download link. ANSSI also points to its 2026-10-20 experience report on application data breaches (CERTFR-2026-CTI-008), which a Swiss reader may want next to the REACTIV findings. The DGFiP investigations are described as closed with a dedicated report (already on file in the store).
+
+  # ------------------------------------------------------------------ 2
+  - title: "Saxony: emergency pager messages of fire brigades, rescue services and civil protection, with patient names, addresses and diagnoses, readable for years in a social network; the state police (LKA) confirms it is investigating"
+    sources:
+      - { url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html", publisher: "heise online (with own statement from the LKA Sachsen cybercrime contact point ZAC)", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.spiegel.de/netzwelt/sachsen-massive-datenpanne-bei-notrufdiensten-a-c5fc673d-e0fa-422b-bed3-a3d323b9db1b", publisher: "DER SPIEGEL (first report, paywalled; lead read)", date: "2026-11-11", role: "primary" }
+      - { url: "https://www.beobachter.ch/burger-verwaltung/datenschutz-sensible-notrufdaten-im-netz", publisher: "Beobachter (Swiss background, 2018)", date: "2018-08-28", role: "context" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (feed item 2026-11-12T15:19Z) → drilled with extract https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html → primary report: Spiegel, URL https://www.spiegel.de/netzwelt/sachsen-massive-datenpanne-bei-notrufdiensten-a-c5fc673d-e0fa-422b-bed3-a3d323b9db1b (only the lead is readable, S+). Swiss background found by WebSearch (Schweiz Pager Alarmierung Feuerwehr Rettungsdienst POCSAG unverschlüsselt ...) → https://www.beobachter.ch/burger-verwaltung/datenschutz-sensible-notrufdaten-im-netz (read via the reader transport; published 2018-08-28). Further WebSearch for a third Saxony outlet found none."
+    summary: |
+      Spiegel reported on 2026-11-11 that unauthorised persons have for years been able to read, in a social network, the emergency messages sent to mobile pagers of fire brigades, rescue services and civil protection in Saxony; according to its lead, the messages contained diagnoses, names and addresses of patients, hundreds flow in per day, and the area named is mainly greater Leipzig, the district of Zwickau, the Vogtlandkreis and the Erzgebirgskreis. heise online, citing Spiegel, adds that the units apparently use the POCSAG radio protocol, which has no encryption of its own and needs it added on top, and that Spiegel says the Saxon networks use IDEA from 1990, regarded as outdated for its 64-bit block size; per the informant, the keys are available in online forums (a claim, relayed by Spiegel). The informant told the Saxon interior ministry and the LKA at the end of October and went to the media after getting no answer. The LKA Sachsen cybercrime contact point told heise on 2026-11-12 that it learned of the incident on 2026-10-31 and opened investigations immediately, and gave no figures; the number of people affected and the volume of data are unknown. Some rescue services have already reacted: the Rettungszweckverband Südwestsachsen now sends operation information without patient names and house numbers (Spiegel, via heise). How the messages reach the social network (passive radio reception versus an insider or gateway leak) is not stated by either source.
+      Swiss background, not a new Swiss case: Beobachter reported in 2018 that ambulance and fire services across Switzerland sent pager messages unencrypted, and that a freely accessible website then showed current pager messages with patient names and addresses. No source read for this finding describes the current Swiss practice.
+    region_nexus: "Germany (neighbouring state); transferable to Swiss blue-light organisations that alert by pager; no Swiss case reported by these sources"
+    primary_sector_nexus: "direct: emergency services (fire, rescue, civil protection) and their health data"
+    sector: "emergency-services"
+    cves: []
+    techniques: [T1040]
+    technique_notes: "T1040 is the nearest ATT&CK fit for passive interception of unencrypted over-the-air POCSAG traffic; the sources do not say how the messages were captured, so the mapping is of the exposure class, not of a confirmed method."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:saxony-emergency-pager-messages-exposure-2026-11", type: incident, name: "Saxony emergency pager messages exposed (November 2026)", aliases: ["Pager-Panne in Sachsen", "Massive Datenpanne bei sächsischen Notrufdiensten"], summary: "Spiegel (2026-11-11) and heise online (2026-11-12) report that pager messages of Saxon fire brigades, rescue services and civil protection, containing patient names, addresses and diagnoses, have for years been readable in a social network; the LKA Sachsen learned of it on 2026-10-31 and is investigating, scope unknown." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: "B2"
+    priority_hint: notable
+    novelty: new
+    evidence:
+      - quote: "Unauthorised persons apparently could read radio messages of Saxon rescue services and fire brigades for years. According to SPIEGEL information they contained diagnoses, names and addresses of patients. The LKA is investigating. (translated from German)"
+        original: "Unbefugte konnten offenbar jahrelang Funkmeldungen sächsischer Rettungsdienste und Feuerwehren mitlesen. Nach SPIEGEL-Informationen enthielten sie Diagnosen, Namen und Adressen von Patienten. Das LKA ermittelt."
+        attribution: "DER SPIEGEL"
+        source_url: "https://www.spiegel.de/netzwelt/sachsen-massive-datenpanne-bei-notrufdiensten-a-c5fc673d-e0fa-422b-bed3-a3d323b9db1b"
+      - quote: "The protocol itself does not provide for encryption. It has to be implemented additionally. (translated from German)"
+        original: "Eine Verschlüsselung sieht das Protokoll selbst aber nicht vor. Sie muss zusätzlich umgesetzt werden."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html"
+      - quote: "according to Spiegel the Saxon networks use the IDEA method from 1990, which is considered outdated because of its small block size of 64 bits (translated from German)"
+        original: "In den sächsischen Netzen kommt laut Spiegel das Verfahren IDEA von 1990 zum Einsatz, das wegen seiner geringen Blockgröße von 64 Bit als veraltet gilt."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html"
+      - quote: "that it learned of the incident on 31 October. Investigations were opened immediately, a spokesman of the LKA Sachsen says (translated from German)"
+        original: "dass man am 31. Oktober von dem Vorfall erfahren habe. Es seien umgehend Ermittlungen eingeleitet worden, sagt ein Sprecher des LKA Sachsen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html"
+      - quote: "Ambulance and fire services communicate unencrypted by pager across Switzerland (translated from German; 2018 article)"
+        original: "Sanität und Feuerwehr kommunizieren in der ganzen Schweiz unverschlüsselt über ihre Pager."
+        attribution: "Beobachter (2018-08-28)"
+        source_url: "https://www.beobachter.ch/burger-verwaltung/datenschutz-sensible-notrufdaten-im-netz"
+    extended_notes: |
+      Exposure/triage hooks the sources support: the exposure class is any alerting chain that puts personal or health data in POCSAG text and relies on no encryption or on a weak, shared-key scheme; the one mitigation named by a source is payload minimisation (operation location and type without names and house numbers). Passive reception leaves no victim-side telemetry, so the exposure becomes visible only when someone republishes the content (inference from the mechanism, not stated by the sources). The Beobachter background is dated 2018 and must be framed as such; whether Swiss cantonal dispatch centres still send names or diagnoses over pager is not established by anything read here. Spiegel is paywalled (S+); only the lead and the heise relay were read.
+
+  # ------------------------------------------------------------------ 3
+  - title: "Citrix NetScaler ADC and Gateway: 28 memory flaws fixed on 2026-11-12, among them CVE-2026-120868 (CVSS 9.3) in core packet processing in every deployment and CVE-2026-107412 (CVSS 9.5) reachable without authentication on Gateway and AAA virtual servers; no exploitation reported"
+    sources:
+      - { url: "https://cert.europa.eu/publications/security-advisories/2026-020/", publisher: "CERT-EU (advisory 2026-020)", date: "2026-11-12", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13175", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub post 13175)", date: "2026-11-12", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0491", publisher: "NCSC-NL (NCSC-2026-0491, read as CSAF)", date: "2026-11-12", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Angreifer-koennen-Citrix-NetScaler-ADC-und-NetScaler-Gateway-lahmlegen-11522940.html", publisher: "heise online", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13175 (python3 tools/fetch_source.py ncsc-csh recent 25; created 2026-11-12T15:50Z) → CERT-EU recent (cert-eu recent 10) item 2026-020, URL https://cert.europa.eu/publications/security-advisories/2026-020/ (fetched with extract: affected and fixed version table) → NCSC-NL ncsc-nl recent 20 item NCSC-2026-0491, read with ncsc-nl csaf NCSC-2026-0491 (references CTX697305, CTX697280, CTX697320) → heise drill https://www.heise.de/news/Angreifer-koennen-Citrix-NetScaler-ADC-und-NetScaler-Gateway-lahmlegen-11522940.html. The vendor bulletin CTX697305 on support.citrix.com is a JS shell on every transport tried (extract, WebFetch), and the Citrix community post on the new release programme answered 403 on every transport, so vendor wording is read only through the four documents above."
+    summary: |
+      On 2026-11-12 Cloud Software Group published bulletins for NetScaler ADC and Gateway fixing 28 memory flaws (heise: nine of the 28 count as critical). CERT-EU reads the bulletin as follows: CVE-2026-120868 (CVSS 9.3) is a memory overflow in core packet processing that needs no special feature and no authentication and affects every deployment, default configuration included; CVE-2026-107412 (CVSS 9.5) covers several memory overflows reachable without authentication on appliances configured as a Gateway (SSL VPN, ICA Proxy, CVPN or RDP Proxy) or as an AAA virtual server. The other flaws depend on features such as SAML, WebAuth, LDAP, Email OTP and client-certificate authentication, DNS-over-HTTPS, HTTP/2, HTTP/3 (QUIC), SMPP, RTSP, BGP routing and the Application Firewall; NCSC Switzerland also lists CVE-2026-107407 (SMPP), CVE-2026-107408 (DNS load balancing with recursive resolution), CVE-2026-107409 (DNS-over-HTTPS load balancing) and CVE-2026-107410 (NetScaler Push). CERT-EU notes that ten flaws score high on confidentiality, integrity and availability although the vendor describes the impact only as unpredictable behaviour or denial of service. Affected: 14.1 before 14.1-73.57, 13.1 before 13.1-64.39, NetScaler ADC FIPS before 14.1-73.58 FIPS, and ADC FIPS and NDcPP before 13.1-37.293; hybrid Secure Private Access environments with NetScaler instances are affected, and Citrix updates its own managed cloud services (heise, NCSC Switzerland). Citrix reports no exploitation and no public proof of concept has been confirmed (CERT-EU); NCSC Switzerland rates exploitation as unknown. NCSC-NL's advisory adds fixes for the Citrix Secure Access Client for Windows (CVE-2026-118268, per the bulletin title) and NetScaler Console (CVE-2026-120869), and says the set includes authentication bypass and privilege escalation to SYSTEM rights on a Windows system. Heise reports that Citrix announced a fixed monthly security release cycle close to Patch Tuesday, starting with this release, with out-of-band updates for active exploitation, and that some flaws were found with AI-assisted code analysis (Citrix's own post could not be read). The class matters because NetScaler Gateway and AAA servers face the internet and Citrix confirmed exploitation of two critical RCEs in its 2026-09-27 bulletin (CERT-EU advisory 2026-014); CERT-EU asks for Gateway and AAA appliances to be upgraded first.
+    region_nexus: "global; internet-facing remote-access and authentication front ends used by public administrations in Europe; NCSC Switzerland published its own advisory"
+    primary_sector_nexus: "indirect: remote-access infrastructure of public-sector organizations"
+    sector: "public-sector"
+    cves: [CVE-2026-120868, CVE-2026-107412, CVE-2026-107407, CVE-2026-107408, CVE-2026-107409, CVE-2026-107410, CVE-2026-111348, CVE-2026-118268, CVE-2026-120869]
+    techniques: [T1190, T1499]
+    technique_notes: "T1190 pre-authentication memory flaws on the Gateway and AAA interfaces; T1499 the vendor-described impact is denial of service or unpredictable behaviour (endpoint DoS)."
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway", "Citrix NetScaler Console", "Citrix Secure Access Client for Windows", "Citrix Secure Private Access (hybrid)"]
+    entity_keys: ["product:citrix-netscaler"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    classification_suggestion: "A2"
+    priority_hint: "notable to high: unauthenticated pre-auth memory flaws on the internet-facing Gateway role, no exploitation reported"
+    novelty: new
+    cve_table_hint:
+      - { cve: "CVE-2026-120868", product: "Citrix NetScaler ADC / Gateway", cvss: "9.3 (CERT-EU)", epss: null, kev: false, exploited: false, affected: "14.1 before 14.1-73.57; 13.1 before 13.1-64.39; ADC FIPS before 14.1-73.58 FIPS; ADC FIPS and NDcPP before 13.1-37.293", fixed: "14.1-73.57; 13.1-64.39; 14.1-73.58 FIPS; 13.1-37.293 (FIPS/NDcPP)", type: "memory overflow in core packet processing", vector: "network, default configuration", auth: "none", source: "https://cert.europa.eu/publications/security-advisories/2026-020/" }
+      - { cve: "CVE-2026-107412", product: "Citrix NetScaler ADC / Gateway", cvss: "9.5 (CERT-EU, heise)", epss: null, kev: false, exploited: false, affected: "same branches, only when configured as Gateway (SSL VPN, ICA Proxy, CVPN, RDP Proxy) or AAA virtual server", fixed: "same builds", type: "memory overflows", vector: "network", auth: "none per vendor (CERT-EU)", source: "https://cert.europa.eu/publications/security-advisories/2026-020/" }
+    evidence:
+      - quote: "Citrix reports no exploitation, and no public proof-of-concept has been confirmed"
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-020/"
+      - quote: "The NetScaler ADC and Gateway bulletin states that all deployments are affected, including those with the default configuration"
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-020/"
+      - quote: "According to the vendor, these issues can be reached without authentication"
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-020/"
+      - quote: "So far Citrix has no reports that attackers are already exploiting the flaws. (translated from German)"
+        original: "Bislang gibt es seitens Citrix keine Berichte, dass Angreifer die Lücken bereits ausnutzen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Angreifer-koennen-Citrix-NetScaler-ADC-und-NetScaler-Gateway-lahmlegen-11522940.html"
+    extended_notes: |
+      Likely also surfaced by the S1 vulnerability domain (CERT-EU, NCSC-NL and NCSC Switzerland are all essential records here); the main agent should merge. Prior store entries cover the earlier NetScaler SAML overflows (CVE-2026-88779 exploited, CVE-2026-107406) and the PHP2Shell management-GUI fixes; this release is a separate set of CVEs, so the new entry should reference them rather than update them. Exposure check hooks from the sources: which appliances are configured as Gateway or AAA virtual servers, and the running build against the fixed builds above. The vendor bulletin text itself was not readable; CVSS values come from CERT-EU and heise, not from the vendor page.
+
+  # ------------------------------------------------------------------ 4
+  - title: "Operation Endgame against Gootloader, CastleRAT and StealC: 235 servers and 257 domains seized, more than 6 million stolen credentials identified, victim data handed to HaveIBeenPwned, Shadowserver, DIVD and NL-NCSC"
+    sources:
+      - { url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks", publisher: "Europol (press release; body is JS-rendered, headline and description read from the page, full text read from the Operation Endgame project site mirror)", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/", publisher: "BleepingComputer", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed probe (python3 tools/fetch_source.py feed https://www.bleepingcomputer.com/feed/ 15, a feed outside the S2 slice, opened to corroborate the Microsoft 365 outage and while running the standing law-enforcement watch; item dated 2026-11-12T15:07Z) → URL https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/ → primary: Europol, URL https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks (raw HTML read with url --direct: title and meta description only, WebFetch got only the headline) → full press-release text read at https://www.operation-endgame.com/news/ (project site listing that carries the same text; listing page, not cited as a source)."
+    summary: |
+      Europol and partners from nine countries (Bulgaria, Canada, Denmark, Germany, Moldova, the Netherlands, Poland, the United Kingdom, the United States, coordinated with Eurojust, per BleepingComputer) announced on 2026-11-12 another Operation Endgame action against three malware operations: Gootloader, CastleRAT and StealC. Europol's description: 235 servers and 257 domains were actioned together with private partners. Per the press-release text, Gootloader (loader that distributed fake legal documents through compromised, often WordPress, websites and led to ransomware) lost 14 servers and 218 domains and 681 infected websites were remediated; CastleRAT (remote access trojan known since 2025, tied by Europol to encryption of data sets and ransom payments) lost 120 servers and 39 domains, with victim data shared for alerts; StealC (credential-stealing dropper) lost 102 servers, continuing the June 2026 action. Europol says over 6 million victim credentials, stolen after infection and sold for later attacks such as ransomware, were identified on the seized infrastructure, and that victim data will be made available via HaveIBeenPwned, DIVD, CheckjeHack, NoMoreLeaks, Sekoia, the Shadowserver Foundation and NL-NCSC to alert victims of CastleRAT credential theft; WordPress users are urged to update credentials, enable MFA and patch. No Swiss authority is among the participants named by BleepingComputer, and no source read says that Swiss victims are in the datasets. Relevance for the constituency: infostealer-harvested credentials are the cause ANSSI's REACTIV reports name for state data breaches (see item 1), so the notification channels named here (Shadowserver and others) are a concrete way to learn of stolen staff or partner credentials, and public-body WordPress sites are the delivery hosts Gootloader abused.
+    region_nexus: "global with European law-enforcement lead; no Swiss participation or Swiss victim count stated"
+    primary_sector_nexus: "indirect: stolen staff and partner credentials and hijacked public-body WordPress sites"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1189, T1204.002, T1555.003]
+    technique_notes: "T1189 Gootloader delivery through compromised websites; T1204.002 fake legal documents opened by the victim; T1555.003 StealC extracts stored passwords and access data (the press text says passwords, stored access data and digital identities; browser stores are the usual place but are not named)."
+    affected_products: ["WordPress"]
+    entity_keys: ["malware:castlerat", "campaign:operation-endgame-amadey-stealc"]
+    new_entities:
+      - { key: "malware:gootloader", type: malware, name: "Gootloader", aliases: [], summary: "Dropper and loader active since 2020 that distributed fake legal documents through compromised, often WordPress, websites and led to further intrusions including ransomware; 14 servers, 218 domains and 681 infected websites actioned by Europol and partners on 2026-11-12 (Europol, BleepingComputer)." }
+      - { key: "malware:stealc", type: malware, name: "StealC", aliases: [], summary: "Information stealer with dropper function sold as a service, extracting passwords, stored access data and digital identities; 102 servers taken down in the 2026-11 Operation Endgame action, continuing the June 2026 action (Europol, 2026-11-12)." }
+      - { key: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", type: campaign, name: "Operation Endgame - Gootloader, CastleRAT, StealC (November 2026)", aliases: ["6.4 million victim datasets secured in international operation against malware networks"], summary: "Europol-coordinated action with nine countries' law enforcement and private partners that seized 235 servers and 257 domains behind Gootloader, CastleRAT and StealC and identified over 6 million victim credentials, announced 2026-11-12 (Europol)." }
+    relation_suggestions:
+      - { subject: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", object: "campaign:operation-endgame-amadey-stealc", basis: "Europol says the StealC part continues the June 2026 Operation Endgame action (Europol press release, 2026-11-12)" }
+      - { subject: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", object: "malware:castlerat", basis: "Europol lists CastleRAT among the three malware operations targeted (Europol, 2026-11-12)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: "A1"
+    priority_hint: notable
+    novelty: new
+    evidence:
+      - quote: "Europol, alongside global partners, has dismantled the criminal infrastructure behind Gootloader, CastleRAT, and StealC malware."
+        attribution: "Europol"
+        source_url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks"
+      - quote: "Together with private partners who helped identify, take down, seize, and block infrastructure tied to the three malware operations, the authorities seized 257 domains and 235 servers."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/"
+      - quote: "Victim data will be made available via platforms HaveIBeenPwned, DIVD, CheckjeHack, NoMoreLeaks, Sekoia, The Shadowserver Foundation, and NL-NCSC, alerting victims of stolen credentials caused by the CastleRAT malware."
+        attribution: "BleepingComputer (quoting Europol)"
+        source_url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/"
+      - quote: "WordPress users are urged to update credentials, enable multi-factor authentication, and patch vulnerabilities."
+        attribution: "BleepingComputer (quoting Europol)"
+        source_url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/"
+    extended_notes: |
+      Sourcing note: the Europol page is a JS application; its raw HTML carries the headline and the meta description (verified), and the per-family numbers above were read from the identical text on the Operation Endgame project site's news page, which is a listing and is deliberately not cited. If the main agent wants to cite only text it can re-read, use the BleepingComputer quotes for the numbers 235/257 and the notification platforms, and drop the per-family figures. Law-enforcement watch: the action is an operation against criminal infrastructure, not sanctions; no OFAC or EU cyber-sanctions action against a ransomware actor was found for November 2026 (the last found is the 2026-07-13 OFAC designation of First VPN Service).
+
+  # ------------------------------------------------------------------ 5
+  - title: "PTC Windchill and FlexPLM: CVE-2026-126325 deserialization flaw allows remote code execution (CVSS 4.0 9.2), patched 2026-11-12, PTC-hosted environments already fixed; an earlier Windchill RCE was used by Cl0p affiliates"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13174", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub post 13174)", date: "2026-11-12", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4540", publisher: "BSI CERT-Bund WID (WID-SEC-2026-4540, read as CSAF)", date: "2026-11-12", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/ptc-patches-critical-windchill-and.html", publisher: "The Hacker News (relays CVE record and PTC statement)", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13174 (ncsc-csh recent 25; created 2026-11-12T15:17Z) → BSI WID feed (bsi-rss item '[NEU] [UNGEPATCHT] [hoch] PTC FlexPLM', 2026-11-12T12:27Z) read with bsi-csaf WID-SEC-2026-4540 → news pivot THN https://thehackernews.com/2026/11/ptc-patches-critical-windchill-and.html. The PTC trust-center advisory (https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability) answered 403 to WebFetch, and NCSC Switzerland notes the vendor article CS483249 is behind a customer login, so the vendor text is read only through THN."
+    summary: |
+      NCSC Switzerland, BSI and The Hacker News report a critical flaw, CVE-2026-126325 (CVSS 4.0 9.2), in PTC Windchill and FlexPLM: deserialization of untrusted data lets a remote, anonymous attacker send crafted requests that run arbitrary code (BSI, NCSC Switzerland). Per The Hacker News, quoting the CVE record, affected Windchill versions are 11.0 M030, 11.1 M020, 11.2.1.0, 12.0.2.0, 12.1.2.0, 13.0.2.0 and 13.1.0.0 to 13.1.4.0, and FlexPLM 11.0 M030, 11.1 M020, 11.2.1.0, 12.0.2.0, 12.1.2.0, 13.0.2.0 and 13.1.0.0 to 13.1.3.0; THN quotes PTC saying patches were applied to PTC-hosted environments and that customers running their own installations should patch as soon as possible. NCSC Switzerland rates exploitation as unknown. BSI's feed carried the item as unpatched at its publication time (12:27 UTC), whereas NCSC Switzerland and THN report patches available, so the status moved during the day. Context from THN: nearly five months earlier a different critical Windchill and FlexPLM RCE (CVE-2026-12569) came under active exploitation and, per THN, was used by Cl0p-linked actors in July for web shells and data theft against manufacturers (the store already carries this campaign); a watchTowr analyst quoted by THN calls PTC software a textbook target for initial access brokers and ransomware operators. Windchill and FlexPLM are product-lifecycle systems used by manufacturers and industrial suppliers, so relevance to the public sector is mainly through defence, infrastructure and industrial suppliers; no source ties this flaw to Swiss public bodies.
+    region_nexus: "global; manufacturers and industrial suppliers; NCSC Switzerland issued an advisory"
+    primary_sector_nexus: "indirect: industrial and defence-supply product-data systems"
+    sector: "manufacturing"
+    cves: [CVE-2026-126325]
+    techniques: [T1190]
+    technique_notes: "T1190 network request to an exposed Windchill or FlexPLM server."
+    affected_products: ["PTC Windchill", "PTC FlexPLM"]
+    entity_keys: ["product:ptc-windchill", "product:ptc-flexplm", "campaign:clop-windchill-flexplm-extortion-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    classification_suggestion: "A2"
+    priority_hint: notable
+    novelty: new
+    borderline: true
+    borderline_reason: "NCSC Switzerland advisory (essential record) but the product class is industrial; S1 may carry the same CVE with the vendor text; no Swiss public-sector exposure evidenced"
+    cve_table_hint:
+      - { cve: "CVE-2026-126325", product: "PTC Windchill, PTC FlexPLM", cvss: "9.2 (CVSS 4.0)", epss: null, kev: false, exploited: false, affected: "Windchill 11.0 M030, 11.1 M020, 11.2.1.0, 12.0.2.0, 12.1.2.0, 13.0.2.0, 13.1.0.0-13.1.4.0; FlexPLM 11.0 M030, 11.1 M020, 11.2.1.0, 12.0.2.0, 12.1.2.0, 13.0.2.0, 13.1.0.0-13.1.3.0 (CVE record via THN)", fixed: "patch from PTC (fixed builds not read; advisory behind login)", type: "deserialization of untrusted data", vector: "network, crafted requests", auth: "none per BSI (anonymous remote attacker)", source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4540" }
+    evidence:
+      - quote: "A remote, anonymous attacker can exploit a vulnerability in PTC FlexPLM and PTC Windchill to execute arbitrary program code. (translated from German)"
+        original: "Ein entfernter, anonymer Angreifer kann eine Schwachstelle in PTC FlexPLM und PTC Windchill ausnutzen, um beliebigen Programmcode auszuführen."
+        attribution: "BSI CERT-Bund WID"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4540"
+      - quote: "carries a CVSS v4 score of 9.2 out of a maximum of 10.0."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/ptc-patches-critical-windchill-and.html"
+      - quote: "the patches have been applied on their behalf. No action is required on your part"
+        attribution: "The Hacker News (quoting PTC)"
+        source_url: "https://thehackernews.com/2026/11/ptc-patches-critical-windchill-and.html"
+    extended_notes: |
+      Store already carries Windchill entries (2026-06-20 CVE-2026-12569, 2026-08-22 three new CVEs); the new entry should reference them. BSI tag UNGEPATCHT versus NCSC-CH and THN "patches available" is a contradiction in timing, kept visible rather than averaged.
+
+  # ------------------------------------------------------------------ 6
+  - title: "Microsoft 365 outage on 2026-11-12 (MO1550821): Exchange Online, Teams, SharePoint Online, Copilot and Defender XDR unreachable for hours worldwide; Microsoft cites unavailable servers, not an attack"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/microsoft/massive-microsoft-365-outage-disrupts-outlook-teams-copilot-worldwide/", publisher: "BleepingComputer", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.srf.ch/news/wirtschaft/software-riese-microsoft-stundenlanger-ausfall-beeintraechtigt-outlook-und-teams", publisher: "SRF", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: srf-news RSS probe (python3 tools/fetch_source.py feed https://www.srf.ch/news/bnf/rss/1646 12; item 2026-11-13T00:39Z), URL https://www.srf.ch/news/wirtschaft/software-riese-microsoft-stundenlanger-ausfall-beeintraechtigt-outlook-und-teams → WebSearch (Microsoft 365 Störung Outlook Teams Copilot ...) found no dated outlet → BleepingComputer feed (item 2026-11-12T20:15Z) URL https://www.bleepingcomputer.com/news/microsoft/massive-microsoft-365-outage-disrupts-outlook-teams-copilot-worldwide/ (quotes the admin-center advisory MO1550821). The Microsoft admin-center advisory and Microsoft's status posts are not public pages and the status posts are on X, so Microsoft's wording is read only through the two outlets."
+    summary: |
+      BleepingComputer reports that a Microsoft 365 incident tracked as MO1550821 began on 2026-11-12 at 13:26 ET (18:26 UTC): customers may be unable to connect to Exchange Online, Microsoft Teams, SharePoint Online, Microsoft 365 Copilot and Microsoft Defender XDR, and users in any region can be affected. Microsoft first blamed elevated infrastructure load, then said the load came not from more traffic but from a number of servers unexpectedly unavailable, straining the rest; it paused deployments, redistributed traffic and restarted servers, later said recovery efforts had not given the expected relief because a core process on affected servers was becoming overwhelmed and capacity was lost, and was checking whether reverting a small number of recent configuration updates would speed recovery; at 18:57 ET (23:57 UTC) it saw limited recovery. SRF reports on 2026-11-13 that Microsoft has been fighting worldwide disruptions since Thursday evening, that several hundred reports reached the Swiss disruption portal allestörungen.ch, that report numbers are falling, and that Microsoft attributes the fault to a problem during automated system checks on servers. Neither source reports an attack. The point for defenders is availability and detection coverage: Defender XDR was among the affected services, and mail and Teams are the usual incident-communication paths, so organizations running on Microsoft 365 had a window with reduced visibility and no usual out-of-band channel. The final end of the outage and any post-incident report were not available at the time of reading.
+    region_nexus: "global; SRF reports several hundred reports on the Swiss disruption portal allestörungen.ch; no source states which Swiss public bodies were affected"
+    primary_sector_nexus: "indirect: cloud dependency of public-sector mail, collaboration and security tooling"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    technique_notes: "no attacker behavior: infrastructure outage, no attack reported by either source"
+    affected_products: ["Microsoft 365", "Exchange Online", "Microsoft Teams", "SharePoint Online", "Microsoft 365 Copilot", "Microsoft Defender XDR"]
+    entity_keys: ["product:microsoft-365", "product:microsoft-exchange-online", "product:microsoft-teams"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: "B2"
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "availability event, not an attack; included because Defender XDR and mail were affected for hours and Swiss reports exist; the main agent should drop it if the brief admits no outage items, or hold it for the post-incident report"
+    evidence:
+      - quote: "In a Microsoft 365 admin center advisory tracked as MO1550821, Microsoft confirmed that customers may be unable to connect to multiple services, including Exchange Online, Microsoft Teams, SharePoint Online, Microsoft 365 Copilot, and Microsoft Defender XDR."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/massive-microsoft-365-outage-disrupts-outlook-teams-copilot-worldwide/"
+      - quote: "We determined the elevated load isn't driven by an increase in traffic, but by a number of servers being unexpectedly unavailable; straining the remaining infrastructure."
+        attribution: "BleepingComputer (quoting Microsoft)"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/massive-microsoft-365-outage-disrupts-outlook-teams-copilot-worldwide/"
+      - quote: "Since Thursday evening the technology group Microsoft has been struggling with disruptions worldwide. (translated from German)"
+        original: "Seit Donnerstagabend kämpft der Technologiekonzern Microsoft weltweit mit Störungen."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/wirtschaft/software-riese-microsoft-stundenlanger-ausfall-beeintraechtigt-outlook-und-teams"
+
+  # ------------------------------------------------------------------ 7
+  - title: "Mittwald (German web host): second wave of attacks on 2026-11-12 after a breach of 56 customer projects through its own MCP server, with customer centre, mStudio and SSH switched off and conflicting statements on whether the company website was compromised"
+    sources:
+      - { url: "https://www.mittwald-status.de/incidents/255116", publisher: "Mittwald status page (incident 255116)", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.heise.de/news/Angriff-ueber-MCP-Server-Webhoster-Mittwald-im-Krisenmodus-11522728.html", publisher: "heise online", date: "2026-11-12", role: "corroborating" }
+      - { url: "https://therecord.media/cyberattack-germany-ai-mittwald", publisher: "The Record", date: "2026-11-09", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item 2026-11-12T13:14Z) → drilled https://www.heise.de/news/Angriff-ueber-MCP-Server-Webhoster-Mittwald-im-Krisenmodus-11522728.html → primary: operator status page https://www.mittwald-status.de/incidents/255116 (extract) → first-wave report: The Record https://therecord.media/cyberattack-germany-ai-mittwald (found by WebSearch 'mittwald Sicherheitsvorfall MCP-Server Angriff 5. November 2026')."
+    summary: |
+      The Record reported on 2026-11-09 that Mittwald CM Service, a North Rhine-Westphalian hosting provider for web agencies, disclosed on Saturday 2026-11-07 that hackers had compromised 56 customer projects after going undetected on its systems for eight days, through a flaw in the Model Context Protocol (MCP) server that lets customers connect AI assistants to its mStudio management platform; the managing director said the logs showed the attacker moved extremely fast, in some cases seconds between steps, and that it is unclear whether the flaw was in Mittwald's code or in open-source MCP libraries; the company supplied no other evidence of AI involvement. The operator's status page for 2026-11-12 says the attackers resumed attacks the night before, that it switched off the customer centre, mStudio and all SSH connections as a precaution, that the customers' websites and mailboxes stay reachable, and that the customer centre and mStudio are planned to return by 11:00 on 2026-11-13. The status page states the attackers exploited a vulnerability and compromised the company website, which was taken offline; heise reports that a tipster claimed a defacement and that the company told heise the website was taken offline by Mittwald as a precaution and was not taken over or defaced, so the two company statements disagree. Mittwald calls the attackers professional actors using automated AI systems (its own assessment). No Swiss customer or public body is mentioned. Transferable points for the constituency: an agent-integration endpoint (MCP server) operated by a hosting or SaaS supplier as an initial-access path, and supplier management planes switched off for days.
+    region_nexus: "Germany; hosting supplier to web agencies; no Swiss link stated"
+    primary_sector_nexus: "indirect: web-hosting supply chain for agencies that may host public-body sites"
+    sector: "supply-chain"
+    cves: []
+    techniques: [T1190]
+    technique_notes: "T1190 is an assumption from 'attack through the MCP server flaw' (an exposed customer-facing service); the sources do not name the exploit class."
+    affected_products: ["Mittwald mStudio", "Mittwald MCP server"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:mittwald-mcp-server-breach-2026-11", type: incident, name: "Mittwald MCP server breach (October-November 2026)", aliases: ["Sicherheitsvorfall am MCP-Server"], summary: "German web host Mittwald disclosed on 2026-11-07 that an attacker exploited a flaw in its MCP server in late October and compromised 56 customer projects; a second wave on 2026-11-12 led it to switch off its customer centre, mStudio and SSH (Mittwald status page, The Record, heise online)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: "B2"
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "German supplier incident with no Swiss link stated; S4 (incidents) will likely carry it; the first wave pre-dates the window, the second wave (2026-11-12) is in window"
+    evidence:
+      - quote: "hackers had compromised 56 customer projects after going undetected on its systems for eight days."
+        attribution: "The Record"
+        source_url: "https://therecord.media/cyberattack-germany-ai-mittwald"
+      - quote: "So far the attackers have succeeded in exploiting a vulnerability and compromising our company website. (translated from German)"
+        original: "Bislang ist es den Angreifern gelungen, eine Sicherheitslücke auszunutzen und unsere Unternehmenswebseite zu kompromittieren."
+        attribution: "Mittwald status page"
+        source_url: "https://www.mittwald-status.de/incidents/255116"
+      - quote: "The company website was taken offline by mittwald itself as a precaution and a status page put in front. A takeover or defacement of the website by attackers did not take place. (translated from German)"
+        original: "Die Unternehmenswebsite hat mittwald vorsorglich selbst vom Netz genommen und eine Status-Seite vorgeschaltet. Eine Übernahme oder ein Defacement der Website durch Angreifer fand nicht statt."
+        attribution: "heise online (quoting Mittwald)"
+        source_url: "https://www.heise.de/news/Angriff-ueber-MCP-Server-Webhoster-Mittwald-im-Krisenmodus-11522728.html"
+
+  # ------------------------------------------------------------------ 8
+  - title: "Poland: the government e-service portal ePUAP is offline after a cyberattack detected on 2026-11-10; the ministry says the attack did not disrupt the system and it was disconnected as a precaution"
+    sources:
+      - { url: "https://www.heise.de/news/Polens-Digitalisierungsportal-ePUAP-nach-Cyberangriff-offline-11521735.html", publisher: "heise online", date: "2026-11-12", role: "primary" }
+      - { url: "https://wiadomosci.wp.pl/cyberatak-na-panstwowy-system-epuap-prewencyjnie-wylaczony-7349677219887584a", publisher: "WP Wiadomości (relays the ministry's communications director)", date: "2026-11-11", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item 2026-11-12T08:39Z) → drilled https://www.heise.de/news/Polens-Digitalisierungsportal-ePUAP-nach-Cyberangriff-offline-11521735.html → pivot: https://wiadomosci.wp.pl/cyberatak-na-panstwowy-system-epuap-prewencyjnie-wylaczony-7349677219887584a (Polish; the minister's own post is on X and is not cited). WebSearch in Polish (ePUAP cyberatak Gawkowski ...) found the same ministry account at TVP Info, nothing newer."
+    summary: |
+      heise online reports on 2026-11-12 that the Polish government's citizen-service platform ePUAP (tax matters, residence registration, document requests) is offline because of a cyberattack. According to the Polish digital minister and deputy prime minister's statement on Tuesday evening (2026-11-10), an attack on ePUAP was detected and repelled, the infrastructure of the Centre for Informatics (COI) is safe, and the domestic intelligence service ABW is involved in the investigation. WP Wiadomości quotes the ministry's communications director saying the system was not breached or disrupted by the attack but was disconnected by the administrators as a precaution, and that no restoration time can be given. No actor, method or data impact is reported. The only transferable point is the pattern of a preventive disconnection of a national citizen-service portal; no Swiss link exists in the sources.
+    region_nexus: "Poland; no Swiss link"
+    primary_sector_nexus: "indirect: national e-government portal availability"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    technique_notes: "no technique stated by any source"
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: "C3"
+    priority_hint: routine
+    novelty: new
+    borderline: true
+    borderline_reason: "e-government incident with no technical detail, actor or Swiss link; likely below the brief's actionability bar; returned only so the drop is auditable"
+    evidence:
+      - quote: "Gawkowski wrote on Tuesday evening that a cyberattack on the ePUAP system was detected and repelled. (translated from German)"
+        original: "Gawkowski schrieb dort am Dienstagabend, dass ein Cyberangriff auf das ePUAP-System erkannt und abgewehrt wurde."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Polens-Digitalisierungsportal-ePUAP-nach-Cyberangriff-offline-11521735.html"
+      - quote: "It was simply disconnected by us as a precaution for security (translated from Polish)"
+        original: "Po prostu został przez nas odłączony prewencyjnie dla bezpieczeństwa"
+        attribution: "Marek Gieorgica, director of the ministry's communication office, via WP Wiadomości"
+        source_url: "https://wiadomosci.wp.pl/cyberatak-na-panstwowy-system-epuap-prewencyjnie-wylaczony-7349677219887584a"
+
+dropped_leads:
+  - "Liechtenstein VwbP register breach: external investigation by an audit firm, ceiling CHF 1.65 million, results expected H1 2027 (inside-it.ch 2026-11-11, outside the 26 h window, no change to what defenders must do; store entry 2026-08-04 exists)"
+  - "ENISA State of Cybersecurity in the Union 2026 (published 2026-11-10, outside window) and ENISA Threat Landscape 2026 (2026-09-22): annual reports, out of window"
+  - "CERT-EU blog 'From penetration testing to cyber threat: beware of ARTEX' (2026-11-05): out of window and ARTEX is heavily covered in the store"
+  - "BACS/NCSC.ch: nothing new after 2026-11-10 on Im Fokus, Aktuelle Vorfälle and Medienmitteilungen; ESTV (2026-11-09) and EHRA (2026-11-06) phishing warnings and Wochenrückblick KW45 (2026-11-10) are out of window and low-actionability; Danfoss/Copeland refrigeration warning (2026-11-10) is already covered"
+  - "EFK audit of ZAS business and IT architecture (efk-25606, 2026-11-09): states that the future security architecture covering all digitalisation initiatives is still missing; governance-level finding, no defender action, within the 121 h lookback only"
+  - "Blick synthesis of hybrid attacks (2026-11-12): bomb-threat emails to about 34 flights and to thousands of Italian and UK schools, DDoS on European authorities incl. Zermatt Tourismus; WebSearch found no primary source and no Swiss school or administration target evidenced"
+  - "Cyberattaque.org items (ARTE/Educ'ARTE leak claim, Qare, 1001RDV, Groupe Alternance): French private-sector claims, no Swiss or public-sector nexus; the education and foreign-ministry articles were used only as press readings of REACTIV"
+  - "UK NCSC scheme to test critical organisations' defences (2026-11-11 12:00 UTC) is outside the 26 h window; ICO enforcement item Somerset Council (FOI enforcement notice) not relevant"
+  - "Policy and regulatory watch: no item in the window changes what Swiss defenders are obliged or advised to do. Checked: NCSC.ch and BACS releases, Swiss federal and cantonal ISG/ICSG news (Bern ICSG in force 2026-11-01 and Aargau InfoSiV 2027-01-01 already covered; Zug consultation closed 2026-11-09), e-ID (a vendor blog, not an official source, says the 2026-12-01 start was dropped; no official in-window statement found), EU NIS2/CRA (CRA reporting duties for manufacturers apply since 2026-09-11 via the ENISA single reporting platform, 2026-09-11, outside window), Council of Europe and UN cybercrime conventions (no Swiss step found), sanctions (last OFAC cyber action found 2026-07-13) and law enforcement (Operation Endgame item above is the only in-window action)."
+
+lead_notes_for_other_domains:
+  - "S1: BleepingComputer 2026-11-12 headlines (titles only, not read): N-able '4EverAble2Shell' zero-day exploited hours after PoC (update candidate on entry 2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline), Windows 'SignDrop' zero-day with SYSTEM rights, Apify breach, 4,800 GitHub accounts compromised for cloud credentials (S3/S4)."
+  - "S1: heise 2026-11-12 Checkmk 2.5.0p19/2.4.0p40 fix three critical CVEs (CVE-2026-120495, CVE-2026-121374, CVE-2026-118965, CVSS4 9.4, each needing an authenticated or privileged position), Zoom for Windows network privilege escalation; CERT-FR 2026-11-12 avis for Check Point (AVI-1501), Palo Alto Networks (AVI-1521), SonicOS (AVI-1507), Mitel MiVoice MX-ONE (AVI-1516), Citrix XenServer (AVI-1502); NCSC-NL 2026-11-12 FortiAuthenticator, FortiClientEMS, FortiMail, FortiOS, FortiManager advisories; CISA ICS 2026-11-12: five Siemens advisories (icsa-26-316-01 to -05, PHP2Shell and Brotli rows, already covered); CISA KEV additions in window: none."
+  - "S1: NCSC-NL php2shell tracker rows of 2026-11-12: Cisco URWB 26.2.1.9 and Cisco Unified Industrial Wireless 26.2.1.9 fixes, QNAP QNE (ADRA) 1.0.7.q327, Trend Micro Apex Central Japanese critical patch 7351, OroCloud managed environments patched 2026-10-22 (updates to covered PHP2Shell entries)."
+
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no watchlists configured; sector lens applied (Swiss public sector first, then neighbouring public administrations)"
+
+candidate_sources: []
+
+coverage_gaps:
+  - { source_id: "europol-newsroom", reason: "recipe note: the press-release page is a JS application (extract and WebFetch return only the headline); url --direct returns the title and meta description, and the full text is mirrored on https://www.operation-endgame.com/news/ which extract reads cleanly (verified 2026-11-13)" }
+  - { source_id: "anssi-fr", reason: "recipe note: `fetch_source.py feed https://www.cert.ssi.gouv.fr/cti/feed/ 8` lists CERTFR-2026-CTI-010 with a link under cert.cyber.gouv.fr; the page carries only the intro and the report is the PDF https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf, which `fetch_source.py pdf` reads (9 pages, 15.7k chars, sentences broken across lines, the figure 64 split over two lines)" }
+  - { source_id: "ncsc-ch-focus / ncsc-ch-incidents / bacs-press", reason: "worked: `url --direct` listing with the 2026-10-27 card split gives hrefs and dates (titles missing, as the 2026-11-12 note says) and `extract <href>` returns title and body; newest items 2026-11-10 (Im Fokus, Vorfälle) and 2026-11-05 (press): quiet in window" }
+  - { source_id: "ico-uk", reason: "recipe confirmed: `ico-uk enforcement 10` lists dated items; `extract` of an enforcement page returns the raw HTML (text readable after tag stripping); newest item 2026-11-12 is an FOI enforcement notice, not relevant" }
+  - { source_id: "cisa-advisories", reason: "WebFetch of the advisories listing returned a clean 10-item list with hrefs (newest 2026-11-10, KEV alerts); `cisa csaf-recent` worked; no in-window item beyond five Siemens ICS advisories already covered" }
+  - { source_id: "inside-it-ch", reason: "feed fine (direct); no in-window item with a security or constituency angle; the 2026-11-11 Liechtenstein item was read via url --direct (__NEXT_DATA__ blocks), as the record note says" }
+  - { source_id: "vendor primaries (outside the slice)", reason: "support.citrix.com bulletin CTX697305 is a JS shell on extract and WebFetch; ptc.com trust-center advisory answered 403 to WebFetch; community.citrix.com answered 403 on every transport; eurojust.europa.eu 403; jina reader pool exhausted (HTTP 402 on every key) — Citrix and PTC are therefore read only through CERT-EU, NCSC-CH, BSI and press" }
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "ncsc-nl recent 20 + ncsc-nl csaf", horizon_hours: 26, in_horizon_items: 11, returned: 1, note: "Citrix NCSC-2026-0491 used in item 3; the rest are vendor-patch advisories (Fortinet batch, SAP, Apache, N-able, Ivanti, Node.js, GitLab) left to S1 or already covered" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 25 + feed cti/alerte + extract + pdf", horizon_hours: 26, in_horizon_items: 26, returned: 1, note: "CERTFR-2026-CTI-010 (REACTIV October) is item 1; 25 avis of 2026-11-12 are vendor-patch notices for S1" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 15, returned: 1, note: "WID-SEC-2026-4540 PTC FlexPLM/Windchill used in item 5; other [NEU] hoch items (Red Hat, Octopus Deploy, Drupal extensions, Telerik, Roundcube, Webmin, rsyslog, Node.js, Fortinet, Chrome, Apache) are S1 material" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-10-21 (PHP)" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 10 + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "2026-020 Citrix used in item 3" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-09 (WidzialniCMS), Polish CMS, not relevant" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + cisa csaf-recent", horizon_hours: 26, in_horizon_items: 5, returned: 0, note: "five Siemens ICS advisories of 2026-11-12 already covered; no KEV additions in window" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract listing + extract per item", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "State of Cybersecurity in the Union dated 2026-11-10 (outside window); Threat Landscape 2026-09-22; CRA reporting platform 2026-09-11" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed 30 + extract", horizon_hours: 26, in_horizon_items: 12, returned: 3, note: "Sachsen pager (item 2), Mittwald (item 7), ePUAP (item 8); Citrix and Apache read as corroboration/covered" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + url --direct", horizon_hours: 26, in_horizon_items: 9, returned: 0, note: "no security or constituency item in window (project costs, salaries, mergers); Liechtenstein VwbP investigation cost of 2026-11-11 dropped" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10 (Kühlanlagen, covered)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 3, returned: 2, note: "13175 Citrix (item 3), 13174 PTC (item 5); 13171 Apache already covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-11 12:00 UTC (critical-organisations testing scheme), outside window" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest press release 2026-11-05 (Beirat Digitale Schweiz, digital sovereignty)" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "ico-uk enforcement 10 + url --direct", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "Somerset Council FOI enforcement notice, not relevant" }
+  - { id: infoguard-labs, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-09-28" }
+  - { id: jpcert, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "Microsoft November security updates alert (generic)" }
+  - { id: ncsc-ie, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 3, returned: 0, note: "Apache (covered), OpenSSH (covered), Refrigeration (covered)" }
+  - { id: ncsc-nl-php2shell-tracker, tier: standard, attempted: true, transport: "url (raw changelog)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "rows of 2026-11-12 are updates to covered PHP2Shell entries; passed to S1 in lead_notes" }
+  - { id: oneconsult-ch, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 2, returned: 0, note: "FSA API post (2026-11-02) already covered; AI awareness post 2026-11-12 not actionable" }
+  - { id: openssf-policy, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22" }
+  - { id: safeonweb-be, tier: standard, attempted: true, transport: "url", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-11-06 14:26, outside the 146 h reach; CCB Entra ID SMS warning already covered" }
+  - { id: synacktiv, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "2026-11-09 game-exploitation post, not relevant" }
+  - { id: truesec, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 3, returned: 0, note: "Chrome zero-day (covered), refrigeration (covered), rogue AI agent on US DoD network (2026-10-30)" }
+  - { id: apa-ots, tier: standard, attempted: true, transport: "feed", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "feed holds about 3 h of party-political releases; sweep of 121 h impossible, as the record notes" }
+  - { id: cyberattaque-org, tier: standard, attempted: true, transport: "feed 10 + extract", horizon_hours: 121, in_horizon_items: 10, returned: 0, note: "feed holds about 14 h; two articles used as press readings of REACTIV (item 1); other items are French private-sector claims" }
+  - { id: ec-digital-strategy-newsroom, tier: standard, attempted: true, transport: "feed 12", horizon_hours: 121, in_horizon_items: 1, returned: 0, note: "DSA items only, nothing on NIS2 or CRA" }
+  - { id: efk-ch, tier: standard, attempted: true, transport: "extract + pdf", horizon_hours: 121, in_horizon_items: 2, returned: 0, note: "ZAS IT-architecture audit (2026-11-09) read in full and dropped as governance-level; BAZG risk-analysis audit not security" }

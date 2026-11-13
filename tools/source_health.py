@@ -568,6 +568,21 @@ def _blocked_handled(fetch_method: str, source_id: str, verdict: str,
     return not any(m in _DEAD_MARKERS for m in (shell_markers or ()))
 
 
+def _direct_refused(url: str, *, timeout: float) -> bool:
+    """True when the bridge's direct transport is refused with a wall status
+    (401/403/429/451) on `url`. Reads the bridge's own stderr, the only place the
+    upstream status is reported; a 404/410, a timeout or any other failure is not
+    a wall."""
+    try:
+        proc = subprocess.run([sys.executable, str(FETCH_SOURCE), "url", url, "--direct"],
+                              capture_output=True, text=True, timeout=timeout)
+    except Exception:  # noqa: BLE001
+        return False
+    if proc.returncode == 0:
+        return False
+    return re.search(r"upstream HTTP (?:401|403|429|451)\b", proc.stderr or "") is not None
+
+
 def _walled(cls: str, shell_markers) -> bool:
     """True when the container is walled out of the host: a refused UA, a
     blocked bridge, an empty reader pool, or a challenge page. A dead or parked
@@ -1101,6 +1116,13 @@ def main() -> int:
         # and a 404 or parked page is not a wall, so a dead or repurposed page on
         # one of the ~80 unwalled webfetch records still surfaces.
         walled = _walled(cls, content.get("content_shell_markers"))
+        if not walled and fetch_method == "webfetch" and verdict == "unreadable":
+            # The reachability probe can answer 200 while the content read's direct
+            # transport is refused outright (asec.ahnlab.com: nginx 403 to the
+            # container on every path, the reader pool out of credit). A bare
+            # 401/403/429/451 from the direct transport is the same wall the
+            # agent-side WebFetch goes around; a 404 or a parked page is not.
+            walled = _direct_refused(url, timeout=max(args.timeout, 30.0))
         if fetch_method == "webfetch" and verdict in ("unreadable", "shell") and walled:
             # v4.18 (operator directive 2026-09-30): the record's working reader is
             # the agent-side WebFetch tool, which runs outside this container and so

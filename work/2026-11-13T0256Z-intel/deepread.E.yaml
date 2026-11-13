@@ -1,0 +1,261 @@
+# work/2026-11-13T0256Z-intel/deepread.E.yaml
+# DR-E scoped completeness re-check (Phase 2 completeness sweep). Written by the cti-research sub-agent.
+# Quote-binding: every evidence quote is a contiguous substring of the saved body named in `body_file`
+# (all under work/2026-11-13T0256Z-intel/bodies/), verified with a literal substring check after writing.
+domain: DR-E
+run_id: 2026-11-13T0256Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+window_hours: 26
+window_start: 2026-11-12T00:55Z
+
+# ---------------------------------------------------------------------------
+# Per-item dispositions (the 9 requested checks)
+# ---------------------------------------------------------------------------
+checked:
+  - id: "AVI-1516"
+    what: "CERT-FR CERTFR-2026-AVI-1516, Mitel MiVoice MX-ONE (avis dated 2026-11-12); vendor Mitel MISA-2026-0011 (2026-11-11)"
+    disposition: candidate
+    clause: "Not covered. Mitel MISA-2026-0011 rates MTLVULN-1860, an unauthenticated authentication bypass in the MX-ONE Service Node Manager that gives administrative access, Critical 9.4 (AV:N/PR:N/UI:N); vendor scopes the attacker to 'LAN network access', no CVE assigned yet, no exploitation stated, hotfixes available. See items[0]; suggested priority notable (high only if SNM/PM is reachable beyond the management LAN)."
+    prior_coverage_match: "none (store has only Mitel MiCollab 2026-07-24 and the Mitel row of the Brotli entry 2026-11-07)"
+  - id: "AVI-1502"
+    what: "CERT-FR CERTFR-2026-AVI-1502, Citrix XenServer; vendor CTX697316 (2026-11-10)"
+    disposition: below-bar
+    clause: "Not covered, but best vendor-stated severity is 'High' (no CVSS on the bulletin) and the one unauthenticated item, CVE-2026-102705, needs a position on the management network and lets an attacker 'eventually infer the Pool Secret'; the rest are authenticated host-admin privilege escalations or AMD CPU microcode items; no exploitation stated. Borderline-awareness only (hypervisor management plane, unauthenticated host compromise) - the main agent may fold it into a one-line watch item."
+    borderline: true
+    facts:
+      advisory: "Citrix CTX697316 'XenServer Security Update for Multiple Issues', initial publication 2026-11-10, Severity: High"
+      affected: "XenServer 8.4 and XenServer 9 (both)"
+      fixed: "updates pushed to the Early Access and Normal update channels of XenServer 8.4 and XenServer 9 (no per-build numbers on the bulletin); customers who wish rotate the Pool Secret"
+      cves:
+        - { cve: "CVE-2026-102705", note: "unauthenticated attacker on the management network may eventually infer the Pool Secret and so compromise the host", cvss: "not published by Citrix; CVE record not resolvable via cveawg (404), EUVD search (0 hits) or NVD API (0 results) at 03:33Z" }
+        - { cve: "CVE-2026-102706, CVE-2026-102707, CVE-2026-102708, CVE-2026-119779, CVE-2026-119780", note: "authenticated host administrator (Pool Operator, VM Power Administrator or VM Administrator) escalating to Pool Administrator, or any role terminating other roles' tasks" }
+        - { cve: "CVE-2024-21963, CVE-2024-36350, CVE-2024-36357, CVE-2026-0004", note: "AMD CPU issues mitigated via microcode + product code changes; hosts without AMD CPUs unaffected (Zen5 for the last three)" }
+      exploitation: "none stated on the bulletin; no KEV/EUVD exploited listing found for these CVEs in this run"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1502/", publisher: "CERT-FR", date: "2026-11-12", role: "corroborating", body_file: "E-certfr-1502.txt" }
+      - { url: "https://support.citrix.com/external/article/CTX697316/xenserver-security-update-for-multiple-issues", publisher: "Citrix (CTX697316)", date: "2026-11-10", role: "primary", body_file: "E-2-citrix-ctx697316-ext.txt" }
+    evidence:
+      - { quote: "An issue has been identified that may allow an unauthenticated attacker on the management network to eventually infer the Pool Secret and so compromise the host.", attribution: "Citrix", source_url: "https://support.citrix.com/external/article/CTX697316/xenserver-security-update-for-multiple-issues", body_file: "E-2-citrix-ctx697316-ext.txt" }
+      - { quote: "**Severity**: High", attribution: "Citrix", source_url: "https://support.citrix.com/external/article/CTX697316/xenserver-security-update-for-multiple-issues", body_file: "E-2-citrix-ctx697316-ext.txt" }
+      - { quote: "These issues affect both XenServer 8.4 and XenServer 9.", attribution: "Citrix", source_url: "https://support.citrix.com/external/article/CTX697316/xenserver-security-update-for-multiple-issues", body_file: "E-2-citrix-ctx697316-ext.txt" }
+  - id: "AVI-1507"
+    what: "CERT-FR CERTFR-2026-AVI-1507, SonicWall SonicOS; vendor SNWLID-2026-0021 (2026-11-10)"
+    disposition: covered
+    clause: "It is SNWLID-2026-0021, an informational advisory (no CVE, no CVSS) on SonicOS Client DPI-SSL trusting the compromised eMudhra intermediate CA chain, fixed in 7.3.4-7015 (Gen7) / 8.2.3-8015 (Gen8); already carried by entry 2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates (cites the same PSIRT advisory and API URL, body names the two fixed builds). Not related to the SonicOS SSLVPN KEV entry of 2026-11-07."
+    covered_by: "2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1507/", publisher: "CERT-FR", date: "2026-11-12", role: "corroborating", body_file: "E-certfr-1507.txt" }
+      - { url: "https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021", publisher: "SonicWall PSIRT (API record of SNWLID-2026-0021)", date: "2026-11-10", role: "primary", body_file: "E-3-sonicwall-snwlid-2026-0021.json" }
+  - id: "AVI-1521"
+    what: "CERT-FR CERTFR-2026-AVI-1521, Palo Alto Networks (CVE-2026-0323 to -0331, PAN-SA-2026-0014 and 2026-11-11 third-party/Chromium rows)"
+    disposition: below-bar
+    clause: "All nine PAN advisories read in full: every row is Severity LOW or MEDIUM by Palo Alto's own rating, 'not aware of any malicious exploitation' on all nine. Highest-impact unauthenticated item is CVE-2026-0328 (GlobalProtect portal/gateway authentication bypass to an unauthorized VPN connection, CVSS-B 7.0 / CVSS-BT 2.7, only where third-party VPN clients are enabled); CVE-2026-0330 is authenticated Panorama RCE (Medium, management-interface exposure); CVE-2026-0326/-0329 dataplane buffer overflows are DoS/memory-corruption (CVSS-B 6.3 / 8.2), CVE-2026-0331 is dataplane information disclosure (CVSS-B 8.7). PAN-SA-2026-0014 is the monthly Chromium roll-up (exploit maturity UNREPORTED). Consistent with S1's 'PAN-OS monthly all low/medium'. Fixed trains: PAN-OS 10.2.18-h14, 11.1.16-h5, 11.2.16-h2, 12.1.10-h4, 12.2.4-h2 (CVE-2026-0328 also lists earlier h-trains)."
+    facts:
+      rows:
+        - { cve: "CVE-2026-0323", product: "Checkov by Prisma Cloud < 3.4.2", type: "SSRF (local unauthenticated)", cvss: "CVSS-B 4.8 / BT 1.1", severity: "LOW" }
+        - { cve: "CVE-2026-0324", product: "GlobalProtect App (OPSWAT MetaDefender SDK < 4.3.4822, Windows)", type: "local privilege escalation to SYSTEM", cvss: "CVSS-B 8.5 / BT 5.9", severity: "MEDIUM" }
+        - { cve: "CVE-2026-0325", product: "PAN-OS GlobalProtect gateway", type: "authenticated IP-restriction bypass", cvss: "CVSS-B 5.3 / BT 1.3", severity: "LOW" }
+        - { cve: "CVE-2026-0326", product: "PAN-OS protocol/service processing (ESP authentication NONE condition)", type: "buffer overflow, unauthenticated, crash or memory corruption", cvss: "CVSS-B 6.3 / BT 1.7", severity: "LOW" }
+        - { cve: "CVE-2026-0327", product: "PAN-OS GlobalProtect gateway", type: "authenticated privilege escalation", cvss: "CVSS-B 6.0 / BT 2.3", severity: "LOW" }
+        - { cve: "CVE-2026-0328", product: "PAN-OS GlobalProtect portal and gateway (third-party VPN clients enabled)", type: "unauthenticated authentication bypass to unauthorized VPN connection", cvss: "CVSS-B 7.0 / BT 2.7", severity: "LOW" }
+        - { cve: "CVE-2026-0329", product: "PAN-OS dataplane", type: "buffer overflow DoS, unauthenticated", cvss: "CVSS-B 8.2 / BT 4.6", severity: "MEDIUM" }
+        - { cve: "CVE-2026-0330", product: "PAN-OS on Panorama", type: "authenticated administrator RCE as root", cvss: "not extracted", severity: "MEDIUM" }
+        - { cve: "CVE-2026-0331", product: "PAN-OS dataplane", type: "unauthenticated information disclosure", cvss: "CVSS-B 8.7 / BT 6.6", severity: "MEDIUM" }
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1521/", publisher: "CERT-FR", date: "2026-11-12", role: "corroborating", body_file: "E-certfr-1521.txt" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-0328", publisher: "Palo Alto Networks PSIRT", date: "2026-11-11", role: "primary", body_file: "E-4-pan-cve-2026-0328.txt" }
+      - { url: "https://security.paloaltonetworks.com/PAN-SA-2026-0014", publisher: "Palo Alto Networks PSIRT", date: "2026-11-11", role: "primary", body_file: "E-4-pan-sa-2026-0014.txt" }
+    evidence:
+      - { quote: "enables an unauthenticated user to bypass security restrictions and establish an unauthorized VPN connection.", attribution: "Palo Alto Networks", source_url: "https://security.paloaltonetworks.com/CVE-2026-0328", body_file: "E-4-pan-cve-2026-0328.txt" }
+      - { quote: "### Severity: LOW, Suggested Urgency: MODERATE", attribution: "Palo Alto Networks", source_url: "https://security.paloaltonetworks.com/CVE-2026-0328", body_file: "E-4-pan-cve-2026-0328.txt" }
+      - { quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue.", attribution: "Palo Alto Networks", source_url: "https://security.paloaltonetworks.com/CVE-2026-0328", body_file: "E-4-pan-cve-2026-0328.txt" }
+  - id: "AVI-1501"
+    what: "CERT-FR CERTFR-2026-AVI-1501, Check Point (cites sk1000302 'du 11 novembre 2026'; CVE-2026-109618 / CVE-2026-109619)"
+    disposition: covered
+    clause: "Same PHP2Shell flaws as the published entry 2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways (no new CVE). BUT sk1000302 now carries a delta the entry lacks (page data lastModified 2026-11-12): the fix is in the Jumbo Hotfix Accumulators (R82.20 from Take 14, R82.10 from Take 52, R82 from Take 132, R81.20 from Take 174) and Spark's fixed builds are stated as R82.00.11 from B998002843 and R81.10.17 from B996005005, whereas the entry records builds 998002823 and 996004992 and 'planned for the Jumbo Hotfix Accumulators of 2026-11-11'. Return as update-of (items[1]); not a new entry."
+    covered_by: "2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways"
+    novelty: "update-of:2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways"
+  - id: "checkmk"
+    what: "Checkmk 2.5.0p19 / 2.4.0p40 (heise 2026-11-12; werks #22624, #17994, #22120; CVE-2026-120495, CVE-2026-121374, CVE-2026-118965)"
+    disposition: below-bar
+    clause: "Checkmk's own werks confirm all three are CVSS 4.0 9.4 with PR:L (none is unauthenticated): #22624 needs a compromised monitored host (root-level) to plant crafted Robotmk agent data plus automatic service discovery or an admin confirming the new services; #17994 needs a user allowed to edit rules in one folder (by default includes the 'Normal monitoring user' role) and the site does not need to monitor Kubernetes; #22120 needs a malicious or compromised remote site (every setup with potentially untrusted remote sites). Not unauthenticated, not exploited, not covered (S1 dropped it). Awareness-grade patch item only; Checkmk is common in DACH IT operations, so a one-line watch mention is the ceiling."
+    borderline: true
+    facts:
+      fixed: "2.5.0p19 and 2.4.0p40 (and 3.0.0b1 not yet released); 2.3.0 is EOL and affected with no fix (migrate)"
+      cves:
+        - { cve: "CVE-2026-120495", werk: 22624, cvss: "9.4 CRITICAL (CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)", type: "path traversal in Robotmk HTML log test service -> arbitrary code execution", auth: "needs crafted agent output from a compromised monitored host (usually root) + auto service discovery or admin confirmation; mitigation until patch: disable 'Monitor undecided services' / 'Periodic service discovery' (heise reading of the Checkmk guidance)" }
+        - { cve: "CVE-2026-121374", werk: 17994, cvss: "9.4 Critical (same vector, PR:L)", type: "Kubernetes special agent option injection (--profile) -> arbitrary file write -> code execution as site user", auth: "user allowed to edit rules in at least one folder; found by internal review" }
+        - { cve: "CVE-2026-118965", werk: 22120, cvss: "9.4 CRITICAL (same vector, PR:L)", type: "unsanitized target filename in remote-site host-label response -> arbitrary file write on the central site -> code execution", auth: "malicious/compromised remote site; reported via security disclosure" }
+      exploitation: "none stated by Checkmk or heise"
+    sources:
+      - { url: "https://www.heise.de/news/Monitoring-Software-Checkmk-Updates-schliessen-kritische-Codeschmuggel-Lecks-11522043.html", publisher: "heise online", date: "2026-11-12", role: "corroborating", body_file: "E-6-heise-checkmk.txt" }
+      - { url: "https://checkmk.com/werk/22624", publisher: "Checkmk (Werk #22624)", date: "2026-11-02", role: "primary", body_file: "E-6-checkmk-werk-22624.txt" }
+      - { url: "https://checkmk.com/werk/17994", publisher: "Checkmk (Werk #17994)", date: "2026-11-03", role: "primary", body_file: "E-6-checkmk-werk-17994.txt" }
+      - { url: "https://checkmk.com/werk/22120", publisher: "Checkmk (Werk #22120)", date: "2026-10-29", role: "primary", body_file: "E-6-checkmk-werk-22120.txt" }
+    evidence:
+      - { quote: "(`CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H`) and assigned `CVE-2026-120495`.", attribution: "Checkmk", source_url: "https://checkmk.com/werk/22624", body_file: "E-6-checkmk-werk-22624.txt" }
+      - { quote: "To exploit the vulnerability, a host running a Checkmk agent has to be compromised to add crafted agent output.", attribution: "Checkmk", source_url: "https://checkmk.com/werk/22624", body_file: "E-6-checkmk-werk-22624.txt" }
+      - { quote: "An attacker needs a user who may edit rules in at least one folder.", attribution: "Checkmk", source_url: "https://checkmk.com/werk/17994", body_file: "E-6-checkmk-werk-17994.txt" }
+      - { quote: "Every setup with potentially untrusted remote sites is affected.", attribution: "Checkmk", source_url: "https://checkmk.com/werk/22120", body_file: "E-6-checkmk-werk-22120.txt" }
+  - id: "zoom"
+    what: "Zoom Workplace for Windows ZSB-26023 (CVE-2026-108186) and ZSB-26024 (CVE-2026-108187) (heise 2026-11-12; bulletins revision 1.0 of 2026-11-10)"
+    disposition: below-bar
+    clause: "Vendor bulletins read: CVE-2026-108186 CVSS 3.1 9.6 Critical (AV:N/AC:L/PR:N/UI:R/S:C), 'unauthenticated ... escalation of privilege via network access', Zoom Workplace for Windows 7.1.0 up to before 7.1.8, found by Zoom Offensive Security; CVE-2026-108187 8.1 High (UI:R), before 7.1.5, reported by shmoul. Desktop client (not an internet-facing service), user interaction required, bulletins give no mechanism, no exploitation stated (heise: 'zumindest schreibt Zoom nichts Derartiges'), not in KEV in this run, not covered in the store. Fails the exploited/unauth-RCE-on-exposed-service bar; a patch-hygiene awareness line at most (Zoom client current build 7.2.5 per heise)."
+    borderline: true
+    facts:
+      cves:
+        - { cve: "CVE-2026-108186", zsb: "ZSB-26023", cvss: "9.6 Critical, CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H", type: "improper input validation -> escalation of privilege via network access (unauthenticated)", affected: "Zoom Workplace for Windows starting on version 7.1.0 and before version 7.1.8", fixed: "7.1.8 (heise: download currently 7.2.5)" }
+        - { cve: "CVE-2026-108187", zsb: "ZSB-26024", cvss: "8.1 High, CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N", type: "origin validation error -> escalation of privilege via network access (unauthenticated)", affected: "Zoom Workplace for Windows before version 7.1.5", fixed: "7.1.5" }
+      exploitation: "none stated by Zoom; heise reads the bulletins as not yet abused"
+    sources:
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26023/", publisher: "Zoom (ZSB-26023)", date: "2026-11-10", role: "primary", body_file: "E-7-zoom-zsb-26023.txt" }
+      - { url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26024/", publisher: "Zoom (ZSB-26024)", date: "2026-11-10", role: "primary", body_file: "E-7-zoom-zsb-26024.txt" }
+      - { url: "https://www.heise.de/news/Zoom-fuer-Windows-Angreifer-koennen-Rechte-ueber-das-Netz-ausweiten-11522500.html", publisher: "heise online", date: "2026-11-12", role: "corroborating", body_file: "E-7-heise-zoom.txt" }
+    evidence:
+      - { quote: "Improper Input Validation in Zoom Workplace for Windows may allow an unauthenticated user to conduct an escalation of privilege via network access.", attribution: "Zoom", source_url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26023/", body_file: "E-7-zoom-zsb-26023.txt" }
+      - { quote: "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H", attribution: "Zoom", source_url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26023/", body_file: "E-7-zoom-zsb-26023.txt" }
+      - { quote: "Zoom Workplace for Windows starting on version 7.1.0 and before version 7.1.8", attribution: "Zoom", source_url: "https://www.zoom.com/en/trust/security-bulletin/zsb-26023/", body_file: "E-7-zoom-zsb-26023.txt" }
+      - { quote: "Beide Schwachstellen werden offenbar noch nicht im Netz missbraucht", attribution: "heise online", source_url: "https://www.heise.de/news/Zoom-fuer-Windows-Angreifer-koennen-Rechte-ueber-das-Netz-ausweiten-11522500.html", body_file: "E-7-heise-zoom.txt" }
+  - id: "gpustack"
+    what: "SANS ISC diary 33514 (2026-11-12): exploit attempts against GPUStack authentication bypass CVE-2026-102895"
+    disposition: below-bar
+    clause: "Product-class check only: GPUStack is an open-source GPU-cluster manager for AI workloads; the diary shows no Swiss public-sector or other constituency product class, so constituency relevance is nil on this evidence. Facts if the main agent wants a one-line mention: the flaw IS exploited (CISA KEV added 2026-11-09, due 2026-11-12; GHSA says exploited in the wild against v2.1.1 with attacker-created custom backends running reverse shells; ISC sees header-spoofing probes in-window), but no entry exists in the store and the 2026-11-10 fire already returned it without publication. The in-window ISC probe observation is a fresh scanning datapoint, not a delta that changes constituency relevance."
+    borderline: true
+    facts:
+      cve: "CVE-2026-102895 (CWE-287/290/346), GPUStack before 2.2.0; fixed 2.2.0 (loopback auto-admin path removed, client-IP and forwarding-header handling hardened); GHSA-gj9m-f8ph-pmhr published 2026-07-31"
+      mechanism: "get_current_user (gpustack/api/auth.py) treats a request whose source is loopback as the built-in administrator when force_auth_localhost is False (default); source can appear loopback either because a same-host reverse proxy is the TCP peer or via a forged X-GPUStack-Real-IP: 127.0.0.1 header"
+      impact: "unauthenticated admin: user/model changes, persistent admin API-key creation, worker and cloud-provider secret disclosure, code execution through POST /v2/inference-backends/from-yaml"
+      exploitation: "CISA KEV (dateAdded 2026-11-09, knownRansomwareCampaignUse Unknown); GHSA: observed exploited in the wild against a v2.1.1 deployment; SANS ISC 2026-11-12: probes sending the spoofed header against a honeypot, same source also looking for /v1/models-style AI endpoints"
+      cvss: "not stated on the pages read (CVE assigned 2026-11-04 per ISC)"
+      techniques: [T1190]
+    sources:
+      - { url: "https://isc.sans.edu/diary/rss/33514", publisher: "SANS Internet Storm Center", date: "2026-11-12", role: "primary", body_file: "E-8-sans-isc-gpustack-33514.txt" }
+      - { url: "https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr", publisher: "GPUStack project (GitHub security advisory)", date: "2026-07-31", role: "primary", body_file: "E-8-gpustack-ghsa.txt" }
+      - { url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", publisher: "CISA Known Exploited Vulnerabilities catalog", date: "2026-11-09", role: "corroborating", body_file: "E-8-kev.json" }
+    evidence:
+      - { quote: "CVE-2026-102895 is a trivial authentication-bypass vulnerability.", attribution: "SANS ISC", source_url: "https://isc.sans.edu/diary/rss/33514", body_file: "E-8-sans-isc-gpustack-33514.txt" }
+      - { quote: "This vulnerability has been observed exploited in the wild against a v2.1.1", attribution: "GPUStack GHSA", source_url: "https://github.com/gpustack/gpustack/security/advisories/GHSA-gj9m-f8ph-pmhr", body_file: "E-8-gpustack-ghsa.txt" }
+      - { quote: "GPUStack contains an improper authentication vulnerability which could allow unauthenticated administrative access, including user and model changes, persistent administrator API-key creation, disclosure of worker and cloud-provider secrets, and code execution through POST /v2/inference-backends/from-yaml.", attribution: "CISA KEV", source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json", body_file: "E-8-kev.json" }
+  - id: "ncsc-csh"
+    what: "NCSC.ch / BACS Cyber Security Hub, posts dated 2026-11-12 or 2026-11-13"
+    disposition: covered
+    clause: "`ncsc-csh recent 15` returned a parsable list on retry (S1's empty result was transient). Newest posts: 13175 Citrix NetScaler (2026-11-12T15:50Z, known), 13174 PTC Windchill/FlexPLM CVE-2026-126325 (2026-11-12T15:17Z, known), 13171 Apache HTTP Server CVE-2026-119618 (2026-11-12T06:56Z, covered by entry 2026-11-12/cve-2026-119618-apache-httpd-mod-http2-assign-headers-rce). Nothing dated 2026-11-13; no other 2026-11-12 post; post ids 13170, 13172, 13173 are absent from the public listing (not enumerated, never guessed). Nothing new to return."
+    covered_by: "2026-11-12/cve-2026-119618-apache-httpd-mod-http2-assign-headers-rce (13171); 13174 and 13175 known to the main agent"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13171", publisher: "NCSC.ch / BACS Cyber Security Hub", date: "2026-11-12", role: "primary", body_file: "E-5-ncsc-csh-recent15.json" }
+
+# ---------------------------------------------------------------------------
+# Records for the main agent
+# ---------------------------------------------------------------------------
+items:
+  # ---- 0: NEW CANDIDATE ---------------------------------------------------
+  - title: "Mitel MiVoice MX-ONE (MISA-2026-0011): unauthenticated authentication bypass in the Service Node Manager rated Critical 9.4, plus an administrator command injection and a Provisioning Manager information disclosure; hotfixes out, no CVE yet"
+    disposition: candidate
+    borderline: true
+    borderline_reason: "Unauthenticated auth bypass to administrative access at CVSS 9.4 on a PBX/UC platform, but Mitel scopes the attacker to 'LAN network access', no CVE assigned, no exploitation stated, supported-version hotfixes available. Clears the unauthenticated-admin-takeover leg of the bar; whether it is internet-facing is deployment-dependent, so the main agent should weigh notable vs high."
+    suggested_priority: notable
+    suggested_priority_note: "Raise to high only if the constituency runs MX-ONE with the Service Node Manager / Provisioning Manager web interfaces reachable from untrusted segments; Mitel's own text limits the attacker to LAN access."
+    novelty: new
+    sources:
+      - { url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", publisher: "Mitel PSIRT (MISA-2026-0011)", date: "2026-11-11", role: "primary", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1516/", publisher: "CERT-FR (CERTFR-2026-AVI-1516)", date: "2026-11-12", role: "corroborating", body_file: "E-certfr-1516.txt" }
+    discovery_trace: "first seen at: S2 lead list (work/2026-11-13T0256Z-intel/findings.S2.yaml, CERT-FR 2026-11-12 avis list) -> CERT-FR feed via `cert-fr avis-recent 60` (dated 2026-11-12) -> avis page https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1516/ (extract) -> primary: Mitel PSIRT https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011 (extract; listing page https://www.mitel.com/support/security-advisories shows it as MISA-2026-0011, 'CVEs requested', critical)"
+    summary: |
+      Mitel PSIRT's MISA-2026-0011 (first issue and last update 2026-11-11, revision 1.0) covers three flaws in MiVoice MX-ONE, tracked only by Mitel's internal ids because the CVE ids are requested but not yet assigned.
+      MTLVULN-1860, the one that matters, is an authentication bypass in the Service Node Manager component: an unauthenticated attacker with LAN network access can obtain unauthorized administrative access and view and modify PBX telephony routing and service configuration (CVSS 3.1 9.4 Critical, AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H).
+      MTLVULN-1859 is a command injection in the Service Node Manager through insufficient parameter sanitization, requiring administrative privileges, giving operating-system command execution as the management service account (8.2 High, PR:H, scope changed); MTLVULN-1858 is an improper-authorization information disclosure in the Provisioning Manager for an authenticated attacker of any privilege level with internal LAN access to read system configuration data (6.5 Medium).
+      Mitel states that exploiting them together can significantly amplify the impact, potentially resulting in a critical severity; read together, the unauthenticated bypass in the Service Node Manager hands over the administrative position the command injection otherwise needs.
+      Affected: MiVoice MX-ONE 8.0 (8.0.0.33) to 8.2 SP1 (8.2.1.0.14), supported versions only. Fix: the MX-ONE PM/SNM hot fixes 8.2 SP0 HF5 and 8.2 SP1 HF2 or later, or an upgrade to a later release; the issues are corrected in MX-ONE 8.3 once available. Mitel's KB000129185 carries the detail and sits behind partner or customer login.
+      The Mitel page states no exploitation, and CERT-FR's avis (which lists remote arbitrary code execution, confidentiality and security-policy-bypass risks) adds none. CERT-FR's affected-version wording ('8.0.0.33 postérieures à 8.2.1.0.14 et antérieures aux correctifs') reads inverted next to Mitel's table; Mitel's range is the authority.
+      Context for the main agent: this is the second MX-ONE authentication-bypass advisory in a year (MISA-2025-0009, CVE-2025-67822, Provisioning Manager, also Critical, listed on the same Mitel index) and part of a dense 2026 Mitel stream (MiCollab MISA-2026-0002/0005/0006 critical, OpenScape MISA-2026-0009 high); the store covers Mitel MiCollab (2026-07-24) and the Brotli row (2026-11-07) but no MX-ONE.
+    cve_table:
+      - { cve: "MTLVULN-1860 (CVE requested, not assigned)", product: "Mitel MiVoice MX-ONE, Service Node Manager", cvss: "9.4 Critical (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H)", epss: null, kev: false, exploited: "none stated", affected: "MX-ONE 8.0 (8.0.0.33) to 8.2 SP1 (8.2.1.0.14)", fixed: "MX-ONE PM/SNM 8.2 SP0 HF5 and 8.2 SP1 HF2 or later; upgrade to a later release; corrected in 8.3 (not yet released)", type: "authentication bypass (improper authentication controls)", vector: "network, LAN access per vendor", auth: "pre-auth", source: "Mitel MISA-2026-0011" }
+      - { cve: "MTLVULN-1859 (CVE requested, not assigned)", product: "Mitel MiVoice MX-ONE, Service Node Manager", cvss: "8.2 High (AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:L/A:L)", epss: null, kev: false, exploited: "none stated", affected: "same as above", fixed: "same as above", type: "command injection (insufficient parameter sanitization)", vector: "network, LAN access per vendor", auth: "admin privileges required", source: "Mitel MISA-2026-0011" }
+      - { cve: "MTLVULN-1858 (CVE requested, not assigned)", product: "Mitel MiVoice MX-ONE, Provisioning Manager", cvss: "6.5 Medium (AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N)", epss: null, kev: false, exploited: "none stated", affected: "same as above", fixed: "same as above", type: "improper authorization, information disclosure of system configuration data", vector: "network, internal LAN per vendor", auth: "authenticated, any privilege level", source: "Mitel MISA-2026-0011" }
+    region_nexus: "global; Mitel MX-ONE is deployed in European public-sector and enterprise telephony; no Swiss-specific deployment evidence in the sources"
+    primary_sector_nexus: "indirect (telephony and unified-communications platform of public administrations and emergency-adjacent services if MX-ONE is used; not verified)"
+    sector: "public-sector (indirect)"
+    cves: []
+    techniques: [T1190, T1059]
+    technique_notes: "T1190: unauthenticated exploitation of the network-reachable Service Node Manager management service for administrative access (vendor-stated AV:N, PR:N); T1059: operating-system command execution via the administrator-level command injection (MTLVULN-1859)."
+    affected_products: ["Mitel MiVoice MX-ONE"]
+    entity_keys: []
+    exposure_facts: "Components: MX-ONE Service Node Manager (SNM) and Provisioning Manager (PM). Affected builds 8.0 (8.0.0.33) to 8.2 SP1 (8.2.1.0.14) of supported releases; end-of-support versions are not assessed by Mitel. Attack position per Mitel: network access from the LAN to the SNM/PM management interfaces, no credentials for the bypass. Defenders can read the installed MX-ONE release from the PBX administration and check that the hotfix level is 8.2 SP0 HF5 or 8.2 SP1 HF2 (or later); whether the SNM/PM web interfaces are reachable from user or guest VLANs, partner networks or the internet is the exposure question the vendor text leaves open."
+    detection_facts: "The sources give no indicators, no exploitation statement and no post-compromise check. Inference only (not source-stated): after an unauthenticated administrative takeover, review SNM/PM web access logs for requests to administrative functions without a preceding login, new or changed administrator accounts, changes to PBX routing and service configuration, and operating-system commands run under the management service account."
+    triage_note: "No behavioral description or benign-lookalike discriminator in the sources; omit Triage."
+    evidence:
+      - { quote: "An authentication bypass vulnerability, MTLVULN-1860, has been identified in the Service Node Manager component of MiVoice MX-ONE, which, if successfully exploited, could allow an unauthenticated attacker with LAN network access to conduct an unauthorized access attack due to improper authentication controls.", attribution: "Mitel PSIRT (MISA-2026-0011)", source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { quote: "A successful exploit of this vulnerability could allow an attacker to gain unauthorized administrative access and view and modify PBX telephony routing and service configuration. The vulnerability severity is rated as critical.", attribution: "Mitel PSIRT (MISA-2026-0011)", source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { quote: "| MiVoice MX-ONE | MTLVULN-1860 | Critical / 9.4 | AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H |", attribution: "Mitel PSIRT (MISA-2026-0011)", source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { quote: "Note: The above issue is referenced here by our internal tracking ID. A CVE identifier has been requested but is not yet assigned.", attribution: "Mitel PSIRT (MISA-2026-0011)", source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { quote: "Mitel has provided Hot Fixes MX-ONE PM/SNM 8.2 SP0 HF5 and 8.2 SP1 HF2, or later, that address these vulnerabilities.", attribution: "Mitel PSIRT (MISA-2026-0011)", source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { quote: "Exploiting these vulnerabilities together can significantly amplify their impact, potentially resulting in a critical severity.", attribution: "Mitel PSIRT (MISA-2026-0011)", source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0011", body_file: "E-1-mitel-misa-2026-0011.txt" }
+      - { quote: "Exécution de code arbitraire à distance", attribution: "CERT-FR", source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1516/", body_file: "E-certfr-1516.txt" }
+    verification: MULTI-SOURCE
+    verification_note: "Mitel PSIRT is the disclosing party for its own product (Admiralty A); CERT-FR (carve-out authority) independently restates it from the same vendor primary, so this is vendor + national CERT, not two independent observations. CVE ids not assigned, so no NVD check possible."
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+    actions_suggestion: "Empty by default; if kept, the only do-now task is hotfix verification on MX-ONE 8.0-8.2 SP1 plus confirming the SNM/PM interfaces are not reachable from untrusted segments - derived from the vendor mechanics, not generic advice."
+
+  # ---- 1: UPDATE-OF on a covered entry -----------------------------------
+  - title: "Check Point sk1000302 (PHP2Shell): Jumbo Hotfix Accumulator takes now carry the fix; Spark fixed builds restated"
+    disposition: covered-with-delta
+    novelty: "update-of:2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways"
+    suggested_record_type: update
+    sources:
+      - { url: "https://support.checkpoint.com/results/sk/sk1000302", publisher: "Check Point (sk1000302, page data lastModified 2026-11-12)", date: "2026-11-12", role: "primary", body_file: "E-5-checkpoint-sk1000302-nextdata.txt" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1501/", publisher: "CERT-FR (CERTFR-2026-AVI-1501)", date: "2026-11-12", role: "corroborating", body_file: "E-certfr-1501.txt" }
+    discovery_trace: "first seen at: S2 lead list (findings.S2.yaml, CERT-FR 2026-11-12 avis list) -> CERT-FR avis https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-1501/ (extract; cites sk1000302 'du 11 novembre 2026') -> primary: https://support.checkpoint.com/results/sk/sk1000302 (extract returned the Next.js page; the advisory text and lastModified were read from its __NEXT_DATA__ JSON per the checkpoint-support recipe; saved text is a tag-stripped rendering of that JSON, body_file below)"
+    summary: |
+      Check Point's sk1000302 now reads lastModified 2026-11-12 and its Solution section says the fix is included in the Jumbo Hotfix Accumulators: R82.20 starting from Take 14, R82.10 from Take 52, R82 from Take 132 and R81.20 from Take 174, and in Spark Firewalls R82.00.11 starting from build B998002843 and R81.10.17 starting from build B996005005; the stand-alone hotfix download remains for customers who do not upgrade and is stated as compatible with all Jumbo takes, requires a reboot, and must be installed on each gateway, cluster member, security-group member or standalone server.
+      The published entry records the Jumbo fix as 'planned for the Jumbo Hotfix Accumulators of 2026-11-11' and the Spark fixed builds as 998002823 (R82.00.11) and 996004992 (R81.10.17); the page now names different Spark build numbers (B998002843, B996005005) - a Spark unit on the older build numbers should be re-checked against the sk. The R81.20 Mobile Access condition on the page is unchanged: the standalone hotfix must sit on Jumbo Take 166 or higher where the Mobile Access Portal is used, and R81.20 Take 174 now includes the fix.
+      The page still carries no exploitation statement for Check Point gateways, the affected-feature list (Mobile Access Portal, SSL Network Extender VPN, SAML-realm VPN, Identity Awareness captive portal, UserCheck, Zero Phishing) is unchanged, and the last dated note remains 2026-10-29 (R81.10 hotfix). No new CVE; CERT-FR's avis restates the same CVE-2026-109618 / CVE-2026-109619 (CVSS 9.2 per Check Point).
+      Caveat: the exact date within 2026-11-12 on which the Solution section changed is not on the page (no dated note for it); the delta is established by comparing the page to the published entry.
+    cve_table:
+      - { cve: "CVE-2026-109618", product: "Check Point Force, Spark and Cloud firewalls (PHP)", cvss: "9.2 (Check Point)", epss: null, kev: true, exploited: "CISA KEV (PHP flaw); sk makes no statement on Check Point gateways", affected: "R81.20, R82, R82.10, R82.20; Spark R81.10.x, R82.00.x; R80-R81.10 and Spark R77.20.x/R80.20.x end of support", fixed: "Jumbo Hotfix Accumulator R82.20 from Take 14, R82.10 from Take 52, R82 from Take 132, R81.20 from Take 174; Spark R82.00.11 from B998002843, R81.10.17 from B996005005; or standalone hotfix", type: "memory-corruption (PHP)", vector: "network, firewall web interfaces", auth: "pre-auth", source: "Check Point sk1000302" }
+      - { cve: "CVE-2026-109619", product: "same", cvss: "9.2 (Check Point)", epss: null, kev: true, exploited: "same", affected: "same", fixed: "same", type: "memory-corruption (PHP)", vector: "network", auth: "pre-auth", source: "Check Point sk1000302" }
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190]
+    affected_products: ["Check Point Force Firewalls", "Check Point Spark Firewalls", "Check Point Cloud Firewall"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    fields_that_moved: [summary, cves, body, evidence, sources, actions]
+    evidence:
+      - { quote: "Jumbo Hotfix Accumulator for R82.20 starting from Take 14", attribution: "Check Point (sk1000302)", source_url: "https://support.checkpoint.com/results/sk/sk1000302", body_file: "E-5-checkpoint-sk1000302-nextdata.txt" }
+      - { quote: "Jumbo Hotfix Accumulator for R81.20 starting from Take 174", attribution: "Check Point (sk1000302)", source_url: "https://support.checkpoint.com/results/sk/sk1000302", body_file: "E-5-checkpoint-sk1000302-nextdata.txt" }
+      - { quote: "Spark Firewalls R82.00.11 starting from B998002843", attribution: "Check Point (sk1000302)", source_url: "https://support.checkpoint.com/results/sk/sk1000302", body_file: "E-5-checkpoint-sk1000302-nextdata.txt" }
+      - { quote: "B996005005", attribution: "Check Point (sk1000302)", source_url: "https://support.checkpoint.com/results/sk/sk1000302", body_file: "E-5-checkpoint-sk1000302-nextdata.txt" }
+      - { quote: "This Hotfix is compatible with all Jumbo Hotfix Accumulator Takes.", attribution: "Check Point (sk1000302)", source_url: "https://support.checkpoint.com/results/sk/sk1000302", body_file: "E-5-checkpoint-sk1000302-nextdata.txt" }
+    verification: SINGLE-SOURCE-VENDOR
+    verification_note: "Vendor is the disclosing party for its own advisory; CERT-FR restates the CVEs and the sk citation but not the Jumbo take numbers."
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+
+watchlist_sweep: { duty: none, note: "not applicable to DR-E" }
+
+out_of_scope_leads:
+  - "CERT-FR 2026-11-12 avis also exist for Ivanti, GitLab, Axis, Xen, Traefik, Citrix Secure Access client, HPE Aruba Private 5G Core, Laravel, NetApp ONTAP tools for VMware vSphere 10, MongoDB, Kaspersky, Fortinet, Mozilla and Intel (titles only, listed from `cert-fr avis-recent 60`; deliberately not read - outside the DR-E scope). Ivanti EPM CVE-2026-121653 and Fortinet are already covered; the rest were S1/S2 territory."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "sonicwall-psirt"
+    reason: "vuln-detail SPA returns a 729-byte JS shell on `url`, and `extract` found no readable body with the reader pool dead (HTTP 402); the documented API recipe (psirtapi.global.sonicwall.com vulndetail JSON) worked. Recipe note stays valid; nothing to change."
+  - source_id: "cve-resolution"
+    reason: "CVE-2026-102705 (Citrix XenServer) was not resolvable on cveawg.mitre.org (404), the ENISA EUVD search (0 hits) or the NVD REST API (0 results) at 2026-11-13T03:33Z; no CVSS was found from any source (Citrix gives only 'High')."
+  - source_id: "jina-reader-pool"
+    reason: "All jina keys report balance exhausted (HTTP 402); one `extract` of a cve.org page fell through to it and returned only a page title. No finding depended on it."
+
+fetch_failures: []
+
+source_ledger:
+  - { id: "cert-fr", tier: essential, attempted: true, transport: "cert-fr avis-recent 60 + extract per avis", horizon_hours: 26, in_horizon_items: 5, returned: 2, note: "5 requested avis read: 1 new candidate (Mitel), 1 update-of delta (Check Point), 3 dispositioned" }
+  - { id: "mitel-psirt", tier: standard, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 1, returned: 1 }
+  - { id: "citrix-netscaler-security-bulletins", tier: standard, attempted: true, transport: "extract external/article/CTX697316 (the kbsearch SPA URL returned a Loading shell)", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "below-bar" }
+  - { id: "sonicwall-psirt", tier: standard, attempted: true, transport: "psirtapi vulndetail JSON via url --direct", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "covered" }
+  - { id: "checkpoint-support", tier: standard, attempted: true, transport: "extract (Next.js page, __NEXT_DATA__ JSON)", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "update-of delta" }
+  - { id: "paloalto-psirt", tier: standard, attempted: true, transport: "extract x10 (9 CVE pages + PAN-SA-2026-0014)", horizon_hours: 26, in_horizon_items: 10, returned: 0, note: "below-bar" }
+  - { id: "checkmk-werks", tier: standard, attempted: true, transport: "extract x3 werks + heise", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "below-bar (PR:L)" }
+  - { id: "zoom-security-bulletins", tier: standard, attempted: true, transport: "extract x2 + heise", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "below-bar" }
+  - { id: "sans-isc", tier: standard, attempted: true, transport: "extract diary 33514 + GHSA + cisa-kev bridge", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "below-bar on constituency relevance" }
+  - { id: "ncsc-ch-csh", tier: essential, attempted: true, transport: "bridge ncsc-csh recent 15", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "all three 2026-11-12 posts known or covered; nothing dated 2026-11-13" }
