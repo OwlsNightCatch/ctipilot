@@ -1,0 +1,409 @@
+---
+schema: 1
+kind: incident
+title: "eMudhra: the private keys of eight ECDSA intermediate CA certificates were trivially recoverable, so anyone could forge trusted HTTPS certificates, and eight RSA intermediates were revoked on 2026-11-07 for key handling eMudhra cannot show compliant; browsers block them, clients with their own trust store or no revocation checking need an update (CVE-2026-111943 in Go)"
+headline: "eMudhra: eight ECDSA CA keys guessable, eight RSA CAs revoked; Windows drops the rest 2026-11-16; update clients"
+summary: >
+  The private keys of eight eMudhra intermediate CA certificates were so weak that anyone could recover them and forge trusted HTTPS certificates for any site, and eMudhra's incident report of 2026-11-10 adds eight RSA intermediates revoked on 2026-11-07 because it cannot show their keys were handled as its policy requires. Browsers and the Apple, Microsoft and Google trust stores block the intermediates, and Microsoft removes the remaining eMudhra roots from Windows, Edge and WebView2 from 2026-11-16. Software with its own trust store or no revocation checking stays exposed until updated (Go, GitLab, Python, Java, macOS command-line tools, SonicWall DPI-SSL, Cisco IOS XE and ISE), and no exploitation is reported.
+discovered_at: "2026-10-21T03:43:00Z"
+updated_at: "2026-11-12T04:26:05Z"
+event_date: "2026-10-20"
+run_id: 2026-10-21T0256Z-intel
+priority: notable
+immediate_action: null
+tags: [supply-chain, patch-available]
+regions: [global]
+sectors: []
+entities: ["incident:emudhra-intermediate-ca-key-compromise-2026-10", "product:oracle-java-se", "product:oracle-graalvm-for-jdk", "product:openjdk", "product:cpython", "product:cisco-secure-firewall-management-center", "product:cisco-duo-access-gateway", "product:cisco-duo-network-gateway", "product:cisco-thousandeyes-enterprise-agent", "product:cisco-ios-xr-software", "product:microsoft-windows", "product:microsoft-edge", "product:gitlab", "product:cisco-identity-services-engine", "product:oracle-database-server", "product:oracle-autonomous-health-framework", "product:oracle-global-lifecycle-management-opatch", "product:oracle-hospitality-cruise-shipboard-property-management", "product:sonicwall-sonicos"]
+techniques: [T1557]
+affected_products: ["Oracle Java SE", "Oracle GraalVM for JDK", "OpenJDK", "CPython", "Cisco Secure Firewall Management Center", "Cisco Duo Access Gateway", "Cisco Duo Network Gateway", "Cisco ThousandEyes Enterprise Agent", "Cisco IOS XR Software", "Microsoft Windows", "Microsoft Edge", "GitLab", "Cisco Identity Services Engine", "Oracle Database Server", "Oracle Autonomous Health Framework", "Oracle Global Lifecycle Management OPatch", "Oracle Hospitality Cruise Shipboard Property Management", "Apple macOS", "Cisco IOS XE Software", "SonicWall SonicOS"]
+cves:
+  - id: CVE-2026-91403
+    cvss: "9.1 (CVSS 3.1)"
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available, mitigation-only]
+    affected: "Oracle Java SE 8u511, 8u511-perf, 11.0.33, 17.0.21, 21.0.13, 25.0.5, 27.0.1; Oracle GraalVM for JDK 17.0.21 and 21.0.13; Oracle GraalVM Enterprise Edition 21.3.20; OpenJDK 27.0.1, 25.0.5, 21.0.13, 17.0.21, 11.0.32.1, 8u504 and earlier"
+    fixed: "superseded by the Java updates of Oracle's Security Alert CVE-2026-114820 and the OpenJDK advisory of 2026-10-24: Oracle's second alert lists the builds 27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.33.0.2 and 8u511-b32 as affected, and OpenJDK says to act even on runtimes updated in the past few days"
+  - id: CVE-2026-114820
+    cvss: "9.1 (CVSS 3.1)"
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available, mitigation-only]
+    affected: "Oracle Java SE 8u511-b32, 8u511-perf-b32, 11.0.33.0.2, 17.0.21.0.2, 21.0.13.0.2, 25.0.5.0.2, 27.0.1.0.2; Oracle GraalVM for JDK 17.0.21.0.2 and 21.0.13.0.2; Oracle GraalVM Enterprise Edition 21.3.20.0.2; OpenJDK 27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.32.1, 8u504 and earlier; Oracle Database Server 19.3-19.32, 21.3-21.23 and 23.4.0-23.26.3 (RDBMS, Java; not applicable to client-only installations), Oracle Autonomous Health Framework Trace File Analyzer 26.3-26.10, Oracle Global Lifecycle Management OPatch 12.2.0.1.16-12.2.0.1.52 and Oracle Hospitality Cruise Shipboard Property Management Next-Gen SPMS 23.3.4-23.3.6 (revision 2 of 2026-10-30)"
+    fixed: "the Java updates of Oracle's Security Alert CVE-2026-114820 (build numbers in Oracle's Patch Availability Document) and the OpenJDK update whose release note names JDK-8395690; until updated, delete the cacerts aliases emsignrootcag1, emsignrootcag2, emsigneccrootcag3 and comodoaaaca or enable revocation checking; the incident tracker lists Oracle JDK 27.0.1.0.3, 25.0.5.0.3, 21.0.13.0.3, 17.0.21.0.3, 11.0.33.0.3 and 8u511 b33 as fixed and OpenJDK builds as pending"
+  - id: CVE-2026-115557
+    cvss: "9.4 (CVSS 4.0)"
+    epss: null
+    type: logic-flaw
+    vector: user-interaction
+    auth: pre-auth
+    status: [patch-available]
+    affected: "CPython 3.15.0 before 3.15.2, 3.14.0 before 3.14.10, 3.13.0 before 3.13.18, 3.12.0 before 3.12.16, every release before 3.11.18, and 3.16.0a1 before 3.16.0 per ENISA's record"
+    fixed: "Python 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18 carry the ssl denylist (Python Insider, 2026-10-26), which the post says makes normal uses of pip safe even if pip is not updated; Christian Heimes says in the announcement thread that pip before 26.2.2 keeps trusting the compromised intermediates whatever the system trust store holds, because it always loads its own vendored certifi"
+  - id: CVE-2026-111943
+    cvss: null
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "Go before 1.27.3 and 1.26.10 (crypto/x509 chain verification); GitLab CE and EE before 19.5.3, 19.4.5, 19.3.7, 19.2.10, 19.1.10, 19.0.11 and 18.11.14"
+    fixed: "Go 1.27.3 and 1.26.10, which block the intermediates in chain verification; GitLab 19.5.3, 19.4.5, 19.3.7, 19.2.10, 19.1.10, 19.0.11 and 18.11.14 (2026-10-29), with GitLab Runner and the AI Gateway updated separately"
+sources:
+  - url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/"
+    publisher: "Google (Chrome Root Program and Android Security)"
+    date: "2026-10-20"
+    role: primary
+  - url: "https://emudhra.we-have-a-problem.com/"
+    publisher: "Dennis Jackson (eMudhra intermediate CA compromise incident tracker)"
+    date: "2026-10-20"
+    role: primary
+  - url: "https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/"
+    publisher: "Mozilla Security Blog"
+    date: "2026-10-20"
+    role: corroborating
+  - url: "https://groups.google.com/g/golang-announce/c/66pojueaQek"
+    publisher: "Go team (golang-announce)"
+    date: "2026-10-20"
+    role: corroborating
+  - url: "https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/"
+    publisher: "BleepingComputer"
+    date: "2026-10-20"
+    role: corroborating
+  - url: "https://www.oracle.com/security-alerts/alert-cve-2026-91403.html"
+    publisher: "Oracle (Security Alert CVE-2026-91403)"
+    date: "2026-10-21"
+    role: primary
+  - url: "https://openjdk.org/groups/vulnerability/advisories/2026-10-21"
+    publisher: "OpenJDK (Vulnerability Advisory 2026/10/21)"
+    date: "2026-10-21"
+    role: primary
+  - url: "https://security-hub.ncsc.admin.ch/#/posts/13091"
+    publisher: "NCSC.ch Security Hub (advisory 13091)"
+    date: "2026-10-22"
+    role: corroborating
+  - url: "https://www.oracle.com/security-alerts/alert-cve-2026-114820.html"
+    publisher: "Oracle (Security Alert CVE-2026-114820)"
+    date: "2026-10-24"
+    role: primary
+  - url: "https://openjdk.org/groups/vulnerability/advisories/2026-10-24"
+    publisher: "OpenJDK (Vulnerability Advisory 2026/10/24)"
+    date: "2026-10-24"
+    role: primary
+  - url: "https://openjdk.org/emudhra"
+    publisher: "OpenJDK (Compromised Certificates and OpenJDK Java Runtimes)"
+    date: "2026-10-24"
+    role: corroborating
+  - url: "https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/"
+    publisher: "Python Software Foundation (security-announce, CVE-2026-115557)"
+    date: "2026-10-24"
+    role: primary
+  - url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-109299"
+    publisher: "ENISA EUVD (EUVD-2026-109299)"
+    date: "2026-10-24"
+    role: corroborating
+  - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+    publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.1)"
+    date: "2026-10-24"
+    role: corroborating
+  - url: "https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576"
+    publisher: "Python Discourse (eMudhra information for Python users)"
+    date: "2026-10-20"
+    role: corroborating
+  - url: "https://thehackernews.com/2026/10/emudhra-to-exit-global-ssltls-business.html"
+    publisher: "The Hacker News"
+    date: "2026-10-22"
+    role: corroborating
+  - url: "https://emudhra.com/en/press-release/emudhra-to-exit-global-ssl-tls-certificate-business"
+    publisher: "eMudhra (press release)"
+    date: "2026-10-22"
+    role: corroborating
+  - url: "https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys"
+    publisher: "Microsoft Security Response Center (updated 2026-10-27)"
+    date: "2026-10-26"
+    role: primary
+  - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+    publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.5)"
+    date: "2026-10-30"
+    role: primary
+  - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/"
+    publisher: "GitLab (patch release 19.5.3)"
+    date: "2026-10-29"
+    role: primary
+  - url: "https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/"
+    publisher: "Python Insider (release post)"
+    date: "2026-10-26"
+    role: primary
+  - url: "https://emudhra.we-have-a-problem.com/"
+    publisher: "Dennis Jackson (eMudhra intermediate CA compromise incident tracker, update of 28 October)"
+    date: "2026-10-28"
+    role: primary
+  - url: "https://www.oracle.com/security-alerts/alert-cve-2026-114820.html"
+    publisher: "Oracle (Security Alert CVE-2026-114820, revision 2)"
+    date: "2026-10-30"
+    role: primary
+  - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+    publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.8)"
+    date: "2026-11-06"
+    role: primary
+  - url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/"
+    publisher: "Google (Chrome Root Program and Android Security, update of 2026-11-04)"
+    date: "2026-11-04"
+    role: primary
+  - url: "https://support.apple.com/de-de/149555"
+    publisher: "Apple Support (information on the compromised eMudhra intermediate CAs, translated from German)"
+    date: "2026-10-30"
+    role: primary
+  - url: "https://www.heise.de/news/macOS-27-3-Apple-behebt-letztes-eMudhra-Leck-aber-es-wird-dauern-11513443.html"
+    publisher: "heise online (translated from German)"
+    date: "2026-11-06"
+    role: corroborating
+  - url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0021"
+    publisher: "SonicWall (informational advisory SNWLID-2026-0021)"
+    date: "2026-11-10"
+    role: corroborating
+  - url: "https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021"
+    publisher: "SonicWall PSIRT (advisory data for SNWLID-2026-0021)"
+    date: "2026-11-10"
+    role: corroborating
+  - url: "https://support.apple.com/de-de/149555"
+    publisher: "Apple Support (information on the compromised eMudhra intermediate CAs, revised 2026-11-10, translated from German)"
+    date: "2026-11-10"
+    role: primary
+
+  - url: "https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys"
+    publisher: "Microsoft Security Response Center (updated 2026-11-10)"
+    date: "2026-11-10"
+    role: primary
+
+  - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+    publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.9)"
+    date: "2026-11-10"
+    role: primary
+
+  - url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+    publisher: "eMudhra (Mozilla CA Program bug 2083449, full incident report)"
+    date: "2026-11-10"
+    role: primary
+  - url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449#c11"
+    publisher: "eMudhra (Mozilla CA Program bug 2083449, comment 11)"
+    date: "2026-10-19"
+    role: corroborating
+  - url: "https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/"
+    publisher: "BleepingComputer"
+    date: "2026-11-11"
+    role: corroborating
+closed_sources: []
+evidence:
+  - quote: "enabling anyone to forge trusted HTTPS certificates to impersonate any website against clients that have not yet removed trust in those CAs."
+    publisher: "Google (Chrome Root Program and Android Security)"
+    source_url: "https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/"
+  - quote: "many other clients do not consume revocation information and require software updates to ensure they no longer trust the compromised intermediates."
+    publisher: "Dennis Jackson (eMudhra intermediate CA compromise incident tracker)"
+    source_url: "https://emudhra.we-have-a-problem.com/"
+  - quote: "We do not know if attackers exploited the flawed key generation to target these clients."
+    publisher: "Dennis Jackson (eMudhra intermediate CA compromise incident tracker)"
+    source_url: "https://emudhra.we-have-a-problem.com/"
+  - quote: "crypto/x509: mitigation for security concerns with a specific Certificate Authority"
+    publisher: "Go team (golang-announce)"
+    source_url: "https://groups.google.com/g/golang-announce/c/66pojueaQek"
+  - quote: "This Security Alert addresses CVE-2026-91403 by providing Java updates which distrusts the set of impacted intermediate CA certificates related to eMudhra."
+    publisher: "Oracle (Security Alert CVE-2026-91403)"
+    source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-91403.html"
+  - quote: "This Security Alert addresses CVE-2026-114820 by providing Java updates that remove the set of impacted root CA certificates related to eMudhra."
+    publisher: "Oracle (Security Alert CVE-2026-114820)"
+    source_url: "https://www.oracle.com/security-alerts/alert-cve-2026-114820.html"
+  - quote: "take one of the following actions immediately — even if you have updated your runtime in the past few days."
+    publisher: "OpenJDK (Compromised Certificates and OpenJDK Java Runtimes)"
+    source_url: "https://openjdk.org/emudhra"
+  - quote: "Python has added a denylist for known compromised certificates to the \"ssl\" module to ensure user safety even without certificate revocation configured."
+    publisher: "Python Software Foundation (security-announce, CVE-2026-115557)"
+    source_url: "https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/"
+  - quote: "Chrome has told eMudhra that standard ACME clients do not replace certificates outside their renewal window unless they support ACME Renewal Information (ARI) or someone steps in by hand."
+    publisher: "The Hacker News"
+    source_url: "https://thehackernews.com/2026/10/emudhra-to-exit-global-ssltls-business.html"
+  - quote: "On October 26, Microsoft released an out-of-band Windows update that removes seven certificates associated with the affected hierarchies: six eMudhra G3 roots and an AAA Certificate Services cross-sign, from the Windows trust list."
+    publisher: "Microsoft Security Response Center"
+    source_url: "https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys"
+  - quote: "GitLab has removed trust for eight eMudhra intermediate CA certificates whose private keys have been compromised."
+    publisher: "GitLab"
+    source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/"
+  - quote: "The Cisco PSIRT is not aware of any malicious use of the issue that is described in this advisory."
+    publisher: "Cisco PSIRT"
+    source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+  - quote: "appliances with Client DPI-SSL enabled continued to trust certificate chains issued by compromised eMudhra intermediate Certificate Authorities (CAs)"
+    publisher: "SonicWall"
+    source_url: "https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021"
+  - quote: "The RSA issuers went through a different path as per our assessment of the code and are therefore not impacted."
+    publisher: "eMudhra (Mozilla CA Program bug 2083449, comment 11)"
+    source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449#c11"
+  - quote: "Eight RSA G2B/G2C subordinate CA certificates revoked (reason: cessationOfOperation) and withdrawn from service; CRLs and OCSP updated; migration of affected G2C subscribers initiated."
+    publisher: "eMudhra (Mozilla CA Program bug 2083449, full incident report)"
+    source_url: "https://bugzilla.mozilla.org/show_bug.cgi?id=2083449"
+verification: multi-source
+sourcing_note: >
+  The Chrome Root Program and Mozilla describe their own handling, the incident tracker is maintained by a Mozilla
+  cryptography engineer, and eMudhra's explanation is now read from its own incident report in the Mozilla bug, with
+  BleepingComputer's account of it; Google's wording (insufficient randomness) and eMudhra's (a script truncated the private values) differ and are attributed separately. Google counts eight subordinate CAs and six TLS intermediates. Microsoft's own post states its block of
+  2026-10-20, its removal of seven certificates from the Windows and Edge trust lists and, from 2026-11-16, of the remaining eMudhra roots; Cisco's advisory is at version 1.9.
+confidence: high
+references: []
+deep_dive: false
+deep_dive_category: null
+org_triage: null
+classification:
+  reliability: A
+  credibility: 1
+watchlist_hit: false
+actions:
+  - "Update every non-browser TLS client that keeps its own CA bundle or does not check revocation to a fixed version: standalone Java runtimes, including those already updated on 2026-10-21, to the update of Oracle's Security Alert CVE-2026-114820 or OpenJDK (Oracle Database Server, Autonomous Health Framework and OPatch installations too), Python 3.15.2, 3.14.10, 3.13.18, 3.12.16 or 3.11.18 together with pip 26.2.2 or later, Go 1.27.3 or 1.26.10, self-managed GitLab to a fixed patch release together with GitLab Runner 19.5.1, and SonicWall Gen7 firewalls with Client DPI-SSL enabled to SonicOS 7.3.4-7015 or later and Gen8 to 8.2.3-8015 or later; then confirm with curl against the incident tracker's test host that the client rejects the certificate; on managed Macs update to macOS 27.2.1, 26.7.3 or 15.8.3, or where that is not possible remove emSign ECC Root CA - G3 from /etc/ssl/cert.pem as Apple describes (AAA Certificate Services is optional and can stop tools that read only that file from verifying some unaffected sites)."
+  - "Replace, by hand where the ACME client does not support ACME Renewal Information, every TLS certificate your organisation holds that chains to emSign ECC Root CA - G3 or to another of the seven certificates Microsoft removed from the Windows and Edge trust lists, or that was issued by one of the eight RSA G2B and G2C issuing CAs eMudhra revoked on 2026-11-07, because Chrome's removal of the G3 root was due on 2026-10-27 and the Windows change takes effect when the trust-list update reaches a device; deliver the updated Disallowed Certificate Trust List and the trust-list changes Microsoft describes, including its out-of-band update of 2026-10-26, to Windows devices that do not receive automatic certificate-trust updates; do not renew or reissue under emSign Root CA - G1 after 2026-11-16, because Chrome 153 and higher will not trust by default a certificate under it whose earliest SCT is later, and Windows, Edge and WebView2 stop trusting the remaining eMudhra roots on 2026-11-16 as Microsoft's update of 2026-11-10 describes."
+  - "Apply Cisco's remediation now for the products its eMudhra advisory (version 1.9) lists with a fix or a procedure available: the CA-trust distrust guide for IOS XE and the guidance for Secure Firewall ASA, FTD and FMC, Secure Email Gateway and Secure Email and Web Manager (run the updatenow command where updates are manual), Duo Access Gateway 3.2.0, Duo Network Gateway 3.4.1, Duo Agentic Authorization Connector 1.0.1 and ThousandEyes Enterprise Agent (Application-hosting Agent 5.2.2)."
+updates:
+  - at: "2026-10-23T03:43:28Z"
+    run_id: 2026-10-23T0256Z-intel
+    type: update
+    summary: >
+      Standalone Java runtimes keep their own trust store: Oracle's Security Alert CVE-2026-91403 (CVSS
+      3.1 9.1) and the OpenJDK advisory of 2026-10-21 ship the distrust update, the tracker lists the
+      fixed builds, replacing blocked.certs or enabling revocation checking is the stop-gap, and NCSC.ch
+      lists the exploitation status as unknown.
+    fields: [headline, summary, affected_products, cves, sources, evidence, actions, body, entities]
+  - at: "2026-10-25T03:36:20Z"
+    run_id: 2026-10-25T0256Z-intel
+    type: update
+    summary: >
+      Oracle's second Security Alert of 2026-10-24, CVE-2026-114820 (CVSS 3.1 9.1), removes four root CAs
+      and lists Java SE builds such as 27.0.1.0.2 as affected, and OpenJDK says even a runtime updated in
+      the past few days needs it, so a standalone Java runtime updated on 2026-10-21 needs the new update
+      or the same stop-gap again; OpenJDK now says Debian, Devuan and Ubuntu packages need the keystore
+      recreated by hand. Python announces a built-in ssl denylist (CVE-2026-115557) without naming a
+      release, so pip 26.2.2 is the Python fix to apply now; Cisco lists the products it has fixes for;
+      and eMudhra is leaving the global TLS business, and standard ACME clients do not replace the
+      affected certificates outside their renewal window unless they support ACME Renewal Information.
+    fields: [headline, summary, cves, affected_products, entities, sources, evidence, actions, body]
+  - at: "2026-11-01T03:32:20Z"
+    run_id: 2026-11-01T0256Z-intel
+    type: update
+    summary: >
+      Microsoft removed seven eMudhra-hierarchy certificates from the Windows trust list in an out-of-band
+      update of 2026-10-26 and from the Edge trust list on 2026-10-27; Cisco's advisory reached version
+      1.5 on 2026-10-30 with ISE fixes dated December 2026 and April 2027; GitLab's releases of 2026-10-29
+      distrust the eight intermediates, with GitLab Runner and the AI Gateway needing separate updates;
+      Python's releases of 2026-10-26 carry the built-in denylist; and Oracle's revision of 2026-10-30
+      extends the Java alert to Oracle Database Server, Autonomous Health Framework and OPatch.
+      Certificates that chain to the removed roots need replacing, and disconnected Windows devices need
+      the updated trust lists.
+    fields: [headline, summary, entities, affected_products, sources, evidence, sourcing_note, actions, body, cves]
+  - at: "2026-11-01T13:46:55Z"
+    run_id: 2026-11-01T1312Z-audit
+    type: correction
+    summary: >
+      Python 3.15.1, 3.14.9 and 3.13.17, which the 2026-10-25 section listed as patched, predate the ssl
+      denylist; the protected releases are 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18, and the tracker
+      clause that carried the earlier versions is removed.
+    fields: [body, evidence]
+  - at: "2026-11-08T03:30:49Z"
+    run_id: 2026-11-08T0256Z-intel
+    type: update
+    summary: >
+      Cisco's eMudhra advisory reached version 1.8 on 2026-11-06 with a CA-trust distrust guide for IOS XE
+      and NX-OS and MDS releases listed as impacted without a remediation; Apple's own page confirms that
+      the curl, git, python3 and openssl that ship with macOS keep trusting the intermediates until a
+      future update, and heise reports that macOS 27.2 undid the manual workaround and that Apple's change
+      is not expected before December. Google's post adds that Chrome 153 and higher will stop trusting by
+      default certificates under emSign Root CA - G1 whose earliest SCT is after 2026-11-16, and Apple's
+      page dates its blocks to 2026-10-19 and 2026-10-23.
+    fields: [summary, affected_products, sources, actions, sourcing_note, body]
+  - at: "2026-11-08T14:08:21Z"
+    run_id: 2026-11-08T1309Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      CVE-2026-111943, which the title and analysis already name for Go and GitLab, now has its structured
+      record with the fixed Go and GitLab releases; the Python Insider and GitLab pages do carry their
+      dates, so the notes saying otherwise are removed.
+    fields: [cves, sources, sourcing_note]
+  - at: "2026-11-11T03:55:02Z"
+    run_id: 2026-11-11T0256Z-intel
+    type: update
+    summary: >
+      SonicWall's advisory of 2026-11-10 says SonicOS firewalls with Client DPI-SSL enabled kept trusting
+      the compromised eMudhra chains and re-signed them for clients; fixed in SonicOS 7.3.4-7015 (Gen7)
+      and 8.2.3-8015 (Gen8), so a Gen7 unit on 7.3.4-7013 is still affected. Apple's macOS 27.2.1, 26.7.3
+      and 15.8.3 now block the certificates in the command-line tools, Microsoft removes the remaining
+      eMudhra roots from Windows, Edge and WebView2 from 2026-11-16, and Cisco's advisory is at version
+      1.9.
+    fields: [summary, entities, affected_products, sources, evidence, actions, body, headline, sourcing_note]
+  - at: "2026-11-12T04:26:05Z"
+    run_id: 2026-11-12T0255Z-intel
+    type: update
+    summary: >
+      eMudhra's full incident report of 2026-11-10 says eight RSA-4096 issuers (G2B and G2C) were revoked on 2026-11-07 with the reason cessationOfOperation because their keys were handled in the memory of a Python script, so eMudhra cannot show compliance with its policy; it had said on 2026-10-19 that they were not impacted, no source says the keys leaked, and the G2C issuers had issued end-entity certificates.
+    fields: [title, headline, summary, sources, evidence, sourcing_note, actions, body]
+migrated_from: null
+---
+
+On 2026-10-17 a researcher reported to the Chrome Root Program, and Mozilla received a report the same day, that the private keys of eight eMudhra subordinate CA certificates were compromised: the keys were so weak that anyone could forge trusted HTTPS certificates to impersonate any website against clients that have not removed trust in those CAs; Google describes the cause as insufficient randomness ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/); [Mozilla, 2026-10-20](https://blog.mozilla.org/security/2026/10/20/protecting-firefox-users-following-the-compromise-of-emudhra-intermediate-certificates/)). BleepingComputer, citing Mozilla's incident report, says all eight were P-384 keys generated in April 2025 with values below 256, so testing 256 numbers recovers a key ([BleepingComputer, 2026-10-20](https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/)). eMudhra's incident report of 2026-11-10 says the keys were generated correctly on its hardware module at a ceremony on 2025-04-30 and then passed through a custom Python wrap/unwrap script that truncated the eight ECDSA private values; the keys of eight RSA-4096 issuers (G2B and G2C) stayed intact but were handled in that script's process memory, so eMudhra cannot show compliance with its certification practice statement, and it revoked them on 2026-11-07 with the reason cessationOfOperation after having said on 2026-10-19 that they were not impacted; its G2C issuers had issued end-entity certificates, the last on 2026-11-03, and no source says any RSA key leaked ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449); [eMudhra, Mozilla bug 2083449, 2026-10-19](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449#c11); [BleepingComputer, 2026-11-11](https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/)). The tracker says it is not known whether attackers used the flaw against other clients ([Dennis Jackson, 2026-10-20](https://emudhra.we-have-a-problem.com/)).
+
+Chrome blocked the intermediates on 2026-10-17, Firefox through OneCRL the same day, Microsoft platforms on 2026-10-20 and Apple products on 2026-10-22, and eMudhra revoked all eight ([Dennis Jackson, 2026-10-20](https://emudhra.we-have-a-problem.com/); [BleepingComputer, 2026-10-20](https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/)). Microsoft went further: an out-of-band Windows update of 2026-10-26 removes seven certificates, six eMudhra G3 roots and an AAA Certificate Services cross-sign, from the Windows trust list, and the same seven left the Edge trust list on 2026-10-27 ([Microsoft, 2026-10-26](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)). Google removed the root that signed them, emSign ECC Root CA - G3, from the Chrome Root Store, with the removal expected to reach devices on 2026-10-27 ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)). Go 1.27.3 and 1.26.10 filter chains that contain the intermediates in crypto/x509, tracked as CVE-2026-111943 ([Go team, 2026-10-20](https://groups.google.com/g/golang-announce/c/66pojueaQek)), and GitLab's release of 2026-10-29 removes trust for the eight intermediates in self-managed CE and EE, with Runner 19.5.1 and the AI Gateway updated separately ([GitLab, 2026-10-29](https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/)).
+
+Oracle's Security Alert of 2026-10-21 for CVE-2026-91403 (CVSS 3.1 9.1, JSSE) provided Java updates that distrust the impacted eMudhra intermediate CA certificates ([Oracle, 2026-10-21](https://www.oracle.com/security-alerts/alert-cve-2026-91403.html)), and a second Security Alert of 2026-10-24, CVE-2026-114820, removes the impacted root CA certificates and also covers the Java component of Oracle Database Server, Autonomous Health Framework and OPatch ([Oracle, 2026-10-30](https://www.oracle.com/security-alerts/alert-cve-2026-114820.html)). OpenJDK's guidance tells users of a standalone runtime to act immediately even if they updated in the past few days ([OpenJDK, 2026-10-24](https://openjdk.org/emudhra)). 
+
+**Exposure:** any software that keeps its own CA bundle or does not check revocation keeps trusting the intermediates until updated; Python 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18 carry a built-in denylist ([Python Insider, 2026-10-26](https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/)); Apple says the curl, git, python3, ruby, perl and openssl that ship with macOS or the Xcode command-line tools read /etc/ssl/cert.pem, check neither Apple's block nor revocation and keep trusting them until macOS 27.2.1, 26.7.3 or 15.8.3 ([Apple, 2026-11-10](https://support.apple.com/de-de/149555)). SonicOS firewalls with Client DPI-SSL enabled re-signed the chains with their own DPI-SSL CA, so client browsers could not reject a forged one, until SonicOS 7.3.4-7015 (Gen7) and 8.2.3-8015 (Gen8) ([SonicWall, 2026-11-10](https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0021); [SonicWall advisory data, 2026-11-10](https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021)).
+
+**Detection:** eMudhra says it found no evidence that the intermediates were used to issue end-user certificates ([BleepingComputer, 2026-10-20](https://www.bleepingcomputer.com/news/security/mozilla-google-apple-block-compromised-emudhra-ca-certificates/)), so a server certificate chain seen in TLS session metadata, proxy or EDR network telemetry that contains one of the eight intermediates or their Sectigo cross-signs, which the tracker lists, is worth treating as a possible forged certificate ([Dennis Jackson, 2026-10-20](https://emudhra.we-have-a-problem.com/)). CT monitoring will not show one, because Google found no certificate chaining to the six TLS intermediates logged before it blocked them ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)).
+
+**Triage:** a site that still chains to emSign ECC Root CA - G3 failing in Chrome after 2026-10-27, or a certificate that chains to one of the seven certificates Microsoft removed failing in Windows or Edge once the change reaches the device, is the announced root removal, not an attack ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/); [Microsoft, 2026-10-26](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)).
+
+**Defender takeaway:** update trust bundles and toolchains on every non-browser client, rebuild container images that embed an old bundle, and do not rely on revocation or CT for those clients; website operators with certificates chaining to emSign ECC Root CA - G3 need one from another hierarchy now ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)), and so does anything issued under emSign Root CA - G1 after 2026-11-16, because Chrome 153 and higher will not trust such a certificate by default when its earliest SCT is later ([Google, 2026-11-04](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)). On Macs, update to macOS 27.2.1, 26.7.3 or 15.8.3, which block them in the command-line tools; where that is not possible, remove emSign ECC Root CA - G3 from that file as Apple describes (removing AAA Certificate Services as well is optional and can stop tools that read only that file from verifying some unaffected sites) ([Apple, 2026-11-10](https://support.apple.com/de-de/149555)). From 2026-11-16 Microsoft removes the remaining eMudhra roots from Windows, Edge and WebView2, so a certificate under emSign Root CA - G1 stops validating there too ([Microsoft, 2026-11-10](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)). Certificates from the eight revoked RSA G2B and G2C issuers are revoked and eMudhra says its subscribers were migrated, so check inventories for any holder still on them.
+
+## Update — 2026-10-23T03:43:28Z
+
+On 2026-10-21 Oracle issued Security Alert CVE-2026-91403 and the OpenJDK project an advisory for the same event, which reaches Java runtimes as well; Oracle says it also applies to sandboxed Java Web Start and applet clients ([Oracle, 2026-10-21](https://www.oracle.com/security-alerts/alert-cve-2026-91403.html)). Affected are Oracle Java SE 8u511, 8u511-perf, 11.0.33, 17.0.21, 21.0.13, 25.0.5 and 27.0.1, GraalVM for JDK 17.0.21 and 21.0.13 and GraalVM Enterprise Edition 21.3.20, and OpenJDK lists 27.0.1, 25.0.5, 21.0.13, 17.0.21, 11.0.32.1 and 8u504 and earlier ([Oracle, 2026-10-21](https://www.oracle.com/security-alerts/alert-cve-2026-91403.html); [OpenJDK, 2026-10-21](https://openjdk.org/groups/vulnerability/advisories/2026-10-21)). NCSC.ch's advisory of 2026-10-22 lists the exploitation status as unknown and the OpenJDK guidance as the temporary mitigation ([NCSC.ch, 2026-10-22](https://security-hub.ncsc.admin.ch/#/posts/13091)).
+
+## Update — 2026-10-25T03:36:20Z
+
+Oracle's second Security Alert of 2026-10-24, CVE-2026-114820 (CVSS 3.1 9.1, component JSSE, remotely exploitable without authentication through the component's APIs), provides Java updates that remove the impacted root CA certificates related to eMudhra ([Oracle, 2026-10-24](https://www.oracle.com/security-alerts/alert-cve-2026-114820.html)). Its affected list names Oracle Java SE 8u511-b32, 11.0.33.0.2, 17.0.21.0.2, 21.0.13.0.2, 25.0.5.0.2 and 27.0.1.0.2, and the OpenJDK advisory of the same day lists 27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.32.1 and 8u504 and earlier as affected ([Oracle, 2026-10-24](https://www.oracle.com/security-alerts/alert-cve-2026-114820.html); [OpenJDK, 2026-10-24](https://openjdk.org/groups/vulnerability/advisories/2026-10-24)). OpenJDK tells users of a standalone runtime to act immediately even if they updated in the past few days, by installing an update whose release note names JDK-8395690 and CVE-2026-114820 or, failing that, by deleting the cacerts aliases emsignrootcag1, emsignrootcag2, emsigneccrootcag3 and comodoaaaca or enabling revocation checking ([OpenJDK, 2026-10-24](https://openjdk.org/emudhra)). The same page now says Debian, Devuan and Ubuntu OpenJDK packages need the keystore recreated by hand, because updating ca-certificates and ca-certificates-java does not refresh it, which replaces the earlier statement that updating the operating system's certificates suffices there ([OpenJDK, 2026-10-24](https://openjdk.org/emudhra)).
+
+The Python Software Foundation announced CVE-2026-115557 on 2026-10-24: the ssl module now carries a denylist of known compromised certificates that is rejected whatever the SSLContext policy, so it works without revocation checking ([Python Software Foundation, 2026-10-24](https://mail.python.org/archives/list/security-announce@python.org/thread/FNAJMZV6XQYLVPABNINDMF3VF66AYLW4/)). ENISA's record scores it 9.4 (CVSS 4.0) and lists CPython before 3.16.0 as affected, and the announcement names no release that carries the denylist ([ENISA EUVD, 2026-10-24](https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-109299)). The Python releases that carry the ssl denylist are 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18 ([Python Insider, 2026-10-26](https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/)), and Christian Heimes stresses in the announcement thread that pip before 26.2.2 keeps trusting the compromised intermediates whatever the system trust store holds, because it always loads its own vendored certifi ([Dennis Jackson, 2026-10-20](https://emudhra.we-have-a-problem.com/); [Python Discourse, 2026-10-20](https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576)).
+
+Cisco's informational advisory, version 1.1 of 2026-10-24, lists as impacted with remediation a TLS policy that blocks the known eMudhra issuers on Secure Firewall Management Center, Duo Access Gateway 3.2.0, Duo Network Gateway 3.4.1, Duo Agentic Authorization Connector 1.0.1, ThousandEyes Enterprise Agent (Application-hosting Agent 5.2.2, 2026-10-23), Meraki MV Smart Camera Firmware (2026-11-18), IOS XR 26.4.1 (2026-11-30) and Ultra Cloud Core Subscriber Microservices Infrastructure 2026.04.1 (November 2026), keeps further products under investigation, and says Cisco PSIRT is not aware of malicious use ([Cisco PSIRT, 2026-10-24](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r)).
+
+eMudhra's board decided on 2026-10-22 to leave the global SSL/TLS certificate business, and its G1 RSA roots keep serving customers during the transition ([eMudhra, 2026-10-22](https://emudhra.com/en/press-release/emudhra-to-exit-global-ssl-tls-certificate-business)). The Hacker News relays Chrome's count of about 30,800 unexpired certificates under the emSign ECC Root CA - G3, which Chrome stops trusting on 2026-10-27, as of 2026-10-21, 99.9 percent of them issued through InCommon, and relays Chrome's point that standard ACME clients do not replace a certificate outside its renewal window unless they support ACME Renewal Information or someone steps in by hand ([The Hacker News, 2026-10-22](https://thehackernews.com/2026/10/emudhra-to-exit-global-ssltls-business.html)).
+
+## Update — 2026-11-01T03:32:20Z
+
+Microsoft released an out-of-band Windows update on 2026-10-26 that removes seven certificates associated with the affected hierarchies, six eMudhra G3 roots and an AAA Certificate Services cross-sign, from the Windows trust list, and removed the same seven from the Edge trust list on 2026-10-27; removing a root is a separate and broader decision than blocking the compromised intermediates, which Microsoft had done through its Disallowed Certificate Trust List on 2026-10-20 ([Microsoft, 2026-10-26](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)). Microsoft tells organizations to keep automatic trust-list updates flowing, to make sure disconnected Windows devices receive the updated trust lists, and to replace certificates that chain to one of the seven before the change reaches their devices, and it warns that software that does not check revocation or the disallowed list could still accept certificates tied to the compromised keys if trust is restored locally ([Microsoft, 2026-10-26](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)).
+
+Cisco's advisory is at version 1.5 of 2026-10-30. It lists remediation for Secure Firewall ASA, FTD and FMC (guidance page), Secure Email Gateway and Secure Email and Web Manager (updated automatically to Trusted Root 2.8, with the updatenow command where updates are manual) and Packaged and Unified Contact Center Enterprise (CSCwx36769); it dates the fixes for ISE and ISE-PIC to ISE 3.5P5 in December 2026 and 3.3P13 and 3.4P8 in April 2027, and still lists IOS XE Software, MDS 9000 and Nexus switches among the impacted products under investigation; Cisco says it is not aware of malicious use ([Cisco PSIRT, 2026-10-30](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r)). GitLab's patch release of 2026-10-29 removes trust for the eight intermediates in self-managed CE and EE and says GitLab Runner 19.5.1 and the AI Gateway must be updated separately because they verify certificates on their own ([GitLab, 2026-10-29](https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-5-3-released/)). Python's expedited releases of 2026-10-26, 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18, now carry the built-in denylist for the compromised intermediates ([Python Insider, 2026-10-26](https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/)). Oracle's revision 2 of Security Alert CVE-2026-114820, dated 2026-10-30, adds the Java component of Oracle Database Server (19.3 to 19.32, 21.3 to 21.23 and 23.4.0 to 23.26.3, not client-only installations), Autonomous Health Framework Trace File Analyzer 26.3 to 26.10, OPatch 12.2.0.1.16 to 12.2.0.1.52 and Hospitality Cruise Shipboard Property Management 23.3.4 to 23.3.6, each remotely exploitable without authentication at CVSS 3.1 9.1 ([Oracle, 2026-10-30](https://www.oracle.com/security-alerts/alert-cve-2026-114820.html)).
+
+## Correction — 2026-11-01T13:46:55Z
+
+Python 3.15.1, 3.14.9 and 3.13.17 do not carry the protection: the releases whose ssl module blocks the compromised eMudhra keys are 3.15.2, 3.14.10, 3.13.18, 3.12.16 and 3.11.18 ([Python Insider, 2026-10-26](https://blog.python.org/2026/10/python-3152-31410-31318-31216-31118/)). A host on 3.15.1, 3.14.9 or 3.13.17 still needs the later release.
+
+## Update — 2026-11-08T03:30:49Z
+
+Cisco's advisory is at version 1.8 of 2026-11-06 (1.6 on 2026-11-04 and 1.7 on 2026-11-05). IOS XE Software, which version 1.5 still listed among the products under investigation, now has a CA-trust distrust guide and a GuestShell bug entry (CSCwx51613) ([Cisco PSIRT, 2026-11-06](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r)). Several routing and switching products have no remediation yet: MDS 9000 releases 9.4(1) to 9.4(5a), Nexus 3000 and standalone NX-OS Nexus 9000 releases 9.3(9) to 9.3(18) and the 10.x trains except 10.1, and ACI-mode Nexus 9000 trains 15.x and 16.x are listed as impacted ([Cisco PSIRT, 2026-11-06](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r)). Cisco still says it is not aware of malicious use ([Cisco PSIRT, 2026-11-06](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r)).
+
+Apple's support page of 2026-10-30 says that the curl, git, python3, ruby, perl and openssl that ship with macOS or the Xcode command-line tools check certificates against /etc/ssl/cert.pem and apply neither Apple's block nor revocation, so they keep trusting the intermediates until a future macOS update, which Apple has not dated; apps and tools that keep their own root list need the developer's update ([Apple, 2026-10-30](https://support.apple.com/de-de/149555)). Administrators can remove emSign ECC Root CA - G3 from the file and, as an optional step, AAA Certificate Services to stop the six Sectigo cross-signed certificates as well, which Apple warns can leave tools that read only that file unable to verify some websites whose chains run through unaffected intermediates; a macOS software update can replace the file with Apple's version, so the check has to be repeated after each update until the one that carries Apple's change ([Apple, 2026-10-30](https://support.apple.com/de-de/149555)). heise reports that macOS 27.2, which brought no fix, undid the workaround for users who had applied it, that the macOS 27.3 developer beta replaces the file, and that the final release will take at least until December ([heise, 2026-11-06](https://www.heise.de/news/macOS-27-3-Apple-behebt-letztes-eMudhra-Leck-aber-es-wird-dauern-11513443.html)).
+
+Google's post now carries an update of 2026-11-04: Chrome 153 and higher will no longer trust by default TLS server certificates that validate to emSign Root CA - G1 when their earliest Signed Certificate Timestamp is dated after 2026-11-16 23:59:59 UTC, and certificates whose earliest SCT is on or before that time are unaffected ([Google, 2026-11-04](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)). Apple's page dates its block of the twelve intermediate certificates to 2026-10-19, three days before the 2026-10-22 the incident tracker and BleepingComputer gave for Apple devices, and its block of the emSign ECC Root CA - G3 root to 2026-10-23 ([Apple, 2026-10-30](https://support.apple.com/de-de/149555)).
+
+## Update — 2026-11-11T03:55:02Z
+
+SonicWall's informational advisory SNWLID-2026-0021 of 2026-11-10, which has no CVE and no workaround, says SonicOS appliances with Client DPI-SSL enabled continued to trust certificate chains issued by the compromised eMudhra intermediate CAs because the firewall's local certificate store trusted the underlying roots, and that the firewall then re-signed traffic from the impacted servers with its local DPI-SSL CA certificate, preventing client browsers from rejecting connections signed by the untrusted intermediates ([SonicWall, 2026-11-10](https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0021); [SonicWall advisory data, 2026-11-10](https://psirtapi.global.sonicwall.com/api/v1/vulndetail/?advisory_id=SNWLID-2026-0021)). SonicWall removed the affected root certificates from the SonicOS certificate store and added blocking logic for the compromised chain. Affected are Gen7 hardware firewalls (TZ 270 to TZ 670, NSa 2700 to 6700, NSsp 10700 to 15700) and Gen7 NSv up to 7.3.4-7013, fixed in 7.3.4-7015 and higher, and Gen8 hardware (TZ 80 to TZ 680, NSa 2800 to 5800) and Gen8 NSv up to 8.2.2-8015, fixed in 8.2.3-8015 and higher; a Gen7 firewall that took only 7.3.4-7013 is therefore still affected ([SonicWall, 2026-11-10](https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0021)).
+
+Apple revised its support page on 2026-11-10: from macOS 27.2.1 the command-line tools no longer accept the twelve intermediate certificates, and the two roots they chain to, with three more eMudhra roots, leave /etc/ssl/cert.pem; macOS 26.7.3 and 15.8.3 carry the same protection, and after updating the manual removal need not be repeated ([Apple, 2026-11-10](https://support.apple.com/de-de/149555)). The revised page no longer carries the block dates of its 2026-10-30 version, so the 2026-10-22 date of the tracker and BleepingComputer stands for Apple's block.
+
+Microsoft's post carries an update of 2026-11-10: the remaining eMudhra roots leave Microsoft products starting 2026-11-16, the ten remaining roots leave the Windows trusted root list through the automatic certificate-trust update, Edge and WebView2 drop default trust for emSign Root CA - G1, C1, ECC Root CA and Root TLS CA - G1 on the same date, Azure Linux images follow that day, and the .NET container images and the Microsoft Build of OpenJDK follow upstream releases ([Microsoft, 2026-11-10](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)). Cisco's advisory is at version 1.9 of 2026-11-10, which updates the products under investigation, impacted and not impacted ([Cisco PSIRT, 2026-11-10](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r)).
+
+
+## Update — 2026-11-12T04:26:05Z
+
+eMudhra posted its full incident report in the Mozilla bug on 2026-11-10 ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)). For the eight RSA-4096 issuers (G2B and G2C) it says the key integrity is intact, all signatures verifying, but that during re-import the private-key material was handled in the volatile memory of a Python process on the ceremony host, which is not consistent with its certification practice statement, so the RSA issuers are treated as not meeting it; it adds that logs cannot reliably establish or exclude how that material was handled ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)). It identified this in early November after a root-program discussion, revoked the eight issuers on 2026-11-07 with the reason cessationOfOperation, not the compromise reason used for the ECDSA set, and had written on 2026-10-19 that the RSA issuers were not impacted ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449); [eMudhra, Mozilla bug 2083449, 2026-10-19](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449#c11)). The G2C issuers were put into production in May 2026 and issued end-entity certificates, the last on 2026-11-03, after which issuance from them stopped; BleepingComputer reports that eMudhra says the affected customer certificates were replaced or migrated, and that the company has not detected malicious use of the keys ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449); [BleepingComputer, 2026-11-11](https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/)). eMudhra also decided to exit public TLS, with all issuance from its emSign Root CA - G1 hierarchy to stop before 2026-11-16 and an independent review due 2026-12-04 ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)). No page read from Google, Microsoft, Apple, Mozilla or the incident tracker names the G2B or G2C issuers or says a vendor blocked them.
