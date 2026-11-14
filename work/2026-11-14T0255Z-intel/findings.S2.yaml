@@ -1,0 +1,345 @@
+# work/2026-11-14T0255Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-14T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-14T02:57:39Z
+ended_at: 2026-11-14T03:17:51Z
+duration_seconds: 1212
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 31
+  bridge_fetches: 95
+window_note: >
+  Window 26 h (start 2026-11-13T00:57Z). Swiss home-region signal in the window is thin: BACS/NCSC.ch published
+  nothing new on bacs.admin.ch (newest press release 2026-11-05, newest Im Fokus / Aktuelle Vorfaelle items 2026-11-10,
+  both already covered), the Cyber Security Hub added two advisories (Red Hat Quay, SignDrop - the latter already
+  covered), no Swiss federal/cantonal/communal incident surfaced in DE/FR/IT press or search, the standing policy watch
+  (ISG, NIS2/CRA, e-ID, CoE, sanctions) produced no in-window obligation change, and the ChimeraZ/ZOHE backlog row
+  found no confirming source. One genuine delta on a covered finding (Danfoss), one law-enforcement action, one Swiss-impact
+  availability incident, one NCSC.ch-flagged critical advisory, and one constituency-sector lead just outside the window.
+items:
+  - title: "Danfoss AK-SM 800A: BSI rates Midnight Blue's six unpatched pre-auth RCE flaws criticality 3 (Orange), the Belgian CCB says no patch exists and internet exposure must come off first, and BSI will not rule out flaws in the newer 5.4.0"
+    sources:
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2", publisher: "BSI", date: "2026-11-13", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action", publisher: "CCB", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a", publisher: "Midnight Blue", date: "2026-11-11", role: "primary" }
+      - { url: "https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html", publisher: "heise online", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'Supermarkt-Angriffe: Danfoss-Kuehlsteuerungen blieben trotz Updates angreifbar', 2026-11-13) → pivot: heise article, URL https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html → primary: BSI IT-Sicherheitshinweis BITS-H 2026-306525-10e2, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2 (read with tools/fetch_source.py pdf plus pdftotext for page 1) → primary: CCB advisory, URL https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action → primary: Midnight Blue, URL https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a. Dedup: prior_coverage entry 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack (last record 2026-11-11, BACS warning of 2026-11-10) carries no mention of Midnight Blue, firmware 5.3.2/5.4.0, the CCB advisory or the BSI note (grep of the entry file)."
+    summary: |
+      Delta for the covered refrigeration-controller entry; it changes what a patch-first reader does. Facts (BSI, 2026-11-13,
+      criticality 3 / Orange, "Massnahmen muessen unverzueglich ergriffen werden"): Midnight Blue published on 2026-11-11 a report
+      on six vulnerabilities in the Danfoss AK-SM 800A, affected firmware "bis mindestens 5.3.2", no fixed version listed, no CVE
+      numbers assigned yet (coordinated disclosure with Danfoss ongoing), and "nichts bekannt" about exploitation. BSI's worst case:
+      the controller has no secure-boot option, so an attacker with remote code execution could load malicious firmware, making the
+      device unusable until manual recovery or replacement, with a long outage if many devices fall at once. Claims (Midnight Blue,
+      the discoverer; technical details withheld): six stack-based buffer overflows giving pre-authentication remote code
+      execution, found in under an hour of manual review of firmware freely downloadable from the vendor site; possible persistent
+      access (possibly surviving reset) or persistent denial of service; Midnight Blue recommends against spending scarce effort on
+      patching and says to remove internet exposure (VPN, private APN, restrictive IP allow-list). CCB (2026-11-12, relaying Midnight
+      Blue): no patches were available at that time, and a further flaw in the session-control mechanism means 'strict' session mode
+      does not remove the risk; updating firmware, changing default passwords and enabling strict sessions are each insufficient;
+      a 4G/5G modem is not a security measure. heise (2026-11-13) reports that Danfoss released firmware 5.4.0 on 2026-11-12 and that
+      BSI told heise it does not want to rule out vulnerabilities in 5.4.0 either - that 5.4.0 statement rests on heise alone (no
+      Danfoss advisory for these flaws on its advisories page as fetched, and BSI's own note does not name 5.4.0). Context from
+      Midnight Blue: public PoCs for earlier Danfoss CVEs appeared within 48 hours of the first French wave and preceded the
+      second wave of 2026-11-02; Censys still shows hundreds of Danfoss and over a thousand Copeland/Dixell controllers exposed
+      (Midnight Blue's figure, honeypots not excluded). Delta against the entry: BACS's 2026-11-10 warning (and the entry) lean on
+      "update to current firmware"; as of this run no BACS/CSH statement on the six new flaws was found (CSH post 13054 last
+      modified 2026-11-06).
+    region_nexus: "switzerland (BACS warned on 2026-11-10 that Swiss installations were attacked; the entry already carries the Swiss cases) and europe (BSI, CCB)"
+    primary_sector_nexus: "indirect: refrigeration controllers sit in retail, pharmacies, laboratories, medical practices, logistics and farms; public-sector exposure is canteens, hospital and care kitchens, cold chain for vaccines and blood"
+    sector: "retail, healthcare"
+    cves: []
+    techniques: [T1190, T1495]
+    affected_products: ["Danfoss AK-SM 800A"]
+    entity_keys:
+      - "incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10"
+      - "product:danfoss-ak-sm-800a"
+    new_entities:
+      - { key: "report:midnight-blue-danfoss-ak-sm800a-six-preauth-rce-2026-11", type: report, name: "Midnight Blue: multiple pre-authentication RCE in Danfoss AK-SM 800A (November 2026)", aliases: ["Don't bother patching: multiple remote code execution vulnerabilities in Danfoss AK-SM800A"], summary: "Midnight Blue report (2026-11-11 per BSI) of six stack-based buffer overflows giving pre-authentication RCE in AK-SM 800A firmware up to 5.3.2; CVE ids pending and coordinated disclosure with Danfoss ongoing; recommends removing internet exposure rather than patching (Midnight Blue; BSI BITS-H 2026-306525-10e2, 2026-11-13; CCB, 2026-11-12)." }
+    relation_suggestions:
+      - { subject: "report:midnight-blue-danfoss-ak-sm800a-six-preauth-rce-2026-11", object: "product:danfoss-ak-sm-800a", basis: "BSI and CCB: the report describes six unpatched pre-auth RCE flaws affecting AK-SM 800A firmware up to 5.3.2 (BSI 2026-11-13; CCB 2026-11-12)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - { quote: "Aktuellen Informationen zufolge sind die Firmwarestände bis mindestens 5.3.2 betroffen.", attribution: "BSI", source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2" }
+      - { quote: "Über eine bereits aktive Ausnutzung der gefundenen Schwachstellen ist nichts bekannt.", attribution: "BSI", source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2" }
+      - { quote: "No patches were available at that time.", attribution: "CCB", source_url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action" }
+      - { quote: "Removing direct public internet exposure is the immediate priority and must not be delayed while awaiting patches.", attribution: "CCB", source_url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action" }
+      - { quote: "Das BSI teilt uns mit, auch bei 5.4.0 Schwachstellen nicht ausschließen zu wollen.", attribution: "heise online", source_url: "https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html" }
+    extended_notes: |
+      Admiralty suggestion A2 for the authority statements (BSI, CCB: both relay one first-hand discoverer, so the technical claims are
+      single-origin; the authorities' own assessments are independent). Detection concepts the sources support: configuration
+      artefacts on the controller (temperature setpoints, defrost schedules, user accounts, remote-access settings, per CCB) and
+      correct operation of attached devices (BSI); credential rotation on suspicion (BSI); web access logs on the controller's CGI
+      endpoints are the only network telemetry class mentioned by Midnight Blue (sm_app handles *.cgi requests). Hardening lever:
+      remove direct internet reachability (VPN, private APN, narrow source-IP allow-list of the service provider as an emergency
+      measure per CCB); CCB also asks owners to review contract and insurance conditions before cutting the provider's data link.
+      MITRE: T1190 (pre-auth exploitation of an exposed controller), T1495 (BSI's bricking worst case: malicious firmware, device
+      unusable). No benign lookalike is stated by any source, so no Triage line is supported. Midnight Blue's blog page metadata
+      shows 2026-11-07 while BSI states publication on 2026-11-11 and CCB's advisory (2026-11-12) cites it as new; the entry should
+      carry BSI's date.
+  - title: "Europol: Operation Endgame strikes Gootloader, CastleRAT and StealC (235 servers, 257 domains), victim credentials routed to HIBP, Shadowserver, NL-NCSC and others for notification"
+    sources:
+      - { url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks", publisher: "Europol", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.heise.de/news/Operation-Endgame-Weltweiter-Schlag-gegen-Cybercrime-11524460.html", publisher: "heise online", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/europol-legt-drei-malware-netzwerke-lahm-20261113", publisher: "Inside IT", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch feed, URL https://www.inside-it.ch/rss.xml (item 'Europol legt drei Malware-Netzwerke lahm', 2026-11-13) → pivot: heise-sec feed item, URL https://www.heise.de/news/Operation-Endgame-Weltweiter-Schlag-gegen-Cybercrime-11524460.html → primary: Europol press release, URL https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks (article body read from the page's embedded NodeLoader JSON via tools/fetch_source.py url --direct; extract and WebFetch return only the SPA shell). Europol's CMS node shows published 2026-11-12T13:00:01Z and updated 2026-11-13T17:00:01Z; the Swiss and German coverage is dated 2026-11-13."
+    summary: |
+      Europol (primary) reports the latest round of Operation Endgame against three malware families, run with private partners:
+      235 servers and 257 domains actioned in total. Gootloader (dropper/loader spread as fake legal documents on compromised, often
+      WordPress, websites, used ahead of ransomware): 14 servers and 218 domains taken down, 681 infected websites remediated.
+      CastleRAT (remote-access trojan known since 2025, used in ransomware intrusions): 120 servers and 39 domains seized, victim
+      data shared for alerts. StealC (stealer with dropper function): 102 servers dismantled, continuing the June 2026 action.
+      Over 6 million (headline: 6.4 million) victim credentials were found on the seized infrastructure; the data will be made
+      available through HaveIBeenPwned, DIVD, CheckjeHack, NoMoreLeaks, Sekoia, the Shadowserver Foundation and the Dutch NCSC to
+      alert victims of CastleRAT credential theft. Europol's advice: WordPress users should update credentials, enable multi-factor
+      authentication and patch. Participants: Bulgaria, Canada, Denmark, Germany (BKA), Moldova, Netherlands, Poland, UK, US, with
+      Europol and Eurojust; no Swiss agency is listed and none of the sources mentions Switzerland. Disposition note: the
+      defender-side consequence is narrow (notification channels and WordPress hygiene); the infrastructure takedown itself gives
+      no operational change for a Swiss administration, so the main agent may prefer to fold this into the registry
+      (campaign:operation-endgame-amadey-stealc) as a relation only.
+    region_nexus: "europe; no Swiss link stated (Swiss coverage via Inside IT, Switzerland not among the listed participants)"
+    primary_sector_nexus: "indirect: staff credentials harvested by StealC/CastleRAT and WordPress-hosted communal sites are the two places a public-sector defender can act"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1189, T1204.002, T1555]
+    affected_products: ["WordPress"]
+    entity_keys:
+      - "malware:castlerat"
+      - "campaign:operation-endgame-amadey-stealc"
+      - "incident:operation-endgame-socgholish-ta569"
+    new_entities:
+      - { key: "malware:gootloader", type: malware, name: "Gootloader", aliases: [], summary: "Dropper/loader that spreads as fake legal documents on compromised, often WordPress, websites and is used ahead of ransomware; 14 servers and 218 domains taken down and 681 infected websites remediated in the November 2026 Operation Endgame round (Europol, 2026-11-12/13)." }
+      - { key: "malware:stealc", type: malware, name: "StealC", aliases: ["Stealc"], summary: "Stealer with dropper function that extracts passwords, stored access data and digital identities for resale; 102 servers dismantled in the November 2026 Operation Endgame round, continuing the June 2026 action (Europol, 2026-11-12/13)." }
+      - { key: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", type: campaign, name: "Operation Endgame - Gootloader/CastleRAT/StealC strike (November 2026)", aliases: ["6.4 million victim datasets secured"], summary: "Europol-coordinated round of Operation Endgame against Gootloader, CastleRAT and StealC: 235 servers and 257 domains actioned, over 6 million victim credentials identified and routed to notification platforms (Europol, 2026-11-12/13)." }
+    relation_suggestions:
+      - { subject: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", object: "campaign:operation-endgame-amadey-stealc", basis: "Europol: 'This operation is part of Operation Endgame' and the StealC action is 'continuing efforts from June 2026' (Europol, 2026-11-12/13)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - { quote: "During the action, 235 servers and 257 domains were actioned by law enforcement together with private parties.", attribution: "Europol", source_url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks" }
+      - { quote: "Victim data will be made available via platforms HaveIBeenPwned, DIVD, CheckjeHack, NoMoreLeaks, Sekoia, The Shadowserver Foundation, and NL-NCSC, alerting victims of stolen credentials caused by the CastleRAT malware.", attribution: "Europol", source_url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks" }
+      - { quote: "WordPress users are urged to update credentials, enable multi-factor authentication, and patch vulnerabilities.", attribution: "Europol", source_url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks" }
+    borderline: true
+    borderline_reason: "law-enforcement action on public threat infrastructure (policy-watch class) but with no Swiss participant and a narrow defender consequence (credential notification channels, WordPress hygiene); Europol's own node dates the release 2026-11-12T13:00Z while Swiss/German coverage is 2026-11-13"
+    extended_notes: |
+      Europol's release says the data were found "in the criminal infrastructure owned by the cybercriminals" and used "to sell them and later
+      be used for other cyber-attacks such as ransomware". Detection concept tied to the notification channel: check Shadowserver and
+      HaveIBeenPwned domain notifications for the organisation's mail domains and rotate affected sessions and passwords, not just passwords
+      (infostealer logs usually carry session material, but no source here says so, so keep that out of the entry). Gootloader's reach into
+      WordPress-hosted communal and school sites is the owner-side exposure (681 sites remediated by the action).
+  - title: "Microsoft 365 / Exchange Online global outage reaches Swiss business and institutions; Microsoft says no sign of a cyberattack, root cause still pending"
+    sources:
+      - { url: "https://www.srf.ch/news/wirtschaft/software-riese-microsoft-ausfall-bei-microsoft-dauert-an-kein-anzeichen-fuer-cyberangriff", publisher: "SRF", date: "2026-11-13", role: "primary" }
+      - { url: "https://www.inside-it.ch/microsoft-panne-schraenkt-schweizer-geschaeftsalltag-ein-20261113", publisher: "Inside IT", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.netzwoche.ch/news/2026-11-13/microsoft-kaempft-mit-ausfaellen-von-outlook-und-teams", publisher: "Netzwoche", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/microsoft-kaempft-gegen-weltweite-stoerungen-20261113", publisher: "Inside IT", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch feed, URL https://www.inside-it.ch/rss.xml (items 'Microsoft-Panne schraenkt Schweizer Geschaeftsalltag ein' and 'Microsoft kaempft gegen weltweite Stoerungen', 2026-11-13) → pivot: netzwoche feed item, URL https://www.netzwoche.ch/news/2026-11-13/microsoft-kaempft-mit-ausfaellen-von-outlook-und-teams → pivot: SRF, URL https://www.srf.ch/news/wirtschaft/software-riese-microsoft-ausfall-bei-microsoft-dauert-an-kein-anzeichen-fuer-cyberangriff (carries Microsoft's statement). Microsoft's status page (status.cloud.microsoft/m365) is a JS app and could not be read; WebSearch for a post-incident report found none dated 2026-11-13."
+    summary: |
+      A Microsoft 365 outage centred on Exchange Online started on Thursday evening (2026-11-12) and was still being worked on the
+      following day (Netzwoche; Inside IT's text calls the day Thursday 13 November, a calendar slip). Per SRF, Microsoft said that
+      "im Moment" no malicious activity is known behind the incident; engineers found a process disabling servers, restored parts
+      and suffered setbacks, and by Friday morning (Netzwoche) a correction to a component responsible for sign-in and request routing
+      had stabilised part of the servers and was being rolled out; Microsoft promised a detailed report after the fix. Affected
+      surfaces named by Netzwoche: Outlook mailboxes (web and desktop), mail delivery, Teams calendar and scheduling, Copilot,
+      parts of SharePoint, the Microsoft 365 admin portal and 'various security solutions' - Safe Links in Defender for Office 365
+      may fail to open links, and access to the Defender XDR portal may be disrupted. Third-party AI services connected to Microsoft 365
+      (OpenAI, Anthropic) also reported problems (Netzwoche citing Reuters; Reuters not fetched). Swiss impact (Inside IT): Richemont's
+      half-year release delayed 40 minutes, Zurich's mail partly down, Nestle delays, Swiss Post pointing urgent cases to the phone,
+      Barry Callebaut and universities including ETH Zurich affected; the Federal Administration (about 44,000 staff) reported only minor
+      performance problems on single applications and unaffected e-mail (statement to Keystone-SDA via Inside IT). No source reports a
+      cantonal or communal administration effect. Hundreds of reports reached allestoerungen.ch (Netzwoche, citing SRF).
+    region_nexus: "switzerland (Swiss businesses, ETH Zurich, Swiss Post; federal administration only marginally affected)"
+    primary_sector_nexus: "direct for dependency risk: Swiss public bodies run M365 mail and Teams; the federal administration reported minor effects only"
+    sector: "public-sector, finance, government"
+    cves: []
+    techniques: []
+    affected_products: ["Microsoft Exchange Online", "Microsoft 365", "Microsoft Defender for Office 365", "Microsoft Defender XDR"]
+    entity_keys: ["product:microsoft-365"]
+    new_entities:
+      - { key: "incident:microsoft-365-exchange-online-global-outage-2026-11", type: incident, name: "Microsoft 365 / Exchange Online global outage (12-13 November 2026)", aliases: ["Microsoft-Panne", "Microsoft 365 Grossstoerung"], summary: "Global Microsoft 365 outage centred on Exchange Online from the evening of 2026-11-12, affecting Outlook, Teams scheduling, Copilot, SharePoint, the admin portal and security features; Microsoft reports no sign of malicious activity and has not yet published a root cause (SRF, Netzwoche, Inside IT, 2026-11-13)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - { quote: "Im Moment sind uns keine bösartigen Aktivitäten bekannt, die diesen Vorfall verursachen.", attribution: "SRF", source_url: "https://www.srf.ch/news/wirtschaft/software-riese-microsoft-ausfall-bei-microsoft-dauert-an-kein-anzeichen-fuer-cyberangriff" }
+      - { quote: "So kann etwa die Linkprüfung Safe Links von Microsoft Defender for Office 365 ausfallen.", attribution: "Netzwoche", source_url: "https://www.netzwoche.ch/news/2026-11-13/microsoft-kaempft-mit-ausfaellen-von-outlook-und-teams" }
+      - { quote: "Die Schweizer Bundesverwaltung mit rund 44'000 Mitarbeitenden meldete lediglich kleinere Leistungsprobleme bei einzelnen Anwendungen.", attribution: "Inside IT", source_url: "https://www.inside-it.ch/microsoft-panne-schraenkt-schweizer-geschaeftsalltag-ein-20261113" }
+    borderline: true
+    borderline_reason: "availability incident, not an attack (Microsoft states no malicious activity known); worth an entry only as a resilience lesson (mail plus Defender portal/Safe Links degraded together; federal administration barely affected) and only once Microsoft publishes its root cause"
+    extended_notes: |
+      Open question for the composer: Microsoft's promised post-incident report is the missing primary; if it lands in a later fire this
+      is the natural update. Defender takeaway candidates the sources support: security tooling that rides on the same sign-in and
+      routing component (Safe Links, Defender XDR portal) degraded with mail, so an out-of-band path to alerting and a decision on how
+      link checking behaves when it cannot answer are worth confirming; no source says Safe Links fails open or closed beyond 'unter
+      Umständen nicht öffnen'.
+  - title: "NCSC.ch advisory: Red Hat Quay anonymous signing-key takeover (CVE-2026-123710, CVSS 9.8) and cross-tenant robot-token theft (CVE-2026-110697, CVSS 9.9)"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13178", publisher: "NCSC Switzerland (Cyber Security Hub)", date: "2026-11-13", role: "primary" }
+      - { url: "https://access.redhat.com/security/cve/cve-2026-123710", publisher: "Red Hat", date: "2026-11-11", role: "primary" }
+      - { url: "https://access.redhat.com/security/cve/cve-2026-110697", publisher: "Red Hat", date: "2026-11-11", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/critical-red-hat-quay-flaw-lets.html", publisher: "The Hacker News", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13178 (ncsc-csh recent 30, post created 2026-11-13T11:29Z) → primary: Red Hat CVE pages, URLs https://access.redhat.com/security/cve/cve-2026-123710 and https://access.redhat.com/security/cve/cve-2026-110697 (named in the CSH post's References) → corroborating: THN, URL https://thehackernews.com/2026/11/critical-red-hat-quay-flaw-lets.html. Dedup: no Quay/CVE-2026-123710 coverage in prior_coverage or the entry store. Overlaps S1's vulnerability remit; returned because a home-region authority flagged it in-window."
+    summary: |
+      Red Hat disclosed two critical Quay flaws on 2026-11-11 (NCSC.ch republished them in the Cyber Security Hub on 2026-11-13;
+      exploitation status "UNKNOWN" there, none reported by the other sources). CVE-2026-123710 (CVSS 3.1 9.8, network, no privileges):
+      an unauthenticated client obtains an anonymous registry token from /v2/auth with an audience it controls, presents it to the
+      service-key rotation endpoint (/keys) and installs its own approved signing key with no expiry, after which registry tokens it
+      signs are accepted for any repository, giving read and write on private images and tag replacement; the planted key survives
+      restarts, can delete the keys running instances use (pushes and pulls then fail) and, per Red Hat, deleting a rogue key is not
+      durable until a fixed build is deployed because the anonymous request can install a new one; the logic has existed since Quay's
+      first public commit (THN citing the bug report). CVE-2026-110697 (CVSS 9.9, low privileges, scope changed): the robot-account
+      listing builds a SQL LIKE pattern from the namespace name without escaping wildcards, so a namespace containing an underscore
+      matches another tenant's namespace and returns its robot accounts with decrypted tokens, enabling image read, push and overwrite;
+      with Quay as the integrated OpenShift registry the stolen tokens can inject images into CI/CD. Red Hat lists every Quay 3 and
+      Quay 5 version as affected (THN's reading of Red Hat's data); fixed builds named on the CVE-2026-110697 page are 3.9.28, 3.10.28,
+      3.12.24, 3.14.10, 3.15.9, 3.16.7, 3.17.7 and 3.18.3 (the fetched CVE-2026-123710 page names no fixed list, and THN observed that
+      page still showing no fix). Exposure: any Quay instance that untrusted clients can reach, including internal registries;
+      standalone installs, Quay Operator on OpenShift and the mirror registry for OpenShift are named for CVE-2026-123710; anonymous
+      access is on by default (THN).
+    region_nexus: "global; NCSC.ch flagged it for Swiss operators of OpenShift/Quay registries (public-sector container platforms are plausible users but no source names Swiss deployments)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-123710, CVE-2026-110697]
+    techniques: [T1190, T1195.002]
+    affected_products: ["Red Hat Quay", "mirror registry for Red Hat OpenShift"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:red-hat-quay", type: product, name: "Red Hat Quay", aliases: ["Quay", "Red Hat Quay container registry"], summary: "Red Hat's container registry (standalone, Quay Operator on OpenShift, mirror registry for OpenShift); two critical flaws disclosed 2026-11-11: anonymous service-key takeover (CVE-2026-123710) and cross-tenant robot-token theft (CVE-2026-110697) (Red Hat, NCSC.ch)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - { quote: "An unauthenticated client can obtain an anonymous registry token with an audience it controls, present that token to the service key rotation endpoint, and install its own approved signing key with no expiry.", attribution: "Red Hat", source_url: "https://access.redhat.com/security/cve/cve-2026-123710" }
+      - { quote: "Deleting a rogue key is not durable until a fixed build is deployed, because the anonymous request can install a new key.", attribution: "Red Hat", source_url: "https://access.redhat.com/security/cve/cve-2026-123710" }
+      - { quote: "Red Hat lists every version of Quay 3 and Quay 5 as affected by both flaws.", attribution: "The Hacker News", source_url: "https://thehackernews.com/2026/11/critical-red-hat-quay-flaw-lets.html" }
+      - { quote: "Patches are available.", attribution: "NCSC Switzerland (Cyber Security Hub)", source_url: "https://security-hub.ncsc.admin.ch/#/posts/13178" }
+    borderline: true
+    borderline_reason: "S1 remit (vulnerability); returned because NCSC.ch flagged it in-window and it is uncovered; pre-auth CVSS 9.8 with a public-sector-plausible platform but no exploitation or PoC reported, and Red Hat's own disclosure is dated 2026-11-11"
+    extended_notes: |
+      Detection concept Red Hat gives: registry audit-log events service_key_rotate and service_key_delete with a null expiration_date, plus
+      unrecognised approved service keys; for the tenant flaw, registry pulls or pushes that do not match expected robot-account usage and
+      rotation of robot tokens for namespaces that collide with underscore-containing names. Interim hardening: block /keys at the proxy or
+      load balancer for everything except trusted internal components; restrict who can create namespaces containing an underscore.
+  - title: "Saxony: emergency-service pager messages with patient names and diagnoses readable and mirrored on a social network for years; LKA investigating (POCSAG without end-to-end encryption)"
+    sources:
+      - { url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html", publisher: "heise online", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.spiegel.de/netzwelt/sachsen-massive-datenpanne-bei-notrufdiensten-a-c5fc673d-e0fa-422b-bed3-a3d323b9db1b", publisher: "DER SPIEGEL", date: "2026-11-11", role: "primary" }
+      - { url: "https://www.beobachter.ch/burger-verwaltung/sensible-notrufdaten-im-netz-174268", publisher: "Beobachter", date: "2018-08-28", role: "background" }
+    discovery_trace: "first seen at: heise-sec feed, URL https://www.heise.de/security/feed.xml (item 'Pager-Panne in Sachsen: Notrufmeldungen offenbar frei zugaenglich im Netz', 2026-11-12T15:19Z) → pivot: heise article, URL https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html → primary: DER SPIEGEL (S+ paywall; only the teaser was readable), URL https://www.spiegel.de/netzwelt/sachsen-massive-datenpanne-bei-notrufdiensten-a-c5fc673d-e0fa-422b-bed3-a3d323b9db1b → background: Beobachter 2018, URL https://www.beobachter.ch/burger-verwaltung/sensible-notrufdaten-im-netz-174268 (found via WebSearch 'Pager Alarmierung Feuerwehr Rettungsdienst Schweiz POCSAG unverschluesselt ...'; read through the jina reader)."
+    summary: |
+      Per Spiegel (relayed by heise, which also queried the authority): unauthorised parties have for years been able to read, and
+      someone republished on a social network, the radio messages sent to pagers of Saxon fire brigades, rescue services and civil
+      protection; hundreds of messages a day, mostly the Leipzig area and the districts of Zwickau, Vogtland and Erzgebirge, with
+      diagnoses, patient names and addresses. An informant told the Saxon interior ministry and LKA at the end of October without a
+      reply and then went to the press. The LKA's cybercrime contact point (ZAC) told heise it learned of the matter on 2026-10-31
+      and opened an investigation; the number of affected persons and the data volume are unknown. At least one rescue association
+      (Rettungszweckverband Suedwestsachsen) now sends dispatch information without patient names and house numbers. Technical
+      background (heise, from Spiegel): the pagers use the POCSAG protocol, which has no encryption of its own; the Saxon networks
+      reportedly add IDEA (1990, 64-bit blocks), and the informant claims the keys are available in online forums (a claim, not
+      confirmed). Swiss background (Beobachter, 2018-08-28, not current evidence): Swiss rescue and fire pager traffic was then
+      unencrypted nationwide beyond the transmitter-to-mast leg and had been mirrored on a public website; whether that is still the case
+      was not found in this run. Recency: the first reports (Spiegel 2026-11-11, heise 2026-11-12T15:19Z) fall about eight hours before the
+      26 h window; no in-window follow-up was found.
+    region_nexus: "germany (Saxony); transferable to Swiss emergency services (the 2018 Beobachter finding), current Swiss status not verified"
+    primary_sector_nexus: "direct sector (emergency services: fire, EMS, civil protection) but not the Swiss constituency's own incident"
+    sector: "emergency-services, public-sector, healthcare"
+    cves: []
+    techniques: [T1040]
+    affected_products: ["POCSAG pager alerting"]
+    entity_keys: ["incident:nhs-blood-transplant-pager-breach-2026-08"]
+    new_entities:
+      - { key: "incident:saxony-emergency-pager-data-exposure-2026-11", type: incident, name: "Saxony emergency-service pager data exposure (November 2026)", aliases: ["Pager-Panne in Sachsen"], summary: "Pager messages of Saxon fire, rescue and civil-protection services, containing patient names, addresses and diagnoses, were for years readable and republished on a social network; the Saxon LKA learned of it on 2026-10-31 and is investigating (DER SPIEGEL 2026-11-11, heise online 2026-11-12)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - { quote: "Wie viele Betroffene es gibt und wie viele Daten abgeflossen sind, ist unklar.", attribution: "heise online", source_url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html" }
+      - { quote: "Eine Verschlüsselung sieht das Protokoll selbst aber nicht vor.", attribution: "heise online", source_url: "https://www.heise.de/news/Pager-Panne-in-Sachsen-Notrufmeldungen-offenbar-frei-zugaenglich-im-Netz-11523154.html" }
+      - { quote: "Allerdings: Sanität und Feuerwehr kommunizieren in der ganzen Schweiz unverschlüsselt über ihre Pager.", attribution: "Beobachter", source_url: "https://www.beobachter.ch/burger-verwaltung/sensible-notrufdaten-im-netz-174268" }
+    borderline: true
+    borderline_reason: "constituency-core sector (emergency-service alerting) and uncovered in the store, but the freshest source (heise 2026-11-12T15:19Z) lies about eight hours outside the 26 h window, it is a German incident, and the Swiss comparison rests on a 2018 article; the main agent decides"
+    extended_notes: |
+      Mapping caveat: T1040 is the closest enterprise technique for passive interception of an unencrypted transmission; the pager link is
+      radio, not IP, so the mapping is approximate. Detection concept for a Swiss emergency-service operator: no network telemetry exists
+      for passive radio reception; the control is the content design (what a dispatch message carries) and end-to-end pager encryption
+      (a Swissphone document, undated, says end-to-end encryption can be enabled on request - search snippet only, not fetched). Registry
+      analogue: incident:nhs-blood-transplant-pager-breach-2026-08.
+watchlist_sweep:
+  duty: sector-lens
+  note: "no product or supplier watchlists configured; Swiss public-sector and emergency-service lens applied (Swiss federal/cantonal/communal incidents, BACS/NCSC.ch, Swiss supplier disclosures, then DACH/EU authorities)"
+policy_watch:
+  sweep: "ran every item of the standing policy watch"
+  result: "no in-window change to obligations or authority advice for the constituency"
+  detail:
+    - "NCSC.ch / BACS: bacs.admin.ch press newest 2026-11-05 (Beiratstreffen Digitale Schweiz), Im Fokus newest 2026-11-10 (Woche 45 fake shops; Kuehl- und Kaeltesteuerungen, already covered by the Danfoss entry), ESTV phishing 2026-11-09 and EHRA phishing 2026-11-06 (both before the window, citizen-facing); CSH: Quay (returned) and SignDrop (covered)."
+    - "ISG and cantonal implementation: Bern ICSG (in force 2026-11-01) and Aargau InfoSIV (2027-01-01) already covered; Zug's ISG/ISV consultation closed 2026-11-09 (WebSearch, zg.ch listing, not fetched) with no result published; federal ISG revision (VBS draft ordered 2026-05-06) and the new Cybersicherheitsgesetz (consultation draft due June 2027, 2026-09-25) unchanged; Swiss Parliament OData: newest cyber business item submitted 2026-10-02, nothing since."
+    - "EU NIS2 / CRA: no public-administration step in the window (CRA reporting duties apply since 2026-09-11; ENISA's Single Reporting Platform news is dated 2026-09-11; ENISA State of Cybersecurity in the Union 2026 is dated 2026-11-10, outside the window and EU-Member-State scoped)."
+    - "E-government / e-ID: no new e-ID or citizen-portal security development found in the window (SRF/Inside IT items: Freiburg e-building permits, Post/Swisscom e-voting operation from 2028 - neither changes a defender duty)."
+    - "Council of Europe cybercrime convention: nothing found in the window."
+    - "Sanctions and law enforcement on threat infrastructure: Operation Endgame round (returned as borderline); OFAC recent actions 2026-11-09 (Iran shipping) and 2026-11-13 (narcotics) are not cyber; dcod's 13 November law-enforcement roundup adds nothing in the window beyond Endgame."
+backlog_check:
+  chimeraz_zohe: "no confirming source found for the Belgian rescue zone Hainaut-Est (ZOHE): French and Dutch WebSearch queries return no ZOHE breach report, and a search for ChimeraZ returns only French/Belgian real-estate and firearms dataset claims (FrenchBreaches, Telegram relays, hendryadrian.com) with no ZOHE or Swiss commune link. Row stays held; expiry 2026-11-17 unchanged."
+candidate_sources:
+  - id: midnight-blue-blog
+    publisher: "Midnight Blue (security research blog)"
+    url: "https://www.midnightblue.nl/blog"
+    category: research
+    why: "Discoverer-side primary for the Danfoss AK-SM 800A research that CCB and BSI both relay (embedded/OT bricking TTPs, TETRA and satphone research). No RSS link surfaced on the listing (probed once); article pages read cleanly with extract. Low cadence, high analytic substance."
+coverage_gaps:
+  - source_id: lab52
+    reason: "Every direct transport resets the connection (curl exit 35), the jina pool is exhausted (HTTP 402 on all keys), WebFetch returned 503; WebSearch indexes no November 2026 post (newest found 2026-10-05). Real gap, no working recipe this run."
+  - source_id: ico-uk
+    reason: "named in the spawn message as rotation-priority but absent from work/<run-id>/slice.S2.json (27 records, none ico-uk); not attempted."
+  - source_id: netzwoche
+    reason: "https://www.netzwoche.ch/rss.xml works on the direct transport (20 items, 2026-11-13 newest) and tag pages read with extract (cyberangriff, datendiebstahl, ransomware); /feed and itmagazine.ch/rss fall through to the dead jina pool. Recipe note for the main agent: record netzwoche's working feed; the 'Update:' items carry old article URLs with fresh timestamps."
+  - source_id: ncsc-ch-focus / ncsc-ch-incidents / bacs-press
+    reason: "recipe confirmed: `url --direct` on the listing yields /de/<slug> and /de/newnsb/<id> hrefs (newest first) but no dates; `extract` of each href returns title and date in the metadata. Listing hrefs for press releases need the extract call for dates."
+  - source_id: europol-newsroom
+    reason: "extract and WebFetch return only the SPA shell for europol.europa.eu article pages; `url --direct` returns the HTML whose window.SERVER_DATA.NodeLoader.node.body JSON carries the full release plus published/updated epochs. Working recipe for the record notes."
+  - source_id: bsi-de
+    reason: "`pdf <URL>` on a BSI Cybersicherheitswarnung PDF lost page 1 (title, Sachverhalt, overview table); pdftotext -f 1 -l 1 -layout on a downloaded copy recovered it (WebFetch saves the PDF under the session tool-results folder). pdftotext is installed in the container."
+  - source_id: ncsc-ch-security-hub
+    reason: "no gap; note that the CSH post 13054 (refrigeration controllers) was last modified 2026-11-06 and has not been updated for the six new Danfoss AK-SM 800A flaws as of this run."
+fetch_failures:
+  - id: lab52
+    url_tried: "https://lab52.io/blog/feed/"
+    fetch_method: "bridge:feed"
+    status_code: "n/a"
+    error_class: transport-timeout
+    error_message: "curl: (35) Recv failure: Connection reset by peer; urllib RemoteDisconnected on url --direct; jina reader keys all HTTP 402 (balance exhausted)"
+    attempted_methods: [bridge:feed, bridge:url-direct, webfetch, jina, websearch]
+    mitigation_applied: "WebSearch only (no November 2026 Lab52 posts indexed; newest 2026-10-05) - coverage gap"
+    covered_anyway: false
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 15", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "NCSC-2026-0493 Ivanti EPM (covered) and 0494 Zoom Workplace (S1 remit)" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent + feed alerte + feed cti", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "only an Apple HomeView avis in window; CTI-010 REACTIV report of 2026-11-12 already added to the covered ANSSI entry on 2026-11-13" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + pdf", horizon_hours: 26, in_horizon_items: 28, returned: 1, note: "28 [NEU] WID items (vulnerability remit, S1); BSI Danfoss IT-Sicherheitshinweis read as the Danfoss delta's primary" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed warnings + current", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-10-21 (PHP)" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-020 Citrix at 2026-11-12T17:20Z (covered)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "Edito CMS vulnerabilities (Polish CMS, no Swiss relevance)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "webfetch listing + bridge:cisa csaf-recent", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "KEV alert of 2026-11-13 (S1); ICS advisories newest 2026-11-12 (before window); no AA-series advisory since 2026-11-01" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "State of Cybersecurity in the Union 2026 dated 2026-11-10 (outside window, EU-scoped); CRA Single Reporting Platform and ETL 2026 are September items" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 7, returned: 2, note: "Danfoss delta and Endgame returned; Saxony pager item (2026-11-12) returned as borderline; secret-stealer item covered (WFX Phantom); Mittwald MCP attack is S4 remit" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + url --direct (NEXT_DATA)", horizon_hours: 26, in_horizon_items: 9, returned: 2, note: "M365 outage and Europol Endgame; the other items are procurement/business news" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest Woche 45 (2026-11-10) and Kuehlanlagen warning (2026-11-10, covered)" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warnung-kuehlanlagen 2026-11-10, ESTV phishing 2026-11-09, EHRA 2026-11-06" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 30", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "13178 Quay returned (borderline); 13177 SignDrop already covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-11 (CyAS scheme news)" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "url --direct + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest press release 2026-11-05" }
+  - { id: lab52, tier: standard, attempted: true, transport: "feed/url --direct/webfetch/jina all failed", horizon_hours: 170, in_horizon_items: 0, returned: 0, note: "unreachable on every transport (see fetch_failures); WebSearch finds no November post" }
+  - { id: infoguard-ch, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-11-09 third-party-risk blog is awareness marketing" }
+  - { id: scip-ch, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "2026-11-12 agent-permissions essay, no new technique or incident" }
+  - { id: senthorus-ch, tier: standard, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "CVE-2026-76504 Cisco SD-WAN, NetScaler and SAP OVERPASS/S4GET posts re-read already covered findings; weekly review of 2026-11-09 covers 26 Oct to 1 Nov" }
+  - { id: swisspost-cybersecurity, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-10-05, marketing content" }
+  - { id: us-treasury-ofac, tier: standard, attempted: true, transport: "extract listing + extract per action", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "2026-11-09 Iran designation update and 2026-11-13 counter-narcotics designations, neither cyber" }
+  - { id: withsecure-labs, tier: standard, attempted: true, transport: "bridge:wp-json", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest 2026-11-04 (Phexia macOS ClickFix), before the lookback" }
+  - { id: golem-security, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 6, returned: 0, note: "lead titles only (cookie wall): Mittwald (S4 remit), Grok app leaks, Patchday; nothing Swiss" }
+  - { id: nzz-technologie, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "no security item since 2026-11-05 (Russian activist groups and the cooling-shelf attacks)" }
+  - { id: rbb24-recherche, tier: standard, attempted: true, transport: "url --direct listing", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "Berlin Rhysida article of 2026-10 already covered; no new Recherche item" }
+  - { id: parlament-ch-odata, tier: standard, attempted: true, transport: "bridge:OData cyber filter", horizon_hours: 148, in_horizon_items: 0, returned: 0, note: "newest cyber business items submitted 2026-10-02 (26.4572, 26.4609); nothing newer" }
+  - { id: dcod-ch, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 121, in_horizon_items: 3, returned: 0, note: "used as a lead to the Endgame action and the ENISA report; no Swiss incident in its 2026-11-10 to 13 roundups beyond already covered Vaud and refrigeration items" }

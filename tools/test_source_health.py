@@ -183,6 +183,14 @@ def test_direct_refusal_status_is_a_wall_but_a_404_is_not():
         sh.subprocess.run = real
 
 
+def test_webfetch_record_with_refused_browser_ua_is_not_flagged_for_a_bridge():
+    """A webfetch record the container UA gets 403 on is handled by the agent-side WebFetch."""
+    assert sh._webfetch_reach_wall("webfetch", "ua-blocked", "needs-bridge")
+    assert not sh._webfetch_reach_wall("bridge", "ua-blocked", "needs-bridge")
+    assert not sh._webfetch_reach_wall("webfetch", "ua-blocked", "none")
+    assert not sh._webfetch_reach_wall("webfetch", "client-error", "needs-demote")
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0
@@ -203,3 +211,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

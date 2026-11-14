@@ -71,12 +71,13 @@ cves:
     fixed: Jumbo Hotfix Accumulator R82.20 take 14, R82.10 take 52, R82 take 132 and R81.20 take 174 or later; release-specific standalone hotfix packages (the R81.20 package of 2026-10-28 on take 166 or higher where Mobile Access is used); Spark R82.00.11 starting from build B998002843 and R81.10.17 starting from B996005005; a hotfix for the R81.10 gateway release, published 2026-10-29
   - id: CVE-2026-123039
     cvss: 7.8 (Check Point)
-    epss: null
+    epss: '0.01274'
     type: priv-esc
     vector: local
     auth: post-auth
     status:
       - exploited
+      - cisa-kev
       - patch-available
     affected: Check Point Force firewalls, Security Management and Log Servers, Multi-Domain Security Management and Log Servers and Maestro Orchestrator on R82.20, R82.10, R82, R81.20, R81.10 and R81; Spark firewalls and Smart-1 Cloud are not affected
     fixed: 'Jumbo Hotfix Accumulator R82.20 take 14, R82.10 take 52, R82 take 132 and R81.20 take 174 or later; no fix listed for R81.10 or R81; mitigation until then: stop the dynamic_server process and prevent it from restarting'
@@ -129,7 +130,7 @@ evidence:
     publisher: Check Point (sk1000362, CVE-2026-123039, modified 2026-11-12)
     source_url: https://support.checkpoint.com/results/sk/sk1000362
 verification: single-source
-sourcing_note: Check Point is the disclosing party and its three documents, sk1000302, sk1000362 and Check Point Research's report, are one assessor; no independent confirmation of exploitation of Check Point gateways was read. sk1000302 carries no exploitation statement and no post-compromise check, and the CISA listing of the two PHP flaws concerns PHP generally, not Check Point gateways. Whether the standalone PHP hotfix also closes CVE-2026-123039 is not stated; sk1000362 lists only Jumbo takes as the fix. Check Point Research names no victim country other than Israel and leaves attribution open; indicators are deliberately not carried.
+sourcing_note: Check Point is the disclosing party and its three documents, sk1000302, sk1000362 and Check Point Research's report, are one assessor; CISA's Known Exploited Vulnerabilities catalogue lists CVE-2026-123039 from 2026-11-13 without describing its evidence, so the listing may rest on Check Point's own report and is not counted as independent confirmation of exploitation. sk1000302 carries no exploitation statement and no post-compromise check, and the CISA listing of the two PHP flaws concerns PHP generally, not Check Point gateways. Whether the standalone PHP hotfix also closes CVE-2026-123039 is not stated; sk1000362 lists only Jumbo takes as the fix. Check Point Research names no victim country other than Israel and leaves attribution open; indicators are deliberately not carried.
 confidence: high
 references:
   - 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619
@@ -181,6 +182,15 @@ updates:
       - evidence
       - sourcing_note
       - body
+  - at: "2026-11-14T04:02:02Z"
+    run_id: 2026-11-14T0255Z-intel
+    type: improvement
+    internal: true
+    summary: >
+      CISA's Known Exploited Vulnerabilities catalogue added CVE-2026-123039 on 2026-11-13 (due
+      2026-11-16); its CVE record now carries the cisa-kev status and an EPSS value, and the sourcing note
+      says the listing is not counted as independent confirmation.
+    fields: [cves, sourcing_note]
 migrated_from: null
 ---
 

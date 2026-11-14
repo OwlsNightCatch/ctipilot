@@ -1,0 +1,1402 @@
+domain: DR-B
+run_id: 2026-11-14T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+note: 'Research only: no entry composed, no state touched. Every quote below is a contiguous substring of the saved copy named beside it (checked with Python `in`
+  and, for single-line quotes, `grep -F -q`); grep_F_verified=true on every row. No IOC values are reproduced (addresses, hashes, domains and wallet strings omitted).
+  ET converted to UTC assuming EST (UTC-5; US DST ended 2026-11-01). Quotes read through WebFetch are marked in the saved copy header.'
+items:
+- item: 1
+  entry: entries/2026-11-12/screenconnect-sckit-toolkit-pushed-to-hundreds-of-endpoints.md
+  returned_item: work/2026-11-14T0255Z-intel/findings.S3.yaml items[4] (Microsoft Threat Intelligence 2026-11-13)
+  primary: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+  verdict: 'Update warranted. New since the entry''s last record (2026-11-13T04:04:37Z): Microsoft names RelayTrap and the cookie/Shared Toolbox stage and relays
+    ConnectWise''s 26.6.5 statement; Huntress (11/13 22:30Z) reports a second wave (205 hosts / 41 organisations) and ConnectWise''s updated advisory urging every
+    technician client on 26.6.5+; Blackpoint (11/13 19:23Z) says the second wave appears to target on-premises instances with mitigations pending. ConnectWise''s
+    CNA record for CVE-2026-127063 is unchanged. The technician stage is still unobserved as a success by Huntress and Blackpoint; Microsoft states it as design.'
+  claim_table:
+  - id: '1.01'
+    claim: Microsoft confirms ConnectWise's reported activity and says it also observed actors abusing ScreenConnect to install unauthorized clients and deploy the
+      SCKit worm on customer managed endpoints; it names no actor, gives no victim count and no observed-success statement for the technician stage.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Microsoft Threat Intelligence has confirmed ConnectWise’s reported activity and we have also observed threat actors abusing ScreenConnect, a legitimate
+      remote-support application, to install unauthorized remote-access clients and deploy a malicious worm, SCKit, on ConnectWise customer managed endpoints.
+    grep_F_verified: true
+  - id: '1.02'
+    claim: 'RelayTrap is the new component name: a replacement for the ScreenConnect client built on the affected customer endpoint, designed to deliver a payload
+      to the technician who connects.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: SCKit is a malware toolkit that includes RelayTrap, a malicious replacement for the ScreenConnect client on an affected customer endpoint. RelayTrap is
+      designed to deliver a payload to a technician’s workstation when they connect for support.
+    grep_F_verified: true
+  - id: '1.03'
+    claim: ConnectWise (relayed by Microsoft) says the CVE-2026-84869 fix blocks the endpoint-to-technician spread.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: ConnectWise states that the fix for CVE-2026-84869 blocks the toolkit’s attempted endpoint-to-technician spread.
+    grep_F_verified: true
+  - id: '1.04'
+    claim: 'Client version statement (relayed by Microsoft from ConnectWise): clients 26.6.5 and later block the endpoint-to-technician transfer; fix released 2026-09-08;
+      a cloud-console update does not update technician clients.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: ConnectWise states that ScreenConnect client 26.6.5 and later block the toolkit’s attempted endpoint-to-technician transfer technique. The fix for CVE-2026-84869
+      was released on September 8, 2026. Verify each technician client’s installed version; a cloud-console update does not automatically update those clients.
+    grep_F_verified: true
+  - id: '1.05'
+    claim: 'Mechanism: a watcher polls every 10 seconds, enumerates ScreenConnect client services and compiles RelayTrap.exe per client with the .NET C# compiler
+      (compile-after-delivery).'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: The watcher enumerates ScreenConnect client services and reads their executable paths and connection parameters. For each client, its build routine creates
+      a directory under trapbins, copies libraries from that client’s installation, and uses the .NET C# compiler to build RelayTrap.exe.
+    grep_F_verified: true
+  - id: '1.06'
+    claim: Poll interval.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: The -PollSeconds 10 argument configures the watcher to poll every 10 seconds.
+    grep_F_verified: true
+  - id: '1.07'
+    claim: RelayTrap reuses the endpoint client's connection details and, when a technician with a vulnerable host client connects, tries to deliver the batch launcher
+      through that session (designed behavior).
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: RelayTrap is designed to reuse the customer endpoint’s ScreenConnect connection details in place of its normal client. When a technician connects with
+      a vulnerable host client, RelayTrap attempts to deliver the staged batch launcher through that session.
+    grep_F_verified: true
+  - id: '1.08'
+    claim: 'Persistence on the endpoint: machine-wide Run value launching an alert script at logon plus a scheduled task for the watcher, scripts under a ProgramData
+      directory.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: The RelayTrapLiteAlert value in the machine-wide CurrentVersion\Run key launches an alert script at user logon.
+    grep_F_verified: true
+  - id: '1.09'
+    claim: Defender path exclusions are written for staged MSI copies and an installer script.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Registry writes target Microsoft Defender Antivirus path exclusions for staged MSI copies
+    grep_F_verified: true
+  - id: '1.10'
+    claim: 'Environmental keying: the decoder reads MachineGuid and sends it to the server; the key is derived from the machine identifier XOR a server-supplied half,
+      then PBKDF2.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: To derive the decryption key, the decoder hashes the UTF-8 machine identifier with SHA-256, XORs that hash with 32 bytes decoded from X-Lab-Half, and appends
+      the machine-identifier bytes to the recovered secret material.
+    grep_F_verified: true
+  - id: '1.11'
+    claim: 'Browser cookie theft: .ASPXAUTH cookies searched in Chrome, Edge, Opera and Opera GX profiles.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: The browser-access code searches Chrome, Edge, Opera, and Opera GX profiles for cookies named .ASPXAUTH.
+    grep_F_verified: true
+  - id: '1.12'
+    claim: 'Second cookie route: memory scan of the browser network-service process.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: An embedded C# scanner uses OpenProcess, VirtualQueryEx, and ReadProcessMemory to inspect readable committed memory regions for cookie strings and nearby
+      host strings.
+    grep_F_verified: true
+  - id: '1.13'
+    claim: 'Console distribution (designed): cookie + anti-forgery + access tokens, enumerate sessions, upload payload with ToolboxRelayUploader.exe, queue through
+      the Shared Toolbox, delete the Toolbox item afterwards.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: The console-distribution component is designed to combine an authentication cookie with the required anti-forgery and access tokens, enumerate accessible
+      sessions, upload a payload using ToolboxRelayUploader.exe, and queue execution through the Shared Toolbox. The workflow also includes removing the uploaded
+      Toolbox item after distribution.
+    grep_F_verified: true
+  - id: '1.14'
+    claim: Microsoft relays the ConnectWise advisory as describing RMM+ 1.0.31/1.0.32 accepting an empty key when no access key was configured (the Trust Center advisory
+      itself returned HTTP 403 on every transport here, so this is unverified against ConnectWise's page).
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: 'describes a reported authentication flaw in RMM+ versions 1.0.31 and 1.0.32: when no access key was configured, the extension accepted an empty key.'
+    grep_F_verified: true
+  - id: '1.15'
+    claim: 'Entry route still open per Microsoft/ConnectWise: extension abuse investigated as initial-access route; entry method under investigation.'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: ConnectWise is investigating extension abuse as an initial-access route; the entry method for the reported campaign remains under investigation.
+    grep_F_verified: true
+  - id: '1.16'
+    claim: Removing the rogue client does not remove persistence or invalidate web sessions.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Removing an unauthorized client alone does not remove the toolkit’s persistence or invalidate exposed web sessions.
+    grep_F_verified: true
+  - id: '1.17'
+    claim: Response channel and technician scope.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Use Microsoft Defender for Endpoint live response or another approved out-of-band method instead of ScreenConnect on a suspected affected device. Isolate
+      affected endpoints and include connecting technician workstations in scope.
+    grep_F_verified: true
+  - id: '1.18'
+    claim: Session revocation incl. identity-provider sessions.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Invalidate affected ScreenConnect web sessions and associated identity-provider sessions, rotate exposed credentials, and review accounts and permissions.
+      Password changes alone do not address every existing session.
+    grep_F_verified: true
+  - id: '1.19'
+    claim: Cleanup script from the kit must not be used (it can re-arm the toolkit).
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Do not use a cleanup script recovered from the kit as a remediation tool.
+    grep_F_verified: true
+  - id: '1.20'
+    claim: Extension names Microsoft says to keep disabled.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Follow the vendor advisory for Labtech Plus, RMM Plus, RMM+, RMM Plus Password Link, and RMM+ Password Link.
+    grep_F_verified: true
+  - id: '1.21'
+    claim: 'Hardening: two separate surfaces (extension authentication and technician-client file transfer).'
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Extension authentication and client-side file transfer are different attack surfaces; securing one does not remove the other or an existing endpoint installation.
+    grep_F_verified: true
+  - id: '1.22'
+    claim: Microsoft Defender coverage names exist (alert-title families) for command execution via ScreenConnect, suspicious remote-management installation, Defender
+      exclusion, DPAPI/browser theft.
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_msft.txt
+    quote: Suspicious installation of remote management software
+    grep_F_verified: true
+  - id: '1.30'
+    claim: 'Second wave on 2026-11-13: Huntress update of 11/13 5:30 pm ET (= 22:30 UTC, EST assumed) reports a spike at 16:12 UTC hitting 205 hosts at 41 organisations
+      (not additive to the first wave without a source saying so).'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: On November 13 at 16:12 UTC, Huntress saw another spike in detections related to SCKit. This latest wave of activity has impacted 205 hosts across 41 organizations.
+    grep_F_verified: true
+  - id: '1.31'
+    claim: 'Second wave: decoder attempts but no follow-on executions observed; one incident had a self-hosted RMM+ plugin.'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: we did not observe any follow-on executions. In one of the incidents we observed, the organization had a self-hosted instance of the RMM+ plugin.
+    grep_F_verified: true
+  - id: '1.32'
+    claim: 'Second wave: ConnectWise updated its advisory (via Huntress): reiterates disabling extensions incl. RMM+ for on-premises partners and urges verifying
+      every technician client runs 26.6.5 or later.'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: reiterating its recommendation for on-premises partners to immediately disable the specified extensions outlined below (including RMM+). ConnectWise also
+      urged partners to verify that every technician client is running ScreenConnect 26.6.5 or later.
+    grep_F_verified: true
+  - id: '1.33'
+    claim: 'Second wave: rogue service masquerading as a Windows component (persistence).'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: we saw a rogue ScreenConnect client establish persistence via a service called Windows Update Agent, posing as a legitimate system component.
+    grep_F_verified: true
+  - id: '1.34'
+    claim: 'Second wave: new installer name and a numeric tag counter; one panel yielded 190 downstream clients.'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: compromising 190 downstream clients from just one ScreenConnect panel.
+    grep_F_verified: true
+  - id: '1.35'
+    claim: 'Second wave: local traffic redirection stage and hosts-file edit (behavior only; addresses omitted).'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: and modified the hosts file.
+    grep_F_verified: true
+  - id: '1.36'
+    claim: 'Huntress original: technician-stage never observed to succeed (still stands).'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: We have not observed that method to spread work successfully. The console-takeover attempt failed in every recovered host log we have checked so far.
+    grep_F_verified: true
+  - id: '1.37'
+    claim: 'Huntress original: RMM+ 1.0.31/1.0.32 blank-key claim and no login activity (already in entry).'
+    source_url: https://www.huntress.com/blog/sckit-worm-rogue-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_sckit.txt
+    quote: 'versions 1.0.31 and 1.0.32 contained a serious authentication flaw: if an administrator had never configured the extension''s access key, RMM+ would accept
+      a blank one.'
+    grep_F_verified: true
+  - id: '1.40'
+    claim: 'Blackpoint SITREP update 03 (2026-11-13 14:23 ET = 19:23 UTC, EST assumed): second wave appears to target on-premises instances where mitigations remain
+      pending.'
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: has observed a second wave of this campaign that appears to target on-premises ScreenConnect instances.
+    grep_F_verified: true
+  - id: '1.41'
+    claim: 'Blackpoint: second wave activity targets instances with pending mitigations; modified toolkit likely; no sample recovered yet.'
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: Our investigation is ongoing, but the activity is targeting instances where the mitigations remain pending.
+    grep_F_verified: true
+  - id: '1.42'
+    claim: 'Blackpoint''s own test: the armed trap queued the transfer but a current Host client did not fetch or run it.'
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: The malicious Guest queued the transfer, but the technician-side Host did **not** request the file or launch a process.
+    grep_F_verified: true
+  - id: '1.43'
+    claim: Blackpoint build threshold for the fixed Host client.
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: The vulnerability affects builds earlier than **26.6.5.9742**
+    grep_F_verified: true
+  - id: '1.44'
+    claim: Blackpoint found no technical link between the extensions and RelayTrap / cookie routines (extensions' role limited to first panel access, unresolved).
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: APG found **no technical link** between those extensions and SCKit’s **RelayTrap** execution request or its browser session collection routines.
+    grep_F_verified: true
+  - id: '1.45'
+    claim: 'Blackpoint: cookie-database route has a parsing defect; memory route more plausible in this build.'
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: That leaves the browser-memory route as the more plausible recovery path in this build.
+    grep_F_verified: true
+  - id: '1.46'
+    claim: 'Blackpoint: no observed technician compromise through this mechanism.'
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: APG also did not observe successful technician compromise through this mechanism during the campaign.
+    grep_F_verified: true
+  - id: '1.47'
+    claim: 'Blackpoint: event ID 201 is the file-transfer-and-run lead in ScreenConnect.'
+    source_url: https://blackpointcyber.com/blog/screenconnect-attack-sckit/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_blackpoint.txt
+    quote: That event is a useful lead when investigating attempted reverse execution
+    grep_F_verified: true
+  - id: '1.50'
+    claim: 'ConnectWise CNA record CVE-2026-84869 (2026-09-08): affected = clients prior to 26.6.5; on-prem upgrade to 26.6.5 or later; cloud servers already updated
+      but host clients and access agents must be updated.'
+    source_url: https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-84869
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_cw_CVE-2026-84869_README.md
+    quote: We recommend updating your host clients
+    grep_F_verified: true
+  - id: '1.51'
+    claim: 'Same record: fixed version.'
+    source_url: https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-84869
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_cw_CVE-2026-84869_README.md
+    quote: '- ScreenConnect 26.6.5 and later'
+    grep_F_verified: true
+  - id: '1.52'
+    claim: 'ConnectWise CNA record CVE-2026-127063 (2026-11-12): unchanged: static API secret by default; no fixed RMM+ version; disable it.'
+    source_url: https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-127063
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_cw_CVE-2026-127063_README.md
+    quote: No fixed RMM+ version has been announced. Disabling the extension is the current mitigation.
+    grep_F_verified: true
+  - id: '1.53'
+    claim: ConnectWise CNA record CVE-2026-127063 names the default-credential weakness class.
+    source_url: https://github.com/ConnectWise-Advisories/Disclosures/tree/main/CVE-2026-127063
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_cw_CVE-2026-127063_README.md
+    quote: 'CWE-1392: Use of Default Credentials'
+    grep_F_verified: true
+  - id: '1.54'
+    claim: 'ConnectWise disclosures repo: last advisory commit for CVE-2026-127063 is 2026-11-12; the 2026-11-13 commit is only a logo update (nothing newer from
+      ConnectWise''s CNA channel).'
+    source_url: https://api.github.com/repos/ConnectWise-Advisories/Disclosures/commits?per_page=10
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_cw_commits.json
+    quote: Update README with new ConnectWise logomark
+    grep_F_verified: true
+  - id: '1.55'
+    claim: 'Same repo: advisory add commit for the extension CVE.'
+    source_url: https://api.github.com/repos/ConnectWise-Advisories/Disclosures/commits?per_page=10
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_cw_commits.json
+    quote: Add advisory for CVE-2026-127063
+    grep_F_verified: true
+  - id: '1.60'
+    claim: 'Huntress: no overlap between the crypto-bait fake sessions and published SCKit indicators.'
+    source_url: https://www.huntress.com/blog/fake-crypto-exchange-sessions-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_fake.txt
+    quote: We haven't found any overlap between the crypto-bait fakes and the published SCKit indicators.
+    grep_F_verified: true
+  - id: '1.61'
+    claim: 'Huntress: leading hypothesis is bait for technicians to exploit CVE-2026-84869; not observed.'
+    source_url: https://www.huntress.com/blog/fake-crypto-exchange-sessions-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_fake.txt
+    quote: This is our leading hypothesis, but it's important to note that we have not observed the guest sessions being used this way.
+    grep_F_verified: true
+  - id: '1.62'
+    claim: 'Huntress: scale and window of the fake sessions.'
+    source_url: https://www.huntress.com/blog/fake-crypto-exchange-sessions-screenconnect
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_huntress_fake.txt
+    quote: we've found 2,223 fake sessions on 118 servers across 109 MSP and organization accounts.
+    grep_F_verified: true
+  - id: '1.70'
+    claim: 'ConnectWise (via BleepingComputer, 2026-11-11): reports of technician workstations compromised during interactive sessions "still being confirmed" - the
+      vendor-level statement the entry does not carry; Huntress and Blackpoint have not observed it.'
+    source_url: https://www.bleepingcomputer.com/news/security/active-screenconnect-attacks-breach-msps-impact-dozens-of-organizations/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_bc.txt
+    quote: ConnectWise also said it has received reports of technician workstations being compromised during interactive ScreenConnect sessions, but these reports
+      are still being confirmed.
+    grep_F_verified: true
+  - id: '1.71'
+    claim: 'The Record (2026-11-12): Blackpoint tested against a fully patched client and the patch blocks it.'
+    source_url: https://therecord.media/connectwise-screenconnect-breaches-third-party-tool
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B1_record.txt
+    quote: Both researchers noted that they tested the toolkit against a fully patched ScreenConnect client and confirmed the patch works
+    grep_F_verified: true
+  facts:
+    versions_and_cves:
+    - 'CVE-2026-127063 (ConnectWise as CNA, published 2026-11-12): third-party RMM+ extension (DataComm) "uses a static API secret by default"; CVSS 4.0 9.3 (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N);
+      CWE-1392; server and client not affected; no fixed RMM+ version; cloud: ConnectWise disabled and removed the extension; on-premises: disable immediately, verify
+      it stays disabled, do not re-enable or reinstall. Record unchanged since 2026-11-12 (disclosures repo: last commit touching it 2026-11-12T17:47Z, a 2026-11-13
+      commit is a logo update). Not in the CISA KEV catalogue 2026.11.13.'
+    - 'RMM+ 1.0.31 and 1.0.32 accept an empty access key when none was configured: Huntress (own analysis, 2026-11-11 update) and Microsoft (2026-11-13) relaying
+      ConnectWise''s Trust Center advisory. The CNA record names no versions. Both statements stand side by side; the Trust Center advisory itself is unreadable here
+      (HTTP 403 on every transport).'
+    - 'Extensions ConnectWise named on 2026-11-11 and Microsoft repeats on 2026-11-13: Labtech Plus, RMM Plus, RMM+, RMM Plus Password Link, RMM+ Password Link; ConnectWise
+      later traced the activity to the RMM+ family (The Record, 2026-11-12); about 400 partner environments had at least one extension of that family.'
+    - 'CVE-2026-84869 (context, covered by entry 2026-09-12/cve-2026-84869-connectwise-screenconnect-worm-file-transfer): ScreenConnect client versions before 26.6.5
+      (CNA record 2026-09-08; Blackpoint: builds earlier than 26.6.5.9742); fixed in 26.6.5 and later; CVSS 3.1 9.9; CWE-862/CWE-269; in CISA KEV since 2026-09-11
+      (own KEV check, ransomware-use field Unknown). Cloud servers were updated by ConnectWise, but host clients and Access agents must still be updated by the partner
+      (CNA record); Microsoft: a cloud-console update does not update technician clients.'
+    - 'New statement now on record from three directions that the 26.6.5+ client blocks SCKit''s endpoint-to-technician transfer: ConnectWise via Microsoft (2026-11-13),
+      ConnectWise via Huntress (updated advisory, urged verifying every technician client is on 26.6.5 or later), and Blackpoint''s own test (patched Host never fetched
+      or ran the file). Neither Microsoft nor Huntress nor Blackpoint reports a successful technician compromise.'
+    exploitation_statements_per_source:
+    - 'Microsoft Threat Intelligence (2026-11-13): confirms ConnectWise''s reported activity from 2026-11-11 and its own observation of actors abusing ScreenConnect
+      to install unauthorized clients and deploy SCKit on customer managed endpoints; names no actor and gives no counts; RelayTrap and the cookie/Toolbox stage are
+      described as "designed to"; says the entry method "remains under investigation" per ConnectWise.'
+    - 'Huntress original + updates: wave 1 started about 17:47 UTC 2026-11-11, 288 hosts / 48 organisations in 90 minutes; wave 2 on 2026-11-13 from 16:12 UTC, 205
+      hosts / 41 organisations, decoder attempted but no follow-on executions seen, one incident with a self-hosted RMM+ plugin (update 11/13 5:30 pm ET = 22:30Z,
+      EST assumed). Technician stage never observed to succeed.'
+    - 'Blackpoint (SITREP update 03, 2026-11-13 14:23 ET = 19:23Z, EST assumed): SOC saw a second wave that appears to target on-premises instances where mitigations
+      remain pending, likely a modified toolkit, no sample recovered yet; APG found no technical link between the extensions and RelayTrap or the cookie routines;
+      the extensions'' role in first panel access stays unresolved; no technician compromise observed; cookie-database route has a parsing defect so the memory route
+      is the more plausible recovery path.'
+    - 'ConnectWise (relayed): 2026-11-11 notice via BleepingComputer: reports of technician workstation compromise during interactive sessions "still being confirmed";
+      2026-11-13 updated advisory via Huntress: reiterates disabling extensions on-premises and urges verifying every technician client is on 26.6.5 or later. ConnectWise''s
+      own pages are unreadable here.'
+    - 'Huntress separate post (2026-11-14): fake crypto-exchange-named guest sessions, no overlap with SCKit indicators, see same_cluster_verdict_item_S3_5.'
+    same_cluster_verdict_item_S3_5: 'Separate cluster per Huntress itself ("We haven''t found any overlap between the crypto-bait fakes and the published SCKit indicators"):
+      guest-side enrollment of 2,223 fake Access sessions on 118 self-hosted servers since 2026-11-03 with no malicious activity observed, versus SCKit''s panel-side
+      Run Command abuse; the only link is the shared product and the client-side CVE-2026-84869 angle against technicians, which is Huntress''s unobserved hypothesis.
+      Do not merge into the SCKit entry; at most a one-clause cross-reference.'
+    not_stated_by_sources:
+    - No source names an actor, a victim organisation or a Swiss victim.
+    - Microsoft gives no number of affected hosts or tenants and no statement that a technician workstation was actually compromised.
+    - ConnectWise's Trust Center advisory and the 2026-09-08 bulletin could not be read (see fetch_notes); every ConnectWise statement beyond the CNA records is relayed.
+  supersession_sweep:
+  - where: 'frontmatter: title'
+    existing_text: installed a rogue second client and the SCKit toolkit; Huntress links the activity to the RMM+ extension, whose versions 1.0.31 and 1.0.32 accepted
+      a blank access key
+    found_verbatim_in_entry: true
+    status: holds for wave 1; incomplete
+    delta_and_proposed_handling: 'Wave 2 (2026-11-13: 205 hosts / 41 organisations) and the technician-targeting design are not reflected. Title has no length cap;
+      composer judgement whether a reader of the title alone needs wave 2.'
+    claim_ids:
+    - '1.30'
+    - '1.40'
+  - where: 'frontmatter: headline (101 chars, limit 120)'
+    existing_text: 'ScreenConnect: rogue clients on 288+ endpoints; RMM+ extension CVE-2026-127063 has no fix, disable it'
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: '"288+" remains a true lower bound; no fix still true (CNA record unchanged). 19 characters of headroom.'
+    claim_ids:
+    - '1.52'
+    - '1.54'
+  - where: 'frontmatter: summary'
+    existing_text: Huntress saw an operator use access to several cloud-hosted ScreenConnect panels on 2026-11-11
+    found_verbatim_in_entry: true
+    status: incomplete
+    delta_and_proposed_handling: 'Scope "cloud-hosted" is wave 1 only: Blackpoint says the 2026-11-13 wave appears to target on-premises instances with mitigations
+      pending; Huntress saw a self-hosted RMM+ in a wave-2 incident. Also the summary does not say technician clients must be on 26.6.5+ (ConnectWise urged it 2026-11-13).'
+    claim_ids:
+    - '1.31'
+    - '1.32'
+    - '1.40'
+    - '1.41'
+  - where: 'frontmatter: summary (end)'
+    existing_text: while a Huntress spokesperson says the panel-access vector is still unclear and Blackpoint calls the extensions' role unresolved
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: Microsoft (2026-11-13) says the entry method "remains under investigation" per ConnectWise; Blackpoint (still) finds no link between
+      the extensions and RelayTrap/cookie routines.
+    claim_ids:
+    - '1.15'
+    - '1.44'
+  - where: body P1, sentence 1
+    existing_text: On 2026-11-11 Huntress observed an operator using access to several cloud-hosted ScreenConnect panels to run commands as SYSTEM
+    found_verbatim_in_entry: true
+    status: holds for wave 1; incomplete
+    delta_and_proposed_handling: Same cloud-hosted scope point; wave 2 is on-premises per Blackpoint. A sentence for wave 2 must replace words elsewhere (547 of 550
+      words used).
+    claim_ids:
+    - '1.30'
+    - '1.40'
+  - where: body P1, last sentence
+    existing_text: The kit adds Defender exclusions, installs a second attacker-controlled client, sets the legitimate client to manual start so the attacker's copy
+      replaces it, and runs a per-host executable from a scheduled task
+    found_verbatim_in_entry: true
+    status: holds; refine
+    delta_and_proposed_handling: 'Microsoft identifies the per-host executable: RelayTrap, built on the endpoint by a watcher polling every 10 s with the .NET C#
+      compiler against each installed client''s libraries and connection details, persisted by a machine-wide Run value plus a scheduled task. Replace this sentence
+      with the sharper one rather than adding beside it.'
+    claim_ids:
+    - '1.05'
+    - '1.06'
+    - '1.07'
+    - '1.08'
+    - '1.09'
+  - where: body P2, technician stage
+    existing_text: Huntress reconstructs a second stage meant to spread through the connecting technician's panel but saw no successful jump
+    found_verbatim_in_entry: true
+    status: holds; imprecise
+    delta_and_proposed_handling: 'Two sub-stages are now documented: (a) RelayTrap pushes the batch launcher into a connecting technician''s session using the CVE-2026-84869
+      client flaw, which 26.6.5+ blocks (ConnectWise via Microsoft; Blackpoint test); (b) cookie theft (.ASPXAUTH from Chrome/Edge/Opera/Opera GX by database copy
+      or browser-process memory scan) then enumerate sessions and push a payload through the Shared Toolbox, deleting the item afterwards. Both are designed behaviour;
+      Huntress and Blackpoint saw neither succeed. Replace the sentence.'
+    claim_ids:
+    - '1.03'
+    - '1.04'
+    - '1.07'
+    - '1.11'
+    - '1.12'
+    - '1.13'
+    - '1.36'
+    - '1.42'
+    - '1.46'
+  - where: body P2, extension role
+    existing_text: Huntress told The Record it has seen no evidence of a new vulnerability and that how the attacker got panel access is unclear (compromised credentials
+      or hijacked operator sessions are possible), and Blackpoint calls the extensions' role in that first access unresolved
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: No newer source resolves it; Huntress wave-2 note adds only that one incident had a self-hosted RMM+.
+    claim_ids:
+    - '1.15'
+    - '1.31'
+    - '1.44'
+  - where: 'labelled line: Exposure'
+    existing_text: an RMM+ extension at any version, since ConnectWise's record names a static default secret, with versions 1.0.31 and 1.0.32 and a blank key as
+      the condition Huntress describes, which the Extensions list shows
+    found_verbatim_in_entry: true
+    status: refine attribution; incomplete
+    delta_and_proposed_handling: 'Microsoft relays ConnectWise''s Trust Center advisory as itself describing 1.0.31/1.0.32 accepting an empty key, so the versions/blank
+      key are no longer only "the condition Huntress describes" (unverified against ConnectWise''s page, 403). Exposure also lacks the technician side: host clients
+      older than 26.6.5 (build 26.6.5.9742 per Blackpoint) are what RelayTrap''s transfer needs, and a cloud console update does not update them.'
+    claim_ids:
+    - '1.04'
+    - '1.14'
+    - '1.43'
+  - where: 'labelled line: Detection'
+    existing_text: process-creation telemetry with the ScreenConnect client service as parent of cmd, PowerShell or msiexec
+    found_verbatim_in_entry: true
+    status: holds; incomplete
+    delta_and_proposed_handling: 'Add (telemetry-class concepts, Microsoft/Blackpoint): a compiler process building an executable under a ProgramData directory next
+      to a ScreenConnect client; a machine-wide Run value and scheduled task pointing into that directory; registry writes adding Defender path exclusions for staged
+      installers; cookie-database copies or shadow-copy reads and ReadProcessMemory against a browser network-service process by a non-browser process; ScreenConnect
+      audit-trail entries for Run Command, Toolbox uploads and deletions; ScreenConnect event ID 201 (file transfer and run) in session context; on technician workstations
+      the host client spawning cmd, PowerShell, wscript or msiexec with a file under the user''s ScreenConnect Temp folder (Huntress, host-side shape of CVE-2026-84869).'
+    claim_ids:
+    - '1.08'
+    - '1.09'
+    - '1.11'
+    - '1.12'
+    - '1.13'
+    - '1.47'
+  - where: 'labelled line: Defender takeaway'
+    existing_text: remove or disable RMM+ and the four other extensions the first notice named, verify the legitimate client before removing anything, rotate ScreenConnect
+      credentials and revoke active sessions from a clean device
+    found_verbatim_in_entry: true
+    status: holds; add
+    delta_and_proposed_handling: 'Add: verify every technician host client is on 26.6.5 or later and reinstall host clients (a cloud console update does not) (ConnectWise
+      via Huntress and Microsoft); treat technician workstations that connected to a suspect host as in scope; do not use a cleanup script recovered from the kit
+      (it can re-arm the toolkit). The first-notice extension names are now the five Microsoft lists.'
+    claim_ids:
+    - '1.04'
+    - '1.17'
+    - '1.18'
+    - '1.19'
+    - '1.20'
+    - '1.32'
+  - where: Update 2026-11-13T04:04:37Z section
+    existing_text: Blackpoint reverse engineered the toolkit, saw unauthorised deployments through legitimate cloud-hosted instances but no successful propagation
+      to a technician workstation, and calls the extensions' role in the first panel access unresolved
+    found_verbatim_in_entry: true
+    status: holds for wave 1
+    delta_and_proposed_handling: Blackpoint's page (now dated 2026-11-13, SITREP update 03) adds a second wave on on-premises instances. The cited source date in
+      the entry is 2026-11-12; the fetched page metadata says 2026-11-13.
+    claim_ids:
+    - '1.40'
+    - '1.41'
+  - where: Update 2026-11-13T04:04:37Z section
+    existing_text: This differs from Huntress's account of a blank key in versions 1.0.31 and 1.0.32
+    found_verbatim_in_entry: true
+    status: holds for the CNA record vs Huntress; refine
+    delta_and_proposed_handling: Per Microsoft the Trust Center advisory agrees with Huntress on versions and the empty key; the difference is then between the CNA
+      record (static default secret, no versions) and the Trust Center advisory/Huntress. Only relayed; ConnectWise's page unreadable.
+    claim_ids:
+    - '1.14'
+    - '1.52'
+  - where: 'frontmatter: sourcing_note (1)'
+    existing_text: ConnectWise's advisory was not readable, so its statements come from the sentences BleepingComputer quotes, written before that update, and from
+      Huntress's account of it.
+    found_verbatim_in_entry: true
+    status: still true; extend
+    delta_and_proposed_handling: 'Still unreadable on every transport this run (extract, url --direct, jina reader, WebFetch; www and bare host). More relays exist
+      now: Microsoft (2026-11-13) and Huntress''s 2026-11-13 update of the advisory. Only the ConnectWise CNA GitHub repository is readable.'
+    claim_ids:
+    - '1.04'
+    - '1.14'
+    - '1.32'
+    - '1.50'
+    - '1.52'
+  - where: 'frontmatter: sourcing_note (2)'
+    existing_text: ConnectWise's CNA record and the statements The Record quotes now describe the extension's defect differently from Huntress (a static default secret
+      in all versions and a passphrase set by the partner, against a blank key in two versions)
+    found_verbatim_in_entry: true
+    status: refine
+    delta_and_proposed_handling: Microsoft's relay of the Trust Center advisory describes the Huntress version (empty key, 1.0.31/1.0.32), so "ConnectWise differs
+      from Huntress" is true of the CNA record and The Record's quote, not of the advisory as relayed by Microsoft.
+    claim_ids:
+    - '1.14'
+    - '1.52'
+  - where: 'frontmatter: sourcing_note (3)'
+    existing_text: Blackpoint ties part of the toolkit's behaviour to CVE-2026-84869, a flaw already covered, and says its test against a current release did not
+      execute.
+    found_verbatim_in_entry: true
+    status: holds; strengthened
+    delta_and_proposed_handling: Microsoft (relaying ConnectWise) and Huntress (relaying ConnectWise's updated advisory) now independently say 26.6.5+ blocks the
+      transfer and should be verified on technician clients.
+    claim_ids:
+    - '1.03'
+    - '1.04'
+    - '1.32'
+    - '1.42'
+  - where: 'frontmatter: cves[]'
+    existing_text: '- id: CVE-2026-127063'
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: Microsoft/Blackpoint tie RelayTrap to CVE-2026-84869, which lives in entry 2026-09-12 (already in this entry's references[]). Whether
+      to add it to cves[] is composer judgement; the gate rule is overlap needs the references[] declaration, which exists.
+    claim_ids:
+    - '1.03'
+    - '1.43'
+  - where: 'frontmatter: priority / immediate_action (priority: high, immediate_action: null)'
+    existing_text: 'priority: high'
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: Nothing in the delta changes the bar (no patch for the extension, exploitation ongoing, but the technician stage is unobserved and
+      a patched client blocks it).
+    claim_ids: []
+  actions_check:
+    current_action_holds: true
+    reasoning: 'Every clause is still valid: disable RMM+ and verify it stays disabled (ConnectWise CNA record; Microsoft "keep the identified extensions disabled"),
+      review Run Command / Toolbox history and audit logs including before 2026-11-11 (Microsoft: retain extension, authentication, Run Command and Toolbox records;
+      Huntress: sequential tags suggest earlier compromise), check endpoints for a second client service, and no interactive session to a suspect host, use out-of-band
+      response (Microsoft: Defender live response or other out-of-band method; Huntress: WinRM; Blackpoint the same). The on-premises wording matches wave 2 (on-premises
+      instances with pending mitigations).'
+    candidate_addition: 'One short clause on technician clients, not a second action: confirm every technician host client is 26.6.5 or later (build 26.6.5.9742 per
+      Blackpoint) and reinstall host clients, since a cloud-console update does not update them. Basis: ConnectWise''s 2026-11-13 advisory update (via Huntress) and
+      Microsoft. Overlap note: entry 2026-09-12 already carries "Upgrade every ConnectWise ScreenConnect on-premise client to 26.6.5 now" (on-premises only), so the
+      new element is the cloud-customer/host-client reinstall and its direct SCKit relevance. Composer decides whether it clears the do-now bar.'
+    not_actions: Detection and hardening detail (Run value, compiler, cookie access, event ID 201, do-not-use-the-kit's-cleanup-script) belongs in the labelled lines,
+      not actions[].
+  main_analysis_word_count:
+    gate_counter: 'tools/check_run.py _main_words (link text only, before the first "## " heading): 547 words; limit 550 (1,100 for a deep dive); 3 words of headroom.'
+    per_paragraph_whitespace_words_incl_citation_tokens:
+      P1 (Huntress observation + SCKit delivery): 114
+      P2 (RMM+ / CVE / Huntress, Blackpoint): 210
+      Exposure: 65
+      Detection: 70
+      Defender takeaway: 88
+    update_section_words:
+      Update 2026-11-13T04:04:37Z: 144
+    cut_candidates: 'A delta that adds RelayTrap, the 26.6.5 statement and wave 2 must remove an equal number of words: the P1 last sentence (kit persistence) is
+      superseded by the RelayTrap sentence; the P2 technician-stage sentence is superseded by the two-sub-stage sentence; the P2 "(compromised credentials or hijacked
+      operator sessions are possible)" parenthesis and "which the Extensions list shows" in Exposure are low-value; the 2026-11-13 Update section already restates
+      the CNA-record and Blackpoint facts that P2 also carries, so P2 can drop its duplicate of them.'
+  attack_suggestions:
+    already_in_entry:
+    - T1072
+    - T1219.002
+    - T1059.003
+    - T1059.001
+    - T1105
+    - T1218.007
+    - T1685
+    - T1053.005
+    - T1547.001
+    - T1489
+    - T1027
+    - T1539
+    - T1550.004
+    suggested_additions:
+    - id: T1027.004
+      name: Compile After Delivery
+      behavior: 'RelayTrap.exe is compiled on each endpoint with the .NET C# compiler against the installed client''s libraries (Microsoft; Huntress: "compiled on
+        the fly")'
+      claim_ids:
+      - '1.05'
+    - id: T1480.001
+      name: Environmental Keying
+      behavior: toolkit decryption key derived from the endpoint MachineGuid XOR a server-supplied half, so the bundle only decrypts on the requesting machine
+      claim_ids:
+      - '1.10'
+    - id: T1140
+      name: Deobfuscate/Decode Files or Information
+      behavior: PowerShell decoder decrypts (AES-256-CBC), decompresses (GZip) and unpacks the bundle
+      claim_ids:
+      - '1.10'
+    - id: T1543.003
+      name: Windows Service
+      behavior: rogue ScreenConnect client installed as an automatic-start service (Microsoft); wave 2 rogue service named like a Windows component (Huntress)
+      claim_ids:
+      - '1.33'
+    - id: T1036.004
+      name: Masquerade Task or Service
+      behavior: wave-2 rogue client service named "Windows Update Agent" (Huntress 11/13)
+      claim_ids:
+      - '1.33'
+    - id: T1059.005
+      name: Visual Basic
+      behavior: VBScript wrapper run through wscript.exe for the hidden relaunch (Microsoft)
+      claim_ids: []
+    - id: T1564.003
+      name: Hidden Window
+      behavior: hidden relaunch of the batch launcher and hidden PowerShell loader processes (Microsoft)
+      claim_ids: []
+    - id: T1070.004
+      name: File Deletion
+      behavior: loader removes its temporary PowerShell payload; Toolbox item deleted after the push (Microsoft)
+      claim_ids:
+      - '1.13'
+    - id: T1570
+      name: Lateral Tool Transfer
+      behavior: designed push of the launcher from the endpoint into the technician's session and of a payload to other sessions through the Shared Toolbox; designed,
+        not observed to succeed (flag as design-level mapping)
+      claim_ids:
+      - '1.07'
+      - '1.13'
+      - '1.46'
+    - id: T1090.001
+      name: Internal Proxy
+      behavior: 'WEAK, wave 2 only: local port redirection staged with netsh plus hosts-file edit (Huntress 11/13); mapping not stated by the source, composer may
+        skip'
+      claim_ids:
+      - '1.35'
+    do_not_add: 'T1555.003 (browser credential stores) is not what the sources describe (session cookies, not saved passwords); T1539 plus T1550.004 already carry
+      the cookie theft and replay. No initial-access id (T1190/T1078/T1199) is supportable: every source says the entry method is unconfirmed.'
+  fetch_notes:
+  - 'Microsoft blog: extract served via trafilatura-direct (full body, saved).'
+  - 'ConnectWise own channel: the Trust Center advisories page and the 2026-09-08 ScreenConnect bulletin are walled on every transport (extract: direct HTTP 403,
+    trafilatura no readable body, jina relayed an upstream block and the first reader key reported balance exhausted HTTP 402; url --direct 403 on www and bare host;
+    WebFetch HTTP 403 on both URLs and on the advisories page). ConnectWise''s statements are therefore relayed (Microsoft, Huntress 11/13, BleepingComputer, The
+    Record).'
+  - 'The readable ConnectWise channel is the CNA repository: `url --direct` on the github.com tree page for CVE-2026-127063 (HTTP 200, directory listing embedded),
+    `url --direct` on raw.githubusercontent.com .../CVE-2026-127063/README.md and .../CVE-2026-84869/README.md (full text, saved), and api.github.com/repos/ConnectWise-Advisories/Disclosures/commits
+    (shows no change to the extension record after 2026-11-12 and a logo-only commit on 2026-11-13). Suggest recording this recipe in the ConnectWise source record.'
+  - 'Also fetched in full and checked for deltas: Huntress SCKit post (update 11/13 is new), Huntress fake-sessions post, Blackpoint (SITREP update 03 is new), Sophos
+    (unchanged), BleepingComputer 11-11 (unchanged), The Record 11-12 (unchanged), The Hacker News SCKit article 11-12 (adds a ConnectWise spokesperson statement
+    already in the entry''s substance), Canadian Cyber Centre AV26-903 (September, only the KEV update).'
+  - 'WebSearch x5 (standard/extended) for newer ConnectWise or coverage statements: nothing newer than the pages above surfaced.'
+  same_cluster_one_liner: 'Separate cluster per Huntress itself ("We haven''t found any overlap between the crypto-bait fakes and the published SCKit indicators"):
+    guest-side enrollment of 2,223 fake Access sessions on 118 self-hosted servers since 2026-11-03 with no malicious activity observed, versus SCKit''s panel-side
+    Run Command abuse; the only link is the shared product and the client-side CVE-2026-84869 angle against technicians, which is Huntress''s unobserved hypothesis.
+    Do not merge into the SCKit entry; at most a one-clause cross-reference.'
+- item: 2
+  entry: entries/2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline.md
+  returned_item: work/2026-11-14T0255Z-intel/findings.S1.yaml items[7] (Agent2Shell, N-able 2026-11-12 precautions, Huntback 19 of 21)
+  primary: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html
+  verdict: 'Update warranted but narrower than S1 suggests. Genuinely new since the entry''s last record (2026-11-13T03:54:38Z): (1) Agent2Shell, absent from the
+    entry; (2) N-able, relayed by Huntress on 11/13 15:25Z, confirmed Agent2Shell also requires the non-default Legacy API and published IoCs for customers that have
+    not disabled it (13:40:25Z), which post-dates and softens the "no signs of compromise" clause the entry carries in four places; (3) Tenable adds that the Intune
+    integration was also temporarily deactivated for on-premises customers; (4) Huntress''s Agent2Shell detection concepts (static analysis only); (5) BSI WID-SEC-2026-4563
+    rates the family kritisch. The 4EverAble2Shell facts (Huntback 21 servers, 19 on Hotfix 2, Previdian attempts, Legacy API gate, no fix, follow-up hotfix) are
+    already in the entry and unchanged. No N-able fixed build or new hotfix exists as of the fetches; no named actor; not in KEV.'
+  claim_table:
+  - id: '2.01'
+    claim: 'Agent2Shell per The Hacker News (2026-11-12 article): more than 10 zero-days to run commands on managed Windows agents as SYSTEM, assuming the attacker
+      knows the target appliance ID. The entry does not mention Agent2Shell anywhere.'
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: Agent2Shell, on the other hand, leverages more than 10 zero-day vulnerabilities to run commands on managed Windows agents as NT AUTHORITY\SYSTEM, assuming
+      the attacker knows the target appliance ID.
+    grep_F_verified: true
+  - id: '2.02'
+    claim: 'Huntress (11/12 1:10 AM ET) on Agent2Shell: more than ten issues in server-to-Agent/Probe communication; two chains give an unauthenticated attacker who
+      can reach the server SYSTEM command execution on managed Windows endpoints.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: Agent2Shell is a set of more than ten issues in how the N-central server communicates with Windows Agents and Probes. Two of the chains allow an unauthenticated
+      attacker who can reach the server to run commands on managed Windows endpoints, including as SYSTEM.
+    grep_F_verified: true
+  - id: '2.03'
+    claim: 'Huntress (11/13 10:25 AM ET = 15:25 UTC, EST assumed) relays N-able: Agent2Shell, like 4EverAble2Shell, requires the non-default Legacy API. Supersedes
+      Huntress/Tenable''s "not yet confirmed whether Agent2Shell also depends on Legacy API".'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: Additionally, N-able confirmed that Agent2Shell exploitation (like 4EverAble2Shell) requires the non-default Legacy API to be enabled.
+    grep_F_verified: true
+  - id: '2.04'
+    claim: Earlier Huntress state (11/12 6:30 AM ET), now superseded by 2.03.
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: We have not yet confirmed whether the Agent2Shell chains affecting Windows Agents and Probes also depend on Legacy API.
+    grep_F_verified: true
+  - id: '2.05'
+    claim: Tenable (11-12) carried the same open question, before 2.03.
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: Huntress says it has not yet confirmed whether the Agent2Shell chains also depend on the Legacy API.
+    grep_F_verified: true
+  - id: '2.10'
+    claim: 'N-able (relayed by Huntress): update of 2026-11-13 13:40:25 UTC says it has identified indicators of compromise for customers that have not disabled the
+      Legacy API. The IoC URLs/outbound-traffic list Huntress reproduces is the same set Huntback published on 2026-11-12 (payload host paths, mining endpoints).
+      N-able''s page itself is unreadable here.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: on November 13 at 13:40:25 UTC, N-able said that it has identified Indicators of Compromise (IoCs) for customers that haven't disabled the Legacy API.
+    grep_F_verified: true
+  - id: '2.11'
+    claim: 'Huntress as of 11/13: still no exploitation observed in its partners'' environments.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: As of this writing, Huntress has not observed exploitation of these issues in our partners' environments.
+    grep_F_verified: true
+  - id: '2.12'
+    claim: 'N-able 2026-11-12 first notice (via The Hacker News): server issue depends on a non-default configuration with Legacy API on and exposed to the public
+      internet; hosted environments not affected; off by default and not recommended.'
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: Based on our initial review, the server issue described depends on a non-default configuration in which the Legacy API is turned on and exposed to the
+      public internet,
+    grep_F_verified: true
+  - id: '2.13'
+    claim: 'Same notice: scope.'
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: It also noted that hosted environments are not affected by this issue.
+    grep_F_verified: true
+  - id: '2.14'
+    claim: Affected services listed by N-able are the three on-premises regions.
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: '- N-central On-premise (Europe)'
+    grep_F_verified: true
+  - id: '2.15'
+    claim: 'N-able 2026-11-12 restriction notice (via The Hacker News 2026-11-13): restricting features and integrations, Legacy API off by default, Intune integration
+      turned off on hosted environments.'
+    source_url: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn1.txt
+    quote: Intune integration has been turned off while additional protections are implemented and validated.
+    grep_F_verified: true
+  - id: '2.16'
+    claim: 'Same notice: statement of purpose.'
+    source_url: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn1.txt
+    quote: '"We are restricting certain N-central features and integrations,"'
+    grep_F_verified: true
+  - id: '2.17'
+    claim: 'Tenable (11-12, from N-able''s later November 12 update): Intune integration also temporarily deactivated for on-premises customers running it; support
+      contacts those it could not reach. Delta versus the entry (silent on Intune) and versus The Hacker News (hosted only).'
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: N-able says it has turned off the Intune integration in hosted environments and has temporarily deactivated it for on-premises customers running it, and
+      that its support team will contact any on-premises customer where it could not do so.
+    grep_F_verified: true
+  - id: '2.18'
+    claim: On-premises customers are told to upgrade Agents and Probes and keep Legacy API off.
+    source_url: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn1.txt
+    quote: On-premises customers are being urged to upgrade Agents and Probes and ensure Legacy API access is disabled in the environment, if it has been previously
+      turned on.
+    grep_F_verified: true
+  - id: '2.19'
+    claim: N-able is developing additional remediation; no fixed server build for the new set.
+    source_url: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn1.txt
+    quote: Our teams are actively assessing the new disclosures, developing additional remediation, and working to safely restore affected functionality,
+    grep_F_verified: true
+  - id: '2.20'
+    claim: 'Tenable: no N-able fix for the 11-12 claims; follow-up hotfix planned.'
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: N-able has not yet released a fix for the November 12 claims and says it is developing additional remediation.
+    grep_F_verified: true
+  - id: '2.21'
+    claim: 'Tenable relays N-able: follow-up hotfix with further security updates is planned.'
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: A follow-up hotfix with further security updates is also planned.
+    grep_F_verified: true
+  - id: '2.22'
+    claim: 'N-able 2026-11-12: "no signs of compromise" (the sentence the entry carries, attributed to Tenable). Tenable key takeaway.'
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: Separately, N-able’s November 12 update says it has seen no signs of compromise.
+    grep_F_verified: true
+  - id: '2.23'
+    claim: BleepingComputer (11-12) notes the same N-able statement and the contradiction with researchers' reports. N-able's 11-13 IoC publication (2.10) post-dates
+      both.
+    source_url: https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bc.txt
+    quote: In its advisory, N-able said it had seen no signs of compromise using the new flaws, although security researchers have since reported successful exploitation
+      of the vulnerability against production N-central servers.
+    grep_F_verified: true
+  - id: '2.24'
+    claim: 'Huntress 11/12 6:30 AM ET: N-able not advising customers to take N-central offline; Hotfix 2 + Legacy API disabled is not exposed to the 4Ever chain;
+      if Legacy API is needed, do not expose it.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: Servers running 2026.4 HF2 with Legacy API disabled are not exposed to this exploit chain.
+    grep_F_verified: true
+  - id: '2.25'
+    claim: 'Same update: do not expose Legacy API to the internet if it must stay on.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: If **you need Legacy API enabled, do not expose it to the internet**.
+    grep_F_verified: true
+  - id: '2.30'
+    claim: 'The Hacker News 2026-11-13: multiple reports show 4EverAble2Shell has moved from probing to active exploitation deploying miners.'
+    source_url: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn1.txt
+    quote: Multiple threat intelligence reports show that 4EverAble2Shell has moved beyond preliminary probing to active exploitation efforts, with threat actors
+      leveraging it to deploy cryptocurrency miners on vulnerable servers.
+    grep_F_verified: true
+  - id: '2.31'
+    claim: 'Huntback: 21 rigs, 19 at build 2026.4.1.26 (Hotfix 2).'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: 19 of them report build `2026.4.1.26`, which is N-central 2026.4 Hotfix 2, released on 10 November to fix the Able2Shell flaws.
+    grep_F_verified: true
+  - id: '2.32'
+    claim: 'Huntback: the patched servers were compromised just the same; one more ran 2025.3.1.9 (the 21st build is not stated).'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: One runs `2025.3.1.9`. The servers that had applied the patch were compromised just the same.
+    grep_F_verified: true
+  - id: '2.33'
+    claim: 'Huntback: country spread, no Swiss host.'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: They sit in the United States (9), South Africa (4), Canada (4), the United Kingdom, Germany, France and Sweden (1 each).
+    grep_F_verified: true
+  - id: '2.34'
+    claim: 'Huntback: miner only payload seen; treat a hit as full compromise; Hotfix 2 alone not enough; keep Legacy API disabled.'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: The miner is the only payload we have seen, but the escalation hands the operator root on a host that manages your customers' endpoints.
+    grep_F_verified: true
+  - id: '2.35'
+    claim: 'Huntback: guidance sentence the entry''s action rests on.'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: 'Applying Hotfix 2 is not enough on its own: 19 of the victims here were already running it.'
+    grep_F_verified: true
+  - id: '2.36'
+    claim: 'Huntback: evidence basis is the operator''s public pool rig list, and Huntback checked each address over HTTPS (production servers, not decoys).'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: These are production servers, not sandboxes or decoys.
+    grep_F_verified: true
+  - id: '2.37'
+    claim: 'Huntback: time stamps (12:50 UTC rig count).'
+    source_url: https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntback.txt
+    quote: 'At 12:50 UTC on 12 November the wallet had **21 rigs whose names start with `nc_`**:'
+    grep_F_verified: true
+  - id: '2.38'
+    claim: 'Tenable: Huntback does not say whether the Legacy API was enabled on the victims; Previdian reports attempts, Tenable lists no named actor.'
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: Huntback has not published the affected addresses and does not say whether the Legacy API was enabled on those servers.
+    grep_F_verified: true
+  - id: '2.39'
+    claim: 'Tenable: no named actor linked.'
+    source_url: https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_tenable.txt
+    quote: No named threat actor has been linked to Able2Shell or 4EverAble2Shell activity as of November 12.
+    grep_F_verified: true
+  - id: '2.40'
+    claim: 'Previdian: 2 attempts, 1 attacker IP, 1 country; first observed 12 Nov; page shows "Updated 14 Nov 2026" with last observed 12 Nov.'
+    source_url: https://previdian.com/VULN-2026-0009
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_previdian.txt
+    quote: Yes. Previdian sensors have observed 2 exploitation attempts, 1 unique attacker IP, and 1 country targeting VULN-2026-0009. First observed Nov 12, 2026.
+      Confidence is confirmed.
+    grep_F_verified: true
+  - id: '2.41'
+    claim: 'Previdian: telemetry shows attempts only, not success.'
+    source_url: https://previdian.com/VULN-2026-0009
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_previdian.txt
+    quote: They do not show that the target was vulnerable or that the attempt succeeded.
+    grep_F_verified: true
+  - id: '2.42'
+    claim: 'Previdian: no CVE assigned for the chain; not in KEV; researcher tested 2026.4.1.26 (HF2); complete affected range and a fixed build not verified.'
+    source_url: https://previdian.com/VULN-2026-0009
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_previdian.txt
+    quote: The complete affected-version range and an N-central fixed build for this chain have not been verified.
+    grep_F_verified: true
+  - id: '2.43'
+    claim: Previdian page flags.
+    source_url: https://previdian.com/VULN-2026-0009
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_previdian.txt
+    quote: No CVE Assigned Yet
+    grep_F_verified: true
+  - id: '2.44'
+    claim: Previdian page flags (KEV).
+    source_url: https://previdian.com/VULN-2026-0009
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_previdian.txt
+    quote: Not in CISA KEV
+    grep_F_verified: true
+  - id: '2.45'
+    claim: 'The Hacker News (11-12): Previdian says no evidence of successful exploitation as of that article (earlier than Huntback''s count); the article is superseded
+      by the 11-13 one.'
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: There is no evidence of successful exploitation as of writing.
+    grep_F_verified: true
+  - id: '2.46'
+    claim: 'The Hacker News (11-12): Previdian first CVE-2026-90436 exploitation attempts; says patches released 2026-11-06 (conflicts with Apache''s statement below).'
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: Dewhurst said the development marks the first documented instance of exploitation attempts aimed at CVE-2026-90436, patches for which were released on
+      November 6, 2026.
+    grep_F_verified: true
+  - id: '2.47'
+    claim: 'Apache Axis project (primary for CVE-2026-90436): affected through 1.4, source patch only, no Axis 1.x release expected. Unchanged.'
+    source_url: https://openwall.com/lists/oss-security/2026/11/06/12
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_openwall.txt
+    quote: The Apache Axis project does not expect to create an Axis 1.x release fixing this problem.
+    grep_F_verified: true
+  - id: '2.48'
+    claim: 'Previdian/BleepingComputer: the full chain was attempted against Previdian''s honeypot and the source IP matched Huntback''s.'
+    source_url: https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bc.txt
+    quote: Previdian later confirmed that attackers were attempting to execute the complete exploit chain against its honeypot server.
+    grep_F_verified: true
+  - id: '2.49'
+    claim: watchTowr also reports probes for the Legacy-API-enabled builds (relayed on X by The Hacker News).
+    source_url: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_thn2.txt
+    quote: watchTowr also said it's seeing probes for 4EverAble2Shell targeting N-Central builds with the Legacy API enabled.
+    grep_F_verified: true
+  - id: '2.50'
+    claim: HF2 build and "critical security update" (unchanged); release notes last updated 2026-11-10, no addendum on Legacy API/Agent2Shell/new hotfix at fetch
+      time (WebFetch summary).
+    source_url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/ (read through WebFetch only; HTTP 403 on extract, url --direct and the reader)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_nable_hf2notes_webfetch.txt
+    quote: N-central 2026.4 Hotfix 2 is a critical security update.
+    grep_F_verified: true
+  - id: '2.51'
+    claim: 'HF2: Agents and Probes must be upgraded for all customers.'
+    source_url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/ (read through WebFetch only; HTTP 403 on extract, url --direct and the reader)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_nable_hf2notes_webfetch.txt
+    quote: All customers, both hosted and on-premises, must upgrade their Agents and Probes.
+    grep_F_verified: true
+  - id: '2.52'
+    claim: 'HF2: Agent upgrade order and hosted servers upgraded by N-able (unchanged).'
+    source_url: https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/ (read through WebFetch only; HTTP 403 on extract, url --direct and the reader)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_nable_hf2notes_webfetch.txt
+    quote: To maintain uninterrupted Agent-to-Probe communication, upgrade Agents first, followed by Probes.
+    grep_F_verified: true
+  - id: '2.60'
+    claim: 'BSI WID-SEC-2026-4563: aggregate severity kritisch.'
+    source_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4563 (content read from the CSAF JSON https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4563.json
+      via `bsi-csaf WID-SEC-2026-4563`; the portal page itself is a JavaScript shell)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bsi_csaf_decoded.txt
+    quote: '"text": "kritisch"'
+    grep_F_verified: true
+  - id: '2.61'
+    claim: 'BSI: summary (German): a remote anonymous attacker can exploit several vulnerabilities in N-able N-Central to execute arbitrary code with administrator
+      privileges.'
+    source_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4563 (content read from the CSAF JSON https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4563.json
+      via `bsi-csaf WID-SEC-2026-4563`; the portal page itself is a JavaScript shell)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bsi_csaf_decoded.txt
+    quote: Ein entfernter, anonymer Angreifer kann mehrere Schwachstellen in N-able N-Central ausnutzen, um beliebigen Programmcode mit Administratorrechten auszuführen.
+    grep_F_verified: true
+  - id: '2.62'
+    claim: 'BSI: affected products named are only N-Central 2026.4 HF2 and 2026.4.1.26; the two vulnerability records carry no CVE id; no mention of the Legacy API
+      prerequisite.'
+    source_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4563 (content read from the CSAF JSON https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4563.json
+      via `bsi-csaf WID-SEC-2026-4563`; the portal page itself is a JavaScript shell)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bsi_csaf_decoded.txt
+    quote: '"name": "N-able N-Central 2026.4.1.26"'
+    grep_F_verified: true
+  - id: '2.63'
+    claim: 'BSI: released 2026-11-12T23:00Z, revision 1, status final.'
+    source_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4563 (content read from the CSAF JSON https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4563.json
+      via `bsi-csaf WID-SEC-2026-4563`; the portal page itself is a JavaScript shell)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bsi_csaf_decoded.txt
+    quote: '"initial_release_date": "2026-11-12T23:00:00.000+00:00"'
+    grep_F_verified: true
+  - id: '2.64'
+    claim: 'BSI: references the N-able status page, Huntback, The Hacker News, Previdian and the researcher''s PoC repository.'
+    source_url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4563 (content read from the CSAF JSON https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4563.json
+      via `bsi-csaf WID-SEC-2026-4563`; the portal page itself is a JavaScript shell)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_bsi_csaf_decoded.txt
+    quote: '"summary": "N-able Active Incidents vom 2026-11-12"'
+    grep_F_verified: true
+  - id: '2.70'
+    claim: 'Huntress: all Agent2Shell/4Ever indicators came from static analysis of the PoC and none were observed in the wild.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: 'Please note that all of these potential indicators were extracted from a static code analysis and none have been observed in the wild:'
+    grep_F_verified: true
+  - id: '2.71'
+    claim: 'Server-side: POSTs to the agent message-exchange endpoint carrying a GenericAgentXMPPMessageExchange payload with session id -1.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: POSTs to `/dms/services/ServerUI` containing `GenericAgentXMPPMessageExchange` with SessionID of -1.
+    grep_F_verified: true
+  - id: '2.72'
+    claim: 'Server-side: POSTs to the MMS2 endpoint carrying RemoteExecutionTaskSubmit with session id -1.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: POSTs to `/dms2/services2/ServerMMS2` containing `RemoteExecutionTaskSubmit` with sessionID of -1.
+    grep_F_verified: true
+  - id: '2.73'
+    claim: 'Server-side artefact: archives under the scheduled-task output directory containing a CodeDropMeta.xml.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: ZIPs under `/download/scheduled_tasks/output_files/` containing `CodeDropMeta.xml`.
+    grep_F_verified: true
+  - id: '2.74'
+    claim: 'Endpoint: SYSTEM PowerShell with -EncodedCommand spawned by the N-able Agent; benign lookalike (PowerShell is a common Agent child) - the command run
+      is what discriminates.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: 'Note: PowerShell is very commonly seen as a child process of N-able, it''s the command that is running that is of interest in this case.'
+    grep_F_verified: true
+  - id: '2.75'
+    claim: 'Endpoint: Windows Software Probe binary/config replaced with backup under CodeDrop and temp files; the probe process tree alone is expected and not a
+      sole indicator.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: 'Note: The Windows Software Probe is very commonly seen as a child process of N-able, so that process tree alone is expected, and not a sole indicator
+      of compromise.'
+    grep_F_verified: true
+  - id: '2.76'
+    claim: 'Endpoint: probe process killed and service stop/start from a .cmd in the temp directory.'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: and a stop/start of "Windows Software Probe Service" run from a .cmd in `%TEMP%`.
+    grep_F_verified: true
+  - id: '2.77'
+    claim: 'Huntress: do not rely on IP allowlisting alone (Agent/Probe check-in endpoints are the affected ones).'
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_huntress.txt
+    quote: The affected endpoints are the same ones Agents and Probes use to check in, so any device on an allowed network can still reach them.
+    grep_F_verified: true
+  - id: '2.80'
+    claim: 'Own check: CISA KEV catalogue 2026.11.13 (released 2026-11-13T20:24Z) lists none of the seven Hotfix 2 CVEs and not CVE-2026-90436 (absence check; no
+      page quote, see saved script output). Previdian''s own flag says Not in CISA KEV.'
+    source_url: CISA KEV catalogue 2026.11.13 via `python3 tools/fetch_source.py cisa-kev` (own check; script output saved)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/B2_kev_check.txt
+    quote: 'NOT in KEV: CVE-2026-125878, CVE-2026-125879, CVE-2026-125880, CVE-2026-125881, CVE-2026-125882, CVE-2026-125883, CVE-2026-127063, CVE-2026-90436, CVE-2026-91000'
+    grep_F_verified: true
+  facts:
+    versions_and_cves:
+    - 'Fixed build for the first set: N-central 2026.4 Hotfix 2, build 2026.4.1.26 (N-able release notes 2026-11-10; read via WebFetch only). Seven CVEs: CVE-2026-125883,
+      -125881, -125878, -125882, -125879, -125880, CVE-2026-91000 (unchanged; none in CISA KEV catalogue 2026.11.13).'
+    - 'Second disclosure (2026-11-12, one researcher, two parts): 4EverAble2Shell (unauthenticated root on the server) and Agent2Shell (more than ten issues in server-to-Windows-Agent/Probe
+      communication; two chains give an unauthenticated attacker who can reach the server SYSTEM command execution on managed Windows endpoints; THN adds "assuming
+      the attacker knows the target appliance ID"). Both tested by the researcher against 2026.4.1.26 (HF2) (BleepingComputer, Previdian).'
+    - 'Gate for both parts: Legacy API turned on. N-able first notice (2026-11-12, via THN): "depends on a non-default configuration in which the Legacy API is turned
+      on and exposed to the public internet"; hosted environments not affected; Legacy API off by default and "not recommended". Agent2Shell requires Legacy API too:
+      N-able, relayed by Huntress on 2026-11-13 10:25 ET (= 15:25Z, EST assumed). This closes the open question Huntress and Tenable carried on 2026-11-12.'
+    - 'CVE-2026-90436 (Apache Axis 1.x, EOL, through 1.4; SOAP fault exceptionName class instantiation; Apache says source patch only and no Axis 1.x release expected;
+      CVSS 9.8 per THN; severity critical per Apache). THN (2026-11-12) quotes Previdian saying patches were released 2026-11-06 - conflicts with Apache; entry cves[].fixed
+      already carries the Apache position. No CVE exists for the N-central root-escalation helper abuse or for Agent2Shell (Previdian: "No CVE Assigned Yet"; BSI
+      vulnerability records carry no CVE id). Not in CISA KEV.'
+    - 'Older builds are hit too: Huntback saw one victim on 2025.3.1.9 besides 19 on 2026.4.1.26; the 21st build is not stated. Tenable: Huntback does not say whether
+      the Legacy API was on on those servers (presumably, since the chain needs it; unverified).'
+    exploitation_statements_per_source:
+    - 'Huntback (2026-11-12, own decoys + the operator''s public mining-pool rig list): first probe 08:30 UTC, first weaponised request 09:16 UTC, 21 active rigs
+      named nc_<ip> at 12:50 UTC, all 21 serve N-central pages (production, not decoys), 19 on 2026.4.1.26; US 9, South Africa 4, Canada 4, UK/Germany/France/Sweden
+      1 each; no Swiss host; miner is the only payload seen; same operator runs 631 rigs across other products. Huntback publishes no victim addresses.'
+    - 'Previdian (page updated 14 Nov, counts unchanged): 2 exploitation attempts, 1 attacker IP, 1 country, first and last observed 12 Nov; says telemetry does not
+      show success; BleepingComputer: Previdian later confirmed the full chain attempted on its honeypot, same source IP as Huntback. Previdian''s own flag: Not in
+      CISA KEV; No CVE Assigned Yet.'
+    - 'The Hacker News 2026-11-12: Previdian "no evidence of successful exploitation as of writing"; watchTowr probes against Legacy-API-enabled builds (via X). The
+      Hacker News 2026-11-13: "Multiple threat intelligence reports show ... active exploitation efforts ... deploy cryptocurrency miners"; Huntback quote that Hotfix
+      2 alone is not enough.'
+    - 'N-able: 2026-11-12 notice "no signs of compromise" (via Tenable, BleepingComputer); 2026-11-13 13:40:25 UTC update (via Huntress) publishes IoCs for customers
+      that have not disabled the Legacy API; the IoC list as reproduced by Huntress matches Huntback''s published network indicators. N-able itself has not, in anything
+      readable, said it has seen compromise or victims; read as: a vendor now carries exploitation-derived indicators, not a vendor confirmation of customer compromise.'
+    - 'Huntress (as of 11/13): has not observed exploitation of the new issues in its partners'' environments. Tenable (2026-11-12): no named actor linked. BSI (WID-SEC-2026-4563,
+      2026-11-12T23:00Z, kritisch): several flaws allow an anonymous remote attacker to run code with administrator rights; affected = N-Central 2026.4 HF2 / 2026.4.1.26;
+      references the N-able status page, Huntback, The Hacker News, Previdian and the PoC repository.'
+    n_able_own_pages: 'Not readable on any transport this run: uptime.n-able.com (root, /event/202609/ first Legacy API notice, /event/202584/, /event/202613/ per
+      Tenable the later 2026-11-12 restriction notice, /event/202561/ original incident) is a script-rendered "Status Dashboard" shell on extract (direct-raw), url
+      --direct and WebFetch (two pages tried); the me.n-able.com knowledge-base article on disabling Legacy API is a Salesforce shell on extract and WebFetch; status.n-able.com
+      HF2 release notes: 403 on extract/url/reader but WebFetch returned a summary with verbatim lines (saved). The page''s own data endpoint sits under /api/v1/private/dashboard/
+      and my one attempt to call it was refused by the permission classifier, so I did not use it and did not retry. All N-able statements after 2026-11-10 are therefore
+      relayed (THN, Tenable, BleepingComputer, Huntress) and must be attributed "N-able, as relayed by ...".'
+  supersession_sweep:
+  - where: 'frontmatter: title'
+    existing_text: a second chain through Apache Axis (CVE-2026-90436) and a root escalation works against Hotfix 2 when the Legacy API is on, is exploited on at
+      least 21 production servers and has no fix yet
+    found_verbatim_in_entry: true
+    status: holds; incomplete
+    delta_and_proposed_handling: True as far as it goes; the second disclosure also contains Agent2Shell (SYSTEM on managed Windows agents), also Legacy-API-gated
+      per N-able. Title has no length cap.
+    claim_ids:
+    - '2.01'
+    - '2.02'
+    - '2.03'
+  - where: 'frontmatter: headline (113 chars, limit 120)'
+    existing_text: 'N-central: 4EverAble2Shell chain works on Hotfix 2 and is exploited on 21+ production servers; disable Legacy API'
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: Still the right action word; 7 characters of headroom.
+    claim_ids:
+    - '2.30'
+    - '2.31'
+    - '2.03'
+  - where: 'frontmatter: summary'
+    existing_text: On 2026-11-12 the researcher published a second chain, 4EverAble2Shell, that pairs an Apache Axis 1.x flaw (CVE-2026-90436) with a separate root
+      escalation
+    found_verbatim_in_entry: true
+    status: incomplete
+    delta_and_proposed_handling: '"a second chain" understates a two-part disclosure; Agent2Shell is absent from the entry (title, headline, summary, body, labelled
+      lines, techniques).'
+    claim_ids:
+    - '2.01'
+    - '2.02'
+  - where: 'frontmatter: summary (N-able clause)'
+    existing_text: N-able says it has seen no signs of compromise, has no fix for the new claims and plans a follow-up hotfix; the Legacy API is off by default and
+      keeping it disabled is the stated protection.
+    found_verbatim_in_entry: true
+    status: partly stale
+    delta_and_proposed_handling: '"no signs of compromise" is N-able''s 2026-11-12 notice (Tenable/BleepingComputer); on 2026-11-13 at 13:40 UTC N-able published
+      IoCs for customers that have not disabled the Legacy API (via Huntress). Date or replace the clause (e.g. N-able later published indicators); no fix and follow-up
+      hotfix still true; Legacy-API protection now also stated to cover Agent2Shell; Intune integration restricted.'
+    claim_ids:
+    - '2.10'
+    - '2.17'
+    - '2.20'
+    - '2.21'
+    - '2.22'
+    - '2.23'
+    - '2.03'
+  - where: 'frontmatter: sourcing_note'
+    existing_text: N-able says it has seen no signs of compromise and no victim has confirmed.
+    found_verbatim_in_entry: true
+    status: partly stale
+    delta_and_proposed_handling: Same stale clause; "no victim has confirmed" still true (no victim statement found).
+    claim_ids:
+    - '2.10'
+    - '2.22'
+  - where: 'frontmatter: sourcing_note'
+    existing_text: The status page where N-able reports the scanning activity is a script-rendered page that could not be read, so that statement comes from Huntress.
+    found_verbatim_in_entry: true
+    status: still true; extend
+    delta_and_proposed_handling: Still unreadable (see n_able_own_pages); the statements added after 2026-11-10 come through The Hacker News, Tenable, BleepingComputer
+      and Huntress.
+    claim_ids:
+    - '2.12'
+    - '2.15'
+    - '2.17'
+  - where: body P3 (4EverAble2Shell paragraph)
+    existing_text: On 2026-11-12 the researcher published a second set, 4EverAble2Shell, which BleepingComputer describes as unauthenticated command execution as
+      root that requires the Legacy API to be enabled
+    found_verbatim_in_entry: true
+    status: incomplete
+    delta_and_proposed_handling: Add Agent2Shell and that N-able confirmed it needs Legacy API too; replace "a second set, 4EverAble2Shell".
+    claim_ids:
+    - '2.01'
+    - '2.02'
+    - '2.03'
+  - where: body P3 and Update 2026-11-13 section
+    existing_text: N-able says it has seen no signs of compromise, has no fix for the new claims and plans a follow-up hotfix ([Tenable, 2026-11-12]
+    found_verbatim_in_entry: true
+    status: partly stale (appears in main body and in the 2026-11-13 Update section)
+    delta_and_proposed_handling: 'Fix both places: "no signs of compromise" predates N-able''s 2026-11-13 IoC publication; "no fix" and "follow-up hotfix" hold.'
+    claim_ids:
+    - '2.10'
+    - '2.20'
+    - '2.21'
+    - '2.22'
+  - where: 'labelled line: Exposure (start)'
+    existing_text: an on-premises N-central server, yours or an IT provider's, whose web interface is reachable beyond a dedicated administration network
+    found_verbatim_in_entry: true
+    status: holds; nuance
+    delta_and_proposed_handling: For Agent2Shell the reachable surface is the server endpoints Agents and Probes check in to, so a dedicated administration network
+      for the web UI is not the whole boundary and IP allow-listing alone is not enough (Huntress 11/12). Hosted environments are stated as not affected by the server
+      issue (N-able via THN/Huntress).
+    claim_ids:
+    - '2.13'
+    - '2.77'
+  - where: 'labelled line: Exposure (4Ever)'
+    existing_text: any build up to Hotfix 2 for 4EverAble2Shell when the Legacy API, off by default, is on and reachable
+    found_verbatim_in_entry: true
+    status: holds; extend
+    delta_and_proposed_handling: Extend to Agent2Shell (Legacy API required, N-able via Huntress 2026-11-13). Add that the Legacy API-off default means hosted instances
+      and default on-premises installs are not exposed; the Intune integration was turned off on hosted servers and temporarily deactivated on on-premises ones (Tenable),
+      which is a side effect, not an exposure.
+    claim_ids:
+    - '2.03'
+    - '2.12'
+    - '2.17'
+  - where: 'labelled line: Detection'
+    existing_text: For 4EverAble2Shell, Huntback names POST requests to the Axis endpoint /dms/services/ServerUI
+    found_verbatim_in_entry: true
+    status: holds; incomplete
+    delta_and_proposed_handling: 'Agent2Shell detection concepts exist, all from Huntress''s static analysis of the PoC and none observed in the wild: server-side
+      POSTs to the agent message-exchange endpoint carrying GenericAgentXMPPMessageExchange with session id -1 and to the MMS2 endpoint carrying RemoteExecutionTaskSubmit
+      with session id -1; archives under the scheduled-task output directory containing CodeDropMeta.xml; endpoint-side SYSTEM PowerShell -EncodedCommand spawned
+      by the N-able Agent, Windows Software Probe binary/config replacement with a backup under CodeDrop, and a probe stop/start run from a .cmd in the temp directory.
+      Triage discriminators stated by Huntress: PowerShell is routinely a child of N-able (the command run matters) and the Software Probe process tree alone is expected.'
+    claim_ids:
+    - '2.70'
+    - '2.71'
+    - '2.72'
+    - '2.73'
+    - '2.74'
+    - '2.75'
+    - '2.76'
+  - where: 'labelled line: Defender takeaway'
+    existing_text: because Hotfix 2 does not fix 4EverAble2Shell and 19 of the 21 compromised servers already ran it
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: 'Unchanged and now backed by The Hacker News 2026-11-13 repeating Huntback. Add: if Legacy API must stay on, do not expose it; the
+      same control covers Agent2Shell; N-able published indicators on 2026-11-13.'
+    claim_ids:
+    - '2.35'
+    - '2.25'
+    - '2.03'
+    - '2.10'
+  - where: Update 2026-11-13T03:54:38Z section
+    existing_text: The researcher's second exploit set, 4EverAble2Shell, published on 2026-11-12, works against Hotfix 2 builds when the Legacy API is turned on and
+      reachable, and no fix exists.
+    found_verbatim_in_entry: true
+    status: incomplete
+    delta_and_proposed_handling: Agent2Shell omitted, and N-able's 2026-11-13 confirmation that it needs the Legacy API and its IoC publication post-date the section.
+    claim_ids:
+    - '2.01'
+    - '2.03'
+    - '2.10'
+  - where: Update 2026-11-11T03:49:03Z section
+    existing_text: N-able's guidance is to keep on-premises servers offline until the upgrade is complete
+    found_verbatim_in_entry: true
+    status: holds as dated
+    delta_and_proposed_handling: Relates to the Hotfix 2 upgrade on 2026-11-10; for the new disclosure N-able is "not advising customers to take N-central offline"
+      (Huntress 11/12 6:30 ET, relaying N-able). No edit needed unless the composer wants the contrast.
+    claim_ids:
+    - '2.24'
+  - where: 'frontmatter: cves[CVE-2026-90436]'
+    existing_text: 'none released: the Apache Axis project offers a source patch but does not expect to release an Axis 1.x fix'
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: Apache primary unchanged; Previdian's 2026-11-06 patch claim still conflicts and is already noted in the entry. No CVE for Agent2Shell
+      or the helper abuse.
+    claim_ids:
+    - '2.46'
+    - '2.47'
+    - '2.43'
+  - where: 'frontmatter: techniques'
+    existing_text: "techniques:\n  - T1190\n  - T1059\n  - T1068\n  - T1136"
+    found_verbatim_in_entry: true
+    status: incomplete
+    delta_and_proposed_handling: 'See ATT&CK suggestions: Agent2Shell adds server-driven SYSTEM execution on managed endpoints (T1072) and the shell/Python specifics
+      refine the generic T1059.'
+    claim_ids:
+    - '2.02'
+    - '2.74'
+  - where: 'frontmatter: priority / confidence / classification (priority: high, confidence: medium, Admiralty B2)'
+    existing_text: 'priority: high'
+    found_verbatim_in_entry: true
+    status: holds
+    delta_and_proposed_handling: Exploitation of 4EverAble2Shell rests on Huntback (own data, public rig list) and Previdian/BleepingComputer; N-able IoC publication
+      is a vendor signal but only relayed. No basis to move up or down. Not in KEV.
+    claim_ids:
+    - '2.31'
+    - '2.40'
+    - '2.80'
+  actions_check:
+    current_action_holds: true
+    reasoning: 'All clauses still valid: Legacy API disabled and unreachable from the internet (N-able, Huntress, Huntback), keep Hotfix 2 and the Agent/Probe upgrades
+      in place (N-able release notes; THN 2026-11-13 repeats the Agent/Probe upgrade requirement), on any server that had Legacy API on check web logs for POSTs to
+      /dms/services/ServerUI carrying a SOAP fault and the host for a symlink at the flag file path (Huntback, Huntress), treat a hit as full compromise because Hotfix
+      2 does not fix the chain and 19 of the 21 compromised servers already ran it (Huntback via THN 2026-11-13). Agent2Shell needs no separate action: the same Legacy
+      API control gates it (N-able via Huntress).'
+    candidate_addition: 'Optional short clause: check the server''s egress against the indicators N-able itself published on its status page on 2026-11-13 (via Huntress;
+      identical to Huntback''s network indicators). It is concrete and derived from this finding, adds a vendor-sourced check the current action lacks, and contains
+      no indicator values. Composer decides; the current action is complete without it. Agent2Shell host-side hunts are static-analysis-derived and unobserved, so
+      they belong in Detection, not actions[].'
+  main_analysis_word_count:
+    gate_counter: 'tools/check_run.py _main_words (link text only, before the first "## " heading): 547 words; limit 550 (1,100 for a deep dive); 3 words of headroom.'
+    per_paragraph_whitespace_words_incl_citation_tokens:
+      P1 (researcher disclosure): 69
+      P2 (Hotfix 2): 62
+      P3 (scanning, KEV, 4EverAble2Shell, exploitation): 165
+      Exposure: 64
+      Detection: 95
+      Defender takeaway: 92
+    update_section_words:
+      Update 2026-11-11T03:49:03Z: 116
+      Update 2026-11-13T03:54:38Z: 126
+    cut_candidates: 'Adding Agent2Shell, N-able''s Legacy-API confirmation and the IoC publication must be paid for with cuts: P2 ("Huntress lists seven CVE ids ...
+      among them CVE-2026-125883 ... and CVE-2026-125881 ...") duplicates the cves[] table; P3 carries the whole 4EverAble2Shell story that the 2026-11-13 Update
+      section also tells (the section can stay short once P3 is the current truth); the Detection line repeats first-set log guidance that the Huntress citations
+      already carry; in Exposure the trailing Field Effect clause.'
+  attack_suggestions:
+    already_in_entry:
+    - T1190
+    - T1059
+    - T1068
+    - T1136
+    - T1552
+    - T1070
+    - T1070.004
+    - T1105
+    - T1496.001
+    - T1543.002
+    - T1053.003
+    suggested_additions:
+    - id: T1072
+      name: Software Deployment Tools
+      behavior: 'Agent2Shell (as described by Huntress/THN from the PoC): an unauthenticated attacker uses N-central''s own server-to-Agent remote-execution channel
+        to run commands on managed Windows endpoints as SYSTEM; unobserved in the wild'
+      claim_ids:
+      - '2.01'
+      - '2.02'
+      - '2.71'
+      - '2.72'
+    - id: T1059.004
+      name: Unix Shell
+      behavior: root command is "curl ... | sh" fetching the miner installer; installer is a shell script (Huntback)
+      claim_ids:
+      - '2.34'
+    - id: T1059.006
+      name: Python
+      behavior: the nable-to-root escalation is a Python script piped into python3 (Huntback)
+      claim_ids:
+      - '2.34'
+    - id: T1564.001
+      name: Hidden Files and Directories
+      behavior: miner staged in a dot-directory under /tmp or /var/tmp (Huntback; the entry already says "hidden miner directory")
+      claim_ids: []
+    - id: T1543.003
+      name: Windows Service
+      behavior: 'WEAK, static-analysis only: Windows Software Probe binary/config replacement and service restart in the Agent2Shell PoC; skip unless the composer
+        keeps an Agent2Shell detection sentence'
+      claim_ids:
+      - '2.75'
+      - '2.76'
+    keep_as_is: T1190 and T1068 map the Axis deserialisation entry and the helper/symlink root escalation; T1496.001, T1543.002, T1053.003, T1070.004 map the miner,
+      systemd/cron persistence and symlink/backup cleanup; T1136 and T1552 belong to the first set (PoC creates an administrator account / session theft).
+  fetch_notes:
+  - 'The Hacker News x2, Previdian, Huntress, Huntback, Tenable, BleepingComputer, Apache oss-security: extract served via trafilatura-direct (full bodies, saved).'
+  - 'BSI WID-SEC-2026-4563: the portal page is a JavaScript shell on extract (2.7 KB); `python3 tools/fetch_source.py bsi-csaf WID-SEC-2026-4563` returns the full
+    CSAF JSON (saved; a decoded copy is the verification target). BSI''s CSAF carries no CVE ids, no Legacy API prerequisite and only the HF2 builds as known_affected.
+    Suggest citing the portal URL (what S1 used) but reading the CSAF.'
+  - 'N-able own pages: see facts.n_able_own_pages. WebFetch on the HF2 release notes worked (summary + verbatim lines, saved as a header-marked copy); it showed the
+    notes last updated 2026-11-10 with no addendum on Legacy API, Agent2Shell or a new hotfix.'
+  - 'CISA KEV (bridge cisa-kev, catalogue 2026.11.13, released 2026-11-13T20:24Z): none of the seven Hotfix 2 CVEs nor CVE-2026-90436 nor CVE-2026-127063 listed;
+    CVE-2026-84869 listed since 2026-09-11.'
+  - 'WebSearch x2: nothing newer (no new hotfix, no Agent2Shell/Legacy API coverage beyond the pages above).'
+cross_item_notes:
+- 'Both entries sit at exactly 547 main-analysis words (gate limit 550): any delta must be net-neutral by replacement (see cut_candidates); an addition without a
+  matching cut trips the entry-shape WARN.'
+- 'Citation date risks: Blackpoint''s page is dated 2026-11-13 on fetch while the SCKit entry cites it as 2026-11-12; the Hacker News 2026-11-13 article is dated
+  2026-11-13 on the page but BSI lists it as 2026-11-12; Huntress''s N-able post and SCKit post carry in-page updates dated 2026-11-13 (the SCKit post''s page metadata
+  date is 2026-11-12, the entry cites 2026-11-11).'
+- ConnectWise's and N-able's own advisory pages are unreadable on every transport used here; every post-2026-11-10 N-able and post-2026-11-12 ConnectWise statement
+  is a relay and must be attributed as such.
+- No IOC values appear anywhere in this file.

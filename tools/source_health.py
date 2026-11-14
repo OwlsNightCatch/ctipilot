@@ -583,6 +583,16 @@ def _direct_refused(url: str, *, timeout: float) -> bool:
     return re.search(r"upstream HTTP (?:401|403|429|451)\b", proc.stderr or "") is not None
 
 
+def _webfetch_reach_wall(fetch_method: str, cls: str, action: str) -> bool:
+    """True when a `fetch_method: webfetch` record only trips `needs-bridge` because
+    the container's browser UA is refused (cisa.gov's Akamai answers 403 to it).
+    The record's reader is the agent-side WebFetch, which goes around that wall, so the
+    refusal is expected even when the content check happened to read the page through
+    the reader (the 2026-11-14 sweep flagged `cisa-news` this way: reachability
+    `ua-blocked`, content `relevant`, so the webfetch-only rewrite never ran)."""
+    return fetch_method == "webfetch" and cls == "ua-blocked" and action == "needs-bridge"
+
+
 def _walled(cls: str, shell_markers) -> bool:
     """True when the container is walled out of the host: a refused UA, a
     blocked bridge, an empty reader pool, or a challenge page. A dead or parked
@@ -1136,6 +1146,9 @@ def main() -> int:
             if action in ("needs-bridge", "needs-demote"):
                 action, action_reason = ("none", "read through the agent-side WebFetch (v4.18): "
                                          "the container is walled out of this host")
+        if _webfetch_reach_wall(fetch_method, cls, action):
+            action, action_reason = ("none", "read through the agent-side WebFetch (v4.18): "
+                                     "this host refuses the container's browser UA")
         blocked_handled = _blocked_handled(fetch_method, sid, verdict, status,
                                            content.get("content_shell_markers"))
         if blocked_handled:

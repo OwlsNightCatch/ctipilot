@@ -1,0 +1,808 @@
+domain: DR-E
+run_id: 2026-11-14T0255Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+scope: scoped deep read of two new entries; research only
+item_1_cyberstrikeai_aws:
+  finding_ref: work/2026-11-14T0255Z-intel/findings.S3.yaml items[2]
+  title_short: 'Elastic Security Labs: CyberStrikeAI used against AWS (2026-09-30 to 2026-10-16)'
+  sources_read_in_full:
+  - url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    publisher: Elastic Security Labs (Samir Bousseaden, Bryan Porras Blanch, Terrance DeJesus)
+    date: '2026-11-13'
+    role: primary
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+  - url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    publisher: Team Cymru (Will Thomas)
+    date: '2026-03-02'
+    role: background on the tool (not on this intrusion)
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md (+ cymru-raw.html for the indicator table)
+  - url: https://thehackernews.com/2026/03/open-source-cyberstrikeai-deployed-in.html
+    publisher: The Hacker News
+    date: '2026-03-03'
+    role: secondary relay of Team Cymru; the article Elastic links for the 21-IP count
+    saved_copy: work/2026-11-14T0255Z-intel/dr/thn-cyberstrikeai.md
+  - url: https://aws.amazon.com/blogs/security/ai-augmented-threat-actor-accesses-fortigate-devices-at-scale/
+    publisher: Amazon Threat Intelligence (AWS Security Blog)
+    date: 2026-02 (page date not extracted)
+    role: first-party source for the FortiGate campaign Team Cymru started from; does not name CyberStrikeAI
+    saved_copy: work/2026-11-14T0255Z-intel/dr/aws-fortigate-ai.md
+  independent_confirmation_of_the_intrusion: none found. WebSearch ("CyberStrikeAI AWS CloudTrail intrusion Elastic Security Labs" and a second query on the 56 requests / 141 ms) returned no other report of this intrusion or of CyberStrikeAI used against AWS. Elastic holds the telemetry; verification stays single-source (Admiralty source B, credibility 2-3 on the incident; the tool itself is independently documented by Team Cymru, the incident is not).
+  ordered_api_call_sequence:
+  - phase: 1
+    date: '2026-09-30'
+    offset: T+0 to T+51 min
+    identities: email-svc-user, cert-renew-user, logship-user-1, logship-user-2 (IAM users, accounts A, B, C)
+    api_calls: STS GetCallerIdentity (four users, three accounts; three calls in one second); STS GetSessionToken x2 on email-svc-user
+    telemetry_class: cloud control-plane audit log (AWS CloudTrail); STS service (per the rule names)
+    rule_that_fired: AWS STS GetCallerIdentity API Called for the First Time (Medium); AWS STS GetSessionToken Usage (Low)
+  - phase: 2
+    date: '2026-09-30'
+    offset: T+0, T+3h18, T+6h10 (burst over 141 ms)
+    identities: app-role (EC2 instance role, account A)
+    api_calls: Secrets Manager GetSecretValue (first access by the role); EC2 DescribeInstanceAttribute for userData x1 (probably a test), then x56 in 141 ms (about 2.5 ms per call); 57 userData calls that day from one assumed-role session
+    telemetry_class: cloud control-plane audit log (AWS CloudTrail); EC2 and Secrets Manager
+    rule_that_fired: AWS EC2 User Data Retrieval for EC2 Instance (Medium, 58 alerts over phases 2-3); First Time Seen AWS Secret Value Accessed in Secrets Manager (Medium)
+  - phase: 3
+    date: 2026-10-01 to 2026-10-02
+    offset: Oct 1 T+0 s to T+4h14; Oct 2 T+0 s and T+29 s
+    identities: several users (revalidation); app-role; nonprod-role (instance role); container-role (instance role)
+    api_calls: 'Oct 1: GetCallerIdentity x4, GetSecretValue and one more DescribeInstanceAttribute by app-role, GetSecretValue x2 by nonprod-role (about 3 minutes apart). Oct 2: SSM GetParameter with decryption (SecureString) by container-role, then SSM SendCommand 29 seconds later'
+    telemetry_class: cloud control-plane audit log (AWS CloudTrail); Systems Manager. Command content and outcome are NOT in the audit record (Elastic)
+    rule_that_fired: AWS Systems Manager SecureString Parameter Request with Decryption Flag (Medium); AWS SSM SendCommand Execution by Rare User (Low)
+  - phase: 4
+    date: '2026-10-16'
+    offset: T+0, T+1h57, T+3h7 after 14 quiet days
+    identities: named-user (IAM user, account D, new); logship-user-1 (account C); logship-user-2 (account B)
+    api_calls: STS GetSessionToken (named-user); GetCallerIdentity (logship-user-1, logship-user-2)
+    telemetry_class: cloud control-plane audit log (AWS CloudTrail); STS
+    rule_that_fired: GetCallerIdentity first-time and GetSessionToken rules (phases 1,3,4 and 1,4 per the rule table)
+  note_on_step_telemetry: Elastic presents the whole record as CloudTrail ("Nothing in CloudTrail looked urgent") and names STS, EC2, Secrets Manager and Systems Manager through the rule titles; it states no event-source strings, no user-agent, no management-vs-data-event split. The telemetry_class column is the vendor-neutral class (cloud control-plane audit log) plus the service Elastic names, nothing more.
+  detections_fired:
+    total_alerts: 78
+    rules: 6
+    table:
+    - rule: AWS EC2 User Data Retrieval for EC2 Instance
+      alerts: 58
+      severity: Medium
+      phase: 2, 3
+    - rule: AWS STS GetCallerIdentity API Called for the First Time
+      alerts: 11
+      severity: Medium
+      phase: 1, 3, 4
+    - rule: First Time Seen AWS Secret Value Accessed in Secrets Manager
+      alerts: 4
+      severity: Medium
+      phase: 2, 3
+    - rule: AWS STS GetSessionToken Usage
+      alerts: 3
+      severity: Low
+      phase: 1, 4
+    - rule: AWS SSM SendCommand Execution by Rare User
+      alerts: 1
+      severity: Low
+      phase: '3'
+    - rule: AWS Systems Manager SecureString Parameter Request with Decryption Flag
+      alerts: 1
+      severity: Medium
+      phase: '3'
+    precision: 'Four of the six rules are Medium and two are Low. "Fired low" in the findings title and in the assignment text is imprecise: Elastic says every alert was medium or low severity.'
+    why_low_as_stated: 'Elastic gives the reason in behavioural terms only: each alert is a call a legitimate role makes every day (first-time GetCallerIdentity, GetSessionToken, SendCommand from a rare user) and looked routine on its own. The rule names show three are new-terms / first-seen / rare-user style (low-confidence by design); the article states no risk scores and does not explain how severities were assigned. Do not invent a scoring rationale.'
+  correlation_key_recommended: source IP address (the shared source address) with a flexible, non-fixed correlation window; Elastic says medium and low alerts are good candidates for correlation "only by source IP". The observed gaps between steps ran from 141 ms to 14 days.
+  high_signal_rules_added_by_elastic:
+  - 'AWS EC2 Bulk User Data Enumeration: one principal and source IP reading userData from more than 20 distinct instances in 10 minutes (ES|QL; Elastic calls it high-severity, low false positive)'
+  - 'AWS STS GetCallerIdentity Bulk Account Enumeration: three or more distinct non-role identities calling GetCallerIdentity from the same external IP and ASN in 10 minutes'
+  benign_lookalike_discriminators_stated_by_article:
+  - Role-session calls (GetSessionToken, GetSecretValue) whose source IP is not the instance or your NAT (Elastic behavioural indicator)
+  - GuardDuty-style alerting on credentials used from outside your expected IP ranges (Elastic response step 8; the passage is generic advice)
+  - The article states no further benign-lookalike analysis. Its only statement on legitimate behaviour is that each call is one "a legitimate role makes every day".
+  credential_acquisition: 'Unknown. Elastic: "we do not know how the attacker obtained the credentials". Inference stated by Elastic: the three instance-role sessions were used from an outside IP, so those credentials were taken from the instances (for example SSRF or host compromise); the five IAM-user credentials have no stated source. The article never mentions ARTEX, exposed repositories, GitHub secrets search, or any named actor.'
+  victim_sector_country: None named. Account and identity names are replaced with aliases (app-role, logship-user-1, ...); no victim, sector, country or account count beyond four is given. The article has no mention of public sector.
+  actor_attribution: None. Elastic attributes the SERVER to the CyberStrikeAI tool (scan data) and names no operator, cluster or nationality. It notes Hong Kong hosting matches earlier reporting. Team Cymru separately assesses the tool developer, not the operator of this server.
+  team_cymru_adds_independently:
+  - 'The tool profile: Go-based, 100+ integrated tools, orchestration engine, dashboard; published on GitHub 2025-11-08 by developer "Ed1s0nZ".'
+  - 'Its own netflow-based count: 21 unique IPs running the tool between 2026-01-20 and 2026-02-26, hosted mainly in China, Singapore and Hong Kong; its indicator table (raw HTML, not in the extracted text) lists 21 servers with GeoIP China 9, Singapore 6, US 3, Hong Kong 1, Switzerland 1, Japan 1 (counts by the reader from that table; the HTML GeoIP column).'
+  - Team Cymru assessed the developer has some ties to the Chinese government (GitHub interactions with Knownsec 404 and a CNNVD award reference the developer later removed); that is Team Cymru's inference from public GitHub activity and concerns the developer, not any operator.
+  - It found the tool by a banner on an IP that Amazon's CTI team published for a FortiGate campaign; the Amazon post itself describes a Russian-speaking, financially motivated actor and does not name CyberStrikeAI. So the tool is documented in use by at least one non-Chinese-nexus actor, per Amazon plus Team Cymru.
+  - 'It does NOT document any AWS targeting. Nothing in the Team Cymru post supports Elastic''s gloss that all 21 addresses were "aimed at Fortinet edge devices": its NetFlow evidence of FortiGate targeting is shown for the single Amazon-published IP; the other 20 are listed only as "running CyberStrikeAI".'
+  - THN (2026-03-03) adds the sentence that additional servers were detected in the U.S., Japan and Switzerland. The Swiss row is a hosting location (a Swiss-registered network, last seen 2026-01-30), not a target and not an operator nationality.
+  store_overlap:
+    cyberstrikeai_in_store: 'Named only in 2026-10-26/jpcert-nict-app-to-backend-api-attacks-ai-scanning-japan (JPCERT/CC AT-2026-0030 update lists "Cairn, CyberStrikeAI, ARTEX" as AI penetration-testing platforms used against Japanese internet-facing web apps and WSUS servers). The registry has no tool:cyberstrikeai key (grep entities/registry.yaml: the only hit is the summary of campaign:japan-web-system-data-leak-wave-2026-09). That entry''s entities list tool:artex and tool:cairn-exploitation-engine but not CyberStrikeAI.'
+    artex_entries:
+    - '2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse (Microsoft: Storm-0940, ARTEX, OAuth app abuse; updated 2026-11-08; also covers GTIG/Mandiant, CrowdStrike, Recorded Future, CERT-EU on ARTEX)'
+    - 2026-10-30/vapor-panda-artex-agentic-campaign-foreign-ministries (CrowdStrike VAPOR PANDA)
+    - '2026-11-06/exposed-app-credentials-entra-signins-msp-clients-artex (Microsoft + Todyl: agentic framework searches GitHub for OAuth and cloud secrets, service-principal sign-ins; government clients among 27 organisations; priority high)'
+    - 2026-11-08/workos-artex-agent-escaped-sandbox-internal-tool-breach
+    other_adjacent_entries:
+    - '2026-07-09/sygnia-ai-orchestrated-aws-cloud-intrusion-72h (Sygnia: AI-assisted AWS intrusion; four keys from four accounts used from one source IP in one second; Secrets Manager and SSM Parameter Store theft; T1651; detection signal is the orchestration, not single actions; actions[] already says "alert on a single source IP ... authenticating with multiple distinct IAM access keys or accounts within seconds"). This is the closest repeat risk.'
+    - 2026-11-11/qubole-vendor-aws-identity-assumes-integration-roles (AWS control-plane abuse; Secrets Manager, Parameter Store, Lambda config reads; shares registry product keys product:aws-secrets-manager, product:aws-systems-manager-parameter-store, product:amazon-web-services-iam; no victim named; credential compromise not known)
+    - 2026-11-09/llmjacking-stolen-cloud-keys-enable-model-services-resale (stolen cloud keys; control-plane hunting guidance for AWS)
+    is_it_distinct: 'Yes on the finding: a different tool (CyberStrikeAI, not ARTEX), a different evidence base (CloudTrail from one lab, tool attribution from scan data), no actor, no Entra/GitHub path, and the AWS-specific step sequence (userData burst, SSM SendCommand, 14-day return) appears nowhere in the store (grep for DescribeInstanceAttribute / userData / SendCommand / GetCallerIdentity finds only Sygnia and Qubole for SSM/GetCallerIdentity in passing). It is a threat entry, not an update of the ARTEX entries; references[] to the Sygnia entry (07-09), the ARTEX entry 2026-11-06 and the JPCERT entry 2026-10-26 are the natural links. The JPCERT entry could take an improvement record adding tool:cyberstrikeai once the key exists.'
+    claims_that_would_repeat_existing_entries:
+    - AI-assisted/agentic tooling producing machine-speed cloud activity and "the detection signal is the orchestration" (Sygnia 07-09; ARTEX 10-22)
+    - One source IP using several identities/accounts within seconds as the hunting pivot (Sygnia 07-09)
+    - Secrets Manager and SSM Parameter Store harvesting after stolen credentials (Sygnia 07-09; Qubole 11-11)
+    - Credential origin unknown for a cloud intrusion (Qubole 11-11)
+    - Generic "agentic frameworks lower the barrier" framing (ARTEX 10-22, exposed-app-credentials 11-06)
+    - CyberStrikeAI as one of several AI pentest platforms in circulation (JPCERT 10-26)
+  claim_table:
+  - claim: 'Scope of the intrusion: window, identity count, account count, alert count'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: used credentials from eight AWS identities (five IAM users and three EC2 instance roles) across four accounts and generated 78 alerts.
+  - claim: 'The sequence in one line: validate identities, harvest Secrets Manager, pull EC2 user data, decrypt an SSM parameter, send a remote command'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: ' server worked through stolen AWS credentials in a familiar sequence: validate identities, harvest secrets from Secrets Manager, pull EC2 user data, decrypt an SSM parameter, send a remote command.'
+  - claim: Telemetry source of every step is the CloudTrail record (the lab describes the article as the CloudTrail record of the intrusion); the lab also says every step is a call a legitimate role makes daily
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Every one of those is a call a legitimate role makes every day. Nothing in CloudTrail looked urgent at the time.
+  - claim: 'Step 1 (Sep 30): GetCallerIdentity on four IAM users across three accounts within 51 minutes; three calls in the same second, one per account'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The server called GetCallerIdentity on four IAM users across three accounts within 51 minutes, a standard way to check which credentials still work. Three of those calls landed in the same second, one in each of three accounts, which points to automation.
+  - claim: 'Step 1b: two GetSessionToken calls on one IAM user (email-svc-user)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Two GetSessionToken calls on one user show it requesting temporary credentials.
+  - claim: Step 1 identities are service accounts
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The validated accounts are service accounts, which are often rotated rarely and watched less closely.
+  - claim: 'Step 2 (Sep 30): app-role (EC2 instance role, Account A) reads a secret, makes one user-data request, then 56 user-data requests in 141 ms'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The main activity came from app-role, an EC2 instance role in Account A. It read a secret, made one user data request, then fired a burst of 56 user data requests in 141 milliseconds.
+  - claim: 'Step 2 timing rows: first GetSecretValue T+0, first userData read T+3h18 (probably a test), burst T+6h10 at about 2.5 ms per call'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| T+6 h 10 min, over 141 ms | DescribeInstanceAttribute (56 calls) | Burst at about 2.5 ms per call |'
+  - claim: The userData attribute is the instance startup script; all 57 calls that day came from one assumed-role session
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Each call asked for the userData attribute, the startup script attached to an instance. These scripts often hold hardcoded API keys, database credentials, bootstrap secrets, SSH keys, or certificates.
+  - claim: Spacing is consistent with tooling working a prepared list of instance IDs; all 57 calls that day were from one session
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The spacing is consistent with tooling working through a prepared list of instance IDs, not a person at a console. All 57 calls that day came from the same assumed-role session.
+  - claim: 'Step 3 (Oct 1): revalidation across accounts, more secrets from app-role, then nonprod-role pulls secrets from a non-production environment'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Oct 1, T+4 h 10 min | GetSecretValue | nonprod-role | Secrets from a non-production environment |'
+  - claim: Non-production access is to be treated as production access until shown otherwise
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Non-production environments often have weaker controls and sometimes share secrets with production, so access to one is worth treating as access to the other until shown otherwise.
+  - claim: 'Step 4 (Oct 2): container-role reads an encrypted SSM parameter and issues SendCommand 29 seconds later; the audit log does not show the command or its outcome'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: On Oct 2, container-role read an encrypted SSM parameter and issued an SSM SendCommand 29 seconds later. The audit log does not show what the command was or whether it succeeded.
+  - claim: Table row for the SSM step (GetParameter with decryption, container-role)
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Oct 2, T+0 s | GetParameter with decryption | container-role | SSM SecureString parameter read |'
+  - claim: The Oct 2 sequence is the lab's highest-risk activity
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The October 2 sequence is the highest-risk activity in the data.
+  - claim: 'Step 5 (Oct 16): return after 14 quiet days; revalidation incl. a user in a fourth account (named-user, Account D, GetSessionToken)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: After 14 quiet days, the server came back and revalidated credentials, including a user in a fourth account that had not appeared before.
+  - claim: Lab does not choose between access-survival check, deliberate cool-down, or operator returning from other targets
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: It could also mean a deliberate cool-down, or the operator returning after working on other targets. The data doesn't separate these.
+  - claim: 'How credentials were obtained: unknown; AI-assisted label rests on tool attribution and machine-speed behavior, not on proof an LLM decided'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: We cannot prove an LLM agent was making the decisions, and we do not know how the attacker obtained the credentials.
+  - claim: Lab's basis for the AI-assisted label
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: We call this AI-assisted on the strength of the tool attribution and the machine-speed behavior in the logs.
+  - claim: Instance-role sessions used from an outside IP imply the credentials were taken from the instances (lab names SSRF or host compromise as examples)
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The three role sessions were named after EC2 instance IDs, so the credentials came from instance profiles. Using them from an outside IP means they were taken from the instances, for example through SSRF or host compromise.
+  - claim: Tool attribution rests on internet scan data (CyberStrikeAI web interface and self-signed certificate one day before the first alert)
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: serving a CyberStrikeAI web interface with a self-signed CyberStrikeAI certificate, one day before the first alert.
+  - claim: Scan data identifies what runs on the IP; the alerts tie the IP to the AWS activity
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: The scan data identifies what runs on the IP, and the alerts tie that IP to the AWS activity.
+  - claim: 'Infrastructure is stale: none of the three servers serves the interface as of November'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: As of November, none of the three is serving that interface, so treat the IPs as indicators for retrospective hunting.
+  - claim: Hosting matches earlier reporting placing most CyberStrikeAI servers in China, Singapore and Hong Kong (no operator attribution by Elastic)
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: the Hong Kong hosting matches earlier reporting that placed most CyberStrikeAI servers in China, Singapore, and Hong Kong.
+  - claim: First case Elastic has seen of the tooling used against AWS
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: This is the first case we have seen of the same tooling turned on AWS.
+  - claim: Elastic's own statement about Team Cymru's count and targeting (this "all aimed at Fortinet" gloss is Elastic's; see unsupported list)
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: counted 21 IPs running it in early 2026](https://thehackernews.com/2026/03/open-source-cyberstrikeai-deployed-in.html?hl=en_US), all of them aimed at Fortinet edge devices.
+  - claim: 'Rule that fired most: EC2 User Data Retrieval for EC2 Instance, 58 alerts, Medium, phases 2-3'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: discovery_ec2_userdata_request_for_ec2_instance.toml) | 58 | Medium | 2, 3 |
+  - claim: 'Rule: AWS STS GetCallerIdentity API Called for the First Time, 11 alerts, Medium, phases 1,3,4'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: discovery_new_terms_sts_getcalleridentity.toml) | 11 | Medium | 1, 3, 4 |
+  - claim: 'Rule: First Time Seen AWS Secret Value Accessed in Secrets Manager, 4 alerts, Medium, phases 2-3'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: credential_access_new_terms_secretsmanager_getsecretvalue.toml) | 4 | Medium | 2, 3 |
+  - claim: 'Rule: AWS STS GetSessionToken Usage (a building-block rule), 3 alerts, Low, phases 1 and 4'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: privilege_escalation_sts_getsessiontoken_abuse.toml) | 3 | Low | 1, 4 |
+  - claim: 'Rule: AWS SSM SendCommand Execution by Rare User, 1 alert, Low, phase 3'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: execution_ssm_sendcommand_by_rare_user.toml) | 1 | Low | 3 |
+  - claim: 'Rule: AWS Systems Manager SecureString Parameter Request with Decryption Flag, 1 alert, Medium, phase 3'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: credential_access_retrieve_secure_string_parameters_via_ssm.toml#L21) | 1 | Medium | 3 |
+  - claim: Six rules fired and covered every phase; taken alone each alert is medium or low and easy to dismiss; the source IP is the tie
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Six Elastic detection rules fired, and between them they covered every phase. Taken alone, every alert is medium or low severity and easy to dismiss. The source IP is what ties them together.
+  - claim: 'Why the alerts stayed low, as the lab states it: each one looks like routine behavior on its own (the article gives no risk-score reasoning beyond this)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: 'Every alert was medium or low severity, and each one looked routine on its own: a first-time GetCallerIdentity, a GetSessionToken, an SSM SendCommand from a rare user.'
+  - claim: Day-one concentration of alerts (65 of 78) and then a few targeted actions per day
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: A sharp change in tempo. 83% of alerts (65 of 78) came on day one, then activity dropped to a few targeted actions per day.
+  - claim: 'Alert totals by day (Sep 30: 65, Oct 1: 8, Oct 2: 2, Oct 16: 3)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Sep 30 | 65 | 57 user data requests, credential validation, first secrets access |'
+  - claim: 'Correlation key the lab recommends: source IP, with a flexible window'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Medium and low severity alerts are good candidates for correlation, but only by source IP, and the correlation window needs to be flexible because AI-assisted activity is irregular.
+  - claim: A short fixed window would have split the intrusion; step gaps ranged from 141 ms to 14 days
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: A short fixed window would have split this intrusion into unrelated alerts.
+  - claim: Only the shared source IP showed the alerts belonged to one intrusion
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Only the shared source IP showed they belonged to one intrusion.
+  - claim: 'New rule 1: one principal and source IP reading userData from more than 20 distinct instances in 10 minutes (ES|QL, high severity, low false positive per Elastic)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: alerts when one principal and source IP read userData from more than 20 distinct instances in 10 minutes
+  - claim: 'New rule 2: three or more distinct non-role identities calling GetCallerIdentity from the same external IP and ASN in 10 minutes'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: alerts when three or more distinct non-role identities call GetCallerIdentity from the same external IP and ASN in 10 minutes.
+  - claim: The two new rules are described as high-severity, low false positive
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: 'We added two high-severity, low false positive ES|QL detections for the burst enumeration behavior:'
+  - claim: 'Behavioral indicator 1 (CloudTrail): userData burst from one role session'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: A burst of DescribeInstanceAttribute calls requesting userData, many per second, from one role session.
+  - claim: 'Behavioral indicator 2: first-time GetCallerIdentity from one external IP across several accounts or users within the same minute'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: First-time GetCallerIdentity calls from the same external IP across several accounts or users within the same minute.
+  - claim: 'Behavioral indicator 3: role-session calls from an address that is neither the instance nor your NAT (the only explicit discriminator the article gives)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: GetSessionToken or GetSecretValue from an instance role session whose source IP is not the instance or your NAT.
+  - claim: 'Behavioral indicator 4: decrypting GetParameter followed within a minute by SSM SendCommand from the same role'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: GetParameter with decryption followed within a minute by SSM SendCommand from the same role.
+  - claim: 'Response: rotate instance-role credentials by replacing the instance profile or the instance'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: For instance roles, rotate by replacing the instance profile or the instance, since stolen role credentials expire but can be reissued while the host stays compromised.
+  - claim: 'Response: review SSM command history; check AWS-managed and custom documents'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Review SSM command history for the window of any unexpected SendCommand call to see what ran. Check for abuse of AWS-managed documents, AWS-RunShellScript and AWS-RunPowerShellScript or custom documents.
+  - claim: 'Hardening: restrict ec2:DescribeInstanceAttribute for userData'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Restrict ec2:DescribeInstanceAttribute for userData to the roles that need it, using IAM policy or a service control policy.
+  - claim: 'Response: treat secrets in EC2 user data as exposed and move them to Secrets Manager or Parameter Store'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Treat all secrets in EC2 user data as exposed, and move them to the Secrets Manager or Parameter Store.
+  - claim: 'Root-cause hunt: exposed web applications, SSRF, code repositories and IMDS'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Hunt for how the instance credentials were obtained, starting with exposed web applications, SSRF, code repositories and IMDS.
+  - claim: Blocking the indicator IP is secondary to behavioral detection
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: but rely on the behavioral detections, since the infrastructure can change
+  - claim: 'PoC response workflow step: deactivate the access key'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Deactivates compromised access key using iam:UpdateAccessKey.
+  - claim: 'PoC response workflow step: deny older temporary sessions by token issue time'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Blocks older temporary sessions associated with IAM user by adding inline deny policy via iam:PutUserPolicy and aws:TokenIssueTime cutoff
+  - claim: 'PoC response workflow step: quarantine the IAM user (needs Elastic Workflows, stack 9.4+)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Quarantines IAM user by attaching inline deny-all policy
+  - claim: Elastic Workflows ships with stack 9.4+
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: shipped with the stack (9.4+)
+  - claim: 'Elastic''s own ATT&CK mapping: T1552.005 for the user-data reads'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Credential Access | T1552.005 Unsecured Credentials: Cloud Instance Metadata API | 58 DescribeInstanceAttribute calls for user data |'
+  - claim: 'Elastic''s own ATT&CK mapping: T1555.006 for GetSecretValue and decrypting GetParameter'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Credential Access | T1555.006 Credentials from Password Stores: Cloud Secrets Management Stores | GetSecretValue and GetParameter with decryption |'
+  - claim: 'Elastic''s own ATT&CK mapping: T1651 for SSM SendCommand'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Execution | T1651 Cloud Administration Command | SSM SendCommand |'
+  - claim: 'Elastic''s own ATT&CK mapping: T1078.004 and T1087.004'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Initial Access | T1078.004 Valid Accounts: Cloud Accounts | IAM user and instance role credentials used from an external IP |'
+  - claim: 'Elastic''s own ATT&CK mapping: T1087.004 for GetCallerIdentity'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: '| Discovery | T1087.004 Account Discovery: Cloud Account | GetCallerIdentity across 8 identities in 4 accounts |'
+  - claim: 'Victim anonymisation: account and identity names are replaced with aliases (no victim, sector or country named anywhere in the article)'
+    source_url: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion
+    saved_copy: work/2026-11-14T0255Z-intel/dr/elastic-cyberstrikeai.md
+    passage: Account and identity names are replaced with aliases.
+  - claim: 'Team Cymru: tool description and developer assessment (Team Cymru assesses the China-based developer has some ties to the Chinese government)'
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: CyberStrikeAI, an open-source artificial intelligence (AI) offensive security tool (OST) developed by a China-based developer who we assess has some ties to the Chinese government.
+  - claim: 'Team Cymru: 21 unique IPs running CyberStrikeAI from 20 Jan to 26 Feb 2026 (its own NetFlow/Scout visibility)'
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: from 20 January 2026 to the conclusion of this assessment on 26 February 2026, we observed 21 unique IP addresses running CyberStrikeAI, over differing periods of time
+  - claim: Team Cymru found the tool through an IP that Amazon's CTI team published for an AI-augmented FortiGate campaign; the NetFlow link to FortiGate targets is shown for that one IP
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: Using Team Cymru Scout, we can find NetFlow communications between the IP shared by Amazon and its targets, such as the Fortinet FortiGate devices it was observed targeting, as shown in Figure 3 below.
+  - claim: 'Team Cymru: servers hosted mainly in China, Singapore and Hong Kong'
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: Many of the CyberStrikeAI servers were hosted in Chinese-speaking locals, namely China, Singapore, and Hong Kong.
+  - claim: 'Team Cymru: repository first added 8 November 2025 with few IPs at first'
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: the repository was first added on 8 November 2025
+  - claim: 'Team Cymru outlook (its assessment): high likelihood the tool may be leveraged by Chinese state-sponsored APTs'
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: suggest a high likelihood that this tool may be leveraged by Chinese state-sponsored advanced persistent threats (APTs).
+  - claim: 'Team Cymru outlook (its assessment): strong adoption among Chinese-speaking threat actors'
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-cyberstrikeai.md
+    passage: we anticipate that CyberStrikeAI will continue to see strong adoption among Chinese-speaking threat actors.
+  - claim: Team Cymru's indicator table lists 21 CyberStrikeAI servers by ASN and GeoIP; one is geolocated to CH (Swiss-registered network, last seen 2026-01-30). Raw-HTML table row, IP address omitted from this passage
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-raw.html
+    passage: CyberStrikeAI Server</td><td>42624</td><td>SWISSNETWORK02, SC</td><td>CH</td><td>30/01/2026</td>
+  - claim: Team Cymru's indicator table column set
+    source_url: https://www.team-cymru.com/post/tracking-cyberstrikeai-usage
+    saved_copy: work/2026-11-14T0255Z-intel/dr/cymru-raw.html
+    passage: <th>Indicator
+  - claim: 'The Hacker News (2026-03-03): additional CyberStrikeAI servers detected in the U.S., Japan and Switzerland (THN sentence; the Swiss row is visible in Team Cymru''s table, the sentence is not in Team Cymru''s page text)'
+    source_url: https://thehackernews.com/2026/03/open-source-cyberstrikeai-deployed-in.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/thn-cyberstrikeai.md
+    passage: Additional servers related to the tool have been detected in the U.S., Japan, and Switzerland.
+  - claim: 'THN: the FortiGate campaign actor is a suspected Russian-speaking actor and Team Cymru found the tool on that actor''s scanning IP'
+    source_url: https://thehackernews.com/2026/03/open-source-cyberstrikeai-deployed-in.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/thn-cyberstrikeai.md
+    passage: that was used by the suspected Russian-speaking threat actor to conduct automated mass scanning for vulnerable appliances.
+  - claim: 'THN: 21 unique IPs running the tool between Jan 20 and Feb 26 2026, mainly China, Singapore, Hong Kong (no claim that all 21 targeted Fortinet)'
+    source_url: https://thehackernews.com/2026/03/open-source-cyberstrikeai-deployed-in.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/thn-cyberstrikeai.md
+    passage: Team Cymru said it observed 21 unique IP addresses running CyberStrikeAI between January 20 and February 26, 2026, with servers primarily hosted in China, Singapore, and Hong Kong.
+  - claim: 'THN: Amazon''s FortiGate campaign: over 600 appliances in 55 countries (Amazon Threat Intelligence)'
+    source_url: https://thehackernews.com/2026/03/open-source-cyberstrikeai-deployed-in.html
+    saved_copy: work/2026-11-14T0255Z-intel/dr/thn-cyberstrikeai.md
+    passage: compromising over 600 appliances in 55 countries.
+  - claim: 'Amazon Threat Intelligence describes a Russian-speaking, financially motivated actor using commercial gen-AI services against 600+ FortiGate devices; the post does not name CyberStrikeAI (grep of saved copy: no match)'
+    source_url: https://aws.amazon.com/blogs/security/ai-augmented-threat-actor-accesses-fortigate-devices-at-scale/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/aws-fortigate-ai.md
+    passage: Amazon Threat Intelligence observed a Russian-speaking financially motivated threat actor leveraging multiple commercial generative AI services to compromise over 600 FortiGate devices across more than 55 countries from January 11 to February 18, 2026.
+  - claim: 'Amazon: no FortiGate vulnerability exploitation, exposed management ports and weak single-factor credentials instead'
+    source_url: https://aws.amazon.com/blogs/security/ai-augmented-threat-actor-accesses-fortigate-devices-at-scale/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/aws-fortigate-ai.md
+    passage: No exploitation of FortiGate vulnerabilities was observed
+  suggested_attack_ids:
+  - id: T1078.004
+    name: 'Valid Accounts: Cloud Accounts'
+    behavior: IAM-user and instance-role credentials used from an external address (initial access and persistence of access across four accounts)
+    basis: Elastic maps it itself
+  - id: T1087.004
+    name: 'Account Discovery: Cloud Account'
+    behavior: GetCallerIdentity across eight identities in four accounts to learn which credentials work
+    basis: Elastic maps it itself
+  - id: T1552.005
+    name: 'Unsecured Credentials: Cloud Instance Metadata API'
+    behavior: EC2 DescribeInstanceAttribute reads of the userData startup script (58 calls)
+    basis: 'Elastic maps it itself; caution: the calls are EC2 API reads of the userData attribute, not requests to the instance metadata endpoint. The pinned definition reads "access the Cloud Instance Metadata API to collect credentials and other sensitive data". Keep as the lab''s mapping; no better active id is stated by the source'
+  - id: T1555.006
+    name: 'Credentials from Password Stores: Cloud Secrets Management Stores'
+    behavior: Secrets Manager GetSecretValue (app-role, nonprod-role) and SSM GetParameter with decryption (container-role)
+    basis: Elastic maps it itself
+  - id: T1651
+    name: Cloud Administration Command
+    behavior: SSM SendCommand 29 seconds after the decrypting GetParameter
+    basis: Elastic maps it itself; the command content is unknown, so only the cloud-administration-command behavior is supported
+  - id: T1580
+    name: Cloud Infrastructure Discovery
+    behavior: 'optional: the userData burst enumerates instances from a prepared list of instance IDs'
+    basis: NOT in Elastic's table; reader mapping from the stated behavior (burst over many instances). Offer as optional, lower confidence
+  unsupported_or_overreaching_in_findings_yaml:
+  - where: 'items[2].title and the assignment text: "six detections ... fired low"'
+    issue: 'Elastic: four of the six rules are Medium and two Low; every alert was "medium or low". Use "medium or low".'
+  - where: 'items[2].new_entities[0].summary and items[2].summary: Elastic cites a count of 21 addresses "all aimed at Fortinet edge devices"; summary of the new tool entity: "Team Cymru tracks its usage (...; Elastic cites a count of 21 addresses aimed at Fortinet edge devices in early 2026)"'
+    issue: 'The attribution to Elastic is accurate (Elastic wrote "all of them aimed at Fortinet edge devices"), but neither Team Cymru nor THN says that. Team Cymru: 21 unique IPs "running CyberStrikeAI"; FortiGate targeting is shown by NetFlow for the one Amazon-published IP. Amazon''s own post does not name CyberStrikeAI. The entity summary blends Team Cymru''s count with Elastic''s gloss under a Team Cymru attribution; carry only "Team Cymru counted 21 addresses running it" and, if wanted, "Elastic describes them as aimed at Fortinet devices".'
+  - where: 'items[2].extended_notes: "Triage / benign lookalike: legitimate automation (config management, backup, inventory) also reads userData and secrets in bulk, so baseline per role and compare the source address with the instance or NAT"'
+    issue: 'The article names no such lookalikes. It says each call is one "a legitimate role makes every day" and gives one discriminator: source IP not the instance or your NAT. The config-management/backup/inventory list and "baseline per role" are the researcher''s reasoning, not stated. Write it as such or drop the lookalike list.'
+  - where: 'items[2].extended_notes hardening: "enforce IMDSv2"'
+    issue: IMDSv2 is not mentioned. The only IMDS reference is a hunt step ("exposed web applications, SSRF, code repositories and IMDS"). Drop IMDSv2 or flag it as general guidance.
+  - where: 'items[2].extended_notes: "Correlate medium and low alerts by source address over a window of weeks, not minutes"'
+    issue: Elastic says the window must be "flexible" and that a short fixed window would have split the case; the longest gap it observed was 14 days. "Weeks" is an extrapolation.
+  - where: 'items[2].extended_notes hardening: "rotate long-lived service-account keys"'
+    issue: Not stated as a recommendation. Elastic says to rotate credentials of every identity that touched the indicator IP and notes service accounts are "rotated rarely and watched less closely". Mild paraphrase.
+  - where: items[2] entity_keys
+    issue: product:amazon-web-services-iam exists in the registry and is in affected_products ("Amazon Web Services IAM") but is not listed in entity_keys. tool:cyberstrikeai is a genuine new key (the registry has none).
+  - where: items[2].summary "GetSessionToken, GetSecretValue" ordering
+    issue: 'No error: GetSessionToken occurs on Sep 30 phase 1, GetSecretValue on phase 2. Noted only so the composer keeps the phase order.'
+  - where: items[2] discovery_trace
+    issue: No error found. The Team Cymru post is dated 2026-03-02 (the findings say the same).
+item_2_luna_moth_token_handoff:
+  finding_ref: work/2026-11-14T0255Z-intel/findings.S3.yaml items[6]
+  title_short: 'ReliaQuest: Luna Moth (Silent Ransom Group) re-targets law firms with a Copilot Graph-token handoff'
+  sources_read_in_full:
+  - url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    publisher: ReliaQuest Threat Research (author Joseph Keyes; contributor Daxton Wirth)
+    date: '2026-11-12'
+    role: primary
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+  - url: https://www.ic3.gov/CSA/2026/260526.pdf
+    publisher: FBI Internet Crime Complaint Center, FLASH CSA 260526 (PDF; text extraction partial)
+    date: '2026-05-26'
+    role: context; already the basis of the registry campaign key
+    saved_copy: work/2026-11-14T0255Z-intel/dr/fbi-csa-260526.txt
+  - url: https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/
+    publisher: Check Point (Uriel Sigal)
+    date: '2026-10-09'
+    role: context on the group (leaked archive); does not confirm the technique
+    saved_copy: work/2026-11-14T0255Z-intel/dr/checkpoint-lunamoth.md
+  independent_confirmation: 'none found. Four WebSearch queries (Luna Moth / Silent Ransom Group with Copilot, access token, Microsoft Graph, "token handoff", developer tools, paste site, "re-targeting", ReliaQuest by name) returned no other vendor, authority or press report of the Copilot token handoff or of the re-targeting of non-payers, and no press pickup of the ReliaQuest post. The FBI FLASH CSA 260526 text I could extract (partial) shows no token wording; Check Point (2026-10-09) and Mandiant/GTIG (store entry 2026-06-06) predate the technique. Verification stays single-source (vendor report, vendor sells the platform it recommends). ReliaQuest''s own first-hand basis is "recent intrusions" it does not size: the article gives no victim count.'
+  step_order_with_telemetry:
+  - step: 0
+    what: Blank-subject email from a free mailbox with a deliberately invalid PDF (named like a business report) that crashes the viewer each time
+    telemetry_class: mail flow / mail gateway logs (the article lists "a blank email" among the ordinary-looking events; it names no mail-log product)
+    note: a pretext, not a payload; no execution
+  - step: 1
+    what: Soon after, a call, often to a personal number outside corporate call controls, from a spoofed number the victim trusts, posing as IT support answering the "malicious email"; user is moved onto a video call and shares the screen
+    telemetry_class: 'telephony (often none: personal number outside corporate call controls); video-call platform logs (external session, screen share)'
+    note: ReliaQuest says this reverses earlier campaigns where the victim called the attacker
+  - step: 2
+    what: User opens Microsoft 365 Copilot in the browser on the managed, compliant laptop
+    telemetry_class: web proxy or DNS logs; Microsoft 365 audit logs (the article names a "Copilot session" as an ordinary event but gives no log field)
+    note: ordinary event
+  - step: 3
+    what: User opens the browser developer tools, finds the Copilot request to Microsoft Graph and copies the access token it carries
+    telemetry_class: none stated. ReliaQuest recommends blocking developer tools by Group Policy and blocking Graph Explorer and the browser net-export pages; it does not describe developer-tools use as a detectable event
+    note: the findings YAML lists developer-tools use as telemetry; the primary does not
+  - step: 4
+    what: User pastes the token into a public text-sharing site, where the attacker retrieves it
+    telemetry_class: web proxy or DNS logs (visit to a text-sharing site)
+    note: ReliaQuest recommends blocking the paste sites; no destination detail in this note by design
+  - step: 5
+    what: Within about a minute the attacker replays the token from its own server and downloads thousands of files in about an hour through the Graph API (an open-source SharePoint download tool seen in one intrusion)
+    telemetry_class: Microsoft 365 audit logs (Graph / file access from an unfamiliar address, no matching interactive sign-in for that address)
+    note: no sign-in event is generated for the attacker address
+  - step: 6
+    what: Extortion email after data theft ("has lost confidential data of their clients"-style subject)
+    telemetry_class: inbound mail flow
+    note: ReliaQuest lists the subject pattern among its observables; text of the subject omitted
+  note_on_step_telemetry: The article lists the three log classes together ("video-call platform logs, web proxy or DNS logs, and Microsoft 365 audit logs each record part of the handoff") and four ordinary events; it does NOT map each step to a log class. The per-step assignment above is the reader's reading of which listed class could hold the event, with "none stated" where the article gives nothing.
+  new_versus_prior_tradecraft_per_reliaquest:
+    new:
+    - 'Token handoff: the user extracts a Microsoft Graph access token out of Microsoft 365 Copilot via browser developer tools and pastes it to a paste site; the attacker replays it from its own server (ReliaQuest: "almost certainly a new tactic for the group"; its table: "No token-handoff technique described in public reporting")'
+    - Exfiltration moves from endpoint-mediated transfers (manual downloads, file-transfer tools, personal cloud storage, emails to attacker accounts) to bulk Graph downloads from attacker infrastructure
+    - 'Lure reversal: a broken-PDF email followed by an outbound call, replacing the fake invoice/subscription email that made the victim call the attacker'
+    - 'A single video call replaces multiple remote-management tools and the built-in remote-assistance tool (progression: by late August video call plus the built-in remote-assistance tool, by October video call alone)'
+    - Re-targeting of law firms extorted in May and August that appear on the leak site, in October and early November (several firms, same infrastructure per ReliaQuest)
+    unchanged: phone-based social engineering posing as IT support; data theft and extortion without encryption; law-firm focus (since at least mid-2023 per ReliaQuest)
+  victim_sector_country: 'Sector: law firms (several, unsized). Country: none named in the article; the grep of the saved copy for US, United States, country names and region words returns nothing. "US law firms" in the findings YAML region_nexus is not supported by this primary; it comes from the FBI/Mandiant coverage of the earlier campaign. No victim named.'
+  benign_discriminators_stated_by_article: None. The article says only that the four events (screen share, Copilot session, visit to a text-sharing site, Graph file access from an unfamiliar address) are "each ordinary on their own" and indicative together. No statement about legitimate bulk Graph downloads, backup, migration or eDiscovery applications.
+  registry:
+    existing_keys:
+    - key: campaign:fbi-flash-csa-260526-silent-ransom-group-physical-usb-attacks-us-law-firms
+      type: campaign
+      name: Silent Ransom Group physical USB intrusions
+      aliases:
+      - Luna Moth
+      - UNC3753
+      first_seen: '2026-05-28'
+      note: registry line ~786; this is the ONLY key carrying the group aliases
+    missing_keys:
+    - No actor key exists for the group (grep -i "silent ransom|luna moth|unc3753|chatty spider|storm-0252|SRG" entities/registry.yaml finds only the campaign key above). "Silent Ransom Group" appears only inside the campaign name; "Chatty Spider", "Storm-0252" and "SRG" appear nowhere in the registry although the 2026-05-28 entry cites them as aliases used by sources.
+    - 'No product key for Microsoft 365 Copilot (only product:github-copilot exists). Existing and usable: product:microsoft-365, product:microsoft-graph (alias Microsoft Graph API), product:microsoft-entra-id, product:microsoft-teams, product:microsoft-quick-assist. No key for Conditional Access / Continuous Access Evaluation as products (they are Entra ID features; Conditional Access is the Microsoft name).'
+    suggestion: 'Propose actor:luna-moth (type actor; aliases Silent Ransom Group, SRG, UNC3753, Chatty Spider; Storm-0252 only as "referenced by CyberScoop" per the 2026-05-28 entry, not as an established alias) so this and the physical-USB campaign hang off one actor; the campaign key is scoped to the FBI physical-USB advisory and is a poor home for a cloud-token technique. The findings YAML items[6] proposes no actor and lists only the campaign key in entity_keys. Add product:microsoft-graph and product:microsoft-365 to entity_keys (both exist); propose product:microsoft-365-copilot if the composer wants one. Do not register the Luna Moth key as a relation to ReliaQuest-attributed alias UNC3753 from this source: ReliaQuest does not use that alias (alias evidence is Mandiant/FBI via the earlier entries).'
+  store_overlap:
+    entries:
+    - '2026-06-06/luna-moth-silent-ransom-group-unc3753-vishing-to-physical-ac (deep dive, Mandiant/GTIG 2026-06-05: vishing, RMM tools, WinSCP/Rclone exfiltration, physical USB; sectors legal-services, finance; priority high)'
+    - 2026-05-28/fbi-flash-csa-260526-silent-ransom-group-sends-operatives-ph (FBI CSA 260526 via CyberScoop and others)
+    - 'adjacent: 2026-10-31/teams-help-desk-impersonation-quick-assist-ad-cs-esc1-esc8 (Microsoft: Teams help-desk impersonation to Quick Assist; different actor); 2026-10-23/m365-token-spray-replay-rogue-entra-devices-mfa-wipe and 2026-11-13/huntress-teams-booking-device-code-phishing-encrypted-kit (token replay / device code; different technique); 2026-08-24/synkloader-teams-helpdesk-impersonation-six-module-loader'
+    distinct: 'Yes for the token handoff and for the re-targeting of non-payers, neither of which is in the store (grep for "token handoff", Copilot-token and Luna Moth finds only the two entries above, which predate the technique). Not a new actor: the two existing entries cover the vishing-to-remote-access chain and the physical USB variant. The composer can treat it as a new threat entry with references[] to 2026-06-06 and 2026-05-28, or as an update of 2026-06-06; the findings YAML offers both. Because the existing deep dive (06-06) is the group profile, a separate entry is defensible on the new technique alone.'
+    claims_that_would_repeat:
+    - 'Group background: law-firm extortion without encryption, vishing posing as IT support (06-06, 05-28)'
+    - Remote-access via legitimate tools (the 06-06 entry covers RMM agents, Quick Assist-type tools, WinSCP/Rclone exfiltration to cloud storage)
+    - 'Generic advice: out-of-band callback verification of IT calls (06-06 actions)'
+  claim_table:
+  - claim: 'Group name and aliases as ReliaQuest uses them: Luna Moth, aka Silent Ransom Group (UNC3753 does not appear in the article)'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Data-extortion group “Luna Moth” (aka “Silent Ransom Group”) is going back for seconds by re-targeting law firms that likely didn’t pay its ransoms the first time.
+  - claim: Law-firm targeting since at least mid-2023; now returning to firms that likely did not pay; new method replaces remote-management tools and manual downloads
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Extortion group “Luna Moth” (aka “Silent Ransom Group”) has targeted law firms since at least mid-2023 and is now returning to those that likely didn’t pay its first extortion demand.
+  - claim: 'ReliaQuest''s novelty claim: token-based exfiltration almost certainly new for the group'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: This token-based exfiltration is almost certainly a new tactic for the group.
+  - claim: 'Why the token passes Conditional Access: the device check runs only at sign-in'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: The stolen token passes Conditional Access (which approves sign-ins) because its device check runs only at sign-in, not when the token is later used.
+  - claim: 'Step 1: attacker poses as IT support, spoofs a number the victim trusts, gets the user onto a video call with screen share'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '**Step 1:** The attacker, posing as IT support, spoofs a number the victim trusts and persuades the user to join a video call and share their screen.'
+  - claim: 'Step 2: user opens Microsoft 365 Copilot in the browser on a managed, compliant laptop'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '**Step 2:** The attacker has the user open Microsoft 365 Copilot in the browser on their managed, compliant laptop.'
+  - claim: 'Step 3: user opens browser developer tools, finds the Copilot request to Microsoft Graph and copies the access token it carries'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '**Step 3:** The user is told to open the browser’s developer tools, a built-in feature meant for web developers, to find the request Copilot sends to Microsoft Graph and copy the access token it carries.'
+  - claim: 'Step 4: user pastes the token into a public text-sharing (paste) site, where the attacker retrieves it'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '**Step 4:** The user pastes the token into a public text-sharing (“paste”) site, where the attacker retrieves it.'
+  - claim: 'Step 5: within a minute the attacker replays the token from its own server and downloads files en masse through Microsoft Graph'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '**Step 5:** Within a minute, the attacker replays the token from their own server and downloads files en masse through the Microsoft Graph API.'
+  - claim: 'Intro nuance: the attacker either takes control of the screen or walks the user through copying the token, in the application or the browser'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Posing as IT support on a call, the attacker either takes control of the employee’s screen or walks them through copying the token out of Microsoft 365 Copilot in the application or browser.
+  - claim: 'Volume and speed: thousands of files in about an hour'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: The attacker then uses it from their own server to download thousands of files in about an hour.
+  - claim: 'Timing evidence from the observed intrusions: first download about a minute after the token was copied'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: In the observed intrusions, the first download from attacker infrastructure came about a minute after the token was copied.
+  - claim: 'Token lifetime facts: default 60 to 90 minutes; CAE can extend supported tokens to 28 hours'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: By default, Microsoft access tokens last 60 to 90 minutes. Continuous Access Evaluation (CAE), which lets Microsoft re-check or revoke a token mid-session, can extend supported tokens to as long as 28 hours.
+  - claim: 'Why sign-in controls see nothing: no attacker authentication, no sign-in event for the attacker address'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Attackers never have to authenticate, so no sign-in events are generated for their address.
+  - claim: 'Difference from device-code phishing: there the token is issued to the attacker device; here it is issued to the victim compliant device and handed over'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: In device-code phishing, tokens are issued to the attacker’s device. Here, they’re issued to the victim’s compliant device and then handed over.
+  - claim: 'Re-targeting: October and early November, law firms extorted in May and August that appear on the leak site'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: In October and early November, the group went back to law firms it had previously extorted in May and August. Those firms appear on the group’s data-leak site, which suggests they likely didn’t pay the first extortion demand.
+  - claim: Re-targeting interval and second round of data
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: This re-targeting came anywhere from several weeks to months after the first extortion, and the group exfiltrated a second round of data.
+  - claim: 'Lure: blank-subject email from a free address with a deliberately invalid PDF that crashes the viewer'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: the group sent a blank-subject email from a free email address with a PDF named like a business report that was deliberately invalid and crashed the viewer every time it was opened.
+  - claim: Follow-up call, often to a personal number outside corporate call controls, posing as IT support responding to a "malicious email"
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Soon after, the attacker called the target, often on a personal number outside corporate call controls, posing as IT support responding to a “malicious email.”
+  - claim: 'Reversal of earlier flow: earlier campaigns had the victim call the attacker after a fake invoice or subscription email'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: This reverses earlier campaigns, where a fake invoice or subscription email prompted the victim to call the attacker.
+  - claim: 'Earlier tradecraft per ReliaQuest: video call plus built-in Windows remote-assistance tool, manual exfiltration to personal cloud storage'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: They manually exfiltrated sensitive data to personal cloud storage for extortion.
+  - claim: 'Trajectory: by late August video call plus built-in remote-assistance tool; by October the video call alone'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: By late August, the group paired video calls with the built-in remote-assistance tool, and by October, the video call alone handled both the conversation and the screen control.
+  - claim: Nothing is installed; video-call applications are signed legitimate software
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Nothing is installed, and these video call applications are signed, legitimate software, so there are no malicious files to block.
+  - claim: Only evidence is ordinary-looking events (blank email, external video call session, Graph access from an unfamiliar address); correlate across email, video call and Microsoft 365 logs
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: 'With no malware or endpoint alert, the only evidence is ordinary-looking events: a blank email, an external video call session, and Graph access from an unfamiliar address. Correlate these across email, video call, and Microsoft 365 logs'
+  - claim: 'Telemetry classes the article names for the handoff: video-call platform logs, web proxy or DNS logs, Microsoft 365 audit logs'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Video-call platform logs, web proxy or DNS logs, and Microsoft 365 audit logs each record part of the handoff but rarely reach a detection pipeline.
+  - claim: Four events ordinary on their own, together indicative of a token handoff (the article's only combination rule; no benign discriminator beyond this)
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: A video-call screen share, a Copilot session, a visit to a text-sharing site, and Graph file access from an unfamiliar address are each ordinary on their own. Together, they can indicate a token handoff.
+  - claim: 'Earlier-versus-new table row: exfiltration moved from endpoint-mediated transfers to bulk Graph downloads from attacker infrastructure'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '| Exfiltration | Manual downloads, file-transfer tools to attacker servers, uploads to personal cloud storage, or emails to attacker-controlled accounts | Bulk downloads through Microsoft Graph from attacker infrastructure | '
+  - claim: 'Earlier-versus-new table row: target selection extort once then move on versus return to non-payers'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '| Target selection | Extort once, then move on | Return to non-paying victims | '
+  - claim: 'Earlier-versus-new table row: identity abuse had no token-handoff technique in public reporting'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '| Identity abuse | No token-handoff technique described in public reporting | A token created on the user’s host and used from attacker infrastructure | '
+  - claim: 'Earlier-versus-new table row: remote access by multiple tools versus one video call'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: '| Remote access | Multiple remote-management tools | A single video call used for both the conversation and screen sharing | '
+  - claim: 'Hardening 1 (ReliaQuest): CAE with strict location enforcement; pilot first, define every egress IP including secure web gateway ranges as a named location'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Pilot strict enforcement first, defining every egress IP address, including secure web gateway ranges, as a named location.
+  - claim: 'Hardening 2 (ReliaQuest): disable developer tools through Group Policy on managed browsers; block Graph Explorer and the browser net-export pages'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Disable developer tools through Group Policy on managed browsers and block Graph Explorer and the browser net-export pages (chrome://net-export and edge://net-export), because the token handoff depends on users reading tokens out of browsers.
+  - claim: 'Hardening 3 (ReliaQuest): restrict remote-support and screen-sharing tools; limit external video meetings to approved platforms and known participants; verify IT requests by callback'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Limit external video meetings to approved platforms and known participants.
+  - claim: 'Hardening 3b: tell users that IT will never ask for developer tools or tokens and to verify by callback'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Tell users that IT will never ask for developer tools or tokens and that they should verify IT requests by callback.
+  - claim: 'Forecast (ReliaQuest, moderate confidence): continued revisiting of non-payers for six months'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: We assess with moderate confidence that Luna Moth will keep revisiting non-paying victims over the next six months because the required effort is low and the potential payoff is high.
+  - claim: 'Forecast (ReliaQuest, moderate confidence): other extortion groups will copy the technique; may expand beyond Copilot tokens'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: We assess with moderate confidence that other extortion groups will copy the token handoff over the next six months
+  - claim: Evidence of deliberate tracking of non-payers is ReliaQuest's inference from several firms hit again with the same infrastructure
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: In this campaign, several firms were hit again in October and November with the same infrastructure, which points to deliberate tracking of non-payers rather than coincidence.
+  - claim: 'Sector: law firms are the current focus; other sectors holding similarly sensitive data could be next (no country named; grep of the saved copy for US / United States / country names returns nothing)'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Law firms are the current focus, likely because their client data gives the group strong leverage, but other sectors holding similarly sensitive data could be targeted next.
+  - claim: An open-source SharePoint download tool was seen in one intrusion (user-agent indicator, value omitted here)
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: Open-source SharePoint download tool, seen in one intrusion
+  - claim: 'Vendor tie: the recommended platform is the vendor''s own product (GreyMatter)'
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: ReliaQuest GreyMatter, an agentic AI security operations platform, equips security teams to spot the activity detailed in this report
+  - claim: ReliaQuest says the report is external threat intelligence from its research team about third parties (the victims are not ReliaQuest customers by this statement; the findings YAML says "its own customer telemetry")
+    source_url: https://reliaquest.com/blog/threat-spotlight-luna-moth-returns-re-targeting-law-firms-through-access-tokens/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/reliaquest-lunamoth.md
+    passage: This is external threat intelligence from the ReliaQuest Threat Research team. The findings describe threats, vulnerabilities, and attacker activity affecting third parties and the broader threat landscape—not ReliaQuest’s own environment.
+  - claim: 'FBI FLASH CSA 260526 (partial text extraction, 15 of 42 PDF streams decoded): maps earlier activity to T1530 with theft from Microsoft 365, OneDrive, Google Drive; lists Quick Assist and other remote tools. No token, Copilot or Graph wording found in the extracted portion, which is NOT proof of absence'
+    source_url: https://www.ic3.gov/CSA/2026/260526.pdf
+    saved_copy: work/2026-11-14T0255Z-intel/dr/fbi-csa-260526.txt
+    passage: Theft of data from Microsoft 365, OneDrive, Google Drive, or
+  - claim: 'FBI FLASH CSA 260526 (partial extraction): Exfiltration to OneDrive, Google Drive or external servers listed as an observable'
+    source_url: https://www.ic3.gov/CSA/2026/260526.pdf
+    saved_copy: work/2026-11-14T0255Z-intel/dr/fbi-csa-260526.txt
+    passage: OneDrive, Google Drive, or external servers.
+  - claim: 'Check Point (2026-10-09), from a leaked group archive: 42 of the 50 most recently observed victims were law firms; no token or Copilot content; says the leak contains no new exploit or malware. Context for the law-firm focus, not confirmation of the token handoff'
+    source_url: https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/checkpoint-lunamoth.md
+    passage: Of the group’s 50 most recently observed victims, 42 were law firms.
+  - claim: 'Check Point: the caller coaching shows a second operator on the endpoint while the caller keeps the conversation calm (earlier remote-access model)'
+    source_url: https://blog.checkpoint.com/security/how-luna-moth-runs-data-extortion-like-a-business/
+    saved_copy: work/2026-11-14T0255Z-intel/dr/checkpoint-lunamoth.md
+    passage: It tells the caller to monitor a separate group chat throughout the remote session and relay any change in the victim’s behavior.
+  suggested_attack_ids:
+  - id: T1566.004
+    name: Spearphishing Voice
+    behavior: outbound phone call to the employee (often a personal number, spoofed trusted number) posing as IT support
+    basis: reader mapping; ReliaQuest names no ATT&CK ids
+  - id: T1684.001
+    name: 'Social Engineering: Impersonation'
+    behavior: attacker impersonates IT support responding to a "malicious email" (new id in the pinned v20.1 dataset; T1656 is revoked)
+    basis: reader mapping; ReliaQuest names no ATT&CK ids
+  - id: T1528
+    name: Steal Application Access Token
+    behavior: user is talked into copying the Microsoft Graph access token out of the Copilot request via browser developer tools and pasting it to a paste site
+    basis: reader mapping; ReliaQuest names no ATT&CK ids
+  - id: T1550.001
+    name: 'Use Alternate Authentication Material: Application Access Token'
+    behavior: attacker replays the handed-over bearer token from its own server
+    basis: reader mapping; ReliaQuest names no ATT&CK ids
+  - id: T1530
+    name: Data from Cloud Storage
+    behavior: bulk file download through the Graph API (thousands of files in about an hour)
+    basis: reader mapping; ReliaQuest names no ATT&CK ids
+  - id: T1213.002
+    name: 'Data from Information Repositories: Sharepoint'
+    behavior: 'optional: the Graph reads target SharePoint-held files (ReliaQuest names SharePoint files as an example and an open-source SharePoint download tool in one intrusion)'
+    basis: reader mapping, optional
+  - id: T1119
+    name: Automated Collection
+    behavior: 'optional: files are downloaded automatically in bulk rather than manually (ReliaQuest: "download files in bulk automatically")'
+    basis: reader mapping, optional; only if the composer wants the automation aspect
+  - id: NOT-MAPPED
+    name: broken-PDF email
+    behavior: the PDF is deliberately invalid and crashes the viewer; it carries no payload and executes nothing, so T1566.001 is not supported; it is a pretext for the call
+    basis: source states no payload
+  unsupported_or_overreaching_in_findings_yaml:
+  - where: 'items[6].summary and title context: "Luna Moth (Silent Ransom Group, UNC3753)"'
+    issue: ReliaQuest uses only "Luna Moth" and "Silent Ransom Group". UNC3753 is Mandiant's tracker, carried by the registry and the earlier entries. Fine to keep the alias, but do not attribute it to ReliaQuest.
+  - where: 'items[6].region_nexus: "global, US law firms observed"'
+    issue: The primary names no country at all. "US law firms" is from the FBI/Mandiant coverage of the earlier campaign.
+  - where: 'items[6].extended_notes: "a user session on a managed device that shows a Copilot browser session, developer-tools use, and a visit to a text-sharing site near an external screen-share call"'
+    issue: The article lists a screen share, a Copilot session, a text-sharing-site visit and Graph file access as the combined signal; developer-tools use is not listed as a telemetry event. It appears only as something to block.
+  - where: 'items[6].extended_notes: "Benign lookalike: legitimate bulk Graph downloads by backup, migration or eDiscovery apps come from known application identities and addresses, not from a user-delegated token replayed from a new address"'
+    issue: Not in the article. The only discriminator it gives is an unfamiliar address plus the combination of otherwise ordinary events. This sentence is the researcher's reasoning; label it as such or remove it.
+  - where: 'items[6].summary: "the only traces are the blank email, an external video-call session, a visit to a paste site and Graph file access from an unfamiliar address"'
+    issue: Merges two lists. The "only evidence" sentence has three events (blank email, external video call session, Graph access from an unfamiliar address); the paste-site visit is in the separate "Detection at Source" four-event list.
+  - where: 'items[6].summary: "the earlier chain (remote-assistance tool plus manual exfiltration to personal cloud storage) is already covered in the store"'
+    issue: Partly. The 06-06 entry covers RMM agents and WinSCP/Rclone-style exfiltration; ReliaQuest's "built-in Windows remote-assistance tool" is not named in the store (it names no product either). Do not claim full coverage.
+  - where: items[6].techniques
+    issue: ReliaQuest gives no ATT&CK ids; the five ids are the researcher's mapping (all active in the pin). Fine for metadata; do not present them as ReliaQuest's.
+  - where: items[6].extended_notes hardening list
+    issue: 'Omits ReliaQuest''s most specific levers: disable developer tools by Group Policy on managed browsers, block Graph Explorer and the chrome://net-export / edge://net-export pages, and the pilot caveat (define every egress IP including secure web gateway ranges as a named location before strict location enforcement). Also omits the token-lifetime facts (default 60 to 90 minutes; CAE up to 28 hours) that explain why the window is short.'
+  - where: 'items[6].summary: "within about a minute the attacker replays the token"'
+    issue: Supported ("Within a minute"; "about a minute after the token was copied"), but it is from "the observed intrusions" without a stated count.
+  - where: items[6] "on its own customer telemetry" in the summary header
+    issue: ReliaQuest says the findings are external threat intelligence about third parties and does not say the victims are its customers. "Its own telemetry" is safe; "customer telemetry" is an inference.
+  - where: items[6].evidence
+    issue: All three quotes verified as substrings of the saved copy (curly apostrophes included). No issue.
+started_at: '2026-11-14T03:36:30Z'
+ended_at: '2026-11-14T03:45:25Z'
+duration_seconds: 535
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 6
+  bridge_fetches: 8
