@@ -1,0 +1,290 @@
+# work/2026-11-15T0356Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-15T0356Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-15T03:58:08Z
+ended_at: 2026-11-15T04:19:54Z
+duration_seconds: 1306
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 12
+  bridge_fetches: 95   # approximate: feed/extract/url/ncsc-nl/bsi/cert-fr/cisa/msrc/ncsc-csh calls plus curl reads of cveawg and api.first.org
+window_note: >
+  Window 28 h (2026-11-14T00:00Z to 2026-11-15T03:56Z) falls on a Saturday and Sunday: no KEV addition,
+  no CISA/ICS advisory, no NCSC-NL, BSI, CERT-FR, CERT-EU or vendor-PSIRT advisory was published after
+  2026-11-13 (latest stamps: NCSC-NL 2026-11-13T14:59Z, BSI [NEU] 2026-11-13T13:22Z, CISA KEV
+  catalogue 2026.11.13 released 2026-11-13T20:24Z). Two items below sit in the 72 h developing window,
+  one is a rotational-lookback borderline. Everything else the sweep touched was already covered.
+
+items:
+  - title: "Cursor's own incident report gives the origin of the marketplace compromise: an access key it issued to the AI infrastructure provider Fireworks was exposed, a shared storage bucket held coding-agent traces with unredacted credentials, and a credential from them let the attacker put the tampered Claude Code copies on the marketplace cache"
+    sources:
+      - { url: "https://cursor.com/blog/security-incident-update", publisher: "Cursor (An update on our recent security incident)", date: "2026-11-13", role: "primary" }
+      - { url: "https://fireworks.ai/security/bulletins/october-2026-security-incident-update", publisher: "Fireworks AI (Update on October 2026 security incident)", date: "2026-11-09", role: "primary" }
+      - { url: "https://fireworks.ai/security/bulletins/october-2026-security-incident", publisher: "Fireworks AI (Fireworks October 2026 security incident)", date: "2026-10-10", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cursor-confirms-security-breach-led-to-malicious-claude-code-extension/", publisher: "BleepingComputer", date: "2026-11-14", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch-adjacent news sweep, BleepingComputer feed URL https://www.bleepingcomputer.com/feed/ (item 'Cursor confirms security breach led to malicious Claude Code extension', 2026-11-14T12:27Z) -> pivot: article https://www.bleepingcomputer.com/news/security/cursor-confirms-security-breach-led-to-malicious-claude-code-extension/ -> primary: https://cursor.com/blog/security-incident-update (published 2026-11-13) -> pivot: Fireworks listing https://fireworks.ai/security/bulletins (WebFetch, hrefs) -> primary: https://fireworks.ai/security/bulletins/october-2026-security-incident-update and https://fireworks.ai/security/bulletins/october-2026-security-incident"
+    summary: |
+      Cursor's incident report of 2026-11-13 answers the question the covered entry
+      (2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor) says no source answered, how the attacker
+      could publish under Anthropic's name. Cursor states: an access key it had issued to Fireworks, a third-party
+      model training and inference provider, was exposed by Fireworks; the attacker used it to copy data from a
+      read-only storage bucket Cursor used to share data with Fireworks; the bucket held historical coding-agent
+      traces (mostly 2025, from sessions not in Privacy Mode, which Cursor was permitted to use for model training)
+      and a small number of the traces carried unredacted credentials (under 0.01% of customers had API credentials
+      exposed, under 0.05% of users had traces exposed, by Cursor's count). With those credentials the attacker
+      reached select SaaS tools and took archived non-production repositories, limited support data and email
+      conversations, usage metrics and contact details, summaries of some agent conversations, and credentials
+      users had sent to Cursor support. On 2026-10-29 a credential taken from that data let the attacker place the
+      tampered copies of Anthropic's Claude Code extension (2.1.312 and 2.1.313) directly on the cache that serves
+      the Cursor marketplace; Cursor says Open VSX never held the malware, Anthropic did not publish the copy, and
+      at most 5,000 users who requested those cached versions on 2026-10-29 may have received it. Cursor says the
+      last attacker activity it saw was on 2026-11-01 and was blocked, that no release signing keys were exposed,
+      and that it shipped Cursor from a separate code-hosting system the attacker never reached. It moved all
+      inference off Fireworks, rotated every credential it found exposed and, as a precaution, all credentials in
+      use internally, and rebuilt the marketplace. Fireworks' own bulletins (2026-10-10, updated 2026-11-09) are
+      the other end of the chain: it identified unauthorised use of internal credentials on 2026-10-06, later found
+      impact to account and billing information and, for a limited set of accounts, to secrets, datasets and
+      incomplete models, and reports a second event in which a third-party cloud provider hosting its R&D machines
+      had an incident on 2026-10-23 that the unauthorised party used on 2026-10-24 to reach development machines.
+      Fireworks says the evidence indicates links to a financially motivated LLMjacking group and points to the
+      2026-11-02 Google/Mandiant LLMjacking post. Assessment boundary: neither Cursor nor Fireworks names an actor
+      for the extension publication, Fireworks' pages never mention Cursor, and the Cursor-Fireworks link rests on
+      Cursor's statement that Fireworks exposed the key; an LLMjacking motive (selling model access) does not by
+      itself explain an SSH-backdoor extension, so the two should not be merged into one cluster.
+    region_nexus: "global; AI coding assistant and AI infrastructure supply chain; Swiss public-sector nexus indirect (developers and technology suppliers using Cursor)"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1078.004, T1530, T1552]
+    affected_products: ["Cursor", "Anthropic Claude Code", "Fireworks AI platform"]
+    entity_keys: ["incident:cursor-claude-code-extension-compromise-2026-10", "product:cursor", "product:anthropic-claude-code"]
+    new_entities:
+      - { key: "incident:fireworks-ai-october-2026-security-incident", type: incident, name: "Fireworks AI security incident (October 2026)", aliases: ["Fireworks October 2026 security incident"],
+          summary: "Fireworks AI identified unauthorised use of internal credentials on 2026-10-06; its 2026-11-09 update reports impact to account and billing information and, for a limited set of accounts, to secrets, datasets and incomplete models, a further event after a third-party cloud provider incident on 2026-10-23, and evidence it links to a financially motivated LLMjacking group (Fireworks, 2026-10-10 and 2026-11-09); Cursor says an access key it issued to Fireworks, exposed by Fireworks, started its own incident (Cursor, 2026-11-13)." }
+    relation_suggestions:
+      - { subject: "incident:cursor-claude-code-extension-compromise-2026-10", object: "incident:fireworks-ai-october-2026-security-incident",
+          basis: "Cursor states its incident 'started at Fireworks': an access key Cursor had issued to Fireworks was exposed by Fireworks and used by the attacker (Cursor, 2026-11-13)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor"
+    evidence:
+      - quote: "An attacker obtained an access key we had issued to Fireworks."
+        attribution: "Cursor (An update on our recent security incident)"
+        source_url: "https://cursor.com/blog/security-incident-update"
+      - quote: "using a stolen credential from the exposed data from our internal system, the attacker placed malicious, unauthorized copies of Anthropic's Claude Code extension directly on the cache used to serve the Cursor VS Code extension marketplace"
+        attribution: "Cursor (An update on our recent security incident)"
+        source_url: "https://cursor.com/blog/security-incident-update"
+      - quote: "At most 5,000 users who requested specific cached versions of the extension on October 29 potentially received the malicious build."
+        attribution: "Cursor (An update on our recent security incident)"
+        source_url: "https://cursor.com/blog/security-incident-update"
+      - quote: "The last attacker activity we have seen was on November 1, and it was blocked."
+        attribution: "Cursor (An update on our recent security incident)"
+        source_url: "https://cursor.com/blog/security-incident-update"
+      - quote: "The evidence indicates links to a cybercriminal threat actor group, which is financially motivated"
+        attribution: "Fireworks AI (Update on October 2026 security incident)"
+        source_url: "https://fireworks.ai/security/bulletins/october-2026-security-incident-update"
+      - quote: "A third-party cloud provider that hosted Fireworks R&D machines experienced a security incident on October 23."
+        attribution: "Fireworks AI (Update on October 2026 security incident)"
+        source_url: "https://fireworks.ai/security/bulletins/october-2026-security-incident-update"
+    extended_notes: |
+      Delta for the existing entry: root cause and data-exposure chain (new), Cursor's containment statement
+      (last attacker activity 2026-11-01), the second-hand credential exposure (traces and support-sent
+      credentials; affected users notified directly, no notice means not in the traces), and the Fireworks side.
+      Exposure line material: Cursor users who ran coding-agent sessions in 2025 with Privacy Mode off and had
+      secrets in the agent context, anyone who sent credentials to Cursor support, and anyone who installed or
+      updated Anthropic.claude-code 2.1.312 or 2.1.313 from the Cursor marketplace on 2026-10-29 (Cursor: uninstalling alone may not be enough).
+      Detection concept (telemetry class first, assessment from the stated mechanism): usage of API keys and
+      tokens that were present in agent sessions or support threads (cloud and SaaS audit logs, key-usage
+      logs) from unfamiliar locations after 2026-10 until rotated; Cursor says it asked issuing services to revoke
+      the credentials it identified. Supplier-risk takeaway: a tool vendor's data-sharing bucket with an AI
+      vendor, plus unredacted secrets in agent traces, became the path to the vendor's marketplace; hold AI
+      assistant vendors to the same credential-scoping and network-restriction questions as other suppliers.
+      Overlap note: this is incident-shaped and S4 may surface the same story; the 2026-11-09 LLMjacking entry
+      (2026-11-09/llmjacking-stolen-cloud-keys-enable-model-services-resale) covers the GTIG report Fireworks cites,
+      but Fireworks does not name UNC6993, so no actor relation is suggested.
+
+  - title: "Fortinet's Node2Shell advisory FG-IR-26-187 (CVE-2026-111497, Brotli decoder) still lists 11 products as under investigation on its 2026-11-13 revision, among them FortiPAM, FortiEDR, FortiVoice, FortiFone and the FortiSwitch family, with no fixed version or workaround, while CISA lists the flaw as exploited"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187", publisher: "Fortinet PSIRT (FG-IR-26-187, Node2Shell CVEs)", date: "2026-11-13", role: "primary" }
+    discovery_trace: "first seen at: fortinet-psirt, URL https://filestore.fortinet.com/fortiguard/rss/ir.xml (feed read with N=80; FG-IR-26-187 listed 'Node2Shell CVEs', CVSSv3 9.8, 'Revised on 2026-11-13', link https://fortiguard.fortinet.com/psirt/FG-IR-26-187) -> primary (no pivot needed): extract and WebFetch of https://fortiguard.fortinet.com/psirt/FG-IR-26-187"
+    summary: |
+      Fortinet's advisory FG-IR-26-187, first published 2026-10-26 and revised on 2026-11-13, covers ten Node.js
+      CVEs under the name Node2Shell, including CVE-2026-111497 ("A flaw in Node.js can cause Node.js Brotli
+      decoder out-of-bounds write permits remote code execution", affecting Node.js 26.x, 24.x and 22.x). The
+      page states "Fortinet is currently investigating the impact of these CVEs over Fortinet Products" and lists
+      eleven products still under investigation: FortiDAST, FortiEDR, FortiFone, FortiPAM, FortiRecon, FortiSandbox
+      PaaS, FortiSwitch, FortiSwitch NMS, FortiSwitchAX, FortiSwitchAX-Chassis and FortiVoice. A long list of
+      products is marked not impacted (FortiOS, FortiMail, FortiManager, FortiAnalyzer, FortiAuthenticator,
+      FortiClient EMS, FortiSIEM, FortiNAC and FortiSandbox among them, 64 distinct names by count of the page);
+      the revision timeline on the page shows the not-impacted list being extended on 2026-10-28, -29, -30,
+      2026-11-03, -05, -06 and -13. FortiSwitchAX appears in both lists, a contradiction on the page itself. The
+      advisory carries no fixed version, solution or workaround section; its header (read through WebFetch) gives
+      CVSSv3 9.8, temporal 9.0, attack type unauthenticated, and "Known Exploited: No", which differs from CISA's
+      KEV listing of CVE-2026-111497 (added 2026-10-27, already in the covered entries). The two statements are
+      about different things: Fortinet reports on its own products, CISA on the flaw in the wild. EPSS 0.83.
+      The covered Brotli vendor-impact entry lists Siemens, Mitel, Cisco and Apple and does not mention Fortinet.
+    region_nexus: "global; Fortinet is widely deployed in Swiss administrations (FortiOS and FortiMail are confirmed not impacted; FortiPAM, FortiEDR and FortiVoice are still open)"
+    primary_sector_nexus: "direct (supplier product status)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190]
+    affected_products: ["Fortinet FortiPAM", "Fortinet FortiEDR", "Fortinet FortiVoice", "Fortinet FortiFone", "Fortinet FortiSwitch", "Fortinet FortiSwitch NMS", "Fortinet FortiSwitchAX", "Fortinet FortiDAST", "Fortinet FortiRecon", "Fortinet FortiSandbox PaaS"]
+    entity_keys: ["product:google-brotli", "product:node-js", "product:fortinet-fortipam"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-07/cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo"
+    evidence:
+      - quote: "Fortinet is currently investigating the impact of these CVEs over Fortinet Products."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187"
+      - quote: "A flaw in Node.js can cause Node.js Brotli decoder out-of-bounds write permits remote code execution."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187"
+    extended_notes: |
+      Single source is the vendor PSIRT, which is first-party for its own product status; verification is
+      single-source by construction. The exact content of the 2026-11-13 revision is the not-impacted list per the
+      page's own timeline; the under-investigation list was last changed on 2026-10-27. Inside the 72 h developing
+      window, outside the 28 h window. Defender action when a Fortinet shop runs FortiPAM or FortiVoice: ask the
+      Fortinet account team or PSIRT for the status, and treat internet-reachable instances of the listed
+      products as unassessed until Fortinet closes the row. The advisory CSAF is at
+      https://filestore.fortinet.com/fortiguard/psirt/csaf_multiple-node-js-cves_fg-ir-26-187.json (listed on the page; not fetched).
+      Priority guide: update on an existing notable entry, an internal-quality change at most if the main agent
+      judges the product list too thin to move readers.
+
+  - title: "jDownloads 4.1.8, Joomla download manager: front-end thumbnail upload runs PHP (CVE-2026-117551, CVSS 4.0 10.0, needs upload permission) and four more CVEs; every version to 4.1.7 affected, older lines have no fix"
+    sources:
+      - { url: "https://mysites.guru/blog/jdownloads-4-1-8-security-release/", publisher: "mySites.guru", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.jdownloads.com/index.php/news/jdownloads-v4-1-8-stable-security-update-released.html", publisher: "jDownloads (vendor release note)", date: "2026-11-12", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-117551", publisher: "CVE record (Joomla CNA; CISA ADP SSVC block)", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: mysites-guru, URL https://mysites.guru/rss.xml (feed item 'jDownloads 4.1.8 Fixes a Critical File Upload RCE and Eight More Security Issues', 2026-11-12T13:59Z, rotational lookback) -> primary: extract of https://mysites.guru/blog/jdownloads-4-1-8-security-release/ -> pivot: vendor note https://www.jdownloads.com/index.php/news/jdownloads-v4-1-8-stable-security-update-released.html -> pivot: CVE record https://cveawg.mitre.org/api/cve/CVE-2026-117551"
+    lookback: true
+    summary: |
+      jDownloads, a third-party download manager for Joomla, shipped 4.1.8 on 2026-11-12 for Joomla 5 and 6 with
+      nine listed security changes; the Joomla CNA published five CVE records for it the same day. The worst,
+      CVE-2026-117551, is an unrestricted file upload (CWE-434) in the front-end thumbnail upload: per the CNA
+      record, "insufficient validation of frontend thumbnail uploads allowed users with upload permission to place
+      executable files on the server", which gives PHP code execution; the CNA scores it CVSS 4.0 10.0 with no
+      privileges required, while its own text and mySites.guru say the attacker needs upload permission, so reach
+      depends on which user groups a site allows to upload from the front end. The other four are an SSRF through
+      redirects in external-download processing (CVE-2026-117543, 8.9, needs a high-privilege account), a download
+      permission bypass (CVE-2026-117544, 8.2), publication of submissions without approval (CVE-2026-117550, 7.1,
+      any logged-in account) and an authenticated path traversal (CVE-2026-117542, 5.1). All five records give 1.0.0
+      to 4.1.7 as affected and 4.1.8 as the only fixed release; mySites.guru adds that 4.0.x, 3.9 and older lines
+      have no fix on their own line. Four further changes have no CVE yet, among them a 4.1.x scan page that ran
+      without a login and showed the scan's secret key (mySites.guru's own score 6.9); the update does not rotate
+      that key, so it must be rotated by hand (vendor and mySites.guru say the same). No source reports
+      exploitation: CISA's ADP SSVC entry of 2026-11-12 reads Exploitation none, Automatable yes, Technical Impact
+      total; mySites.guru's rendering of the vector carries E:A, which the CNA record does not (exploit maturity not
+      defined), so that letter should not be read as an attack report. EPSS 0.0044. This is a different flaw from
+      CVE-2026-61900 (unauthenticated upload endpoint removed in 4.1.6): a site that updated for that one is still
+      exposed until 4.1.8.
+    region_nexus: "global; Joomla sites incl. communal and cantonal web presences possible, Swiss footprint unverified"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2026-117551, CVE-2026-117543, CVE-2026-117544, CVE-2026-117550, CVE-2026-117542]
+    techniques: [T1190, T1505.003]
+    affected_products: ["jDownloads extension for Joomla"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "CVSS 10.0 RCE in a popular Joomla extension, from the Joomla third-party-extension stream the audits have repeatedly recovered misses from (mysites-guru record), but it needs upload permission (site configuration dependent), no exploitation is reported (CISA ADP SSVC none, EPSS 0.004) and the Swiss footprint is unknown; drop unless the main agent wants stream continuity. Sibling posts of 2026-11-12/13 on the same feed (AcyMailing 11.1.2 seven authorisation flaws, worst 8.8 forced unsubscribe, no RCE or SQLi; Joomill Autolanguage stored XSS; Kunena stored XSS) were dropped."
+    evidence:
+      - quote: "Front-end thumbnail uploads were not validated properly, so a user with upload permission could place an executable file on the server and run PHP code."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/jdownloads-4-1-8-security-release/"
+      - quote: "This release fixes multiple security issues and improves file-management stability."
+        attribution: "jDownloads (vendor release note)"
+        source_url: "https://www.jdownloads.com/index.php/news/jdownloads-v4-1-8-stable-security-update-released.html"
+    extended_notes: |
+      Exposure: Joomla 5 or 6 sites running jDownloads 4.1.7 or earlier (read the installed version from the component
+      itself, not only the Joomla updater, per mySites.guru's note for other extensions), where front-end upload is
+      allowed to groups that include untrusted users. Detection concept (derived from the stated mechanism, not from
+      a source): new script-type files in the component's thumbnail or upload directories and web-server requests that
+      fetch them; after updating, rotate the scan key. Hardening lever: update to 4.1.8, restrict front-end upload
+      permission to trusted groups, block script execution in upload directories at the web server.
+
+cve_table:
+  - { cve: CVE-2026-117551, product: "jDownloads extension for Joomla", cvss: "10.0 (CVSS 4.0, Joomla CNA)", epss: 0.00442, kev: false, exploited: "no source reports exploitation; CISA ADP SSVC 2026-11-12: Exploitation none, Automatable yes, Technical Impact total", affected: "1.0.0 to 4.1.7", fixed: "4.1.8 (only fixed release; 4.0.x, 3.9 and older lines have none)", type: "unrestricted file upload to PHP code execution (CWE-434)", vector: "network, front-end thumbnail upload", auth: "upload permission needed per CNA text (CNA vector PR:N)", source: "https://cveawg.mitre.org/api/cve/CVE-2026-117551" }
+  - { cve: CVE-2026-117543, product: "jDownloads extension for Joomla", cvss: "8.9 (CVSS 4.0, per mySites.guru)", epss: 0.00275, kev: false, exploited: "none reported", affected: "1.0.0 to 4.1.7", fixed: "4.1.8", type: "SSRF via redirects in external download URL", vector: "network", auth: "high-privilege account", source: "https://mysites.guru/blog/jdownloads-4-1-8-security-release/" }
+  - { cve: CVE-2026-111497, product: "Brotli decoder in Node.js and vendor products; Fortinet FG-IR-26-187 status", cvss: "9.8 (CVSS 3.1 as shown on Fortinet's advisory; 9.2 in the CVE record's CVSS 4.0 per other coverage)", epss: 0.82641, kev: true, exploited: "yes per CISA KEV (added 2026-10-27, in the store); Fortinet's header reads Known Exploited: No for its own products", affected: "Fortinet: 11 products under investigation (FortiDAST, FortiEDR, FortiFone, FortiPAM, FortiRecon, FortiSandbox PaaS, FortiSwitch, FortiSwitch NMS, FortiSwitchAX, FortiSwitchAX-Chassis, FortiVoice); Node.js 26.x, 24.x, 22.x as the upstream", fixed: "none stated by Fortinet", type: "out-of-bounds write in Brotli decoder", vector: "network, attacker-controlled Brotli data", auth: "unauthenticated per Fortinet header", source: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187" }
+
+# Scheduled multi-product releases in the window and revised advisories (one-line disposition each).
+# These are drops or already-covered rows, not items.
+scheduled_release_dispositions:
+  - release: "Microsoft November 2026 Patch Tuesday (2026-11-10; CVRF 2026-Nov, 1,644 records, document revision 575 stamped 2026-11-14T01:45Z)"
+    exploited: "1: CVE-2026-124194 Outlook (KEV 2026-11-10), covered 2026-11-11/cve-2026-124194-outlook-forced-authentication-exploited-kev"
+    publicly_disclosed: "0 (no Threats row says Publicly Disclosed:Yes)"
+    preauth_9_plus_covered: "CVE-2026-85844, -116928, -88218, -88243, -119958, -88234, -116945 in 2026-11-11/microsoft-november-2026-patch-tuesday-preauth-9-8-rows"
+    preauth_9_plus_dropped: "CVE-2026-95882, -95901 (DirectMusic 9.8), -96157 (Media Foundation 9.8), -112967 (Xbox Live Networking 9.8), -96078 and -96067 (Color Management 9.8; -96067 needs an application to process a crafted profile), -95962 (VFP 9.0, AC:H): Exploitation Less Likely, E:U, no exploit or disclosure, client or consumer components, fixed by the same cumulative update; the covered entry already states these rows are out of its scope"
+    authenticated_9_plus_dropped: "SharePoint CVE-2026-120002 (9.9, needs read access plus Secure Store target-application membership), -109454 and -80095 (9.0, stored XSS needing content-edit rights), Azure DevOps Server -109467 (9.9, Project Reader), Microsoft Graph -114162 (9.1, PR:H), Visual Studio Code -120779 (9.6, user must connect to a malicious MCP server and click), ASP.NET Core -114146 (9.0); cloud-service rows (Azure OpenAI -119990) need no customer action"
+    revisions: "50 Microsoft-CNA revisions since 2026-11-10, all informational (acknowledgements, Security Updates table changes) except CVE-2026-126526 OneNote RCE 8.8 added 2026-11-11 as inadvertently omitted (BSI WID-SEC-2026-4569 hoch; previously dropped, stays dropped)"
+  - release: "Fortinet monthly PSIRT bundle (49 advisories dated 2026-11-10)"
+    disposition: "All CVSS 9.0+ rows (FG-IR-26-199, -200, -216, -268, -267, -208, -244, -271, -275) sit in 2026-10-23/fortinet-hardening-release-fortios-fortimanager-fortimail; FG-IR-26-268 (rev 2026-11-13) and -193 (rev 2026-11-12) revisions already dispositioned by the 2026-11-14 run (IPS virtual patch, no exploitation); FG-IR-26-187 returned as an update-of item above"
+  - release: "Adobe 2026-11-10 (APSB26-189 AEM, APSB26-191 Connect)"
+    disposition: "Connect APSB26-191 covered; AEM APSB26-189 (CVE-2026-114371, -113580, -113579, -119017 at 9.9, all PR:L, priority 2, 'not aware of any exploits in the wild', affects AEM Cloud Service to 2026.10.29023, AEM 6.5 SP25 and earlier, AEM 6.5 LTS SP3 and earlier) stays a drop (authenticated; dropped by the 2026-11-11 and 2026-11-14 runs). Photoshop (NCSC-NL 2026-0482) not read in depth."
+  - release: "SAP 2026-11-10, Citrix 2026-11-12, Check Point 2026-11-12/13"
+    disposition: "covered (2026-11-10/sap-november-2026-cna-records-four-unauth-cvss-10-rows, 2026-11-13/citrix-netscaler-adc-gateway-ctx697305-28-memory-flaws, 2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways); CVE-2026-123039 and CVE-2026-119618 CVE records were re-enriched by CISA ADP on 2026-11-14/15 (SSVC: Check Point exploitation per KEV; Apache httpd CVE-2026-119618 Exploitation none, Automatable no, Technical Impact total, 2026-11-13)"
+  - release: "Ivanti 2026-11-10 (EPM, CSA, EPMM, Sentry, User Workspace Manager)"
+    disposition: "EPM CVE-2026-121653 and CSA CVE-2026-121683 covered (2026-11-11/ivanti-epm-cve-2026-121653-unauthenticated-sqli-rce, updated 2026-11-14); EPMM (CVE-2026-107404, -107405, -105426, -105427, -83528), Sentry (CVE-2026-105425 7.2, -105669, -123179, -123181) and UWM (CVE-2026-105813) rows are 4.9 to 7.2, admin-authenticated or local: drop; Ivanti says no evidence of exploitation"
+  - release: "Palo Alto Networks 2026-11-11 (10 advisories) and Brotli portfolio CVE-2026-111497"
+    disposition: "PAN-OS rows LOW or MEDIUM (highest CVE-2026-0330 authenticated Panorama RCE, MEDIUM) plus PAN-SA-2026-0014 Chromium monthly: drop; PHP2Shell advisory CVE-2026-109618 timeline last revised 2026-10-29 (no new fixed releases since); Brotli advisory last revised 2026-11-09 (three products moved to remediated), PAN states it is not aware of malicious exploitation"
+  - release: "Siemens 2026-11-10 (NCSC-NL 2026-0479), Zoom ZSB-26023/-24 (2026-11-10), Node.js 2026-11-12 (NCSC-NL 2026-0492), Mozilla Firefox 160, ESR 153.7, Thunderbird 160 (MFSA 2026-125 to -129, 2026-11-10, about 99 CVEs incl. many sandbox escapes, no exploitation statement read), Android November bulletin (published 2026-11-02, revised 2026-11-06, outside the 168 h lookback), AWS bulletins 2026-11-06..12 (12, none exploited)"
+    disposition: "all drop: Siemens max 9.8 is the covered Brotli CVE-2026-111497, the rest 8.8 or lower; Zoom CVE-2026-108186 9.6 needs UI:R, no exploitation (already dropped on 2026-11-14); Node.js 16 CVEs max 8.2; Mozilla is a regular four-weekly release with no exploitation statement; none has an exploited or publicly-disclosed flag"
+  - release: "CISA KEV / ENISA EUVD / ICS"
+    disposition: "KEV catalogue 2026.11.13 (1,781 entries) has no addition dated 2026-11-14 or later; the last two (CVE-2026-114713 UnrealIRCd, CVE-2026-123039 Check Point, 2026-11-13) were handled by the 2026-11-14 run (THN 2026-11-14 restates the CISA listing and adds no new fact); no KEV ransomware-flag flip on a covered CVE (kev_window_diff since 2026-11-03: none); EUVD exploited list has 4 records, all covered or borderline-dropped; EUVD 9.0+ records of 2026-11-13/15 (77) are consumer routers, WordPress plugins and niche products (Zenitel Connect and EdgeAudioClient AV:A/PR:H, RBH Integra32, sysPass, VITEC EZ TV, Control Web Panel, Tactical RMM, OpenEMR, Dell PowerStore PR:H) with no exploitation and no stated constituency footprint: drop; latest CISA ICS advisories released 2026-11-12 (before window)"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no product watchlist; sweep is a no-op"
+
+candidate_sources:
+  - id: fireworks-ai-security-bulletins
+    publisher: "Fireworks AI security bulletins"
+    url: "https://fireworks.ai/security/bulletins"
+    category: incidents
+    why: "First-party incident statements for an AI infrastructure provider whose exposed key started the Cursor marketplace compromise; the bulletin pages (october-2026-security-incident, ...-update) carry timeline, data categories and the LLMjacking assessment; listing reads through WebFetch, the bulletin pages through extract. Low volume, keep as candidate only while the incident develops."
+
+coverage_gaps:
+  - { source_id: belden-psirt, reason: "https://www.belden.com/security answered HTTP 403 on extract and WebFetch and the jina pool is exhausted (HTTP 402 on every key); no alternate route found; candidate record, 403 never demotes. The PHP2Shell OT entries already carry Belden (NetModule, MACMON) from earlier fires." }
+  - { source_id: connectwise-trust-center, reason: "recipe confirmed: HTML advisories blocked, but `python3 tools/fetch_source.py url --direct 'https://api.github.com/repos/ConnectWise-Advisories/Disclosures/commits?per_page=15'` lists dated disclosure commits (latest advisory CVE-2026-127063 on 2026-11-12, covered); `extract https://github.com/ConnectWise-Advisories/Disclosures` returns only the README. Suggest adding the API commit listing to the record's notes." }
+  - { source_id: karimi-honeypot-data, reason: "recipe change: `extract` of the GitHub tree URL returns navigation chrome only; `url --direct 'https://api.github.com/repos/0x4D31/honeypot-data/contents/reports/php2shell'` lists the report files (two files, latest 2026-10-24) and the commits API (`.../commits?path=reports`) dates them (newest 2026-10-26). No new report in lookback." }
+  - { source_id: msrc-update-guide, reason: "recipe addition: the SUG revised-CVE sweep returns only Azure Linux rows unless filtered; `$filter=latestRevisionDate ge 2026-11-10T00:00:00Z and isMariner eq false` returns 1,309 rows (1,186 Microsoft CNA, 121 Chrome CNA); then drop rows whose latestRevisionDate starts with the Patch Tuesday day and read `revisions[].unformattedDescription`. `msrc cvrf 2026-Nov` downloads in about one minute (33 MB, document revision 575); `Threats` type 1 text carries Exploited and Publicly Disclosed, `CVSSScoreSets[0].Vector` the vector, FAQ notes the attack path. `msrc recent 25` returned only Mozilla CVE records re-imported into the catalogue on 2026-11-14 (fixes dating to Firefox 154 and earlier) - not new advisories." }
+  - { source_id: chromereleases-feed, reason: "not a slice record: `feed https://chromereleases.googleblog.com/feeds/posts/default` answers HTTP 302 (unreadable on every rung) and `extract https://chromereleases.googleblog.com/` returned a single ChromeOS post; Chrome desktop stable posts were not reachable in this run (Chrome rows were dropped by earlier fires)." }
+  - { source_id: scratchpad-sharing, reason: "process note: parallel research sub-agents of one run share one scratchpad directory (S1 to S4 wrote bc.txt, divd.txt and others into the same path); S1 used its own subdirectory s1/ to avoid clobbering. A shell `SP=... && ( ... ) &` assignment does not survive into the next backgrounded command, so two redirects wrote to / (moved afterwards); use `export SP=` per call." }
+
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (+ kev_window_diff since 2026-11-03)", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "catalogue 2026.11.13, no addition dated 2026-11-14 or later; the 2026-11-13 additions were handled by the previous fire" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "url --direct exploitedvulnerabilities + search?fromScore=9 (2026-11-13..15)", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "4 exploited records (all covered or dropped), 77 critical-score records (consumer routers, WordPress plugins, niche products), none qualifying" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract watchtowr.com/intelligence", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "newest labs post 2026-11-05 (Barracuda, covered); intelligence listing shows nothing newer" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed N=80 + extract + WebFetch of FG-IR-26-187", horizon_hours: 28, in_horizon_items: 0, returned: 1, note: "49 advisories dated 2026-11-10 all covered; FG-IR-26-187 revised 2026-11-13 returned as update-of; FG-IR-26-268 and -193 revisions already dispositioned" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "msrc recent + SUG API revised sweep (isMariner eq false) + msrc cvrf 2026-Nov", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "Patch Tuesday covered; 50 informational revisions; see scheduled_release_dispositions" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + url --direct json/CVE-2026-109618 and json/CVE-2026-111497", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "newest advisories 2026-11-11 (LOW/MEDIUM); PHP2Shell and Brotli advisories unchanged since 2026-10-29 and 2026-11-09" }
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "ncsc-nl recent 30 + ncsc-nl csaf 0465/0479/0481/0492/0494", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest 2026-11-13T14:59Z (Ivanti EPM v1.01, covered); Barracuda 0465 v1.0.1 'Actief misbruik waargenomen' 2026-11-12 already in the entry" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "cert-fr avis-recent 25 + feed alerte", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest avis 2026-11-13 (AVI-1526 to -1539), latest alert CERTFR-2026-ALE-015 (2026-11-05/06, OpenSSH, covered)" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bsi-rss (250 items, 28 [NEU])", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest [NEU] 2026-11-13T13:22Z; kritisch rows: N-able, ScreenConnect RMM+ (CVE-2026-127063), Linksys unpatched (dropped) all covered or dropped" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "cert-eu recent 10", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest 2026-020 Citrix NetScaler (2026-11-12, covered)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest 2026-11-13 Edito CMS (dropped by previous fire)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + cisa csaf-recent", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest item 2026-11-13 KEV alert; ICS advisories latest 2026-11-12" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 28, in_horizon_items: 0, returned: 0, note: "latest 2026-11-11 scheme news; no advisory-shaped item" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "GitHub API commits via url --direct + extract of repo", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "CVE-2026-127063 (2026-11-12) covered by the ScreenConnect entry; HTML trust-center pages not retried" }
+  - { id: android-security-bulletin, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "November bulletin published 2026-11-02, revised 2026-11-06, outside lookback; no limited-exploitation wording found in the page text" }
+  - { id: belden-psirt, tier: standard, attempted: true, transport: "extract + WebFetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "HTTP 403 on both, jina pool exhausted (402): logged as coverage gap" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "url --direct listing + regex", horizon_hours: 147, in_horizon_items: 2, returned: 0, note: "CVE-2026-119618 Apache post and the GitHub Actions secret-stealer post, both covered" }
+  - { id: aws-security-bulletins, tier: standard, attempted: true, transport: "feed N=12", horizon_hours: 147, in_horizon_items: 12, returned: 0, note: "12 bulletins 2026-11-06..12 (MCP gateway registry, Kiro CLI, SDKs, Babelfish), none exploited" }
+  - { id: balbooa-blog, tier: standard, attempted: true, transport: "extract + url --direct + extract of deep-dive post", horizon_hours: 147, in_horizon_items: 1, returned: 0, note: "Gridbox 2.20.5.0 security deep dive (2026-11-04) already in the Gridbox entry" }
+  - { id: greynoise, tier: standard, attempted: true, transport: "url --direct listing + extract of 6 posts", horizon_hours: 147, in_horizon_items: 1, returned: 0, note: "newest post 2026-11-12 is a product and benchmark post; exploitation posts date 2026-09-21 to 2026-10-15" }
+  - { id: hadrian-labs, tier: standard, attempted: true, transport: "url --direct listing", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "marketing posts only again (second quiet sweep in a row: demotion candidate)" }
+  - { id: karimi-honeypot-data, tier: standard, attempted: true, transport: "GitHub API contents and commits via url --direct", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "no new PHP2Shell report since 2026-10-26" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed", horizon_hours: 147, in_horizon_items: 2, returned: 0, note: "Keycloak 26.8.2 (2026-11-05) and Client Libraries 26.0.13 (2026-11-12) carry no security statement in the feed; the SAML signature entry is covered" }
+  - { id: morphisec, tier: standard, attempted: true, transport: "url --direct listing + extract of 2 posts", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "newest posts dated 2026-10-30 and 2026-11-01, outside lookback" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "latest post 'Using risk cohorts to prioritize security updates' (2026-10)" }
+  - { id: mysites-guru, tier: standard, attempted: true, transport: "feed N=12 + extract of 2 posts", horizon_hours: 147, in_horizon_items: 5, returned: 1, note: "jDownloads 4.1.8 returned borderline; AcyMailing 11.1.2, Joomill Autolanguage, Kunena dropped (no RCE, no exploitation)" }
