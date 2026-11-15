@@ -2,7 +2,7 @@
 schema: 1
 kind: vulnerability
 title: "Adobe Connect (Windows) APSB26-191: five unauthenticated flaws rated CVSS 10.0 and two more unauthenticated rows among 24 fixes in 12.12 and earlier; Adobe knows of no exploitation"
-headline: "Adobe Connect on Windows: five unauthenticated CVSS 10.0 flaws fixed in 12.12.a and earlier; no known exploitation"
+headline: "Adobe Connect on Windows: five unauthenticated CVSS 10.0 flaws up to 12.12, fixed in 12.12.a; not known exploited"
 summary: >
   Adobe's priority 2 bulletin APSB26-191 of 2026-11-10 fixes 24 CVEs in Adobe Connect on Windows 12.12 and earlier, five of them scored CVSS 3.1 10.0 with no privileges and no user interaction (SSRF, path traversal, incorrect authorization and CRLF injection) and two more unauthenticated rows at 9.4 (SQL injection) and 9.1. The fixed builds are 12.12.a, 12.11.i, 12.10.f, 12.9.a and 12.8.a; Adobe is not aware of exploitation and the bulletin gives no root-cause detail.
 discovered_at: "2026-11-11T03:38:00Z"
@@ -108,7 +108,15 @@ classification:
 watchlist_hit: false
 actions:
   - "Update every Adobe Connect server on Windows to the fixed build of its train (12.12.a, 12.11.i, 12.10.f, 12.9.a or 12.8.a), those reachable from the internet first, because five flaws need no privileges and no user interaction and Adobe names no mitigation."
-updates: []
+updates:
+  - at: "2026-11-15T15:01:25Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The headline now says the flaws affect Connect 12.12 and earlier and are fixed in 12.12.a, instead
+      of reading as if builds up to 12.12.a were the fixed ones.
+    fields: [headline]
 migrated_from: null
 ---
 

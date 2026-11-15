@@ -4,7 +4,7 @@ kind: incident
 title: "Qubole: an attacker used IAM credentials from a vendor-associated AWS account to assume dormant cross-account integration roles in dozens of customer accounts, then harvested secrets and validated Entra ID and Okta client credentials (Wiz and Sentra, 14 to 26 October)"
 headline: "Stolen Qubole vendor credentials assumed customers' idle AWS integration roles; a source-IP condition stops it"
 summary: >
-  Wiz, working with Sentra and Mandiant, reports that between 2026-10-14 and 2026-10-26 an actor used IAM credentials from an AWS account associated with the data platform Qubole to assume customers' cross-account integration roles, each call carrying the correct External ID; most roles had otherwise been idle. Inside each account the actor listed resources, read Secrets Manager, Parameter Store and Lambda configuration, tested harvested AWS, Entra ID and Okta credentials with TruffleHog and downloaded S3 data, in some cases whole buckets; no victim is named, the counts range from more than a dozen to dozens, and how the vendor identities were compromised is not known.
+  Wiz, working with Sentra and Mandiant, reports that between 2026-10-14 and 2026-10-26 an actor used IAM credentials from an AWS account associated with the data platform Qubole to assume customers' cross-account integration roles, each call carrying the correct External ID; most roles had otherwise been idle. Inside the affected accounts the actor listed resources, read Secrets Manager, Parameter Store and Lambda configuration, tested harvested AWS, Entra ID and Okta credentials with TruffleHog and downloaded S3 data, in some cases whole buckets; no victim is named, the counts range from more than a dozen to dozens, and how the vendor identities were compromised is not known.
 discovered_at: "2026-11-11T03:41:30Z"
 updated_at: null
 event_date: "2026-11-09"
@@ -62,13 +62,21 @@ classification:
 watchlist_hit: false
 actions:
   - "In every AWS account, list the IAM roles whose trust policy names an external vendor account, delete those of finished integrations, pin the rest to the vendor's specific principal with an aws:SourceIp or aws:SourceVpce condition, and search CloudTrail from 2026-10-01 for AssumeRole calls into them from non-vendor network addresses, using the account identifier and session-name prefix Wiz publishes, because the actor's calls carried the correct External ID and succeeded on roles nobody was using."
-updates: []
+updates:
+  - at: "2026-11-15T15:01:40Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: correction
+    internal: true
+    summary: >
+      Wiz describes the in-account activity across the affected environments, not in each one; the summary
+      and analysis now say the affected accounts.
+    fields: [summary, body]
 migrated_from: null
 ---
 
 Wiz, working with Sentra and Mandiant, observed a threat actor using IAM credentials from an AWS account associated with Qubole, a big-data platform, between 2026-10-14 and 2026-10-26 ([Wiz, 2026-11-09](https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild)). The actor used two Qubole IAM users to call sts:AssumeRole on the cross-account integration roles that customers had created to trust Qubole's account; "every AssumeRole request we attributed to the threat actor included an External ID, and every one succeeded", most of the roles were otherwise not in use, and the traffic came from a rented hosting server and commercial VPN exits, not the AWS infrastructure where legitimate platform traffic originates ([Wiz, 2026-11-09](https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild); [Sentra, 2026-11-09](https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack)).
 
-Inside each account the actor enumerated resources, read Lambda function configuration, Secrets Manager and Systems Manager Parameter Store, ran TruffleHog to test AWS access keys, Entra ID service-principal client secrets and Okta client credentials it found, and then downloaded S3 data opportunistically, in some cases whole buckets in one session ([Wiz, 2026-11-09](https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild)). Wiz found no tie to other reported activity and judges the targeting opportunistic; how the Qubole IAM users were compromised is not stated. Sentra writes that dozens of Qubole customers were impacted, and BleepingComputer could not find a public Qubole announcement ([Sentra, 2026-11-09](https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack); [BleepingComputer, 2026-11-10](https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/)). No Swiss or public-sector victim is named, but the exposure is shared by any account that gave a data or analytics vendor a cross-account role and left it in place.
+Inside the affected accounts the actor enumerated resources, read Lambda function configuration, Secrets Manager and Systems Manager Parameter Store, ran TruffleHog to test AWS access keys, Entra ID service-principal client secrets and Okta client credentials it found, and then downloaded S3 data opportunistically, in some cases whole buckets in one session ([Wiz, 2026-11-09](https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild)). Wiz found no tie to other reported activity and judges the targeting opportunistic; how the Qubole IAM users were compromised is not stated. Sentra writes that dozens of Qubole customers were impacted, and BleepingComputer could not find a public Qubole announcement ([Sentra, 2026-11-09](https://sentra.io/blog/breaches/inside-the-qubole-supply-chain-attack); [BleepingComputer, 2026-11-10](https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/)). No Swiss or public-sector victim is named, but the exposure is shared by any account that gave a data or analytics vendor a cross-account role and left it in place.
 
 **Exposure:** any AWS account holding an IAM role whose trust policy lets a Qubole account, or any other vendor account, assume it, including roles left from integrations that ended; the roles' trust policies and last-used data show them, and Wiz publishes the vendor account identifier, the two principals and the attacker address ranges for a CloudTrail hunt back to 2026-10-01 ([Wiz, 2026-11-09](https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild)).
 

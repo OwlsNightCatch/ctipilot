@@ -1,10 +1,10 @@
 ---
 schema: 1
 kind: incident
-title: "eMudhra: the private keys of eight ECDSA intermediate CA certificates were trivially recoverable, so anyone could forge trusted HTTPS certificates, and eight RSA intermediates were revoked on 2026-11-07 for key handling eMudhra cannot show compliant; browsers block them, clients with their own trust store or no revocation checking need an update (CVE-2026-111943 in Go)"
+title: "eMudhra: the private keys of eight ECDSA intermediate CA certificates were trivially recoverable, so anyone could forge trusted HTTPS certificates, and eight RSA intermediates were revoked on 2026-11-07 for key handling eMudhra cannot show compliant; browsers block the eight ECDSA intermediates, clients with their own trust store or no revocation checking need an update (CVE-2026-111943 in Go)"
 headline: "eMudhra: eight ECDSA CA keys guessable, eight RSA CAs revoked; Windows drops the rest 2026-11-16; update clients"
 summary: >
-  The private keys of eight eMudhra intermediate CA certificates were so weak that anyone could recover them and forge trusted HTTPS certificates for any site, and eMudhra's incident report of 2026-11-10 adds eight RSA intermediates revoked on 2026-11-07 because it cannot show their keys were handled as its policy requires. Browsers and the Apple, Microsoft and Google trust stores block the intermediates, and Microsoft removes the remaining eMudhra roots from Windows, Edge and WebView2 from 2026-11-16. Software with its own trust store or no revocation checking stays exposed until updated (Go, GitLab, Python, Java, macOS command-line tools, SonicWall DPI-SSL, Cisco IOS XE and ISE), and no exploitation is reported.
+  The private keys of eight eMudhra intermediate CA certificates were so weak that anyone could recover them and forge trusted HTTPS certificates for any site, and eMudhra's incident report of 2026-11-10 adds eight RSA intermediates revoked on 2026-11-07 because it cannot show their keys were handled as its policy requires. Browsers and the Apple, Microsoft and Google trust stores block the eight ECDSA intermediates, and Microsoft removes the remaining eMudhra roots from Windows, Edge and WebView2 from 2026-11-16. Software with its own trust store or no revocation checking stays exposed until updated (Go, GitLab, Python, Java, macOS command-line tools, SonicWall DPI-SSL, Cisco IOS XE and ISE), and no exploitation is reported.
 discovered_at: "2026-10-21T03:43:00Z"
 updated_at: "2026-11-12T04:26:05Z"
 event_date: "2026-10-20"
@@ -179,10 +179,14 @@ sources:
   - url: "https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys"
     publisher: "Microsoft Security Response Center (updated 2026-11-10)"
     date: "2026-11-10"
+    role: corroborating
+  - url: "https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys"
+    publisher: "Microsoft Security Response Center (updated 2026-11-12)"
+    date: "2026-11-12"
     role: primary
 
   - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
-    publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.9)"
+    publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.11)"
     date: "2026-11-10"
     role: primary
 
@@ -250,7 +254,7 @@ sourcing_note: >
   The Chrome Root Program and Mozilla describe their own handling, the incident tracker is maintained by a Mozilla
   cryptography engineer, and eMudhra's explanation is now read from its own incident report in the Mozilla bug, with
   BleepingComputer's account of it; Google's wording (insufficient randomness) and eMudhra's (a script truncated the private values) differ and are attributed separately. Google counts eight subordinate CAs and six TLS intermediates. Microsoft's own post states its block of
-  2026-10-20, its removal of seven certificates from the Windows and Edge trust lists and, from 2026-11-16, of the remaining eMudhra roots; Cisco's advisory is at version 1.9.
+  2026-10-20, its removal of seven certificates from the Windows and Edge trust lists and, from 2026-11-16, of the remaining eMudhra roots; Cisco's advisory is at version 1.11 of 2026-11-13.
 confidence: high
 references: []
 deep_dive: false
@@ -263,7 +267,7 @@ watchlist_hit: false
 actions:
   - "Update every non-browser TLS client that keeps its own CA bundle or does not check revocation to a fixed version: standalone Java runtimes, including those already updated on 2026-10-21, to the update of Oracle's Security Alert CVE-2026-114820 or OpenJDK (Oracle Database Server, Autonomous Health Framework and OPatch installations too), Python 3.15.2, 3.14.10, 3.13.18, 3.12.16 or 3.11.18 together with pip 26.2.2 or later, Go 1.27.3 or 1.26.10, self-managed GitLab to a fixed patch release together with GitLab Runner 19.5.1, and SonicWall Gen7 firewalls with Client DPI-SSL enabled to SonicOS 7.3.4-7015 or later and Gen8 to 8.2.3-8015 or later; then confirm with curl against the incident tracker's test host that the client rejects the certificate; on managed Macs update to macOS 27.2.1, 26.7.3 or 15.8.3, or where that is not possible remove emSign ECC Root CA - G3 from /etc/ssl/cert.pem as Apple describes (AAA Certificate Services is optional and can stop tools that read only that file from verifying some unaffected sites)."
   - "Replace, by hand where the ACME client does not support ACME Renewal Information, every TLS certificate your organisation holds that chains to emSign ECC Root CA - G3 or to another of the seven certificates Microsoft removed from the Windows and Edge trust lists, or that was issued by one of the eight RSA G2B and G2C issuing CAs eMudhra revoked on 2026-11-07, because Chrome's removal of the G3 root was due on 2026-10-27 and the Windows change takes effect when the trust-list update reaches a device; deliver the updated Disallowed Certificate Trust List and the trust-list changes Microsoft describes, including its out-of-band update of 2026-10-26, to Windows devices that do not receive automatic certificate-trust updates; do not renew or reissue under emSign Root CA - G1 after 2026-11-16, because Chrome 153 and higher will not trust by default a certificate under it whose earliest SCT is later, and Windows, Edge and WebView2 stop trusting the remaining eMudhra roots on 2026-11-16 as Microsoft's update of 2026-11-10 describes."
-  - "Apply Cisco's remediation now for the products its eMudhra advisory (version 1.9) lists with a fix or a procedure available: the CA-trust distrust guide for IOS XE and the guidance for Secure Firewall ASA, FTD and FMC, Secure Email Gateway and Secure Email and Web Manager (run the updatenow command where updates are manual), Duo Access Gateway 3.2.0, Duo Network Gateway 3.4.1, Duo Agentic Authorization Connector 1.0.1 and ThousandEyes Enterprise Agent (Application-hosting Agent 5.2.2)."
+  - "Apply Cisco's remediation now for the products its eMudhra advisory (version 1.11) lists with a fix or a procedure available: the CA-trust distrust guide for IOS XE and the guidance for Secure Firewall ASA, FTD and FMC, Secure Email Gateway and Secure Email and Web Manager (run the updatenow command where updates are manual), Duo Access Gateway 3.2.0, Duo Network Gateway 3.4.1, Duo Agentic Authorization Connector 1.0.1 and ThousandEyes Enterprise Agent (Application-hosting Agent 5.2.2)."
 updates:
   - at: "2026-10-23T03:43:28Z"
     run_id: 2026-10-23T0256Z-intel
@@ -346,6 +350,15 @@ updates:
     summary: >
       eMudhra's full incident report of 2026-11-10 says eight RSA-4096 issuers (G2B and G2C) were revoked on 2026-11-07 with the reason cessationOfOperation because their keys were handled in the memory of a Python script, so eMudhra cannot show compliance with its policy; it had said on 2026-10-19 that they were not impacted, no source says the keys leaked, and the G2C issuers had issued end-entity certificates.
     fields: [title, headline, summary, sources, evidence, sourcing_note, actions, body]
+  - at: "2026-11-15T15:05:50Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    summary: >
+      Microsoft's post now carries an update dated 2026-11-12 whose table adds VS Code 1.147.0 (2026-11-18),
+      Azure CLI 2.93.0 (2026-11-16), which removes two more eMudhra roots, the .NET SDK update in December
+      2026 and the API Management self-hosted gateway and Microsoft Build of OpenJDK after the Mozilla release
+      of 2026-11-16 to the products that drop the eMudhra roots.
+    fields: [title, summary, sources, sourcing_note, actions, body]
 migrated_from: null
 ---
 
@@ -361,7 +374,7 @@ Oracle's Security Alert of 2026-10-21 for CVE-2026-91403 (CVSS 3.1 9.1, JSSE) pr
 
 **Triage:** a site that still chains to emSign ECC Root CA - G3 failing in Chrome after 2026-10-27, or a certificate that chains to one of the seven certificates Microsoft removed failing in Windows or Edge once the change reaches the device, is the announced root removal, not an attack ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/); [Microsoft, 2026-10-26](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)).
 
-**Defender takeaway:** update trust bundles and toolchains on every non-browser client, rebuild container images that embed an old bundle, and do not rely on revocation or CT for those clients; website operators with certificates chaining to emSign ECC Root CA - G3 need one from another hierarchy now ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)), and so does anything issued under emSign Root CA - G1 after 2026-11-16, because Chrome 153 and higher will not trust such a certificate by default when its earliest SCT is later ([Google, 2026-11-04](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)). On Macs, update to macOS 27.2.1, 26.7.3 or 15.8.3, which block them in the command-line tools; where that is not possible, remove emSign ECC Root CA - G3 from that file as Apple describes (removing AAA Certificate Services as well is optional and can stop tools that read only that file from verifying some unaffected sites) ([Apple, 2026-11-10](https://support.apple.com/de-de/149555)). From 2026-11-16 Microsoft removes the remaining eMudhra roots from Windows, Edge and WebView2, so a certificate under emSign Root CA - G1 stops validating there too ([Microsoft, 2026-11-10](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)). Certificates from the eight revoked RSA G2B and G2C issuers are revoked and eMudhra says its subscribers were migrated, so check inventories for any holder still on them.
+**Defender takeaway:** update trust bundles and toolchains on every non-browser client, rebuild container images that embed an old bundle, and do not rely on revocation or CT for those clients; website operators with certificates chaining to emSign ECC Root CA - G3 need one from another hierarchy now ([Google, 2026-10-20](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)), and so does anything issued under emSign Root CA - G1 after 2026-11-16, because Chrome 153 and higher will not trust such a certificate by default when its earliest SCT is later ([Google, 2026-11-04](https://blog.google/security/protecting-chrome-and-android-users-from-compromised-emudhra-intermediate-ca-certificates/)). On Macs, update to macOS 27.2.1, 26.7.3 or 15.8.3, which block them in the command-line tools; where that is not possible, remove emSign ECC Root CA - G3 from that file as Apple describes ([Apple, 2026-11-10](https://support.apple.com/de-de/149555)). From 2026-11-16 Microsoft removes the remaining eMudhra roots from Windows, Edge and WebView2, so a certificate under emSign Root CA - G1 stops validating there too ([Microsoft, 2026-11-10](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)). Certificates from the eight revoked RSA G2B and G2C issuers are revoked and eMudhra says its subscribers were migrated ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)), so check inventories for any holder still on them.
 
 ## Update — 2026-10-23T03:43:28Z
 
@@ -407,3 +420,7 @@ Microsoft's post carries an update of 2026-11-10: the remaining eMudhra roots le
 ## Update — 2026-11-12T04:26:05Z
 
 eMudhra posted its full incident report in the Mozilla bug on 2026-11-10 ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)). For the eight RSA-4096 issuers (G2B and G2C) it says the key integrity is intact, all signatures verifying, but that during re-import the private-key material was handled in the volatile memory of a Python process on the ceremony host, which is not consistent with its certification practice statement, so the RSA issuers are treated as not meeting it; it adds that logs cannot reliably establish or exclude how that material was handled ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)). It identified this in early November after a root-program discussion, revoked the eight issuers on 2026-11-07 with the reason cessationOfOperation, not the compromise reason used for the ECDSA set, and had written on 2026-10-19 that the RSA issuers were not impacted ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449); [eMudhra, Mozilla bug 2083449, 2026-10-19](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449#c11)). The G2C issuers were put into production in May 2026 and issued end-entity certificates, the last on 2026-11-03, after which issuance from them stopped; BleepingComputer reports that eMudhra says the affected customer certificates were replaced or migrated, and that the company has not detected malicious use of the keys ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449); [BleepingComputer, 2026-11-11](https://www.bleepingcomputer.com/news/security/emudhra-revokes-8-more-ca-certificates-after-private-key-mishap/)). eMudhra also decided to exit public TLS, with all issuance from its emSign Root CA - G1 hierarchy to stop before 2026-11-16 and an independent review due 2026-12-04 ([eMudhra, Mozilla bug 2083449, 2026-11-10](https://bugzilla.mozilla.org/show_bug.cgi?id=2083449)). No page read from Google, Microsoft, Apple, Mozilla or the incident tracker names the G2B or G2C issuers or says a vendor blocked them.
+
+## Improvement — 2026-11-15T15:05:50Z
+
+Microsoft's post now carries an update dated 2026-11-12 with a per-product table: Visual Studio Code 1.147.0 is due with fixes on 2026-11-18 after the node-vsce-sign package of 2026-11-12, Azure CLI 2.93.0 is due on 2026-11-16 to remove two more eMudhra roots, emSign Root CA - C1 and emSign ECC Root CA - C3, from its bundled trust store after 2.92.0 blocked the G3 root on 2026-11-03, the .NET SDK follows in December 2026, and the API Management self-hosted gateway and the Microsoft Build of OpenJDK follow the Mozilla release of 2026-11-16 ([Microsoft, 2026-11-12](https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys)).

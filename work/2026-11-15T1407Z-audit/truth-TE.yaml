@@ -1,0 +1,112 @@
+batch: TE
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-15T14:12:39Z'
+  ended: '2026-11-15T14:38:44Z'
+entries:
+- entry: 2026-11-13/citrix-netscaler-adc-gateway-ctx697305-28-memory-flaws
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: null
+    where: sourcing_note, last-but-one sentence (CVE List check)
+    defect: (low confidence; stale after publication) "the CVE List held no record for those ids or for CVE-2026-120860 to CVE-2026-120867 when they were checked on 2026-11-13" and "now CVE-2026-111333 to CVE-2026-111339" - true as dated, but the CVE List now carries all of them.
+    ground_truth: 'CVE Services record CVE-2026-111333: state PUBLISHED, datePublished 2026-11-13T07:29:29Z, assigner NetScaler, CVSS 4.0 6.9; CVE-2026-111339 published 2026-11-13T07:45:26Z; CVE-2026-120860 published 2026-11-13T07:56:35Z; CVE-2026-120867 published 2026-11-13T08:14:51Z; CVE-2026-120869 record 9.3 AV:N matches the sourcing note. Bulletin revision table still shows only two rows, both 2026-11-12, the second ''Updated CVE numbers CVE-2026-111333 ... CVE-2026-111339''. All 29 cves[] ids, scores and builds otherwise match the bulletin rows (parsed programmatically).'
+    ground_truth_url: 'https://cveawg.mitre.org/api/cve/CVE-2026-111333 (read only; bulletin: https://support.citrix.com/external/article/CTX697305/citrix-netscaler-adc-and-citrix-netscale.html)'
+    fix: 'Internal improvement record: replace the sentence with ''the CVE List published records for CVE-2026-111333 to CVE-2026-111339 and CVE-2026-120860 to CVE-2026-120867 on 2026-11-13'' (or drop it).'
+  length_note: null
+- entry: 2026-11-13/dixell-copeland-xweb-evo-vulncheck-cves-end-of-service
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: 11cd01a8d5, ff470b73e3 (also title)
+    where: title "no exploitation reported"; summary last clause "no source reports exploitation of these CVEs"; body paragraph 2 first sentence "No source reports exploitation or a public proof of concept for these CVEs"
+    defect: The entry says no source reports exploitation or a public proof of concept. VulnCheck, the CNA and the entry's own primary source family, reports in-the-wild exploitation of one of the seven carried CVEs (CVE-2026-124010) and of one of the seven omitted CVEs (CVE-2026-124014, 8.8), and prints working request lines.
+    ground_truth: 'VulnCheck blog 2026-11-13: "Two of them are under active exploitation." ... "At 03:41 UTC the next morning, a second source began probing CVE-2026-124010, the unauthenticated root command execution, and VulnCheck added that vulnerability to VulnCheck KEV on November 13." ... "Of the 14 IDs, two now show up in the canary data: CVE-2026-124014, the unauthenticated config.lua configuration write, and CVE-2026-124010, the unauthenticated xwconsole.cgi root command execution." (CVE-2026-124014: first hit 2026-11-12 22:00 UTC, 125 hits, "VulnCheck adds it to VulnCheck KEV the same day"; CVE-2026-124010: four `id` probes from a second host, "opportunistic scanner".) The advisory page for CVE-2026-124010 (cited in the entry) states: "This advisory is in the VulnCheck KEV database". The blog also prints the unauthenticated request for CVE-2026-124010 (GET /cgi-bin/xwconsole.cgi?sh=id returning uid=0(root)) and describes a VulnCheck go-exploit module for CVE-2026-124002 (public
+      availability of the module not confirmed; the Initial Access repository path feed/cve-2026-124002 was not retrievable when fetched). The blog also says "Neither scanning source is evidence of the October refrigeration campaign", so the ''no tie to the French and Swiss attacks'' clause stays true.'
+    ground_truth_url: https://www.vulncheck.com/blog/copeland-xweb-evo-unauthenticated-root ; https://www.vulncheck.com/advisories/dixell-copeland-xweb-evo-unauthenticated-command-injection-via-xwconsole-cgi
+    fix: 'Correction/update record: state that VulnCheck reports exploitation attempts against CVE-2026-124010 from 2026-11-13 (four id probes from an opportunistic scanner, added to VulnCheck KEV) and in-the-wild exploitation of the unauthenticated config.lua write CVE-2026-124014 (8.8, not carried here) from 2026-11-12; drop ''no exploitation reported'' from title/summary and ''or a public proof of concept'' from the body; keep ''no source ties them to the October campaign'' (VulnCheck says the scanners are opportunistic); cite the VulnCheck blog.'
+  - code: F4
+    claim_id: 97af22eda9, 9624ac2f19, c81a1cdc70, 05f069bcb7, 5bddb31559
+    where: 'body paragraph 1 last clause "so no source shows where a fixed build can be had"; cves[] CVE-2026-124007, -124010, -124004 (affected ''before 5.6.2'') and -124002 (''5.2.3 to before 5.7.0''): status no-patch, fixed ''none distributed ... the CNA record names no fixed build'''
+    defect: The records' affected ranges end at 5.6.2 / 5.7.0, i.e. later builds are outside the range and exist (5.8.8 is the current firmware), and the entry's own cited Dixell France guide tells operators to install the latest software version from Copeland's update service. VulnCheck says the injection/backdoor class is fixed on the current branch; only the credential-derivation CVEs (124005, 124006, 124012, range through 5.8.8) have no fix.
+    ground_truth: 'VulnCheck blog: "On the pre-2021 .lua-era builds (this whole class was removed in the 2021 rewrite, so it is fixed on the current branch but lives on across the legacy fleet ...)"; "The XWEB EVO firmware is distributed through Copeland''s update portal"; "the ARM 5.8.8.STANDARD firmware"; "The credential, MAC-disclosure and configuration findings that reach 5.8.8 are therefore won''t-fix by the vendor''s own policy". Dixell France guide (Copeland bulletin of 2026-10-14), step 5: "Mettez à jour le logiciel. ... téléchargez la dernière version logicielle correspondant à votre modèle de XWEB EVO depuis la page Copeland System Software Update et installez-la depuis Système > Mises à jour"; EVO update section: "Trois modes sont proposés : Réseau (téléchargement par Internet), USB ... et Téléchargement". The public download pages (XWEB300D_500D_500_EVO, XWEB3000_5000_EVO) do list 5.2.3 [2018/07/09] as the newest package, which is why the update service rather than the page is
+      the channel.'
+    ground_truth_url: https://www.vulncheck.com/blog/copeland-xweb-evo-unauthenticated-root ; https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf
+    fix: 'For CVE-2026-124007/-124010/-124004 set affected ''before 5.6.2'' with ''fixed: 5.6.2 or later (vendor update service; current firmware 5.8.8)'' and status patch-available/no-patch as appropriate; likewise 124002 ''before 5.7.0''; keep no-patch only for 124005/124006/124012. Replace ''so no source shows where a fixed build can be had'' with the vendor''s instruction to install the latest version through System > Updates, and note that the credential chain still reaches 5.8.8.'
+  - code: F4
+    claim_id: 62d492bf85
+    where: '**Detection:** first sentence "no source gives log artefacts for these flaws"'
+    defect: VulnCheck gives request-level artefacts for the carried flaws.
+    ground_truth: 'VulnCheck blog: "For defenders, the practical indicators are ... any unauthenticated POST to config.lua, any unauthenticated GET to /cgi-bin/xwconsole.cgi carrying the sh parameter, and the two canary rule names above." Request examples for login.lua (username injection) and api.lua action=ssh are printed.'
+    ground_truth_url: https://www.vulncheck.com/blog/copeland-xweb-evo-unauthenticated-root
+    fix: 'Add web-server access-log hunting: unauthenticated GET to /cgi-bin/xwconsole.cgi with an sh parameter (CVE-2026-124010), login.lua requests with shell metacharacters in the username (CVE-2026-124002), POST to config.lua (CVE-2026-124014).'
+  - code: F16
+    claim_id: null
+    where: 'priority: notable'
+    defect: (low confidence) With exploitation attempts now documented, BACS and NCSC naming Copeland/Dixell XWEB as potentially affected and a decision (take EVO units off the internet) inside 7 days, notable may under-grade.
+    ground_truth: 'High bar: plausible constituency exposure + decision within 7 days + in-window development. BACS (2026-11-10): Copeland/Dixell XWEB ''als potenziell betroffen identifiziert''; VulnCheck: exploitation attempts 2026-11-12/13; Copeland bulletin 2026-10-14: remove all XWEB EVO from the public internet immediately. Swiss deployment itself is not evidenced.'
+    ground_truth_url: https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de ; https://www.vulncheck.com/blog/copeland-xweb-evo-unauthenticated-root
+    fix: Re-grade on the corrected exploitation facts; keep notable if no Swiss exposure case is made (doubt -> notable).
+  length_note: null
+- entry: 2026-11-13/ptc-windchill-flexplm-cve-2026-126325-deserialization-rce
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-13/signdrop-windows-clfs-authentication-lpe-public-poc-no-patch
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-14/gitlab-critical-patch-git-merge-overflow-cve-2026-105437
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-14/red-hat-quay-signing-key-takeover-cve-2026-123710
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-12/plone-security-hotfix-20261110-anonymous-rce-chain
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-12/screenconnect-sckit-toolkit-pushed-to-hundreds-of-endpoints
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-15/screenconnect-crypto-bait-guest-sessions-118-servers
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-12/gsocket-relay-client-keeps-access-after-linux-web-patch
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-09/llmjacking-stolen-cloud-keys-enable-model-services-resale
+  verdict: imprecision
+  findings:
+  - code: F9
+    claim_id: 9e8f28f38c, 9f7dbc0aab
+    where: body paragraph 2 (LiteLLM /key/regenerate sentence) and Defender takeaway 'patch model gateways such as LiteLLM'; cves[] is empty
+    defect: (low confidence) The cited GTIG post names CVE-2026-40217 for the LiteLLM /key/regenerate user-ID rebind that lifted virtual keys to PROXY_ADMIN; the entry drops the id, gives no fixed version, and does not say that the CVE record for that id describes a different LiteLLM flaw, so a reader cannot act on 'patch LiteLLM'.
+    ground_truth: 'GTIG: "The actor exploited a user ID rebind vulnerability in the /key/regenerate endpoint (CVE-2026-40217) to elevate standard Virtual Keys into full PROXY_ADMIN master administrative credentials" and "ensuring rapid patching against privilege escalation and authentication bypass flaws (such as CVE-2026-40217)". CVE record CVE-2026-40217 (MITRE CNA, published 2026-04-10): "LiteLLM through 2026-04-08 allows remote attackers to execute arbitrary code via bytecode rewriting at the /guardrails/test_custom_code URI." An earlier store entry (2026-06-16/obsidian-security-a-three-cve-chain...) already carries this id.'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models ; https://cveawg.mitre.org/api/cve/CVE-2026-40217 (read only)
+    fix: 'Improvement record: name CVE-2026-40217 as GTIG''s reference, add a Contradiction line that the CVE record describes a different LiteLLM defect, and point to the earlier LiteLLM entry in references[]; no new claim needed.'
+  length_note: null
+- entry: 2026-11-11/qubole-vendor-aws-identity-assumes-integration-roles
+  verdict: imprecision
+  findings:
+  - code: F14
+    claim_id: 7894a3cb15, 562f4bdcaa
+    where: summary "Inside each account the actor listed resources, read Secrets Manager ..."; body paragraph 2 "Inside each account the actor enumerated resources, read Lambda function configuration ..."
+    defect: (low confidence) Absolute 'each account' for the in-account activity chain.
+    ground_truth: 'Wiz: "Once inside multiple victim AWS environments, the threat actor enumerated resources, collected configuration and secrets, accessed S3 data, and validated additional credentials"; "Once inside an environment, the threat actor enumerated broadly across services"; only the S3 sequence is ''consistent across environments'' and whole-bucket downloads happened ''in some cases''. Sentra: ''More than a dozen organizations hacked'', ''Dozens of Qubole customers were impacted''.'
+    ground_truth_url: https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild
+    fix: Replace 'Inside each account' with 'Inside the affected accounts' / 'In the environments Wiz observed'.
+  - code: F8
+    claim_id: null
+    where: Attribution / sourcing_note (publisher revision after the entry)
+    defect: (low confidence) Wiz added an update on 2026-11-11 about a claim of responsibility, and BleepingComputer added an AWS statement the same day; neither is in the entry, whose attribution wording ('no tie to other reported activity') now omits that an actor has claimed it.
+    ground_truth: 'Wiz: "Update, November 11, 2026: Catalin Cimpanu, of the Risky Business newsletter has reported that an actor calling themselves \"n0n\" has claimed responsibility for this intrusion." BleepingComputer "Update 11/11": AWS spokesperson: "AWS services were not compromised by this issue and operated as designed."'
+    ground_truth_url: https://www.wiz.io/blog/qubole-cross-account-access-abused-in-the-wild ; https://www.bleepingcomputer.com/news/security/hackers-exploit-trusted-aws-access-to-breach-multiple-cloud-environments/
+    fix: 'Update record (non-internal) only if the claim is judged worth carrying: ''a self-described actor, n0n, claimed the intrusion (reported via Risky Business; unverified)'' plus the AWS statement that its services were not compromised; otherwise note in sourcing_note.'
+  length_note: null

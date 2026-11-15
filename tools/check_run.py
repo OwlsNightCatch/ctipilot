@@ -4506,6 +4506,28 @@ def check_entry_shape_v417(new_entries: list[dict], run_entries: list[dict], run
         if len(head) > 120 and len(head) > len(head_before):
             warns.append(f"{e['id']}: this fire's record lengthened the headline to {len(head)} "
                          "characters — keep it within 120")
+    # A sources[] record an update appends must be cited somewhere too. The new-entry
+    # check below never saw these: the 2026-11-15 audit found an EUVD API record the
+    # 2026-11-13 fire added to the SCKit entry with no citation in any section.
+    for e in run_entries:
+        if e.get("id") in new_ids or str(e.get("run_id") or "") == str(run_id):
+            continue
+        if not any(isinstance(r, dict) and str(r.get("run_id") or "") == str(run_id)
+                   for r in (e.get("updates") or [])):
+            continue
+        before = _committed_entry(e["id"])
+        if before is None:
+            continue
+        prior = {str(x.get("url")) for x in (before[0].get("sources") or [])
+                 if isinstance(x, dict) and x.get("url")}
+        cited = set(_BODY_LINK_RE.findall(e.get("body") or "")) | \
+            {str(ev.get("source_url") or "") for ev in (e.get("evidence") or []) if isinstance(ev, dict)}
+        for src in e.get("sources") or []:
+            if isinstance(src, dict) and src.get("url") and src["url"] not in prior \
+                    and src["url"] not in cited:
+                warns.append(f"{e['id']}: this fire added source {src['url']}, which is never cited "
+                             "inline or by an evidence record — cite it at the claim it supports or "
+                             "drop it (PD-2)")
     for e in new_entries:
         main, _ = cm.split_update_sections(e.get("body") or "")
         links = _BODY_LINK_RE.findall(main)

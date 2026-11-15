@@ -1,0 +1,167 @@
+batch: TC
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-15T14:12:39Z'
+  ended: '2026-11-15T14:39:40Z'
+claims_in_scope: 312
+claims_verdicts:
+  ok: 296
+  F3: 2
+  F4: 8
+  F5: 1
+  unreadable: 5
+entries:
+- entry: 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: c11ffbfdab
+    where: body para 2, sentence citing CybersecurityNews (low confidence)
+    defect: A low-privileged domain user, using a machine account it can self-register under the default `ms-DS-MachineAccountQuota` or one it controls, stands up rogue LDAP/LSA services ... ([CybersecurityNews, 2026-07-24])
+    ground_truth: 'CybersecurityNews carries only: "Combined with a machine account created through the default ms-DS-MachineAccountQuota setting (which lets any user register up to 10 machine accounts)". "or a machine account already controlled by the attacker" is stated by the Microsoft Defender post (techcommunity ... 4542861), which is not the citation of that clause.'
+    ground_truth_url: https://cybersecuritynews.com/certighost-active-directory-cs-flaw/
+    fix: Add the Microsoft Defender citation to the clause, or drop "or one it controls".
+  - code: F16
+    claim_id: null
+    where: 'priority: high (low confidence)'
+    defect: priority high on an update whose new fact is Kaspersky reporting that the Citrus ransomware group "attempted to exploit" Certighost.
+    ground_truth: 'Bar element (b) is weak: the patch has been available since 2026-07-14 and the PoC public since 2026-07-24, so the decision is the ordinary patch decision, not an out-of-band one; MSRC revision history still lists only "1.0 Jul 14, 2026 Information published" and Exploitability "Exploited No"; Kaspersky says Citrus attacks "Russian companies only" and never says an attempt succeeded; the flaw needs EDITF_ENABLECHASECLIENTDC on the CA plus a machine-template enrollment path. Bar element (c) in-window development holds (Kaspersky 2026-11-11). Doubt resolves to notable.'
+    ground_truth_url: https://securelist.com/citrus-ransomware/121879/
+    fix: Consider notable, or keep high only if a specific constituency exposure (Enterprise CAs without the July 2026 CU with the chase flag set) is stated.
+  length_note: null
+  notes:
+  - 'Verified: CVE-2026-54121 CVSS 3.1 8.8 and affected products (Windows 10 1607/1809, Server 2012-2025) in the MSRC CVRF; not in CISA KEV (catalogue 2026.11.13); evidence quotes verbatim; techniques T1649, T1003.006, T1078.002 active in pin; updated_at mirrors the 2026-11-12 record.'
+- entry: 2026-08-13/cve-2026-58115-simatic-iot2050-node-red-unauth-root
+  verdict: clean
+  findings: []
+  length_note: null
+  notes:
+  - 'SSA-834709 current V1.2 (2026-11-10) CSAF verified: 8 product ids (4 models x Industrial OS <V4.3.4-1 with fix, Example Image all versions with none_available), mitigations on all eight, CVSS 3.1 and 4.0 10.0, CWE-306; CERT-FR lists only the Advanced variant; NCSC-NL CSAF lists only the Advanced variant; VulnCheck blog (2026-11-01) and The Register (2026-11-02) match; not in CISA KEV. high is defensible: V1.2 revision is in-window, Siemens offers no fix for Example Image units.'
+- entry: 2026-10-10/ahsaycbs-cve-2026-105133-105134-exploited-webshells-xmrig
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 1f07ace98e, 9fa744ca09, 2716d80919, 1709787bd0, bcb01da631
+    where: headline; summary; cves[].fixed (both CVEs); actions[0]; Defender takeaway (publisher revision after the 2026-11-10 record)
+    defect: 'headline: "the hotfixes are partner-only"; summary: "the fixes are the hotfixes v10.3.4.45 (v10) and v9.15.2.70 (v7, v8 and v9), available only to partners with a portal login"; fixed: "hotfixes available only through the Ahsay partner portal"; actions[0]: "apply the hotfix v10.3.4.45 ... ask the integrator or Ahsay for the build".'
+    ground_truth: 'Ahsay has since shipped later hotfixes and standard (non-partner) releases. Announcements: 2026-10-27 "The latest v10 official hotfix version is v10.3.4.55" and "AhsayCBS v9.15.2.78 official hotfix" (v9.17.0 to follow "incorporated into the official installer and available as part of the standard release"); 2026-11-03 "New Ahsay v10.3.6.1 Released ... AhsayCBS security hardening updates"; 2026-11-12 "New Ahsay v9.17.0 Released ... Ahsay Security Patchset for CVE-2026-105133 and CVE-2026-105134 ... Disabled remote API access by default ... Disabled the JSP engine"; release notes "AhsayCBS (DIY) v9.17.0 Release Notes (12-Nov-2026)"; 2026-11-13 v10.3.6.14. Fix is therefore no longer partner-only and the named hotfix builds are not the newest.'
+    ground_truth_url: https://www.ahsay.com/en/company/announcements
+    fix: 'Add a changelog update: Ahsay released v9.17.0 (2026-11-12, patchset for both CVEs, JSP engine disabled, remote API off by default), v10.3.6.1 (2026-11-03) and later hotfixes v10.3.4.55 / v9.15.2.78; reword headline, summary, fixed fields and actions[0] so the partner-only hotfix is not presented as the only route.'
+  - code: F9
+    claim_id: null
+    where: Improvement section 2026-10-18, CVE-2026-105134 root cause (low confidence)
+    defect: The section gives Horizon3's mechanism for CVE-2026-105134 (receiver created through an auth-bypassed call, upload path escapes the denylist, JSP written, runs as LocalSystem/root) without noting that the CNA record and CISA classify it as OS command injection via the random parameter of /rps/api/json/UpdateReceivers.do.
+    ground_truth: 'CISA KEV for CVE-2026-105134: "contains a command injection vulnerability ... via manipulation of the random parameter in the Replication Receiver component''s /rps/api/json/UpdateReceivers.do endpoint"; CNA (VulDB) title "UpdateReceivers.do os command injection"; Bitdefender: "OS command injection (CWE-77 and CWE-78)". Horizon3: "CVE-2026-105134 - A file write path traversal leading to remote code execution".'
+    ground_truth_url: https://horizon3.ai/attack-research/attack-blogs/ahsaycbs-cve-2026-105133-cve-2026-105134-technical-analysis/
+    fix: 'Add a Contradiction line: CNA/CISA label it command injection, Horizon3''s source analysis shows a path-traversal file write.'
+  - code: F18
+    claim_id: null
+    where: actions[1] (low severity)
+    defect: actions[1] bundles a compromise check, re-imaging and credential rotation and repeats the body's Detection list (.jsp files, replication receivers, administrator accounts, OpenSSH) inside the task.
+    ground_truth: 'Body Detection and Update 2026-11-10 already carry these artifacts; Huntress: "we recommend a full re-image from a trusted backup and rotating credentials stored on or reachable from the server".'
+    ground_truth_url: https://www.huntress.com/blog/ahsaycbs-webshells
+    fix: 'Shorten to the task: compromise-check every AhsayCBS server exposed since 2026-10-04, re-image on a finding, rotate stored credentials; leave the artifact list to the body.'
+  length_note: main analysis 705 words (bound 550); headline 127 characters (bound 120)
+  notes:
+  - Verified against Huntress (2026-10-08 with 10/12 update; 2026-11-09 follow-up), Bitdefender (2026-10-15), Horizon3 (2026-10-14), CISA alert and KEV (both added 2026-10-14), Ahsay announcement (October 12, 2026), CNA records (CVSS 3.1 7.3 and 10.0, CVSS 4.0 6.9 and 10.0 as the internal correction states). high stays defensible (in-window Huntress follow-up, KEV).
+- entry: 2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 92ddc630c2
+    where: cves[CVE-2026-98432].fixed (low confidence)
+    defect: '"Debian trixie security 6.12.116-1"'
+    ground_truth: 'Debian tracker today: "trixie (security) | 6.12.117-1 | fixed"; fixed-version table: trixie 6.12.113-1 (DSA-6568-1), bookworm 6.1.190-1 (DLA-4841-1). 6.12.116-1 appears nowhere on the page.'
+    ground_truth_url: https://security-tracker.debian.org/tracker/CVE-2026-98432
+    fix: Replace with trixie 6.12.113-1 (first fixed, DSA-6568-1) or the current security build 6.12.117-1.
+  - code: F3
+    claim_id: 0396dda0f9
+    where: body para 3, Veeam sentence (low confidence)
+    defect: '"Veeam''s KB4966 says its Software and Infrastructure Appliances, workers, helper appliances and recovery media include an affected kernel, delivered fixed through Veeam Updater"'
+    ground_truth: 'KB4966 delivers the fix per product: appliances and public-cloud plug-in appliances through Veeam Updater; "Workers automatically update on launch"; Windows-based Backup & Replication helper appliances through a private fix; recovery media by downloading new media.'
+    ground_truth_url: https://www.veeam.com/kb4966
+    fix: Say "delivered through Veeam Updater, automatic worker updates, a private fix or new recovery media depending on the component".
+  - code: F4
+    claim_id: a228c833f0, 6bea0f7b0c, 92ddc630c2 (publisher revisions since the 2026-11-11 record)
+    where: summary / affected / fixed / body para 3, Sophos
+    defect: 'Sophos is described by "version 3" (2026-11-06): Firewall hotfix HF110626.1 and SD-RED firmware 3.0.012 via the firewall pattern only.'
+    ground_truth: 'Sophos advisory now Article Version 5, Updated 2026 Nov 12, PRODUCT(S) Sophos Firewall, Sophos RED, Sophos UTM: "SD-RED firmware 3.0.012 was released on November 10, 2026 as a patch for Sophos UTM, installed manually. It requires Sophos UTM 9.724 or later." and "Legacy RED models that have reached end of life are affected but will not receive a fix."'
+    ground_truth_url: https://www.sophos.com/en-us/security-advisories/sophos-sa-20261102-linux-kernel-tcp
+    fix: 'Add an update record: Sophos UTM RED patch of 2026-11-10 and no fix for end-of-life RED models; update the Sophos source label.'
+  - code: F4
+    claim_id: a83282446c, 948522098e, 6bea0f7b0c, 92ddc630c2 (publisher revision)
+    where: summary / affected "some HWE, FIPS, NVIDIA, Azure 24.04 and Raspberry Pi 26.04 variant kernels ... still in progress" (dated 2026-11-10)
+    defect: The dated statement is accurate for 2026-11-10 but the Ubuntu tracker moved on 2026-11-14.
+    ground_truth: 'Ubuntu tracker "Last updated 14 November 2026": linux-hwe-5.15 (20.04) 5.15.0-203.213~20.04.1, linux-hwe-6.8 (22.04) 6.8.0-149.149~22.04.1, linux-hwe-7.0 (24.04) 7.0.0-43.43~24.04.1, linux-azure (24.04) 6.8.0-1073.82, linux-raspi (26.04) 7.0.0-1023.23 now Fixed; still "Vulnerable work in progress": linux-fips 24.04 (6.8.0-149.149+fips2), linux-azure-nvidia 24.04, linux-azure-7.0 24.04, linux-nvidia-6.8 22.04, linux 20.04/18.04/16.04.'
+    ground_truth_url: https://ubuntu.com/security/CVE-2026-98432
+    fix: Refresh the Ubuntu variant list in the next update record.
+  - code: F4
+    claim_id: 0396dda0f9, aafc7289eb (publisher revision)
+    where: body para 3 and Update 2026-11-11, Veeam
+    defect: KB4966 described as "last modified on 2026-11-10" with the component list of that date.
+    ground_truth: 'KB4966 "Last Modified: 2026-11-13"; its table now also lists Veeam Recovery Orchestrator 13.1 (embedded Veeam Backup & Replication helper appliances: "Yes, until the private fix is installed"; Recovery Orchestrator 13.1.2.25 / VBR 13.1.2.57), the Veeam Cloud Connect roles (cloud gateway, WAN accelerator) and Recovery Media for Agent for Linux 6.3; the entity list has no Recovery Orchestrator.'
+    ground_truth_url: https://www.veeam.com/kb4966
+    fix: Add Veeam Recovery Orchestrator 13.1 and Cloud Connect roles to affected_products and the next update record.
+  - code: F18
+    claim_id: 031aa75dde
+    where: actions[0] (low severity)
+    defect: actions[0] opens with a vendor status roll call ("Red Hat, Debian, CIQ, Amazon Linux, Ubuntu's generic kernels ... updates are out") and then chains four separate tasks (kernel install and reboot, XCP-ng mitigation, Veeam Updater/redeploy/recovery media).
+    ground_truth: The status list restates the body (para 3); the Veeam steps are separate tasks.
+    ground_truth_url: https://www.veeam.com/kb4966
+    fix: Drop the status list; keep "install the vendor kernel and reboot, confirm the running version" and move the Veeam steps to their own action.
+  length_note: main analysis 547 words (under bound); headline 112 characters
+  notes:
+  - 'Unreadable portion: the AWS bulletin revision of 2026-11-02 (NLB TCP listeners pass IP options; GA endpoints affected) is not retrievable; the current bulletin (updated 11/12/2026) lists Global Accelerator as not affected and keeps PrivateLink and VPC Lattice L4 targets. Verified: CNA record (CVSS 3.1 9.8, fixed 5.10.272 ... 7.2.10, 7.3), CIQ patched-kernel table, Red Hat security-data API RHSA-2026:93412/93413/93414, Citrix CTX697256 (Initial Publication 2026-11-03), Vates VSA-2026-056, XCP-ng 2026-11-04, WatchGuard WGSA-2026-0033 (unchanged), Fortinet FG-IR-26-188 (Updated Nov 7, Known Exploited No), MikroTik changelogs, NCSC.ch 13120, NCSC-NL 0461, Akamai, Anthropic, Go team. notable is right (exploit needs an MPTCP listener, not reproduced by CloudLinux, no exploitation reported).'
+- entry: 2026-11-04/cve-2026-116606-barracuda-esg-auth-bypass-root-rce
+  verdict: clean
+  findings: []
+  length_note: main analysis 550 words (at bound); headline 106 characters
+  notes:
+  - 'Advisory F11 (leave or fix): cves[].cvss "9.3" and "8.6" and the title do not say these are CVSS 4.0 scores (Mandiant MNDT-2026-0042/0041 metric lines "CVSS:4.0/... (9.3)" and "(8.6)"; CNA records cvssV4_0); other entries in the batch name the version.'
+  - 'Verified: Barracuda trust page (Updated November 9, 2026 9:00pm EST; patch table BNSF-40425/40430, BNADC-16586, BNMA-32468, BNWF-60060, BNYF-24789), Campus article (9.4.0.029), Mandiant pages and CNA records (< 9.4.0.030; ESG <=9.4.0.27, ADC <=6.4.0, WAF <=11.0.1, WSG <=16.1.100.100, BMA <=5.5.4.0, WCC <=2.2.1), watchTowr write-up and README, CCCS AV26-1112 (now Update 2), CISA alert 2026-11-10 and KEV records (both added 2026-11-10, forensicTriage Yes), NCSC.ch 13144. high defensible (KEV in-window, pre-auth root chain on an edge appliance with a public tool).'
+- entry: 2026-11-06/cve-2026-116779-freeswitch-sip-message-api-command-execution
+  verdict: clean
+  findings: []
+  length_note: null
+  notes:
+  - 'Verified: GHSA-mg63-h38w-8p9p (API: critical, CVSS 3.1 9.8, <= 1.11.2, patched >= 1.11.3, published 2026-10-28 and not updated), v1.11.3 release (2026-08-28, mod_sofia and mod_verto gates), BSI CSAF WID-SEC-2026-4364 (kritisch, <1.11.3), CISA alert and KEV (added 2026-11-09). Context only: the same repository published about 25 further advisories between 2026-10-26 and 2026-11-03 (e.g. CVE-2026-116786 command execution via SIP REFER, CVE-2026-116785/116790 critical), all fixed in 1.11.2 or 1.11.3, so the 1.11.3 upgrade covers them; the entry does not mention the wave.'
+- entry: 2026-11-06/cve-2026-123158-openssh-musl-no-pam-password-bypass-sshole
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: 921f9980ee, 5089932a4f
+    where: summary ("NCSC Switzerland published an advisory the same day and rates exploitation unknown") and Update 2026-11-10 ("NCSC Switzerland's advisory, last edited on 2026-11-06, still rates the exploitation status unknown") (publisher revision after the 2026-11-10T03:36Z record)
+    defect: The entry tells Swiss readers that their national CERT still rates exploitation unknown.
+    ground_truth: 'NCSC Switzerland post 13155 history: Edited 2026-11-10T09:03:28Z "Updated the exploitation status and added relevant links"; content: "Update: 10.11.2026, 09:59 - Current exploitation status: Actively Exploited, PoC Available" (news source BleepingComputer, PoC https://github.com/oz9un/sshole).'
+    ground_truth_url: https://security-hub.ncsc.admin.ch/#/posts/13155
+    fix: 'Add a changelog update: NCSC.ch moved the status to Actively Exploited on 2026-11-10; correct the summary and the sentence in the 2026-11-10 section.'
+  - code: F5
+    claim_id: 921f9980ee
+    where: summary, final sentence (low confidence)
+    defect: '"Previdian counts 22 attempts from 14 addresses as of 2026-11-10"'
+    ground_truth: 'No body section or evidence record carries 22 / 14; the body gives 15 attempts from 10 addresses (2026-11-07) and 20 from 13 (2026-11-09). Previdian is a live counter: it now reads "42 exploitation attempts, 24 unique attacker IPs, and 14 countries ... last observed Nov 14, 2026", so the 11-10 value cannot be re-read ("14" may be the country count).'
+    ground_truth_url: https://previdian.com/CVE-2026-123158
+    fix: Drop the figure from the summary or carry it, with its as-of date, in a cited body sentence.
+  length_note: main analysis 548 words (under bound); headline 96 characters
+  notes:
+  - 'Unreadable: ox.security blog (HTTP 403 on extract, url, WebFetch, jina); four clauses attributed to OX (mechanism, tiny-cloud doas chain, `*` field condition, restart/rebuild advice, and "OX scores ... 8.1") are corroborated by Alpine, NCSC.ch and Previdian/GreyNoise/CNA (CVSS 3.1 8.1) but the OX page itself could not be read; evidence quote 3 (OX) not checked.'
+  - 'Verified: OpenSSH 10.6p2 notes, Alpine advisory and fixed-package table, CNA record (MITRE, 8.1, < 10.6p2), CISA alert and KEV (2026-11-09), GreyNoise tracker (live, 2026-11-15), BleepingComputer, The Hacker News, SANS ISC diary 33498 (counts 232/713/246/51), CCCS AV26-1130, heise. GreyNoise and Previdian pages are live trackers and have moved since the entry.'
+- entry: 2026-11-07/cve-2026-19868-sonicwall-sonicos-sslvpn-saml-mfa-bypass-kev
+  verdict: clean
+  findings: []
+  length_note: null
+  notes:
+  - 'Verified from the PSIRT API (psirtapi.global.sonicwall.com vulndetail SNWLID-2026-0014): seven CVEs, CVE-2026-19868 CVSS 3.1 7.1 AV:N/AC:H/PR:L/UI:N/S:C, CWE-308, NOTE on SAML, workaround text and menu paths (revision 1.1, 09-Nov-2026), affected 7.3.3-7015 / 8.2.2-8015 and older, fixed 7.3.4-7013 / 8.2.3-8015; CISA alert and KEV (added 2026-11-06, forensicTriage No); BleepingComputer (no workaround in v1.0). Minor: the advisory revision table dates v1.0 "05-Nov-2026" while the portal timestamp, BleepingComputer ("published Friday") and CISA say 2026-11-06. CNA CVSS block absent; CISA-ADP scores 7.5, entry correctly says the 7.1 is SonicWall''s.'
+- entry: 2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor
+  verdict: imprecision
+  findings:
+  - code: F5
+    claim_id: 37068b2cd7
+    where: body para 2, first sentence (low confidence)
+    defect: '"The injected loader runs when the extension module loads." (no inline citation; the paragraph''s citation is Cursor)'
+    ground_truth: 'Microsoft: "The injected loader runs when the extension module loads and attempts to add an attacker-controlled Secure Shell (SSH) key, enable the local SSH service, establish reverse SSH forwarding, configure persistence, and report host details." The fact is true; Cursor''s notice does not state it.'
+    ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/10/30/inside-malicious-claude-code-branded-cursor-extension-persistent-ssh-backdoor/
+    fix: Add the Microsoft Threat Intelligence citation to the sentence.
+  length_note: main analysis 550 words (at bound); headline 111 characters
+  notes:
+  - Verified against Cursor notice (updated Oct 30 11:30 am PT) and incident report 2026-11-13 (all update-section claims, 5,000 users, <0.01% and <0.05% figures, last activity 2026-11-01), Microsoft, Phorion (revision history 2.1.312 added), Sophos, heise (2.1.314), NCSC.ch 13121 (Open VSX), Fireworks bulletin 2026-11-09. PDT conversion 02:27 PDT = 09:27 UTC holds. notable is right.

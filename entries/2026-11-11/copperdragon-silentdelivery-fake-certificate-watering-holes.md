@@ -57,7 +57,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-11-15T15:02:13Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: correction
+    summary: >
+      Check Point says the operators placed their tools in existing system directories and renamed SoftEther
+      VPN to system-process names such as vmtoolsd.exe and csrss.exe, so the name, not the path, is the
+      discriminator.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -71,6 +79,10 @@ The other two sets show what follows an intrusion. OceanGate in Asia starts from
 
 **Detection:** in endpoint telemetry, a browser followed by msiexec running an installer named like a certificate repair utility and a new Run key value with an update-themed name; in module-load telemetry, DLL sideloading by rarely abused executables, and the WinDivert driver loaded by a process that is not a VPN or firewall product; in account telemetry, a new local administrator account; on Linux, ssh and sshd binaries that differ from the package-manager copy and frpc or chisel binaries; in DNS, MX-query volume from servers that send no mail.
 
-**Triage:** WinDivert is legitimate in VPN and firewall products, so the signal is a parent that is a sideloaded DLL or backdoor rather than the vendor's signed service; SoftEther is legitimate software, but not under a system-process name in a non-system path; a genuine Chrome SSL warning is never cleared by installing an MSI.
+**Triage:** WinDivert is legitimate in VPN and firewall products, so the signal is a parent that is a sideloaded DLL or backdoor rather than the vendor's signed service; SoftEther running under a system-process name such as vmtoolsd.exe is not legitimate; a genuine Chrome SSL warning is never cleared by installing an MSI.
 
 **Defender takeaway:** treat a browser page that offers a "certificate fix" installer as an incident trigger and stop standard users running MSI installers from a browser download; web teams of government and research sites should check for injected third-party script and input-handling flaws, because a compromised site becomes a delivery vehicle for its peers.
+
+## Correction — 2026-11-15T15:02:13Z
+
+The SoftEther discriminator is the name, not the path: Check Point says the operators renamed SoftEther VPN to names such as vmtoolsd.exe and csrss.exe and deliberately placed their tools in existing system directories instead of creating new ones ([Check Point Research, 2026-11-10](https://research.checkpoint.com/2026/not-all-that-glitters-is-gold-tracking-copperdragons-sparrow-framework-around-the-globe/)), so a SoftEther binary or configuration under a system-process or VMware Tools name is the signal, wherever it sits.

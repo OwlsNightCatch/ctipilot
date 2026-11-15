@@ -113,17 +113,9 @@ sources:
     publisher: Trend Micro Download Center (Mobile Security for Enterprise)
     date: '2026-11-12'
     role: corroborating
-  - url: https://security.netapp.com/advisory/NTAP-20261021-0021
-    publisher: NetApp (NTAP-20261021-0021)
-    date: '2026-10-26'
-    role: primary
   - url: https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021
     publisher: NetApp (NTAP-20261021-0021, advisory data)
     date: '2026-10-26'
-    role: primary
-  - url: https://security.netapp.com/advisory/NTAP-20261021-0021
-    publisher: NetApp (NTAP-20261021-0021, initial release)
-    date: '2026-10-21'
     role: primary
   - url: https://security.netapp.com/adv_api/advisory/NTAP-20261021-0021
     publisher: NetApp (NTAP-20261021-0021, advisory data revision 10.0)
@@ -264,6 +256,14 @@ updates:
       - sourcing_note
       - actions
       - body
+  - at: "2026-11-15T15:06:49Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      Two records for NetApp's advisory page duplicated the cited advisory-data records of the same
+      advisory and were cited nowhere; they are removed from the sources.
+    fields: [sources]
 migrated_from: null
 ---
 

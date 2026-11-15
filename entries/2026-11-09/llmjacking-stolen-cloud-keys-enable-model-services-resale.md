@@ -31,6 +31,10 @@ sources:
     publisher: "Datadog Security Labs"
     date: "2026-10-06"
     role: corroborating
+  - url: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+    publisher: "Obsidian Security"
+    date: "2026-09-08"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "the dominant initial access vector has been exposed or stolen cloud identity tokens"
@@ -52,7 +56,7 @@ verification: multi-source
 sourcing_note: >
   The case details and the UNC6993 cluster rest on GTIG and Mandiant's own incident-response work. Wiz and Datadog describe different variants (Google Cloud billing accounts, AWS key validation) from their own telemetry, so they corroborate the pattern, not GTIG's individual cases. Datadog's AWS evidence is one platform's frontend code, two validation scripts and similar probing it saw at 12 of its customer organizations, which it does not link to those tools.
 confidence: high
-references: ["2026-08-07/ai-api-token-jacking-transfer-station-resale"]
+references: ["2026-08-07/ai-api-token-jacking-transfer-station-resale", "2026-06-16/obsidian-security-a-three-cve-chain-turns-any-litellm-user-i"]
 deep_dive: false
 deep_dive_category: null
 org_triage: null
@@ -61,7 +65,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-11-15T15:03:59Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    summary: >
+      GTIG attaches CVE-2026-40217 to the LiteLLM /key/regenerate user-ID rebind it saw exploited, but
+      Obsidian Security tracks CVE-2026-40217 as a sandbox escape in LiteLLM's custom-code guardrail, with
+      the fixes for its reported chain in v1.83.14-stable.
+    fields: [references, sources, body]
 migrated_from: null
 ---
 
@@ -76,3 +88,7 @@ After the foothold the actors enumerated cloud services and repositories for cre
 **Triage:** GTIG treats any call that disables model invocation logging, made by a principal outside infrastructure-as-code, as high severity ([GTIG, 2026-11-02](https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models)).
 
 **Defender takeaway:** deny model-service permissions to identities that do not need them, set per-model quotas and spending caps, patch model gateways such as LiteLLM, and alert on any enablement of a model service or call that disables its logging ([GTIG, 2026-11-02](https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models)). Switch on model-call logging where it is not on by default, or inference calls go unseen.
+
+## Improvement — 2026-11-15T15:03:59Z
+
+GTIG names the /key/regenerate user-ID rebind CVE-2026-40217 and advises patching model gateways against it ([GTIG, 2026-11-02](https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models)). Obsidian Security tracks CVE-2026-40217 as a sandbox escape in LiteLLM's custom-code guardrail, which X41 D-Sec separately showed through the guardrail test path, not a key-regeneration flaw, and says the full set of fixes for the chain it reported shipped in LiteLLM v1.83.14-stable on 2026-04-25 ([Obsidian Security, 2026-09-08](https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce)). The id therefore does not match the flaw GTIG describes; LiteLLM v1.83.14-stable or later is the release that carries the fixes for the disclosed chain, and no source names a separate fix for the rebind.

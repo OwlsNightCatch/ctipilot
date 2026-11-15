@@ -2,10 +2,10 @@
 schema: 1
 kind: research
 title: "BluePhishing: Proofpoint's proof of concept turns a consent link for a third-party Entra agent blueprint into tenant initial access, with an agent-creation permission that Proofpoint says cannot be revoked"
-headline: "BluePhishing: consent to a rogue Entra agent blueprint gives tenant access, and default users can soon create blueprints"
+headline: "BluePhishing: a consented rogue Entra agent blueprint gives tenant access; Entra users get blueprint rights in November"
 summary: >
   Proofpoint describes BluePhishing, a research proof of concept that extends OAuth consent phishing to Microsoft Entra Agent ID: a victim who consents to an attacker's multi-tenant agent blueprint gets a blueprint principal with an agent-creation permission that Proofpoint says cannot be revoked, and the attacker then creates agent identities, up to 250 per blueprint, that inherit the consented permissions, which Microsoft's documentation says neither the Entra portal nor Microsoft Graph shows.
-  Proofpoint has identified no in-the-wild activity, and Microsoft 365 message MC1506733 says default Entra users will be able to create agent blueprints from November 2026.
+  Proofpoint has identified no in-the-wild activity, and Microsoft 365 message MC1506733 says default Entra users can create agent blueprints from 2026-11-04, in a rollout due to complete by late November, unless an administrator turns that right off.
 discovered_at: "2026-11-10T03:57:00Z"
 updated_at: null
 event_date: "2026-11-09"
@@ -24,6 +24,10 @@ sources:
     publisher: "Proofpoint"
     date: "2026-11-09"
     role: primary
+  - url: "https://mc.merill.net/message/MC1506733"
+    publisher: "Microsoft 365 Message Center (MC1506733, read on the mc.merill.net archive)"
+    date: "2026-10-13"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "By default, blueprint principals were observed to have an implicit admin-consent permission, AgentIdentity.CreateAsManager, to allow the blueprint to create agent identities linked to itself."
@@ -48,7 +52,15 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions: []
-updates: []
+updates:
+  - at: "2026-11-15T15:03:29Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    summary: >
+      Microsoft's message MC1506733 schedules the change that lets default Entra users create agent blueprints
+      from 2026-11-04, with the rollout due to finish by late November, unless an administrator turns off the
+      "Users can create agent blueprints" setting, which is the lever a tenant has now.
+    fields: [headline, summary, sources, body]
 migrated_from: null
 ---
 
@@ -60,4 +72,8 @@ Proofpoint has identified no in-the-wild activity and says agent consent control
 
 **Detection:** Proofpoint says agent and blueprint events surface in the Entra audit log as app consent operations do, the creation of an agent identity blueprint as "Add application" and the creation of an agent identity as "Add service principal", and that the blueprint ID is the same in every tenant that consents to it, so a known malicious blueprint can be searched for across tenants ([Proofpoint, 2026-11-09](https://www.proofpoint.com/us/blog/threat-insight/BluePhishing-Initial-Access-via-Third-Party-Agent-Blueprint-Consent)).
 
-**Defender takeaway:** review the tenant's user consent settings and permission classifications before the November 2026 default lets default Entra users create agent blueprints, and look in the audit log for blueprint and agent-identity creations that nobody in IT made; no attacks have been reported, so this is a hardening decision, not an incident response.
+**Defender takeaway:** review the tenant's user consent settings and permission classifications and decide whether default users keep the right to create agent blueprints, which Microsoft's change rolling out through November 2026 grants unless the Users can create agent blueprints setting is turned off ([Microsoft 365 Message Center, 2026-10-13](https://mc.merill.net/message/MC1506733)), and look in the audit log for blueprint and agent-identity creations that nobody in IT made; no attacks have been reported, so this is a hardening decision, not an incident response.
+
+## Improvement — 2026-11-15T15:03:29Z
+
+Microsoft's Message Center item MC1506733 says that starting 2026-11-04 default users will be able to create new agent blueprints unless an administrator turns off "Users can create agent blueprints", with the worldwide rollout beginning in early November 2026 and expected to complete by late November 2026; the setting sits under Entra ID user settings, Default user role permissions, and users assigned the Agent ID Developer role keep the right regardless ([Microsoft 365 Message Center, 2026-10-13](https://mc.merill.net/message/MC1506733)).

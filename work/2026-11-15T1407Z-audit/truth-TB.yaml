@@ -1,0 +1,183 @@
+batch: TB
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-15T14:12:38Z'
+  ended: '2026-11-15T14:46:10Z'
+entries:
+- entry: 2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways
+  verdict: imprecision
+  findings:
+  - code: F8
+    claim_id: 891f6faff8
+    where: '**Exposure:** line and cves[CVE-2026-109618/109619].affected (R82.20 listed as plainly exposed)'
+    defect: Exposure and the CVE records treat every gateway on R81.20, R82, R82.10 and R82.20 with a portal or VPN feature in use as exposed; the sk1000302 hotfix note that R82.20 gateways already carry
+      built-in IPS protection is dropped.
+    ground_truth: 'sk1000302 Important Notes: "Check Point Firewalls R82.20 protect themselves through the Check Point IPS signatures "PHP Remote Code Execution" even when IPS is not enabled and HTTPS Inspection
+      is not active on these Check Point Firewalls." (sk lastModified 2026-11-12)'
+    ground_truth_url: https://support.checkpoint.com/results/sk/sk1000302
+    fix: 'Add one clause to Exposure/Defender takeaway: Check Point states R82.20 gateways are protected by the built-in "PHP Remote Code Execution" IPS signature even with IPS disabled, so R82.20 is the
+      lowest-risk release until the Jumbo take is installed (low severity; no source says the signature is a complete mitigation).'
+  - code: F8
+    claim_id: 0f23bbdafc
+    where: '**Detection:** line'
+    defect: Detection names only the dynamicCli.log wrapper check and refers to "the web-shell, listener and SSH-to-ESXi behavior above"; the exploitation-phase observables Check Point Research describes
+      (bursts of segmentation faults in the Mobile Access portal Apache/PHP workers, PHP session files left by the exploit, the backdoor listening on all IPv4 interfaces) are not stated.
+    ground_truth: 'CPR: "During the same window, the portal''s Apache/PHP workers experienced hundreds of segmentation faults, providing additional evidence of repeated exploitation attempts against the
+      service."; "TSGA listens on all IPv4 interfaces" (TCP port 11072)'
+    ground_truth_url: https://research.checkpoint.com/2026/php2shell-exploitation-on-check-point-gateway/
+    fix: Add the behavioural signal (repeated crashes of the portal web workers on a gateway with Mobile Access, then a new listener on the gateway) to Detection without file names or hashes (low severity).
+  length_note: main analysis 549 words (link text stripped); headline 112 chars - within bounds
+- entry: 2026-10-29/php2shell-trend-micro-apex-quest-kace-netapp-ontap
+  verdict: clean
+  findings: []
+  length_note: 'main analysis 535 words; headline 109 chars - within bounds. Observation, not a defect: the Quest KB reads "Last Update on: 11/2/2026" (after the 2026-10-29 revision the entry cites); its
+    current content still matches every Quest claim in the entry.'
+- entry: 2026-10-26/cve-2026-111497-microsoft-net-oob-update-brotli-sockets-fix
+  verdict: clean
+  findings: []
+  length_note: main analysis 549 words; headline 104 chars - within bounds. MSRC record still at revision 7 (2026-11-12) with exploited=No; KB table verified against the CVRF.
+- entry: 2026-11-07/cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo
+  verdict: imprecision
+  findings:
+  - code: F8
+    claim_id: 5e0913c5b9
+    where: summary, cves[CVE-2026-111497].fixed, affected_products, "Update - 2026-11-13T03:56:37Z" and its record summary (Apple release list)
+    defect: Apple fix list stops at iOS/iPadOS, macOS, watchOS, visionOS and HomeView Software; Apple posted tvOS 27.2.1 on 2026-11-13 with the same Brotli entry, after the entry's last record, so tvOS
+      is neither in the fix list nor in affected_products.
+    ground_truth: 'Apple "About the security content of tvOS 27.2.1" (Released November 13, 2026): "brotli - Available for: Apple TV 4K 2nd generation and later - Impact: Processing maliciously crafted
+      input may lead to memory corruption - Description: An out-of-bounds write issue was addressed with improved input validation. CVE-2026-111497"'
+    ground_truth_url: https://support.apple.com/en-us/149721
+    fix: Add tvOS 27.2.1 (Apple TV 4K 2nd generation and later, 2026-11-13) to the Apple fix list, the Exposure line and affected_products (Apple tvOS), via a changelog update.
+  - code: F3
+    claim_id: fc10fabc08
+    where: body paragraph on Cisco ("version 1.12 of 2026-11-12"), Update 2026-11-13 ("now at version 1.12") and its record summary
+    defect: The entry names Cisco advisory version 1.12 of 2026-11-12 as current; the advisory has since been revised.
+    ground_truth: 'Cisco revision history: "1.13 Updated products under investigation, vulnerable products, and products confirmed not vulnerable. Summary and Affected Products Interim 2026-NOV-13" (1.12
+      is 2026-NOV-12). Every Cisco statement the entry makes (PoC known, no malicious use, ISE/IOS XE/IOS XR/ASA/FMC/FTD not impacted, Duo Network Gateway 3.4.2, RoomOS fixes) still holds on v1.13.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u
+    fix: Update the version/date to 1.13 of 2026-11-13 at the next changelog update (low severity; no fact changed).
+  length_note: main analysis 549 words; headline 113 chars - within bounds
+- entry: 2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: cd3db5794b
+    where: actions[2] ("its eMudhra advisory (version 1.9)") and sourcing_note ("Cisco's advisory is at version 1.9")
+    defect: Cisco's eMudhra advisory is named as being at version 1.9; it has been revised twice since the entry's last record. The products the action lists (IOS XE guide, ASA/FTD/FMC guidance, Secure
+      Email updatenow, Duo Access Gateway 3.2.0, Duo Network Gateway 3.4.1, Duo Agentic Authorization Connector 1.0.1, ThousandEyes Application-hosting Agent 5.2.2) are all still listed.
+    ground_truth: 'Cisco history: "1.11 Updated products under investigation, impacted, and not impacted. Affected Products Interim 2026-NOV-13; 1.10 ... 2026-NOV-12; 1.9 ... 2026-NOV-10". MDS 9000 and
+      Nexus 3000/9000 now sit in the "Impacted Products with Software Fixes" table with bug IDs CSCwx45599/CSCwx36440, where the 2026-11-08 section reports "no remediation yet" (release strings not shown).'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r
+    fix: Cite version 1.11 (2026-11-13) and re-read the MDS 9000 / Nexus rows for the current remediation state (low severity).
+  - code: F3
+    claim_id: 5d2088cf79
+    where: '"Update - 2026-11-11T03:55:02Z" ("Microsoft''s post carries an update of 2026-11-10") and the Defender takeaway citation "Microsoft, 2026-11-10"'
+    defect: The Microsoft post is dated as an update of 2026-11-10; the post now carries an "Update (November 12, 2026)" note with the same content plus an extended product table (two days of drift; low
+      confidence because the 2026-11-10 wording cannot be re-read).
+    ground_truth: '"Update (November 12, 2026): ... Microsoft is removing the remaining eMudhra root certificates across its products and services, starting November 16, 2026." Table adds Azure CLI 2.93.0
+      (11/16), VS Code 1.147.0 (11/18), .NET SDK December 2026, APIM self-hosted gateway.'
+    ground_truth_url: https://www.microsoft.com/en-us/msrc/blog/2026/10/microsoft-response-to-compromised-emudhra-certificate-authority-keys
+    fix: Date the note 2026-11-12 (or say the post was updated 2026-11-10 and again 2026-11-12) in the section and the Defender takeaway citation.
+  - code: F5
+    claim_id: 929351cfad
+    where: Defender takeaway, last sentence ("Certificates from the eight revoked RSA G2B and G2C issuers are revoked and eMudhra says its subscribers were migrated")
+    defect: A factual attribution to eMudhra with no inline citation in that sentence or its paragraph.
+    ground_truth: 'eMudhra full incident report: "Subscriber migration arising from the RSA G2C revocations is complete." (Mozilla bug 2083449, comment 82, 2026-11-10)'
+    ground_truth_url: https://bugzilla.mozilla.org/show_bug.cgi?id=2083449
+    fix: Append the Mozilla bug 2083449 citation to the sentence (the claim itself is supported).
+  - code: F14
+    claim_id: 1c9bb3cb9b
+    where: record summary of 2026-10-25T03:36:20Z ("removes four root CAs")
+    defect: The record summary gives a count of four root CAs for Oracle's CVE-2026-114820 update; the body section says only "the impacted root CA certificates".
+    ground_truth: 'Oracle: "providing Java updates that remove the set of impacted root CA certificates related to eMudhra" (no count). "Four" appears only as the four cacerts aliases (emsignrootcag1, emsignrootcag2,
+      emsigneccrootcag3, comodoaaaca) in OpenJDK''s fallback instructions.'
+    ground_truth_url: https://www.oracle.com/security-alerts/alert-cve-2026-114820.html
+    fix: 'Low severity: record summaries are audit trail only; say "removes the impacted root CAs" if the record is ever amended.'
+  - code: F11
+    claim_id: null
+    where: title and summary ("eight RSA intermediates were revoked ... ; browsers block them"; "Browsers and the Apple, Microsoft and Google trust stores block the intermediates")
+    defect: (low confidence) "them" / "the intermediates" can be read to include the eight RSA G2B/G2C issuers, which the entry's own closing sentence says no read vendor page names or blocks.
+    ground_truth: Google, Mozilla, Microsoft, Apple and tracker pages name only the eight ECDSA G3B/G3C intermediates; G2B/G2C appear only in the Mozilla bug and eMudhra's report (revoked 07 Nov 2026).
+    ground_truth_url: https://emudhra.we-have-a-problem.com/
+    fix: Say "browsers and platforms block the eight ECDSA intermediates; the eight RSA intermediates are revoked by eMudhra".
+  length_note: main analysis 895 words (over the 550-word bound for a non-deep-dive entry); headline 112 chars - within bound. Six claims about superseded revisions (Cisco v1.1/v1.8, Apple 2026-10-30 page,
+    OpenJDK 2026-10-21 wording) are marked unreadable in the claims file because no current page carries them.
+- entry: 2026-10-23/fortinet-hardening-release-fortios-fortimanager-fortimail
+  verdict: factual-error
+  findings:
+  - code: F4
+    claim_id: ad4c246977
+    where: cves[CVE-2026-126229].affected ("all 7.2 and 7.0") and .fixed ("7.2 and 7.0 migrate to a fixed release")
+    defect: The record says all FortiAnalyzer/FortiManager 7.2 are affected with no fixed build and 7.2 must migrate. The advisory lists 7.2.0 through 7.2.12 as affected and gives 7.2.13 as the fix; only
+      7.0 is told to migrate.
+    ground_truth: 'FG-IR-26-244 table: "FortiAnalyzer 7.2 | 7.2.0 through 7.2.12 | Upgrade to 7.2.13 or above"; "FortiManager 7.2 | 7.2.0 through 7.2.12 | Upgrade to 7.2.13 or above"; Cloud 7.2 "7.2.1 through
+      7.2.12 | Upgrade to 7.2.13 or above"; "FortiAnalyzer 7.0 / FortiManager 7.0 | 7.0 all versions | Migrate to a fixed release"'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    fix: 'affected: "... 7.4.0 through 7.4.11, 7.2.0 through 7.2.12 and all 7.0"; fixed: "8.0.2, 7.6.8, 7.4.12 or 7.2.13; 7.0 migrates to a fixed release".'
+  - code: F4
+    claim_id: 1fc69e497f
+    where: actions[0] ("every FortiManager and FortiAnalyzer on 7.6 or 7.4 to 7.6.8 or 7.4.12 (7.2 and 7.0 migrate)")
+    defect: The action tells the on-shift team to migrate FortiAnalyzer/FortiManager 7.2 units; Fortinet's fix for 7.2 is an upgrade to 7.2.13 (an October build the entry itself lists).
+    ground_truth: 'FG-IR-26-244: 7.2.0 through 7.2.12 "Upgrade to 7.2.13 or above"; Fortinet blog table: FortiManager/FortiAnalyzer 7.2 "7.2.0-7.2.12 | 7.2.13 or above | October 22"'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    fix: '"... every FortiManager and FortiAnalyzer on 7.6, 7.4 or 7.2 to 7.6.8, 7.4.12 or 7.2.13 (7.0 migrates)".'
+  - code: F4
+    claim_id: ef2d849721
+    where: summary ("FortiOS 7.0, FortiMail 7.2 and FortiAnalyzer and FortiManager 7.2 and 7.0 are left to migrate or wait")
+    defect: Same 7.2 error in the summary; FortiAnalyzer/FortiManager 7.2 are fixed in 7.2.13 and only 7.0 is left to migrate.
+    ground_truth: 'FG-IR-26-244: FortiAnalyzer/FortiManager 7.2 "Upgrade to 7.2.13 or above"; 7.0 "Migrate to a fixed release"'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    fix: '"... FortiOS 7.0, FortiMail 7.2 and FortiAnalyzer and FortiManager 7.0 are left to migrate or wait".'
+  - code: F3
+    claim_id: b399a1661a
+    where: body, "Not every row" sentence ("FortiAnalyzer and FortiManager 7.2 and 7.0 and FortiOS 7.0 must migrate ([FG-IR-26-244]; [FG-IR-26-267]; [FG-IR-26-273])")
+    defect: The cited FG-IR-26-244 gives 7.2.13 for FortiAnalyzer/FortiManager 7.2; only 7.0 migrates. (FortiOS 7.0 migrating for -267 and -273 is correct.)
+    ground_truth: 'FG-IR-26-244: "FortiManager 7.2 | 7.2.0 through 7.2.12 | Upgrade to 7.2.13 or above"'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    fix: '"FortiAnalyzer and FortiManager 7.0 and FortiOS 7.0 must migrate".'
+  - code: F3
+    claim_id: 1c8de62f96
+    where: Update 2026-11-12T04:20:00Z ("FortiAnalyzer and FortiManager 7.2 and 7.0 must migrate for CVE-2026-126229")
+    defect: Same error in the changelog section.
+    ground_truth: 'FG-IR-26-244: 7.2.0 through 7.2.12 "Upgrade to 7.2.13 or above"; only 7.0 "Migrate to a fixed release"'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    fix: '"FortiAnalyzer and FortiManager 7.0 must migrate for CVE-2026-126229"; correct via a changelog correction record naming body, summary, cves and actions.'
+  - code: F4
+    claim_id: 7c7dc0ab26
+    where: record summary of 2026-11-12T04:20:00Z ("FortiOS 7.0 and FortiAnalyzer and FortiManager 7.2 and 7.0 must migrate")
+    defect: Record summary repeats the 7.2 error (audit trail).
+    ground_truth: FG-IR-26-244 gives 7.2.13 as the fix for FortiAnalyzer/FortiManager 7.2
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-244
+    fix: 'Records are append-only: state the correction in the new correction record''s summary.'
+  - code: F8
+    claim_id: 0b6899efd7
+    where: cves[CVE-2026-126254] record and the iBGP clause of the body
+    defect: FG-IR-26-268 was revised on 2026-11-13 (after the last record, 2026-11-12) to add a virtual patch for the iBGP flaw; the entry names a virtual patch only for CVE-2026-126259.
+    ground_truth: 'FG-IR-26-268 Timeline: "2026-11-13: Added IPS package info"; "Virtual Patch named "FG-VD-62507.0day." is available in FMWP db update 26.118"; Updated Date Nov 13, 2026'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-268
+    fix: Add "virtual patch FG-VD-62507.0day (FMWP db update 26.118, 2026-11-13)" to the CVE-2026-126254 fixed field via a changelog update.
+  - code: F3
+    claim_id: ef2d849721
+    where: summary ("Fortinet's coordinated hardening release of 2026-10-22 fixed ... FortiMail and FortiAuthenticator")
+    defect: (low confidence) The summary dates all five products' builds to 2026-10-22; Fortinet's blog table dates FortiMail and FortiAuthenticator availability "Today" (2026-10-21) and FortiOS/FortiManager/FortiAnalyzer
+      to October 22.
+    ground_truth: 'Blog table: "FortiMail 8.0 | 8.0.0-8.0.1 | 8.0.2 or above | Today"; "FortiAuthenticator 8.0 ... | Today"; FortiOS/FortiManager/FortiAnalyzer "October 22"; text: "following recent releases
+      from FortiMail and FortiAuthenticator"'
+    ground_truth_url: https://www.fortinet.com/blog/ciso-collective/fortinet-releases-security-hardening-release-for-multiple-products
+    fix: '"Fortinet''s hardening releases of 2026-10-21 (FortiMail, FortiAuthenticator) and 2026-10-22 (FortiOS, FortiManager, FortiAnalyzer) ...".'
+  - code: F4
+    claim_id: null
+    where: evidence[0] quote ("We strongly urge every customer to plan and promptly complete these upgrades as soon as the releases are available, prioritizing internet-facing devices.")
+    defect: (low confidence) The quote ends with a full stop the source sentence does not carry, so it is not a contiguous substring of the page.
+    ground_truth: 'Page text: "...as soon as the releases are available, prioritizing internet-facing devices" (paragraph ends without a period; raw HTML "devices</p>")'
+    ground_truth_url: https://www.fortinet.com/blog/ciso-collective/fortinet-releases-security-hardening-release-for-multiple-products
+    fix: Drop the trailing period from the quote.
+  - code: F4
+    claim_id: null
+    where: cves[CVE-2026-126254].type ("memory-corruption")
+    defect: (low confidence) The advisory classifies the flaw as a numeric truncation error (CWE-197) with Fortinet impact "Denial of service"; no source states memory corruption.
+    ground_truth: 'FG-IR-26-268: "A Numeric Truncation Error vulnerability [cwe-197] in FortiOS and FortiSASE bgp daemon may allow a configured ibgp neighbor to send malicious/malformed attributes to all
+      connected routers"; Impact: Denial of service'
+    ground_truth_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-268
+    fix: Use a type the page supports (for example logic-flaw or dos) or omit the claim.
+  length_note: main analysis 549 words; headline 115 chars - within bounds

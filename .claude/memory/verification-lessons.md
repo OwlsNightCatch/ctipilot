@@ -135,3 +135,18 @@ The FortiMail entry said Fortinet's second workaround was restricting the manage
 - **Do not subtract the previous two fires' attempts from a rotation slice when the cursor already ranks it.** Doing so emptied the breaches slice (S4 got zero records); rank on the cursor alone and say so in the run notes.
 - **A hedge in the source ("most likely", "we could not prove") survives only if the title, headline and summary keep it.** The Gentlemen entry hedged correctly in the body and dropped it in three frontmatter fields (F4, iteration 1).
 - **Re-surfaced lookback items were mostly dropped by the two earlier fires; check `runs/*` borderline-drop lines before re-litigating.** Eight of twelve S3 items and three S2 items had already been judged with the same facts.
+
+## Quality audit 2026-11-15T1407Z (56 entries: 27 clean, 24 imprecision, 5 factual error)
+
+- **An out-of-slice "majors" check moves the rotation cursor (fixed in v4.25).** Research sub-agents list sources they checked at the fire's 26 h window in their ledgers; `sources_attempted` used to carry them, the cursor treated each as a full lookback sweep, and Datadog's ARTEX-in-AWS post fell between two windows. Only allocated slice rows count as attempted now.
+- **`entry-shape` now also WARNs a `sources[]` record an update adds that nothing cites** (SCKit's EUVD API record slipped through on 2026-11-13). Cite it at its claim or drop it in the same record.
+- **A single-quoted YAML scalar needs `''` for every apostrophe you insert** (the Dixell summary broke `frontmatter-yaml` on "VulnCheck's"). After editing a quoted frontmatter field, re-parse with `yaml.safe_load`.
+- **Internal records may change at most about 12 words of prose** (`changelog-fields`): removing record-keeping narration in two sections (17 words) FAILed. Split such cleanup or give it a non-internal record.
+- **Check a figure caption before accepting "the text does not say so"** (Unit 42's Figure 2 caption bound the counts to France; the truth pass read only the body text).
+- **Multiple `sources[]` records on one URL with different dates are a store pattern for revisions; the inline-date check maps the URL to the last record's date**, so a new citation must use that date.
+- **Read a relayed bulletin at its origin before writing an update on it.** CERT-FR's relay of SNWLID-2026-0021 read as a second SonicOS fix; SonicWall's PSIRT API showed it is the eMudhra DPI-SSL notice. The update was reverted after verifier iteration 1.
+- **When a new reading supersedes a fact, grep the whole entry for the old fact, including the main analysis, not just the summary and the action you are editing.** Apache's "forky is still vulnerable" survived three iterations in the main analysis after the action was fixed. A dated earlier section can keep it as history.
+- **Re-read the vendor's announcement listing for newer builds when you name a fix.** Ahsay's 2026-10-27 hotfixes and v10.3.6.14 appeared after the builds the entry named. A reboot instruction belongs only to the release the vendor attaches it to.
+- **Every citation link counts toward the 550-word main-analysis bound (link text is counted).** Adding a citation adds about 3 words; trim in the same edit.
+- **Public record summaries state the development, never the edit** ("the entry also gives", "the Triage line now names", "headline and summary now say"). Nine of this audit's non-internal summaries needed rewriting after verifier iteration 6.
+- **This audit's loop took 7 iterations to a confirmed CLEAN.** Iteration 5 found an F4 in this fire's own Check Point section outside its quarter sample: an audit with 27 updated entries should expect the confirmation pass to be the first full re-read.

@@ -45,10 +45,6 @@ sources:
     publisher: ANSSI / CERT-FR (CERTFR-2026-CTI-010)
     date: '2026-11-12'
     role: primary
-  - url: https://www.cert.ssi.gouv.fr/cti/CERTFR-2026-CTI-010/
-    publisher: ANSSI / CERT-FR (CERTFR-2026-CTI-010, report page)
-    date: '2026-11-12'
-    role: primary
 closed_sources: []
 evidence:
   - quote: This vulnerability, of the SQL injection type, gives an unauthenticated user access to the database of the Metabase application and administrator rights on the instance. (translated from French)
@@ -83,6 +79,14 @@ updates:
       new cases of an SMS second factor validated by the attacker and IDOR flaws combined with infostealer
       credentials.
     fields: [title, headline, summary, sources, sourcing_note, body]
+  - at: "2026-11-15T15:06:46Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The report page duplicated the cited PDF of the same CERT-FR report and was cited nowhere; it is
+      removed from the sources.
+    fields: [sources]
 migrated_from: null
 ---
 

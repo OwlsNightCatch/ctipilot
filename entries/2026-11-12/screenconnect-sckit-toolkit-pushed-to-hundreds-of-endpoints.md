@@ -77,10 +77,6 @@ sources:
     publisher: Blackpoint Cyber
     date: '2026-11-12'
     role: corroborating
-  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-124597
-    publisher: ENISA EUVD (EUVD-2026-124597)
-    date: '2026-11-12'
-    role: corroborating
   - url: https://www.microsoft.com/en-us/security/blog/2026/11/13/sckit-abuses-screenconnect-deploy-remote-access-target-technician-sessions/
     publisher: Microsoft Threat Intelligence
     date: '2026-11-13'
@@ -153,6 +149,14 @@ updates:
       2026-11-13 hit 205 hosts at 41 organisations, one with a self-hosted RMM+, so every technician
       client now belongs on the action list.
     fields: [headline, summary, techniques, sources, evidence, sourcing_note, actions, body]
+  - at: "2026-11-15T15:06:47Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      An ENISA vulnerability-database API record added on 2026-11-13 was cited by no sentence and is
+      removed from the sources.
+    fields: [sources]
 migrated_from: null
 ---
 

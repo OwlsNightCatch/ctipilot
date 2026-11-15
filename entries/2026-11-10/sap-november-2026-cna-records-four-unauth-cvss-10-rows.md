@@ -35,7 +35,7 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [patch-available]
-    affected: "SAP Web Dispatcher: WEBDISP 7.53, 7.54, 7.77, 7.93, 9.16, KERNEL 7.53, 9.18, 9.20, KRNL64UC 7.53, HDB 2.00, XS_ADVANCED_RUNTIME 1.00, SAP_EXTENDED_APP_SERVICES 1"
+    affected: "SAP Web Dispatcher: WEBDISP 7.53, 7.54, 7.77, 7.93, 9.16, KERNEL 7.53, 7.54, 7.77, 7.93, 9.16, 9.18, 9.20, KRNL64UC 7.53, HDB 2.00, XS_ADVANCED_RUNTIME 1.00, SAP_EXTENDED_APP_SERVICES 1"
     fixed: "SAP Security Note 3778556; kernel and Web Dispatcher patch levels per Onapsis: 7.53 PL 1616 or 1617, 7.54 PL 710, 7.77 PL 914, 7.93 PL 401 or 420, 9.16 PL 111, 9.18 PL 37 (kernel), 9.20 PL 11 or 13 (kernel); SAP HANA 2.00 and XS Advanced Web Dispatchers per the Onapsis table"
   - id: CVE-2026-76964
     cvss: "10.0"
@@ -53,7 +53,7 @@ cves:
     vector: zero-click
     auth: pre-auth
     status: [patch-available]
-    affected: "SAP Gateway: KRNL64NUC 7.22, 7.22EXT, KRNL64UC 7.22, 7.53, 8.04, KERNEL 7.22, 7.54, 7.77, 7.93, 9.16, 9.20, 9.21"
+    affected: "SAP Gateway: KRNL64NUC 7.22, 7.22EXT, KRNL64UC 7.22, 7.22EXT, 7.53, 8.04, KERNEL 7.22, 7.53, 7.54, 7.77, 7.93, 8.04, 9.16, 9.20, 9.21"
     fixed: "SAP Security Note 3798345 plus the profile parameter gw/acl_mode_proxy = 1 on most releases; minimum kernel patch levels per Onapsis: 7.22 EXT, EX2 and EX3 PL 1612, 7.53 PL 1625, 7.54 PL 718, 7.77 PL 915, 8.04 PL 244, 9.20 PL 16, 9.21 PL 4"
 sources:
   - url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-120700"
@@ -137,6 +137,14 @@ updates:
       pair and has seen no attacks, replacing the entry's earlier statement that fixed releases were not
       public.
     fields: [title, headline, summary, cves, sources, evidence, verification, sourcing_note, confidence, actions, body]
+  - at: "2026-11-15T15:01:24Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The affected component lists for CVE-2026-89126 and CVE-2026-89103 now reproduce SAP's Patch Day
+      table in full (further KERNEL and KRNL64UC releases).
+    fields: [cves]
 migrated_from: null
 ---
 

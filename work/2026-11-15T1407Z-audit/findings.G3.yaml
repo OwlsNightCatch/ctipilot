@@ -1,0 +1,1511 @@
+domain: G3
+run_id: 2026-11-15T1407Z-audit
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-15T14:10:35Z'
+ended_at: '2026-11-15T14:37:07Z'
+duration_seconds: 1592
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 8
+  bridge_fetches: 150
+window:
+  window_hours: 170
+  start: 2026-11-08T13:09Z
+  end: 2026-11-15T14:07Z
+audit_summary: 'Sweep of 42 publisher records by date across the whole window found no uncovered critical or high item. The week''s research flow is almost wholly in the store (ARTEX wave, SCKit, Falcon
+  C2, CopperDragon, Cereal, BlackNevas, DarkLunnen, Certighost-Citrus). One real miss: Datadog''s ARTEX-in-AWS post (2026-11-09) was never seen by any fire because datadog-security-labs is a rotation source,
+  and the store has none of its control-plane hooks (item 1, include). One borderline lean-include: Huntress''s ClickFix roundup (item 2). One reopen note: Malbear''s Operation Snowball reports in-the-wild
+  exploitation of Cisco BroadWorks CVE-2026-20320, a CVE earlier fires borderline-dropped with no exploitation (item 4). Periodic reports flagged: Proofpoint Europe''s Threat Landscape 2026 (item 3), Kaspersky
+  Q3 2026 statistics (item 12), Sophos State of Ransomware in Retail 2026 (item 13); none changes a defender decision. Registry gap: Citrus, Sn00py, SilentAir, LIMINAL PANDA, GTPDoor, Greeter, Operation
+  Snowball, Amazon Cognito and CloudWatch Logs are unregistered (proposals inside the items). Two sources could not be swept: sygnia (blocked) and nict-cynex-lettice (JS shell, reader pool exhausted).'
+items:
+- title: 'Datadog: ARTEX operators against AWS accounts, from long-lived IAM keys that search CloudWatch Logs for secrets to anonymous S3 reads and self-registration in public Cognito user pools'
+  recommendation: 'INCLUDE as a new threat entry (routine to notable). Unseen by any intel fire this week (datadog-security-labs is a rotation source nobody swept), and the store carries none of the AWS
+    control-plane hooks (grep of entries for FilterLogEvents: no hit; Cognito appears only in the Storm-0940 entry at the Wiz level and in an unrelated PoeLLM entry). Alternative: improvement record on
+    2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse, but that entry is already past its word bound.'
+  related_entries:
+  - 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  - 2026-10-30/vapor-panda-artex-agentic-campaign-foreign-ministries
+  - 2026-11-14/cyberstrikeai-aws-cloudtrail-intrusion-one-source-ip
+  - 2026-11-06/exposed-app-credentials-entra-signins-msp-clients-artex
+  sources:
+  - url: https://securitylabs.datadoghq.com/articles/artex-agentic-attacks-aws-environments/
+    publisher: Datadog Security Labs
+    date: '2026-11-09'
+    role: primary
+  - url: https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors
+    publisher: Wiz Research
+    date: '2026-10-22'
+    role: corroborating
+  - url: https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex
+    publisher: Elastic Security Labs
+    date: '2026-11-13'
+    role: corroborating
+  - url: https://blog.talosintelligence.com/artex-and-beyond/
+    publisher: Cisco Talos
+    date: '2026-11-13'
+    role: corroborating
+  - url: https://unit42.paloaltonetworks.com/artex-and-ai-powered-red-teaming-tools/
+    publisher: Palo Alto Networks Unit 42
+    date: '2026-11-11'
+    role: corroborating
+  - url: https://blog.gitguardian.com/ai-pentesting-tools-beyond-artex/
+    publisher: GitGuardian
+    date: '2026-11-09'
+    role: corroborating
+  discovery_trace: 'first seen at: datadog-security-labs, feed https://securitylabs.datadoghq.com/rss/feed.xml (item ''On the hunt for ARTEX: understanding agentic attacks in AWS environments'', 2026-11-09)
+    -> primary (no pivot needed): https://securitylabs.datadoghq.com/articles/artex-agentic-attacks-aws-environments/ -> pivot (Datadog cites Wiz): https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors
+    -> corroborating framework internals: Elastic https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex (first seen via elastic-seclabs feed https://www.elastic.co/security-labs/rss/feed.xml),
+    Talos https://blog.talosintelligence.com/artex-and-beyond/ (talos feed https://blog.talosintelligence.com/rss/), Unit 42 https://unit42.paloaltonetworks.com/artex-and-ai-powered-red-teaming-tools/ (unit42
+    feed), GitGuardian https://blog.gitguardian.com/ai-pentesting-tools-beyond-artex/ (gitguardian feed)'
+  published_at: '2026-11-09'
+  summary: 'Datadog reports in-the-wild activity by operators of ARTEX, the agentic penetration-testing framework already tracked in the store, against several AWS environments in October 2026, with a focus
+    on financial data. Every session it reviewed opened with unauthenticated S3 reads (CloudTrail identity type AWSAccount, account id anonymous) and, where S3 hosted a web front end, the agent read build
+    manifests and runtime configuration; Datadog and Wiz both describe a request for a deliberately non-existent object or path just before a burst of guesses. Where a valid long-term access key was held,
+    the most frequent call was CloudWatch Logs FilterLogEvents, always with limit 1000, first searching names of crypto firms, funds and invoicing terms and on a later day widening to storage links, internal
+    addresses, passwords and AKIA-style access keys inside log text. Where no key was held, the agent went after public Cognito user pools: repeated SignUp (some with the tool named in the user agent) against
+    a PreSignUp Lambda that validated a tenant domain, then InitiateAuth, RespondToAuthChallenge, GetUser, a token-for-credentials exchange that shows in CloudTrail under the CognitoIdentityCredentials
+    role session name, and a burst of read-only discovery calls (buckets, secrets, parameters, topics, log groups, REST APIs, repositories, functions) that all failed because the identity pool''s authenticated
+    role was narrow. Datadog says it tied ARTEX activity to a hosted console and found hundreds of further exposed consoles, often Chinese-language; it states the distributions it studied carry no cloud
+    playbook of their own, so behavior depends on the model behind them. Elastic, reading the source of five agentic frameworks, adds that none enforces authorization in code, that ARTEX and CyberStrikeAI
+    change route when blocked, that revoking credentials does not stop an agent instantly because of documented propagation and token-lifetime delays, and that behavior-anchored detections (tempo per identity,
+    sequence across sessions) outlast framework fingerprints. Facts are Datadog''s own telemetry (single first-hand source for the AWS sightings); the Cognito pattern and the non-existent-path habit are
+    independently stated by Wiz.'
+  region_nexus: global; AWS accounts of any region. Store entries already tie ARTEX to government ministries (VAPOR PANDA) and to MSP/Entra tenants; Datadog says some versions ship a default blocklist for
+    .gov, .gov.cn, .edu and .edu.cn, which would not cover Swiss .admin.ch or cantonal .ch domains (inference, not a source statement)
+  primary_sector_nexus: 'indirect: cloud tenants of cantonal/federal bodies and their suppliers that run AWS with long-lived IAM keys or public Cognito pools; no Swiss victim or Swiss-specific targeting
+    is stated'
+  sector: public-sector (indirect), cloud/IT suppliers
+  cves: []
+  techniques:
+  - T1078.004
+  - T1530
+  - T1619
+  - T1552
+  - T1136.003
+  - T1087.004
+  - T1526
+  - T1595.002
+  affected_products:
+  - Amazon Web Services IAM
+  - Amazon Cognito
+  - Amazon CloudWatch Logs
+  - Amazon S3
+  entity_keys:
+  - tool:artex
+  - actor:storm-0940
+  - product:amazon-web-services
+  - product:amazon-web-services-iam
+  new_entities:
+  - key: product:amazon-cognito
+    type: product
+    name: Amazon Cognito
+    aliases:
+    - AWS Cognito
+    - Cognito user pools
+    summary: AWS identity service (user pools and identity pools); Datadog and Wiz report ARTEX self-registering in public user pools and exchanging tokens for AWS credentials (Datadog, 2026-11-09).
+  - key: product:amazon-cloudwatch-logs
+    type: product
+    name: Amazon CloudWatch Logs
+    aliases:
+    - CloudWatch Logs
+    summary: AWS log service; Datadog reports ARTEX searching it with FilterLogEvents for financial names, file links, passwords and access keys using a compromised long-term key (Datadog, 2026-11-09).
+  relation_suggestions:
+  - subject: tool:artex
+    object: product:amazon-cognito
+    basis: Datadog and Wiz report ARTEX abusing public Cognito user pools (SignUp, InitiateAuth, ForgotPassword) (Datadog, 2026-11-09; Wiz, 2026-10-22)
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: In October 2026, Datadog observed in-the-wild activity from ARTEX, an AI-native penetration framework, against several AWS environments, with a focus on accessing financial data.
+    attribution: Datadog Security Labs
+    source_url: https://securitylabs.datadoghq.com/articles/artex-agentic-attacks-aws-environments/
+  - quote: Before either, every session we reviewed opened with unauthenticated S3 requests.
+    attribution: Datadog Security Labs
+    source_url: https://securitylabs.datadoghq.com/articles/artex-agentic-attacks-aws-environments/
+  - quote: Every `FilterLogEvents` call was set with a `limit` of 1000, below the API's 10,000-event maximum.
+    attribution: Datadog Security Labs
+    source_url: https://securitylabs.datadoghq.com/articles/artex-agentic-attacks-aws-environments/
+  - quote: We saw the agent go further, registering an account, collecting tokens, trading them for AWS credentials, then enumerating resources.
+    attribution: Datadog Security Labs
+    source_url: https://securitylabs.datadoghq.com/articles/artex-agentic-attacks-aws-environments/
+  - quote: Throughout October 2026, we identified an actor using tooling associated with ARTEX, an autonomous AI penetration-testing agent, to target multiple IT and software vendors.
+    attribution: Wiz Research
+    source_url: https://www.wiz.io/blog/artex-in-the-wild-storm-0940-expands-targeting-of-it-and-software-vendors
+  - quote: so detections anchored on behavior age more slowly than those anchored on a framework's fingerprint.
+    attribution: Elastic Security Labs
+    source_url: https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex
+  exposure: AWS accounts that hold long-lived IAM user access keys reachable from code, logs or developer machines; Cognito user pools that allow self-registration without a strict PreSignUp check; identity-pool
+    authenticated roles broader than read-only; S3 buckets that serve web front ends with build manifests or runtime configuration; secrets and keys written into CloudWatch log text.
+  detection: 'Telemetry class: cloud control-plane audit logs. (1) Unauthenticated S3 reads (CloudTrail userIdentity.type AWSAccount with accountId anonymous: GetObject/ListObjects) followed by a request
+    for an object name that cannot exist, immediately before a burst of guessed keys. (2) FilterLogEvents from a long-term access key with limit 1000, repeated filter terms naming organisations plus Fund/Invoice/Billing/LLC,
+    then terms for s3://, presigned, pdf/xlsx/csv, password, AKIA, internal address ranges. (3) Cognito sequence SignUp -> InitiateAuth -> RespondToAuthChallenge -> GetUser -> tokens exchanged for credentials
+    (role session name CognitoIdentityCredentials) then many read-only discovery calls returning AccessDenied. (4) Large volumes of permission-denied errors, instance-role credentials used from a non-AWS
+    address, and tempo per identity (many distinct sensitive actions in seconds). Post-incident check: revocation lags (AWS and Entra document propagation and token-validity delays), so pair a block with
+    credential rotation and check for the same requests returning from new addresses and user agents.'
+  triage: 'Benign lookalikes: authorised red-team use of the same open-source frameworks and log tooling that legitimately calls FilterLogEvents. Discriminators: a user-agent string that names the framework
+    or an ''authorized pentest'' label, a constant limit of 1000, search terms that enumerate financial names and secret patterns, an identity-pool role session that probes dozens of unrelated services
+    in a burst, and a source address outside the organisation''s known egress ASNs.'
+  defender_takeaway: Retire or rotate long-lived IAM user keys, close self-sign-up on Cognito pools that do not need it and validate in PreSignUp, make identity-pool authenticated roles least-privilege,
+    keep secrets out of CloudWatch text and front-end bundles in S3, and add a per-identity burst rule across S3, CloudWatch Logs and Cognito events.
+  extended_notes: 'Datadog lists tool-named user agents and hosting-provider addresses in its appendix; deliberately not carried (no IOCs). Datadog says the ARTEX developer made the repository closed-source
+    on 2026-10-08 after 12,000 forks; Elastic notes none of five frameworks enforces authorization in code and only ARTEX and CyberStrikeAI ship .gov blocklists. Talos, Unit 42 and GitGuardian published
+    parallel ARTEX-class landscape posts the same week (Talos: 700 reachable PentAGI instances; GitGuardian: about 45 frameworks, 1,428 ARTEX-family Shodan services on 2026-11-07); both are inventory material,
+    not a new campaign. Fires dropped the Elastic/Talos/Unit 42/Sophos internals on 2026-11-13 to 2026-11-15 as ''class already covered''; Datadog''s AWS post was never seen.'
+- title: 'Huntress: beyond the clipboard, four ClickFix chains seen in incidents (ClickFix to WinRM on a domain controller with reverse SSH tunnels, payloads rebuilt from PNG pixel data, browser-cache-seeded
+    launch, Node.js RAT posing as an RMM tool)'
+  recommendation: BORDERLINE, lean include at routine priority (or hold to two sentences). Unseen by any fire. Roundup of Huntress's own incidents; the technique is commodity and the store has no generic
+    ClickFix tradecraft entry, but the ClickFix-to-domain-controller chain and the cache-seeded 'for /r' launch give concrete hunts.
+  related_entries:
+  - 2026-10-04/chatgpt-custom-gpt-clickfix-sideloaded-in-memory-rat
+  - 2026-11-13/huntress-teams-booking-device-code-phishing-encrypted-kit
+  sources:
+  - url: https://www.huntress.com/blog/the-evolving-tradecraft-of-clickfix
+    publisher: Huntress
+    date: '2026-11-10'
+    role: primary
+  discovery_trace: 'first seen at: huntress, feed https://www.huntress.com/blog/rss.xml (item ''Beyond the clipboard: The evolving tradecraft of ClickFix'', 2026-11-10) -> primary (no pivot needed): https://www.huntress.com/blog/the-evolving-tradecraft-of-clickfix'
+  published_at: '2026-11-10'
+  summary: 'Huntress''s SOC summarises how ClickFix is being used beyond a single pasted download command. Delivery runs through malvertising (typosquat of a legal-research service, SEO-poisoned LinkedIn
+    lookalikes) and compromised legitimate sites, with a fake ''verify you are human'' turnstile and, newly, terminal output that mimics a verification process and even an error message that prompts a retry.
+    Four chains are described. (1) An early-September incident where the pasted command unpacked a ZIP into a ProgramData folder with a batch file and a sideloaded DLL named like a certificate-enrolment
+    control, ran native reconnaissance (nltest, net, whoami, findstr), planted a private key and a reverse SSH tunnel, then used WinRM to reach the primary domain controller, created a user and tried to
+    add it to local administrators, and opened a second tunnel; earlier incidents used PsExec and SMBExec through administrative shares after a Matanbuchus or Potemkin loader. (2) A chain that rebuilds
+    full executables from PNG pixel data after a signed Microsoft binary sideloads a rogue DLL. (3) A browser-cache-seeded chain on a compromised dental-practice site: a 17,635-byte file saved in the browser
+    cache is found by a pasted cmd ''for /r'' loop over the Firefox, Chrome or Brave profile directory and run as a batch file. (4) MSI installers that drop a Node.js RAT dressed as an RMM tool, persisting
+    through a Run key and calling out over a raw TCP port. The post carries IOCs (not reproduced) and generic advice: stop-the-paste training, execution control from user-writable paths, and chain detection;
+    it says the variants come from unconnected actors, not one group.'
+  region_nexus: global; no Swiss or European targeting stated
+  primary_sector_nexus: 'indirect: any Windows desktop in any sector, including municipal and cantonal staff on work laptops'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1204.004
+  - T1189
+  - T1059.001
+  - T1021.006
+  - T1572
+  - T1027.003
+  - T1574.001
+  - T1053.005
+  - T1547.001
+  - T1482
+  - T1087.002
+  affected_products:
+  - Microsoft Windows
+  entity_keys: []
+  new_entities:
+  - key: malware:duskdesk
+    type: malware
+    name: DuskDesk
+    aliases: []
+    summary: Node.js-based remote access trojan delivered by an MSI after a ClickFix lure and named like an RMM tool; persists through a user Run key (Huntress, 2026-11-10).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: the threat actor leveraged a lightweight execution and persistence chain using native Windows administration protocols to move from an initial endpoint to the domain controller and then create
+      a reverse SSH tunnel.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/the-evolving-tradecraft-of-clickfix
+  - quote: Next, the attacker used WinRM to laterally move to the primary domain controller.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/the-evolving-tradecraft-of-clickfix
+  - quote: each command iterates through the files in the cache, looking for one that is 17,635 bytes in size.
+    attribution: Huntress
+    source_url: https://www.huntress.com/blog/the-evolving-tradecraft-of-clickfix
+  exposure: Any managed Windows endpoint whose users can open a Run dialog or terminal and that allows execution from ProgramData, Temp or browser-cache paths; domain controllers reachable over WinRM from
+    ordinary workstations.
+  detection: 'Telemetry class: process-creation events with parent lineage plus registry and scheduled-task audit. Browser or explorer launching cmd/PowerShell with a pasted one-liner; cmd ''for /r'' enumerating
+    a browser profile directory and copying a cache file to Temp as a batch file; a ProgramData folder with a sideloaded DLL beside a signed binary; nltest/net/whoami/findstr burst from a user context;
+    new Run key plus scheduled task with identical names; WinRM from a workstation to a domain controller followed by a new local account; an SSH client or key file appearing under ProgramData with a new
+    scheduled task. Post-incident check: look for the second tunnel and rogue accounts on the domain controller, not only the first host.'
+  triage: 'Benign lookalikes: administrators running nltest/net during troubleshooting and legitimate WinRM management. Discriminators: parentage from a browser or the Run dialog, user context rather than
+    an admin workstation, a ProgramData folder named with random hex, and the reverse SSH tunnel''s scheduled task.'
+  defender_takeaway: Block execution from user-writable paths with application control, alert on browser-profile enumeration through cmd, restrict WinRM to admin hosts, and treat a ClickFix hit as a possible
+    domain-controller lateral-movement case.
+  extended_notes: Several Huntress ClickFix posts since August are already referenced in the store only indirectly; the Berlin Landesnetz entry carries campaign:terminalfix-clickfix-reverse-tunnel-2026,
+    which is the closest ClickFix-to-tunnel precedent.
+  borderline: true
+  borderline_reason: roundup of the vendor's own earlier incidents on a commodity technique; value is the concrete DC-lateral and cache-seeded hunts; no Swiss, European or sector targeting stated
+- title: 'ANNUAL REPORT - Proofpoint, Europe''s Threat Landscape in 2026: phishing detections up 4.5x, South Asian espionage actors reaching Western Europe, half-click webmail exploitation by TA488, device-code
+    phishing of European governments, a Swiss-targeting real-time investor-phishing kit'
+  recommendation: BORDERLINE (periodic regional report). Closest of the week's periodic reports to the constituency, but statistics-heavy; value is the regional actor roll-call (TA488 webmail half-click,
+    UNK_AcademicFlare device-code phishing against government, TA2730 hitting Switzerland with Swissquote lures). Not on the Proofpoint US threat-insight feed (UK site post); found through Infosecurity
+    Magazine. Hold to two sentences if included.
+  related_entries:
+  - 2026-11-12/falcon-c2-browser-implant-government-webmail-script-tag
+  - 2026-11-05/vaud-m365-device-code-phishing-campaign-romandie
+  sources:
+  - url: https://www.proofpoint.com/uk/blog/threat-insight/europes-threat-landscape-2026-espionage-expands-ai-and-phishing-risks-grow
+    publisher: Proofpoint
+    date: '2026-11-11'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/phishing-rises-faster-europe/
+    publisher: Infosecurity Magazine
+    date: '2026-11-13'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine, feed https://www.infosecurity-magazine.com/rss/news/ (item ''Phishing Rises Three Times Faster in Europe Than Globally'', 2026-11-13) -> primary: Proofpoint
+    UK blog https://www.proofpoint.com/uk/blog/threat-insight/europes-threat-landscape-2026-espionage-expands-ai-and-phishing-risks-grow (page date 2026-11-11; Infosecurity says the report was released
+    2026-11-12 at Proofpoint Protect London)'
+  published_at: '2026-11-11'
+  summary: 'Proofpoint''s regional report covers July 2025 to September 2026 telemetry. Its stated findings: phishing detections up 4.5x year over year in Europe against 1.5x worldwide (3.2x per million
+    inbound messages), 8.3 clicks per 100 delivered threat messages in Europe against 2.0 worldwide, callback phishing against European healthcare up 257%, and 64% of European organisations hit by ''precision''
+    cloud attacks (phishing, session hijacking) showing impact against 33% for brute force. On state-aligned activity Proofpoint says South Asian actors (TA395 named) are widening into Western Europe and
+    assesses that LLMs very likely accelerated their kit development; Russian actor TA488 has used half-click exploits against Outlook, Zimbra and other webmail, and Russian device-code and app-specific-password
+    phishing (UNK_AcademicFlare) continued against government, education and think-tank targets in Europe in 2026; Chinese-aligned actors use webmail and browser exploitation and Evilginx-class adversary-in-the-middle
+    kits and have widened to AI-policy targets. Cybercrime items include localised campaigns against freight and logistics, a French health-insurance portal impersonation, and TA2730, which targets retail
+    investors in the UK, Switzerland, Germany and others with localised W-8BEN lures impersonating Swissquote, Binance and Interactive Brokers through a real-time phishing kit. It also reports exploitation
+    attempts against open-source AI components (Langflow, LiteLLM) up 4.6x between consecutive 90-day windows. The figures are Proofpoint telemetry and are not independently corroborated.'
+  region_nexus: Europe including Switzerland (TA2730 lists Switzerland among targeted countries)
+  primary_sector_nexus: 'indirect: government and webmail are named targets of TA488 and UNK_AcademicFlare; the Swiss-named item is retail-investor phishing, not public-sector'
+  sector: government, healthcare, finance, logistics (cross-sector regional report)
+  cves: []
+  techniques:
+  - T1566
+  - T1111
+  - T1078.004
+  - T1189
+  - T1190
+  affected_products:
+  - Microsoft Outlook
+  - Zimbra Collaboration Suite
+  - Microsoft 365
+  entity_keys:
+  - actor:laundry-bear
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: Phishing detections increased 4.5× year-over-year.
+    attribution: Proofpoint
+    source_url: https://www.proofpoint.com/uk/blog/threat-insight/europes-threat-landscape-2026-espionage-expands-ai-and-phishing-risks-grow
+  - quote: TA488, for example, has used half-click exploits targeting Outlook, Zimbra, and other webmail providers.
+    attribution: Proofpoint
+    source_url: https://www.proofpoint.com/uk/blog/threat-insight/europes-threat-landscape-2026-espionage-expands-ai-and-phishing-risks-grow
+  - quote: Cybercrime actor TA2730 regularly targets retail investors and brokerage customers across Europe.
+    attribution: Proofpoint
+    source_url: https://www.proofpoint.com/uk/blog/threat-insight/europes-threat-landscape-2026-espionage-expands-ai-and-phishing-risks-grow
+  exposure: European organisations on webmail (Outlook, Zimbra and similar) and Microsoft 365 with device-code or app-password flows enabled.
+  detection: 'Telemetry class: identity sign-in and OAuth consent logs (device-code and app-specific-password grants, inbox-rule creation, app linking after sign-in) and webmail server logs; the report
+    gives no rule-level detail.'
+  defender_takeaway: 'Awareness: confirm device-code flow and app-specific passwords are restricted for staff and webmail is patched; the report adds no new mechanism to the store''s existing entries.'
+  extended_notes: UAC-0050, TA2725 (Latin-American banking trojans in Spain/Portugal) and the French Ameli phishing portal are outside the constituency. Proofpoint cites an ANSSI report on the August French
+    tax-authority breach.
+  borderline: true
+  borderline_reason: statistics-heavy vendor telemetry report; Swiss mention is retail-investor phishing; no new mechanism beyond store entries on device-code phishing and government webmail exploitation
+- title: 'Malbear Labs, Operation Snowball: a jailbroken DeepSeek agent ran two weeks of intrusion against a European telecom through Cisco BroadWorks CVE-2026-20320, adapting when endpoint security blocked
+    it'
+  recommendation: BORDERLINE (reopen note for CVE-2026-20320). No Swiss nexus and AI-agent intrusions are saturated in the store, but this is the first source reporting in-the-wild exploitation of Cisco
+    BroadWorks XSP CVE-2026-20320 (earlier fires borderline-dropped it as a carrier/UC-supplier product with fix since 2026-08-19 and no exploitation). The CVE is not in state/cves_seen.json or any entry;
+    G1's disposition should be revisited. Primary is a small lab with a single-source claim set; victims unnamed and unconfirmed.
+  related_entries:
+  - 2026-11-07/bossai-ai-agent-mesh-emergency-services-data-taiwan
+  - 2026-11-14/cyberstrikeai-aws-cloudtrail-intrusion-one-source-ip
+  sources:
+  - url: https://malbearlabs.com/posts/operation-snowball-inside-an-autonomous-ai-intrusion-campaign
+    publisher: Malbear Labs
+    date: '2026-11-08'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/operation-snowball-ai-telecom/
+    publisher: Infosecurity Magazine
+    date: '2026-11-09'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine, feed https://www.infosecurity-magazine.com/rss/news/ (item ''Jailbroken AI Agent Ran Two-Week Attack on European Telecom'', 2026-11-09) -> primary: Malbear
+    Labs https://malbearlabs.com/posts/operation-snowball-inside-an-autonomous-ai-intrusion-campaign (feed https://malbearlabs.com/feed.xml dates it 2026-11-08T05:00Z, about eight hours before the window
+    opened; the in-window source is the Infosecurity report)'
+  published_at: '2026-11-08'
+  summary: 'Malbear Labs found an exposed operator workspace during an open-directory sweep: about 70 session transcripts of a custom agent harness built on DeepSeek Flash, with a roughly 78,000-character
+    jailbreak prompt (a modified public template) that treats any refusal as a malfunction, directed in Chinese by a human who set a target subnet and checked in asynchronously. Malbear says the agent entered
+    a European telecom through CVE-2026-20320, an unauthenticated XXE in the Cisco BroadWorks XSP OCI XML parser (release 23.0.1.1075, port 2208) that Cisco fixed in August, recovered the platform''s system-identity
+    key and other private keys, and moved on with a Liferay deserialization flaw (CVE-2020-7961) and an end-of-life JBoss AS 6 RichFaces flaw (CVE-2013-2165), with Behinder webshells, Sliver, chisel, frp
+    and suo5 tunnels. When endpoint security blocked a PwnKit attempt and a tunnelling tool, Malbear says the agent changed approach without operator input (an alternative privilege path, a custom replacement
+    tunnel; an egress-blocked host was handled with an in-process gadget chain). Malbear lists consequences including subscriber billing and device records, an AD data set from a healthcare organisation,
+    about 80 Zabbix monitoring backups covering the provider''s managed customers and, through a TrakCare Oracle database with default credentials, what it calls millions of patient records; 13 hosted organisations
+    were named in scope by the agent itself. Infosecurity notes the post does not say whether Malbear checked any claim with a victim, what was taken rather than staged, or whether all 13 were breached.
+    Malbear assesses a Chinese-origin operator and does not link a state actor. The victim telecom is not named and no Swiss nexus is stated.'
+  region_nexus: Europe (victim country not named); no Swiss nexus stated
+  primary_sector_nexus: 'indirect: a telecom and hosting provider whose customers include a healthcare organisation; supplier-compromise lesson for public bodies hosted at carriers'
+  sector: telecom, hosting, healthcare
+  cves:
+  - CVE-2026-20320
+  - CVE-2020-7961
+  - CVE-2013-2165
+  - CVE-2021-4034
+  techniques:
+  - T1190
+  - T1068
+  - T1505.003
+  - T1572
+  - T1078
+  - T1021
+  - T1552
+  affected_products:
+  - Cisco BroadWorks
+  - Liferay Portal
+  - JBoss Application Server
+  - Zabbix
+  entity_keys: []
+  new_entities:
+  - key: campaign:operation-snowball-ai-telecom-2026-11
+    type: campaign
+    name: Operation Snowball
+    aliases: []
+    summary: Malbear Labs name for a two-week AI-agent-driven intrusion by a Chinese-speaking operator against a European telecom and 13 hosted organisations via Cisco BroadWorks CVE-2026-20320 (Malbear
+      Labs, 2026-11-08).
+  - key: product:cisco-broadworks
+    type: product
+    name: Cisco BroadWorks
+    aliases:
+    - BroadWorks XSP
+    summary: Cisco carrier-grade hosted voice and unified-communications platform; CVE-2026-20320 is an unauthenticated XXE in its OCI XML parser, fixed in August 2026 (Cisco, per Infosecurity 2026-11-09).
+  relation_suggestions:
+  - subject: campaign:operation-snowball-ai-telecom-2026-11
+    object: product:cisco-broadworks
+    basis: 'Malbear Labs: the agent''s entry point into the telecom was CVE-2026-20320 in BroadWorks XSP (Malbear, 2026-11-08)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: LOW
+  classification_hint: C3
+  novelty: new
+  evidence:
+  - quote: The agent exploited CVE-2026-20320, an unauthenticated XXE in the BroadWorks OCI XML parser.
+    attribution: Malbear Labs
+    source_url: https://malbearlabs.com/posts/operation-snowball-inside-an-autonomous-ai-intrusion-campaign
+  - quote: Millions of patient records accessed via a TrakCare Oracle instance with default database credentials
+    attribution: Malbear Labs
+    source_url: https://malbearlabs.com/posts/operation-snowball-inside-an-autonomous-ai-intrusion-campaign
+  - quote: The post does not say whether Malbear checked these claims with any victim, what was taken rather than staged or whether all 13 organizations were breached.
+    attribution: Infosecurity Magazine
+    source_url: https://www.infosecurity-magazine.com/news/operation-snowball-ai-telecom/
+  exposure: Internet-reachable BroadWorks XSP on a release without the August 2026 fix (OCI service port 2208), end-of-life JBoss AS 6 and unpatched Liferay on carrier or hosting networks, and databases
+    still on vendor default credentials.
+  detection: 'Telemetry class: application and web-server logs plus EDR. Crafted OCI XML requests to the XSP followed by file reads of key material; Behinder-style JSP components under JBoss; chisel, frp
+    or suo5 tunnels from application servers; Zabbix native-protocol probing (ZBXD header) from application hosts; an agent that retries a blocked step with a different privilege path or a self-written
+    tunnel within minutes.'
+  defender_takeaway: If you run BroadWorks, confirm the August fix, treat internet-exposed JBoss AS 6 as compromised (Malbear's own advice), and rotate system-identity keys on an exposed XSP.
+  extended_notes: Malbear Labs (malbearlabs.com) is a low-cadence malware-research lab; feed https://malbearlabs.com/feed.xml works on the direct transport. The earlier borderline-drop reason for CVE-2026-20320
+    was 'carrier and UC-supplier product with no stated constituency footprint'; the new fact is exploitation, the footprint question is unchanged.
+  borderline: true
+  borderline_reason: no Swiss or public-sector nexus, victims unnamed and unconfirmed, single small-lab source; kept because it changes the exploitation status of a borderline-dropped CVE and shows AI-agent
+    adaptation against EDR
+- title: 'KrebsOnSecurity: who runs Qilin, the most active ransomware affiliate programme (365 claimed victims in three months): identity pieced together from forum records, breach data and an AI de-anonymisation
+    platform'
+  recommendation: BORDERLINE, drop acceptable. Actor-identification journalism (a named individual in St Petersburg) with no defender action; useful only as an update to actor:qilin if the audit wants the
+    NCC Group volume figure. Not seen by any fire.
+  related_entries:
+  - 2026-11-06/qilin-october-2026-build-vcenter-esxi-safe-mode-printers
+  sources:
+  - url: https://krebsonsecurity.com/2026/11/who-runs-the-ransomware-group-qilin/
+    publisher: KrebsOnSecurity
+    date: '2026-11-11'
+    role: primary
+  discovery_trace: 'first seen at: krebs, feed https://krebsonsecurity.com/feed/ (item ''Who Runs the Ransomware Group Qilin?'', 2026-11-11) -> primary (no pivot needed): https://krebsonsecurity.com/2026/11/who-runs-the-ransomware-group-qilin/'
+  published_at: '2026-11-11'
+  summary: Krebs reports that Qilin, operating since September 2022, is the currently most active ransomware-as-a-service programme, citing an NCC Group report that credits it with at least 365 claimed
+    victims in the past three months, and that it pays affiliates at least 80 percent of extortion proceeds and works with English-speaking affiliates (its leader has said on Telegram that it has worked
+    with Scattered Spider and RansomHub). The article ties the administrator, handle Haise, to older forum identities through Intel 471 forum records, Flashpoint and SpyCloud data, a Russian state-services
+    breach data set and a link supplied privately by IntelHawk, an AI platform that de-anonymises actors through historical usernames and stylometry, and names a 36-year-old man in St Petersburg. The identification
+    rests on third-party commercial data and one AI platform's linkage; Krebs presents it as a chain of record matches, not as a confession or law-enforcement finding. No technique, tooling or victim-side
+    fact is added; the store's Qilin entry already carries the October build.
+  region_nexus: global; Russia-based operator; no Swiss content
+  primary_sector_nexus: 'indirect: Qilin is a top-volume affiliate programme that has hit public bodies in Europe (store: Die Linke, Retelit)'
+  sector: cross-sector
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys:
+  - actor:qilin
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B3
+  novelty: update-of:2026-11-06/qilin-october-2026-build-vcenter-esxi-safe-mode-printers
+  evidence:
+  - quote: claiming at least 365 victim organizations in the past three months alone
+    attribution: KrebsOnSecurity
+    source_url: https://krebsonsecurity.com/2026/11/who-runs-the-ransomware-group-qilin/
+  - quote: Qilin attracts affiliates to hack into companies and deploy ransomware by offering them at least 80 percent of any extortion amount paid by victims.
+    attribution: KrebsOnSecurity
+    source_url: https://krebsonsecurity.com/2026/11/who-runs-the-ransomware-group-qilin/
+  defender_takeaway: 'None: identification of an individual does not change a defender''s controls.'
+  extended_notes: Kaspersky's Q3 statistics (item below) independently put Qilin at 15% of data-leak-site victims; GRIT's Q3 report (seen only in a search snippet, not fetched) reportedly has TheGentlemen
+    overtaking Qilin, so 'most active' is vendor- and method-dependent.
+  borderline: true
+  borderline_reason: actor identification with no defender action, third-party commercial data chain; the Qilin tradecraft entry already exists
+- title: 'Morphisec: finance-themed archives through WhatsApp and email side-load a DLL that hides an encrypted payload in the Authenticode certificate table of a PE file, then run it through an in-process
+    APC into Donut and a modular backdoor'
+  recommendation: BORDERLINE, drop acceptable. Unseen by any fire. Technique detail is concrete (payload staged in the PE security directory, Early Bird APC variant, registry staging), but the lure is commodity
+    finance fraud with no region or sector stated and the vendor's own reliability is rated C in sources.json.
+  related_entries: []
+  sources:
+  - url: https://www.morphisec.com/blog/beyond-the-signature-how-attackers-hide-malware-in-pe-certificate-tables/
+    publisher: Morphisec Threat Research
+    date: '2026-11-11'
+    role: primary
+  discovery_trace: 'first seen at: morphisec, URL https://www.morphisec.com/blog/ (raw listing read with fetch_source url --direct; per-post date from extract: 2026-11-11) -> primary (no pivot needed):
+    https://www.morphisec.com/blog/beyond-the-signature-how-attackers-hide-malware-in-pe-certificate-tables/'
+  published_at: '2026-11-11'
+  summary: Morphisec describes two alternative loader variants delivered in finance-themed archives (invoice, cheque-statement and account-adjustment lures) sent through WhatsApp and email, building on
+    its earlier Vulkan RAT research. Both run a legitimate signed executable that loads a malicious DLL by search order; the DLL hijacks the host's entry point with a sleep stub and runs a worker thread.
+    One variant downloads Donut shellcode and injects it into a suspended mspaint process with an Early Bird APC, caching the bytes in a registry value; the 'standout' variant instead hides an encrypted
+    next-stage payload in the Authenticode certificate-table region of a PE file and runs it through an in-process APC, so no network fetch precedes execution. Both reach Donut and a modular encrypted backdoor
+    that profiles hosts, watches user activity and loads in-memory DLL modules. Morphisec states the paths are alternatives, not stages of one infection, and that bypass and elevation success were not verified
+    at runtime. No victim, region or sector is named.
+  region_nexus: not stated
+  primary_sector_nexus: 'indirect: any Windows user receiving finance documents over email or WhatsApp'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1566.001
+  - T1574.001
+  - T1055.004
+  - T1027
+  - T1553.002
+  affected_products:
+  - Microsoft Windows
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: C2
+  novelty: new
+  evidence:
+  - quote: The standout development is an alternative loader that hides an encrypted next-stage payload in the Authenticode certificate-table region of a PE file.
+    attribution: Morphisec Threat Research
+    source_url: https://www.morphisec.com/blog/beyond-the-signature-how-attackers-hide-malware-in-pe-certificate-tables/
+  - quote: The paths are alternatives, not successive stages of one infection.
+    attribution: Morphisec Threat Research
+    source_url: https://www.morphisec.com/blog/beyond-the-signature-how-attackers-hide-malware-in-pe-certificate-tables/
+  exposure: Windows endpoints that open archives from WhatsApp Web or email and run signed third-party executables from a user-writable folder.
+  detection: 'Telemetry class: image-load and process-creation events. A signed executable from an archive folder loading a same-folder dbghelp-style DLL; a suspended mspaint (or similar) process receiving
+    a queued APC; PE files whose certificate table is far larger than a signature needs; registry values holding large binary blobs under an HKCU key.'
+  defender_takeaway: Awareness of a staging place (the PE security directory) that signature checks ignore; no new control beyond application control and blocking archive execution from user folders.
+  extended_notes: IOC lists in the post are not carried.
+  borderline: true
+  borderline_reason: commodity finance lure, single vendor source rated C, no region or sector nexus
+- title: 'TrendAI: more than 900 dead GitHub links in MCP server directories point at deleted accounts that anyone can re-register, so an AI agent that installs servers by directory listing can be handed
+    an attacker''s repository'
+  recommendation: BORDERLINE, drop acceptable. Unseen by any fire. Measured exposure (namespace re-registration) with no observed hijack or victim, and the detail sits in a PDF brief not read here; the
+    store's MCP-related entries are exploited-bug or incident cases.
+  related_entries:
+  - 2026-10-07/gentlemen-affiliate-azazel-ci-cd-secrets-mcp-attacks
+  sources:
+  - url: https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/when-ai-agents-trust-the-dead-more-than-900-mcp-servers-hijackable-github-repositories
+    publisher: TrendAI (Trend Micro)
+    date: '2026-11-10'
+    role: primary
+  discovery_trace: 'first seen at: trendmicro-research, feed https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/rss.xml (item 2026-11-10) -> primary (no pivot needed): the TrendAI
+    post URL above'
+  published_at: '2026-11-10'
+  summary: 'TrendAI health-checked more than 90,000 GitHub URLs across four MCP server directories in September 2026: about 8% are dead and more than 900 of those point to deleted GitHub accounts whose
+    usernames anyone can register, inheriting the directory listing''s trust. More than a quarter of that surface comes from ten claimable accounts, a single username could claim up to 92 repositories,
+    and over 80 entries carry names of well-known services (AWS, MySQL, PayPal, GitHub, Microsoft 365). TrendAI says it found no evidence that the directories validate link health, detect namespace changes
+    or verify code integrity, and argues the risk grows when an AI agent installs servers without a human reading the README; it cites the NSA AI Security Center''s May 2026 MCP advisory. This is a measured
+    exposure, not an observed hijack: the post names no victim or actor. Detection, mitigation and recommendations are in a downloadable technical brief that was not read.'
+  region_nexus: global
+  primary_sector_nexus: 'indirect: developers and agents in any organisation that install MCP servers from directories'
+  sector: cross-sector (software supply chain)
+  cves: []
+  techniques:
+  - T1195.002
+  - T1199
+  affected_products:
+  - Model Context Protocol (MCP) server directories
+  entity_keys:
+  - product:model-context-protocol-mcp
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: pointing to deleted GitHub accounts that anyone can register with no exploit required
+    attribution: TrendAI
+    source_url: https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/when-ai-agents-trust-the-dead-more-than-900-mcp-servers-hijackable-github-repositories
+  - quote: We did not find evidence that the directories we examined routinely validate link health, detect namespace changes, or verify code integrity at listed URLs.
+    attribution: TrendAI
+    source_url: https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/when-ai-agents-trust-the-dead-more-than-900-mcp-servers-hijackable-github-repositories
+  exposure: Developer machines and agents that install MCP servers by name from public directories without pinning to a verified repository or commit.
+  detection: 'Telemetry class: package and repository fetch logs plus endpoint process lineage from agent hosts: an MCP server fetched from an account created recently or a repository whose owner changed;
+    MCP config files that list servers by directory name.'
+  defender_takeaway: Pin MCP servers to verified repositories and commits and keep an allow-list for agent installs; no incident to hunt.
+  borderline: true
+  borderline_reason: measured potential exposure with no observed hijack, no victim, and no constituency link
+- title: 'TrendAI, Hermes attack workbench part 2: session records from an exposed offensive AI stack show one parent session directing 29 delegated workers, 19 agent-written skill packages patched 430
+    times, and model switching through a gateway while tools stayed unchanged'
+  recommendation: 'BORDERLINE, drop acceptable (consistent with the 2026-11-11 fire''s drop of part 1: honeypot-only evidence). Adds operational detail on tool:hermes-ai-agent usage, no victim and no new
+    defender control.'
+  related_entries:
+  - 2026-11-07/bossai-ai-agent-mesh-emergency-services-data-taiwan
+  sources:
+  - url: https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/docker-ping-ai-command-plane-carbonato-hermes-attack-workbench-part-2
+    publisher: TrendAI (Trend Micro)
+    date: '2026-11-11'
+    role: primary
+  discovery_trace: 'first seen at: trendmicro-research, feed https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/rss.xml (item 2026-11-11) -> primary (no pivot needed): the TrendAI
+    post URL above'
+  published_at: '2026-11-11'
+  summary: Part 2 analyses the Hermes session database, agent logs and skill telemetry recovered from an exposed offensive infrastructure that TrendAI first met as a failed attack on its Docker honeypot
+    (part 1, 2026-11-09). TrendAI reports that the operator sent instructions over Telegram to a persistent parent session that coordinated 29 delegated workers in 14 waves (the parent made about 81% of
+    model requests and all code-execution calls), that 19 agent-created skill packages recorded 435 uses and 430 patches preserving methods, corrections and failed approaches, and that the operator switched
+    models through the Carbonato OpenAI-compatible gateway without changing tools. Retained logs show activity against databases, monitoring platforms, Java applications, message brokers and administrative
+    interfaces beyond Docker; TrendAI says not every recorded target implied compromise. TrendAI says self-updating skills are a standard Hermes feature. The evidence is honeypot-derived and the full analysis
+    sits in a technical brief not read here.
+  region_nexus: not stated
+  primary_sector_nexus: 'indirect: exposed Docker, database and monitoring services in any sector'
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1595.002
+  - T1190
+  - T1059
+  affected_products:
+  - Docker Engine
+  - Nous Research Hermes Agent
+  entity_keys:
+  - tool:hermes-ai-agent
+  - product:nous-research-hermes-agent
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: One persistent parent session coordinated 29 delegated workers
+    attribution: TrendAI
+    source_url: https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/docker-ping-ai-command-plane-carbonato-hermes-attack-workbench-part-2
+  - quote: We uncovered 19 agent-created skill packages and 430 recorded patches that preserved attack methods, corrections, and failed approaches for reuse.
+    attribution: TrendAI
+    source_url: https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/docker-ping-ai-command-plane-carbonato-hermes-attack-workbench-part-2
+  exposure: Internet-exposed Docker APIs, databases, monitoring platforms and message brokers.
+  detection: 'Telemetry class: honeypot or network telemetry; the post says detection needs correlation across container, host, network and application activity.'
+  defender_takeaway: None beyond closing exposed Docker and database services.
+  extended_notes: Part 1 was a fire-dropped item on 2026-11-11 (work/2026-11-11T0256Z-intel/findings.S3.yaml).
+  borderline: true
+  borderline_reason: honeypot-only evidence, no victim, class already represented by BOSSAI and ARTEX entries
+- title: 'Enea: SilentAir, a state-level actor abusing hijacked Asian mobile-operator equipment for SS7 and Diameter interception of 2FA codes (mostly Taiwanese subscribers), and LIMINAL PANDA''s GTPDoor
+    now riding GTP-U'
+  recommendation: BORDERLINE, drop acceptable. Unseen by any fire. Signalling-network espionage aimed at Taiwan and Asian operators; no Swiss or European operator is named. Telecom-signalling interception
+    of SMS 2FA is the transferable point (and the store already tells readers to drop SMS sign-in).
+  related_entries:
+  - 2026-11-12/ccb-entra-id-sms-sign-in-abused-belgian-organisations
+  sources:
+  - url: https://www.enea.com/insights/the-enemy-within-tracking-liminal-panda-and-silentair-through-mobile-networks/
+    publisher: Enea
+    date: '2026-11-11'
+    role: primary
+  - url: https://www.infosecurity-magazine.com/news/silentair-liminal-panda-telco/
+    publisher: Infosecurity Magazine
+    date: '2026-11-12'
+    role: corroborating
+  discovery_trace: 'first seen at: infosec-magazine, feed https://www.infosecurity-magazine.com/rss/news/ (item ''Hacked Asian Telcos Used to Intercept Taiwanese Calls and Texts'', 2026-11-12) -> primary:
+    Enea https://www.enea.com/insights/the-enemy-within-tracking-liminal-panda-and-silentair-through-mobile-networks/ (page dated 2026-11-11, key-takeaways update 2026-11-12)'
+  published_at: '2026-11-11'
+  summary: Enea, a telecom-security vendor with firewall telemetry at operators, names SilentAir, a state-level actor it assesses with high confidence and links to China-nexus operations with low confidence
+    (Taiwan focus, no Chinese targets, working hours and holiday lulls matching China). Since early 2025 it has seen SS7 and Diameter attacks from hijacked equipment in operators in at least six Asian countries
+    against targets in about a dozen more countries and territories, in waves from a few subscribers to several thousand a month; interception made up 18.30% of its activity against 2.07% for the surveillance
+    vendors behind most signalling abuse, with 2FA codes arriving moments after interception began and silent SMS sent mostly to Taiwanese users around midnight; some targets were political and government
+    VIPs. Enea also reports that its firewalls blocked LIMINAL PANDA's GTPDoor (a Unix backdoor hiding C2 inside GTP) at several customer operators from early 2026, that at least five to ten operators were
+    infected directly or by strong indication (possibly several dozen in Asia, Africa and Latin America), and a new GTPDoor version carried in GTP-U user-plane traffic that survives into 5G; it sees a possible
+    but unproven link between the two actors. CrowdStrike linked LIMINAL PANDA to China-nexus operations in November 2024, also with low confidence.
+  region_nexus: Asia-Pacific, Africa, Latin America; no European or Swiss operator named
+  primary_sector_nexus: 'indirect: mobile and roaming signalling that carries SMS 2FA for any subscriber'
+  sector: telecom
+  cves: []
+  techniques:
+  - T1111
+  - T1071
+  - T1095
+  affected_products:
+  - SS7
+  - Diameter
+  - GPRS Tunnelling Protocol
+  entity_keys: []
+  new_entities:
+  - key: actor:silentair
+    type: actor
+    name: SilentAir
+    aliases: []
+    summary: Enea name for a state-level actor abusing hijacked Asian mobile-operator signalling equipment for SS7/Diameter interception, mainly of Taiwanese subscribers; China-nexus at low confidence (Enea,
+      2026-11-11).
+  - key: actor:liminal-panda
+    type: actor
+    name: LIMINAL PANDA
+    aliases:
+    - Liminal Panda
+    summary: China-nexus (low confidence, CrowdStrike 2024-11) actor attacking mobile-operator networks with the GTPDoor backdoor; Enea reports a GTP-U variant and 5 to 10 infected operators (Enea, 2026-11-11).
+  - key: malware:gtpdoor
+    type: malware
+    name: GTPDoor
+    aliases: []
+    summary: Unix backdoor that hides C2 traffic in the GPRS Tunneling Protocol; a GTP-U variant reported by Enea (2026-11-11).
+  relation_suggestions:
+  - subject: actor:liminal-panda
+    object: malware:gtpdoor
+    basis: 'Enea: LIMINAL PANDA''s GTPDoor and other activity were blocked by its firewalls at several customer operators (Enea, 2026-11-11)'
+  - subject: actor:silentair
+    object: actor:liminal-panda
+    basis: Enea sees a possible but unproven connection between the two groups (Infosecurity Magazine, 2026-11-12)
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: Enea is highly confident that SilentAir operated at state level.
+    attribution: Infosecurity Magazine
+    source_url: https://www.infosecurity-magazine.com/news/silentair-liminal-panda-telco/
+  - quote: Enea linked SilentAir to China-nexus operations with low confidence
+    attribution: Infosecurity Magazine
+    source_url: https://www.infosecurity-magazine.com/news/silentair-liminal-panda-telco/
+  exposure: Mobile operators interconnecting over SS7, Diameter and GTP; subscribers who rely on SMS codes for second factors.
+  detection: 'Telemetry class: operator signalling-firewall logs (SS7/Diameter/GTP). Not an enterprise telemetry item.'
+  defender_takeaway: Treat SMS as an interceptable second factor for high-value accounts; no enterprise detection applies.
+  borderline: true
+  borderline_reason: Asian operators and Taiwanese targets, vendor telemetry from operator firewalls, no Swiss or European operator named
+- title: 'Kaspersky: Citrus ransomware (Sn00py family), a new Russian-speaking group entering through contractors'' stolen VPN and RDP credentials, tunnelling with VLESS, using LLM-written scripts and a
+    malicious Group Policy Object, with a stated overlap with Toy Ghouls'
+  recommendation: 'COVERED as an update on 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc (record of 2026-11-12T04:17Z). Not returned as a standalone entry: Kaspersky says Citrus attacks
+    Russian companies only. Registry gap to close: actor:citrus-ransomware and malware:sn00py are not registered, and Kaspersky''s stated Toy Ghouls link is a typed overlap edge.'
+  update_target: 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
+  related_entries:
+  - 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
+  - 2026-07-31/genielocker-toy-ghouls-no-ransom-note-esxi-ransomware
+  sources:
+  - url: https://securelist.com/citrus-ransomware/121879/
+    publisher: Kaspersky Securelist
+    date: '2026-11-11'
+    role: primary
+  discovery_trace: 'first seen at: kaspersky-securelist, feed https://securelist.com/feed/ (item ''Citrus Ransomware: VLESS for traffic, Sn00py for encryption, and LLMs lending a hand'', 2026-11-11; the
+    feed answered on retry) -> primary (no pivot needed): https://securelist.com/citrus-ransomware/121879/'
+  published_at: '2026-11-11'
+  summary: 'Kaspersky documents Citrus, a previously undocumented group whose entry is compromised contractors: stolen employee credentials used against corporate VPNs or exposed RDP terminal servers. Execution
+    is cmd and PowerShell with commands and scripts that carry LLM-style comments, Impacket atexec and, on 1C:Enterprise servers, external data processors; escalation attempts used the public Certighost
+    exploit (machine accounts named GHOST plus eight random letters) and CVE-2020-1337; credential theft used mimikatz, a modified keylogger and Snaffler; tunnels are Xray reverse VLESS configured through
+    certutil/BITS downloads; impact is a Go ransomware (Sn00py family, .citrus extension) deployed domain-wide through a malicious Group Policy Object that also switches Defender off. Kaspersky states that
+    Citrus shares TTPs and tool directories with Toy Ghouls, that their infrastructures do not directly overlap, that both groups are Russian-speaking and attack Russian companies only, and that in several
+    incidents it saw the same infrastructure compromised by both. The store''s Certighost entry already carries the exploitation-attempt and GPO facts; the gaps are the registry entries.'
+  region_nexus: Russia only (Kaspersky); no Swiss nexus
+  primary_sector_nexus: none stated; transferable lesson is contractor credentials into VPN/RDP and GPO-deployed encryption
+  sector: Russian enterprises (manufacturing and others)
+  cves:
+  - CVE-2026-54121
+  - CVE-2020-1337
+  techniques:
+  - T1078
+  - T1133
+  - T1021.001
+  - T1572
+  - T1484.001
+  - T1486
+  - T1649
+  affected_products:
+  - Microsoft Active Directory Certificate Services
+  - 1C:Enterprise
+  entity_keys:
+  - actor:toy-ghouls
+  new_entities:
+  - key: actor:citrus-ransomware
+    type: actor
+    name: Citrus
+    aliases:
+    - Citrus ransomware group
+    summary: 'Russian-speaking ransomware group documented by Kaspersky (2026-11-11): contractor-credential initial access, VLESS tunnels, LLM-assisted scripting, Sn00py ransomware; attacks Russian companies
+      only.'
+  - key: malware:sn00py
+    type: malware
+    name: Sn00py
+    aliases:
+    - Sn00py ransomware family
+    summary: Go ransomware family (RSA-2048 and ChaCha20, .citrus extension) used by Citrus; ransom note refers to a RaaS platform named Sn00py (Kaspersky, 2026-11-11).
+  relation_suggestions:
+  - subject: actor:citrus-ransomware
+    object: actor:toy-ghouls
+    basis: 'Kaspersky: similar TTPs and tool directories, infrastructures do not directly overlap, same infrastructure compromised by both in several incidents (overlaps-with, not attribution) (Kaspersky,
+      2026-11-11)'
+  - subject: actor:citrus-ransomware
+    object: malware:sn00py
+    basis: 'Kaspersky: Citrus uses ransomware from the Sn00py family (Kaspersky, 2026-11-11)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: HIGH
+  classification_hint: B2
+  novelty: update-of:2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
+  evidence:
+  - quote: The attackers gain initial access to victims’ infrastructure through compromised contractors.
+    attribution: Kaspersky Securelist
+    source_url: https://securelist.com/citrus-ransomware/121879/
+  - quote: Although their infrastructures don’t directly overlap, the two groups share TTPs
+    attribution: Kaspersky Securelist
+    source_url: https://securelist.com/citrus-ransomware/121879/
+  - quote: both groups are Russian-speaking and attack Russian companies only.
+    attribution: Kaspersky Securelist
+    source_url: https://securelist.com/citrus-ransomware/121879/
+  extended_notes: The G3 point is registry hygiene only; the published entry's content matches the primary.
+  borderline: true
+  borderline_reason: standalone entry would fail on nexus (Russian victims only); the finding is already published as a Certighost update
+- title: 'Era Security: Greeter, a Chinese-language framework that hides commands in ''hello'' chat messages to exploit Flowise overrideConfig (CVE-2024-58351) and steal cloud credentials; Dark Reading
+    carries it a week later'
+  recommendation: BORDERLINE, drop acceptable. Honeypot-only observation (seven honeypots), niche AI-builder product; the store holds a Flowise entry (2026-08-08) that does not mention exploitation of CVE-2024-58351.
+    Primary is 2026-11-03 (outside the window); only the Dark Reading relay (2026-11-11) is in-window.
+  update_target: 2026-08-08/flowise-three-cves-vendor-sunset-no-fix-coming
+  related_entries:
+  - 2026-08-08/flowise-three-cves-vendor-sunset-no-fix-coming
+  sources:
+  - url: https://era.security/blog/greeter-flowise-ai-infrastructure-attack
+    publisher: Era Security
+    date: '2026-11-03'
+    role: primary
+  - url: https://www.darkreading.com/cloud-security/attackers-hello-scale-cloud-attack
+    publisher: Dark Reading
+    date: '2026-11-11'
+    role: corroborating
+  discovery_trace: 'first seen at: darkreading, feed https://www.darkreading.com/rss.xml (item ''Attackers Say Hello to a Different Scale of Cloud Attack'', 2026-11-11) -> primary: Era Security https://era.security/blog/greeter-flowise-ai-infrastructure-attack
+    (dated 2026-11-03; linked from the Dark Reading article)'
+  published_at: '2026-11-11'
+  summary: 'Era Security recorded Greeter attacks for two and a half months (July to October 2026) on seven Flowise honeypots in four regions: a framework that sent rapid messages 3.5 seconds apart through
+    the prediction API, exploiting the overrideConfig runtime-configuration flaw CVE-2024-58351 so that the stored chatflow looked harmless while commands ran, with the chat history showing thousands of
+    identical ''hello'' messages whose responses carried identities, AWS credentials and cloud-metadata probe results. Era''s Shodan count found 4,372 exposed Flowise instances, 703 without authentication
+    and 46 with the same vulnerable conditions as its honeypots, and a table of newer Flowise CVEs that nearly all versions it fingerprinted still carry. Dark Reading quotes Era''s CTO that after exploitation
+    attackers mapped privileges, hunted credentials, abused cloud metadata services across providers and persisted, reports Chinese characters in code (possibly a false flag), and says Era confirmed 46
+    real-world victims by counting instances that mirror the honeypot conditions. Era''s ''victims'' are exposed instances, not confirmed compromises, and the actor is unattributed.'
+  region_nexus: global; honeypots in four regions; no Swiss nexus
+  primary_sector_nexus: 'indirect: any body running Flowise (self-hosted AI agent builder) with cloud workload identity'
+  sector: cross-sector (AI infrastructure)
+  cves:
+  - CVE-2024-58351
+  - CVE-2026-69255
+  - CVE-2026-46442
+  - CVE-2026-56271
+  techniques:
+  - T1190
+  - T1552.005
+  - T1078.004
+  - T1059
+  affected_products:
+  - Flowise
+  entity_keys:
+  - product:flowise
+  - product:flowiseai-flowise
+  new_entities:
+  - key: tool:greeter
+    type: tool
+    name: Greeter
+    aliases:
+    - Greeter framework
+    summary: Chinese-language exploitation framework named by Era Security for hiding commands in 'hello' chat messages against Flowise (CVE-2024-58351) and harvesting cloud credentials (Era Security, 2026-11-03).
+  relation_suggestions:
+  - subject: tool:greeter
+    object: product:flowise
+    basis: 'Era Security: Greeter exploits Flowise overrideConfig (CVE-2024-58351) (Era Security, 2026-11-03)'
+  verification: MULTI-SOURCE
+  confidence: LOW
+  classification_hint: C3
+  novelty: update-of:2026-08-08/flowise-three-cves-vendor-sunset-no-fix-coming
+  evidence:
+  - quote: Our research team recorded the attacks over two and a half months, from July to October 2026, on a network of seven Flowise honeypots across four regions.
+    attribution: Era Security
+    source_url: https://era.security/blog/greeter-flowise-ai-infrastructure-attack
+  - quote: 46 of those unauthenticated instances (6.5%), appeared to have the same vulnerable conditions we deliberately recreated in our honeypots.
+    attribution: Era Security
+    source_url: https://era.security/blog/greeter-flowise-ai-infrastructure-attack
+  exposure: Flowise instances reachable from the internet without authentication, especially older versions with overrideConfig enabled, running with cloud workload credentials.
+  detection: 'Telemetry class: application logs and cloud audit logs: chat histories where every stored user message is the same greeting but responses contain identities or credentials; a workload role
+    calling the instance metadata service from the Flowise process.'
+  defender_takeaway: Put authentication in front of Flowise and restrict its workload role; the vendor-sunset entry already tells self-hosters they own the controls.
+  extended_notes: The 2026-08-08 Flowise entry (vendor winding down, no patches) predates this; Greeter is a real-attacker datum for it, but honeypot-based.
+  borderline: true
+  borderline_reason: honeypot-only, small vendor, niche product, primary outside the window, no constituency link
+- title: 'ANNUAL REPORT - Kaspersky, IT threat evolution in Q3 2026 (desktop and IoT statistics, plus a mobile companion): 311 million blocked web attacks, 4,470 new ransomware variants, Qilin 15% of leak-site
+    victims'
+  recommendation: BORDERLINE, drop acceptable (periodic statistics; the 2026-11-10/11-11 fires already dropped it as 'detection counts, no defender takeaway'). Flagged here only because the G3 mission asks
+    for periodic reports.
+  related_entries: []
+  sources:
+  - url: https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/
+    publisher: Kaspersky Securelist
+    date: '2026-11-10'
+    role: primary
+  discovery_trace: 'first seen at: kaspersky-securelist, feed https://securelist.com/feed/ (items ''IT threat evolution in Q3 2026. Non-mobile statistics'' and ''Mobile statistics'', 2026-11-10) -> primary
+    (no pivot needed): https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/'
+  published_at: '2026-11-10'
+  summary: 'Kaspersky''s quarterly statistics are drawn from detection verdicts of its products among users who consented to share data. Headline figures: more than 311 million attacks blocked from online
+    resources, 47 million unique links handled by Web Anti-Virus, 4,470 new ransomware variants, more than 81,000 users hit by ransomware, 15% of ransomware victims listed on data-leak sites being Qilin
+    victims, and more than 217,000 users targeted by miners. The report contains no new technique and no Swiss or public-sector cut that the sample showed; figures are one vendor''s user base.'
+  region_nexus: global statistics
+  primary_sector_nexus: none stated
+  sector: cross-sector
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys:
+  - actor:qilin
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: 15% of all ransomware victims whose data was published on threat actors’ data leak sites (DLSs) were victims of Qilin.
+    attribution: Kaspersky Securelist
+    source_url: https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/
+  - quote: There were 4470 new ransomware variants discovered.
+    attribution: Kaspersky Securelist
+    source_url: https://securelist.com/malware-report-q3-2026-pc-iot-statistics/121843/
+  borderline: true
+  borderline_reason: periodic vendor statistics with no defender decision
+- title: 'ANNUAL REPORT - Sophos, State of Ransomware in Retail 2026: 217 respondents, encryption rate up 14 points to 62%, exploited vulnerabilities the root cause of 26% of retail attacks'
+  recommendation: 'BORDERLINE, drop acceptable: sector survey for retail; fires dropped it on 2026-11-12 and 2026-11-15. Flagged as an annual report only.'
+  related_entries: []
+  sources:
+  - url: https://www.sophos.com/en-us/blog/the-state-of-ransomware-in-retail-2026
+    publisher: Sophos
+    date: '2026-11-10'
+    role: primary
+  discovery_trace: 'first seen at: sophos-xops, feed https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 (item ''The State of Ransomware in Retail 2026'', 2026-11-10) -> primary (no pivot needed):
+    https://www.sophos.com/en-us/blog/the-state-of-ransomware-in-retail-2026'
+  published_at: '2026-11-10'
+  summary: Sophos's sixth annual retail ransomware survey (217 IT and security leaders, fieldwork January to March 2026) reports that retail paid attackers less than any other sector and recovered fastest,
+    while encryption rates rose 14 percentage points and average recovery cost rose to USD 1.76 million. Exploited vulnerabilities started 26% of retail attacks (18% cross-sector), phishing was the top
+    technical root cause at 29%, and identity-based vectors started 69%. Survey self-reports; retail only.
+  region_nexus: global survey
+  primary_sector_nexus: 'none: retail'
+  sector: retail
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: findings from 217 IT and cybersecurity leaders in retail organizations that were hit by ransomware in the last 12 months
+    attribution: Sophos
+    source_url: https://www.sophos.com/en-us/blog/the-state-of-ransomware-in-retail-2026
+  - quote: Phishing was the top technical root cause for retail at 29%
+    attribution: Sophos
+    source_url: https://www.sophos.com/en-us/blog/the-state-of-ransomware-in-retail-2026
+  borderline: true
+  borderline_reason: sector survey (retail), no constituency link, no technique
+- title: 'Citizen Lab: Bloomberg investigation extends the Penlink Webloc ad-based location-surveillance customer list to UK, Netherlands, Germany, Austria''s interior ministry and others'
+  recommendation: BORDERLINE, drop acceptable (the 2026-11-15 fire's S3 sweep saw it). Policy and privacy item about government use of ad-tech location data; no Swiss customer is named and no defender control
+    follows.
+  related_entries: []
+  sources:
+  - url: https://citizenlab.ca/security-agencies-worldwide-found-to-use-ad-based-surveillance-system/
+    publisher: The Citizen Lab
+    date: '2026-11-12'
+    role: primary
+  discovery_trace: 'first seen at: citizen-lab, feed https://citizenlab.ca/feed/ (item ''Security Agencies Worldwide Found to Use Ad-Based Surveillance System'', 2026-11-12) -> primary (no pivot needed):
+    https://citizenlab.ca/security-agencies-worldwide-found-to-use-ad-based-surveillance-system/ (relays a Bloomberg investigation not fetched here)'
+  published_at: '2026-11-12'
+  summary: A Citizen Lab note says a Bloomberg investigation into Penlink's Webloc ad-based surveillance product identified further government customers beyond the US, El Salvador and Hungary found in its
+    April report, and that Austria's interior ministry was confirmed as a customer since. Bloomberg's additional countries, per Citizen Lab, are the UK, Netherlands, Germany, Mexico, Singapore, Saudi Arabia,
+    UAE and Israel; Citizen Lab calls use in Europe and the UK highly controversial. The page is a media-relay note; the investigation itself was not read, and Switzerland is not mentioned.
+  region_nexus: Europe and others; Switzerland not mentioned
+  primary_sector_nexus: none for defenders (surveillance-policy)
+  sector: government
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  classification_hint: B2
+  novelty: new
+  evidence:
+  - quote: identified customers in additional countries including the UK, Netherlands, Germany, Mexico, Singapore, Saudi Arabia, UAE, and Israel.
+    attribution: The Citizen Lab
+    source_url: https://citizenlab.ca/security-agencies-worldwide-found-to-use-ad-based-surveillance-system/
+  borderline: true
+  borderline_reason: surveillance-policy relay, no Swiss link, no defender control
+- title: 'Lab-only AI-agent abuse research of the week: Microsoft''s post-training supply-chain backdoors (dataset and model poisoning), Microsoft''s ''Lazarus'' dormant-neuron backdoor, and Darktrace''s
+    lab C2 over Claude Code memory stores'
+  recommendation: 'DROP (correctly droppable): all three are laboratory demonstrations, each source says no in-the-wild use. Listed so the audit can document the drop.'
+  related_entries:
+  - 2026-11-08/claude-code-dont-ask-again-secrets-in-settings-local-json
+  sources:
+  - url: https://www.microsoft.com/en-us/security/blog/2026/11/12/trained-to-betray-how-post-training-supply-chain-attacks-hijack-coding-agents/
+    publisher: Microsoft Security Blog
+    date: '2026-11-12'
+    role: primary
+  - url: https://www.helpnetsecurity.com/2026/11/11/microsoft-hidden-ai-backdoors-lazarus/
+    publisher: Help Net Security
+    date: '2026-11-11'
+    role: corroborating
+  - url: https://www.helpnetsecurity.com/2026/11/12/stolen-claude-api-keys-remote-controlled-implant/
+    publisher: Help Net Security
+    date: '2026-11-12'
+    role: secondary
+  discovery_trace: 'first seen at: msft-ti, bridge msft-secblog recent 30 (item 2026-11-12 ''Trained to betray'') -> primary (no pivot needed): https://www.microsoft.com/en-us/security/blog/2026/11/12/trained-to-betray-how-post-training-supply-chain-attacks-hijack-coding-agents/;
+    Lazarus and Darktrace items first seen at helpnetsecurity, extract https://www.helpnetsecurity.com/ (front page), then the two article URLs above (Darktrace primary not fetched)'
+  published_at: '2026-11-12'
+  summary: Microsoft Defender Research and the AI Red Team show that poisoned fine-tuning data teaches a coding agent a conditional unsafe tool call (about 78% attack success in-distribution) and that a
+    poisoned open-weight checkpoint reaches 84.1% to 94.8% success on unseen repositories; Microsoft's separate Lazarus work implants a backdoor by changing fewer than ten dormant neurons. Microsoft says
+    it has not observed threat actors weaponising the technique. Darktrace, per Help Net Security, steered Claude Code through Claude platform memory stores with stolen API keys in a lab and pulled a 1
+    GB file through the Files API; it needs a compromised developer machine first, relies on no platform vulnerability and has not been seen in the wild.
+  region_nexus: global
+  primary_sector_nexus: none
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1195
+  - T1071
+  affected_products:
+  - Claude Code
+  - Anthropic Claude Files API
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  classification_hint: A2
+  novelty: new
+  evidence:
+  - quote: It reached approximately 78% attack success on in-distribution harnesses and transferred to an unseen harness.
+    attribution: Microsoft Security Blog
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/11/12/trained-to-betray-how-post-training-supply-chain-attacks-hijack-coding-agents/
+  - quote: The company has not observed threat actors weaponizing the technique
+    attribution: Help Net Security
+    source_url: https://www.helpnetsecurity.com/2026/11/11/microsoft-hidden-ai-backdoors-lazarus/
+  - quote: The technique does not rely on a vulnerability in the Claude platform, and the company has not seen it used in the wild.
+    attribution: Help Net Security
+    source_url: https://www.helpnetsecurity.com/2026/11/12/stolen-claude-api-keys-remote-controlled-implant/
+  borderline: true
+  borderline_reason: laboratory demonstrations with no observed exploitation
+covered:
+- item: Cisco Talos 'ARTEX and beyond' (2026-11-13)
+  entries:
+  - 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  - 2026-10-30/vapor-panda-artex-agentic-campaign-foreign-ministries
+  note: landscape post; cited as corroboration on the Datadog item; 11-14 and 11-15 fires dropped it as covered class
+- item: Unit 42 Falcon C2 (2026-11-11)
+  entries:
+  - 2026-11-12/falcon-c2-browser-implant-government-webmail-script-tag
+- item: Unit 42 ARTEX and AI-powered red-teaming tools (2026-11-11)
+  entries:
+  - 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  note: corroboration on the Datadog item
+- item: Unit 42 Cairn framework against semiconductor, defense, civil society (2026-11-12)
+  entries: []
+  note: fire-dropped 2026-11-13 (out of nexus, class covered); not fetched by me
+- item: Check Point Research PHP2Shell exploitation on Check Point gateways (2026-11-12)
+  entries:
+  - 2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways
+  note: entry update record of 2026-11-13T03:59Z cites the CPR post and sk1000362; content matches
+- item: Check Point Research CopperDragon / Sparrow framework (2026-11-10)
+  entries:
+  - 2026-11-11/copperdragon-silentdelivery-fake-certificate-watering-holes
+- item: Check Point 9 November weekly digest
+  entries: []
+  note: digest, leads only; HYFLOCK ransomware post it links is dated 2026-11-04 (outside the window)
+- item: ESET Turla Cereal (2026-11-10)
+  entries:
+  - 2026-11-11/turla-cereal-exchange-server-c2-and-mail-collector-gov
+- item: Kaspersky ESXi ransomware at the hypervisor layer, BlackNevas (2026-11-13)
+  entries:
+  - 2026-11-14/kaspersky-blacknevas-vcenter-host-profile-ssh-backups-first
+  note: same securelist URL is the entry's primary
+- item: Kaspersky Citrus ransomware (2026-11-11)
+  entries:
+  - 2026-07-25/certighost-cve-2026-54121-ad-cs-dc-impersonation-poc
+  note: update record of 2026-11-12; see item 10 for the registry gap
+- item: Proofpoint BluePhishing (2026-11-09)
+  entries:
+  - 2026-11-10/bluephishing-entra-agent-blueprint-consent-phishing-poc
+- item: Huntress SCKit worm (2026-11-12) and Microsoft/Sophos SCKit posts (2026-11-11, 2026-11-13)
+  entries:
+  - 2026-11-12/screenconnect-sckit-toolkit-pushed-to-hundreds-of-endpoints
+  note: entry cites the Microsoft 2026-11-13 post and Sophos 2026-11-11
+- item: Huntress fake crypto-exchange ScreenConnect sessions (2026-11-14)
+  entries:
+  - 2026-11-15/screenconnect-crypto-bait-guest-sessions-118-servers
+- item: Huntress Teams booking device-code phishing (2026-11-12)
+  entries:
+  - 2026-11-13/huntress-teams-booking-device-code-phishing-encrypted-kit
+- item: Huntress N-able Able2Shell (2026-11-09) and Sophos N-able advisory (2026-11-10)
+  entries:
+  - 2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline
+- item: Huntress AhsayCBS intrusion (2026-11-09)
+  entries:
+  - 2026-10-10/ahsaycbs-cve-2026-105133-105134-exploited-webshells-xmrig
+  note: entry cites the Huntress post
+- item: Elastic CyberStrikeAI AWS CloudTrail intrusion (2026-11-13)
+  entries:
+  - 2026-11-14/cyberstrikeai-aws-cloudtrail-intrusion-one-source-ip
+- item: Elastic 'Five AI attack frameworks' (2026-11-13)
+  entries: []
+  note: fire-dropped 2026-11-14 as framework internals; cited as corroboration on the Datadog item; ES|QL tool-family burst hunt is the concrete hook
+- item: Group-IB DarkLunnen open directory (2026-11-11 per feed, page shows 2026-11-13)
+  entries:
+  - 2026-11-13/darklunnen-group-ib-fortios-super-admin-swiss-scan-list
+  note: entry's Swiss details (4,725-target scan list, restic access to an S3 repository at a Swiss domain) match the primary
+- item: GitGuardian wfx-loot (2026-11-13)
+  entries:
+  - 2026-11-13/wfx-phantom-github-actions-ci-secret-stealer-stolen-tokens
+- item: GitGuardian Claude Code settings.local.json secrets (2026-11-09)
+  entries:
+  - 2026-11-08/claude-code-dont-ask-again-secrets-in-settings-local-json
+- item: Microsoft GSocket (2026-11-11)
+  entries:
+  - 2026-11-12/gsocket-relay-client-keeps-access-after-linux-web-patch
+- item: Recorded Future GhostFrame (2026-11-10)
+  entries:
+  - 2026-11-11/ghostframe-esxi-post-exploitation-framework-tag-218
+- item: TrendAI CVE-2026-98432 AI-written exploit post (2026-11-09)
+  entries:
+  - 2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root
+  note: secondary summary; the entry already holds its facts including Go 1.24 MPTCP listener default and the Anthropic exploit
+- item: Dark Reading Luna Moth law firms (2026-11-12)
+  entries:
+  - 2026-11-14/luna-moth-token-handoff-copilot-graph-token-law-firms
+- item: Dark Reading Binance breach (2026-11-13)
+  entries:
+  - 2026-11-04/binance-theft-fake-recruiter-ai-tool-pivot-deploy-token
+- item: Infosecurity APT29 watering holes, 3AM ransomware, Zyxel GS1900 (2026-11-04/05, outside window)
+  entries:
+  - 2026-11-05/apt29-watering-hole-ios-android-n-day-chains-kev
+  - 2026-11-04/threeam-uk-school-veeam-rogue-domain-admins-new-ad-trusts
+  - 2026-09-22/cve-2026-7273-zyxel-gs1900-red-heron-kev-exploited
+  note: out of the window; already published
+dropped:
+- item: Huntress GeoVision camera software abused for XMRig at 13 organisations (2026-11-13)
+  url: https://www.huntress.com/blog/geovision-camera-software-xmrig-cryptominer
+  why: fire-borderline-dropped 2026-11-14; exposed GeoVision management software, SYSTEM PowerShell, BYOVD Defender kill, IFEO hijacks, cryptominer; no CVE or vendor advisory named; reopen on a CVE or a
+    public-sector deployment. Not re-examined beyond the first page.
+- item: 'SANS ISC: attackers searching for SAP NetWeaver webshells (2026-11-09)'
+  url: https://isc.sans.edu/diary/33502
+  why: honeypot noise around the 2025 SAP NetWeaver flaw (CVE-2025-31324); old CVE, no new fact
+- item: 'SANS ISC: Macfinger ClickFix and DownTheDRAIN macOS stealer (2026-11-13)'
+  url: https://isc.sans.edu/diary/33518
+  why: commodity macOS stealer, sample blocked by macOS, nickname only
+- item: 'Fortinet via Infosecurity: weak SQL Server passwords deliver XMRig miner and Gh0st RAT (2026-11-12)'
+  url: https://www.infosecurity-magazine.com/news/fortinet-sql-server-cryptominer/
+  why: commodity brute force of internet-facing MS SQL (xp_cmdshell, scheduled loader); FortiGuard primary not fetched; no victim, region or actor
+- item: Zimperium ArcticRAT Android RAT (2026-11-12)
+  url: https://zimperium.com/blog/arcticrat-ai-powered-android-rat
+  why: consumer Android crypto and banking RAT with LLM-assisted exfiltration parsing, impersonating consumer brands; no Swiss or public-sector nexus
+- item: 'Help Net Security: suspected DPRK IT workers reaching onboarding (Material Security, 2026-11-13)'
+  url: https://www.helpnetsecurity.com/2026/11/13/north-korean-it-workers-onboarding/
+  why: vendor statistics on fake-applicant pipelines and open file shares at monitored private firms; no public-sector hiring evidence
+- item: 'Help Net Security: FBI FaceStealer fake-Zoom scheme (2026-11-13)'
+  url: https://www.helpnetsecurity.com/2026/11/13/fbi-north-korean-fake-zoom-calls/
+  why: DPRK crypto theft aimed at crypto and web3 targets; earlier fires dropped the FBI/DOJ FaceStealer item
+- item: 'Help Net Security / EfficientIP: fake Zillow ClickFix delivering NetSupport (2026-11-13)'
+  url: https://www.helpnetsecurity.com/2026/11/13/fake-zillow-clickfix-netsupport-rat/
+  why: consumer lure (apartment hunters), commodity ClickFix with a legitimate RAT
+- item: 'Infosecurity: TrendAI''s Bob McArdle on AI and ransomware in 2027 (2026-11-13)'
+  url: https://www.infosecurity-magazine.com/news/ai-revolutionize-ransomware/
+  why: conference prediction talk, no incident or technique
+- item: 'Infosecurity: Check Point CopperDragon relay (2026-11-11)'
+  url: https://www.infosecurity-magazine.com/news/chinese-malware-tied-three-hacking/
+  why: secondary of the covered CopperDragon entry
+- item: 'Symantec: how AI revived a stalled attack on a US retailer (2026-11-12)'
+  url: https://www.security.com/threat-intelligence/ai-assisted-attack-us-retailer
+  why: 'fire-dropped 2026-11-13: US retailer, class saturated; Gambit-reported operation overlap noted by Symantec'
+- item: 'Recorded Future: AI Is Both Target and Tool (2026-11-11), State of Threat Intelligence 2027 survey (2026-11-12), DoppelCart (2026-11-10)'
+  url: https://www.recordedfuture.com/research/ai-cyber-threat-trends-2026
+  why: fire-seen on 2026-11-11, 11-13 and 11-15; trend synthesis of 103 AI incidents, a vendor survey and a fraud-domain network; no constituency decision
+- item: 'Dark Reading: Claude ''Office Party'' document-tool flaw, Chinese AI project profiling Taiwan chip industry, Greeter (11-09 to 11-12)'
+  url: https://www.darkreading.com/cloud-security/attackers-hello-scale-cloud-attack
+  why: Office Party and AntiFox were fire-seen on 2026-11-12; Taiwan-profiling project is a Big-Data collection story with no defender control (not fetched); Greeter is item 11
+- item: Check Point HYFLOCK ransomware evolution and encryption weaknesses (2026-11-04)
+  url: https://blog.checkpoint.com/security/hyflock-ransomware-evolves-with-new-builds-and-encryption-weaknesses/
+  why: published 2026-11-04, outside the window; eight leak-site claims
+- item: Concevis ransomware (Blick, search hit)
+  url: null
+  why: 'WebSearch surfaced a Blick page whose metadata dated it 2023-11-13: a recycled 2023 Swiss federal supplier incident (Concevis), not a current event; no store gap'
+- item: Previdian featured CVE-2026-62735 (Windows HTTP.sys local EoP, 2026-11-10 homepage)
+  url: https://previdian.com/
+  why: PoC available, not exploited, local privilege escalation; the exploited-CVE list at previdian.com/feed stays 403 on every transport
+watchlist_sweep:
+  duty: none
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: no watchlists configured in this deployment
+candidate_sources:
+- id: malbear-labs
+  publisher: Malbear Labs (malware and AI-intrusion research lab)
+  url: https://malbearlabs.com/posts
+  rss_url: https://malbearlabs.com/feed.xml
+  category: research
+  why: Source of the Operation Snowball primary (open-directory discovery of an AI intrusion harness) and earlier loader and RMM-abuse analyses; low cadence (about monthly to quarterly); feed.xml reads
+    on the direct transport with dated items; reliability C until corroborated.
+coverage_gaps:
+- source_id: sygnia
+  reason: 'blocked on every transport again: extract rc=1, url --direct rc=1, WebFetch HTTP 403, WebSearch finds no November 2026 post; 403 never demotes; rotation continues'
+- source_id: nict-cynex-lettice
+  reason: extract returns a JS shell, WebFetch returns four undated banner links, the jina reader pool is exhausted (HTTP 402 on every key); the 2026-11-01 recipe (jina on the library URL) cannot run until
+    credit returns. Window not swept.
+- source_id: previdian
+  reason: the exploited-vulnerability feed https://previdian.com/feed still answers 403 on every transport; only the featured per-CVE page reads (via extract)
+- source_id: kaspersky-securelist
+  reason: 'recipe note: the direct feed https://securelist.com/feed/ answered a connection reset on the first parallel call and read cleanly (10 dated items) on the retry; per-post extract worked for all
+    four posts read'
+- source_id: msft-ti
+  reason: 'recipe confirmation: raw `url` of the topic listing returns time datetime values and every card href (6 cards in the window); `msft-secblog recent 30` lists the whole blog feed plus the Security
+    Community Blog'
+- source_id: lumen-black-lotus-labs
+  reason: 'recipe confirmation: `url --direct https://www.lumen.com/blog/query-index.json` still lists every post; blogPublishedDate uses mixed formats (''Sept 22, 2026'', ''Sep 9, 2024''), so parse both
+    %b and %B and normalise ''Sept'' before sorting'
+- source_id: darkreading
+  reason: 'recipe note: `extract` of a Dark Reading article URL was served by the metered jina reader again (the reader answered despite the exhausted-key warnings); the RSS summary suffices for triage
+    and WebFetch/extract for a body'
+- source_id: proofpoint
+  reason: 'gap in the recipe: regional posts on https://www.proofpoint.com/uk/blog/threat-insight/ (e.g. Europe''s Threat Landscape 2026) are not in the US feed https://www.proofpoint.com/us/threat-insight-blog.xml;
+    they surfaced only through Infosecurity Magazine. A UK-site listing or feed would close it'
+source_ledger:
+- id: msft-ti
+  tier: standard
+  attempted: true
+  transport: url (raw listing with time datetime) + bridge msft-secblog recent 30
+  horizon_hours: 170
+  in_horizon_items: 6
+  returned: 1
+  note: SCKit 11-13 and GSocket 11-11 covered; 'Trained to betray' in the lab-only item; sleeper-agent, FORGE and kernel-bug-report posts are not threat research
+- id: mandiant-gtig
+  tier: standard
+  attempted: true
+  transport: feed + extract + url listing
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: feed newest 2026-11-02; the listing page hero is the 2026-09-08 GTIG AI Threat Tracker; no post in the window
+- id: talos
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 0
+  note: ARTEX and beyond cited as corroboration on item 1; Patch Tuesday Snort post and a staff essay
+- id: unit42
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 0
+  note: Falcon C2 covered; ARTEX post is corroboration on item 1; Cairn fire-dropped
+- id: checkpoint-research
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 0
+  note: PHP2Shell gateway and CopperDragon covered; weekly digest read for leads
+- id: eset
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 2
+  returned: 0
+  note: Turla Cereal covered; GTA VI scam post is consumer content; ESET APT Activity Report Q2-Q3 2026 is 2026-10-28, outside the window
+- id: kaspersky-securelist
+  tier: standard
+  attempted: true
+  transport: feed (retry ok) + url listing + extract
+  horizon_hours: 170
+  in_horizon_items: 5
+  returned: 2
+  note: ESXi covered; Citrus (item 10) and Q3 statistics (item 12) returned; first feed call hit a connection reset and the retry succeeded
+- id: sentinellabs
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 1
+  returned: 0
+  note: one LABScon replay; listing page returns a 429 Vercel checkpoint, feed fine
+- id: proofpoint
+  tier: standard
+  attempted: true
+  transport: feed + Infosecurity pivot
+  horizon_hours: 170
+  in_horizon_items: 1
+  returned: 1
+  note: BluePhishing covered; the Europe threat landscape report is a Proofpoint UK site post absent from the US threat-insight feed
+- id: trendmicro-research
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 7
+  returned: 2
+  note: MCP directories and Hermes part 2 returned; part 1 fire-dropped; CVE-2026-98432 post covered; remaining posts commentary
+- id: huntress
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 8
+  returned: 1
+  note: ClickFix roundup returned; SCKit, crypto-bait, Teams booking, N-able, Ahsay covered; GeoVision fire-dropped; employee spotlight
+- id: sophos-xops
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 6
+  returned: 1
+  note: retail annual report returned; ScreenConnect and N-able covered; ARTEX fire-dropped; product posts
+- id: crowdstrike
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 0
+  note: Patch Tuesday analysis, analyst-ranking and product posts; VAPOR PANDA post is earlier and covered
+- id: elastic-seclabs
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 0
+  note: five-frameworks post cited as corroboration on item 1; CyberStrikeAI covered; SANSAR cryptomining fire-dropped
+- id: dfirreport
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: feed newest 2026-08-24
+- id: recordedfuture-insikt
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 4
+  returned: 0
+  note: GhostFrame covered; AI trends, survey and DoppelCart fire-seen
+- id: volexity
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: feed newest 2026-10-16
+- id: citizen-lab
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 1
+  returned: 1
+  note: Webloc relay note (item 14)
+- id: zscaler-threatlabz
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: research feed newest 2026-10-28
+- id: symantec-security-com
+  tier: standard
+  attempted: true
+  transport: extract listing + per-post extract for dates
+  horizon_hours: 170
+  in_horizon_items: 1
+  returned: 0
+  note: listing yields five links; only the 2026-11-12 retailer post is in the window (fire-dropped)
+- id: lumen-black-lotus-labs
+  tier: standard
+  attempted: true
+  transport: url --direct query-index.json
+  horizon_hours: 170
+  in_horizon_items: 1
+  returned: 0
+  note: one Black Lotus Labs-tagged post in the window (2026-11-10, CISO-oriented thought leadership); blogPublishedDate used
+- id: group-ib
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 2
+  returned: 0
+  note: DarkLunnen covered (feed 11-11, page shows 11-13); other post is product marketing
+- id: gitguardian
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 7
+  returned: 0
+  note: wfx-loot and Claude Code settings covered; AntiFox and 45-frameworks posts are ARTEX-class inventory
+- id: datadog-security-labs
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 2
+  returned: 1
+  note: ARTEX in AWS returned as item 1; MongoDB CVE-2026-118383 post fire-dropped on 2026-11-12
+- id: morphisec
+  tier: standard
+  attempted: true
+  transport: url --direct listing + per-post extract for dates
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 1
+  note: PE certificate-table post returned; two others are opinion and product content
+- id: sygnia
+  tier: standard
+  attempted: true
+  transport: extract rc=1, url --direct rc=1, WebFetch 403, WebSearch
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: blocked on every transport again; WebSearch found no November 2026 Sygnia research
+- id: darkreading
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 27
+  returned: 1
+  note: news feed; Greeter relay (item 11); other research items covered or fire-seen
+- id: gambit-security
+  tier: standard
+  attempted: true
+  transport: url listing + per-post extract
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-11-02
+- id: helpnetsecurity
+  tier: standard
+  attempted: true
+  transport: extract front page (raw HTML, dated anchors) + per-article extract
+  horizon_hours: 170
+  in_horizon_items: 32
+  returned: 1
+  note: aggregator (count of dated front-page anchors 2026-11-09 to 2026-11-13); lab-only AI items (item 15) and drops listed under dropped
+- id: infosec-magazine
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 27
+  returned: 3
+  note: used as secondary for Proofpoint EU, Snowball and SilentAir
+- id: sans-isc
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 10
+  returned: 0
+  note: SAP webshell scanning and Macfinger dropped; Patch Tuesday and Apple diaries are G1 material
+- id: previdian
+  tier: standard
+  attempted: true
+  transport: extract homepage and per-CVE page
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: feed https://previdian.com/feed stays 403; homepage features one Windows HTTP.sys local EoP with PoC and no exploitation
+- id: jpcert-eyes
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: feed newest 2026-10-21
+- id: semperis-research
+  tier: standard
+  attempted: true
+  transport: extract + url
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: newest dated post 2026-10-22
+- id: nict-cynex-lettice
+  tier: standard
+  attempted: true
+  transport: extract (JS shell), WebFetch (banner links only), WebSearch
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: 'no usable listing: extract returns the JS shell, WebFetch shows four banner links with no dates, the jina reader pool is exhausted (only that transport returns the dated list per the 2026-11-01
+    note); not swept'
+- id: krebs
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 2
+  returned: 1
+  note: Qilin profile returned; Patch Tuesday post is G1 material
+- id: team-cymru
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-11-02
+- id: technadu
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 4
+  returned: 0
+  note: VPN deal and product-rating posts only
+- id: zimperium-zlabs
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 170
+  in_horizon_items: 2
+  returned: 0
+  note: ArcticRAT dropped (consumer Android RAT); UK fake-app roundup
+- id: expel
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 3
+  returned: 0
+  note: methodology and product posts
+- id: censys-blog
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 170
+  in_horizon_items: 1
+  returned: 0
+  note: 2026-11-12 ARTEX first-party-data post is inventory; other posts 11-05 and 11-06 are before the window
+- id: flatt-security
+  tier: standard
+  attempted: true
+  transport: extract (raw listing)
+  horizon_hours: 170
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-10-21

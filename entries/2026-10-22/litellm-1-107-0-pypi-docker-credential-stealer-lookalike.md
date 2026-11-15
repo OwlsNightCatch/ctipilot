@@ -75,9 +75,9 @@ evidence:
   - quote: "removing the LiteLLM package directory alone does not remove those files or stop an existing process"
     publisher: "Socket Research Team"
     source_url: "https://socket.dev/blog/litellm-compromise"
-  - quote: "We have identified that the malicious actions were taken through three engineers' GitHub accounts, appearing to be by way of stolen GitHub CLI OAuth tokens."
-    publisher: "GitHub issue BerriAI/litellm #47826 (Upwind report, with maintainer replies)"
-    source_url: "https://github.com/BerriAI/litellm/issues/47826"
+  - quote: "malicious actions were taken through three engineers' GitHub accounts, appearing to be by way of stolen GitHub CLI OAuth tokens."
+    publisher: "Wiz Research"
+    source_url: "https://www.wiz.io/blog/litellm-compromised-steals-credentials"
   - quote: "On October 10th, the threat actor used this key to gain control of our LiteLLM Agent Platform deployment."
     publisher: "LiteLLM maintainers (root-cause post, attack chain)"
     source_url: "https://docs.litellm.ai/blog/security-incident-oct-21-2026-attack-chain"
@@ -136,6 +136,15 @@ updates:
       the public history until 2026-10-22, and the key was never revoked; two quotes no longer on the page
       are replaced.
     fields: [body, evidence, summary]
+  - at: "2026-11-15T15:07:06Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The maintainers' statement on the three engineers' GitHub accounts sits in a collapsed comment of
+      the GitHub issue that a page read does not return, so the evidence record now quotes it from Wiz's
+      post, which carries the same statement.
+    fields: [evidence]
 migrated_from: null
 ---
 

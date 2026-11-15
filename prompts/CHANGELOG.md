@@ -4,6 +4,22 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 4.25 — 2026-11-15 (only slice records count as rotation sweeps)
+
+### Why
+
+The 2026-11-15 quality audit recovered Datadog's 2026-11-09 post on ARTEX operators in AWS, which no fire had surfaced although `datadog-security-labs` sat in the rotation. The 2026-11-09 fire swept it at 02:55Z, before the post. The 2026-11-12 fire did not allocate it, but its S3 sub-agent checked it among "majors checked in addition to the slice (26 h window)" and listed it in its source ledger, so the run record's `sources_attempted` carried it and the rotation cursor moved to 2026-11-12. The source's lookback at that point was about 74 h; the check read 26 h, and the post fell between the two windows. The rotation cursor (v4.12) and the lookback (v4.13) assume every recorded attempt swept the source's lookback.
+
+### What changed
+
+- `prompts/cti-run.md` Phase 2 § Slice-completion check: `sources_attempted` is copied from the ledger's attempted rows of the allocated slice only. A source a sub-agent checked outside its slice was read over the fire's window, not its lookback, and is not recorded as attempted, so the cursor does not move and the next fire that allocates it sweeps the full lookback.
+- `prompts/quality-audit.md` moves to v4.25 in lockstep, with no other change.
+
+### What stays
+
+- Sub-agents may still check sources outside their slice and return what they find; only the bookkeeping that moves the rotation cursor changes.
+- The rotation cursor, the lookback computation and every allocation rule.
+
 ## 4.24 — 2026-10-25 (an update rewrites the analysis in place instead of growing it)
 
 ### Why

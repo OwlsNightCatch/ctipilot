@@ -145,6 +145,33 @@ def test_entry_shape_flags_growth_of_an_updated_entry():
         cr._committed_entry, cr.warn, cr.ok, cr.fail = saved
 
 
+def test_entry_shape_flags_uncited_source_added_by_an_update():
+    saved = (cr._committed_entry, cr.warn, cr.ok, cr.fail)
+    warns = []
+    run = "2026-11-13T0256Z-intel"
+    old = {"url": "https://vendor.example/advisory", "date": "2026-11-12"}
+    added = {"url": "https://euvd.example/api?id=EUVD-1", "date": "2026-11-13"}
+    body = "Fixed in 2.0 ([Vendor, 2026-11-12](https://vendor.example/advisory))."
+    try:
+        cr._committed_entry = lambda eid: ({"headline": "Short", "sources": [old]}, body)
+        cr.warn = lambda label, detail="": warns.append((label, detail))
+        cr.ok = cr.fail = lambda label, detail="": None
+        e = {"id": "2026-11-12/example", "run_id": "2026-11-12T0255Z-intel", "headline": "Short",
+             "body": body, "sources": [old, added], "evidence": [],
+             "updates": [{"run_id": run, "type": "update", "fields": ["sources"]}]}
+        cr.check_entry_shape_v417([], [e], run, enforce=True)
+        assert any("this fire added source https://euvd.example" in d for _, d in warns), warns
+        warns.clear()
+        # Cited in a section, or present before the fire: no warning.
+        cited = dict(e, body=body + "\n\n## Update — x\n\nScored 9.8 ([EUVD, 2026-11-13](https://euvd.example/api?id=EUVD-1)).")
+        cr.check_entry_shape_v417([], [cited], run, enforce=True)
+        cr._committed_entry = lambda eid: ({"headline": "Short", "sources": [old, added]}, body)
+        cr.check_entry_shape_v417([], [e], run, enforce=True)
+        assert not [d for _, d in warns if "added source" in d], warns
+    finally:
+        cr._committed_entry, cr.warn, cr.ok, cr.fail = saved
+
+
 def main() -> int:
     tests =[v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

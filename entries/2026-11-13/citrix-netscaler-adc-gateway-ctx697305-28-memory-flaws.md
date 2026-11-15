@@ -357,7 +357,7 @@ evidence:
     publisher: CERT-EU (advisory 2026-020)
     source_url: https://cert.europa.eu/publications/security-advisories/2026-020/
 verification: multi-source
-sourcing_note: The bulletins are the vendor's own and the only source for the per-row scores, preconditions and builds; CERT-EU, NCSC Switzerland and heise restate them. The Console score differs between the bulletin (9.4, adjacent) and Citrix's CVE record and ENISA's record (9.3, network); both are Citrix data. Citrix revised CTX697305 on 2026-11-12 to correct seven mistyped CVE numbers, now CVE-2026-111333 to CVE-2026-111339, and the CVE List held no record for those ids or for CVE-2026-120860 to CVE-2026-120867 when they were checked on 2026-11-13. No source says how a memory overflow could lead beyond a crash.
+sourcing_note: The bulletins are the vendor's own and the only source for the per-row scores, preconditions and builds; CERT-EU, NCSC Switzerland and heise restate them. The Console score differs between the bulletin (9.4, adjacent) and Citrix's CVE record and ENISA's record (9.3, network); both are Citrix data. Citrix revised CTX697305 on 2026-11-12 to correct seven mistyped CVE numbers, now CVE-2026-111333 to CVE-2026-111339, and the CVE List published the records for those ids and for CVE-2026-120860 to CVE-2026-120867 on 2026-11-13. No source says how a memory overflow could lead beyond a crash.
 confidence: high
 references:
   - 2026-10-23/netscaler-php2shell-management-gui-fixes-2026-10-27
@@ -370,7 +370,15 @@ classification:
 watchlist_hit: false
 actions:
   - Upgrade every customer-managed NetScaler ADC and Gateway to 14.1-73.57, 13.1-64.39 (14.1-73.58 FIPS; 13.1-37.293 for 13.1-FIPS and 13.1-NDcPP) and the NetScaler Console to 14.1-74.34, internet-facing Gateway and AAA appliances first, because CVE-2026-120868 affects every unpatched appliance in default configuration and neither bulletin offers a workaround; keep the management address (NSIP) and the Console IP off networks that untrusted hosts can reach.
-updates: []
+updates:
+  - at: "2026-11-15T15:01:26Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The sourcing note now says the CVE List published the corrected CVE records on 2026-11-13 instead of
+      saying it held none.
+    fields: [sourcing_note]
 migrated_from: null
 ---
 

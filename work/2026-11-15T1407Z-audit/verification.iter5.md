@@ -1,0 +1,52 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-11-15T17:18:10Z · ended_at=2026-11-15T17:40:34Z · duration_seconds=1344
+
+## Verification report — 2026-11-15T1407Z-audit (iteration 5)
+
+Role: post-fix pass. Scope: the 88 claim ids of `verify.iter5.scope.txt` (the 16 claims changed since iteration 4, every other claim of AhsayCBS, Fortinet, Brotli and Apache httpd, and a random quarter of the rest). All 88 have a verdict row in `verification.iter5.claims.yaml` (86 ok, 1 F3, 1 F14); the file also carries 10 extra rows for claims outside the scope that I read in the cold pass (9 ok, 1 F4). Two scope ids (3569981456, 6036786559) parse as integers in YAML and are answered under their string form. Beyond the ledger I read the ARTEX entry whole, the diff of all 27 updated entries against base `b010c9a`, the run record and the audit report against disk, and re-checked the SonicWall entry (no diff vs base).
+
+### Prior-iteration deltas (iteration 4): all five fixes confirmed
+
+- **Apache F4 (forky):** the main analysis now reads "2.4.71-1 for forky and sid as fixed ([Debian Security Tracker, 2026-11-15])". Debian tracker read now: "| forky, sid | 2.4.71-1 | fixed |"; bookworm (security) 2.4.71-1~deb12u1, trixie (security) 2.4.71-1~deb13u1, DLA-4902-1, DSA-6620-1. No remaining "forky vulnerable" outside the dated 2026-11-13 section (declined, stands).
+- **Fortinet F3 (exploitation statement):** FG-IR-26-219 page metadata row reads "Known Exploited No CVSSv3 Score 9.8"; I also read the metadata of the other 19 PSIRT pages the entry cites (all "Known Exploited No" except FG-IR-26-175, the October exploited FortiMail row, which is not a 2026-11-10 advisory). NCSC post 13092 says only "Current exploitation status: UNKNOWN" for the October release; the new body sentence splits them correctly.
+- **Brotli F8 (Nexus, Apple TV):** Exposure and takeaway now name Nexus 3000/9000 Guest Shell (Guestshell 4.9) and Apple TV (tvOS 27.2.1), cited. Cisco advisory v1.13 (2026-NOV-13) lists both Nexus rows under CSCwx56979 with Guestshell 4.9 or NX-OS 10.3.11 (Dec 2026), 9.3.19, 10.5.7, 10.7.1 (Jan 2027), 10.4.9, 10.6.5 (Feb 2027); tvOS 27.2.1 "Released November 13, 2026" carries the brotli entry. Analysis 548 words (limit 550).
+- **AhsayCBS F8 (v10.3.6.14):** the release notes (13-Nov-2026) list under Security "Redirector logged CBS password in the access log in readable form"; the announcements listing dates it 13 November (v9.17.0: 12 November, v10.3.6.1: 03 November, hotfix advisory: 27 October). Current build is named in the action, takeaway and both `fixed` fields, the section states the access-log exposure, the release notes are a source, and the record summary matches.
+- **AhsayCBS F11 (headline):** now "list a patchset for both flaws", 110 characters. The title was not changed with it (advisory finding below).
+
+### Truth defects
+
+**#1 (F4)** 2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways, section "Improvement — 2026-11-15T15:06:21Z" (claim 2dd28d1a93, outside the 88-id scope): "so R82.20 gateways carry a built-in protection while the Jumbo take is pending". sk1000302 says R82.20 firewalls "protect themselves through the Check Point IPS signatures 'PHP Remote Code Execution' even when IPS is not enabled and HTTPS Inspection is not active", and its Solution says "The fix is included in: Jumbo Hotfix Accumulator for R82.20 starting from Take 14". No source says a take is pending, and the entry's own main analysis says "the sk now says the fix is included in Jumbo Hotfix Accumulator R82.20 take 14", with the headline and actions naming take 14. The clause is unsupported and contradicts the main analysis (4c-e). Fix: delete "while the Jumbo take is pending" or restate it as protection on gateways that have not installed the hotfix or take yet.
+
+**#2 (F3, low confidence)** 2026-10-10/ahsaycbs-..., Exposure (claim 1ac2a95ee8): "run a v7 to v10 build without the fix (v9.17.0, v10.3.6, or a hotfix from v10.3.4.45 or v9.15.2.70 on) ... ([Ahsay, 2026-10-12](...patch-cve-105133-105134-update); [Huntress, 2026-10-08](...))". Both cited pages carry only the hotfix builds and the v10.3.4.0 / v9.15.2.59 gap; neither names v9.17.0 or v10.3.6. The release-notes citations sit in the takeaway and the 2026-11-15 section. Add them to this clause.
+
+**#3 (F14, low confidence)** 2026-11-09/llmjacking-..., section "Improvement — 2026-11-15T15:03:59Z" (claim 237de9fef0): "a sandbox escape in LiteLLM's custom-code guardrail, first shown by X41 D-Sec on the guardrail test path". Obsidian: the playground path "was discovered by X41 D-Sec"; the production-path variant "we found while pivoting off CVE-2026-47101 ... track it under CVE-2026-40217"; its timeline shows it reported all three flaws on 2026-02-19, before X41's advisory (2026-04-08). Nothing cited says X41 showed it first. Drop "first".
+
+**#4 (F4, low confidence)** docs/audits/2026-11-15-quality-audit.md, systemic finding 7: "Registry: 25 non-product records added." On disk: the seven intel fires' run records add 22 non-product keys (1+2+8+5+2+2+2), the registry diff from the 2026-11-08 audit's publish commit to base shows 22, from before that audit 23; this fire adds six product keys only. Correct the figure or state its basis.
+
+### Needs more research
+
+**#5 (F8, low confidence)** 2026-10-23/fortinet-..., actions[0] and actions[1]: neither tells FortiAnalyzer and FortiManager 8.0.0 to 8.0.1 owners to install 8.0.2, the fix for CVE-2026-126229 (FG-IR-26-244) and for the unauthenticated oftp SQL injection CVE-2026-126262, 9.3 (FG-IR-26-276, "FortiAnalyzer 8.0.0 through 8.0.1 | Upgrade to 8.0.2 or above"). actions[1] gives only the rpc-permit workaround for 8.0.0 to 8.0.2 until 8.0.3. Exposure and the takeaway cover the branch; the action list does not.
+
+### Editorial / less-is-more flags (advisory)
+
+- **#6 (F11)** AhsayCBS title still says "now carry the fix" while the headline was corrected to "list a patchset for both flaws".
+- **#7 (F11)** Apache headline "Debian, Ubuntu, Alpine, SUSE fixed": SUSE's CVE page lists released packages for SLE 15 SP4 to SP7, 12 SP5 LTSS and Tumbleweed but "Overall state of this security issue: Pending" with SLES 16.0 in QA; summary and action hedge, the headline does not.
+- **#8 (F11, low confidence)** Fortinet Exposure "FortiClient 7.4.0 to 7.4.7 and 7.2.0 to 7.2.14": FG-IR-26-194 lists 7.2 as affected on Windows and Windows PAM only (FortiClient Mac 7.2 not affected); the `cves[]` record says so, the Exposure line does not.
+- **#9 (F11, low confidence)** Dixell record 2026-11-15T14:53:24Z: the summary says "so only the password flaws and CVE-2026-124014 stay unfixed. Priority moves to high and a do-now action is added"; the section states neither the priority nor the action and says the unfixed exposure is "the pre-2021 fleet plus the predictable-password flaws".
+
+### What I checked and found correct (no finding)
+
+- **ARTEX in AWS (new entry):** every sentence against the Datadog post (2026-11-09) and the Wiz post (2026-10-22): the Storm-0940 tie is Datadog's own sentence naming Microsoft; the CloudTrail identity fields, FilterLogEvents limit 1000, 2026-10-20 widening, PreSignUp iteration, the CognitoIdentityCredentials session name, the failed discovery calls, the Mandarin consoles, the .gov/.edu blocklist and the "unusual patterns" hunting list all match; evidence quotes verbatim; single-source flag, `sourcing_note`, B2, `notable`, empty actions, 529 words, four references all exist and are distinct findings (they cover Microsoft and Wiz reporting, the WorkOS breach, a CloudTrail intrusion and exposed app credentials, not Datadog's AWS sightings).
+- **Sources read this pass:** Ahsay (7 pages plus the announcements listing raw), CISA KEV JSON (CVE-2026-105133/-134 dateAdded 2026-10-14, -111497, -125350, -123158), Huntress (two posts), Horizon3, Bitdefender (CVSS 7.3 / 10.0), 20 FortiGuard PSIRT pages, Fortinet blog, NCSC.ch 13092 and 13155 (update 10.11.2026 09:59 "Actively Exploited, PoC Available"), Cisco Brotli and eMudhra advisories, Mitel MISA-2026-0010, 9 Apple notes, Siemens CSAF for SSA-045512/-443410/-242944/-678870 (15 and 28 affected products, 8 not affected), Debian/SUSE/Red Hat/Ubuntu/Alpine/RHSA pages for CVE-2026-119618 and CVE-2026-98432, Sophos v5, Veeam KB4966, QNAP QSA-26-21, SAP Patch Day and Onapsis, MC1506733, Edge security notes and the MSRC API record (rev 1.1, 2026-11-13, 8.8 CISA ADP), Recorded Future, Wiz Qubole, N-able release notes and Huntress/Huntback/BleepingComputer/Hacker News/Previdian, VulnCheck blog and advisories, Dixell France PDF, Copeland download page (raw HTML: latest listed v5.2.3 [2018/07/09]), BPK, Publica, NZZ, cash.ch, Inside IT, Mozilla bug 2083449, GTIG, Obsidian (datePublished 2026-09-08), X41, Check Point sk1000302 (raw JSON) and Check Point Research, CopperDragon research, Citrix CVE records (cveawg: published 2026-11-13), Adobe APSB26-191 (12.12 and earlier, 12.12.a).
+- **Record/section agreement:** all 27 entries carry exactly one record of this fire (6 update, 10 correction, 11 improvement, 12 internal), ids match `updated_entry_ids`, the SonicWall entry has no diff vs base, every non-internal record has its section, no silent edit seen in the diffs; `cves_seen` adds CVE-2026-124014 and bumps 16 dates as the report says.
+- **Audit report and run record against disk:** AhsayCBS analysis 595 words and headline 110 characters (row and recommendation 3), eMudhra 878, Publica 1,100; KEV window (12 additions, 8 covered, 4 not covered with dispositions); the seven fires' durations (1.1 to 3.9 h), iterations (3 to 6), residuals, `gate.log` committed 7 of 7. Only the registry figure (#4) fails.
+- **Style:** no em dash outside section headings, no IOCs (the VulnCheck scanner IPs are not carried), no pipeline vocabulary in any changed entry's reader-facing text.
+- **Coverage:** the re-sweeps (G1 46/46, G2 44/44, G3 42/42) plus the KEV window show no uncovered critical or high item I can name a plausible in-window source for; the four uncovered KEV additions (GPUStack, Openwave, BroadWorks, UnrealIRCd) carry documented drop lines with no constituency footprint shown. Coverage looks complete; no missed angle named.
+
+### Verdict
+
+NEEDS_FIXES (truth: 4, editorial: 1, advisory: 4)
+
+### Findings summary (machine-readable)
+
+See `work/2026-11-15T1407Z-audit/verification.iter5.findings.yaml`.

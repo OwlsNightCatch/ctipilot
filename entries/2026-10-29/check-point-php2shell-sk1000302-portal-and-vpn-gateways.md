@@ -86,10 +86,6 @@ sources:
     publisher: Check Point (sk1000302)
     date: '2026-10-28'
     role: primary
-  - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
-    publisher: CISA Known Exploited Vulnerabilities catalog
-    date: '2026-10-26'
-    role: corroborating
   - url: https://support.checkpoint.com/results/sk/sk1000302
     publisher: Check Point (sk1000302, hotfix note of 2026-10-29)
     date: '2026-10-29'
@@ -191,6 +187,15 @@ updates:
       2026-11-16); its CVE record now carries the cisa-kev status and an EPSS value, and the sourcing note
       says the listing is not counted as independent confirmation.
     fields: [cves, sourcing_note]
+  - at: "2026-11-15T15:06:21Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: improvement
+    summary: >
+      Check Point's hotfix article says R82.20 gateways are protected by the built-in "PHP Remote Code
+      Execution" IPS signatures even with IPS disabled and HTTPS Inspection inactive, and Check Point
+      Research saw hundreds of segmentation faults in the portal's Apache and PHP workers during the
+      exploitation window, a crash pattern defenders can look for.
+    fields: [sources, body]
 migrated_from: null
 ---
 
@@ -211,3 +216,7 @@ Check Point's sk1000302 carries a new note of 2026-10-29 at 11:30 GMT, "Released
 ## Update — 2026-11-13T03:59:06Z
 
 Check Point Research reports that exploitation of unpatched Check Point gateways began on 2026-10-30 and says it escalated to root with a second flaw, CVE-2026-123039, which Check Point rates CVSS 7.8 and says it saw exploited against a couple of dozen customers ([Check Point Research, 2026-11-12](https://research.checkpoint.com/2026/php2shell-exploitation-on-check-point-gateway/); [Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000362)). The attacker left PHP web shells and a root-run backdoor with backup and snapshot persistence, and in the first wave moved by SSH from the gateway to a VMware ESXi host and deleted files there ([Check Point Research, 2026-11-12](https://research.checkpoint.com/2026/php2shell-exploitation-on-check-point-gateway/)); sk1000302 itself still carries no exploitation statement ([Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000302)). The fix for both flaws is in Jumbo Hotfix Accumulator R82.20 take 14, R82.10 take 52, R82 take 132 and R81.20 take 174 or later ([Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000302); [Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000362)), none is listed for R81.10 or R81 ([Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000362)), and the Spark fixes are now stated as builds from B998002843 and B996005005 ([Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000302)). Check Point Research describes the TSGA backdoor and its embedded TSProxy library as modified variants of PhiliKit, a framework ESET associated with the China-nexus cluster UNC5221, and says the evidence does not allow a high-confidence assessment of who ran the operation: a single actor, an initial access broker or a false-flag operation all remain plausible ([Check Point Research, 2026-11-12](https://research.checkpoint.com/2026/php2shell-exploitation-on-check-point-gateway/)).
+
+## Improvement — 2026-11-15T15:06:21Z
+
+Check Point's hotfix article states that R82.20 firewalls protect themselves through the "PHP Remote Code Execution" IPS signatures even when IPS is not enabled and HTTPS Inspection is not active, while the fix itself ships in the R82.20 Jumbo Hotfix Accumulator from take 14 ([Check Point, 2026-11-12](https://support.checkpoint.com/results/sk/sk1000302)). Check Point Research reports that during the exploitation window the Mobile Access portal's Apache and PHP workers recorded hundreds of segmentation faults, which it reads as evidence of repeated exploitation attempts; a burst of portal worker crashes on a gateway with Mobile Access enabled is therefore a signal to investigate ([Check Point Research, 2026-11-12](https://research.checkpoint.com/2026/php2shell-exploitation-on-check-point-gateway/)).

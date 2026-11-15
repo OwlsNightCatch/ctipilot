@@ -35,10 +35,6 @@ sources:
     publisher: "Infosecurity Magazine"
     date: "2026-10-12"
     role: corroborating
-  - url: "https://www.bleepingcomputer.com/news/security/cyberattack-shuts-down-refrigerators-at-french-supermarkets/"
-    publisher: "BleepingComputer"
-    date: "2026-10-12"
-    role: corroborating
   - url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012, revised version)"
     date: "2026-10-13"
@@ -161,10 +157,6 @@ sources:
     role: corroborating
   - url: "https://www.srf.ch/news/international/hintergruende-unklar-hackerangriff-auf-kuehlsysteme-blutbanken-in-frankreich-betroffen"
     publisher: "SRF"
-    date: "2026-11-04"
-    role: corroborating
-  - url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/cyberattaques-des-frigos-pirates-les-stocks-de-l-etablissement-francais-du-sang-vises_8268404.html"
-    publisher: "franceinfo"
     date: "2026-11-04"
     role: corroborating
   - url: "https://www.acn.gov.it/portale/w/sicurezza-dei-sistemi-a-supporto-della-catena-del-freddo-e-interfacce-di-management-di-sistemi-connessi-richiamo-urgente-alle-misure-di-verifica-e-mitigazione"
@@ -388,7 +380,7 @@ evidence:
     publisher: "Ransom-ISAC"
     source_url: "https://ransom-isac.org/blog/the-copeland-incident/"
   - quote: "France is able to attribute to Iran these destructive actions, carried out by the cyber-offensive unit SHAHID KAVEH, affiliated with the electronic and cyber centre of the Islamic Revolutionary Guard Corps of Iran. (translated from French)"
-    original: "la France est en mesure d’attribuer à l’Iran ces actions destructrices, mises en œuvre par à l’unité cyberoffensive SHAHID KAVEH, affiliée au centre électronique et cyber du Corps des Gardiens de la Révolution Islamique d’Iran"
+    original: "la France est en mesure d’attribuer à l’Iran ces actions destructrices, mises en œuvre par l’unité cyberoffensive SHAHID KAVEH, affiliée au centre électronique et cyber du Corps des Gardiens de la Révolution Islamique d’Iran"
     publisher: "French Ministry for Europe and Foreign Affairs"
     source_url: "https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france"
   - quote: "Available evidence shows similarities in the timing, the infrastructure, the targeting and observed tradecraft across the October and November waves"
@@ -577,6 +569,15 @@ updates:
       exploitation (BSI); CCB says updating, new passwords and Strict mode are insufficient and removing
       internet exposure comes first, and BSI will not rule out flaws in firmware 5.4.0 (heise).
     fields: [title, headline, summary, tags, sources, evidence, sourcing_note, actions, body]
+  - at: "2026-11-15T14:57:28Z"
+    run_id: 2026-11-15T1407Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The French foreign ministry quote's French original drops a stray word so it matches the page, one
+      section no longer points to another by its timestamp, and two news sources that no sentence cites
+      are removed.
+    fields: [sources, evidence, body]
 migrated_from: null
 ---
 
@@ -606,7 +607,7 @@ Censys, which scans for Danfoss StoreView control panels, says Danfoss has not c
 
 CERT-FR's alert now has a third version, dated 2026-10-16 and listed on the page as an update of the recommendations; the page does not show which sentences changed ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). Its current text separates the two cases. For every unit it asks to remove the internet exposure of the affected units and of any unit on a public IP address, and to check the insurance contract conditions before cutting the data uplink to the refrigeration contractor ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). For a unit not known to be compromised it then asks to check the whole configuration, notably the defrost ranges; for a compromised Danfoss unit it says to restart the equipment or otherwise restore it with a factory reset, and then to reconfigure it for service ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). In both cases access returns only through a secure VPN or protected network, with source-address filtering for the contractors an emergency measure and not a lasting one, and the maker's practices apply ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). The alert still says campaigns are probably ongoing, still names no flaw or entry vector, and gives the risk as not specified by the vendor ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)).
 
-The alert's documentation section links an operator guide from Dixell France (Copeland) ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). The file at that address was replaced on 2026-10-18; its current text, described in the correction of 2026-10-19T04:06:00Z, is Copeland's bulletin of 14 October 2026 followed by Dixell France's own complement ([Dixell France, 2026-10-14](https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf)). That complement says XWEB PRO and EVO ship with the same factory account, Admin with the password Admin, advises keeping the original Admin password sealed or in a password manager and not using it daily, gives each user a named account with an expiry date for an external contractor's account, and requires remote access through an encrypted VPN, with no port forward or DMZ and no remote-control software such as AnyDesk or TeamViewer on a site PC that stays on ([Dixell France, 2026-10-14](https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf)). CERT-FR does not say how the attackers got in, and SecurityWeek writes that neither Danfoss nor French authorities have tied the attack to the flaws Claroty disclosed ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/); [SecurityWeek, 2026-10-15](https://www.securityweek.com/supermarket-refrigeration-attack-widens-to-copeland-dixell-controllers/)).
+The alert's documentation section links an operator guide from Dixell France (Copeland) ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). The file at that address was replaced on 2026-10-18; its current text is Copeland's bulletin of 14 October 2026 followed by Dixell France's own complement ([Dixell France, 2026-10-14](https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf)). That complement says XWEB PRO and EVO ship with the same factory account, Admin with the password Admin, advises keeping the original Admin password sealed or in a password manager and not using it daily, gives each user a named account with an expiry date for an external contractor's account, and requires remote access through an encrypted VPN, with no port forward or DMZ and no remote-control software such as AnyDesk or TeamViewer on a site PC that stays on ([Dixell France, 2026-10-14](https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf)). CERT-FR does not say how the attackers got in, and SecurityWeek writes that neither Danfoss nor French authorities have tied the attack to the flaws Claroty disclosed ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/); [SecurityWeek, 2026-10-15](https://www.securityweek.com/supermarket-refrigeration-attack-widens-to-copeland-dixell-controllers/)).
 
 ## Correction — 2026-10-19T04:06:00Z
 
