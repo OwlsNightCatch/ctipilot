@@ -1,0 +1,261 @@
+# work/2026-11-16T0356Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-16T0356Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-16T03:58:33Z
+ended_at: 2026-11-16T04:21:22Z
+duration_seconds: 1369
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 13
+  bridge_fetches: 95
+
+# Window note (read first): 2026-11-16 is a Monday and the window (26 h, from 2026-11-15T01:56Z) covers a
+# weekend. Every government, PSIRT and catalogue record in the slice has its newest item dated 2026-11-13 or
+# earlier: CISA KEV catalogVersion 2026.11.13 (no addition in window, no knownRansomwareCampaignUse flip on any
+# covered CVE: every KEV row of a covered CVE still reads "Unknown"), ENISA EUVD exploited list = 4 records (all
+# covered or earlier borderline-dropped), NCSC-NL newest 2026-11-13 14:59, NCSC-CH CSH newest 2026-11-13,
+# BSI WID newest 2026-11-13 13:22, CERT-EU newest 2026-11-12, CISA ICS CSAF newest 2026-11-12, MSRC revisions
+# newest 2026-11-13 (all informational), Fortinet PSIRT newest revision 2026-11-13 (FG-IR-26-268, already in the
+# Fortinet entry), Palo Alto newest 2026-11-11 (PAN-OS November rows low/medium only). No scheduled multi-product
+# release landed in the window. Items below therefore come from pivots off the weekend press and the GitHub
+# Advisory Database, not from the essential records.
+items:
+  - title: "N-able N-central: Hotfix 3, planned for Saturday 2026-11-14, was postponed for further checks and the Intune integration was switched off; the Axis chain stays without a vendor fix (heise, 2026-11-15)"
+    sources:
+      - { url: "https://www.heise.de/news/Warten-auf-Sicherheitspatch-Krypto-Miner-Attacken-auf-N-central-beobachtet-11525491.html", publisher: "heise online", date: "2026-11-15", role: "primary" }
+      - { url: "https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers", publisher: "Huntback", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed, `feed https://www.heise.de/security/feed.xml` (item dated 2026-11-15 10:14Z), URL https://www.heise.de/security/feed.xml → drill: extract of https://www.heise.de/news/Warten-auf-Sicherheitspatch-Krypto-Miner-Attacken-auf-N-central-beobachtet-11525491.html → vendor notice that heise cites, https://uptime.n-able.com/, is a JavaScript status application that returned an empty shell on extract (no body), and https://status.n-able.com/category/n-central/ (WebFetch) carries no post dated 2026-11-12 to 2026-11-16 on hotfixes, Legacy API, IoCs or Intune → primary for the delta is therefore heise's reading of N-able's notice (single source), Huntback is the prior primary already in the entry"
+    summary: |
+      heise online reports on 2026-11-15, citing N-able's continuously updated notice, two status facts on the N-central 4EverAble2Shell thread that the store's entry does not carry (the entry, last changed 2026-11-14 and corrected 2026-11-15, already carries N-able's indicators of compromise, the Legacy API condition and the Agent2Shell set). First, a further hotfix, HF3, which N-able had planned to release on Saturday 2026-11-14, was postponed for additional checks, so as of 2026-11-15 the Axis-based chain (CVE-2026-90436) is still without a vendor fix and the interim control remains: turn the Legacy API off, install Hotfix 2 (2026.4.1.26), and update Agents and Probes (on the hosted service N-able updates the server, customers update Agents and Probes). Second, N-able disabled the Intune integration as a precaution. heise also repeats that disabling the Legacy API closes the 4EverAble2Shell path but does not undo an intrusion that already happened, and that traces mean full compromise, and it repeats Huntback's count of 21 infected servers, 19 of them already at Hotfix 2, with Monero miners installed (both already in the entry). Caveat: heise is the only source for the HF3 delay and the Intune change, because N-able's own notice is a script-built status page that no reader here could render; both statements are heise's reading of that page, not the vendor's text.
+    region_nexus: "global; MSP-run and self-hosted RMM, relevant to Swiss public bodies that use an IT provider running N-central"
+    primary_sector_nexus: "indirect (supplier-side remote-management platform)"
+    sector: "technology"
+    cves: [CVE-2026-90436]
+    techniques: [T1190, T1068, T1496.001]
+    affected_products: ["N-able N-central", "Apache Axis"]
+    entity_keys: ["product:n-able-n-central", "incident:n-able-n-central-able2shell-disclosure-2026-11"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline"
+    evidence:
+      - quote: "Einen weiteren Hotfix (HF3) wollte N-able eigentlich am Samstag veröffentlichen, hat die Freigabe aber wegen zusätzlicher Prüfungen verschoben."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Warten-auf-Sicherheitspatch-Krypto-Miner-Attacken-auf-N-central-beobachtet-11525491.html"
+      - quote: "Mittlerweile hat N-able IP-Adressen und URLs veröffentlicht, an denen Admins bereits erfolgte Attacken erkennen können (Indicators of Compromise, IoC)."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Warten-auf-Sicherheitspatch-Krypto-Miner-Attacken-auf-N-central-beobachtet-11525491.html"
+      - quote: "Das Deaktivieren der Legacy API unterbindet den 4EverAble2Shell-Angriffspfad, macht aber einen bereits erfolgten Einbruch nicht rückgängig."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Warten-auf-Sicherheitspatch-Krypto-Miner-Attacken-auf-N-central-beobachtet-11525491.html"
+      - quote: "Vorsorglich hat N-able zudem die Intune-Integration deaktiviert."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Warten-auf-Sicherheitspatch-Krypto-Miner-Attacken-auf-N-central-beobachtet-11525491.html"
+    extended_notes: |
+      Delta against the entry (changed 2026-11-14T04:00Z, corrected 2026-11-15T15:01Z): (1) HF3 was due Saturday 2026-11-14 and is postponed, so the entry's "follow-up hotfix" is still pending; (2) Intune integration disabled. The vendor IoC publication that heise also mentions is already in the entry (N-able statement of 2026-11-13 13:40:25 UTC, via Huntress). Worth an `update` record only if the main agent accepts a single German-press reading; the entry's action to disable the Legacy API is unchanged, so this is a status delta, not a new instruction.
+    borderline: true
+    borderline_reason: "thin single-source status delta (heise's reading of a vendor page nobody here could render: HF3 postponed, Intune integration off); the entry's action set does not change; recommend an internal record or no record"
+
+  - title: "Cyrus SASL SRP plugin authentication bypass (CVE-2026-129483): an unauthenticated client logs in as any existing user; upstream removed the plugin from master on 2026-11-12 and no release has followed 2.1.28 (2022)"
+    sources:
+      - { url: "https://www.vulncheck.com/advisories/cyrus-sasl-through-2.1.28-srp-authentication-bypass-via-plugins-srp-c", publisher: "VulnCheck (CNA)", date: "2026-11-15", role: "primary" }
+      - { url: "https://github.com/cyrusimap/cyrus-sasl/issues/896", publisher: "Cyrus SASL issue tracker (reporter afldl)", date: "2026-07-31", role: "primary" }
+      - { url: "https://github.com/cyrusimap/cyrus-sasl/commit/fb3724f43dc50247ff2bf02135457d6d77031654", publisher: "Cyrus SASL maintainers (commit 'Remove the SRP plugin')", date: "2026-11-12", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-h9fw-9v74-m2cr", publisher: "GitHub Advisory Database", date: "2026-11-15", role: "corroborating" }
+      - { url: "https://seclists.org/oss-sec/2026/q4/122", publisher: "oss-security (Alan Coopersmith, Oracle Solaris)", date: "2026-10-09", role: "corroborating" }
+      - { url: "https://raw.githubusercontent.com/cyrusimap/cyrus-sasl/cyrus-sasl-2.1.28/configure.ac", publisher: "Cyrus SASL 2.1.28 source (configure.ac)", date: "2022-02-22", role: "corroborating" }
+    discovery_trace: "first seen at: GitHub Advisory Database API via `url --direct https://api.github.com/advisories?severity=critical&per_page=30&sort=published&direction=desc` (record github-advisory, GHSA-h9fw-9v74-m2cr published 2026-11-15T15:30Z) → pivot: https://github.com/advisories/GHSA-h9fw-9v74-m2cr (references) → https://www.vulncheck.com/advisories/cyrus-sasl-through-2.1.28-srp-authentication-bypass-via-plugins-srp-c → primary: reporter's issue https://github.com/cyrusimap/cyrus-sasl/issues/896 and upstream commit https://github.com/cyrusimap/cyrus-sasl/commit/fb3724f43dc50247ff2bf02135457d6d77031654 → context: https://seclists.org/oss-sec/2026/q4/122 and 2.1.28 configure.ac for the build default"
+    summary: |
+      CVE-2026-129483 (CVSS 3.1 9.1 per the GitHub record, CVSS 4.0 9.3 per VulnCheck, the CNA; published 2026-11-15) is an authentication bypass in the SRP mechanism of the Cyrus SASL library, versions through 2.1.28. srp_server_mech_step2 in plugins/srp.c rejects only a client public value A that is zero or negative, so an unauthenticated network client that sends A equal to N (a multiple of the modulus) forces a zero shared secret, can compute a valid proof from public values, authenticates as any existing user without the password, and learns the session keys. The reporter (afldl) opened the issue with a working end-to-end reproducer against the real libsasl2 on 2026-07-31, so the technique has been public for about three and a half months. Exposure is narrow: in the 2.1.28 source the SRP plugin is built only with `--enable-srp` (default no), and the reproducer builds with that flag, so only builds that enable the plugin and services that offer SRP are reachable; the sources do not say which distributions or products ship it. The maintainers did not patch the check: on 2026-11-12 they removed the SRP plugin from master (commit "Remove the SRP plugin"), and master has since received a burst of other changes (plugins OTP, SECURID, PASSDSS also removed on 2026-11-13). The newest tagged release remains 2.1.28 of 2022-02-22, so no fixed release exists; on 2026-10-09 an oss-security post already described the project as having no response from maintainers and no new version since 2022 and listed further unfixed public reports (a DIGEST-MD5 client heap overflow, a SCRAM GS2 header over-read), of which only one had a CVE then (Red Hat's CVE-2026-107161, which oss-security says seems to match the DIGEST-MD5 report). No exploitation in the wild is stated by any source.
+    region_nexus: "global; library used in mail, directory and IMAP/SMTP/LDAP authentication stacks (the DIGEST-MD5 report names IMAP/SMTP/LDAP servers); no Swiss-specific nexus found"
+    primary_sector_nexus: "indirect (identity library; only builds with the non-default SRP plugin)"
+    sector: "technology"
+    cves: [CVE-2026-129483]
+    techniques: [T1190, T1078]
+    affected_products: ["Cyrus SASL"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:cyrus-sasl", type: product, name: "Cyrus SASL", aliases: ["cyrus-sasl", "libsasl2"], summary: "Cyrus SASL, the open-source SASL authentication library (libsasl2 and its mechanism plugins) used by IMAP, SMTP and LDAP software; newest tagged release 2.1.28 of 2022-02-22, project maintainers resumed work on master in November 2026 (GitHub commit history, 2026-11-12 to 2026-11-14)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Unauthenticated network clients can send A equal to N to force a zero shared secret, authenticating as any existing user without the password and learning session keys."
+        attribution: "VulnCheck (CNA)"
+        source_url: "https://www.vulncheck.com/advisories/cyrus-sasl-through-2.1.28-srp-authentication-bypass-via-plugins-srp-c"
+      - quote: "Remove the SRP plugin"
+        attribution: "Cyrus SASL maintainers"
+        source_url: "https://github.com/cyrusimap/cyrus-sasl/commit/fb3724f43dc50247ff2bf02135457d6d77031654"
+      - quote: "enable SRP authentication [[no]]"
+        attribution: "Cyrus SASL 2.1.28 configure.ac"
+        source_url: "https://raw.githubusercontent.com/cyrusimap/cyrus-sasl/cyrus-sasl-2.1.28/configure.ac"
+      - quote: "no new version since 2022"
+        attribution: "oss-security (Alan Coopersmith)"
+        source_url: "https://seclists.org/oss-sec/2026/q4/122"
+    extended_notes: |
+      Defender angle (only what the sources support): (1) exposure check = does any libsasl2 in the estate include the SRP plugin (the plugin exists only in builds configured with --enable-srp) and does any service advertise SRP in its SASL mechanism list; if neither, the finding does not apply. (2) Detection concept: authentication logs of the service that terminates SASL showing a successful SRP exchange for an account that did not present its password, especially from an unexpected source. (3) Hardening: do not enable or advertise SRP; vendors' packages built from master after 2026-11-12 no longer contain the plugin, and there is no tagged fix. Wider context for a short entry: the library is effectively unmaintained until this month, with a DIGEST-MD5 client heap overflow (CVE-2026-107161, attacker-controlled server to client) also unfixed in any release; the commit titles since 2026-10-01 list no DIGEST-MD5 fix (read from the commit list, titles only).
+    borderline: true
+    borderline_reason: "pre-authentication identity bypass with public reproducer and no fixed release, but the plugin is a non-default build option and no source names a product that ships it; recommend a two-to-three-sentence entry or a drop"
+
+  - title: "Apache Shiro DefaultLdapRealm accepts any password once a user is cached (CVE-2026-129349, CVSS 4.0 9.1): non-default authenticationCachingEnabled=true required; fixed in 3.0.1"
+    sources:
+      - { url: "https://lists.apache.org/thread.html/1whn52ht402lhc782c3s843c9hho8b4y", publisher: "Apache Shiro project announcement (user@shiro.apache.org)", date: "2026-11-15", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-3j37-vw7v-fxxw", publisher: "GitHub Advisory Database", date: "2026-11-15", role: "corroborating" }
+    discovery_trace: "first seen at: GitHub Advisory Database API via `url --direct https://api.github.com/advisories?severity=critical&per_page=30&sort=published&direction=desc` (GHSA-3j37-vw7v-fxxw, published 2026-11-15T12:31Z) → pivot: https://github.com/advisories/GHSA-3j37-vw7v-fxxw (references) → primary: Apache announcement https://lists.apache.org/thread.html/1whn52ht402lhc782c3s843c9hho8b4y (the openwall copy is http-only and could not be fetched)"
+    summary: |
+      The Apache Shiro project announced CVE-2026-129349 (CVSS 4.0 9.1, attack-requirements-present) by 2026-11-15 (the GitHub record, published that day, links an oss-security post whose URL path is dated 2026-11-14; the Apache thread page itself shows no date): when authentication caching is enabled on DefaultLdapRealm (or JndiLdapRealm), a user who has logged in successfully once can be impersonated by anyone who knows the username, because the cached authentication skips the LDAP bind and the AllowAllCredentialsMatcher that DefaultLdapRealm installs by default accepts any credentials. All Shiro versions through 3.0.0 are affected, only with authenticationCachingEnabled set to true, which is not the default; Shiro 3.0.1 stops installing AllowAllCredentialsMatcher by default, and the project's alternative is to leave caching off or configure a SimpleCredentialsMatcher. The finder is Joshua Rogers; the GitHub record lists an EPSS probability of about 0.5 percent and no exploitation or public exploit is stated by either source. The narrow trigger (non-default setting plus a valid username) keeps exposure to Java applications that embed Shiro with LDAP caching switched on.
+    region_nexus: "global; embedded Java authentication framework, relevant to custom government Java applications with LDAP login"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-129349]
+    techniques: [T1190, T1078]
+    affected_products: ["Apache Shiro"]
+    entity_keys: ["product:apache-shiro"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "This issue affects all Apache Shiro versions through 3.0.0, only when using DefaultLdapRealm (or JndiLdapRealm) with authenticationCachingEnabled set to true, which is not the default."
+        attribution: "GitHub Advisory Database (Apache Shiro text)"
+        source_url: "https://github.com/advisories/GHSA-3j37-vw7v-fxxw"
+      - quote: "Upgrade to version 3.0.1 or later, which fixes the issue by no longer installing AllowAllCredentialsMatcher by default."
+        attribution: "GitHub Advisory Database (Apache Shiro text)"
+        source_url: "https://github.com/advisories/GHSA-3j37-vw7v-fxxw"
+    extended_notes: |
+      Exposure check a defender can run: search application configuration for DefaultLdapRealm or JndiLdapRealm together with authenticationCachingEnabled=true (shiro.ini or Spring/Java configuration). Detection concept: authentication logs of the application showing repeated successful logins for one account with differing or wrong passwords, and no matching LDAP bind in the directory's own log for those logins. Recommend drop: non-default, needs a known username, no exploitation, project-level library.
+    borderline: true
+    borderline_reason: "critical-rated identity bypass, but a non-default setting is required, there is no exploitation or public exploit, and the constituency footprint is unknown; recommend drop"
+
+  - title: "PostgreSQL 18.7, 17.12, 16.16, 15.20, 14.25 (52 CVEs): a researcher's write-up of 2026-11-09 shows a working crash exploit for CVE-2026-6460 (type confusion to code execution as the postgres OS account); full protection also needs C extensions rebuilt; PostgreSQL 14 is end-of-life"
+    sources:
+      - { url: "https://www.postgresql.org/support/security/CVE-2026-6460/", publisher: "PostgreSQL Global Development Group", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/", publisher: "PostgreSQL Global Development Group (release announcement)", date: "2026-11-12", role: "primary" }
+      - { url: "https://mehmetince.net/part-3-6-how-i-ended-up-turning-a-22-year-old-postgresql-type-confusion-primitive-into-rce-cve-2026-6460/", publisher: "Mehmet Ince (finder)", date: "2026-11-09", role: "primary" }
+      - { url: "https://www.postgresql.org/support/security/CVE-2026-116322/", publisher: "PostgreSQL Global Development Group", date: "2026-11-12", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html", publisher: "The Hacker News", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: BSI WID feed (bsi-rss, WID-SEC-2026-4571 [NEU][hoch] PostgreSQL, 2026-11-13), URL https://wid.cert-bund.de/content/public/securityAdvisory/rss and The Hacker News feed https://feeds.feedburner.com/TheHackersNews → drill: https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html → primary: https://www.postgresql.org/support/security/CVE-2026-6460/ and the release announcement https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/ → finder's write-up https://mehmetince.net/part-3-6-how-i-ended-up-turning-a-22-year-old-postgresql-type-confusion-primitive-into-rce-cve-2026-6460/. Already borderline-dropped by run 2026-11-14T0255Z on 'no exploitation or public PoC'; the write-up changes the PoC part of that ground."
+    summary: |
+      The PostgreSQL project's 2026-11-12 minor releases (18.7, 17.12, 16.16, 15.20, 14.25) close 52 vulnerabilities and are the final release of PostgreSQL 14, which is now end-of-life. The headline flaw CVE-2026-6460 (CVSS 3.1 8.8, AV:N/PR:L) is a type confusion in the core server that lets a role able to create objects execute code as the operating-system user running the database, primarily through ALTER ... SET DATA TYPE; the project's advisory also names other DDL routes. The finder, Mehmet Ince, published a long technical write-up (dated 2026-11-09, three days before the fix) that, per The Hacker News, includes the SQL that crashes an unpatched PostgreSQL 18.6 server and a second step that leaks memory addresses, but not the SQL for the final command-execution step; Ince wrote that he could trigger the crash as a lowest-privileged login role, while the project and Red Hat describe the attacker as someone who can create objects. He privately gave managed-PostgreSQL providers (AWS, Microsoft, Google, Supabase, Databricks, Ubicloud) working proofs of concept in August. Neither the project nor CISA's record states exploitation in the wild. 32 of the 52 flaws score 8.8 and most need a login (run 2026-11-14T0255Z counted 43 of 52 as needing a low-privileged SQL role); the only server flaw needing neither login nor user action is CVE-2026-116322 (CVSS 5.3), which lets an unauthenticated client trigger a restart of PostgreSQL 18 servers (versions before 18.7 only). Post-update steps the project and package maintainers name: rebuild or update every C-language extension together with the server, because extensions built against older releases still load but may not be protected; reindex where the notes say so (B-tree on bpchar, others); take a new full backup after updating when incremental backups are used; restart a server that runs outside its package's service unit (for example under Patroni). The Hacker News adds that client tools are also affected (a crafted archive can run code through pg_restore, and a compromised source server can run code through psql via a pg_dump tar restore script); the project's CVE list in the release announcement names CVE-2026-116314 and CVE-2026-116330 at 8.8 with user interaction.
+    region_nexus: "global; PostgreSQL is a common back end for public-sector applications and managed database services"
+    primary_sector_nexus: "indirect (authenticated database flaw; PostgreSQL 14 end-of-life is the sector-relevant fact)"
+    sector: "technology"
+    cves: [CVE-2026-6460, CVE-2026-116322, CVE-2026-116314, CVE-2026-116330]
+    techniques: [T1068, T1190]
+    affected_products: ["PostgreSQL"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:postgresql", type: product, name: "PostgreSQL", aliases: ["Postgres"], summary: "PostgreSQL, the open-source relational database; 2026-11-12 minor releases 18.7, 17.12, 16.16, 15.20 and 14.25 fixed 52 security issues and ended support for PostgreSQL 14 (PostgreSQL project, 2026-11-12)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Type confusion in PostgreSQL allows an object creator to execute arbitrary code as the operating system user running the database"
+        attribution: "PostgreSQL Global Development Group"
+        source_url: "https://www.postgresql.org/support/security/CVE-2026-6460/"
+      - quote: "This is the final release of PostgreSQL 14"
+        attribution: "PostgreSQL Global Development Group"
+        source_url: "https://www.postgresql.org/about/news/postgresql-187-1712-1616-1520-1425-and-19-rc-2-released-3442/"
+      - quote: "Full protection from this flaw also requires rebuilding any C-language extensions installed on the server."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html"
+      - quote: "CISA's assessment in the CVE record also lists exploitation as none."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html"
+    extended_notes: |
+      Defender angle: exposure = any PostgreSQL below 18.7, 17.12, 16.16, 15.20 or 14.25 where untrusted or low-privilege roles can create or alter objects (multi-tenant databases, application roles with DDL rights, managed services whose status the write-up does not give); PostgreSQL 14 has no further fixes, so a 14.x estate must migrate. Detection concept: DDL audit records (ALTER ... SET DATA TYPE, ALTER TABLE ... ADD COLUMN followed by rollback) from application or low-privilege roles, postgres backend crashes (server log signal 11, restart), child processes of the postgres OS account that the database does not normally start. Hardening: patch server and extensions in one change, revoke CREATE on public schemas and object-creation rights from application roles. Prior-run drop ground ('no exploitation or public PoC', 43 of 52 need a low-privileged SQL role) stands except for the public write-up and partial exploit; the main agent decides whether a short entry is warranted.
+    borderline: true
+    borderline_reason: "authenticated flaws inside a scheduled release, no exploitation; but the finder's public write-up with a crash exploit, a rebuild-your-extensions requirement and the PostgreSQL 14 end-of-life make a short entry defensible; run 2026-11-14T0255Z dropped it on 'no public PoC', which the write-up now contradicts"
+
+cve_table:
+  - { cve: "CVE-2026-129483", product: "Cyrus SASL (plugins/srp.c, SRP server mechanism)", cvss: "9.1 (CVSS 3.1, GitHub) / 9.3 (CVSS 4.0, VulnCheck CNA)", epss: null, kev: false, exploited: false, affected: "cyrus-sasl <= 2.1.28 and master before 2026-11-12, only builds configured with --enable-srp", fixed: "no tagged release; plugin removed on master by commit fb3724f (2026-11-12); newest release 2.1.28 (2022-02-22)", type: "auth-bypass (CWE-287)", vector: "network", auth: "pre-auth", source: "https://www.vulncheck.com/advisories/cyrus-sasl-through-2.1.28-srp-authentication-bypass-via-plugins-srp-c" }
+  - { cve: "CVE-2026-129349", product: "Apache Shiro (DefaultLdapRealm / JndiLdapRealm)", cvss: "9.1 (CVSS 4.0)", epss: 0.00543, kev: false, exploited: false, affected: "shiro-core through 3.0.0, only with authenticationCachingEnabled=true (non-default)", fixed: "3.0.1", type: "auth-bypass (CWE-287)", vector: "network", auth: "pre-auth (needs a valid username)", source: "https://github.com/advisories/GHSA-3j37-vw7v-fxxw" }
+  - { cve: "CVE-2026-6460", product: "PostgreSQL core server", cvss: "8.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "PostgreSQL 18 before 18.7, 17 before 17.12, 16 before 16.16, 15 before 15.20, 14 before 14.25", fixed: "18.7, 17.12, 16.16, 15.20, 14.25 (14 is end-of-life after this release); C extensions must be rebuilt for full protection", type: "type-confusion", vector: "network", auth: "post-auth (object-creation rights)", source: "https://www.postgresql.org/support/security/CVE-2026-6460/" }
+  - { cve: "CVE-2026-116322", product: "PostgreSQL 18 startup processing", cvss: "5.3 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "PostgreSQL 18 before 18.7 (earlier majors unaffected)", fixed: "18.7", type: "dos (improper locking)", vector: "network", auth: "pre-auth", source: "https://www.postgresql.org/support/security/CVE-2026-116322/" }
+
+# Dispositions of everything considered and not returned (one-line drop reasons, per the standing S1 duties)
+dispositions:
+  kev_sweep:
+    - "cisa-kev catalogVersion 2026.11.13 (dateReleased 2026-11-13T20:24Z): no addition inside the window; every covered CVE's knownRansomwareCampaignUse still 'Unknown' (checked all 27 KEV rows of CVEs in the 14-day index incl. CVE-2026-123039, -124194, -111560, -116606, -125350, -123158, -116779, -123218, -19868, -119977, -111497, -109618, -109619, -105133, -105134)."
+    - "UnrealIRCd CVE-2026-114713 (KEV 2026-11-13, due 2026-11-16): The Hacker News (2026-11-14) quotes the maintainer 'We are seeing bad guys exploiting this issue on the internet right now' and heise followed on 2026-11-15; no constituency footprint shown (needs an IRC network with two or more linked servers) - stays a borderline-drop, same ground as run 2026-11-14T0255Z and the 2026-11-15 audit."
+    - "Cisco BroadWorks CVE-2026-20320 / Openwave Webtop CVE-2026-111793 / GPUStack CVE-2026-102895: earlier borderline-drops stand; Cisco advisory v1.2 of 2026-11-13 (17:38Z) re-checked via the Cisco PSIRT feed, no new exploitation statement read."
+  scheduled_releases:
+    - "Microsoft Patch Tuesday 2026-11-10: out of window and covered (microsoft-november-2026-patch-tuesday-preauth-9-8-rows, cve-2026-124194 entry). MSRC OData revisions through 2026-11-13: 91 non-Chromium rows, all informational (acknowledgement edits, 'Added Microsoft Office software to the Security Updates table', one affected-Windows-versions update); none changes exploitation or disclosure status."
+    - "SAP Security Patch Day 2026-11-10 (read from the vendor's page): 35 notes + 4 GitHub advisories; the four CVSS 10.0 notes (CVE-2026-76964, -89126, -89103, -120017) are in entry sap-november-2026-cna-records-four-unauth-cvss-10-rows. Remaining critical rows dispositioned as drops: CVE-2026-109803 (9.9, authenticated PR:L), CVE-2026-76965 (9.9, PR:L), CVE-2026-109795 (9.9, PR:L), CVE-2026-89119 (9.6, CSRF, UI:R), CVE-2026-109798 (9.1, PR:L)."
+    - "Fortinet 2026-11-10 set: in entry fortinet-hardening-release-fortios-fortimanager-fortimail; FG-IR-26-268 (rev 2026-11-13) already carried by the 2026-11-15 correction. FG-IR-26-193 (FortiOS SSLVPN improper certificate validation, CVSS 7.7, revised 2026-11-12 to add fix-behaviour differences by branch) is in no entry: dropped (MITM precondition between the portal and its backend site, no exploitation, below 9.0)."
+    - "Palo Alto PAN-OS November rows (CVE-2026-0323 to -0331, 2026-11-11): LOW and MEDIUM only, none exploited; CVE-2026-111497 portfolio status is covered with the Brotli entries."
+    - "Oracle: Critical Security Patch Update November 2026 is due Tuesday 2026-11-17 (pre-release announcement 2026-11-12: 652 new patches; Fusion Middleware 71 patches / 53 unauthenticated / highest 10.0; E-Business Suite 72 / 22 unauthenticated / 9.8; Database 7 / 3 / 9.9; REST Data Services 9 / 5 / 9.8; Hyperion 267 / 107 / 9.9; Supply Chain 74 / 36 / 9.9; Analytics 29 / 9 / 10.0; MySQL 8 / 2 / 9.1; Java SE 11 / all unauthenticated / 8.1). Not an item (pre-notification); the store covers each Oracle CPU/CSPU after release, so the 2026-11-17 and 2026-11-18 fires must read https://www.oracle.com/security-alerts/cspunov2026.html's successor and the CVE-to-advisory map."
+  advisory_revisions_checked:
+    - "Check Point sk1000302 and sk1000362 lastModified 2026-11-12 (covered by the entry's 2026-11-13 update); Citrix NetScaler CTX697320 (CVE-2026-120869) is in the CTX697305 entry; Ivanti EPM public-PoC statement (NCSC-NL 2026-11-13) is already in the entry (updated 2026-11-14); ConnectWise CVE-2026-127063 advisory text (CNA repository, commit 8b1962d of 2026-11-12) matches the entry, no fixed RMM+ version announced; heise 2026-11-15 on Check Point (PHP2Shell + CVE-2026-123039, ESXi wiper, R81/R81.10 workaround only) matches the entry. No advisory revised after its entry's last record changed a fact."
+  other_drops:
+    - "GitHub Advisory Database criticals published in window, dropped: Tactical RMM CVE-2026-129165 (needs report-management permission, authenticated), Control Web Panel CVE-2026-124020/-124021 (hosting panel, needs a recovery token), sysPass CVE-2026-129110 (niche password manager, unauthenticated reinstall), Dokploy CVE-2026-129433, C-Kermit, Zenitel, RBH Integra32, VITEC EZ TV, Seafile SeaDoc, NginxPulse, D-Link DIR-600L / DSL-6740C and TRENDnet TEW-657BRM (end-of-life SOHO), WordPress plugins (Estatik CVE-2026-125795, Advanced Form Integration CVE-2026-125769, Document Library Pro CVE-2026-122662, Shipo, AutomatorWP Pro, Fluent Forms cloud storage): no constituency footprint shown, no exploitation stated."
+    - "Cisco ISE advisories (cisco-sa-ise-auth-bypass-1: authenticated, CVSS 4.3; cisco-sa-ise-cert: CVSS 5.3) re-listed with 2026-11 revision dates: low severity, dropped."
+    - "Drupal SA-CONTRIB-2026-316 (GraphQL Core Schema, Critical, 2026-11-11) and the SA-CONTRIB batch of 2026-11-04/-11: contributed modules, prior borderline-drop stands."
+    - "Zoom Workplace for Windows (NCSC-NL 2026-0494), Node.js 2026-11-11 releases, n8n, NATS, OpenCTI, OneNote CVE-2026-126526, Linksys: dispositioned by run 2026-11-14T0255Z, no change."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no product watchlist: the sweep is a no-op"
+
+candidate_sources:
+  - id: cis-msisac-advisories
+    publisher: "Center for Internet Security (MS-ISAC) Cybersecurity Advisories"
+    url: "https://www.cisecurity.org/advisory"
+    rss_url: "https://www.cisecurity.org/feed/advisories"
+    category: vulns
+    why: "Public-sector (state and local government) multi-vendor advisory stream; the feed reads direct in-container (15 dated items, 2026-10-27 to 2026-11-11, e.g. 'Critical Patches Issued for Microsoft Products, November 10, 2026', Fortinet, SAP, Chrome, SonicWall rows) and gives a dated cross-vendor release calendar that doubles as a scheduled-release check for the S1 duty; reliability B, aggregator of vendor advisories."
+
+coverage_gaps:
+  - source_id: belden-psirt
+    reason: "https://www.belden.com/security answers HTTP 403 on `url --direct` and WebFetch today; the reader pool is exhausted (HTTP 402 on every key but one), so no transport read it. Candidate stays in rotation; 403 never demotes. Not logged as a fetch failure of a working recipe (the record has none)."
+  - source_id: connectwise-trust-center
+    reason: "https://www.connectwise.com/company/trust/advisories answers 403 on direct, extract, WebFetch and the reader. Working route: `python3 tools/fetch_source.py url --direct 'https://api.github.com/repos/ConnectWise-Advisories/Disclosures/commits?per_page=15'` read cleanly (newest advisory CVE-2026-127063 of 2026-11-12, commit 8b1962d; a README logo commit on 2026-11-13); the advisory text is read from the commit's patch via https://api.github.com/repos/ConnectWise-Advisories/Disclosures/commits/<sha>, because github.com blob and tree paths for the advisory returned 404 for the path I guessed. status.connectwise.com shows only an x360Cloud performance incident tied to the Microsoft 365 outage."
+  - source_id: msrc-update-guide
+    reason: "Recipe note: `msrc release 2026-Nov 500` rows carry no exploited/publiclyDisclosed values (the SUG OData record has no such keys; Threats need the CVRF), and total=2248 includes Mariner rows; the revised-CVE sweep that works is `url --direct 'https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability?%24filter=isMariner%20eq%20false&%24orderby=latestRevisionDate%20desc&%24top=120'` with the `revisions` array giving each revision's text."
+  - source_id: github-advisory
+    reason: "Recipe note (works in-container, no key): `python3 tools/fetch_source.py url --direct 'https://api.github.com/advisories?severity=critical&per_page=30&sort=published&direction=desc'` lists critical advisories by publish time (ghsa_id, cve_id, published_at); `.../advisories/<GHSA>` returns description, references, CVSS v3/v4 and EPSS. It surfaced the two identity-library criticals above and is the only in-window sweep that saw anything on a weekend; most rows are VulnCheck CNA bulk records of niche products."
+  - source_id: nvd
+    reason: "services.nvd.nist.gov CVE API answered HTTP 503 once (not retried beyond that); not a slice record."
+  - source_id: tooling
+    reason: "`fetch_source.py feed <url>` on a URL that is not a feed (guessed Chrome releases, VMware, Citrix, SonicWall, Veeam and GitHub changelog feed paths) fell back to the metered reader and burned credit on dead keys: probe unknown feed paths with `url --direct` first. Do not guess feed paths."
+  - source_id: uptime.n-able.com
+    reason: "N-able's security notice for N-central is a script-built status application (empty shell through extract); the N-central 4EverAble2Shell status therefore reaches the store through press only. A reader that executes JavaScript would be needed; the reader pool is exhausted."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0493 2026-11-13 14:59Z (Ivanti EPM public PoC, in entry)" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "feed alerte/avis/cti", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest avis 2026-11-13 (CERTFR-2026-AVI-1533); newest alerte 2026-11-05" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf WID-SEC-2026-4545", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "250 items all dated 2026-11-13; [NEU] rows already dispositioned by run 2026-11-14T0255Z; WID-SEC-2026-4545 = CTX697320, covered" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-020 Citrix 2026-11-12" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-13 Edito CMS" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest alert 2026-11-13 (two KEV additions); newest ICS 2026-11-12" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogVersion 2026.11.13; no addition in window; no ransomware-flag flip on covered CVEs" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent exploited/criticals/lastvulnerabilities", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "exploited list = 4 (covered or borderline-dropped); 3 WordPress-plugin criticals in window dropped" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13178 Red Hat Quay 2026-11-13 11:29Z, covered" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-11 scheme news, no advisory" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "feed newest 2026-11-05 (Barracuda, covered); /intelligence/ listing has no post dated in window" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (40 items) + extract FG-IR-26-193", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest revisions 2026-11-13 (FG-IR-26-268, in entry), 2026-11-12 (FG-IR-26-193, dropped)" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc release + url --direct OData revisions", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "revisions through 2026-11-13 informational only" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-11, low/medium rows" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "bridge:url wiki + feed blog.zimbra.com", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "10.1.21 (2026-09-24) still the newest release; wiki table undated" }
+  - { id: joomla-security-centre, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25" }
+  - { id: drupal-security, tier: standard, attempted: true, transport: "feed 60 items", horizon_hours: 168, in_horizon_items: 12, returned: 0, note: "SA-CONTRIB batch 2026-11-11, one 'Critical' (GraphQL Core Schema) already borderline-dropped" }
+  - { id: openjdk-vulnerability-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "last update 2026-10-24" }
+  - { id: oracle-cpu, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "November CSPU pre-release 2026-11-12, release Tuesday 2026-11-17; see dispositions" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest bulletins 136187/136188 dated 2026-10-14" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "extract november-2026.html", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Patch Day 2026-11-10 covered by existing entry; remaining critical rows dispositioned" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only a Kinsta partnership post (2026-11-12)" }
+  - { id: 0patch-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "newest 2026-10-21" }
+  - { id: calif-codex, tier: standard, attempted: true, transport: "feed + extract https://calif.io/research", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "listing newest 2026-10-29" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "bridge:url __NEXT_DATA__ (sk185222, sk1000302, sk1000362)", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "sk1000302/sk1000362 lastModified 2026-11-12, covered; sk185222 is the August CVE-2026-18574 advisory" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-09-11" }
+  - { id: belden-psirt, tier: standard, attempted: true, transport: "bridge:url --direct + WebFetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "HTTP 403 on both; reader pool exhausted; see coverage_gaps (priority-list record, not in the slice file)" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "bridge:url --direct (CNA GitHub commits API) + extract/WebFetch (403)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "CVE-2026-127063 (2026-11-12) covered; status page shows no security incident; see coverage_gaps (priority-list record, not in the slice file)" }
