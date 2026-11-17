@@ -1,0 +1,370 @@
+# work/2026-11-17T0355Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-11-17T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-17T03:57:49Z
+ended_at: 2026-11-17T04:27:39Z
+duration_seconds: 1790
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 34
+  bridge_fetches: 125
+items:
+  - title: "OptimJack: poisoned vendor-served scripts (Optimizely project files, Kissmetrics, StorifyMe, minute-ly) carry a crypto-clipper, a card skimmer and an iPhone exploit-kit router; the University of Basel site loaded a poisoned StorifyMe widget"
+    sources:
+      - { url: "https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/", publisher: "Hudson Rock (InfoStealers)", date: "2026-11-16", role: "primary" }
+      - { url: "https://ohey.ca/threats/ios-exploits/darksword/", publisher: "Ohey (Kirk)", date: "2026-11-05 (page text updated to 2026-11-17)", role: "primary" }
+      - { url: "https://amirulcyber.com/2026/11/16/optimjack-optimizely-skimmer/", publisher: "Amirul Cyber", date: "2026-11-16", role: "primary" }
+      - { url: "https://urlscan.io/result/01a1d818-b73d-71cc-956d-29ebe10eb3ff/", publisher: "urlscan.io (scan of unibas.ch, 2026-11-14 03:27 UTC)", date: "2026-11-14", role: "corroborating" }
+      - { url: "https://ohey.ca/research/darksword-router-ios-26-c10/", publisher: "Ohey (Kirk) router write-up", date: "2026-11-05 (updated 2026-11-16)", role: "corroborating" }
+    discovery_trace: "first seen at: infostealers-hudson-rock, feed https://www.infostealers.com/feed/ (item dated 2026-11-16 21:54 UTC) → drilled article https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/ → pivot: discoverer Amirul Cyber, URL https://amirulcyber.com/2026/11/16/optimjack-optimizely-skimmer/ → pivot: Kirk/Ohey (iOS branch), URL https://ohey.ca/threats/ios-exploits/darksword/ and https://ohey.ca/research/darksword-router-ios-26-c10/ → pivot: urlscan record of the Swiss capture, URL https://urlscan.io/result/01a1d818-b73d-71cc-956d-29ebe10eb3ff/ → primary (researcher write-ups plus the public scan archive; no vendor statement exists yet)"
+    summary: |
+      Facts (Hudson Rock, which says it retrieved the files as data, executed nothing and matched all 16 archived vendor-response hashes across 15 captures): malicious code sits "inside responses served from third-party providers' own script and widget endpoints" of four providers. Eight Optimizely customer project files (BBC, Zoom, GitLab marketing site, HSBC UAE, Hootsuite, Virgin Media O2, Stamps.com, Tricentis) and the minute-ly loader were recovered directly; Kissmetrics' shared i.js and StorifyMe's shared web component were captured poisoned from 13 November. Hudson Rock names 21 web properties in all, among them CNN, Fox News, Salesforce, FAZ and the University of Basel; none of it counts victims. The initial access to each provider, the operator and the visitor count are unknown, and no provider statement was found.
+      Behaviour (Hudson Rock, Amirul Cyber, Ohey): the injected loader adds a script element for a stealer that swaps copied or pasted cryptocurrency addresses in the DOM, clipboard API calls and request bodies, skims card number, expiry and CVV from form and fetch/XHR POST bodies (sendBeacon), and conditionally sends readable cookies plus a page screenshot. The BBC and HSBC UAE files also embed a 24 KB fallback copy that runs when the remote fetch fails or takes more than 2.5 seconds, so blocking the attacker host does not stop the clipper. On iPhones and iPads it additionally loads a mobile router whose routing, per Ohey, sends iOS 13-17 to a Coruna stage, iOS 18-25 to a DarkSword entry and iOS 26 to a chain Ohey's own capture labels not weaponised. Ohey states DarkSword attacks iOS 18.4 to 18.7.2 through Safari and that an iOS 18.6 capture fetched every DarkSword stage. Hudson Rock stresses these are delivery observations, not demonstrated compromises. Ohey dates the vendor-script wave from 13 November and says GitLab's, Zoom's and minute-ly's files still carried it at 21:10 UTC on 16 November and a further variant was still present on 17 November.
+      Swiss nexus: the urlscan record of unibas.ch (scanned 2026-11-14 03:27 UTC from CH) shows www.unibas.ch loading the StorifyMe web component, which requested a second script that requested a roughly week-old host; urlscan gave no verdict and the response bodies were not read by us, the poisoning of that widget response is Kirk's and Hudson Rock's reading of the archived hash. Whether Swiss federal, cantonal or communal sites load the four vendors' scripts is not stated by any source.
+    region_nexus: "global; direct Swiss nexus: the University of Basel public site loaded a poisoned StorifyMe web component on 2026-11-14 (urlscan archive, Hudson Rock table); German (FAZ) and UK sites also named"
+    primary_sector_nexus: "direct (Swiss public institution observed) plus transferable exposure for any Swiss public-sector site or e-government portal embedding these vendors' scripts, and for staff iPhones in the DarkSword and Coruna version ranges"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.002, T1189, T1059.007, T1056, T1115, T1565.002, T1657]
+    affected_products: ["Optimizely (customer project JavaScript served from cdn.optimizely.com)", "Kissmetrics (i.js)", "StorifyMe (storifyme-elements.min.js web component and widgets)", "minute-ly (loader.js)", "Apple iOS (Safari), versions in the Coruna and DarkSword routing ranges"]
+    entity_keys: ["tool:coruna", "tool:darksword"]
+    new_entities:
+      - { key: "incident:optimjack-poisoned-vendor-scripts-2026-11", type: incident, name: "OptimJack: poisoned third-party vendor scripts (November 2026)", aliases: ["OPTIMJACK"], summary: "From 2026-11-13 malicious code appeared in script files served by Optimizely (customer project JS), Kissmetrics, StorifyMe and minute-ly, delivering a crypto-clipper and card skimmer to visitors of at least 21 named sites and an iPhone exploit-kit router to iOS visitors (Hudson Rock, Ohey and Amirul Cyber, 2026-11-16 and 2026-11-17); initial access and operator unknown." }
+      - { key: "tool:caishen-ios-c2-v2", type: tool, name: "Caishen iOS C2 V2", aliases: [], summary: "Name under which Ohey says a combined iPhone exploit-kit router and panel is sold on Chinese source-code markets; its router sends iOS 13-17 to Coruna, 18-25 to DarkSword and 26 to a not-yet-working chain (Ohey, 2026-11-05, updated 2026-11-16)." }
+    relation_suggestions:
+      - { subject: "incident:optimjack-poisoned-vendor-scripts-2026-11", object: "tool:coruna", basis: "Hudson Rock and Ohey: a mobile router served via the poisoned vendor scripts delivers a Coruna-associated stage to an iOS 17.5 user-agent capture (a delivery observation, not proven exploitation)" }
+      - { subject: "incident:optimjack-poisoned-vendor-scripts-2026-11", object: "tool:darksword", basis: "Ohey: the router served via the poisoned vendor scripts routes iOS 18 to a DarkSword entry and an iOS 18.6 capture fetched the DarkSword stages (Ohey, 2026-11-17)" }
+      - { subject: "incident:optimjack-poisoned-vendor-scripts-2026-11", object: "tool:caishen-ios-c2-v2", basis: "Ohey: the router seen on the poisoned vendor scripts belongs to the kit advertised as Caishen iOS C2 V2" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The confirmed compromise is malicious code inside responses served from third-party providers’ own script and widget endpoints."
+        attribution: "Hudson Rock (InfoStealers)"
+        source_url: "https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/"
+      - quote: "These are delivery observations, not demonstrated iPhone compromises."
+        attribution: "Hudson Rock (InfoStealers)"
+        source_url: "https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/"
+      - quote: "A FAZ capture records a poisoned StorifyMe widget response. Later captures include Sydney Morning Herald, University of Basel and vidaXL."
+        attribution: "Hudson Rock (InfoStealers)"
+        source_url: "https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/"
+      - quote: "A DNS or network block is useful, but it does not remove the poisoned trusted script."
+        attribution: "Hudson Rock (InfoStealers)"
+        source_url: "https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/"
+      - quote: "From 13 November 2026 the router reached iPhones through scripts that sites load from their vendors."
+        attribution: "Ohey (Kirk)"
+        source_url: "https://ohey.ca/threats/ios-exploits/darksword/"
+      - quote: "GitLab's and Zoom's Optimizely files and minute-ly's loader still carried it at 21:10 UTC on 16 November."
+        attribution: "Ohey (Kirk)"
+        source_url: "https://ohey.ca/threats/ios-exploits/darksword/"
+      - quote: "DarkSword attacks iPhones running iOS 18.4 to 18.7.2 through Safari."
+        attribution: "Ohey (Kirk)"
+        source_url: "https://ohey.ca/threats/ios-exploits/darksword/"
+      - quote: "Attacker JavaScript injected into Optimizely bundles swaps visitor crypto addresses and skims cards on 10+ sites."
+        attribution: "Amirul Cyber"
+        source_url: "https://amirulcyber.com/2026/11/16/optimjack-optimizely-skimmer/"
+    extended_notes: |
+      Suggested classification B2 (Hudson Rock and Ohey are B research sources; the poisoned bytes are independently observed by three parties and archived on urlscan, but no provider has confirmed or explained it). Suggested priority: high for the constituency's web and mobile exposure, not critical (no demonstrated device compromise). event_date: first vendor-response capture 2026-11-13 05:42 UTC (Kissmetrics); Optimizely files switched to the card-skimming payload on 2026-11-16. Related prior entry (no source states a link): 2026-10-28/deadtag-expired-tag-domains-coruna-darksword-iphone-kits, a different delivery channel into the same two kits. IOCs (hosts, hashes, wallet addresses) are in the sources and deliberately omitted here.
+      Exposure: any page that loads Optimizely project JavaScript from cdn.optimizely.com (both /js/<id>.js and /public/<id>/s/ paths appear), Kissmetrics i.js, StorifyMe widgets or web components, or the minute-ly loader. Check the bytes the browser actually receives (Hudson Rock: restore only after preserving response bytes, headers, hashes and project revisions). For devices: Ohey puts DarkSword at iOS 18.4 to 18.7.2 via Safari; Coruna's range in the registry is iOS 13 to 17.2.1 (Report URI via the DeadTag entry).
+      Behaviour for triage: a vendor-hosted script that causes an additional script load from a host unrelated to the vendor; on iPhone/iPad user agents a second boot script and a hidden 320x568 near-transparent frame that loads at most once a day per visitor (Ohey); card POST bodies sent by sendBeacon to an unfamiliar host on checkout pages; html2canvas fetched from a non-site host (Amirul Cyber); wallet addresses changing between copy and paste. Benign lookalike: legitimate Optimizely experiments rewrite DOM text and load code from Optimizely hosts; the discriminator is any request from the vendor script's execution context to a non-vendor, recently registered host (urlscan: the router host was about a week old, its certificate issued 2026-11-09).
+      Detection: CSP script-src violation reports naming unknown hosts (Amirul Cyber says two affected sites survived exactly this way: compromised snippet, unexecuted payload); proxy/DNS/egress logs for managed endpoints visiting the affected pages followed by lookups of newly registered domains; a canary wallet address on a staging page (paste, submit, compare); response-body diffing of served third-party bundles. Post-patch/post-removal check: provider-side project change history, API credentials and integrations (Hudson Rock: shared malicious output proves an integrity problem, not the access path); sensitive pages (payment, login, e-government forms) that loaded the file; session invalidation and card-fraud coordination where the evidence supports it.
+      Hardening (as the sources frame it): CSP script-src as the last line of defence (Amirul Cyber) and scoping which sensitive paths loaded the affected file (Hudson Rock); do not rely on blocking the attacker host alone (embedded fallback copy in the BBC and HSBC UAE files). Gaps: no provider (Optimizely, Kissmetrics, StorifyMe, minute-ly) statement found; no count of exposed visitors; Hudson Rock could not read the GitHub issue it was supplied.
+    watchlist: []
+    borderline: false
+
+  - title: "Communauté de communes Entre Bièvre et Rhône (Isère, 37 municipalities): hacker collective publishes a 605 MB archive; the intercommunality confirms a security incident on 15 November; the archive holds waste-site user records, staff social-security numbers, plain-text credentials and a software supplier's mailing account"
+    sources:
+      - { url: "https://fuitesinfos.fr/article/2026-11-13-communaute-de-communes-entre-bievre-et-rhone", publisher: "Fuites Infos", date: "2026-11-15", role: "primary" }
+      - { url: "https://frenchbreaches.com/alertes/cyberattaque-entre-bievre-et-rhone-donnees-habitants-collectivites-mwf9txigpk5flbkvnm", publisher: "FrenchBreaches", date: "2026-11-15", role: "primary" }
+    discovery_trace: "first seen at: frenchbreaches, feed https://frenchbreaches.com/feed.xml (item 'Communauté de Communes d'Entre Bièvre et Rhône', 2026-11-13, update 2026-11-15) → drilled https://frenchbreaches.com/alertes/cyberattaque-entre-bievre-et-rhone-donnees-habitants-collectivites-mwf9txigpk5flbkvnm → corroboration found via fuitesinfos listing https://fuitesinfos.fr/articles/ → https://fuitesinfos.fr/article/2026-11-13-communaute-de-communes-entre-bievre-et-rhone (carries the victim's written reply and an analysis of the archive) → primary (the victim's own written statement is reproduced as a masked capture; the original reply is not published)"
+    summary: |
+      Facts: a criminal-forum post of 2026-11-13 offers a 605 MB archive (12 files) as a free download, presented as the result of an intrusion into the network of the Communauté de communes Entre Bièvre et Rhône (37 municipalities around Saint-Maurice-l'Exil, northern Isère). On 2026-11-15 the intercommunality told both Fuites Infos and FrenchBreaches in writing that it detected a security incident affecting part of its information system, that security measures were taken, that its services and specialist providers are restoring service progressively and that it will inform the residents concerned. Its reply does not date the detection, name the data or count people, and does not mention the claim or the archive.
+      Fuites Infos analysed the archive itself: about 22,500 waste-collection-site users (name, postal address, phone, e-mail and the trace of each visit), the collectivity's automatic-sending mailbox, ten staff files with the social-security number, two music-conservatory family files (minors), internal-tool login credentials some in clear text, an API key, an inventory of mobile devices from a fleet-management server shared by about a hundred waste-sector organisations, and about 890,000 e-mail addresses from the sending account of Symetri, the vendor of the waste-site management software, whose sender identities also name other collectivities. Fuites Infos did not find several announced elements, including directory accounts, in the part it analysed.
+      Claims only (FrenchBreaches, from the criminals' message): 715 domain accounts, up to 95 TB of backups with 186 virtual machines, and 128 GB of water-management telemetry; FrenchBreaches notes nothing shows control of water installations or a service disruption, and that the figures are the criminals' own. Initial access is not disclosed by any source.
+    region_nexus: "France (neighbouring state); communal public administration with a shared software-supplier environment, directly analogous to Swiss communes and communal associations"
+    primary_sector_nexus: "direct sector analogue (communal administration; supplier blast radius across other collectivities and a shared fleet-management server)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1213, T1114]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:entre-bievre-et-rhone-cyberattack-2026-11", type: incident, name: "Entre Bièvre et Rhône intercommunality cyberattack (November 2026)", aliases: ["Entre Bièvre et Rhône data leak"], summary: "Hacker-collective publication on 2026-11-13 of a 605 MB archive from the Isère intercommunality, covering waste-site users, staff files and a software supplier's sending account; the collectivity confirmed a security incident on 2026-11-15 (Fuites Infos, FrenchBreaches)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "confirme avoir détecté un incident de sécurité informatique affectant une partie de son système d'information"
+        attribution: "Fuites Infos"
+        source_url: "https://fuitesinfos.fr/article/2026-11-13-communaute-de-communes-entre-bievre-et-rhone"
+      - quote: "Plusieurs éléments annoncés, dont des comptes de l'annuaire informatique de la collectivité, n'ont pas été retrouvés dans la partie du dépôt analysée."
+        attribution: "Fuites Infos"
+        source_url: "https://fuitesinfos.fr/article/2026-11-13-communaute-de-communes-entre-bievre-et-rhone"
+      - quote: "Ces affirmations proviennent des cybercriminels et n'ont pas été confirmées indépendamment."
+        attribution: "FrenchBreaches"
+        source_url: "https://frenchbreaches.com/alertes/cyberattaque-entre-bievre-et-rhone-donnees-habitants-collectivites-mwf9txigpk5flbkvnm"
+    extended_notes: |
+      Suggested classification C2 (both outlets are C-reliability breach trackers, but each obtained the victim's written reply; the incident is confirmed, the data scope is the outlets' analysis and the criminals' claims). Suggested priority: routine to notable. event_date 2026-11-13 (claim); 2026-11-15 (victim confirmation, the freshest development).
+      Transferable lessons for communal defenders: (1) a shared supplier environment (a sending account at a waste-management software vendor and a fleet-management server shared by about a hundred organisations) widens one commune's incident into other collectivities' data; (2) clear-text credentials and an API key sat inside exportable mailbox and ticket data; (3) a citizen-service export (waste-site access cards) carries name, address, phone and e-mail on one record, which makes credible fake-notice and fake-billing messages possible, as the sources note.
+      Exposure/Detection: no CVE or product is named, the access path is undisclosed. Telemetry to review in a comparable commune: outbound mail and API-key use at third-party SaaS accounts, support-ticket and automatic-mailbox export access, shared fleet/MDM consoles with other tenants. Post-incident check the sources imply: rotate every credential that appears in a leaked archive, including supplier API keys. Triage: not applicable (no behavioural signature in the sources).
+    watchlist: []
+    borderline: false
+
+  - title: "Kreiskrankenhaus Greiz-Ronneburg (county-owned hospital, Thuringia): extortion attack takes the emergency department off the 112 dispatch map from 14/15 to 16 November; the Landkreis confirms an extortion message and a police lead"
+    sources:
+      - { url: "https://www.landkreis-greiz.de/aktuelles/news-detailseite/hacker-angriff-auf-kreiskrankenhaus-greiz-ronneburg", publisher: "Landkreis Greiz (press release)", date: "2026-11-15", role: "primary" }
+      - { url: "https://www.mdr.de/nachrichten/thueringen/ost-thueringen/greiz/krankenhaus-notaufnahme-,greiz-hackerangriff-100.html", publisher: "MDR Thüringen", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://borncity.com/blog/2026/11/16/cyberangriff-auf-kreiskrankenhaus-greiz-ronneburg-nov-2026/", publisher: "Borns IT- und Windows-Blog", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: borncity, feed https://borncity.com/blog/feed/ (item 'Cyberangriff auf Kreiskrankenhaus Greiz-Ronneburg (Nov. 2026)', 2026-11-16) → drilled https://borncity.com/blog/2026/11/16/cyberangriff-auf-kreiskrankenhaus-greiz-ronneburg-nov-2026/ → pivot: owner's press release, URL https://www.landkreis-greiz.de/aktuelles/news-detailseite/hacker-angriff-auf-kreiskrankenhaus-greiz-ronneburg → pivot: MDR Thüringen, URL https://www.mdr.de/nachrichten/thueringen/ost-thueringen/greiz/krankenhaus-notaufnahme-,greiz-hackerangriff-100.html → primary (the owner's statements; the WebSearch for follow-ups found nothing further)"
+    summary: |
+      Facts (Landkreis Greiz, which owns the Kreiskrankenhaus Greiz-Ronneburg GmbH): the hospital was hit by a hacker attack that the Landkreis says was established on Sunday 2026-11-15 at about 09:00; analysis began at once, the state criminal police office (LKA) and the public prosecutor are involved, patient safety is said not to be endangered, scheduled appointments proceed, the emergency department in Greiz was unavailable, callers should dial 112 and the central dispatch centre in Gera decides where emergencies go. MDR reports the Landkreis spokesperson as saying an extortion message reached the clinic on Sunday, the hospital manager saying the system failure had already been noticed on Saturday evening (a different time from the Landkreis release), the emergency department restarting step by step from Monday evening in coordination with the responsible ambulance-service associations, digital treatment plans still impaired, no statement on patient data while investigations run, and the police investigating a suspect. Thuringia's interior minister said such hybrid attacks have become everyday in Thuringia (a characterisation, not an attribution).
+      Not established by any source: the access path, whether systems were encrypted, whether data left, and who is behind it. Born City alone calls it probably a ransomware group, a hedge, not a finding. The 256-bed, roughly 450-staff size is Born City's figure.
+    region_nexus: "Germany (Thuringia), neighbouring DACH state; county-owned hospital whose emergency department dropped out of the regional 112 dispatch picture"
+    primary_sector_nexus: "direct sector analogue (public-owned hospital and emergency medical service diversion; communal owner)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:kreiskrankenhaus-greiz-ronneburg-extortion-attack-2026-11", type: incident, name: "Kreiskrankenhaus Greiz-Ronneburg extortion attack (November 2026)", aliases: ["Greiz hospital hack"], summary: "Extortion attack on a county-owned Thuringian hospital found on 2026-11-14/15; its emergency department was unavailable until the evening of 2026-11-16 while the dispatch centre in Gera redirected emergencies (Landkreis Greiz, MDR Thüringen)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Auf das Kreiskrankenhaus Greiz-Ronneburg ist ein Hacker-Angriff verübt worden."
+        attribution: "Landkreis Greiz (press release)"
+        source_url: "https://www.landkreis-greiz.de/aktuelles/news-detailseite/hacker-angriff-auf-kreiskrankenhaus-greiz-ronneburg"
+      - quote: "Die Notaufnahme in Greiz steht gegenwärtig nicht zur Verfügung."
+        attribution: "Landkreis Greiz (press release)"
+        source_url: "https://www.landkreis-greiz.de/aktuelles/news-detailseite/hacker-angriff-auf-kreiskrankenhaus-greiz-ronneburg"
+      - quote: "Hinter dem Hackerangriff auf das Kreiskrankenhaus Greiz-Ronneburg steckt ein Erpressungsversuch."
+        attribution: "MDR Thüringen"
+        source_url: "https://www.mdr.de/nachrichten/thueringen/ost-thueringen/greiz/krankenhaus-notaufnahme-,greiz-hackerangriff-100.html"
+      - quote: "Der Systemausfall war nach Angaben des Krankenhauses bereits am Samstagabend bemerkt worden."
+        attribution: "MDR Thüringen"
+        source_url: "https://www.mdr.de/nachrichten/thueringen/ost-thueringen/greiz/krankenhaus-notaufnahme-,greiz-hackerangriff-100.html"
+    extended_notes: |
+      Suggested classification A1 for the core facts (owner's press release plus an independent regional broadcaster), the actor and mechanism are unknown. Suggested priority: notable (a public-owned hospital emergency department closed for roughly a day and a half in a neighbouring state; no Swiss victim). event_date 2026-11-14/15; freshest development 2026-11-16 (emergency department restarting, extortion message confirmed).
+      Gate rationale for the main agent: no home-region nexus, but it clears the sector criterion (public-owned hospital, emergency medical service dispatch dependency) and carries operational lessons for Swiss cantonal and communal hospitals and EMS dispatch: the dispatch centre, not the hospital, redirected emergencies, and recovery was coordinated with the ambulance-service associations.
+      Exposure/Detection: no product or vector named, so no telemetry guidance is supportable from these sources; the first observable was a system failure (Saturday evening per the hospital, 09:00 Sunday per the Landkreis). Triage: not applicable. Gaps to watch: later disclosure of the encrypted or exfiltrated scope and any leak-site claim (none seen).
+    watchlist: []
+    borderline: false
+
+  - title: "BundID (German federal citizen account): automated mass login attempts lock accounts from 14 November; BSI confirms an IT security incident, password login is suspended on 16 November and reported to return behind an e-mail one-time code; no compromise evidenced"
+    sources:
+      - { url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html", publisher: "heise security", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.finanznachrichten.de/nachrichten-2026-11/70142135-hackerangriff-auf-digitales-buergerkonto-des-bundes-003.htm", publisher: "dts Nachrichtenagentur via finanznachrichten.de (citing Handelsblatt)", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://borncity.com/blog/2026/11/15/angriffe-auf-bundid-konten-14-11-2026/", publisher: "Borns IT- und Windows-Blog", date: "2026-11-15", role: "corroborating" }
+      - { url: "https://www.ad-hoc-news.de/wissenschaft/bundid-nach-angriffswelle-passwort-login-jetzt-nur-noch-mit-e-mail-code/70522344", publisher: "ad-hoc-news.de (boerse-global.de)", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, feed https://www.heise.de/security/feed.xml (item 'BundID: Massenhafte Angriffe führen zu Kontosperrungen', 2026-11-16) → drilled https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html → corroboration: WebSearch (\"BundID Cyberangriff BSI bestätigt massenhafte Login-Versuche Konten gesperrt Passwort-Reset\") → pivot: dts/Handelsblatt copy, URL https://www.finanznachrichten.de/nachrichten-2026-11/70142135-hackerangriff-auf-digitales-buergerkonto-des-bundes-003.htm → pivot: Born City reader report, URL https://borncity.com/blog/2026/11/15/angriffe-auf-bundid-konten-14-11-2026/ → pivot: ad-hoc-news follow-up, URL https://www.ad-hoc-news.de/wissenschaft/bundid-nach-angriffswelle-passwort-login-jetzt-nur-noch-mit-e-mail-code/70522344 → primary (BSI spokesperson statements given to heise security and to Handelsblatt; the BundID portal notice is quoted by heise, the portal itself is a JavaScript shell we could not read)"
+    summary: |
+      Facts (BSI spokesperson, to heise security and, separately, to Handelsblatt): the BSI is aware of an IT security incident involving BundID accounts, "automated, mass login attempts" against BundID accounts, whose failed attempts locked accounts, triggered automated e-mails and asked holders to reset passwords; the attack was fended off with countermeasures the BSI did not name; the BSI has no evidence that BundID accounts were compromised and gave no count of affected accounts. heise quotes the BundID portal notice that username-and-password login was disabled while eID and other credentials still work, and says locked accounts are not unlocked across the board: holders must pass the password reset or use eID. Born City recorded a reader's lockout notice from 2026-11-14, the earliest dated sign.
+      One aggregator (ad-hoc-news.de, which cites heise) reports that password login came back on Monday afternoon behind a mandatory e-mailed one-time code for all accounts, that the BSI described the pattern as credential stuffing, and that the German interior-security debate is running (a Bundestag cyber-defence bill passed on 2026-11-12). We could not confirm the one-time-code and credential-stuffing statements from the BSI or heise directly, treat them as reported.
+      Ours, not a source's: the lockout side effect turned a login-volume attack into an availability problem for a citizen identity service while the strong-credential route (eID, ELSTER certificate) carried on, which is the design point Swiss federal and cantonal login services (AGOV, CH-Login, cantonal portals) share.
+    region_nexus: "Germany (federal government e-government identity service); neighbouring state, direct design analogue for Swiss federal and cantonal citizen and employee login services"
+    primary_sector_nexus: "direct sector analogue (public-sector identity provider for administrative services)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1110.004]
+    affected_products: ["BundID"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:bundid-mass-login-attempts-2026-11", type: incident, name: "BundID mass login attempts and lockouts (November 2026)", aliases: ["BundID credential-stuffing wave"], summary: "From 2026-11-14 automated mass login attempts against German BundID accounts triggered lockouts; the BSI confirmed an IT security incident on 2026-11-16, said the attack was fended off and has no evidence of compromised accounts (heise security, Handelsblatt via dts)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Dabei ist es zu automatisierten, massenhaften Login-Versuchen in BundID-Konten gekommen"
+        attribution: "heise security"
+        source_url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html"
+      - quote: "Auf eine Kompromittierung von BundID-Konten liegen dem BSI derzeit keine Hinweise vor"
+        attribution: "heise security"
+        source_url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html"
+      - quote: "Dem BSI ist ein IT-Sicherheitsvorfall im Zusammenhang mit Konten der BundID bekannt"
+        attribution: "dts Nachrichtenagentur via finanznachrichten.de (citing Handelsblatt)"
+        source_url: "https://www.finanznachrichten.de/nachrichten-2026-11/70142135-hackerangriff-auf-digitales-buergerkonto-des-bundes-003.htm"
+      - quote: "Aktuell gibt es zahlreiche unberechtigte Anmeldeversuche auf BundID-Konten"
+        attribution: "heise security"
+        source_url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html"
+    extended_notes: |
+      Suggested classification A1 for the BSI-confirmed core (the same authority statement reached two outlets independently); the one-time-code and credential-stuffing details are aggregator-only (C3 for those). Suggested priority: notable to routine (no compromise, attack repelled). event_date 2026-11-14 (first dated lockout), freshest development 2026-11-16 (BSI confirmation; password login suspended and, per an aggregator, restored behind an e-mailed code). Likely also reached S2's home-region sweep; dedup on the entity key.
+      Exposure: citizen or staff login services that offer username-and-password sign-in next to a stronger route and lock accounts on repeated failures. Detection (telemetry class): authentication logs showing failed-login volume spread across many accounts and sources in the same period, a spike in lockout notification e-mails and in help-desk contacts, which is how the incident became visible (a reader's lockout notice and the portal banner). Triage: ordinary forgotten-password lockouts are per-account and spread over time, this wave was reported across many accounts at once. Post-incident check: the BSI says no compromise was seen, so the checks are successful logins following bursts of failures and password-reset requests for accounts that were locked.
+    watchlist: []
+    borderline: false
+
+  - title: "Maileva (La Poste / Docaposte mail-dispatch platform): La Poste confirms 22 million recipients' names and postal addresses stolen in a mid-September attack; hospitals, social-housing bodies and other public-facing senders warn that letter contents may have been read"
+    sources:
+      - { url: "https://www.lapostegroupe.com/fr/actualite/cyberattaque-de-maileva-ce-quil-faut-savoir", publisher: "La Poste Groupe (communiqué)", date: "2026-11-15", role: "primary" }
+      - { url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/des-courriers-ont-pu-etre-lus-ce-que-l-on-sait-de-la-cyberattaque-contre-maileva-filiale-de-la-poste-qui-a-conduit-au-vol-de-donnees-de-22-millions-de-personnes_8283266.html", publisher: "franceinfo", date: "2026-11-15", role: "corroborating" }
+      - { url: "https://next.ink/267710/cyberattaque-sur-maileva-filiale-de-la-poste-22-millions-de-personnes-exposees/", publisher: "Next", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://cyberinsider.com/maileva-data-breach-22-million-french-addresses/", publisher: "CyberInsider", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: cyberinsider, feed https://cyberinsider.com/feed/ (item 'Maileva data breach exposes names and addresses of 22 million people', 2026-11-16) and databreaches-net feed https://databreaches.net/feed/ ('Hack at French postal unit exposes 22 million people's data') → drilled https://cyberinsider.com/maileva-data-breach-22-million-french-addresses/ → pivot: La Poste Groupe communiqué, URL https://www.lapostegroupe.com/fr/actualite/cyberattaque-de-maileva-ce-quil-faut-savoir → pivot: franceinfo, URL https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/des-courriers-ont-pu-etre-lus-ce-que-l-on-sait-de-la-cyberattaque-contre-maileva-filiale-de-la-poste-qui-a-conduit-au-vol-de-donnees-de-22-millions-de-personnes_8283266.html → pivot: Next, URL https://next.ink/267710/cyberattaque-sur-maileva-filiale-de-la-poste-22-millions-de-personnes-exposees/ → primary (the group's own communiqué)"
+    summary: |
+      Facts (La Poste Groupe communiqué of 2026-11-15): Maileva, a Docaposte subsidiary that sends documents for client organisations, suffered a complex cyberattack in mid-September; no alteration or destruction of data was found; 22 million recipients of mailings from client companies and institutions are affected by a leak of their identification data (name, forename, postal address); the content of the documents belongs to the clients' relationship with their own recipients; clients were informed; the CNIL was notified and a complaint filed. The Paris prosecutor opened an investigation for intrusion into an automated data-processing system, assigned to the cybercrime brigade (franceinfo).
+      Disclosed by victims before the group spoke: Flandre Opale Habitat (social housing, 2026-11-03) warned that data in letters sent over the past ten years may have been accessed, including housing and invoice-amount information; Hôpital Foch (2026-11-06) said payment-reminder letters sent between 9 and 23 September via its billing provider Kiwee, which uses Maileva, may have been read by an attacker (invoice number, date of care, amount); a Finistère occupational-health service warned on 2026-10-09 of unauthorised access to the mail-tracking database and said it had no sign the contents were read. Maileva suspended its services for about six days from late September after what Solutions Numériques called an attempt to hijack the platform. Neither the intrusion method nor the number of notified individuals is public.
+      Assessment attributed: Almond's secretary general calls Maileva a provider that presents systemic risk because tens of thousands of organisations use it (franceinfo). The customer count differs between sources (Next: more than 20,000 clients, franceinfo: more than 70,000 users on Maileva's site), do not quote either as settled.
+    region_nexus: "France; no Swiss victim or Swiss sender stated in any source"
+    primary_sector_nexus: "indirect (supplier incident whose clients include hospitals, social-housing bodies and other public institutions; transferable to Swiss public bodies that outsource letter printing and dispatch)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1213]
+    affected_products: ["Maileva (Docaposte) online mail and registered-letter platform"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:maileva-docaposte-cyberattack-2026-09", type: incident, name: "Maileva (Docaposte) cyberattack (September 2026)", aliases: ["Maileva breach"], summary: "Mid-September 2026 attack on the La Poste group's Maileva mail-dispatch platform; La Poste confirmed on 2026-11-15 that identification data of 22 million recipients leaked and clients reported that letter contents may have been read (La Poste Groupe, franceinfo)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "22 millions de personnes destinataires d’envois par des entreprises et institutions clientes de Maileva, sont concernées par une fuite de leurs données d’identification (nom, prénom, adresse postale)."
+        attribution: "La Poste Groupe (communiqué)"
+        source_url: "https://www.lapostegroupe.com/fr/actualite/cyberattaque-de-maileva-ce-quil-faut-savoir"
+      - quote: "Elle imprime et expédie des courriers pour de nombreuses grandes entreprises, mais aussi des institutions publiques, comme des bailleurs sociaux et des hôpitaux."
+        attribution: "franceinfo"
+        source_url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/des-courriers-ont-pu-etre-lus-ce-que-l-on-sait-de-la-cyberattaque-contre-maileva-filiale-de-la-poste-qui-a-conduit-au-vol-de-donnees-de-22-millions-de-personnes_8283266.html"
+      - quote: "La brigade de lutte contre la cybercriminalité a été chargée de l'enquête, a confirmé dimanche le parquet de Paris."
+        attribution: "franceinfo"
+        source_url: "https://www.franceinfo.fr/internet/securite-sur-internet/cyberattaques/des-courriers-ont-pu-etre-lus-ce-que-l-on-sait-de-la-cyberattaque-contre-maileva-filiale-de-la-poste-qui-a-conduit-au-vol-de-donnees-de-22-millions-de-personnes_8283266.html"
+    extended_notes: |
+      Suggested classification A1 for the 22-million fact and the confirmation (the group's own communiqué plus national press), B2 for the claim that letter contents were read (only individual clients' notices). Suggested priority: routine. event_date mid-September 2026 (attack), 2026-11-15 (confirmation, the in-window development).
+      Gate rationale: out-of-nexus by geography, so it ships only on the transferable supply-chain lesson (d) or global scale (a); returned borderline on that basis. Lesson for Swiss communal and cantonal bodies: a document-dispatch supplier holds the letter content and recipient lists of every client, the group's own public communiqué came on 15 November, about eight weeks after the incident became public through clients' notices and press reports of 24 September, and clients had to notify their own recipients. Exposure/Detection: no CVE or product defect is named, no hunting guidance is supportable. Triage: recipients who receive an unexpected payment reminder should verify it with the sender through an independent channel (CyberInsider's advice).
+    watchlist: []
+    borderline: true
+    borderline_reason: "No Swiss nexus; qualifies only as a supplier blast-radius lesson for public bodies that outsource letter dispatch, plus national-scale confirmation (22 million) inside the window"
+
+  - title: "Quantum Systems (German military drone maker): company confirms an active attack at the end of October; FT and Spiegel report a malicious QBase update distributed to customers and the Bundeswehr grounding its drones, which the company says resumed"
+    sources:
+      - { url: "https://quantum-systems.com/news/cyberattack-defeated/", publisher: "Quantum Systems (statement)", date: "2026-11-12", role: "primary" }
+      - { url: "https://securityaffairs.com/203085/cyber-crime/german-military-grounds-quantum-systems-drones-following-reported-cyberattack.html", publisher: "Security Affairs", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://resiliencemedia.co/quantum-systems-hit-by-cyberattack-prompting-drone-grounding/", publisher: "Resilience Media", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://news.lavx.hu/article/quantum-systems-drones-return-to-service-after-malware-found-in-software-update", publisher: "LavX News", date: "2026-11-14", role: "corroborating" }
+      - { url: "https://www.zataz.com/quantum-systems-une-cyberattaque-inquiete-larmee-allemande/", publisher: "ZATAZ", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Quantum Systems drone maker cyber attack malicious software update German army grounded Financial Times\"), prompted by a ZATAZ lead in the zataz feed https://www.zataz.com/feed/ (item 'Quantum Systems : une cyberattaque inquiète l'armée allemande', 2026-11-16, URL https://www.zataz.com/quantum-systems-une-cyberattaque-inquiete-larmee-allemande/) → pivot: Security Affairs, URL https://securityaffairs.com/203085/cyber-crime/german-military-grounds-quantum-systems-drones-following-reported-cyberattack.html (links the vendor statement, Der Spiegel and the FT) → primary: vendor statement, URL https://quantum-systems.com/news/cyberattack-defeated/ (Spiegel and FT articles are paywalled and were not fetched)"
+    summary: |
+      Facts (Quantum Systems statement of 2026-11-12, Gilching): the company identified a cybersecurity incident at the end of October 2026, an immediate investigation showed an active cyberattack by hostile actors, the threat was contained with authorities, and it says there is no risk in operating its unmanned systems; it adds that the European defence industry faces persistent attacks, particularly firms supporting Ukraine. The statement gives no technical detail.
+      Reported, not company-confirmed (Der Spiegel and the Financial Times, citing internal sources, as relayed by Security Affairs and Resilience Media; neither original fetched): attackers may have used a malicious update file for QBase, the Windows ground-control and mission-planning software, reportedly after reaching the update server; an unexpected update reached customers and raised alarms; the number of installations is unknown; the Bundeswehr grounded drones and excluded them from an exercise; MAD, BfV and BSI are reportedly involved. Quantum Systems said the Bundeswehr was the only customer to ground systems and that the fleet operates normally (LavX, relaying the company), Reuters reportedly confirmed on 2026-11-13 that the drones flew again. No actor is named. The in-window sources of 2026-11-16 restate the 12 to 13 November reporting, the company's statement and the reporting are 4 to 5 days old.
+    region_nexus: "Germany; no Swiss customer or Swiss exposure is stated by any source (a Swiss-media search found none)"
+    primary_sector_nexus: "indirect (defence-industry supplier whose update channel was reportedly abused; relevant to Swiss Armed Forces supplier assurance only as a transferable pattern)"
+    sector: "defence"
+    cves: []
+    techniques: [T1195.002]
+    affected_products: ["Quantum Systems QBase (ground-control and mission-planning software)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:quantum-systems-qbase-update-compromise-2026-10", type: incident, name: "Quantum Systems cyberattack and reported malicious QBase update (October 2026)", aliases: [], summary: "Quantum Systems confirmed on 2026-11-12 an active cyberattack at the end of October 2026; Der Spiegel and the Financial Times report a malicious update for the QBase ground-control software reached customers and the Bundeswehr grounded drones, which the company says resumed." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Quantum Systems identified a cybersecurity incident at the end of October 2026. An immediate internal investigation revealed an active cyberattack by hostile actors."
+        attribution: "Quantum Systems (statement)"
+        source_url: "https://quantum-systems.com/news/cyberattack-defeated/"
+      - quote: "However, these details have not been officially confirmed, and no attacker has been identified."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/203085/cyber-crime/german-military-grounds-quantum-systems-drones-following-reported-cyberattack.html"
+      - quote: "The Bundeswehr was the only customer to ground their systems as a precaution."
+        attribution: "LavX News"
+        source_url: "https://news.lavx.hu/article/quantum-systems-drones-return-to-service-after-malware-found-in-software-update"
+    extended_notes: |
+      Verification: the incident is confirmed by the vendor (carve-out-grade first-party statement), the update-channel mechanism and the grounding rest on FT and Spiegel reporting we saw only through secondary outlets, so the mechanism is single-source (relayed). Suggested classification B3 for the mechanism, A for the vendor's own confirmation. Suggested priority: routine at most, and only if the main agent accepts the borderline rationale. event_date 2026-11-12 (statement); late October 2026 (attack).
+      Gate rationale: out-of-nexus; (d) supply-chain blast radius onto a military customer through the vendor's own update distribution, a transferable pattern for any supplier whose software updates reach government customers. Exposure/Detection: the company says only that the incident was contained; the sources offer no hunting detail. Defender-side lessons are the generic ones the secondary outlets state (signed and independently verifiable updates, restricted access to update servers, a way to stop or roll back an update); those are commentary by Security Affairs and LavX, not vendor or authority guidance.
+    watchlist: []
+    borderline: true
+    borderline_reason: "No stated Swiss customer or exposure; source-confirmed incident but the update-server mechanism is relayed press reporting (FT, Spiegel not fetched); publication in the window is a restatement of 12-13 November events"
+
+  - title: "Mass hoax-threat e-mails to schools, flights and media signed 'Mikhail Andropov': third wave to at least 100 Italian public schools on 16 November adds a poisoned-canteen warning, sent from a probably hacked Vietnamese university mailbox; police advise against evacuation on the content alone"
+    sources:
+      - { url: "https://de.euronews.com/2026/11/16/neue-bomben-und-giftwarnungen-per-e-mail-an-italienische-schulen-ohne-raumungen", publisher: "Euronews (German)", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.scotland.police.uk/what-s-happening/news/2026/november/statement-after-threatening-messages-sent-to-a-number-of-schools-in-scotland/", publisher: "Police Scotland (statement)", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.infostealers.com/article/school-bomb-threats-hudson-rock-finds-reported-sender-accounts-in-infostealer-data/", publisher: "Hudson Rock (InfoStealers)", date: "2026-11-12", role: "corroborating" }
+    discovery_trace: "first seen at: infostealers-hudson-rock, feed https://www.infostealers.com/feed/ (item 'School Bomb Threats: Hudson Rock Finds Reported Sender Accounts in Infostealer Data', 2026-11-12, inside the 49 h lookback of that record) → drilled https://www.infostealers.com/article/school-bomb-threats-hudson-rock-finds-reported-sender-accounts-in-infostealer-data/ → WebSearch (\"Bombendrohung E-Mail Schulen Schweiz Polizei Andropov November 2026\") → pivot: Euronews German, URL https://de.euronews.com/2026/11/16/neue-bomben-und-giftwarnungen-per-e-mail-an-italienische-schulen-ohne-raumungen → pivot: Police Scotland statement, URL https://www.scotland.police.uk/what-s-happening/news/2026/november/statement-after-threatening-messages-sent-to-a-number-of-schools-in-scotland/ → primary (police statement for the UK waves; Euronews for the Italian third wave; PSNI page returned HTTP 403 on every transport)"
+    summary: |
+      Facts: on 2026-11-11 threatening e-mails signed "Mikhail Andropov" reached schools in Italy and the UK; Hudson Rock, citing ANSA, says about 6,000 Italian schools received them and some evacuated, and cites Northern Ireland police for more than 300 schools there. Police Scotland's statement of 13 November assesses the messages as hoaxes, says they were sent widely to distribution lists across the UK and Northern Ireland, that its cyber unit is working out the source and that schools need not be evacuated on the content alone; its update says specialists established the hoax by examining the sending address. A third wave on Monday 16 November reached at least 100 Italian public schools (Euronews): a bomb due in 40 minutes plus a warning that a canteen employee had mixed sodium azide and potassium cyanide into the food; there were no evacuations because new Italian rules no longer provide for evacuating on serial e-mails without concrete details, and canteen checks found nothing. Euronews says the e-mail came from an account of a Vietnamese university that was very probably hacked; the Italian postal police are investigating and the government will brief parliament on 18 and 19 November.
+      Hudson Rock found two university sender addresses tied to earlier waves in its infostealer holdings (an Egyptian record from a 2021 Vidar infection, a Taiwanese entry from an aggregated collection) and states this shows credential exposure years before the messages, not that the credentials were used and not a common operator for every wave. Attribution: none; the signature and group labels are the sender's claims (Hudson Rock).
+    region_nexus: "Italy, UK, Ireland (waves seen); no Swiss school or police force named by any source we found"
+    primary_sector_nexus: "indirect (schools, police and emergency-service triage of serial hoax threats; compromised education-sector mailboxes used as senders)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1586.002]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:andropov-hoax-threat-emails-2026-11", type: campaign, name: "'Mikhail Andropov' hoax-threat e-mail waves (November 2026)", aliases: ["Andropov bomb-threat e-mails"], summary: "Serial hoax e-mails signed Mikhail Andropov sent from compromised university mailboxes to schools, airlines and media across Europe from early November 2026; third wave to Italian schools on 2026-11-16 added a poisoned-canteen warning (Euronews, Police Scotland, Hudson Rock)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Die Mail ist über ein E-Mail-Konto einer vietnamesischen Universität verschickt worden, das mit hoher Wahrscheinlichkeit gehackt wurde."
+        attribution: "Euronews (German)"
+        source_url: "https://de.euronews.com/2026/11/16/neue-bomben-und-giftwarnungen-per-e-mail-an-italienische-schulen-ohne-raumungen"
+      - quote: "Die neuen Sicherheitsvorschriften sehen die Räumung einer Schule bei Serienmails ohne konkrete Angaben, wie in diesem Fall, grundsätzlich nicht mehr vor."
+        attribution: "Euronews (German)"
+        source_url: "https://de.euronews.com/2026/11/16/neue-bomben-und-giftwarnungen-per-e-mail-an-italienische-schulen-ohne-raumungen"
+      - quote: "These messages were immediately assessed and are being treated as hoaxes."
+        attribution: "Police Scotland (statement)"
+        source_url: "https://www.scotland.police.uk/what-s-happening/news/2026/november/statement-after-threatening-messages-sent-to-a-number-of-schools-in-scotland/"
+    extended_notes: |
+      Suggested classification B1 for the wave facts (police statement plus national-press reporting), B3 for the infostealer link (Hudson Rock states exposure, not use). Suggested priority: routine. event_date 2026-11-11 (first wave), 2026-11-16 (third wave, the in-window development).
+      Gate rationale: out-of-nexus (no Swiss recipient found), but schools, police and emergency-service dispatch are the constituency's own triage problem if the template reaches Swiss recipients; returned borderline. Behaviour for triage: serial mass e-mail to many institutions at once, same template and signature, sender address in a foreign education-sector tenant; discriminators the sources give: examine the sender address and domain (Police Scotland), no concrete detail (no location, device or demand), identical text across many recipients (Italian protocol). Detection for mail operators: outbound mass mail from education-sector accounts with leaked credentials, which is the piece an operator of such a tenant controls. Exposure: education and public bodies whose staff or student mailboxes appear in infostealer data (Hudson Rock).
+    watchlist: []
+    borderline: true
+    borderline_reason: "No Swiss recipient confirmed; relevance is the transferable hoax-triage protocol and the compromised education-sector mailbox sender pattern for Swiss schools, police and dispatch"
+
+borderline_drops:
+  - { title: "CNIL: ten simplified sanctions against territorial authorities and one public body for cybersecurity failings (no MFA for administrators, permanent shared supplier access, incomplete logging, obsolete servers, missing RGS homologation)", url: "https://www.cnil.fr/fr/sanctions-cybersecurite-collectivites-territoriales", reason: "published 2026-11-09/10, outside the 26 h window (cnil-fr lookback is 26 h); strongly relevant to communal-level obligations and a policy item for S2 or the main agent if the store lacks it; mentions NIS2 transposition obliging territorial authorities" }
+  - { title: "Inside IT 'Derselbe Hacker verkauft erneut Schweizer Daten': one forum seller offers data of the ISP Solnet (Roundcube webmail logs 13-31 October, confirmed by Solnet), the Davos Klosters tourism organisation and four Swiss municipalities (tags Ebikon, Gersau, Meggen, Wil)", url: "https://www.inside-it.ch/derselbe-hacker-verkauft-erneut-schweizer-daten-20261106", reason: "published 2026-11-06 (page date 2026-11-11), outside the window; body is paywalled so the municipalities' statements could not be read; not in prior_coverage; recommend S2 (Swiss regional press) or the main agent check whether the four communes confirmed anything and whether Solnet/BACS added detail" }
+  - { title: "JASP-K9 (French supplier of equipment to law enforcement): a pseudonymous actor claims 1,699 then 2,000+ invoices", url: "https://frenchbreaches.com/alertes/cyberattaque-jasp-k9-1699-factures-fournisseur-forces-ordre-mw17nkhxufxntcyogu", reason: "PD-6: claim by an actor on X, no victim statement, FrenchBreaches itself says it is unconfirmed and finds no sign of operational police files" }
+  - { title: "German municipal incidents on kommunaler-notbetrieb.de: Stadtverwaltung Eichstätt (data stolen, letters to affected people 2026-11-13), Kreisverwaltung Oberspreewald-Lausitz (LKA investigating, 2026-11-12), Landratsamt Cham DDoS (2026-10-08)", url: "https://kommunaler-notbetrieb.de/", reason: "last developments 4 to 5 days old or older, outside the window; not in the store; communal analogues for Swiss defenders if the main agent wants a catch-up entry" }
+  - { title: "Medi Porta, Chur (private medical centre, Cloak claims 87 GB) and the Köniz butcher refrigeration attack", url: "https://www.netzwoche.ch/news/2026-11-09/cyberkriminelle-erbeuten-patienten-und-mitarbeiterdaten-von-churer", reason: "Chur item is private-sector and 2026-11-09 (outside the window); the Köniz and Volg refrigeration cases are already in the store inside the Danfoss entry" }
+  - { title: "1001RDV Santé / Logicielnet (9 to 23 million patients), Softway Medical radiology groups (GRIM, Imagerie des 3 Rivières), Ipsos, Rassemblement National, French sports federations", url: "https://frenchbreaches.com/feed.xml", reason: "private-sector or political-party victims, no Swiss or public-sector nexus, claims largely unconfirmed" }
+  - { title: "Coles, LEGO BrickLink, Expedia claim, Maersk extortion claim, Servier, Trezor/Skladon, Legoland (Korea), Douglas County School District (Nevada, SSNs released through a public-records request), Boston University", url: "https://databreaches.net/feed/", reason: "out-of-nexus (a)-(d) not met; Expedia and Maersk are criminal claims without victim confirmation (PD-6)" }
+  - { title: "ANSSI REACTIV second report (2026-11-12; includes an intrusion into the Foreign Ministry's library portal via stolen technical accounts) and the Check Point wiper development (BleepingComputer/Netzwoche 2026-11-16)", url: "https://fuitesinfos.fr/article/2026-11-12-ministere-de-l-europe-et-des-affaires-etrangeres", reason: "already in the store (anssi-reactiv entry, last development 2026-11-13; check-point-php2shell entry already names the ESXi wiper)" }
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured; sweep is a no-op (suppliers checked=0)"
+
+candidate_sources:
+  - id: ohey-ca
+    publisher: "Ohey (ohey.ca web threat research)"
+    url: "https://ohey.ca/research/"
+    category: research
+    why: "Dated primary web-threat research (ClickFix, skimmers, iOS exploit-kit routers) with first-party captures; the iOS branch and the vendor-script timeline of OptimJack come from it. No RSS (feed.xml, rss.xml, feed all 404); `url --direct https://ohey.ca/research/` and `https://ohey.ca/sitemap.xml` return listings and `extract` reads articles. Reliability B."
+
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "RECIPE CHANGE (not a failure): the main host answered this run. `python3 tools/fetch_source.py ico-uk enforcement 12` returned 12 dated enforcement items from https://ico.org.uk/sitemap.xml (232 in the sitemap; HTTP 200), and `extract https://ico.org.uk/action-weve-taken/enforcement/2026/11/somerset-council/` returned the page (served direct-raw, raw HTML with DC.Date metadata). The news listing page is hydrated by JavaScript (WebFetch saw only 'Loading' placeholders), so enumerate through the sitemap or the `ico-uk enforcement` subcommand rather than the listing. The Welsh mirror recipe (`url --direct https://cy.ico.org.uk/sitemap.xml`, filter out /action-weve-taken/decision-notices/) also still works. Newest enforcement items: Somerset Council (2026-11-12), Bluon Energy (2026-11-04), Staffordshire Police (2026-10-28), Local Government Data Unit Wales (2026-10-20), Metropolitan Police Service (2026-10-14): all outside the 49 h lookback, none in-window. The main agent may want to refresh the ico-uk record's newest_note and fetch_method."
+  - source_id: ransomware-live
+    reason: "`extract https://www.ransomware.live/country/CH` still returns an undated victim list with names partly stripped (no usable in-window filter). Working supplement this run: `python3 tools/fetch_source.py feed https://www.ransomware.live/rss.xml 500` returned 200 dated items (2026-11-12 to 2026-11-17; titles carry group, victim and deadline, no country field); no Swiss or DACH public-sector victim in it. `url https://www.ransomware.live/recent` returns about 400 KB of HTML without row structure we could parse."
+  - source_id: fuitesinfos
+    reason: "Recipe confirmed: `url --direct https://fuitesinfos.fr/articles/` (trailing slash) returns the listing with article hrefs of the form /article/<YYYY-MM-DD>-<slug>; `extract` reads each article, including the victim reply and data-category lists."
+  - source_id: handelsblatt (cited page, not a slice record)
+    reason: "extract returned a JavaScript shell (direct-raw); the dts/finanznachrichten.de copy of the same Handelsblatt report was read instead."
+  - source_id: inside-it-ch (paywall)
+    reason: "Inside IT Plus articles show only the lede to `extract` (Abo paywall); the 2026-11-06 municipal data-sale article could not be read in full."
+  - source_id: webfetch-summariser
+    reason: "WebFetch of https://ohey.ca/threats/ios-exploits/darksword/ returned an API safeguard error from the summariser model (exploit-kit content); `extract` read the same page fully. For exploit-kit or malware research pages prefer `extract` over WebFetch. urlscan.io's API answers 403 'not logged in' on every transport; WebFetch of the human result page works."
+
+source_ledger:
+  - { id: cyberdaily-au, tier: standard, attempted: true, transport: "extract (listing)", horizon_hours: 49, in_horizon_items: 8, returned: 0, note: "listing items in horizon: Coles confirmed incident, LEGO BrickLink breach, Expedia extortion claim, VCAA website defacement, Qantas/Accenture, all out-of-nexus; dropped per PD-11 (see borderline_drops)" }
+  - { id: fuitesinfos, tier: standard, attempted: true, transport: "url --direct /articles/ + extract per article", horizon_hours: 49, in_horizon_items: 30, returned: 1, note: "returned the Entre Bièvre et Rhône confirmation (merged with the FrenchBreaches record); MEAE library-portal item is already covered by the ANSSI REACTIV entry" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "bridge:ico-uk enforcement 12 + url --direct cy.ico.org.uk/sitemap.xml + extract", horizon_hours: 49, in_horizon_items: 1, returned: 0, note: "main host answers again via the ico-uk enforcement subcommand (sitemap) and extract; no enforcement or breach-notice item inside the 49 h lookback (newest: Somerset Council 2026-11-12); Welsh mirror also confirmed" }
+  - { id: infostealers-hudson-rock, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 49, in_horizon_items: 4, returned: 2, note: "OptimJack (poisoned vendor scripts) and the school bomb-threat sender-account analysis (feeds the Andropov item); weekly report and marketplace post carry no public-sector content" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "extract /country/CH (undated) + feed rss.xml", horizon_hours: 49, in_horizon_items: 0, returned: 0, note: "no dated Swiss item obtainable from the country page; RSS (200 items) had no Swiss or DACH public-sector victim" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge:sec-edgar 8k 2026-11-14..2026-11-17 item 1.05 + efts full-text supplement", horizon_hours: 49, in_horizon_items: 0, returned: 0, note: "0 hits for Item 1.05; the supplementary full-text query returned 16 8-K exhibits, all boilerplate forward-looking-statement matches (checked Henry Schein)" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "url --direct (listing) + extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest listing item dated 2026-11-12; the territorial-authority sanctions (2026-11-09/10) are outside the 26 h horizon, noted in borderline_drops" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "feed https://cyberinsider.com/feed/", horizon_hours: 26, in_horizon_items: 6, returned: 1, note: "Maileva breach returned (borderline); Trezor/Skladon, Meta fine, Tor DDoS, Retadup out of scope for S4" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed https://databreaches.net/feed/ 15", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "items are out-of-nexus (Legoland Korea, JPMorgan outage, Douglas County SD Nevada, Boston University suit) or already covered (ARTEX); Maileva discovered here as well but cited via primary" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "feed https://frenchbreaches.com/feed.xml 25", horizon_hours: 26, in_horizon_items: 26, returned: 1, note: "returned Entre Bièvre et Rhône (victim confirmation 2026-11-15, within the 72 h developing window); JASP-K9 claim dropped per PD-6; the rest are private-sector victims" }

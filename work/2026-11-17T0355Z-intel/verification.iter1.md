@@ -1,0 +1,53 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-11-17T04:50:57Z · ended_at=2026-11-17T05:10:21Z · duration_seconds=1164
+
+## Verification report — 2026-11-17T0355Z-intel (iteration 1)
+
+Scope: 6 new entries, 2 updated entries (whole entry plus `git diff HEAD`), the run record, dedup context. All 153 ledger claims carry a verdict row in `verification.iter1.claims.yaml` (140 ok, 10 F3, 2 F14, 1 F13). Cached bodies were compared byte-for-byte with live `extract` fetches (identical for Unit 42, Symantec, GTIG, Hudson Rock, Ohey, Amirul, Huntress 2026-11-16, FG-IR-26-273, heise, WEB.DE, Handelsblatt, Craft sources); the other cited pages (20 FortiGuard PSIRT pages including raw HTML metadata, Fortinet blog, NCSC.ch post 13092 via `ncsc-csh`, ConnectWise disclosure, Huntress 2026-09-03, CISA KEV via the bridge) were read live this iteration. Spot confirmations: every Fortinet CVE id and CVSS matches its PSIRT page; FG-IR-26-273 was revised 2026-11-16 and its FGCP text, hardening configuration and virtual patch match the new section; CVE-2026-84869 KEV dateAdded 2026-09-11; CVE-2026-123488 is not in KEV; Craft's GHSA is critical, 2026-10-22, MySQL/MariaDB only, no CVE id on the page.
+
+### Citation does not support the claim
+- #1 F3, OptimJack (headline, summary, body para 1 sentence 1, actions[0]): "Since 2026-11-13, scripts served by four third-party providers (Optimizely customer project files, Kissmetrics, StorifyMe and minute-ly) have carried code that swaps cryptocurrency addresses, skims payment cards and, on iPhones, adds a router". Hudson Rock: StorifyMe, Kissmetrics and minute-ly deliver `webshell[.]lol/get.js`, and "A response that only delivers webshell/get.js establishes the mobile-router path, not the presence of those financial-theft modules." The Basel capture is a StorifyMe component, so the headline pairs "Basel site hit" with "skim cards, swap wallets" on evidence that covers only the router path. Ohey: router loader from 13 Nov; "On 16 November the Optimizely files switched to 1688360[.]cc/track.js. That script swaps copied wallet addresses and skims card numbers". Hudson Rock: "Observation times do not establish the complete attack window"; its verified captures for Optimizely and minute-ly start 16 Nov, and "From 2026-11-13" is cited to Hudson Rock for all four providers (minute-ly's start is undated in Ohey). Fix: tie clipper and skimmer to the Optimizely track.js payload, state router-only evidence for the other three, cite the 13 Nov start to Ohey.
+- #2 F3 (low confidence), OptimJack: "...and no provider statement was found ([Hudson Rock, 2026-11-16]". Hudson Rock says mechanism, operator, visitor count "remain unresolved"; none of Hudson Rock, Ohey, Amirul Cyber mentions provider statements. Also in sourcing_note ("No provider has confirmed or explained the compromise").
+- #3 F3 (low confidence), OptimJack: Ohey cited as 2026-11-17 (sources[] and three inline). The page has no dateline or JSON-LD date; extractor date 2026-11-05; body text says "counted on 16 November" and "still there on 17 November". 
+- #4 F3, TGR-STA-0049: "Both use HTTP/3 over QUIC as the primary command channel with an HTTP/2 fallback". Unit 42 states the automatic fallback only for PerfectPioneer newhttp3; KUKURAT has "two variants ... one variant leverages HTTP/2, the other uses HTTP/3"; RatAAkk-tt and PerfectRat "rely strictly/solely on HTTP/2".
+- #5 F3 (low confidence), TGR-STA-0049: "PerfectPioneer carries a built-in blocklist". Unit 42: isDangerousCommand "is implemented in two specific variants that the author named Pioneer and rat_http3_cc" (of six).
+- #6 F3 (low confidence), GTIG entry: "GTIG assesses that such frameworks trade stealth for velocity, leaving forensic traffic, recognizable identifiers and code-level traces", placed after exploit_agent, and the Detection line "high-rate scanning with recognizable identifiers, which GTIG says these frameworks leave behind". In GTIG the sentence closes the section on open-source agentic pentest frameworks (ARTEX, CAIRN, CyberStrikeAI, PentAGI); "high-rate scanning" is not in the text.
+- #7 F3, ScreenConnect update record summary: "installed a rogue ScreenConnect client within about nine seconds, after attacker guests made 688,000 run-file requests on 42 MSP servers since 2026-10-20". Huntress: requests span 2026-10-20 to 2026-11-16; the 11-12 compromise followed the 16:03 UTC spray of that file by 43 minutes. The section states the window correctly; the record summary orders it wrongly.
+- #8 F3 (low confidence), ScreenConnect actions[2]: "fully compromised nine seconds after joining a guest session". Huntress's nine seconds run from the host client executing the batch file (16:46:20.7) to the relay connection (16:46:29.1), not from the join.
+
+### Analytical-link-as-fact
+- #9 F13, ScreenConnect main analysis: "disables Defender reporting, notifications and Hypervisor-Protected Code Integrity — the last of these via a vulnerable WinRing0 kernel driver dropped alongside the payload". Huntress 2026-09-03 says the 011 branch disables HVCI and, separately, "The package also includes the vulnerable WinRing0 driver as svcdrv64.sys"; it never says the driver is the means. No other cited source says so. Predates this run; entry re-published.
+
+### Quantifier without source
+- #10 F14 (low confidence), GTIG entry: "adds three findings". GTIG lists five key trends and covers ARTEX, CAIRN, PentAGI, LLMJacking and IO; no source gives "three".
+- #11 F14 (low confidence), ScreenConnect main analysis: "two and a half weeks before any advisory existed". Huntress: first incident 20 Aug; ConnectWise advisory 3 Sep (14 days); CVE bulletin 8 Sep (19 days).
+
+### Surface contradiction
+- #12 F9 (low confidence), BundID: headline "password sign-in switched off" and takeaway "the operator contained the run by switching off the password-only path". The run read an aggregator (ad-hoc-news.de / boerse-global; bodies/9f9af8f4af.md; S2 findings) reporting "Am Nachmittag wurde der reguläre Login per Passwort unter dieser neuen Zwei-Faktor-Pflicht wieder freigeschaltet" (restored the same afternoon with an e-mail one-time code). heise (12:29 UTC) says switched off. The entry states the shutdown as standing, with no time stamp and no caveat. I could not corroborate the restoration (id.bund.de is a JS shell; web search found nothing), so fix by time-stamping the shutdown and adding one caveat sentence; do not assert the restoration.
+
+### Action-item discipline
+- #13 F18, ScreenConnect actions[2]: restates the update section's Session.db and workstation detection paragraph almost verbatim and runs about 100 words (check 10b(b)/(c)). Keep a short do-now hunt-and-isolate task; the artefact list belongs in the body. actions[0] and actions[1] are fine.
+
+### Editorial / less-is-more flags (advisory)
+- #14 F11, Fortinet update: the section's virtual-patch sentence ("FG-VD-61445.0day in FMWP database update 26.082") is absent from the record summary and is not a delta (cves[CVE-2026-126259].fixed already read "virtual patch FG-VD-61445.0day" before this run). The trim also removed the body note that FG-IR-26-277 says authenticated in its summary and unauthenticated in its metadata; it survives in `cves[].affected` and `sourcing_note`, which is acceptable.
+- #15 F11, ScreenConnect: em dashes in title and several body sentences (pre-existing, entry re-published).
+- #16 F11 (low confidence), TGR-STA-0049 `sourcing_note`: third sentence is an uncited registry-merge rationale about Symantec's Jewelbug naming; no cited source states TGR-STA-0049 = Jewelbug.
+- #17 F11, GTIG headline: "DPRK cluster abuses" drops GTIG's "suspected MIDNIGHT NEPTUNE".
+- #18 F11 (low confidence), Craft CMS: tag `actively-exploited` and `status: exploited` are a step stronger than the hedged body (CCCS "open source reporting indicates", VulnCheck's own KEV flag, not in CISA KEV).
+- #19 F11 (low confidence), Symantec entry: does not say which relevance ground it rests on (transferable Orion RabbitMQ Erlang-cookie pivot and AI-assisted tempo); priority is fine.
+- #20 F11 (low confidence), registry `campaign:optimjack-poisoned-vendor-scripts-2026-11` summary repeats #1 and "delivering ... to visitors" overstates Hudson Rock ("No count of affected readers or successful collection has been established"). Outside the entry files.
+
+### Checks that came back clean
+- Updated-entry contract (4c): both records are `update` typed with `updated_at` equal to `at`, sections present with matching `at`, `fields` cover every changed frontmatter line in `git diff HEAD` (Fortinet: cves, evidence, body; ScreenConnect: entities, sources, evidence, actions, body), `discovered_at`/`run_id`/path untouched, no silent edit, both deltas genuine and inline-cited, no main-analysis statement disproved by the new sections. ScreenConnect actions were replaced, not accumulated.
+- Dedup: no new entry overlaps an existing CVE or source; `state/cves_seen.json` carries CVE-2026-123488 only from this run; references[] declared where related coverage exists (Gambit, DeadTag, APT29 watering hole, Fortinet predecessors); the Huntress 2026-11-16 delta belongs on the CVE-2026-84869 entry, not the 2026-11-12 SCKit or 2026-11-15 crypto-bait entries.
+- Classification and sources: all six new entries carry Admiralty codes inside the vocabulary; single-source entries are marked `single-source` with a sourcing_note; no watchlist or org_triage use; no IOC, no KEV deadline used as a reason to act; no workflow-internal vocabulary in reader-facing text.
+- Run record: counts, durations (3132 s), entities_added (matches the registry diff), backlog rows (match `state/coverage_backlog.md`), per-priority dispositions and telemetry statements are consistent with the files on disk.
+- Missed angles (F10): none evidenced. Searches for in-window exploited zero-days and Swiss incidents surfaced only items already in the store (Patch Tuesday, Chrome CVE-2026-125350, Arista VeloCloud) or undated pages; Oracle CSPU and TYPO3 advisories are correctly held in the backlog for the next fire.
+
+### Verdict
+NEEDS_FIXES (truth: 11, editorial: 2, advisory: 7)
+
+Truth = F3 x8 (#1 to #8) + F13 x1 (#9) + F14 x2 (#10, #11). Editorial = F9 (#12) + F18 (#13). Advisory = F11 (#14 to #20). The substantive defect is #1 (OptimJack capability and date conflation in headline and summary); #4, #7 and #9 are the next most consequential; the low-confidence items are listed so the main agent can weigh them.
+
+### Findings summary (machine-readable)
+See `work/2026-11-17T0355Z-intel/verification.iter1.findings.yaml` (20 records).

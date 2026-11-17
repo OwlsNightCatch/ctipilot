@@ -1,0 +1,494 @@
+# work/2026-11-17T0355Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-17T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-17T03:57:48Z
+ended_at: 2026-11-17T04:27:06Z
+duration_seconds: 1758
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 15
+  bridge_fetches: 120
+window_note: >
+  window_hours 26 (anchor 2026-11-16T02:00Z), developing 72 h. Zero CISA KEV additions in the window
+  (catalogVersion 2026.11.13, dateReleased 2026-11-13T20:24Z, newest dateAdded 2026-11-13); none of the 171
+  CVE ids carried by the 14-day prior coverage has knownRansomwareCampaignUse = Known in the KEV record
+  (all read Unknown). ENISA EUVD exploited list holds 4 records (CVE-2026-123039, CVE-2026-114713,
+  CVE-2026-124194, CVE-2026-111560), all covered or dropped by earlier runs. MSRC 2026-Nov: one exploited row
+  (CVE-2026-124194, covered), zero publicly-disclosed rows; revised-CVE sweep shows only informational
+  revisions plus the two SharePoint additions below.
+items:
+  - title: "FortiOS HA command-execution flaw FG-IR-26-273 (CVE-2026-126259): Fortinet's 2026-11-16 revision adds FGCP clusters, an HA hardening configuration and a virtual patch"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-273", publisher: "Fortinet PSIRT (FG-IR-26-273)", date: "2026-11-16", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-123906", publisher: "ENISA EUVD (EUVD-2026-123906)", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: fortinet-psirt RSS, URL https://filestore.fortinet.com/fortiguard/rss/ir.xml (item FG-IR-26-273 'Revised on 2026-11-16') → primary: Fortinet PSIRT, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-273 (extract) → EUVD record found by search?text=CVE-2026-126259, URL https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-123906 (dateUpdated 2026-11-16)"
+    summary: |
+      Fortinet revised FG-IR-26-273 on 2026-11-16 ("Added additional information"). The advisory describes a missing-authentication flaw (CWE-306,
+      CVSS 3.1 9.0) in FortiOS high availability: an unauthenticated attacker with HA FGSP plus standalone-config-sync, or in an autoscale
+      deployment, can run commands as super admin through crafted HA packets. New in the revision: FortiGate HA clusters running FGCP (active-passive and
+      active-active) are also affected on vulnerable pre-fix builds, with the condition that exploitation needs an attack vector adjacent to the HA
+      segment; Fortinet adds a hardening configuration for fixed builds where the HA layer-2 segment is not fully trusted (HA password with
+      encryption and authentication enabled for FGCP and standalone-config-sync; additionally an encryption setting and pre-shared secret on the
+      standalone-cluster object for FGSP peers; a pre-shared secret on the autoscale object); and a virtual patch, FG-VD-61445.0day, shipped in FMWP
+      database update 26.082. Affected and fixed builds per the advisory table: FortiOS 8.0.0 (fixed in 8.0.1 or above), 7.6.0 to 7.6.7 (7.6.8), 7.4.0 to 7.4.12
+      (7.4.13), 7.2.0 to 7.2.13 (7.2.14); 7.0, all versions, must migrate. Fortinet credits its own Product Security team for internal discovery
+      (the page names an AI model as the tool used) and states no exploitation. One inconsistency a reader should know: the CVSS vector in the CVE record
+      mirrored by ENISA reads network attack vector with no privileges, while the revised page limits exploitation to the HA segment.
+    region_nexus: "global; FortiGate HA pairs are common in Swiss federal, cantonal and communal perimeters"
+    primary_sector_nexus: "direct (public-sector perimeter firewalls)"
+    sector: "public-sector"
+    cves: [CVE-2026-126259]
+    techniques: [T1210]
+    affected_products: ["Fortinet FortiOS"]
+    entity_keys: ["product:fortinet-fortios"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-23/fortinet-hardening-release-fortios-fortimanager-fortimail"
+    evidence:
+      - quote: "FortiGate HA clusters running FGCP (both active-passive and active-active) are also affected on vulnerable pre-fix versions. However, exploitation requires HA-segment adjacent attack vector."
+        attribution: "Fortinet PSIRT (FG-IR-26-273)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-273"
+      - quote: 'Virtual Patch named "FG-VD-61445.0day." is available in FMWP db update 26.082'
+        attribution: "Fortinet PSIRT (FG-IR-26-273)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-273"
+      - quote: "2026-11-16: Added additional information"
+        attribution: "Fortinet PSIRT (FG-IR-26-273)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-273"
+    extended_notes: |
+      Exposure: the advisory scopes exposure by HA mode (FGCP; standalone-config-sync with or without FGSP peers; autoscale) and by who can reach the HA
+      layer-2 segment, so the question for a defender is which clusters share an HA or sync segment with anything less trusted than the firewalls
+      themselves. Detection concept (follows from the mechanism, not stated by Fortinet): HA-protocol frames or config-sync traffic on the heartbeat
+      segment from a source that is not a cluster member, and unexpected HA state changes or administrator-context command execution on a member shortly
+      after. Post-patch: the hardening settings are separate from the fix, so upgrading does not by itself authenticate the HA channel. The existing entry
+      says the October builds are 8.0.2, 7.6.8, 7.4.13 and 7.2.14; for this row the advisory table lists 8.0.1 or above for the 8.0 branch.
+
+  - title: "Dassault Systèmes 3DEXPERIENCE Station Launcher App: three critical flaws published 2026-11-16, one an unauthenticated deserialization RCE scored 10.0, all releases R2023x through R2026x"
+    sources:
+      - { url: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-93664", publisher: "Dassault Systèmes (CVE-2026-93664)", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-19732", publisher: "Dassault Systèmes (CVE-2026-19732)", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-77033", publisher: "Dassault Systèmes (CVE-2026-77033)", date: "2026-11-16", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-126294", publisher: "ENISA EUVD (EUVD-2026-126294)", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-126292", publisher: "ENISA EUVD (EUVD-2026-126292)", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-15&toDate=2026-11-17&page=0&size=100 (36 records at CVSS 9.0+, three Dassault 'Station Launcher App' rows published 2026-11-16) → primary: Dassault Systèmes advisories, URL https://www.3ds.com/trust-center/security/security-advisories/cve-2026-93664 (and the two siblings) → corroboration: EUVD advisory pages for the three records; WebSearch ('3DEXPERIENCE Station Launcher CVE-2026-93664') found no secondary reporting"
+    summary: |
+      Dassault Systèmes published three Critical advisories on 2026-11-16 for the Station Launcher App in the 3DEXPERIENCE platform, for every release
+      from R2023x through R2026x. CVE-2026-93664 is a deserialization of untrusted data that "could lead to an unauthenticated remote code execution"
+      (CVSS 3.1 10.0, network, no privileges, no user interaction, scope changed per the ENISA record); CVE-2026-19732 and CVE-2026-77033 are OS command injections that
+      could let an attacker run commands on the server (9.9 each, low privileges required). The advisory pages state affected releases and the Critical
+      rating but name no fixed build, hotfix or workaround, and say nothing about exploitation; ENISA lists no exploitation and EPSS is not yet computed. The same component had an
+      earlier unauthenticated deserialization RCE scored 10.0 (CVE-2026-11756, July 2026, per OpenCVE, an aggregator) and Dassault's DELMIA Apriso has
+      three entries in CISA's KEV catalog from 2025, so the vendor's server components are a known exploitation target class. 3DEXPERIENCE is the PLM and
+      engineering platform used in aerospace, defence-industry and machinery supply chains, which makes it relevant to suppliers of the Swiss
+      armed forces and industry rather than to core administration IT.
+    region_nexus: "global; Swiss engineering and defence-industry suppliers use the platform (usage in the administration itself not established)"
+    primary_sector_nexus: "indirect (industrial and defence supply chain)"
+    sector: "manufacturing"
+    cves: [CVE-2026-93664, CVE-2026-19732, CVE-2026-77033]
+    techniques: [T1190]
+    affected_products: ["Dassault Systèmes 3DEXPERIENCE platform (Station Launcher App)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:dassault-3dexperience-station-launcher", type: product, name: "Dassault Systèmes 3DEXPERIENCE Station Launcher App", aliases: ["Station Launcher App"], summary: "Component of the Dassault Systèmes 3DEXPERIENCE platform that carries repeated critical unauthenticated RCE and command-injection advisories (CVE-2026-93664, CVE-2026-19732, CVE-2026-77033 on 2026-11-16; Dassault, 2026-11-16)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A Deserialization of Untrusted Data vulnerability affecting Station Launcher App in 3DEXPERIENCE platform from Release 3DEXPERIENCE R2023x through Release 3DEXPERIENCE R2026x could lead to an unauthenticated remote code execution."
+        attribution: "Dassault Systèmes (CVE-2026-93664)"
+        source_url: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-93664"
+      - quote: "could allow an attacker to execute arbitrary commands on the server"
+        attribution: "Dassault Systèmes (CVE-2026-19732)"
+        source_url: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-19732"
+      - quote: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+        attribution: "ENISA EUVD (EUVD-2026-126294)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-126294"
+    extended_notes: |
+      Single-source (vendor PSIRT for its own product; the ENISA records restate the CNA text). Gaps a reader must hold open: no fixed build is
+      named on any of the three pages, how the app is reached (interface, listener, port) is not stated, and the pages carry no workaround. Exposure
+      check is therefore inventory-first: any 3DEXPERIENCE R2023x to R2026x server with the Station Launcher App deployed, then whether it is reachable from
+      anything other than the engineering network. Dassault points customers to its Support Knowledge Base for per-advisory detail (listing page states this),
+      which was not readable here. Candidate source: Dassault Systèmes security advisories listing (119 results).
+
+  - title: "Craft CMS unauthenticated SQL injection CVE-2026-123488 (admin takeover): CCCS relays open-source reporting of exploitation and VulnCheck lists it in its KEV; fixed in 4.18.9 and 5.11.2"
+    lookback: true
+    sources:
+      - { url: "https://www.vulncheck.com/advisories/craft-cms-4.0.0-before-4.18.9-sql-injection-via-element-search-endpoint", publisher: "VulnCheck (CNA advisory)", date: "2026-11-06", role: "primary" }
+      - { url: "https://github.com/craftcms/cms/security/advisories/GHSA-qcvp-ggx3-97r6", publisher: "Craft CMS (GHSA-qcvp-ggx3-97r6)", date: "2026-10-22", role: "primary" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/craft-cms-security-advisory-av26-1086", publisher: "Canadian Centre for Cyber Security (AV26-1086, Update 1)", date: "2026-11-12", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118288", publisher: "ENISA EUVD (EUVD-2026-118288)", date: "2026-11-06", role: "corroborating" }
+      - { url: "https://github.com/craftcms/cms/security/advisories/GHSA-mjj9-pjh4-r48g", publisher: "Craft CMS (GHSA-mjj9-pjh4-r48g, GraphQL SQL injection)", date: "2026-10-22", role: "corroborating" }
+    discovery_trace: "first seen at: cccs-alerts, URL https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en (AV26-1086 'Update 1' of 2026-11-12) → pivot: CCCS page https://cyber.gc.ca/en/alerts-advisories/craft-cms-security-advisory-av26-1086 (links the craftcms/cms advisories) → WebSearch ('Craft CMS CVE-2026-123488 exploited in the wild') → primary: VulnCheck CNA advisory https://www.vulncheck.com/advisories/craft-cms-4.0.0-before-4.18.9-sql-injection-via-element-search-endpoint and Craft's GHSA https://github.com/craftcms/cms/security/advisories/GHSA-qcvp-ggx3-97r6 (WebFetch); EUVD https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118288 ties the two together"
+    summary: |
+      Craft CMS 4.0.0 to 4.18.8 and 5.0.0 to 5.11.1 contain an unauthenticated SQL injection in front-end search: the attribute parameter is concatenated
+      into the query unsanitized and emulated PDO prepares allow stacked statements, which gives read and write access to the application database
+      (VulnCheck, the CNA, scores it CVSS 4.0 9.3; ENISA carries CVSS 3.1 9.8). Craft's own advisory (Critical, 2026-10-22) says the write primitive was used to set the admin flag on user ID 1 and could
+      overwrite any account's password hash, so an unauthenticated visitor can become an administrator; it applies to MySQL and MariaDB only. Fixed in
+      4.18.9 and 5.11.2; Craft's temporary workaround is blocking front-end requests whose query string carries the bracketed attribute token. The
+      exploitation status rests on two claims: the Canadian Cyber Centre's 2026-11-12 update says open-source reporting indicates exploitation in the wild,
+      and VulnCheck's advisory page states the CVE is in its own KEV; no first-hand telemetry, victim statement or CISA or ENISA listing was found
+      (EUVD shows no exploitation date), public proof-of-concept repositories date from 2026-11-06 to 09 and a Nuclei template from 2026-11-15 per
+      aggregators. Two further unauthenticated SQL injections are fixed in the same releases, among them a GraphQL eager-load flaw (Craft GHSA, High) that exposes
+      password hashes and session tokens when a public GraphQL schema grants anonymous read.
+    region_nexus: "global; Craft CMS is a common agency-built website platform in German-speaking Europe (Swiss public-sector use not established)"
+    primary_sector_nexus: "indirect (public websites)"
+    sector: "public-sector"
+    cves: [CVE-2026-123488]
+    techniques: [T1190]
+    affected_products: ["Craft CMS"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:craft-cms", type: product, name: "Craft CMS", aliases: ["craftcms/cms"], summary: "PHP content management system whose 4.x and 5.x releases carry critical unauthenticated SQL injections fixed in 4.18.9 and 5.11.2 (Craft CMS GHSA advisories, 2026-10-22; VulnCheck, 2026-11-06)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Craft CMS 4.0.0 before 4.18.9 and 5.0.0 before 5.11.2 contains an unauthenticated SQL injection vulnerability in the element search endpoint because the attribute parameter is concatenated into the query unsanitized and emulated PDO prepares allow stacked statements."
+        attribution: "VulnCheck (CNA advisory)"
+        source_url: "https://www.vulncheck.com/advisories/craft-cms-4.0.0-before-4.18.9-sql-injection-via-element-search-endpoint"
+      - quote: "This advisory is in the VulnCheck KEV database"
+        attribution: "VulnCheck (CNA advisory)"
+        source_url: "https://www.vulncheck.com/advisories/craft-cms-4.0.0-before-4.18.9-sql-injection-via-element-search-endpoint"
+      - quote: "Open source reporting indicates that CVE-2026-123488 is exploited in the wild."
+        attribution: "Canadian Centre for Cyber Security (AV26-1086, Update 1)"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/craft-cms-security-advisory-av26-1086"
+      - quote: "The write primitive was used to set the admin flag on user ID 1 in the users table"
+        attribution: "Craft CMS (GHSA-qcvp-ggx3-97r6)"
+        source_url: "https://github.com/craftcms/cms/security/advisories/GHSA-qcvp-ggx3-97r6"
+    extended_notes: |
+      Contradiction held open: CCCS and VulnCheck say exploited; ENISA's record shows no exploitation date and CISA KEV (catalogVersion 2026.11.13) does not list it; the CCCS
+      attribution is "open source reporting" with no named source. Treat exploitation as claimed. Detection concept: web access logs on front-end search
+      routes for query strings carrying a bracketed attribute token (the token Craft's workaround blocks), database audit for changes to the users
+      table admin flag or password hashes, and new administrator sessions or accounts afterwards. Post-patch: upgrading closes the injection but not an
+      administrator account or hash already written. Mapping of Craft's GHSA (no CVE on its page) to CVE-2026-123488 comes from the EUVD record's
+      references; Craft describes the front-end craft.search path, VulnCheck the element search endpoint.
+      Candidate source: github.com/craftcms/cms/security/advisories (reads with WebFetch).
+
+  - title: "NoisyTCP, CVE-2026-99288: unauthenticated remote kernel panic on Linux servers through a SYN-cookie request-socket race; upstream fix of 2026-11-03, researcher advisory published 2026-11-15"
+    sources:
+      - { url: "https://github.com/V4bel/NoisyTCP", publisher: "Hyunwoo Kim (researcher advisory, V4bel/NoisyTCP)", date: "2026-11-15", role: "primary" }
+      - { url: "https://access.redhat.com/security/cve/cve-2026-99288", publisher: "Red Hat (CVE-2026-99288)", date: "2026-11-10", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/linux/new-noisytcp-linux-kernel-flaw-lets-attackers-crash-servers/", publisher: "BleepingComputer", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121963", publisher: "ENISA EUVD (EUVD-2026-121963)", date: "2026-11-10", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed, URL https://www.bleepingcomputer.com/feed/ (item 'New NoisyTCP vulnerability lets attackers crash Linux servers', 2026-11-16) → pivot: BleepingComputer article https://www.bleepingcomputer.com/news/linux/new-noisytcp-linux-kernel-flaw-lets-attackers-crash-servers/ → primary: researcher advisory https://github.com/V4bel/NoisyTCP and Red Hat https://access.redhat.com/security/cve/cve-2026-99288 (extract) → EUVD https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-121963"
+    summary: |
+      CVE-2026-99288 is a race in the Linux kernel TCP receive path: lockless established-socket lookups can retain the address of a request socket that another
+      receive context frees and reallocates as a SYN-cookie request with the same tuple, after which the stale lookup dereferences a missing listener and
+      panics the kernel (the upstream fix is titled "inet: reject unhashed sockets during established lookups"). The flaw was introduced in 2015 and is
+      fixed in mainline commit 4e2b3ef19e0e of 2026-11-03, so it reaches almost every distribution kernel until each vendor ships the fix. Per the researcher it
+      is reachable pre-authentication against any plain TCP listener, such as Nginx, Apache or SSH in default configuration, on hosts with two or more RX queues or RPS
+      spreading packets across CPUs, and needs IPv4 fragments and regular TCP packets for the same tuple to steer the race: seconds to two minutes on
+      VMs, about 14 hours on a quiet 8-queue bare-metal server in the researcher's test. A container's crash takes down the whole host. Impact is denial of service;
+      a use-after-free path exists but is described as hard to trigger, and the researcher has not published a general exploit ("a very limited,
+      lab-specific exploit that targets VM servers"). Red Hat rates it Important. Mitigations from the researcher and Red Hat: disable SYN cookies
+      (per network namespace, which weakens SYN-flood protection) or reduce the receiving interface to one RX queue with RPS and RFS off.
+    region_nexus: "global; any Linux server estate, including Swiss public-sector web and mail frontends"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-99288]
+    techniques: [T1499.004]
+    affected_products: ["Linux kernel"]
+    entity_keys: ["product:linux-kernel"]
+    new_entities:
+      - { key: "trend:noisytcp-linux-kernel-tcp-syn-cookie-race-dos", type: trend, name: "NoisyTCP", aliases: ["CVE-2026-99288"], summary: "Name given by researcher Hyunwoo Kim to a Linux kernel TCP SYN-cookie request-socket race that crashes servers remotely before authentication (researcher advisory, 2026-11-15; fix merged 2026-11-03)." }
+    relation_suggestions:
+      - { subject: "trend:noisytcp-linux-kernel-tcp-syn-cookie-race-dos", object: "product:linux-kernel", basis: "researcher advisory and Red Hat: flaw in the Linux kernel TCP networking subsystem (Hyunwoo Kim, 2026-11-15; Red Hat, 2026-11-10)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Against Nginx running with its default configuration on a quiet bare-metal server (8 RX queues), it took about 14 hours to trigger, even though a PoC with race timing carefully tuned for the target environment was used."
+        attribution: "Hyunwoo Kim (NoisyTCP advisory)"
+        source_url: "https://github.com/V4bel/NoisyTCP"
+      - quote: "Not yet. and basically, no. So far I have only written a very limited, lab-specific exploit that targets VM servers."
+        attribution: "Hyunwoo Kim (NoisyTCP advisory)"
+        source_url: "https://github.com/V4bel/NoisyTCP"
+      - quote: "This vulnerability is rated as an Important impact because an unauthenticated remote attacker can trigger an immediate operating system crash across the network without requiring privileges."
+        attribution: "Red Hat"
+        source_url: "https://access.redhat.com/security/cve/cve-2026-99288"
+    extended_notes: |
+      No exploitation reported. Detection: unexplained kernel panics or reboots on internet-facing Linux hosts, with kdump or console traces ending in a NULL
+      dereference in the TCP receive path, and, before a crash, bursts of IPv4 fragments mixed with TCP packets for one tuple. Triage: an isolated reboot on a
+      busy VM is the likelier lookalike of a hardware or hypervisor fault; repeated panics that follow inbound connection bursts on a listener match this
+      mechanism. Hardening beyond the two mitigations: kernel updates from the distribution once it carries the 2026-11-03 fix (the NVD or distribution
+      score is not yet published; EUVD shows 0.0 unscored).
+
+  - title: "Microsoft adds two SharePoint CVEs to the November 2026 table on 2026-11-16, including CVE-2026-124223 (deserialization RCE, 8.8): fixed in the November updates but omitted from the release"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-124223", publisher: "Microsoft MSRC (CVE-2026-124223)", date: "2026-11-16", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-124222", publisher: "Microsoft MSRC (CVE-2026-124222)", date: "2026-11-16", role: "primary" }
+    discovery_trace: "first seen at: msrc-update-guide, revised-CVE OData sweep (isMariner eq false, latestRevisionDate ge 2026-11-15, API https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability) listing CVE-2026-124222, CVE-2026-124223 and CVE-2026-105544 → primary: MSRC per-CVE records read through `fetch_source.py msrc cve CVE-2026-124223` (citation URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-124223)"
+    summary: |
+      MSRC published two SharePoint records on 2026-11-16 at 08:00 PT and revised both within the same day to say they "were addressed by updates that were
+      released in November 2026, but ... inadvertently omitted from the November 2026 Security Updates", an informational change for anyone who already installed
+      the November updates. CVE-2026-124223 is a deserialization of untrusted data (CWE-502) in Microsoft Office SharePoint that lets an authorized attacker
+      execute code over the network (CVSS 3.1 8.8, low privileges, no user interaction, Important); Microsoft's exploitability index reads "Exploitation Less Likely", exploited
+      and publicly disclosed are both No, and the FAQ says exploitation needs a user to reach a susceptible API with specially formatted input. CVE-2026-124222
+      is a SharePoint elevation of privilege (6.5). The same sweep shows the other post-release revisions of 2026-11-12 to 16 as informational (acknowledgements, Office
+      added to update tables, a corrected .NET VSTest description). The November release carries one exploited row (CVE-2026-124194, covered) and no
+      publicly disclosed row.
+    region_nexus: "global; SharePoint Server is widespread in Swiss federal and cantonal administrations"
+    primary_sector_nexus: "direct (SharePoint Server in public administrations)"
+    sector: "public-sector"
+    cves: [CVE-2026-124223, CVE-2026-124222]
+    techniques: [T1190]
+    affected_products: ["Microsoft SharePoint Server"]
+    entity_keys: ["product:microsoft-sharepoint"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-11-11/microsoft-november-2026-patch-tuesday-preauth-9-8-rows"
+    borderline: true
+    borderline_reason: "authenticated 8.8, Exploitation Less Likely, not exploited or disclosed; kept only because SharePoint is high-footprint in the constituency and the CVEs were missing from the November table the existing entry was built on"
+    evidence:
+      - quote: "This CVE was addressed by updates that were released in November 2026, but the CVE was inadvertently omitted from the November 2026 Security Updates."
+        attribution: "Microsoft MSRC (CVE-2026-124223)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-124223"
+      - quote: "Deserialization of untrusted data in Microsoft Office SharePoint allows an authorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC (CVE-2026-124223)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-124223"
+    extended_notes: |
+      The MSRC API returns no affectedProducts or KB list for either record (null), so fixed builds are not stated here; read them from the November SharePoint
+      security-update KB rows before relying on this.
+
+  - title: "Splunk gives advance notice that Enterprise, Universal Forwarder, Enterprise Security and SOAR advisories publish on 2026-11-18 (fixed builds 10.6.1, 10.4.5, 10.2.9, 10.0.12, 9.4.17)"
+    lookback: true
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1101", publisher: "Splunk PSIRT (SVD-2026-1101)", date: "2026-11-11", role: "primary" }
+    discovery_trace: "first seen at: splunk-advisories, URL https://advisory.splunk.com/advisories (extract, SVD-2026-1101 listed 2026-11-11, modified 2026-11-12) → primary: https://advisory.splunk.com/advisories/SVD-2026-1101 (extract)"
+    summary: |
+      Splunk PSIRT's advance notice SVD-2026-1101 (published 2026-11-11, modified 2026-11-12) says that on 2026-11-18 it will publish advisories for fixes
+      in Splunk Enterprise 10.6.1, 10.4.5, 10.2.9, 10.0.12 and 9.4.17, Universal Forwarder at the same versions, Enterprise Security 8.7.0, SOAR 8.8.0, SOAR Connectors,
+      Stream 8.1.7 and AI Assistant 2.0.0, and recommends the listed or latest builds. No CVE, score or exploitation statement exists yet; the October
+      cycle (2026-10-21) shipped 'Security Vulnerabilities in Splunk Enterprise' and SOAR advisories the same way, so the 2026-11-18 content is
+      the item to pull then. The advance notice itself is a scheduling signal for patch windows on SIEM and log-forwarder estates.
+    region_nexus: "global; Splunk is a common SIEM and forwarder platform in Swiss public-sector SOCs"
+    primary_sector_nexus: "indirect (SOC infrastructure)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Splunk Enterprise", "Splunk Universal Forwarder", "Splunk Enterprise Security", "Splunk SOAR"]
+    entity_keys: ["product:splunk-enterprise"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "no vulnerability content until 2026-11-18; useful only as a patch-window heads-up; drop if the composer wants the 2026-11-18 advisories instead"
+    evidence:
+      - quote: "On November 18 2026, Splunk PSIRT will publish advisories to disclose security vulnerabilities fixed in the following Splunk products and versions:"
+        attribution: "Splunk PSIRT (SVD-2026-1101)"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1101"
+
+  - title: "Control Web Panel recovery-code flaws CVE-2026-124020 and CVE-2026-124021: VulnCheck publishes exploit modules for a hosting panel with about 124,000 exposed instances; fixed in 1.30.6"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce", publisher: "VulnCheck", date: "2026-11-16", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-125801", publisher: "ENISA EUVD (EUVD-2026-125801)", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-125803", publisher: "ENISA EUVD (EUVD-2026-125803)", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: vulncheck (WebFetch of https://www.vulncheck.com/blog, post of 2026-11-16) → primary: https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce (extract) → EUVD records found by search?text=CVE-2026-124020 and CVE-2026-124021"
+    summary: |
+      VulnCheck, as CNA, disclosed two Control Web Panel (formerly CentOS Web Panel) flaws on 2026-11-16 that both end in code execution as the hosting account from one
+      primitive, a password-recovery code. CVE-2026-124020 builds the reset link from the unauthenticated Host header, so an attacker who knows an account name and its contact
+      email can redirect the link, capture the code, reset the password and run a cron-scheduled PHP callback through File Manager; the public user panel is the
+      reachable surface. CVE-2026-124021 lets the port 2304 administration API accept a recovery code as authorization, with a daily signature built from values readable off the TLS certificate
+      (applies only where the API is deliberately exposed, since the standard CSF firewall configuration blocks it). Fixed in Control Web Panel 1.30.6; before
+      updating, keep port 2304 off the internet and restrict the user panel. VulnCheck confirms about 124,000 internet-facing instances and ships go-exploit
+      modules for both; both CVSS 4.0 9.2 in the ENISA records; no exploitation reported.
+    region_nexus: "global; hosting providers and small web hosters (Swiss public-sector use not established)"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-124020, CVE-2026-124021]
+    techniques: [T1190, T1053.003]
+    affected_products: ["Control Web Panel (CentOS Web Panel)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:control-web-panel", type: product, name: "Control Web Panel", aliases: ["CWP", "CentOS Web Panel"], summary: "Hosting control panel with two recovery-code flaws (CVE-2026-124020, CVE-2026-124021) fixed in 1.30.6 and disclosed with public exploit modules (VulnCheck, 2026-11-16)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "public exploit modules and a large exposed base, but a hosting panel with no established Swiss public-sector footprint, requires a known account name and email, and no exploitation reported"
+    evidence:
+      - quote: "Control Web Panel 1.30.6 fixes both."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce"
+      - quote: "VulnCheck Target Intelligence, which fingerprints products from real scan data, confirms roughly 124,000 internet-facing CWP instances"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce"
+      - quote: "CVE-2026-124021 is narrower by design, since CSF blocks port 2304 by default; it applies to the deliberately API-enabled subset"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce"
+    extended_notes: |
+      Detection concept: password-reset requests to the lost-password route whose Host header differs from the server's configured hostname; recovery-code
+      rows spent against the administration API; new cron entries written for hosting accounts; PHP files appearing under account tmp directories.
+
+  - title: "Zyxel patches an unauthenticated out-of-bounds write (CVE-2026-79614, 9.8) and a post-auth command injection in about 40 DSL/Ethernet CPE, fiber ONT and extender models on 2026-11-17"
+    sources:
+      - { url: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-out-of-bounds-write-and-post-authentication-command-injection-vulnerabilities-in-certain-dsl-ethernet-cpe-fiber-onts-and-wireless-extenders-11-17-2026", publisher: "Zyxel (security advisory 11-17-2026)", date: "2026-11-17", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-126810", publisher: "ENISA EUVD (EUVD-2026-126810)", date: "2026-11-17", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-15&toDate=2026-11-17&page=0&size=100 (EUVD-2026-126810, 2026-11-17) → primary: Zyxel advisory, URL as listed in the EUVD references, fetched with extract"
+    summary: |
+      Zyxel's 2026-11-17 advisory fixes two flaws in the libclinkc.so web component of certain DSL/Ethernet CPE, fiber ONTs and wireless extenders (DX, EX, EE, EMG, VMG,
+      GM, AM, AX, PE and PM series, with per-model fixed firmware in two tables). CVE-2026-79614 is an out-of-bounds write that "could allow an unauthenticated attacker to elevate
+      privileges and potentially execute arbitrary commands by sending a crafted HTTP request" (CVSS 3.1 9.8); CVE-2026-86676 is a post-authentication command injection in the Description
+      parameter of a CGI program, reachable only with administrator credentials. Zyxel says WAN access is disabled by default and that its tables
+      exclude customized ISP models, so exposure is on the LAN side unless remote administration was enabled. No exploitation is stated and EPSS is not yet computed; Zyxel
+      equipment has a record of KEV listings (see the existing Zyxel GS1900 entry), which is why the low-likelihood signal is worth a line.
+    region_nexus: "global; consumer and small-office CPE, mostly ISP-supplied (Swiss public-sector use not established)"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-79614, CVE-2026-86676]
+    techniques: [T1190]
+    affected_products: ["Zyxel DSL/Ethernet CPE, Fiber ONTs and Wireless Extenders"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:zyxel-dsl-ethernet-cpe", type: product, name: "Zyxel DSL/Ethernet CPE, Fiber ONTs and Wireless Extenders", aliases: [], summary: "Zyxel CPE, ONT and extender families fixed on 2026-11-17 for CVE-2026-79614 (unauthenticated out-of-bounds write) and CVE-2026-86676 (Zyxel advisory, 2026-11-17)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "9.8 unauthenticated but WAN access is off by default, ISP-customized models are outside the advisory, no exploitation, and the constituency's use of these CPE models is unknown"
+    evidence:
+      - quote: "could allow an unauthenticated attacker to elevate privileges and potentially execute arbitrary commands by sending a crafted HTTP request. WAN access is disabled by default on these devices."
+        attribution: "Zyxel"
+        source_url: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-out-of-bounds-write-and-post-authentication-command-injection-vulnerabilities-in-certain-dsl-ethernet-cpe-fiber-onts-and-wireless-extenders-11-17-2026"
+
+  - title: "Cisco's eMudhra distrust advisory moves to version 1.12 on 2026-11-16 with a revised impacted, under-investigation and not-impacted product list"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r", publisher: "Cisco PSIRT (cisco-sa-emudhra-info, version 1.12)", date: "2026-11-16", role: "primary" }
+    discovery_trace: "first seen at: Cisco PSIRT feed sweep, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (2026-11-16 22:25 item) → primary: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r (extract)"
+    summary: |
+      Cisco revised its informational advisory on the eMudhra intermediate-CA compromise to version 1.12 on 2026-11-16 ("Updated products under investigation, impacted, and not
+      impacted"); the existing entry tracks version 1.11 of 2026-11-13. The page now lists products with remediation guidance (IOS and IOS XE, Secure Firewall ASA, FTD and FMC,
+      IOS XR, ISE, Nexus, MDS) and products with dated fixes: for example Meraki MV firmware on 2026-11-18, several ISE patch levels with target dates from
+      December 2026 to April 2027, APIC 6.3.1 in December 2026, Cyber Vision 5.6.2 and Secure Network Analytics roll-up patches in November 2026, and a Telemetry Broker
+      remediation script of 2026-11-15; Secure Client, Jabber and Secure Web Appliance are still under investigation. Cisco states it is not aware of malicious use. This
+      is a rolling impact table, so what changed between 1.11 and 1.12 is not stated and was not diffed.
+    region_nexus: "global; Cisco infrastructure and Meraki are widespread in Swiss public-sector networks"
+    primary_sector_nexus: "direct (network infrastructure)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Cisco IOS XE", "Cisco Secure Firewall ASA", "Cisco Identity Services Engine", "Cisco Meraki"]
+    entity_keys: ["incident:emudhra-intermediate-ca-key-compromise-2026-10"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-10-21/emudhra-intermediate-ca-keys-recoverable-trust-store-updates"
+    borderline: true
+    borderline_reason: "incremental revision of a rolling product table already tracked at 1.11; delta unspecified; at most an improvement record to the existing entry"
+    evidence:
+      - quote: "1.12 Updated products under investigation, impacted, and not impacted. Affected Products Interim 2026-NOV-16"
+        attribution: "Cisco PSIRT (cisco-sa-emudhra-info)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-emudhra-info-ScS22A1r"
+
+  - title: "Fortinet's Node2Shell (Brotli, CVE-2026-111497) advisory FG-IR-26-187 still lists eight products under investigation on 2026-11-16; FortiOS, FortiManager, FortiMail and most others confirmed not impacted"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187", publisher: "Fortinet PSIRT (FG-IR-26-187)", date: "2026-11-16", role: "primary" }
+    discovery_trace: "first seen at: fortinet-psirt RSS, URL https://filestore.fortinet.com/fortiguard/rss/ir.xml (50-item read: FG-IR-26-187 'Revised on 2026-11-16') → primary: https://fortiguard.fortinet.com/psirt/FG-IR-26-187 (extract)"
+    summary: |
+      Fortinet's impact advisory for the Node.js October releases (FG-IR-26-187, 'Node2Shell CVEs', published 2026-10-26, CVSS 9.8 in the feed) was revised on 2026-11-13 and again on
+      2026-11-16, each time updating the not-impacted list. It covers ten Node.js CVEs including the high-severity Brotli decoder out-of-bounds write CVE-2026-111497
+      (remote code execution in Node.js 26.x, 24.x and 22.x). Fortinet is still investigating FortiDAST, FortiEDR, FortiFone, FortiPAM, FortiRecon, FortiSandbox PaaS,
+      FortiSwitch and FortiSwitchAX, has confirmed 67 product names not impacted (FortiSwitchAX appears on both lists) (including FortiOS, FortiManager, FortiAnalyzer, FortiMail, FortiAuthenticator, FortiProxy and FortiWeb),
+      and lists no virtual patch. No product is stated as impacted.
+    region_nexus: "global; Fortinet is a primary perimeter vendor in Swiss public-sector networks"
+    primary_sector_nexus: "direct (perimeter and security tooling)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: []
+    affected_products: ["Fortinet FortiPAM", "Fortinet FortiEDR", "Fortinet FortiSwitch"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-11-07/cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo"
+    borderline: true
+    borderline_reason: "vendor impact list revision with no product shown impacted; at most one improvement line on the Brotli vendor-impact entry, which does not mention Fortinet"
+    evidence:
+      - quote: "Fortinet is currently investigating the impact of these CVEs over Fortinet Products."
+        attribution: "Fortinet PSIRT (FG-IR-26-187)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187"
+      - quote: "2026-11-16: Products not impacted list updated"
+        attribution: "Fortinet PSIRT (FG-IR-26-187)"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-187"
+
+cve_table:
+  - { cve: CVE-2026-126259, product: "Fortinet FortiOS (HA: FGCP, standalone-config-sync with FGSP, autoscale)", cvss: "9.0 (CVSS 3.1; mirrored vector reads AV:N/PR:N while the 2026-11-16 page says HA-segment adjacent)", epss: 0.0065, kev: false, exploited: false, affected: "8.0.0; 7.6.0-7.6.7; 7.4.0-7.4.12; 7.2.0-7.2.13; 7.0 all versions", fixed: "8.0.1 or above; 7.6.8; 7.4.13; 7.2.14; 7.0 migrate to a fixed release (virtual patch FG-VD-61445.0day in FMWP 26.082)", type: missing-authentication, vector: "adjacent (HA segment)", auth: pre-auth, source: "https://fortiguard.fortinet.com/psirt/FG-IR-26-273" }
+  - { cve: CVE-2026-93664, product: "Dassault Systèmes 3DEXPERIENCE Station Launcher App", cvss: "10.0 (CVSS 3.1, ENISA record)", epss: null, kev: false, exploited: false, affected: "3DEXPERIENCE R2023x through R2026x", fixed: "not stated on the advisory page", type: deserialization-rce, vector: network, auth: pre-auth, source: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-93664" }
+  - { cve: CVE-2026-19732, product: "Dassault Systèmes 3DEXPERIENCE Station Launcher App", cvss: "9.9 (CVSS 3.1, ENISA record)", epss: null, kev: false, exploited: false, affected: "3DEXPERIENCE R2023x through R2026x", fixed: "not stated on the advisory page", type: os-command-injection, vector: network, auth: "low privileges", source: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-19732" }
+  - { cve: CVE-2026-77033, product: "Dassault Systèmes 3DEXPERIENCE Station Launcher App", cvss: "9.9 (CVSS 3.1, ENISA record)", epss: null, kev: false, exploited: false, affected: "3DEXPERIENCE R2023x through R2026x", fixed: "not stated on the advisory page", type: os-command-injection, vector: network, auth: "low privileges", source: "https://www.3ds.com/trust-center/security/security-advisories/cve-2026-77033" }
+  - { cve: CVE-2026-123488, product: "Craft CMS", cvss: "9.3 (CVSS 4.0, VulnCheck CNA); 9.8 (CVSS 3.1, ENISA)", epss: 0.0186, kev: false, exploited: "claimed (CCCS relays open-source reporting; VulnCheck KEV member); no first-hand telemetry read; ENISA shows no exploitation date", affected: "4.0.0-4.18.8; 5.0.0-5.11.1 (MySQL/MariaDB for the craft.search path)", fixed: "4.18.9; 5.11.2", type: sql-injection, vector: network, auth: pre-auth, source: "https://www.vulncheck.com/advisories/craft-cms-4.0.0-before-4.18.9-sql-injection-via-element-search-endpoint" }
+  - { cve: CVE-2026-99288, product: "Linux kernel TCP (NoisyTCP)", cvss: "not scored (EUVD 0.0); Red Hat rating Important", epss: 0.0016, kev: false, exploited: false, affected: "kernels from commit 079096f103fa (2015-10-03) to before 4e2b3ef19e0e", fixed: "mainline 4e2b3ef19e0e of 2026-11-03; distribution kernels as each vendor ships it", type: race-null-dereference-dos, vector: network, auth: pre-auth, source: "https://github.com/V4bel/NoisyTCP" }
+  - { cve: CVE-2026-124223, product: "Microsoft SharePoint Server", cvss: "8.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "SharePoint (versions not returned by the MSRC API)", fixed: "November 2026 security updates (KB not returned by the API)", type: deserialization-rce, vector: network, auth: "low privileges", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-124223" }
+  - { cve: CVE-2026-124020, product: "Control Web Panel", cvss: "9.2 (CVSS 4.0, ENISA)", epss: 0.0065, kev: false, exploited: false, affected: "before 1.30.6", fixed: "1.30.6", type: host-header-reset-poisoning, vector: network, auth: "pre-auth (needs account name and email)", source: "https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce" }
+  - { cve: CVE-2026-124021, product: "Control Web Panel (administration API, port 2304)", cvss: "9.2 (CVSS 4.0, ENISA)", epss: 0.0067, kev: false, exploited: false, affected: "before 1.30.6, where the API is exposed", fixed: "1.30.6", type: authorization-bypass, vector: network, auth: "pre-auth (needs a captured recovery code)", source: "https://www.vulncheck.com/blog/control-web-panel-recovery-code-rce" }
+  - { cve: CVE-2026-79614, product: "Zyxel DSL/Ethernet CPE, Fiber ONTs, Wireless Extenders", cvss: "9.8 (CVSS 3.1, ENISA)", epss: null, kev: false, exploited: false, affected: "per-model tables, for example DX3301-T0 5.50(ABVY.8.3)C0 and earlier", fixed: "per-model, for example DX3301-T0 5.50(ABVY.8.4)C0", type: out-of-bounds-write, vector: "network (WAN access off by default)", auth: pre-auth, source: "https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-out-of-bounds-write-and-post-authentication-command-injection-vulnerabilities-in-certain-dsl-ethernet-cpe-fiber-onts-and-wireless-extenders-11-17-2026" }
+
+drops:
+  - { id: "kev-additions", reason: "zero CISA KEV additions since 2026-11-16 (catalogVersion 2026.11.13); no covered CVE flagged ransomware use (171 prior-coverage CVE ids checked, all Unknown)" }
+  - { id: "CVE-2026-114713 UnrealIRCd", reason: "KEV 2026-11-13, SecurityWeek 2026-11-16 reports exploitation; dropped by earlier runs (IRC server, no Swiss public-sector footprint)" }
+  - { id: "Arista advisories 0218-0227 (2026-11-10)", reason: "EOS DoS, RIPv2, RPKI, PTP, S-BFD and C-250/C-260 AP static-key flaws; all internally found, no exploitation; the highest rows are adjacent-only (CVE-2026-121367 9.6 RIPv2 on management interfaces; CVE-2026-102166 8.8 AP firmware keys, all AP releases, no fix named)" }
+  - { id: "HPE Networking Private 5G Core HPESBNW05179 (2026-11-10)", reason: "telecom core product, no exploitation; third-party flatted CVE-2026-33228 (9.8) and Erlang CVE-2026-49759 carry public discussion only" }
+  - { id: "WatchGuard AuthPoint Gateway CVE-2026-121637 to -121640 (2026-11-04) and Endpoint LPE CVE-2026-57907 (2026-11-10)", reason: "AuthPoint advisories predate the lookback horizon; Endpoint row is a local LPE; none exploited; the 2026.4 Fireware rows are already covered by the 2026-10-29 entry" }
+  - { id: "Progress Telerik (CCCS AV26-1148, 2026-11-12)", reason: "Report Server CVE-2026-106152 scores 8.8; the other rows could not be read to a 9.0+ unauthenticated condition; no exploitation" }
+  - { id: "n8n AV26-1160 (2026-11-13)", reason: "OAuth callback account hijack rated medium by n8n's GHSA; no exploitation" }
+  - { id: "React Server Components CVE-2026-126187", reason: "CCCS re-lists the 2026-10-14 advisory on 2026-11-12; dropped by earlier runs for narrow application preconditions; GHSA still states no exploitation" }
+  - { id: "EUVD score>=9 rows 2026-11-15 to 17: Apache Shiro CVE-2026-129349, Cyrus SASL CVE-2026-129483, OpenCTI CVE-2026-104840, phpMyFAQ CVE-2026-130369 and -130371, AdminNeo, Arize Phoenix, DrayTek Vigor2960 and D-Link EOL routers, WordPress plugins", reason: "non-default configuration (Shiro), rarely deployed mechanism (SRP), brute-force rate limit (OpenCTI), niche or end-of-life products, no exploitation" }
+  - { id: "Palo Alto 2026-11-11 PAN-OS and GlobalProtect batch (CVE-2026-0323 to -0331)", reason: "highest rating Medium or Low; PHP2Shell and Brotli portfolio advisories show no revision after 2026-10-29 and 2026-11-09" }
+  - { id: "Check Point CVE-2026-107484 (Gaia Portal, authenticated privilege escalation)", reason: "authenticated; sk1000302 and sk1000362 last modified 2026-11-12 (already folded into the Check Point entry)" }
+  - { id: "Citrix NetScaler 2026-11-12 bulletin, SonicWall, MikroTik 7.25.1, SEPPmail 15.1.1, PTC Windchill, Apache httpd 2.4.71, Plone 20261110", reason: "re-read; no revision, fixed build or exploitation-status change since the covering entries (Plone's CVE ids still 'requested' on the hotfix post; PTC page newest entry 2026-11-11)" }
+  - { id: "N-able N-central follow-up patch", reason: "THN weekly recap (2026-11-16) says N-able patches for 4EverAble2Shell were expected that day; no first-party page readable (status.n-able.com 403, uptime.n-able.com is a script shell) and no corroborating report found, so not returned as an update; Tenable FAQ notes N-able network indicators of 2026-11-13 for customers with the Legacy API enabled" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty in the org profile; the sweep is a no-op"
+
+candidate_sources:
+  - id: dassault-security-advisories
+    publisher: "Dassault Systèmes Trust Center, security advisories (3ds.com)"
+    url: "https://www.3ds.com/trust-center/security/security-advisories"
+    category: vendor-psirt
+    why: "First-party CNA listing (119 results) for 3DEXPERIENCE, DELMIA, GEOVIA and Tuleap; the Station Launcher App advisories of 2026-11-16 appeared on no slice source, and DELMIA Apriso has three KEV entries from 2025; extract reads each advisory page (listing page also reads)."
+  - id: craftcms-github-advisories
+    publisher: "Craft CMS GitHub security advisories"
+    url: "https://github.com/craftcms/cms/security/advisories"
+    category: vendor-psirt
+    why: "Primary for Craft CMS SQL injection and RCE fixes (CVE-2026-123488 family); WebFetch reads the listing with GHSA ids, severities and dates; no slice source carried it."
+
+coverage_gaps:
+  - { source_id: connectwise-trust-center, reason: "trust-center HTML 403 on url --direct, extract and WebFetch; GitHub commits API answered 403 then 429 and gh refused (repository access not enabled). Recipe that works: `python3 tools/fetch_source.py url --direct https://github.com/ConnectWise-Advisories/Disclosures/commits/main.atom` returns dated commit titles with no API limit (newest advisory CVE-2026-127063, 2026-11-12; README commit 2026-11-13)." }
+  - { source_id: belden-psirt, reason: "https://www.belden.com/security answered 403 on url --direct and WebFetch, extract fell to the reader whose key pool is exhausted (HTTP 402); WebSearch found no November 2026 Belden advisory (newest dated item September 2026), so the gap is real but low-yield" }
+  - { source_id: enisa-euvd, reason: "recipe improvement: `enisa-euvd recent criticals` and `lastvulnerabilities` return only 4 rows; `python3 tools/fetch_source.py url --direct 'https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=YYYY-MM-DD&toDate=YYYY-MM-DD&page=0&size=100'` returns every record at that score in the window (36 for 2026-11-15 to 17) with vendor, product, vector, EPSS and references; `search?text=<CVE>` works when the aliases field is checked." }
+  - { source_id: msrc-update-guide, reason: "recipe confirmed: the revised-CVE sweep pages with $skip in steps of 100 (filter `latestRevisionDate ge <ISO> and isMariner eq false`, `$orderby=latestRevisionDate desc`); exploited and disclosed rows for a release read with `$filter=releaseNumber eq '2026-Nov' and exploited eq 'Yes'` (and publiclyDisclosed eq 'Yes') through fs._msrc_fetch_strict_json" }
+  - { source_id: vulncheck, reason: "WebFetch of the blog listing returned dated posts with hrefs and `extract` of each post reads in full (this run: 2026-11-16 Control Web Panel post); the listing carries teasers only, so every post needs a drill" }
+  - { source_id: checkpoint-support-pages, reason: "support.checkpoint.com sk pages are a Next.js shell: extract returns raw HTML, WebFetch returns nothing; the full article sits in the __NEXT_DATA__ JSON (fields title, solution, lastModified, dateCreated) and parses with json.loads" }
+  - { source_id: n-able-status, reason: "status.n-able.com 403 on url --direct (reader fallback served the empty shell) and uptime.n-able.com/event/202613/ is a script shell; N-able's first-party update trail for the N-central follow-up hotfix is not readable from the container, so patch availability after 2026-11-12 could not be confirmed" }
+
+source_ledger:
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "url --direct (403), extract (403), WebFetch-free; github.com/ConnectWise-Advisories/Disclosures/commits/main.atom (reads); GitHub API 403/429; gh refused", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "newest advisory CVE-2026-127063 (2026-11-12) already covered by the ScreenConnect entry; trust-center HTML still 403 (coverage gap logged with the working recipe)" }
+  - { id: belden-psirt, tier: standard, attempted: true, transport: "url --direct (403), extract (reader pool exhausted, 402), WebFetch (403), WebSearch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "403 on every transport; WebSearch found no November 2026 Belden advisory; candidate stays in rotation" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing newest item 2026-11-13 (KEV alert); ICS CSAF newest release 2026-11-12 (icsa-26-316-01 to -05)" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogVersion 2026.11.13, 1781 entries, newest dateAdded 2026-11-13; zero additions in the window; no covered CVE flagged for ransomware use" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "url --direct on api/exploitedvulnerabilities, api/search (score>=9 window), enisa-euvd recent criticals and lastvulnerabilities, advisory pages", horizon_hours: 26, in_horizon_items: 4, returned: 2, note: "exploited list 4 rows (all covered or dropped); 36 rows at CVSS 9.0+ since 2026-11-15 yielded the Dassault trio and the Zyxel CPE row; other rows dispositioned in drops" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract of watchtowr.com/intelligence", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest labs post 2026-11-05 (Barracuda ESG, covered); intelligence FAQ page lists no new vulnerability FAQ" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (50 items) + extract of advisory pages", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "FG-IR-26-273 and FG-IR-26-187 revised 2026-11-16; FG-IR-26-268 (2026-11-13 revision) already in the existing entry; no new FG-IR numbers" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "OData revised-CVE sweep (isMariner eq false) with paging, msrc cve, exploited/disclosed filter, msrc recent", horizon_hours: 26, in_horizon_items: 3, returned: 1, note: "SharePoint CVE-2026-124222/-124223 additions returned (borderline); .NET VSTest row corrected, informational; exploited/disclosed filters for 2026-Nov show only CVE-2026-124194 (covered)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + url --direct json/CVE-<id>", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-11-11 (PAN-OS and GlobalProtect rows at Medium or Low, Chromium monthly); PHP2Shell and Brotli advisories show no revision after 2026-10-29 and 2026-11-09" }
+  - { id: arista-security-advisories, tier: standard, attempted: true, transport: "extract + url --direct CSAF", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "advisories 0218-0227 dated 2026-11-10, none exploited, highest rows adjacent-only (see drops)" }
+  - { id: cccs-alerts, tier: standard, attempted: true, transport: "feed (25 items) + url --direct per advisory", horizon_hours: 168, in_horizon_items: 12, returned: 1, note: "Craft CMS AV26-1086 Update 1 (exploitation claim) returned; Check Point AV26-1154 Update 1 and Apache AV26-1159 covered; n8n, Telerik, React, Docker, MongoDB, Apple, Dell, IBM, Red Hat, Qualcomm dispositioned in drops or as routine rollups" }
+  - { id: censys-advisories, tier: standard, attempted: true, transport: "extract of the N-able advisory + WebSearch for a listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "only the 2026-11-09 N-able N-central advisory exists in window (covered); no listing page or newer advisory found" }
+  - { id: citrix-netscaler-security-bulletins, tier: standard, attempted: true, transport: "feed + extract CTX697305", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-12 security update covered by the CTX697305 entry; no revision found" }
+  - { id: hpe-networking-psirt, tier: standard, attempted: true, transport: "url --direct changes.csv + CSAF json", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "HPESBNW05179 (Private 5G Core, 2026-11-10) dropped as niche, no exploitation" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "url --direct NEWESTa7.stable", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "stable 7.25.1 stamped 2026-11-02, outside the horizon" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "Able2Shell FAQ (N-able, covered; update of 2026-11-16 notes N-able network indicators) and a product-marketing post" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "WebFetch listing + extract per post", horizon_hours: 168, in_horizon_items: 5, returned: 1, note: "Control Web Panel post returned (borderline); Copeland post already folded into the dixell entry; FortiGate firmware fingerprinting, Japan exploitation flows and Glasswing posts are analysis with no actionable CVE" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract listing + extract advisory pages", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "newest row CVE-2026-57907 (2026-11-10, local LPE 8.5); AuthPoint rows dated 2026-11-04; Fireware 2026.4 rows covered by the 2026-10-29 entry" }
+  - { id: seppmail-gateway-revision-history, tier: standard, attempted: true, transport: "extract", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest entry 15.1.1 of 2026-11-03 (covered by the 2026-11-05 entry)" }
+  - { id: sonicwall-psirt, tier: standard, attempted: true, transport: "feed + url --direct vulndetail JSON", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest SNWLID-2026-0021 (2026-11-10, informational eMudhra); revision histories of 0014, 0019 and 0021 show version 1.0 only" }
+  - { id: splunk-advisories, tier: standard, attempted: true, transport: "extract listing + extract SVD-2026-1101", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "advance notice for 2026-11-18 advisories (borderline); rotate again on 2026-11-18" }

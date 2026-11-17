@@ -11,6 +11,8 @@
 
 | Surfaced | By run | Item | Why it clears the gate | Primary source | Event date |
 |---|---|---|---|---|---|
+| 2026-11-17 | 2026-11-17T0355Z-intel | **TYPO3 Core critical security releases (TYPO3-PSA-2026-002 pre-announcement; the releases publish 2026-11-17 at about 11:00 UTC, after this fire began).** | One critical flaw exploitable by low-privileged backend users in all supported versions including ELTS (network, low complexity), no CVE ids or fixed versions yet; it clears PD-11(b) only if the published advisories show an exposure or an exploitation timeline the mechanics force. **HELD** on a named condition: TYPO3 publishes the TYPO3-CORE-SA advisories with CVE ids and fixed versions; expiry 2026-12-01, then struck. | https://news.typo3.com/security/advisory/typo3-psa-2026-002 | 2026-11-16 |
+| 2026-11-17 | 2026-11-17T0355Z-intel | **Oracle Critical Security Patch Update of 2026-11-17 (pre-release announcement of 2026-11-12: 652 patches, Fusion Middleware 53 unauthenticated rows up to CVSS 10.0, E-Business Suite 22 unauthenticated rows up to 9.8, Database Server and APEX unauthenticated rows up to 9.9).** | The advisory carries no CVE ids until Oracle publishes it later on 2026-11-17, after this fire began (re-read at 04:55 UTC: still the pre-release page); its risk matrices decide which unauthenticated network rows clear PD-11(b), as in the September cycle. **HELD** on a named condition: Oracle publishes the advisory and the risk matrices are read; expiry 2026-12-01, then struck. | https://www.oracle.com/security-alerts/cspunov2026.html | 2026-11-17 |
 
 ## Struck
 

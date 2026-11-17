@@ -1,0 +1,393 @@
+# work/2026-11-17T0355Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-17T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-17T03:57:48Z
+ended_at: 2026-11-17T04:20:41Z
+duration_seconds: 1373
+window_hours: 26
+developing_window_hours: 72
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 29
+  bridge_fetches: 75
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "BundID: automated mass logins lock German federal citizen accounts; BSI confirms the attack, password login is switched off, then reportedly restored with an e-mail second factor"
+    sources:
+      - { url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html", publisher: "heise online", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.handelsblatt.com/politik/deutschland/bundid-hackerangriff-auf-buergerkonten-mit-massenhaften-log-in-versuchen/100270238.html", publisher: "Handelsblatt", date: "2026-11-16", role: "primary" }
+      - { url: "https://web.de/magazine/digital/bundid-konto-gesperrt-betroffene-42951652", publisher: "WEB.DE News", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://www.ad-hoc-news.de/wissenschaft/bundid-nach-angriffswelle-passwort-login-jetzt-nur-noch-mit-e-mail-code/70522344", publisher: "ad-hoc-news.de (boerse-global aggregator)", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item 2026-11-16T12:29Z) -> extract https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html -> WebSearch (\"BundID Konten gesperrt automatisierte Login-Versuche BSI Cyberangriff November 2026\") -> pivot: Handelsblatt, URL https://www.handelsblatt.com/politik/deutschland/bundid-hackerangriff-auf-buergerkonten-mit-massenhaften-log-in-versuchen/100270238.html (BSI statement to Handelsblatt) -> pivot: WEB.DE, URL https://web.de/magazine/digital/bundid-konto-gesperrt-betroffene-42951652 -> pivot: ad-hoc-news aggregator, URL https://www.ad-hoc-news.de/wissenschaft/bundid-nach-angriffswelle-passwort-login-jetzt-nur-noch-mit-e-mail-code/70522344. The operator's own notice on https://id.bund.de/de was fetched but is a JavaScript shell, so its text is known only as quoted by heise and WEB.DE (no primary notice text read)."
+    summary: |
+      On Monday 2026-11-16 Germany's BSI confirmed to heise security and to Handelsblatt an IT security incident involving BundID, the federal citizen account used for online administrative services: automated, mass login attempts against BundID accounts. The failed attempts locked accounts, triggered automatic mails and prompted account holders to reset their passwords. The federal government switched off username-and-password sign-in on Monday morning; sign-in with the online ID card (eID) and the Elster certificate stayed possible throughout. The BSI says countermeasures, which it does not name, repelled the attack and that it has no indication that any BundID account was compromised. Handelsblatt, citing government circles, reports the pattern as credential stuffing (credentials from earlier leaks at other services replayed against BundID); that label is the reporter's attribution to unnamed officials, not a BSI statement. The number of locked accounts is not disclosed, locked accounts are not unlocked in bulk, and users must pass the password-reset flow or use another sign-in method; a support contact form handles urgent cases. Aggregator sites (boerse-global / ad-hoc-news) add that password sign-in returned the same afternoon under a mandatory one-time code sent by e-mail; no primary source read confirms that restoration.
+      The defender-relevant mechanics are generic to any citizen- or employee-facing login portal: a lockout-after-N-failures control turns a credential-stuffing run into a mass-lockout and helpdesk event even when no account is taken over, and the fastest containment lever the operator used was to disable the password-only path while leaving strong-identity paths (eID, certificate) open, followed by adding a second factor to the password path.
+    region_nexus: "Germany (neighbouring country); federal citizen-account portal. No Swiss involvement is reported. Transferable to Swiss federal, cantonal and communal citizen- and employee-facing login portals (analyst inference, not a source statement)."
+    primary_sector_nexus: "direct (public-sector e-government identity and login service)"
+    sector: "public-sector"
+    techniques: [T1110.004]
+    affected_products: ["BundID"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:bundid-credential-stuffing-account-lockouts-2026-11", type: incident, name: "BundID automated login attack and account lockouts (November 2026)", aliases: ["BundID Angriffswelle November 2026"], summary: "On 2026-11-16 the BSI confirmed automated, mass login attempts against BundID, Germany's federal citizen account; failed logins locked accounts and triggered password-reset mails, the federal government disabled username-and-password sign-in, and the BSI reports no indication of account compromise (heise, Handelsblatt, 2026-11-16)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    classification_suggestion: "B2 (press relaying an on-the-record BSI statement; incident facts agree across heise, Handelsblatt and WEB.DE; the credential-stuffing label rests on unnamed government sources)"
+    novelty: new
+    evidence:
+      - quote: "Es handelt sich um einen Cyberangriff, wie ein Sprecher des Bundesamts für Sicherheit in der Informationstechnik (BSI) gegenüber heise security bestätigt."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html"
+      - quote: "Durch fehlgeschlagene Login-Versuche wurden Konten gesperrt, automatisierte Mails ausgelöst und die Kontoinhaberinnen und -inhaber zu einem Passwort-Reset aufgefordert."
+        attribution: "heise online (quoting the BSI spokesperson)"
+        source_url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html"
+      - quote: "Auf eine Kompromittierung von BundID-Konten liegen dem BSI derzeit keine Hinweise vor"
+        attribution: "heise online (quoting the BSI spokesperson)"
+        source_url: "https://www.heise.de/news/BundID-Massenhafte-Angriffe-fuehren-zu-Kontosperrungen-11526376.html"
+      - quote: "Nach aktuellen Erkenntnissen handelt es sich um sogenanntes Credential Stuffing, erfuhr das Handelsblatt aus Regierungskreisen."
+        attribution: "Handelsblatt"
+        source_url: "https://www.handelsblatt.com/politik/deutschland/bundid-hackerangriff-auf-buergerkonten-mit-massenhaften-log-in-versuchen/100270238.html"
+      - quote: "Anmeldungen per Online-Ausweis (eID) und Elster-Zertifikat seien weiterhin möglich."
+        attribution: "WEB.DE News"
+        source_url: "https://web.de/magazine/digital/bundid-konto-gesperrt-betroffene-42951652"
+    extended_notes: |
+      Detection concept (telemetry class first): authentication and session logs on the account-login endpoint show a surge of failed password logins spread over many distinct usernames with few attempts each and many source addresses, followed by lockout-notification and password-reset mail volume and helpdesk-form volume; a lockout storm is itself the alert. Hardening levers named by the sources' account of the operator's response: disable the password-only path and keep eID/certificate sign-in, add a one-time-code second factor (reported by aggregators only). Triage note (analyst inference from the mechanism, not stated by a source): a lockout spike after a password-policy change or login-page defect looks similar; the discriminator is distinct-username breadth with source-address spread and no preceding deployment.
+      The first public hints reportedly came from the Born City blog on 2026-11-14 (stated by the ad-hoc-news aggregator only; not verified). Scale unknown (one aggregator cites about 4.9 million active BundID accounts as of August 2025 via a search snippet; not fetched, not for use).
+    borderline: false
+
+  # ------------------------------------------------------------------ 2
+  - title: "NCSC.ch issues its own advisory on the six Danfoss AK-SM 800A pre-authentication RCE flaws (Cyber Security Hub post 13180) and, on 2026-11-16, extends its refrigeration-controller advisory with the XWEB EVO disclosure"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13180", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub)", date: "2026-11-16", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13054", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub, edited 2026-11-16T16:25Z)", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a", publisher: "Midnight Blue", date: "2026-11-07", role: "corroborating" }
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2", publisher: "BSI (BITS-H 2026-306525-10e2)", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html", publisher: "heise online", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, `python3 tools/fetch_source.py ncsc-csh recent 25` (post 13180 created 2026-11-16T07:13Z, post 13054 lastModified 2026-11-16T16:25Z), post URL https://security-hub.ncsc.admin.ch/#/posts/13180 -> pivot: Midnight Blue, URL https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a (the post's cited primary) -> pivot: BSI PDF, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2 -> pivot: heise, URL https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html"
+    summary: |
+      Delta on an already-covered entry. NCSC Switzerland's Cyber Security Hub published post 13180 on 2026-11-16 (07:13 UTC): Danfoss AK-SM 800A, all versions up to and including 5.3.2, multiple pre-authentication stack buffer overflows giving root-level code execution, with persistent malicious firmware or irreversible bricking possible because the device has no Secure Boot; NCSC.ch lists the exploitation status as unknown, states "Vendor firmware updates are available" and says the recommendations of its earlier refrigeration advisory (post 13054) remain relevant. It names Midnight Blue as the source advisory and cites BSI and heise as supporting. This is the first Swiss-authority advisory covering the six flaws; the entry's current text records the Midnight Blue report through BSI, CCB and heise but cites no NCSC.ch post for it.
+      Caution for the composer: the post does not say which firmware fixes the six flaws. Midnight Blue says the flaws exist in the latest firmware (5.3.2 when written) and advises against patching in place of removing internet exposure; heise reports that Danfoss shipped 5.4.0 on 2026-11-12 and that the BSI cannot rule out flaws in it either. NCSC.ch's "updates are available" therefore must not be read as "fixed".
+      Separately, NCSC.ch edited its refrigeration advisory (post 13054) on 2026-11-16 to add the VulnCheck disclosure of 14 XWEB EVO CVEs (XWEB EVO end of support since 2026-03-16, no security update will follow, never expose it, at least two flaws alleged exploited after the CVEs were published on 2026-11-12); that edit is a delta for the XWEB EVO entry (2026-11-13/dixell-copeland-xweb-evo-vulncheck-cves-end-of-service), which already carries VulnCheck's own reporting.
+    region_nexus: "Switzerland (NCSC.ch advisory); Swiss refrigeration incidents already in the entry"
+    primary_sector_nexus: "indirect (cold-chain and refrigeration controllers in public-sector estates, healthcare and logistics)"
+    sector: "public-sector"
+    techniques: [T1190]
+    affected_products: ["Danfoss AK-SM 800A"]
+    entity_keys: ["product:danfoss-ak-sm-800a", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "product:copeland-xweb", "product:dixell-xweb", "incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    classification_suggestion: "A2 (national CERT for its own jurisdiction; underlying Midnight Blue findings corroborated by BSI and CCB, exploitation status unknown)"
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - quote: "Pre-authentication stack buffer overflows enable root-level code execution; absent Secure Boot may permit persistent malicious firmware or irreversible device bricking."
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13180)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13180"
+      - quote: "Affected versions: All up to and including 5.3.2"
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13180)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13180"
+      - quote: "Vendor firmware updates are available."
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13180)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13180"
+      - quote: "Das BSI teilt uns mit, auch bei 5.4.0 Schwachstellen nicht ausschließen zu wollen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html"
+      - quote: "The vulnerabilities can lead to command execution as root, at least two where alleged to be actively exploited shortly after the CVEs were made public on November 12th."
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13054, update of 2026-11-16)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13054"
+    extended_notes: |
+      Date note: Midnight Blue's page metadata reads 2026-11-07 while the existing entry dates its report 2026-11-11; the page text says only 'November, 2026' and quotes 5.3.2 as the latest firmware, so it predates Danfoss's 5.4.0 of 2026-11-12.
+      Exposure/hardening carried by the post: network access to the controller's web management interface is the prerequisite; remove internet exposure, restrict to trusted IPs or a VPN, single managed entry point for remote users, change default passwords; if compromise is suspected the 13054 advisory carries the CERT-FR recovery order (restrict access, factory reset, apply fixes, rotate secrets, review accounts, reconfigure). A factory reset alone is insufficient while the device stays reachable and vulnerable.
+    borderline: false
+
+  # ------------------------------------------------------------------ 3
+  - title: "NCSC.ch raises its N-able N-central advisory to 'actively exploited' on 2026-11-16 and tells customers to upgrade Agents and Probes and keep the Legacy API disabled"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13163", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub, edited 2026-11-16T09:34Z)", date: "2026-11-16", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, `python3 tools/fetch_source.py ncsc-csh recent 25` (post 13163 lastModified 2026-11-16T09:34Z, history reason 'Updated with claims of active exploitation'), post URL https://security-hub.ncsc.admin.ch/#/posts/13163 -> primary (no pivot needed; the post's own references are N-able advisories and The Hacker News, not fetched here)"
+    summary: |
+      Low-weight delta on an already-covered entry. NCSC Switzerland edited its N-central advisory (post 13163) on 2026-11-16 and changed the exploitation status from unknown to "Actively exploited, Proof of Concept Available", citing The Hacker News; it lists seven N-able per-CVE advisories (CVE-2026-125883 XXE, CVE-2026-125878 OGNL injection to RCE, CVE-2026-125879 local privilege escalation to root via a writable syslog-ng configuration, CVE-2026-125880 stored XSS, CVE-2026-125881 schema-hint SSRF, CVE-2026-125882 file-repository upload path traversal to RCE, CVE-2026-91000 insecure IPC local privilege escalation), says further fixes for more vulnerabilities are still expected, and states that Agents and Probes must be upgraded by the customer in both hosted and on-premises environments, with on-premises customers urged to upgrade them and to ensure Legacy API access is disabled if it had been turned on. The entry already carries Huntress's reporting of exploitation on at least 21 production servers, all seven CVE ids and the Legacy API condition; the new fact is that the Swiss national authority now rates it actively exploited. NCSC.ch does not name its own telemetry for the rating.
+    region_nexus: "Switzerland (NCSC.ch advisory)"
+    primary_sector_nexus: "indirect (managed-service-provider tooling used by Swiss public bodies' IT providers)"
+    sector: "public-sector"
+    techniques: [T1190]
+    affected_products: ["N-able N-central"]
+    entity_keys: ["product:n-able-n-central", "incident:n-able-n-central-able2shell-disclosure-2026-11"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    classification_suggestion: "A3 (national CERT for its own jurisdiction; the exploitation rating itself rests on a secondary citation)"
+    novelty: "update-of:2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline"
+    evidence:
+      - quote: "Actively exploited, Proof of Concept Available"
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13163, update of 2026-11-16)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13163"
+      - quote: "On-premises customers are being urged to upgrade Agents and Probes and ensure Legacy API access is disabled in the environment, if it has been previously turned on."
+        attribution: "NCSC Switzerland (Cyber Security Hub post 13163, update of 2026-11-16)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13163"
+    borderline: true
+    borderline_reason: "Marginal delta (authority rating change only); compose as a one-line update record on the existing entry or drop."
+
+  # ------------------------------------------------------------------ 4
+  - title: "Microsoft 365 global outage of 12-14 November: Microsoft's root-cause account (a July change in a central traffic entry point) lands on 2026-11-16, Swiss federal administration reports minor effects, canton Aargau moves to review contingency plans, and phishing mails imitate outage notices"
+    sources:
+      - { url: "https://www.srf.ch/news/wirtschaft/globale-panne-weltweiter-microsoft-ausfall-nun-ist-der-grund-bekannt", publisher: "SRF", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.heise.de/news/Microsoft-Ausfall-Woran-es-lag-und-wer-besonders-litt-11525257.html", publisher: "heise online (dpa)", date: "2026-11-14", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/microsoft-panne-schraenkt-schweizer-geschaeftsalltag-ein-20261113", publisher: "Inside IT", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116", publisher: "Inside IT", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Phishing-Kampagne-nutzt-Microsoft-Cloud-Ausfall-11525471.html", publisher: "heise online (relaying Microsoft Threat Intelligence)", date: "2026-11-15", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item 'Aargau soll nach M365-Ausfall Notfallpläne prüfen', 2026-11-16) -> extract (url --direct, __NEXT_DATA__) https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116 -> pivot: Inside IT 2026-11-13 https://www.inside-it.ch/microsoft-panne-schraenkt-schweizer-geschaeftsalltag-ein-20261113 -> pivot: srf-news feed https://www.srf.ch/news/bnf/rss/1646 -> SRF https://www.srf.ch/news/wirtschaft/globale-panne-weltweiter-microsoft-ausfall-nun-ist-der-grund-bekannt -> pivot: heise https://www.heise.de/news/Microsoft-Ausfall-Woran-es-lag-und-wer-besonders-litt-11525257.html and https://www.heise.de/news/Phishing-Kampagne-nutzt-Microsoft-Cloud-Ausfall-11525471.html. Microsoft's own written post-incident report was searched for (two WebSearch queries) and not found, so the root cause is read through SRF and heise."
+    summary: |
+      A worldwide Microsoft 365 outage began on Thursday evening 2026-11-12 and ran, with partial recovery, until Saturday 2026-11-14 (heise); Outlook and Exchange Online, Teams, SharePoint and Copilot were affected in more than 70 countries (SRF). Microsoft says the cause was internal and not a cyberattack or AI activity (heise, Inside IT). On 2026-11-16 SRF reports Microsoft's fuller account: a software change to a central traffic entry point for Microsoft 365, deployed in July, carried an undetected bug that lab tests missed because they ran mostly on older hardware; it surfaced on newer, more powerful servers when Teams was moved onto the same infrastructure and about 14 percent of server capacity was already out of service; the load shift spread the same fault to the remaining machines, more than 80 percent of the responsible machines stopped responding at the peak, almost the whole system was hit within two hours, and safeguards between world regions failed. Outlook could not be rerouted, restarted servers collapsed under the queued requests, and Microsoft needed a special repair update and group-wise restarts, which is why recovery ran into Saturday. Microsoft's first statement (heise, 2026-11-14) had named a network-capacity upgrade whose introduced problem only showed after later network changes; the two accounts are worded differently and Microsoft's written report was not read.
+      Swiss public-sector effects, from Inside IT relaying AWP and Keystone-SDA: the federal administration (about 44,000 staff) reported only minor performance problems in individual applications and working e-mail; ETH Zurich students were hit by Outlook, Teams and SharePoint problems; Swiss Post told customers with urgent matters to phone. On 2026-11-16 Aargau GLP Grossrat Lukas Huber announced an interpellation, to be filed on 2026-11-17, asking the Regierungsrat what the outage meant for the cantonal administration, schools and courts, how effective existing emergency measures are, and which state tasks could only be met in a restricted way or not at all in a multi-day outage of central Microsoft services. German reporting (heise, 2026-11-14) adds that the German federal client, which runs on its own infrastructure, stayed stable.
+      Security angle: heise reports that Microsoft Threat Intelligence warned of phishing mails that imitate Microsoft 365 service-status messages and reference the Exchange Online incident EX1550543; some claim that mail was held during the outage and will be deleted within 24 hours unless the recipient clicks to restore it, with subject lines following an 'Outage' plus short-code pattern and display names built from organisation-specific prefixes plus 'Outage Notification' or 'Service Health'. Microsoft had not confirmed credential theft or malware delivery, says Defender for Office 365 blocks the mails, and advises checking Safe Links policies and verifying outage notices only in the Microsoft 365 admin center. The phishing detail is single-source (heise relaying a Microsoft Threat Intelligence post on Bluesky, which was not fetched).
+    region_nexus: "Global event with reported Swiss public-sector impact (federal administration, ETH Zurich, Swiss Post) and a cantonal (Aargau) parliamentary follow-up"
+    primary_sector_nexus: "direct (government dependency on a single cloud mail and collaboration platform)"
+    sector: "public-sector"
+    techniques: [T1566.002]
+    affected_products: ["Microsoft 365", "Microsoft Exchange Online", "Microsoft Teams"]
+    entity_keys: ["product:microsoft-365", "product:microsoft-exchange-online", "product:microsoft-teams"]
+    new_entities:
+      - { key: "incident:microsoft-365-global-outage-2026-11", type: incident, name: "Microsoft 365 global outage (12-14 November 2026)", aliases: ["Microsoft Cloud-Ausfall November 2026", "Exchange Online incident EX1550543"], summary: "Worldwide Microsoft 365 outage from the evening of 2026-11-12 to 2026-11-14 affecting Outlook, Exchange Online, Teams, SharePoint and Copilot; Microsoft attributes it to an internal fault (a July change in a central traffic entry point per SRF, 2026-11-16) and rules out a cyberattack (SRF, heise, 2026-11-14/16)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: "B2 for the outage facts and Swiss impact (SRF, heise, Inside IT agree and trace to Microsoft and Keystone-SDA/AWP); C3 for the phishing component (single outlet relaying an unfetched social post)"
+    novelty: new
+    evidence:
+      - quote: "Ein seit Juli unentdeckt im System schlummernder Programmfehler hat in der vergangenen Woche den weltweiten Ausfall von Microsoft-Diensten wie Outlook und Teams ausgelöst."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/wirtschaft/globale-panne-weltweiter-microsoft-ausfall-nun-ist-der-grund-bekannt"
+      - quote: "Auf dem Höhepunkt der Störung reagierten am Donnerstagabend mehr als 80 Prozent der zuständigen Rechner nicht mehr."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/news/wirtschaft/globale-panne-weltweiter-microsoft-ausfall-nun-ist-der-grund-bekannt"
+      - quote: "Die Schweizer Bundesverwaltung mit rund 44'000 Mitarbeitenden meldete lediglich kleinere Leistungsprobleme bei einzelnen Anwendungen."
+        attribution: "Inside IT (relaying Keystone-SDA)"
+        source_url: "https://www.inside-it.ch/microsoft-panne-schraenkt-schweizer-geschaeftsalltag-ein-20261113"
+      - quote: "Mit seiner Interpellation verlangt er vom Regierungsrat eine Einschätzung zu den Auswirkungen auf die Kantonsverwaltung, Schulen und Gerichte."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116"
+      - quote: "Das Schema stimmt mit üblichem Zugangsdaten-Phishing überein, Microsofts IT-Sicherheitsforscher konnten bislang jedoch weder das Abgreifen von Zugangsdaten noch das Ausliefern von Malware bestätigen."
+        attribution: "heise online (relaying Microsoft Threat Intelligence)"
+        source_url: "https://www.heise.de/news/Phishing-Kampagne-nutzt-Microsoft-Cloud-Ausfall-11525471.html"
+    extended_notes: |
+      Triage value: during an outage like this, mail delays and bounces, authentication failures and stalled Teams or SharePoint sessions look like a mail-flow or identity incident; Microsoft's statement that no attack was involved, and the German federal client's stability because it does not use the Microsoft cloud, are the discriminators the sources give. Detection concept for the lure: mail-flow logs for sender display names or subjects that imitate service-health or outage notifications with a short code, links through bulk-mail click-tracking redirects, and a new-domain or low-reputation landing page; hardening: send staff to the Microsoft 365 admin center service-health view rather than to mailed links, and review Safe Links policy (sources' own advice). No indicator values are carried (IOC rule).
+    borderline: true
+    borderline_reason: "An availability and dependency event, not an attack: Swiss public-sector impact reported as minor (federal administration), the in-window parts are Microsoft's root-cause account (2026-11-16) and a cantonal interpellation, and the phishing lure was reported 2026-11-14/15, outside the 26 h window. Worth a short entry only for the continuity-planning and outage-lure angle."
+
+  # ------------------------------------------------------------------ 5
+  - title: "TYPO3 pre-announces critical Core security releases for 2026-11-17 11:00 UTC: all supported versions including ELTS, one critical flaw exploitable by low-privileged backend users"
+    sources:
+      - { url: "https://news.typo3.com/security/advisory/typo3-psa-2026-002", publisher: "TYPO3 Association (TYPO3-PSA-2026-002)", date: "2026-11-16", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4578", publisher: "BSI CERT-Bund (WID-SEC-2026-4578)", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, `python3 tools/fetch_source.py bsi-rss` ([NEU] [UNGEPATCHT] [kritisch] 'TYPO3 Core: Mehrere Schwachstellen ermöglichen nicht spezifizierten Angriff', pubDate 2026-11-16T15:47Z) -> `bsi-csaf WID-SEC-2026-4578` (portal URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4578; its only external reference is the TYPO3 PSA) -> primary: TYPO3, URL https://news.typo3.com/security/advisory/typo3-psa-2026-002"
+    summary: |
+      The TYPO3 Security Team published TYPO3-PSA-2026-002, a pre-announcement of important Core security releases scheduled for Tuesday 2026-11-17 at about 11:00 UTC (12:00 CET). It affects all supported TYPO3 versions including those under extended long-term support (ELTS), suggested severity Critical, highest CVSS 4.0 vector network, low complexity, no user interaction, privileges low, high impact on confidentiality, integrity and availability including subsequent systems. The releases fix several vulnerabilities; one is rated critical and can be exploited by low-privileged backend users, the others high and medium. No CVE ids, component names or fixed versions are published yet; the corresponding advisories follow with the release at typo3.org/help/security-advisories, and website maintainers are told to apply the updates as soon as possible after publication. The BSI's CERT-Bund entry (rated critical, status 'unpatched', initial release 2026-11-15 23:00 UTC) only relays the TYPO3 notice and dates the TYPO3 advisory 2026-11-15 whereas the TYPO3 page carries 2026-11-16. No exploitation is reported.
+      Defender relevance: TYPO3 backends are internet-reachable CMS administration surfaces; the critical flaw needs a valid low-privileged backend account, so the exposure is every instance with editor or other low-privilege backend users, which includes outsourced editors and service accounts. Swiss public-sector prevalence of TYPO3 is not established by any source read here.
+    region_nexus: "Global; no Swiss-specific statement in the sources. Relevant to any Swiss federal, cantonal or communal body running TYPO3 (prevalence unsourced)."
+    primary_sector_nexus: "indirect (public-sector web estates built on TYPO3, unquantified)"
+    sector: "public-sector"
+    techniques: [T1190]
+    affected_products: ["TYPO3 CMS"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:typo3", type: product, name: "TYPO3 CMS", aliases: ["TYPO3", "TYPO3 Core"], summary: "Open-source PHP content-management system maintained by the TYPO3 Association; its Core security releases are announced as TYPO3-CORE-SA advisories, with PSA pre-announcements for coordinated releases (TYPO3 Association, 2026-11-16)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: "A3 (vendor advisory as primary for its own product, relayed by BSI; scope and severity stated, but no CVE ids or versions yet)"
+    novelty: new
+    evidence:
+      - quote: "The releases address several vulnerabilities. One of them is rated “critical” and can be exploited by low-privileged backend users."
+        attribution: "TYPO3 Association"
+        source_url: "https://news.typo3.com/security/advisory/typo3-psa-2026-002"
+      - quote: "Affected Versions: All supported versions, including ELTS"
+        attribution: "TYPO3 Association"
+        source_url: "https://news.typo3.com/security/advisory/typo3-psa-2026-002"
+      - quote: "The TYPO3 Security Team pre-announces important security releases, which are planned to be published on Tuesday, November 17th 2026, at around 11:00 UTC (12:00 CET)."
+        attribution: "TYPO3 Association"
+        source_url: "https://news.typo3.com/security/advisory/typo3-psa-2026-002"
+      - quote: "Ein Angreifer kann mehrere Schwachstellen in TYPO3 Core ausnutzen, um einen nicht näher spezifizierten Angriff durchzuführen."
+        attribution: "BSI CERT-Bund"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4578"
+    extended_notes: |
+      Pre-release prepare-now actions the source supports: inventory TYPO3 installations including ELTS ones and know who can reach the backend; plan the update window for the afternoon of 2026-11-17 (CET); after release, read the actual advisory for the component and any post-patch compromise check. Vulnerability overlap: S1 owns vulnerability coverage and can cover the real advisories on the next fire.
+    borderline: true
+    borderline_reason: "A pre-announcement without CVE ids, versions or exploitation; the substantive advisories publish at about 11:00 UTC today, after this fire starts, so the composer may prefer to cover the actual release on the next fire. Swiss prevalence of TYPO3 is unsourced."
+
+  # ------------------------------------------------------------------ 6
+  - title: "Aargau, the business chamber and BACS present the Cyber Resilience Assessment (CyRA) pilot results and the cantonal cyber coordination office at the cantonal police that starts in January 2027"
+    lookback: true
+    sources:
+      - { url: "https://www.ag.ch/de/medien/medienmitteilungen?mm=kanton-aargau-staerkt-cyberresilienz-von-gemeinden-und-unternehmen-d153e06e-6f3f-466d-a5c7-432386a5f5db_de", publisher: "Kanton Aargau (Medienmitteilung)", date: "2026-11-13", role: "primary" }
+      - { url: "https://www.netzwoche.ch/news/2026-07-02/bacs-probt-cyberresilienz-von-gemeinden-und-unternehmen", publisher: "Netzwoche (reporting the BACS pilot report)", date: "2026-07-02", role: "corroborating" }
+    discovery_trace: "first seen at: ag-ch-medienmitteilungen, URL https://www.ag.ch/content/export/api/v1/xml/medienmitteilungen (newest entry lastmod 2026-11-13T13:00Z) -> extract of the release URL https://www.ag.ch/de/medien/medienmitteilungen?mm=kanton-aargau-staerkt-cyberresilienz-von-gemeinden-und-unternehmen-d153e06e-6f3f-466d-a5c7-432386a5f5db_de -> WebSearch (\"Cyberresilienz-Assessment CyRA BACS Pilotprojekt Gemeinden Self-Assessment\") -> pivot: Netzwoche, URL https://www.netzwoche.ch/news/2026-07-02/bacs-probt-cyberresilienz-von-gemeinden-und-unternehmen (BACS's own pilot report page on ncsc.admin.ch returned HTTP 404 and its PDF was not read)"
+    summary: |
+      Canton Aargau, the Aargau industry and trade chamber (AIHK) and the Federal Office for Cybersecurity (BACS) held the information event 'Cyberresilienz stärkt den Kanton Aargau' on 2026-11-13 and presented the results of the BACS Cyberresilienz-Assessment (CyRA) pilot and the new cantonal cyber coordination office. CyRA is a self-assessment against six resilience objectives that looks at business-critical processes and their dependence on IT and OT; it was piloted in Aargau from mid-February to the end of March 2026. BACS director Florian Schütz, quoted by the canton, says the pilot showed that basic IT protection is in place but that a holistic, process-oriented resilience concept is missing in many organisations. BACS's July report, as Netzwoche reports it, locates the weaknesses in three areas: structured capture of IT and OT dependencies along business processes, emergency and recovery planning, and management of dependencies on external IT service providers; CyRA is still a prototype. The participant counts differ between sources: the canton says eleven communes and fourteen companies, Netzwoche (citing BACS) says 14 communes and 11 other organisations.
+      The canton adds that the information-security law (InfoSiG), in force from 2027-01-01, provides for a cyber coordination office, placed at the Kantonspolizei Aargau, as the central contact point on information-security questions for communes, the population and the economy, promoting information exchange between cantonal and intercantonal bodies. The entry on the InfoSiV adoption already records the office at the cantonal police and its 2027-01-01 start; the new facts are the CyRA findings, the office's stated clientele, and the BACS-canton-chamber cooperation.
+    region_nexus: "Switzerland (canton Aargau, communes and companies; BACS federal tool)"
+    primary_sector_nexus: "direct (communal and cantonal resilience programme)"
+    sector: "public-sector"
+    techniques: []
+    affected_products: []
+    entity_keys: ["policy:aargau-infosig-infosiv-2026"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: "A2 (the canton as disclosing party for its own programme, BACS findings confirmed by Netzwoche's report of the BACS pilot report; participant counts conflict)"
+    novelty: "update-of:2026-11-07/aargau-infosiv-adopted-information-security-law-2027-01-01"
+    evidence:
+      - quote: "Der Pilot im Kanton Aargau war der erste Praxistest unter realen Bedingungen."
+        attribution: "Kanton Aargau (quoting BACS director Florian Schütz)"
+        source_url: "https://www.ag.ch/de/medien/medienmitteilungen?mm=kanton-aargau-staerkt-cyberresilienz-von-gemeinden-und-unternehmen-d153e06e-6f3f-466d-a5c7-432386a5f5db_de"
+      - quote: "doch ein ganzheitliches, prozessorientiertes Resilienzkonzept in vielen Organisationen noch fehlt."
+        attribution: "Kanton Aargau (quoting BACS director Florian Schütz)"
+        source_url: "https://www.ag.ch/de/medien/medienmitteilungen?mm=kanton-aargau-staerkt-cyberresilienz-von-gemeinden-und-unternehmen-d153e06e-6f3f-466d-a5c7-432386a5f5db_de"
+      - quote: "Die neue zentrale Koordinationsstelle ist bei der Kantonspolizei Aargau angesiedelt."
+        attribution: "Kanton Aargau"
+        source_url: "https://www.ag.ch/de/medien/medienmitteilungen?mm=kanton-aargau-staerkt-cyberresilienz-von-gemeinden-und-unternehmen-d153e06e-6f3f-466d-a5c7-432386a5f5db_de"
+      - quote: "Schwächen ortet sie hingegen vor allem in drei Bereichen: bei der strukturierten Erfassung von IT- und OT-Abhängigkeiten entlang von Geschäftsprozessen, bei der Notfall- und Wiederherstellungsplanung sowie beim Management von Abhängigkeiten gegenüber externen IT-Dienstleistern."
+        attribution: "Netzwoche (reporting the BACS pilot report)"
+        source_url: "https://www.netzwoche.ch/news/2026-07-02/bacs-probt-cyberresilienz-von-gemeinden-und-unternehmen"
+    borderline: true
+    borderline_reason: "Awareness-level programme news; most of the cantonal content (coordination office at the cantonal police, 2027-01-01) is already in the InfoSiV entry and the BACS pilot findings date from July. Keep only if the composer wants the CyRA findings as a one-paragraph update."
+
+  # ------------------------------------------------------------------ 7
+  - title: "Canton Vaud runs its second cantonal cyber crisis exercise CYBER26: about 170 communal and cantonal entities, 580 people and 168 crisis cells play a four-hour fictional cyberattack"
+    lookback: true
+    sources:
+      - { url: "https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud/detail/communique/renforcer-la-resilience-des-administrations-du-canton-face-aux-cybermenaces", publisher: "Etat de Vaud (communiqué de presse)", date: "2026-11-12", role: "primary" }
+    discovery_trace: "first seen at: vd-ch-press-releases, URL https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud (server-rendered teaser list; item 2026-11-12T10:17+01:00 'renforcer-la-resilience-des-administrations-du-canton-face-aux-cybermenaces') -> primary (extract of the communiqué URL https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud/detail/communique/renforcer-la-resilience-des-administrations-du-canton-face-aux-cybermenaces, no pivot needed)"
+    summary: |
+      On Thursday 2026-11-12 close to 170 Vaud entities, among them communes, intercommunal associations and partners of social cohesion, took part in the second edition of the cantonal cyber crisis-management exercise CYBER26, led by the cantonal cybersecurity intervention force (CSIRT) and run as an online serious game. For four hours about 580 people in 168 crisis cells faced a fictional cyberattack by cybercriminals that paralysed key services; the exercise trained coordination and communication in a cyber crisis and the newly elected communal officials. The communiqué restates the Vaud escalation path: the CSIRT consists of experts of the cantonal digital directorate (DGNSI), joined case by case by cybercrime experts of the cantonal police and crisis specialists of the cantonal command staff (EMCC), and can act for a commune, a state or para-state entity or a private organisation whose impairment could affect the state's functioning or the population; in a cyberattack the caller should dial 117, the cantonal police then contact the DGNSI intervention force, which coordinates the response. The release says that AI is accelerating attacks and improving criminals' methods, and gives no new threat or incident information.
+    region_nexus: "Switzerland (canton Vaud, communes)"
+    primary_sector_nexus: "direct (communal and cantonal crisis preparedness)"
+    sector: "public-sector"
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_suggestion: "A2 (the canton as disclosing party for its own exercise; no corroboration sought, none needed for the facts stated)"
+    novelty: new
+    evidence:
+      - quote: "Ce jeudi 12 novembre, près de 170 entités vaudoises ont participé à une simulation de cyberattaque."
+        attribution: "Etat de Vaud"
+        source_url: "https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud/detail/communique/renforcer-la-resilience-des-administrations-du-canton-face-aux-cybermenaces"
+      - quote: "quelque 580 personnes réparties dans 168 cellules de crise"
+        attribution: "Etat de Vaud"
+        source_url: "https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud/detail/communique/renforcer-la-resilience-des-administrations-du-canton-face-aux-cybermenaces"
+    borderline: true
+    borderline_reason: "Preparedness-exercise communiqué with no threat content; the only operational fact is the Vaud incident-escalation path (call 117, then cantonal police, then the DGNSI intervention force), which matters to Vaud communes and sits beside the two Vaud incident entries. Likely a drop unless the composer wants the path recorded."
+
+# Leads read and dropped (one-line reasons) so nothing relevant disappears silently.
+dropped_leads:
+  - { lead: "SRF interview with BACS director Florian Schütz, 'Cyberangriffe werden aggressiver' (2026-11-16)", url: "https://www.srf.ch/news/schweiz/kriminelle-hackerangriffe-cyber-chef-des-bundes-warnt-vor-aggressiveren-cyberangriffen", reason: "Interview of general assessment (rising report numbers, refrigeration attacks as physical-damage example, product-security case for the planned Cybersicherheitsgesetz); no new fact, no defender action; the CSG is already tracked as policy:switzerland-cybersecurity-act-csg-2026." }
+  - { lead: "Inside IT: Zürich definiert Cloud-Strategie (Regierungsrat decision, four-tier cloud model, 2026-11-16)", url: "https://www.inside-it.ch/zuerich-definiert-cloud-strategie-20261116", reason: "Single secondary source (reliability C); the Regierungsratsbeschluss was searched for twice and not located, and a cantonal cloud-governance strategy has little Tier 2/3 actionability. Composer could revisit if the RRB is found." }
+  - { lead: "Inside IT: Armee steckt weitere Millionen in Cyber-Ausbildung (Sparc procurement, CHF 2.6 million to Cybercon)", url: "https://www.inside-it.ch/armee-steckt-weitere-millionen-in-cyber-ausbildung-20261116", reason: "Procurement and training news; no threat or defender content." }
+  - { lead: "CCB Belgium advisory 2026-11-13: ManageEngine M365 Manager Plus CVE-2026-12591 (CVSS 3.1 9.9, build 4817 and earlier, fixed in 4818)", url: "https://ccb.belgium.be/advisories/warning-m365-manager-plus-privilege-escalation-can-lead-remote-code-execution-patch", reason: "Authenticated technician privilege escalation; the vendor advisory does not state exploitation or public exploit code; not covered by the store; left to S1 (vulnerability sweep) if it judges it above the bar." }
+  - { lead: "Netzwoche / SwissCybersecurity.net / heise: Check Point gateways hit by PHP2Shell, ESXi wiper (2026-11-15/16)", reason: "Already covered by 2026-10-29/check-point-php2shell-sk1000302-portal-and-vpn-gateways (carries the wiper, the 2026-10-30 start and CVE-2026-123039)." }
+  - { lead: "CERT-FR REACTIV situation report of October 2026 (CERTFR-2026-CTI-010, 2026-11-12)", url: "https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf", reason: "Already covered: the REACTIV entry 2026-10-02/anssi-reactiv-situation-report-99-state-data-breaches carries this PDF and its 64 new breaches." }
+  - { lead: "heise: Berlin Senate Rhysida leak forensics interview (2026-11-15)", url: "https://www.heise.de/news/Berliner-Daten-GAU-Wie-man-einen-Leak-seziert-11524771.html", reason: "Outside the 26 h window, interview format, and the case is covered by 2026-08-30/berlin-landesnetz-rhysida-extortion-phishing-vector." }
+  - { lead: "heise: Tracking, how Iran used fitness apps and social media to target US bases (relaying a Los Angeles Times report, 2026-11-16)", url: "https://www.heise.de/news/Tracking-Wie-US-Soldaten-unabsichtlich-Ziele-fuer-iranische-Angriffe-lieferten-11526829.html", reason: "Armed-forces OPSEC and location-data story, secondary relay of one newspaper, no Swiss link and no cyber-intrusion content." }
+  - { lead: "Europol / Operation Endgame malware-network takedown (heise and Inside IT, 2026-11-13)", reason: "Four days old (outside 26 h and 72 h); no Swiss authority involvement or Swiss notification found in two searches." }
+  - { lead: "ENISA State of Cybersecurity in the Union 2026 (2026-11-10), ENISA Threat Landscape 2026 (2026-09-22), CRA Single Reporting Platform launch (2026-09-11)", url: "https://www.enisa.europa.eu/news/enisa-reveals-the-state-of-cybersecurity-in-the-union", reason: "All outside the window; the 2026-11-10 report is a biennial report that the main agent may want to flag as a periodic report if the store has no entry (grep found none; it is seven days old)." }
+  - { lead: "Vaud, Aargau and federal press listings other than the two items kept; CERT.at, CERT-EU, CERT.pl, NCSC-NL, NCSC-UK, CISA, FBI IC3", reason: "No in-horizon item relevant to the Swiss public sector (the CERT.pl 2026-11-16 items are niche-software advisories with no Swiss nexus stated; NCSC-NL and CERT-EU newest 2026-11-12/13 and already covered)." }
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: lab52
+    reason: "Every transport failed again: `feed https://lab52.io/blog/feed/` and `extract` fell through to the jina reader, whose whole key pool answers HTTP 402 and whose anonymous tier answers 401; `url --direct https://lab52.io/blog/` ends in a connection reset; WebFetch https://lab52.io/blog/ returned HTTP 503. No in-horizon content could be read. Fifth consecutive failed run; no recipe found."
+  - source_id: ncsc-ch-focus / ncsc-ch-incidents / bacs-press
+    reason: "Recipe confirmed working (`url --direct https://www.bacs.admin.ch/de/<medienmitteilungen|im-fokus|aktuelle-vorfaelle>`, split on 'class=\"card card--default card--clickable', date in the card's 'meta-info__item', href in the footer link): newest items 2026-11-10 (Im Fokus and Aktuelle Vorfälle) and 2026-11-05 (Medienmitteilungen), so quiet, not broken. Old ncsc.admin.ch/ncsc/en/... page URLs now return HTTP 404 through every transport; cite bacs.admin.ch URLs."
+  - source_id: ncsc-ch-security-hub
+    recipe_note: "`ncsc-csh recent 25` returns full post content plus a 'history' array whose edit reasons expose changes in the window (posts 13163 and 13054 were edited 2026-11-16 without new ids); compare lastModified, not only created, to catch advisory updates."
+  - source_id: vd-ch-press-releases
+    recipe_note: "`url https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud` returns a server-rendered list; split on '<article', take href and `<time datetime=...>`; `extract` of a detail URL reads the full communiqué. Works without a reader."
+  - source_id: ag-ch-medienmitteilungen
+    recipe_note: "`url https://www.ag.ch/content/export/api/v1/xml/medienmitteilungen` (about 2.5 MB sitemap, newest first, `lastmod` per release) then `extract` of the `?mm=` detail URL works as noted on 2026-11-07."
+  - source_id: cisa-directives
+    recipe_note: "The WebFetch listing shows no issue dates; each directive page must be drilled for its date (BOD 26-04 is dated 2026-06-10). The listing therefore cannot establish recency on its own."
+  - source_id: cisa-news
+    recipe_note: "WebFetch https://www.cisa.gov/news-events/news returns a dated 10-item list (newest 2026-11-09) with full hrefs; works."
+  - source_id: fbi-cyber-alerts
+    recipe_note: "WebFetch https://www.ic3.gov/PSA lists PSAs with dates and URLs (newest 2026-10-23); works. It did not list the FBI FLASH on ARTEX that the store cites (2026-11-13), so FLASH items are not on this page."
+  - source_id: anssi-fr / cert-fr-cti
+    recipe_note: "`cert-fr avis-recent 12`, `feed https://www.cert.ssi.gouv.fr/alerte/feed/ 8` and `feed https://www.cert.ssi.gouv.fr/cti/feed/ 8` all work; item links resolve under www.cert.cyber.gouv.fr; `extract` of a CTI page returns only the cover text and the report itself is the PDF (`pdf https://www.cert.cyber.gouv.fr/uploads/CERTFR-2026-CTI-010.pdf` read cleanly through ToUnicode decoding)."
+  - source_id: bsi-de
+    recipe_note: "`bsi-rss` returns raw RSS XML (250 items), not JSON; parse pubDate and the [NEU]/[UNGEPATCHT]/severity tags directly; `bsi-csaf WID-SEC-2026-NNNN` returns the CSAF JSON, whose references block names the vendor advisory."
+  - source_id: jina-pool
+    reason: "All jina reader keys answer HTTP 402 (balance exhausted) and the anonymous tier 401 for the whole run; extract and the raw bridge covered every other host. Not a notification-worthy event under the operator policy; recorded as state."
+
+fetch_failures:
+  - id: lab52
+    url_tried: "https://lab52.io/blog/feed/"
+    fetch_method: bridge:feed
+    status_code: 402
+    error_class: other
+    error_message: "fetch_source: jina reader key ...d_WRtz balance exhausted (HTTP 402) - rotating to the next credential; all keys exhausted, anonymous tier HTTP 401; direct GET of the feed and of https://lab52.io/blog/ reset the connection; WebFetch https://lab52.io/blog/ returned HTTP 503"
+    attempted_methods: [bridge:feed, bridge:extract, bridge:url-direct, webfetch]
+    mitigation_applied: "none - coverage gap; no WebSearch fallback run because the source is a research lab outside the Swiss public-sector lens and the S3 sweep carries research coverage"
+    covered_anyway: false
+
+bridge_uses:
+  - { id: ncsc-ch-security-hub, method: "bridge:ncsc-csh.recent", outcome: ok }
+  - { id: ncsc-ch-focus, method: "bridge:url-direct", outcome: empty-feed }
+  - { id: ncsc-ch-incidents, method: "bridge:url-direct", outcome: empty-feed }
+  - { id: bacs-press, method: "bridge:url-direct", outcome: empty-feed }
+  - { id: advisories-ncsc-nl, method: "bridge:ncsc-nl.recent", outcome: empty-feed }
+  - { id: bsi-de, method: "bridge:bsi-rss", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.avis-recent+feed", outcome: ok }
+  - { id: cert-eu, method: "bridge:cert-eu.recent", outcome: empty-feed }
+  - { id: ag-ch-medienmitteilungen, method: "bridge:url", outcome: ok }
+  - { id: vd-ch-press-releases, method: "bridge:url", outcome: ok }
+  - { id: enisa-cnw, method: "bridge:url (GitHub API commits)", outcome: empty-feed }
+  - { id: bfv-verfassungsschutz-de, method: "bridge:url-direct", outcome: empty-feed }
+  - { id: ccb-belgium, method: "bridge:url", outcome: ok }
+
+# One row per slice record (27), slice order. horizon_hours = the horizon applied (window_hours 26, or the record's lookback_hours).
+source_ledger:
+  - { id: lab52, tier: standard, attempted: true, transport: "feed -> extract -> url --direct -> WebFetch (all failed)", horizon_hours: 168, in_horizon_items: null, returned: 0, note: "unreadable on every transport; see fetch_failures" }
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 20", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0493 on 2026-11-13T14:59Z" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent + alerte/cti feeds", horizon_hours: 26, in_horizon_items: 7, returned: 0, note: "7 vulnerability avis dated 2026-11-16 (S1 content); newest ALE 2026-11-05; no Swiss-sector content" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 19, returned: 1, note: "19 [NEU] items, all vulnerability advisories (S1 lens); TYPO3 critical returned borderline; DrayTek and Gitea high left to S1" }
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed warnings + current", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest warning 2026-10-21, newest current item 2026-10-20" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-020 on 2026-11-12 (Citrix, covered)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "VisualNet visualTicket and Batflat advisories, niche software, no Swiss nexus stated" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract listing + extract per item", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing has no dates; four items drilled dated 2026-08-06, 09-11, 09-22, 11-10; none in window" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 7, returned: 2, note: "BundID returned; Microsoft-outage coverage used as source for the M365 item; the rest outside the lens or covered" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + url --direct (__NEXT_DATA__)", horizon_hours: 26, in_horizon_items: 7, returned: 1, note: "Aargau interpellation folded into the M365 item; Zürich cloud strategy, Armee Sparc and others dropped (dropped_leads)" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "bridge:url --direct", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10 (Woche 45; refrigeration controller guidance, already covered)" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "bridge:url --direct", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 25", horizon_hours: 26, in_horizon_items: 3, returned: 2, note: "post 13180 new; posts 13163 and 13054 edited 2026-11-16" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-11 (critical-organisations test scheme)" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "bridge:url --direct", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-05 (Beiratstreffen Digitale Schweiz)" }
+  - { id: cert-fr-cti, tier: standard, attempted: true, transport: "feed https://www.cert.ssi.gouv.fr/cti/feed/ + pdf", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "CTI-010 (2026-11-12) already carried by the REACTIV entry; CTI-009 (2026-11-09) outside the horizon and carried by the Danfoss entry" }
+  - { id: ccn-cert-es, tier: standard, attempted: true, transport: "feed (atom)", horizon_hours: 146, in_horizon_items: 2, returned: 0, note: "AV 04/26 Apache httpd update (2026-11-12, covered by the Apache entry) and CCN guidance news" }
+  - { id: cisa-directives, tier: standard, attempted: true, transport: "WebFetch listing + drill", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "listing undated; BOD 26-04 drilled and dated 2026-06-10; no November directive found" }
+  - { id: cisa-news, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-11-09" }
+  - { id: compass-security, tier: standard, attempted: true, transport: "feed", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-11-03" }
+  - { id: enisa-cnw, tier: standard, attempted: true, transport: "bridge:url GitHub API commits", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest commit 2026-11-10 (CNW-2026-05 retail incidents)" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest PSA 2026-10-23" }
+  - { id: swisscybersecurity-net, tier: standard, attempted: true, transport: "bridge:url --direct (server-rendered hrefs)", horizon_hours: 146, in_horizon_items: 8, returned: 0, note: "Check Point wiper (covered), consumer scam and shop-fraud items, event and funding news" }
+  - { id: vd-ch-press-releases, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 146, in_horizon_items: 1, returned: 1, note: "CYBER26 exercise communiqué 2026-11-12 (lookback)" }
+  - { id: ag-ch-medienmitteilungen, tier: standard, attempted: true, transport: "bridge:url sitemap export + extract", horizon_hours: 122, in_horizon_items: 1, returned: 1, note: "cyber-resilience communiqué 2026-11-13 (lookback)" }
+  - { id: bfv-verfassungsschutz-de, tier: standard, attempted: true, transport: "bridge:url --direct on the RSS feed", horizon_hours: 122, in_horizon_items: 0, returned: 0, note: "newest 2026-10-19" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "bridge:url + extract", horizon_hours: 122, in_horizon_items: 9, returned: 0, note: "9 advisories 2026-11-12/13, all vulnerability warnings (S1 content); eight already covered; M365 Manager Plus dropped (dropped_leads)" }
+
+# Off-slice gap-fill sweeps (not slice records; read to widen Swiss home-region coverage). All 2026-11-17T04:00-04:15Z.
+off_slice_sweeps:
+  - { id: netzwoche, transport: "feed https://www.netzwoche.ch/rss.xml", note: "20 items, newest 2026-11-16; nothing in the lens beyond the Check Point and consumer-fraud items already dropped" }
+  - { id: ictjournal-ch, transport: "feed https://www.ictjournal.ch/rss.xml", note: "Microsoft restores services after 24 h outage (2026-11-16) used as context; no security incident item" }
+  - { id: srf-news, transport: "feed https://www.srf.ch/news/bnf/rss/1646", note: "two relevant items: Microsoft root-cause (used) and BACS director interview (dropped)" }
+  - { id: cybercrimepolice-ch, transport: "feed https://cybercrimepolice.ch/de/rss-feed", note: "newest 2026-11-12 (refrigeration-attack risks, covered theme); no item in window" }
+  - { id: rts-info-regions-rss, transport: "feed", note: "no cyber item" }
+  - { id: europol-newsroom, transport: "feed", note: "undated items; the malware-network takedown is 2026-11-13, outside window" }
+  - { id: news-admin-ch, transport: "bridge:url first page", note: "12 releases 2026-11-13/16; no cyber or security-of-state-IT item" }
+
+process_notes:
+  - "Web search is US-geolocated and returned mostly pre-2026-11 background for Swiss queries (about 29 queries across DE/FR/IT/EN); in-window Swiss signal came from the curated feeds (CSH, heise, inside-it, canton press pages), as the definition predicts."
+  - "Two earlier-store entries already carry the heaviest Swiss threads (PK Softech/Publica with 19 updates, Danfoss, Vaud schools, Vaud device-code phishing); targeted searches found no new development in the window for PK Softech, Vaud schools or Vaud device-code phishing, and none for ChimeraZ communal claims."
+  - "Standing policy watch result: nothing in the window for ISG or the planned Cybersicherheitsgesetz (Federal Council decision 2026-09-25, consultation draft expected 2027 per Netzwoche via search, already tracked), NIS2 or CRA implementation, e-ID/swiyu (no November news found), Council of Europe cybercrime, EU cyber sanctions (latest listings found 2026-07-13) or law-enforcement actions against publicly known infrastructure beyond the out-of-window 2026-11-13 takedown. Aargau's CyRA/coordination-office news (item 6) and the NCSC.ch advisories (items 2 and 3) are the only authority-side deltas."

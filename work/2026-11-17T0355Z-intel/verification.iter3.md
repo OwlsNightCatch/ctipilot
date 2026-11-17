@@ -1,0 +1,44 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-11-17T05:31:10Z · ended_at=2026-11-17T05:46:11Z · duration_seconds=901
+
+## Verification report — 2026-11-17T0355Z-intel (iteration 3)
+
+Scope: 6 new entries, 2 updated entries (whole entry plus `git diff HEAD`), run record, registry diff, dedup context. All 156 ledger claims carry a verdict row in `verification.iter3.claims.yaml` (154 ok, 2 F3; every ok passage was machine-checked as a verbatim substring of the page named in the row); `tools/claim_ledger.py --coverage 3` reports 156/156 answered. Pages fetched live this iteration with `extract` and byte-compared with the gate's cached bodies: Hudson Rock, Ohey, Amirul Cyber, Unit 42, GTIG, ad-hoc-news, heise, Handelsblatt, WEB.DE, FG-IR-26-273, Huntress 2026-11-16 and 2026-09-03, CCCS, VulnCheck, Symantec (all identical; the ENISA JSON differs only in processing timestamps). Craft GHSA raw HTML (severity critical, no CVE id), CISA KEV via the bridge (CVE-2026-84869 dateAdded 2026-09-11, catalogue 2026.11.13; CVE-2026-123488 absent), NCSC.ch post 13092 via `ncsc-csh`. All 19 FortiGuard PSIRT pages were cross-checked from the gate cache (raw HTML: CVE id, CVSS, Known Exploited metadata) against every `cves[]` row.
+
+### Prior-iteration deltas, walked first
+
+| # | Remediation | Result |
+|---|---|---|
+| 1 | OptimJack summary "names 21 web properties" | Correct. Hudson Rock: "Together, the two tables identify 21 named web properties"; nine recovered files, 16 archived responses across 15 captures. |
+| 2 | OptimJack Exposure clause | Correct. Hudson Rock's step 1 ends "Verify what visitors actually receive after changes." |
+| 3 | Ohey date and living-page label | Correct. The raw page has no dateline; the text runs to "It was still there on 17 November". Citations and `sources[1]` carry 2026-11-17, label "Ohey (Kirk), living page", sourcing note explains. |
+| 4 | TGR HTTP/2-only variants | Correct. Unit 42 appendix: RatAAkk-tt "relies strictly on HTTP/2", PerfectRat "relies solely on HTTP/2"; Pioneer, rat_http3_ls "HTTP/3 only/exclusively"; rat_http3_cc continues Pioneer; KUKURAT has an HTTP/2 and an HTTP/3 build. "Most variants" holds; registry summary matches; Detection pairs UDP 443 with proxy and TLS telemetry. |
+| 5 | BundID aggregator contradiction | Correct. ad-hoc-news: "Nach Angaben des BSI handelte es sich ... um sogenanntes Credential Stuffing"; heise carries no such label and Handelsblatt gives "aus Regierungskreisen". Title is past tense and dated. |
+| 6, 7 | GTIG "Three findings from", BundID takeaway | Correct (GTIG calls it the quarterly update and lists five key trends; heise says "eID oder andere Zugangsmittel"). |
+| 8 | Craft tag and status | Left as advisory (restated below). |
+
+### Citation does not support the claim
+- #1 F3 (low confidence), OptimJack body paragraph 1: "gained a few lines that load a small router script for iPhones and iPads ([Ohey, 2026-11-17])". Ohey: the vendor files "gained a few lines at the end that load a 400-byte script from webshell[.]lol", which "adds one tag to the page" (boot.js), and "boot.js returns an empty file to anything that is not an iPhone". "iPhones and iPads" appears in Ohey only for the 16 November track.js ("adds the router tag only on iPhones and iPads"), which the second paragraph states correctly. Fix the first sentence to "for iPhones".
+- #2 F3 (low confidence), ScreenConnect update section: "in a campaign it separates from the SCKit activity and from the crypto-named decoy sessions". Huntress 2026-11-16 states the distinction only for the crypto-exchange-named sessions ("This most recent activity is distinct from a separate campaign we reported on November 13 that planted unauthorized guest sessions disguised with crypto exchange names"). For SCKit it says the malware "appears to be leveraging a vulnerable third-party extension on the server side of ScreenConnect and not directly exploiting CVE-2026-84869, but attempting to stage it as a 'relay trap'". Reword or drop the SCKit clause.
+
+### Action-item discipline
+- #3 F18 (low confidence), ScreenConnect actions[0] "Update every ScreenConnect technician host client and Access agent to 26.6.5 or later now, not only the server": the SCKit entry (2026-11-12, updated 2026-11-14) already carries "update every technician host client to ScreenConnect 26.6.5 or later, because a cloud-console update does not update them" inside its action. Pre-existing overlap that the rewrite kept; leave if the CVE entry is the canonical patch task.
+
+### Editorial / less-is-more flags (advisory)
+- #4 F11 (low confidence), Craft CMS: tag `actively-exploited` and status `exploited` rest on CCCS's unnamed "Open source reporting indicates ..." and VulnCheck's own KEV flag (CISA KEV absent, ENISA silent). Restated from iterations 1 and 2; body, summary and sourcing note hedge correctly.
+- #5 F11 (low confidence), Symantec and TGR bodies: file-name indicators (bdreinit.exe, log.dll, ask.exe, ask.dll; Bysunue.aspx). Symantec says the pairing "does not on its own identify the malware or the actor"; the Detection line already states the behavior generically.
+
+### Checks that came back clean
+- Updated-entry contract (4c): both records typed `update`, `updated_at` equals `at`, sections present with matching `at`, `fields` cover every changed frontmatter line in `git diff HEAD` (Fortinet: cves, evidence, body; ScreenConnect: entities, sources, evidence, actions, body, title), `discovered_at`/`run_id`/path untouched, no silent edit. Fortinet: FG-IR-26-273 timeline "2026-11-16: Added additional information", the FGCP sentence, the evidence quote and the hardening configuration (HA password with encryption and authentication; standalone-cluster encryption and psksecret; autoscale psksecret) all verbatim or faithful; fixed builds unchanged. The body trim (AI-diffing clause, in-body SQL-injection auth note) is declared under `body` and the discrepancy stays in `sourcing_note` and `cves[CVE-2026-126263]`. ScreenConnect: 9 seconds (16:46:20.7 to 16:46:29.1), 688,000 requests, 42 servers, 29 source addresses, 2026-10-20 to 2026-11-16, three October sessions with two Windows and one Mac technician, 22.x/24.2/25.8, Session.db EventType 85/86, port 8041 all match Huntress; KEV deadline phrase removed from the body; main analysis not contradicted by the new section.
+- Fortinet `cves[]`: all 19 critical rows match their PSIRT page on CVE id, CVSS, version table, fixed build and Attack Type; Known Exploited "No" confirmed on FG-IR-26-219; NCSC.ch post 13092 "Current exploitation status: UNKNOWN".
+- Evidence quotes: OptimJack (Hudson Rock curly apostrophe, Ohey 21:10 line), TGR (3), GTIG (3), Symantec (3), BundID German originals (3, faithful translations), Craft (4), Fortinet FG-IR-26-273 and ScreenConnect Huntress quotes, all verbatim on the pages fetched.
+- Dedup and entities: no new entry overlaps an existing CVE or entity finding in prior_coverage.json, `state/cves_seen.json` or the entries tree (OptimJack declares the deadtag and APT29 entries in `references[]`, Symantec declares the Gambit entry); registry additions match `entities_added`; product keys resolve from `affected_products[]`; the `actor:jewelbug` alias additions rest on Unit 42's own alias list, disclosed in the sourcing note (Unit 42 never names Jewelbug: grep 0).
+- Classification, priority, style: Admiralty codes inside vocabulary and proportionate (craft A2 rests on the vendor GHSA and CCCS; Hudson Rock, Ohey, Unit 42, GTIG, Symantec, heise at B); no watchlist or org_triage; no em dash outside the `## <Type> — <at>` headings; no workflow vocabulary; priorities calibrated (OptimJack high with the Basel capture; Craft notable because Swiss use is not established).
+- Run record: counts, durations, `updated_entry_ids`, `entities_added`, backlog rows (TYPO3, Oracle held to 2026-12-01) and the iteration 1 and 2 remediation notes match the files on disk; KEV catalogue 2026.11.13 matches the live catalogue. Gate: 56 pass, 0 warn, only the two verification-counter FAILs and the run clock, as expected.
+- Missed angles (F10): none evidenced. Searches for in-window Swiss municipal or cantonal incidents returned only August to October items already in the store or undated pages; exploited zero-days surfaced (Patch Tuesday CVE-2026-124194, Chrome CVE-2026-125350, BeyondTrust CVE-2026-102764, Check Point, Cisco SD-WAN) are covered or pre-window; no source reports exploitation of Gitea CVE-2026-116289 or the Discourse ids. Coverage looks complete for the critical/high signal.
+
+### Verdict
+NEEDS_FIXES (truth: 2, editorial: 1, advisory: 2). All five items are low confidence and small; every iteration 2 remediation checks out against its source and introduced no new defect.
+
+### Findings summary (machine-readable)
+See `work/2026-11-17T0355Z-intel/verification.iter3.findings.yaml` (5 records).
