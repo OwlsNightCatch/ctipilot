@@ -1,0 +1,1988 @@
+# work/2026-11-18T0356Z-intel/findings.S1.yaml  (written in segments; validated with PyYAML at the end)
+domain: S1
+run_id: 2026-11-18T0356Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-18T03:58:05Z
+ended_at: 2026-11-18T04:32:56Z
+duration_seconds: 2091
+self_telemetry:
+  webfetch_calls: 13
+  websearch_calls: 16
+  bridge_fetches: 105
+window_hours: 26
+ordering_note: "Exploitation-first: items 1-2 (KEV exploited / CNA-stated exploited), then items 3-5 (public PoC trigger or CNA-stated exploitation on edge or pre-auth surface, upcoming release), then the rest."
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "CVE-2026-115731, Perforce Puppet Enterprise and Puppet Server before 2023.8.13, 2025.12.1 and 2026.0.1: deserialization of a crafted rich-data report gives code execution as the Puppet service user to any holder of a CA-signed agent certificate, and unauthenticated code execution where the CA autosigns; CISA adds it to KEV on 2026-11-17 on evidence of active exploitation"
+    sources:
+      - url: "https://www.cisa.gov/news-events/alerts/2026/11/17/cisa-adds-one-known-exploited-vulnerability-catalog"
+        publisher: "CISA"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq"
+        publisher: "OpenVox project (GHSA-ffr6-rwpm-p5wq, names the sink and affects Puppet Enterprise)"
+        date: "2026-11-03"
+        role: primary
+      - url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-116495"
+        publisher: "ENISA EUVD (exploitedSince 2026-11-17, CVSS 4.0 9.4)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://access.redhat.com/security/cve/CVE-2026-115731"
+        publisher: "Red Hat Product Security"
+        date: "2026-11-03"
+        role: corroborating
+      - url: "https://smartscope.blog/en/blog/puppet-server-vulnerabilities-puppet-server-openvox-allow-server-2026/"
+        publisher: "SmartScope (fixed-version table, KEV update of 2026-11-17, cites JPCERT/CC weekly report 2026-11-11)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://dailysecurityreview.com/resources/public-exploit-released-for-puppet-server-rce-cve-2026-115731/"
+        publisher: "Daily Security Review (secondary; public PoC claim)"
+        date: "2026-11-04"
+        role: corroborating
+    discovery_trace: "first seen at: cisa-kev bridge `python3 tools/fetch_source.py cisa-kev` (catalogVersion 2026.11.17, CVE-2026-115731 dateAdded 2026-11-17) and work/<run-id>/kev-window.txt -> CISA alert URL https://www.cisa.gov/news-events/alerts/2026/11/17/cisa-adds-one-known-exploited-vulnerability-catalog (WebFetch) -> vendor advisory https://portal.perforce.com/s/cve/a91Qi000003IaHpIAK/report-deserialization-code-execution (Salesforce SPA, shell only on extract, jina and WebFetch; content taken from the KEV record, EUVD record and the OpenVox advisory) -> WebSearch (\"CVE-2026-115731 Puppet Server report deserialization code execution Perforce\") -> OpenVox GHSA https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq -> Red Hat https://access.redhat.com/security/cve/CVE-2026-115731 -> ENISA EUVD https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-116495"
+    summary: |
+      Facts (Perforce CNA text carried by the KEV record, EUVD and Red Hat): the report-processing code of Puppet, as used by Puppet Server, deserializes
+      untrusted data; a client holding any CA-signed agent certificate can execute arbitrary code on the Puppet Server as its service user by sending a PUT
+      request carrying a report with a crafted rich-data type, and where the CA autosigns requests without strong verification an unauthenticated network
+      attacker can first obtain such a certificate. CWE-502 and CWE-94; CVSS 4.0 9.4 (AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H), Red Hat and NVD
+      score 9.9 under CVSS 3.1 (Scope:Changed). Affected per the CNA record (as read through EUVD and SmartScope): Puppet Enterprise 2023.8.0 up to before 2023.8.13,
+      2025.0.0 up to before 2025.12.1, 2026.0.0 up to before 2026.0.1; fixed in 2023.8.13, 2025.12.1 and 2026.0.1. The OpenVox fork is affected too (OpenVox Server 9.1.0 and
+      earlier or 8.17.0 and earlier, fixed 9.2.0 and 8.18.0; OpenVox Agent 9.2.0 and earlier or 8.31.1 and earlier, fixed 9.3.0 and 8.32.0).
+      Mechanism per the OpenVox advisory: agents report events through PUT /puppet/v3/report; the JSON event reaches Puppet::Pops::Serialization::FromDataConverter.convert,
+      which resolves the attacker-chosen __ptype and ends in RubyGenerator create_class and cls.class_eval, giving code execution at compile or evaluation time on the server.
+      The advisory ships a complete malicious report (a Notify resource whose event carries a crafted Object type) and notes that code execution as the puppet user
+      gives access to the CA signing key, so an attacker can mint certificates with serverAuth and clientAuth and, where orchestration is configured, reach other hosts.
+      Exploitation status: CISA lists it in KEV (added 2026-11-17, due date 2026-12-01 for federal agencies, ransomware use Unknown) and states the listing is
+      based on evidence of active exploitation; ENISA EUVD carries exploitedSince 2026-11-17. No source read names an actor, victim, campaign or telemetry behind that
+      claim, and CISA ADP SSVC records Exploitation active, Automatable no, Technical Impact total. The OpenVox advisory (2026-11-03) has carried the working report since
+      disclosure, so a public PoC predates the KEV listing by 14 days. Daily Security Review wrote on 2026-11-04 that no exploitation had been confirmed.
+      Not covered by the KEV row: the companion CVE-2026-115732 (CVSS 4.0 9.0, certificate-name matching in trapperkeeper-authorization lets a certificate whose name extends or
+      shortens an authorized hostname be authorized as that host; in Puppet Enterprise it reaches CA administration and remote command execution on managed nodes); it is not
+      in KEV as of catalogVersion 2026.11.17 and no exploitation is stated for it. EPSS 0.00366 (FIRST, 2026-11-17).
+    region_nexus: "global; Puppet Server runs the configuration-management plane of Linux and mixed fleets in public-sector data centres (assessment, no source in this run names Swiss users)"
+    primary_sector_nexus: "indirect (infrastructure management plane; compromise reaches every node the server manages)"
+    sector: "public-sector"
+    cves: [CVE-2026-115731, CVE-2026-115732]
+    techniques: [T1190, T1649, T1072, T1059.004]
+    affected_products: ["Puppet Enterprise", "Puppet Server", "OpenVox Server", "OpenVox Agent"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:puppet-enterprise", type: product, name: "Puppet Enterprise (Perforce)", aliases: ["Perforce Puppet Enterprise", "Puppet Server"], summary: "Perforce configuration-management product whose Puppet Server report endpoint is the sink of CVE-2026-115731 (CISA KEV 2026-11-17)." }
+      - { key: "product:openvox", type: product, name: "OpenVox", aliases: ["OpenVox Server", "OpenVox Agent"], summary: "Vox Pupuli community fork of Puppet affected by the same report-deserialization flaw (GHSA-ffr6-rwpm-p5wq)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/17/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "In configuration with autosign (which is common for enterprise deployment), this is an unauthenticated attack chain to compromise the OpenVox / Puppet server"
+        attribution: "OpenVox project"
+        source_url: "https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq"
+      - quote: "This allows the attacker to sign a certificates with EKU critical, serverAuth, clientAuth, which could enable direct command execution on other hosts if certain kinds of orchestration is configured."
+        attribution: "OpenVox project"
+        source_url: "https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq"
+      - quote: "Until patched, avoid autosigning certificate requests without strong verification so untrusted clients cannot obtain a CA-signed agent certificate."
+        attribution: "Red Hat Product Security"
+        source_url: "https://access.redhat.com/security/cve/CVE-2026-115731"
+      - quote: "The number of attacks, the attackers, and the damage are not stated in the records we read."
+        attribution: "SmartScope"
+        source_url: "https://smartscope.blog/en/blog/puppet-server-vulnerabilities-puppet-server-openvox-allow-server-2026/"
+    extended_notes: |
+      Exposure: version in the Puppet Enterprise console or `puppetserver --version`; the sink is the report endpoint on the Puppet Server (default port 8140) that every agent already talks to, so the
+      precondition is a CA-signed agent certificate (any node the server already trusts, a stolen agent key, or autosign). Check `autosign` configuration (autosign.conf, policy-based or naive `*`) and whether
+      CSR submission is reachable from untrusted networks.
+      Detection concept: the puppetserver JVM (service user puppet) spawning a shell or any unusual child process during report processing; PUT /puppet/v3/report bodies whose resource_statuses events carry
+      an `__ptype` that is not a standard Puppet event type (Object[{...}] definitions with RubyMethod annotations); a new or unexpected certificate signed by the CA (`puppetserver ca list --all`, CA signed/
+      directory timestamps); agent certificates with names that extend or shorten real hostnames (CVE-2026-115732 pattern). Post-patch compromise check: because the CA key sits on the same host, rotate or audit
+      the CA and re-issue if any unexplained signing or shell activity is found; patching does not revoke certificates already minted.
+      Triage: legitimate agent reports carry only standard event structures; a report with an Object-type definition containing code annotations has no benign source. Autosign installations see CSRs from
+      unknown hostnames routinely, so the discriminator is the report content, not the CSR.
+      Perforce vendor page could not be read (Salesforce SPA returns only a loading shell on extract, jina reader pool exhausted, WebFetch); every Perforce statement above comes from the KEV, EUVD, Red Hat and
+      OpenVox records. The CVE.org record (read through the CVE services JSON, not cited) adds that the fix bundles puppet-agent 8.22.2 or 9.1.3 and that the Puppet Server must be restarted to load it.
+      Related: CISA KEV also lists, since 2026-11-10 to 2026-11-13, products already carrying borderline-drop dispositions (BroadWorks, Openwave, UnrealIRCd, GPUStack); no other KEV row dated 2026-11-17 or later.
+    classification_suggestion: "A / credibility 1 for the KEV listing itself (CISA primary, ENISA corroborates the flag); the basis of the exploitation claim is not stated, so 'exploited' rests on CISA's assertion"
+  # ------------------------------------------------------------------ 2
+  - title: "CVE-2026-129448, Apache Roller 4.0.0 to 6.1.4: unauthenticated deserialization in the XML-RPC endpoint gives code execution before authentication, and the Apache CNA states the issue is being actively exploited; fixed in 6.1.6, disabling XML-RPC in the admin UI is not enough"
+    sources:
+      - url: "https://www.openwall.com/lists/oss-security/2026/11/17/5"
+        publisher: "Apache Software Foundation (CNA announcement to oss-security by Arnout Engelen)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://lists.apache.org/thread/cc0jck13nb9vvcmzxzwotr6n16mx28z9"
+        publisher: "Apache announce list (CVE-2026-82384, the same flaw first published 2026-11-01 for 6.1.5 only)"
+        date: "2026-11-01"
+        role: corroborating
+    discovery_trace: "first seen at: oss-security index https://www.openwall.com/lists/oss-security/2026/11/17/ (fetched while following the Java4Shell post) -> primary: https://www.openwall.com/lists/oss-security/2026/11/17/5 (Apache announcement) -> https://lists.apache.org/thread/cc0jck13nb9vvcmzxzwotr6n16mx28z9 (earlier CVE-2026-82384 thread, read through the jina reader)"
+    summary: |
+      The Apache Roller project announced on 2026-11-17 CVE-2026-129448 (CVSS 3.1 9.8): the XML-RPC endpoint accepts vendor extension types and deserializes them before authenticating the
+      requester, so an unauthenticated remote attacker can execute code. The announcement lists 4.0.0 before 6.1.5 as affected (text: 4.0.0 through 6.1.4) and says this is the same
+      vulnerability as CVE-2026-82384, which had listed only 6.1.5 as affected, so 6.1.5 is vulnerable as well; it states "This issue is being actively exploited." Fixed in Roller 6.1.6 or later, which disables the extension types and
+      rejects XML-RPC requests when the feature is off. Workaround: set enabledForExtensions to false in WEB-INF/web.xml or remove the /roller-services/xmlrpc servlet mapping and restart; switching XML-RPC off
+      in the administration UI does not help because older versions deserialize the request before checking that setting. Single-source claim: no sponsor of the exploitation statement (who saw it, how many victims) is
+      given, and CISA ADP SSVC on the CVE record shows Exploitation none at 2026-11-17 11:26Z; not in KEV.
+    region_nexus: "global; Apache Roller is a niche multi-user blog server, no source ties it to Swiss public-sector use"
+    primary_sector_nexus: "none shown"
+    sector: "technology"
+    cves: [CVE-2026-129448, CVE-2026-82384]
+    techniques: [T1190, T1059]
+    affected_products: ["Apache Roller"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:apache-roller", type: product, name: "Apache Roller", aliases: [], summary: "Apache blog server whose XML-RPC endpoint deserializes extension types before authentication (CVE-2026-129448, stated exploited by the Apache CNA)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "CNA-stated active exploitation of a pre-auth RCE, but a niche product with no constituency footprint; drop unless the main agent wants an exploited-in-the-wild awareness line"
+    evidence:
+      - quote: "This is the same vulnerability as CVE-2026-82384, which listed only Apache Roller 6.1.5 as affected. This issue is being actively exploited."
+        attribution: "Apache Software Foundation"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/17/5"
+      - quote: "Disabling XML-RPC in the administration UI is not enough, because older versions deserialize the request before checking that setting."
+        attribution: "Apache Software Foundation"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/17/5"
+    extended_notes: |
+      Detection concept: web-server access logs for POST requests to /roller-services/xmlrpc from outside the management network; Java child processes of the servlet container (shell, curl, wget) on Roller hosts.
+      Hardening: remove the servlet mapping or restrict it at the reverse proxy; upgrade to 6.1.6.
+  # ------------------------------------------------------------------ 3
+  - title: "Java4Shell, CVE-2026-114938: out-of-bounds heap write in the OpenJDK HotSpot x86-64 AVX-512 Base64 decoder (17.0.6 and later, 21, 25, 27, Oracle 8u511b33-perf) gives pre-authentication remote code execution in Keycloak, Jira, Confluence, Artifactory, Jenkins and PingFederate per the discoverer; fixed builds and a JVM flag released 2026-11-17, a safe trigger PoC is public, no exploitation reported"
+    sources:
+      - url: "https://calif.io/java4shell/"
+        publisher: "Calif (discoverer, Quang Luong; technical write-up with trigger PoC and mitigation)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://openjdk.org/groups/vulnerability/advisories/2026-11-17"
+        publisher: "OpenJDK Vulnerability Group"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://www.oracle.com/security-alerts/cspunov2026.html"
+        publisher: "Oracle (Critical Security Patch Update, Java SE risk matrix)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://www.oracle.com/java/technologies/javase/17-0-21-1-relnotes.html"
+        publisher: "Oracle (JDK 17.0.21.1 release notes)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://www.cisa.gov/news-events/alerts/2026/11/17/critical-java-vulnerability-requires-immediate-patching"
+        publisher: "CISA"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/13198"
+        publisher: "NCSC Switzerland, Cyber Security Hub advisory 13198"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0495"
+        publisher: "NCSC-NL (NCSC-2026-0495, probability medium, damage high)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://access.redhat.com/security/cve/CVE-2026-114938"
+        publisher: "Red Hat Product Security"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://www.endorlabs.com/learn/java4shell-unauthenticated-rce-reported-in-openjdk-17-cve-2026-114938"
+        publisher: "Endor Labs (root cause, fix JDK-8393212, detection)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://www.tenable.com/blog/java4shell-cve-2026-114938-frequently-asked-questions-about-openjdk-rce-vulnerability"
+        publisher: "Tenable (FAQ; exploitation status)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://research.jfrog.com/post/java4shell-vulnerability/"
+        publisher: "JFrog Security Research"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://raw.githubusercontent.com/corretto/corretto-17/develop/CHANGELOG.md"
+        publisher: "Amazon Corretto 17 changelog (17.0.21.1.2, 2026-11-17)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: jfrog-security-research RSS https://research.jfrog.com/rss.xml (item 'Java4Shell: What We Know About the Critical OpenJDK RCE Vulnerability (CVE-2026-114938)', 2026-11-17) -> primary: Calif https://calif.io/java4shell/ (extract plus `url --direct` for the PoC and Limitations sections that extract drops) -> OpenJDK advisory https://openjdk.org/groups/vulnerability/advisories/2026-11-17 -> Oracle CSPU https://www.oracle.com/security-alerts/cspunov2026.html -> Oracle JDK 17.0.21.1 release notes https://www.oracle.com/java/technologies/javase/17-0-21-1-relnotes.html -> NCSC-CH `ncsc-csh recent 25` post 13198 https://security-hub.ncsc.admin.ch/#/posts/13198 -> CISA alert (WebFetch) -> oss-security https://www.openwall.com/lists/oss-security/2026/11/17/31 -> Tenable and Endor Labs via WebSearch (\"Java4Shell fixed versions Corretto Temurin Zulu Liberica Microsoft OpenJDK November 17 2026 release AVX-512 Base64 CVE-2026-114938\")"
+    summary: |
+      Facts: Oracle's CSPU of 2026-11-17 and the OpenJDK advisory list CVE-2026-114938 (hotspot/compiler, CVSS 3.1 8.1 AV:N/AC:H/PR:N/UI:N, component Compiler, protocols Multiple) as affecting
+      OpenJDK 17, 21, 25 and 27 and Oracle Java SE 8u511b33-perf, 17.0.21.0.3, 21.0.13.0.3, 25.0.5.0.3, 27.0.1.0.3 (plus GraalVM for JDK 17 and 21, GraalVM Enterprise 21.3.20.0.3); standard Java 8 and 11 are not
+      listed. The discoverer (Calif, Quang Luong) names the bug Java4Shell and scores it 9.2 under CVSS 4.0. Root cause per Calif and Endor Labs: the hand-written AVX-512 VBMI assembly in HotSpot's Base64 decoder miscomputes the
+      store mask for a padded tail; for a 65-character input (64 x A then =; 129 characters on 17.x because the vector path starts at 128 bytes) it writes 62 bytes past the 50-byte output array, after which Java throws
+      IllegalArgumentException; the overwritten bytes are a constant, the attacker controls where, not what. Only x86-64 hosts with AVX-512 VBMI are affected (Intel Ice Lake, Sapphire Rapids, Emerald Rapids, Granite Rapids; AMD
+      Zen 4 or newer); ARM64 is not. The vulnerable decoder shipped from OpenJDK 17.0.6 and is in all distributions built from OpenJDK (Corretto, Temurin, Microsoft Build, Zulu, Liberica, SapMachine, Red Hat, Oracle).
+      Claims by Calif (discoverer, telemetry holder for its own tests): by remote heap grooming the overwrite becomes a heap leak ("JavaBleed") and code execution; pre-auth RCE was achieved in default configurations of Keycloak, Atlassian
+      Jira, Atlassian Confluence, JFrog Artifactory, Jenkins and PingFederate, post-auth RCE in Kafka broker, Solr, Elasticsearch, Gerrit and Spinnaker, plus sample Struts and Spring Boot applications, and a Java client that opens TLS to a
+      malicious server (credited to samczsun). Calif states there is no universal exploit (each target needs its own decoder route, writable buffer, readable feedback channel, heap layout) and that the weaponized per-product chains are being held
+      back and will be published later; a bounded, self-contained trigger PoC (200,000 warm-up decodes, then the malformed input into a 4096-byte array) is public in the write-up. Exploitation status: NCSC-CH writes that the research demonstrates
+      exploitation but does not establish malicious exploitation; Tenable and Endor Labs report no attacks in the wild as of 2026-11-17; CISA ADP SSVC at 2026-11-17 21:53Z is Exploitation none, Automatable no, Technical Impact total; CISA's alert does not
+      say exploited. NCSC-NL rates probability medium (multiple prerequisites) and damage high.
+      Fix: Oracle ships 17.0.21.1, 21.0.13.1, 25.0.5.1, 27.0.1.1 (NCSC-CH, JFrog) and Amazon Corretto 17.0.21.1.2; the upstream fix is JDK-8393212 ("Base64 optimization improvements", about four lines, in OpenJDK 27.0.1.1 and mainline; Endor Labs saw
+      the jdk17u, jdk21u and jdk25u update repositories without it on 2026-11-17). Other distributions publish on their own schedules (Endor Labs: do not infer fixed builds from Oracle's numbering; verify the fix commit). Mitigation without patching:
+      start the JVM with -XX:-UseBASE64Intrinsics or -XX:UseAVX=2 (x86-64 only; ARM JVMs refuse -XX:UseAVX=2 and fail to start); NCSC-CH and Calif state request buffering and WAF rules are not complete mitigations.
+    region_nexus: "global; Java (Keycloak, Jenkins, Atlassian, Artifactory, PingFederate) is ubiquitous in Swiss federal, cantonal and communal identity, build and collaboration stacks; NCSC-CH published its own advisory the same day"
+    primary_sector_nexus: "direct (shared runtime under identity, CI/CD and collaboration platforms the public sector runs)"
+    sector: "public-sector"
+    cves: [CVE-2026-114938]
+    techniques: [T1190, T1203, T1059]
+    affected_products: ["OpenJDK", "Oracle Java SE", "Oracle GraalVM for JDK", "Amazon Corretto", "Eclipse Temurin", "Microsoft Build of OpenJDK", "Azul Zulu", "BellSoft Liberica", "SAP SapMachine", "Red Hat build of OpenJDK", "Keycloak", "Jenkins", "Atlassian Jira", "Atlassian Confluence", "JFrog Artifactory", "PingFederate"]
+    entity_keys: ["product:openjdk", "product:oracle-java-se", "product:oracle-graalvm-for-jdk", "product:keycloak", "product:jenkins"]
+    new_entities:
+      - { key: "tool:java4shell", type: tool, name: "Java4Shell", aliases: ["Java2Shell", "CVE-2026-114938"], summary: "Calif's name for CVE-2026-114938, an OOB heap write in the OpenJDK AVX-512 Base64 decoder with pre-auth RCE chains demonstrated against Keycloak, Jira, Confluence, Artifactory, Jenkins and PingFederate (Calif, 2026-11-17)." }
+    relation_suggestions:
+      - { subject: "tool:java4shell", object: "product:openjdk", basis: "Calif and the OpenJDK advisory: the flaw sits in the HotSpot AVX-512 Base64 decoder of OpenJDK 17.0.6 and later (Calif, OpenJDK, 2026-11-17)" }
+      - { subject: "tool:java4shell", object: "tool:php2shell", basis: "Calif says it chose Java after disclosing PHP2Shell and credits the same AI-assisted workflow; same discoverer, no technical overlap (Calif, 2026-11-17)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Our initial testing demonstrated remote code execution in the following widely deployed Java applications, in their default configs."
+        attribution: "Calif"
+        source_url: "https://calif.io/java4shell/"
+      - quote: "A Java program that opens a TLS connection to a malicious server can be compromised, even if it exposes no service of its own."
+        attribution: "Calif"
+        source_url: "https://calif.io/java4shell/"
+      - quote: "Every HotSpot release from 17.0.6 on carries the vulnerable decoder, so exposure is wider than Java 17."
+        attribution: "Endor Labs"
+        source_url: "https://www.endorlabs.com/learn/java4shell-unauthenticated-rce-reported-in-openjdk-17-cve-2026-114938"
+      - quote: "The published research demonstrates exploitation; it does not establish malicious exploitation in operational environments."
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13198"
+      - quote: "Specially crafted Base64 input could crash the JVM and allow for unauthenticated remote code execution."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/17/critical-java-vulnerability-requires-immediate-patching"
+      - quote: "As of November 17, Tenable is not aware of any reports that attackers have exploited this flaw"
+        attribution: "Tenable"
+        source_url: "https://www.tenable.com/blog/java4shell-cve-2026-114938-frequently-asked-questions-about-openjdk-rce-vulnerability"
+      - quote: "Exploitability is reported to depend on the host CPU supporting AVX-512 VBMI"
+        attribution: "Red Hat Product Security"
+        source_url: "https://access.redhat.com/security/cve/CVE-2026-114938"
+    extended_notes: |
+      Exposure: the host must be x86-64 with avx512f, avx512bw, avx512vbmi and bmi2 flags (Linux: grep the cpuinfo flags line); the JVM must be 17.0.6+, 21, 25 or 27 and the Base64 intrinsic live (UseAVX above 2 and UseBASE64Intrinsics true, check with the same JDK and
+      options as the service; the stub is used after the decoder is hot). Bundled JREs inside appliances, containers and vendor products count; ARM64 and older CPUs do not. Exploit reach needs an application path that passes attacker-controlled Base64 to
+      java.util.Base64 decoder (authentication headers, file uploads, tokens, TLS client side).
+      Detection concept (Endor Labs, Calif; behaviour only): request fields ending in = or == whose length is not a multiple of 4, as short as 65 characters on 21/25/27 and 129 on 17; bursts of IllegalArgumentException from java.util.Base64 in request handlers; high-rate paced decode traffic from
+      one source (heap grooming); oversized or binary-looking responses from endpoints that echo decoded input (JavaBleed channel); repeated hs_err crashes with SIGSEGV in a GC copy routine and a compiled Base64$Decoder.decode0 frame; unexpected child processes
+      of JVMs (shell, curl) and rogue runtimes (CISA). Post-patch: updating does not remove an existing compromise (NCSC-CH); review JVM crashes, new admin accounts or webshell-like files on the six named products since 2026-11-17.
+      Hardening: restart every JVM after the update and verify the running build, rebuild containers, take the vendor's fixed build per distribution; interim -XX:-UseBASE64Intrinsics or -XX:UseAVX=2.
+      Time sensitivity: weaponized chains for Keycloak, Jira, Confluence, Artifactory, Jenkins and PingFederate are stated to exist and to be published later; treat the public trigger plus six named pre-auth targets as imminent-exploitation profile.
+      Related same-day entries: the Oracle CSPU item below carries the other ten Java SE rows (all CVSS 7.5 or lower).
+    classification_suggestion: "A (OpenJDK/Oracle/CISA/NCSC-CH primaries) / credibility 2 for RCE-in-products (discoverer claim, no independent reproduction named), 1 for the flaw and fixes"
+  # ------------------------------------------------------------------ 4
+  - title: "Drupal core PSA-2026-11-16: a critical core security release for all supported branches (11.4.x, 11.3.x, 10.6.x; also 12.0.0-beta3 and 11.5.0-beta1) is scheduled for 2026-11-18 between 17:00 and 21:00 UTC, with at least one flaw exploitable by anonymous users and a proof of concept rated to exist; Drupal Steward mitigates"
+    sources:
+      - url: "https://www.drupal.org/psa-2026-11-16"
+        publisher: "Drupal Security Team"
+        date: "2026-11-16"
+        role: primary
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/13196"
+        publisher: "NCSC Switzerland, Cyber Security Hub advisory 13196"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://www.drupal.org/security"
+        publisher: "Drupal.org security advisories listing (shows the PSA at risk 18/25 and no SA-CORE yet)"
+        date: "2026-11-18"
+        role: corroborating
+    discovery_trace: "first seen at: ncsc-ch-security-hub `ncsc-csh recent 25` post 13196 (2026-11-17T10:08Z) https://security-hub.ncsc.admin.ch/#/posts/13196 -> primary: https://www.drupal.org/psa-2026-11-16 (WebFetch; extract returns a client challenge) -> https://www.drupal.org/security (WebFetch listing, no SA-CORE published yet)"
+    summary: |
+      Drupal's Security Team announced on 2026-11-16 that a core security release for all supported branches will ship on 2026-11-18 between 17:00 and 21:00 UTC (about 13 to 17 hours after this run started). The PSA rates the issues Critical,
+      scored 18/25 with vector AC:Complex/A:None/CI:All/II:All/E:Proof/TD:Uncommon, says at least one can be exploited by anonymous users, that more than one configuration is affected so sites should not assume they are safe, and that
+      exploits might be developed within hours or days. Affected: 11.4.x, 11.3.x and 10.6.x plus 12.0.0-beta3 and 11.5.0-beta1; end-of-life lines (before 10.6, Drupal 11 before 11.3) are not patched and the advisory is to
+      carry interim mitigations. Drupal Steward already mitigates "known attack vectors" for this issue, but other advisories may ship the same day without Steward coverage. Technical details, CVE ids and affected components are withheld until the release.
+      The listing page shows no SA-CORE advisory yet (checked 2026-11-18 about 04:30Z). NCSC-CH relays the PSA and states exploitation UNKNOWN. Drupal also recommends updating to the latest patch release before the window so unrelated upgrade problems surface early.
+    region_nexus: "Drupal core is used widely across Swiss federal, cantonal and communal websites and portals (assessment; NCSC-CH published an advisory for this PSA)"
+    primary_sector_nexus: "direct (public-sector web platforms)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Drupal Core"]
+    entity_keys: ["product:drupal-core"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    time_sensitive: "release window 2026-11-18 17:00-21:00 UTC falls after this run; the next fire should re-check https://www.drupal.org/security for the SA-CORE advisories (CVE ids, versions, exploitation) and update the entry"
+    evidence:
+      - quote: "There will be a Drupal core security release for all supported branches on November 18, 2026 between 17:00 and 21:00 UTC."
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-11-16"
+      - quote: "The vulnerabilities are currently rated as critical and at least one can be exploited by anonymous users."
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-11-16"
+      - quote: "exploits might be developed within hours or days"
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-11-16"
+      - quote: "This issue is being mitigated by Drupal Steward."
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-11-16"
+    extended_notes: |
+      Single-source rule: Drupal is the disclosing party for its own product (vendor primary); NCSC-CH repeats it. Pre-announcement shape: the entry is a heads-up with a dated action (patch window), not a vulnerability record yet. The entity registry already tracks an earlier Drupal core pre-patch
+      warning (incident:drupal-core-highly-critical-pre-patch-warning-psa-2026-05-18); its outcome was not re-read for this return.
+      Action concept for the window: reserve staff and a change slot for 17:00-21:00 UTC, update to the latest patch release beforehand, enrol or confirm Drupal Steward where applicable, inventory EOL Drupal 7/8/9/10.5 instances that will not be patched, put WAF in front of anonymous routes.
+    classification_suggestion: "A / 2 (vendor pre-announcement; flaw details not yet disclosed)"
+  # ------------------------------------------------------------------ 5
+  - title: "TYPO3 core security releases of 2026-11-17 (TYPO3-CORE-SA-2026-025 to -034): a low-privileged backend user can chain a web-root file write (SA-026) into the unauthenticated installer (SA-027, critical) and then admin and RCE, an unauthenticated upload and ImageMagick MVG chain discloses configuration files, and TYPO3 states SA-029 is actively exploited; fixed in 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS and 14.3.12 LTS"
+    sources:
+      - url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-027"
+        publisher: "TYPO3 Security Team (TYPO3-CORE-SA-2026-027, critical)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-026"
+        publisher: "TYPO3 Security Team (TYPO3-CORE-SA-2026-026)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-029"
+        publisher: "TYPO3 Security Team (TYPO3-CORE-SA-2026-029, states actively exploited)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-028"
+        publisher: "TYPO3 Security Team (TYPO3-CORE-SA-2026-028, ImageMagick MVG file disclosure)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-032"
+        publisher: "TYPO3 Security Team (TYPO3-CORE-SA-2026-032, Form Framework upload)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-025"
+        publisher: "TYPO3 Security Team (TYPO3-CORE-SA-2026-025, Import/Export path traversal to RCE)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://news.typo3.com/security/advisory/typo3-psa-2026-002"
+        publisher: "TYPO3 Security Team (pre-announcement)"
+        date: "2026-11-16"
+        role: corroborating
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4611"
+        publisher: "BSI CERT-Bund (WID-SEC-2026-4611, rated kritisch)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1553/"
+        publisher: "CERT-FR (CERTFR-2026-AVI-1553)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: backlog row A (run-prompt note) and BSI feed `python3 tools/fetch_source.py bsi-rss` (WID-SEC-2026-4611 TYPO3 CMS Extension, [NEU] [kritisch], 2026-11-17 12:42) -> PSA https://news.typo3.com/security/advisory/typo3-psa-2026-002 -> advisory feed `python3 tools/fetch_source.py feed https://typo3.org/rss-security 20` (ten core advisories SA-2026-025 to -034 published 2026-11-17 11:00-11:09 +0100) -> primaries https://news.typo3.com/security/advisory/typo3-core-sa-2026-025 through -034 (extract) -> BSI CSAF `bsi-csaf WID-SEC-2026-4611` (CVE list) -> CERT-FR https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1553/ (from the `cert-fr avis-recent 25` feed, then extract)"
+    summary: |
+      TYPO3's Security Team published ten core advisories on 2026-11-17 (about 11:00 UTC, as pre-announced on 2026-11-16 with the sentence that one is critical and exploitable by low-privileged backend users). Affected in every case:
+      10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11 (SA-034 only 14.0.0-14.3.11); fixed in 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS. TYPO3 Suggested CVSS values are 4.0 vectors, severity labels as published:
+      SA-025 CVE-2026-119621 Import/Export (ext:impexp) path traversal, High: the file hash values of imported T3D or XML files are used unvalidated to build a temporary file path, so a crafted import file writes arbitrary content to any web-server-writable location (for example a PHP file in the public web root) and gives RCE; needs an administrator backend user, or a non-admin user for whom options.impexp.enableImportForNonAdminUser is set.
+      SA-026 CVE-2026-119622 Backend missing authorization, High: the online-media endpoint (YouTube, Vimeo) accepts a target folder in the fallback storage (storage uid 0, the public web root), where file mount and permission checks are not applied, so any authenticated low-privileged backend user, even without file mounts or module access, can create online-media files with a partially controllable file name in the web root.
+      SA-027 CVE-2026-119623 Installer (ext:install) missing authentication, Critical (CVSS 4.0 vector AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H, the same vector scored 9.4 in the Perforce CVE record above): placing a file whose name starts with FIRST_INSTALL in the public web root or project root re-enables the installer on a configured instance without authentication, allowing database-connection changes and creation of a new administrator and system maintainer account, hence RCE. With SA-026 the marker file can be created by that low-privileged backend user. Fixed versions keep the installer off via a new SYS/isInstalling setting and accept only the exact names FIRST_INSTALL and FIRST_INSTALL.txt. TYPO3 advises checking the web root and project root for unexpected FIRST_INSTALL* files and reviewing administrator and system-maintainer accounts for unknown entries.
+      SA-028 CVE-2026-125159 Image processing, High: TYPO3 chooses the ImageMagick or GraphicsMagick coder from content-sniffed MIME type, so an MVG file uploaded with a .png extension is processed by the MVG coder, whose instructions read local files into the output image served publicly; needs a way to upload without a MIME check (for example SA-032, giving unauthenticated exploitation), ImageMagick, and a default policy that allows the MVG coder. After updating, formats outside the default raster list (psd, ppm) must be added to SYS/FileInfo/fileExtensionToMimeType.
+      SA-029 CVE-2026-125160 Form Framework information disclosure, Medium (vector carries E:A): the raw storage error message (for example a too-long file name) discloses the unguessable upload sub-folder and temp path, letting an attacker derive the public URL of a file they uploaded; with an upload element that accepts browser-executable files (HTML) this becomes XSS where the web server does not apply TYPO3's recommended Content-Security-Policy to the upload folder. The advisory states "This vulnerability is known to be actively exploited"; no actor, victim count or telemetry is given.
+      SA-032 CVE-2026-125163 Form Framework unrestricted upload, Medium: an empty allowedMimeTypes list was treated as unrestricted, so unauthenticated visitors can upload HTML or SVG to the (public by default) upload folder; after the update an empty list refuses uploads (breaking change, toggle security.form.allowUnrestrictedFileUploadMimeTypes restores the old behaviour, not recommended).
+      Others: SA-030 CVE-2026-125161 open redirect (incomplete fix of SA-2026-009), Medium; SA-031 CVE-2026-125162 page-cache flooding DoS via an array cHash when FE/cacheHash/enforceValidation is off (default on only for new installs since v12), High; SA-033 CVE-2026-125164 eID=dumpFile token reuse lets unauthenticated visitors fetch file references or processed files with the same uid from non-public storage, Medium; SA-034 CVE-2026-125165 Dashboard RSS-widget SSRF to internal hosts and cloud metadata for backend users, 14.x only, Medium, and updating alone does not mitigate it (HTTP/allowed_hosts/dashboard_rss must be configured).
+      No source states a public PoC. BSI rates the bundle kritisch; the TYPO3 pre-announcement text says one issue is "critical" and can be exploited by low-privileged backend users, which is SA-027 chained through SA-026.
+    region_nexus: "TYPO3 is widely used for Swiss cantonal, communal, university and federal-agency websites (assessment; no source in this run states it); BSI rates the bundle kritisch"
+    primary_sector_nexus: "direct (public-sector CMS)"
+    sector: "public-sector"
+    cves: [CVE-2026-119621, CVE-2026-119622, CVE-2026-119623, CVE-2026-125159, CVE-2026-125160, CVE-2026-125161, CVE-2026-125162, CVE-2026-125163, CVE-2026-125164, CVE-2026-125165]
+    techniques: [T1190, T1505.003, T1078, T1005, T1059]
+    affected_products: ["TYPO3 CMS"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:typo3", type: product, name: "TYPO3 CMS", aliases: ["TYPO3 Core"], summary: "Open-source PHP content-management system; ten core advisories SA-2026-025 to -034 were published 2026-11-17, one critical (installer re-enable) and one stated exploited (SA-029)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The installer then became accessible without authentication, allowing for example to change the database connection and to create a new administrator and system maintainer account"
+        attribution: "TYPO3 Security Team"
+        source_url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-027"
+      - quote: "any authenticated, low-privileged backend user, even without file mounts or module access, could create online media files with a partially controllable file name in the public web root"
+        attribution: "TYPO3 Security Team"
+        source_url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-026"
+      - quote: "This vulnerability is known to be **actively exploited**."
+        attribution: "TYPO3 Security Team"
+        source_url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-029"
+      - quote: "Exploiting this vulnerability requires a way to upload files without a mime-type check"
+        attribution: "TYPO3 Security Team"
+        source_url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-028"
+      - quote: "Exploiting this vulnerability requires an administrator backend user account, or a non-admin backend user for whom importing has been enabled via the user TSconfig option"
+        attribution: "TYPO3 Security Team"
+        source_url: "https://news.typo3.com/security/advisory/typo3-core-sa-2026-025"
+      - quote: 'One of them is rated “critical” and can be exploited by low-privileged backend users.'
+        attribution: "TYPO3 Security Team"
+        source_url: "https://news.typo3.com/security/advisory/typo3-psa-2026-002"
+    extended_notes: |
+      Single-source rule: TYPO3 Security Team is the disclosing party for its own product; BSI and CERT-FR relay it (BSI WID-SEC-2026-4611 lists CVE-2026-119621 to -119623 and -125159 to -125165).
+      Exposure: TYPO3 version in the Admin Tools > Environment or composer.lock; any internet-facing TYPO3 with backend users, and installations with Form Framework upload elements (check allowedMimeTypes per element) and ImageMagick (default policy allowing MVG).
+      Detection concept: files named FIRST_INSTALL* (or similar) appearing in the web root or project root, and unexpected requests to /typo3/install.php or the installer entry; new administrator or system-maintainer accounts and changes to LocalConfiguration database settings; backend-user requests to the online-media add endpoint with a storage 0 target folder; uploads with image extensions whose content starts with MVG instructions; error responses from Form Framework upload elements that leak storage paths; web-server access logs for processed-image URLs that return non-image content.
+      Post-patch check: the updates stop the marker-file re-enable but do not remove a webshell, a rogue admin or a changed DB connection already created; review backend admins and fileadmin and web root for stray files, and rotate configuration secrets if SA-028 could have run (encryptionKey, DB credentials).
+      Hardening: update to the fixed LTS or ELTS build; enforce a restrictive Content-Security-Policy on form upload folders (fileadmin/.htaccess carries it for Apache only; nginx needs a manual rule); set allowedMimeTypes on every upload element; set FE/cacheHash/enforceValidation; configure HTTP/allowed_hosts/dashboard_rss on 14.x; restrict impexp import to admins.
+      Triage: a FIRST_INSTALL file in the web root on a configured instance has no benign source except an unfinished new installation; legitimate installs create it on purpose and remove it.
+    classification_suggestion: "A / 1 (vendor primary, fixed versions stated; exploitation statement is the vendor's own, unsupported by named telemetry, so 2 for SA-029 exploitation)"
+  # ------------------------------------------------------------------ 6
+  - title: "Oracle Critical Security Patch Update of 2026-11-17: 655 patches for 640 CVEs, 62 rows at CVSS 3.1 9.0 or above of which 56 are reachable over the network without authentication (WebLogic T3/IIOP and TopLink, Access Manager and Platform Security for Java at 10.0, BI Enterprise Edition 10.0, E-Business Suite, Hyperion, APEX and ORDS), none flagged exploited or publicly disclosed by Oracle; Java4Shell is the only row with public technical detail"
+    sources:
+      - url: "https://www.oracle.com/security-alerts/cspunov2026.html"
+        publisher: "Oracle (Critical Security Patch Update Advisory, Rev 1 of 2026-11-17)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://www.tenable.com/blog/oracle-november-2026-critical-security-patch-update-addresses-640-cves-cve-2026-114938"
+        publisher: "Tenable (independent count: 640 CVEs, 62 critical rows across 57 CVEs)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/13198"
+        publisher: "NCSC Switzerland, Cyber Security Hub advisory 13198 (pre-release text for the CSPU, later edited into Java4Shell)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0495"
+        publisher: "NCSC-NL (covers only the Java row so far)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: run-prompt backlog row B (pre-release page https://www.oracle.com/security-alerts/cspunov2026.html, 652 patches announced) -> published advisory fetched with `python3 tools/fetch_source.py extract https://www.oracle.com/security-alerts/cspunov2026.html` (655 table rows parsed, 62 rows at 9.0 or above) -> Tenable https://www.tenable.com/blog/oracle-november-2026-critical-security-patch-update-addresses-640-cves-cve-2026-114938 (found via WebSearch, independent count) -> NCSC-CH post 13198 via `ncsc-csh recent 25` -> KEV cross-check `python3 tools/fetch_source.py cisa-kev` -> ENISA EUVD search `url --direct https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-16&toDate=2026-11-18&page=0&size=100`"
+    summary: |
+      Facts (Oracle advisory, Rev 1, 2026-11-17): 655 new security patches across 21 product families (the pre-release page had announced 652), CVSS 3.1. Rows at 9.0 or above: 62 (Tenable counts 62 across 57 CVEs; this return counts 51 distinct CVEs among the 56 unauthenticated rows). Unauthenticated network-reachable rows (Remote Exploit without Auth = Yes) per Oracle's own counts: Hyperion 107, Fusion Middleware 53, Supply Chain 36, Communications 21,
+      E-Business Suite 19 (the pre-release said 22), Analytics 9, Siebel 9, PeopleSoft 6, REST Data Services 5, MySQL 3, Database Server 3, Enterprise Manager 3, Virtualization 3, Java SE 11 and APEX 2.
+      Rows at 9.0 or above that are unauthenticated: Fusion Middleware 15 (Access Manager CVE-2026-114835 Admin Console, CVE-2026-91500 and CVE-2026-91510 Authentication Engine, Oracle Platform Security for Java CVE-2026-114824 and WebLogic Server TopLink Integration CVE-2026-91569, all 10.0 over HTTP; WebLogic CVE-2026-91470 over T3 and IIOP, CVE-2026-91456 SOAP and CVE-2026-91585 TCP at 9.8; Access Manager CVE-2026-91507 9.3),
+      Analytics (BI Enterprise Edition CVE-2026-114784, 10.0), E-Business Suite 6 (CVE-2026-114880, -114924, -114925 and -114863 at 9.8, applications 12.2.3 to 12.2.15), Hyperion 11, Supply Chain 5 (AutoVue CVE-2026-127324 to -127327 at 9.8), Communications 7, PeopleSoft 3, APEX 2 (CVE-2026-114849 and -114850, 9.8, HTTPS, supported 24.1.22, 24.2.21, 26.1.5, 26.2.0) and REST Data Services 2, MySQL 2, Autonomous Health Framework 1 and Enterprise Manager 1.
+      Database Server: the three 9.9 rows (Oracle Text CVE-2026-114819 and CVE-2026-114848, RDBMS CVE-2026-114822) need a Create Session privilege and are not unauthenticated, so the pre-release headline of unauthenticated Database rows at 9.9 does not hold; its three unauthenticated rows are third-party components at 7.5 or lower.
+      Exploitation and disclosure: Oracle's text carries only the generic sentence that it continues to receive reports of attempts to exploit already-patched vulnerabilities and flags no row as exploited. CISA KEV contains one CVE from the table, CVE-2026-111497 (Brotli), added 2026-10-27, which appears as three unauthenticated 9.8 rows (Communications Diameter Signaling Router via Node.js, Communications Unified Assurance via Brotli,
+      PeopleSoft PeopleTools OpenSearch Dashboards via Node.js) and is already covered. Public technical detail exists only for CVE-2026-114938 (Java4Shell, CVSS 8.1, separate item above). Searches found no public write-up for the 10.0 Access Manager and WebLogic rows, the APEX/ORDS rows credited to Trend Micro ZDI researchers or CVE-2026-114819 (credited to depthfirst); Oracle does not publish exploit prerequisites beyond the matrix.
+      CVE-2026-114820 (Java, three Communications rows, 9.1) was the subject of Oracle's Security Alert of 2026-10-24 and CVE-2026-115557 (Python, MySQL Shell 9.8 and RDBMS 7.4) is an id the store already carries in its eMudhra-related entry; Oracle's page reminds customers to apply the Security Alerts of 2026-10-21 (CVE-2026-91403), 2026-10-24 (CVE-2026-114820) and 2026-10-25 (CVE-2026-109618 and CVE-2026-109619) as well as this CSPU.
+    region_nexus: "global; WebLogic, Access Manager, E-Business Suite, PeopleSoft, Hyperion, APEX/ORDS and Database run in cantonal and federal ERP, identity and portal estates (assessment, no source in this run names Swiss customers)"
+    primary_sector_nexus: "indirect (enterprise application and middleware layer)"
+    sector: "public-sector"
+    cves: [CVE-2026-114835, CVE-2026-91500, CVE-2026-91510, CVE-2026-114824, CVE-2026-91569, CVE-2026-91470, CVE-2026-91456, CVE-2026-91585, CVE-2026-114784, CVE-2026-114849, CVE-2026-114850, CVE-2026-114924, CVE-2026-114925, CVE-2026-114880, CVE-2026-114863, CVE-2026-114819, CVE-2026-114848, CVE-2026-114822]
+    techniques: [T1190, T1210, T1203]
+    affected_products: ["Oracle WebLogic Server", "Oracle Access Manager", "Oracle Platform Security for Java", "Oracle Business Intelligence Enterprise Edition", "Oracle E-Business Suite", "Oracle Hyperion", "Oracle APEX", "Oracle REST Data Services", "Oracle Database Server", "Oracle PeopleSoft", "Oracle MySQL", "Oracle Java SE"]
+    entity_keys: ["product:oracle-weblogic-server", "product:oracle-access-manager", "product:oracle-platform-security-for-java", "product:oracle-business-intelligence", "product:oracle-e-business-suite", "product:oracle-database-server", "product:oracle-fusion-middleware", "product:oracle-java-se", "product:oracle-peoplesoft"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This Critical Security Patch Update contains 655 new security patches across the product families listed below."
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/cspunov2026.html"
+      - quote: "53 of these vulnerabilities may be remotely exploitable without authentication"
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/cspunov2026.html"
+      - quote: "Oracle continues to periodically receive reports of attempts to maliciously exploit vulnerabilities for which Oracle has already released security patches."
+        attribution: "Oracle"
+        source_url: "https://www.oracle.com/security-alerts/cspunov2026.html"
+      - quote: "This month's update includes 62 critical patches across 57 CVEs."
+        attribution: "Tenable"
+        source_url: "https://www.tenable.com/blog/oracle-november-2026-critical-security-patch-update-addresses-640-cves-cve-2026-114938"
+    extended_notes: |
+      Disposition of every row at CVSS 3.1 9.0 or above (62 rows): all are folded into this one Oracle item; none is exploited or on KEV except the three CVE-2026-111497 (Brotli) rows already covered; none is publicly disclosed with technical detail; CVE-2026-114938 (8.1) is returned as its own item. Rows by family (CVE, score, unauth or AUTH = needs privileges, component, protocol):
+      Oracle APEX: CVE-2026-114849 9.8 unauth Oracle APEX / General / HTTPS; CVE-2026-114850 9.8 unauth Oracle APEX / General / HTTPS
+      Oracle Analytics: CVE-2026-114784 10.0 unauth Oracle Business Intelligence Enterprise Edition / Platform Security / HTTP
+      Oracle Autonomous Health Framework: CVE-2026-114847 9.1 unauth Oracle Autonomous Health Framework / Developer triaging platform / HTTP
+      Oracle Communications: CVE-2026-111497 9.8 unauth Oracle Communications Diameter Signaling Router / PMAC (Node.js) / HTTP; CVE-2026-111497 9.8 unauth Oracle
+              Communications Unified Assurance / Core (Brotli) / HTTP; CVE-2026-1229 9.8 unauth Oracle Communications Unified Assurance / Core (CIRCL) / HTTP; CVE-2026-41889
+              9.8 unauth Oracle Communications Unified Assurance / Core (PostgreSQL) / SQL; CVE-2026-114820 9.1 unauth Oracle Communications Element Manager / Core (Java) /
+              HTTPS; CVE-2026-114820 9.1 unauth Oracle Communications Unified Assurance / Core (Java) / HTTPS; CVE-2026-114820 9.1 unauth Oracle Communications Unified
+              Inventory Management / Security (Java) / HTTPS
+      Oracle Database Products: CVE-2026-114819 9.9 AUTH Oracle Text (priv Create Session) Oracle Net; CVE-2026-114822 9.9 AUTH RDBMS (priv Create Session) Oracle Net;
+              CVE-2026-114848 9.9 AUTH Oracle Text (priv Create Session) Oracle Net
+      Oracle E-Business Suite: CVE-2026-114863 9.8 unauth Oracle Universal Work Queue / Media Integration issues / HTTP; CVE-2026-114880 9.8 unauth Document Management and
+              Collaboration / Attachments / HTTP; CVE-2026-114924 9.8 unauth Oracle Application Object Library / Core / HTTP; CVE-2026-114925 9.8 unauth Oracle Applications
+              Framework / REST Services / HTTP; CVE-2026-101691 9.3 unauth Oracle Mobile Field Service / Admin UI / HTTP; CVE-2026-114881 9.1 unauth Document Management and
+              Collaboration / Attachments / HTTP
+      Oracle Enterprise Manager: CVE-2026-10050 9.1 unauth Oracle Enterprise Manager Base Platform / Agent Next Gen (Eclipse Jetty) / HTTP
+      Oracle Fusion Middleware: CVE-2026-114824 10.0 unauth Oracle Platform Security for Java / Centralized Thirdparty Jars / HTTP; CVE-2026-114835 10.0 unauth Oracle Access
+              Manager / Admin Console / HTTP; CVE-2026-91500 10.0 unauth Oracle Access Manager / Authentication Engine / HTTP; CVE-2026-91510 10.0 unauth Oracle Access Manager
+              / Authentication Engine / HTTP; CVE-2026-91569 10.0 unauth Oracle WebLogic Server / TopLink Integration / HTTP; CVE-2026-114826 9.8 unauth Service Delivery
+              Platform / Messaging Enabler / SOAP; CVE-2026-91456 9.8 unauth Oracle WebLogic Server / Core / SOAP; CVE-2026-91470 9.8 unauth Oracle WebLogic Server / Core / T3,
+              IIOP; CVE-2026-91570 9.8 unauth Oracle WebLogic Server / TopLink Integration / HTTP; CVE-2026-91583 9.8 unauth Oracle WebLogic Server / TopLink Integration /
+              HTTP; CVE-2026-91585 9.8 unauth Oracle WebLogic Server / TopLink Integration / TCP; CVE-2026-91561 9.6 AUTH Oracle Service Bus / Core / RMI; CVE-2026-91469 9.4
+              unauth Oracle WebLogic Server / Core / HTTP; CVE-2026-91507 9.3 unauth Oracle Access Manager / Authentication Engine / HTTP; CVE-2026-8763 9.1 unauth Oracle
+              Managed File Transfer / MFT Runtime Server (Bouncy Castle Java Library) / HTTPS; CVE-2026-91618 9.1 unauth Oracle Application Development Framework (ADF) /
+              Security Framework / HTTP
+      Oracle Hyperion: CVE-2026-114978 9.9 AUTH Oracle Hyperion Financial Management / Security / HTTP; CVE-2026-115047 9.8 unauth Oracle Hyperion Infrastructure Technology /
+              Installation and Configuration / HTTP; CVE-2026-115048 9.8 unauth Oracle Hyperion Infrastructure Technology / Common Security / HTTP; CVE-2026-115080 9.8 unauth
+              Oracle Hyperion Infrastructure Technology / Installation and Configuration / HTTP; CVE-2026-115086 9.8 unauth Oracle Hyperion Planning / Security / RMI;
+              CVE-2026-115089 9.8 unauth Oracle Hyperion Planning / Application Development Framework / HTTP; CVE-2026-114785 9.6 unauth Oracle Hyperion Planning / Security /
+              HTTP; CVE-2026-114956 9.3 unauth Oracle Hyperion Planning / Security / HTTP; CVE-2026-115139 9.3 unauth Oracle Hyperion Infrastructure Technology / Installation
+              and Configuration / HTTP; CVE-2026-115050 9.1 unauth Oracle Hyperion Infrastructure Technology / Installation and Configuration / HTTP; CVE-2026-127362 9.1 unauth
+              Oracle Hyperion Financial Close Management / Reconciliation Manage / HTTP; CVE-2026-127369 9.1 unauth Oracle Hyperion Financial Close Management / Reconciliation
+              Manage / Oracle Net
+      Oracle MySQL: CVE-2026-115557 9.8 unauth MySQL Shell / Shell: Core Client (Python) / HTTP; CVE-2026-114952 9.1 unauth MySQL Server, MySQL Cluster / Client programs /
+              MySQL Protocol
+      Oracle PeopleSoft: CVE-2026-111497 9.8 unauth PeopleSoft Enterprise PeopleTools / OpenSearch Dashboards (Node.js) / HTTP; CVE-2026-114934 9.3 unauth PeopleSoft Enterprise
+              PeopleTools / Integration Broker / HTTP; CVE-2026-114862 9.1 unauth PeopleSoft Enterprise PeopleTools / Weblogic / HTTP
+      Oracle REST Data Services: CVE-2026-114849 9.8 unauth Oracle REST Data Services / Core / HTTPS; CVE-2026-114856 9.6 unauth Oracle REST Data Services / General / HTTPS
+      Oracle Supply Chain: CVE-2026-114980 9.9 AUTH Oracle AutoVue / Security Related Issues / HTTP; CVE-2026-127324 9.8 unauth Oracle AutoVue / Security / HTTP;
+              CVE-2026-127325 9.8 unauth Oracle AutoVue / Security / HTTP; CVE-2026-127326 9.8 unauth Oracle AutoVue / Security / HTTP; CVE-2026-127327 9.8 unauth Oracle
+              AutoVue / Security / HTTP; CVE-2026-101356 9.1 unauth Oracle Agile PLM / File Manager (Apache Tomcat) / HTTP/2
+      Detection concept: WebLogic T3 and IIOP listeners (7001/7002) reachable from untrusted networks, TopLink and SOAP endpoints; Access Manager Admin Console and authentication-engine requests from outside admin networks; EBS HTTP paths under Applications Framework REST, Attachments and Media Integration; ORDS and APEX HTTPS from the internet; Java child processes of WebLogic/OAM managed servers (shell, curl, powershell).
+      Hardening: apply the CSPU; where the CSPU cannot be applied immediately, block T3 and IIOP (named in the CVE-2026-91470 row) at the network edge, as Oracle suggests blocking the protocols an attack requires as interim relief; Oracle patches only Premier and Extended Support versions.
+      Next CSPU 2026-12-15, CPU 2027-01-19 (Oracle).
+    classification_suggestion: "A / 1 for the contents of the advisory; there is no exploitation claim to rate"
+  # ------------------------------------------------------------------ 7
+  - title: "Mitel MiCollab 10.3 (10.3.0.18) and earlier, MISA-2026-0012: unauthenticated blind command injection in the Audio, Web and Video Conferencing component (CVSS 3.1 10.0) and unauthenticated XML injection (9.0), plus file upload, authentication bypass and information disclosure; patch for 10.3.0.18 available, no CVE ids yet, no exploitation stated"
+    sources:
+      - url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012"
+        publisher: "Mitel (MISA-2026-0012, revision 1.0)"
+        date: "2026-11-16"
+        role: primary
+      - url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1547/"
+        publisher: "CERT-FR (CERTFR-2026-AVI-1547)"
+        date: "2026-11-17"
+        role: corroborating
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4608"
+        publisher: "BSI CERT-Bund (WID-SEC-2026-4608, hoch)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: bsi-de `python3 tools/fetch_source.py bsi-rss` (WID-SEC-2026-4608 Mitel MiCollab, [NEU] [hoch], 2026-11-17 11:57) -> BSI CSAF `bsi-csaf WID-SEC-2026-4608` (reference to the vendor advisory) -> primary: https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012 (extract) -> CERT-FR https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1547/ (from `cert-fr avis-recent 25`, then extract)"
+    summary: |
+      Mitel's advisory MISA-2026-0012 (first issued and last updated 2026-11-16, revision 1.0) covers five flaws in the Audio, Web and Video Conferencing (AWV) component of MiCollab 10.3 (10.3.0.18) and earlier, tracked by internal ids because CVE ids were requested but not yet assigned:
+      MTLVULN-1864 blind command injection from insufficient parameter sanitization, unauthenticated, CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:H/A:H); MTLVULN-1862 XML injection that lets an unauthenticated attacker leverage pre-staged malicious content to execute commands, 9.0 (AV:N/AC:H, S:C);
+      MTLVULN-1861 arbitrary file upload from weak file-type validation, unauthenticated, 5.3; MTLVULN-1863 unauthorized access needing a system-generated random identifier or pre-staged content, 5.9; MTLVULN-1877 authentication bypass, 5.3. Mitel states that exploiting them together can significantly amplify the impact.
+      Fix: Mitel provides a patch for release 10.3 (10.3.0.18) via KB000129195 (customer portal, login required) and says the update will be included in later releases. Mitigation: restrict external access to the AWV component. No exploitation or public PoC is stated in the advisory;
+      CERT-FR words the affected range as MiCollab versions before 10.3.0.18, whereas Mitel says 10.3 (10.3.0.18) and earlier and asks customers to upgrade to 10.3.0.18 and apply the provided patch, so 10.3.0.18 itself needs the patch. BSI describes a remote anonymous attacker able to manipulate files, run code with the service's rights, bypass security measures and disclose information. CERT-FR lists the same advisory the following day.
+    region_nexus: "global; MiCollab is a unified-communications and conferencing suite used in public administrations; AWV is the conferencing front end that is typically published to the internet (assessment; no source names Swiss users)"
+    primary_sector_nexus: "indirect (telephony and collaboration edge)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1059]
+    affected_products: ["Mitel MiCollab"]
+    entity_keys: ["product:mitel-micollab"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "could allow an unauthenticated attacker to conduct a blind command injection attack due to insufficient parameter sanitization."
+        attribution: "Mitel"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012"
+      - quote: "Exploiting these vulnerabilities together can significantly amplify their impact."
+        attribution: "Mitel"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012"
+      - quote: "the risk may be mitigated by restricting external access to the AWV component."
+        attribution: "Mitel"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012"
+      - quote: "A CVE identifier has been requested but is not yet assigned"
+        attribution: "Mitel"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012"
+    extended_notes: |
+      Single-source rule: Mitel is the disclosing vendor for its own product. Exposure: MiCollab version in the Server Manager or admin portal; whether the AWV web-conferencing component is reachable from the internet (reverse proxy, MiCollab Border Gateway, published conferencing URL).
+      Detection concept: web-server and AWV application logs for unauthenticated requests carrying shell metacharacters or XML payloads to conferencing endpoints; child processes of the AWV service (shell, curl, wget); unexpected files in AWV upload directories; new admin sessions without a login event.
+      Post-patch: apply the patch and review for webshells or staged content given that XML injection relies on pre-staged content. Hardening: remove external reachability of AWV until patched; Mitel's advisory notes unsupported (end-of-support) products are not assessed.
+      Related: store entry cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo covers different Mitel OpenScape products for the Brotli flaw.
+    classification_suggestion: "A / 2 (vendor primary; CVE ids pending; no exploitation claim)"
+  # ------------------------------------------------------------------ 8
+  - title: "Broadcom AutoSys Workload Automation 12.1 through 24.2.00 (CA20261117-01): unauthenticated hard-coded-key RCE on managed System Agent hosts (CVE-2026-126551), unauthenticated OS command execution and deserialization on the Workload Control Center in releases before 24.1.00 (CVE-2026-126552, -126553), all CVSS 4.0 9.3; fixed in 24.2.01"
+    sources:
+      - url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615"
+        publisher: "Broadcom (Security Notice CA20261117-01)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-127126"
+        publisher: "ENISA EUVD (EUVD-2026-127126, CVE-2026-126552)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: enisa-euvd search `url --direct https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-16&toDate=2026-11-18&page=0&size=100` (EUVD-2026-127125 to -127127 Broadcom AutoSys, 9.3 each, published 2026-11-17) -> primary: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615 (extract)"
+    summary: |
+      Broadcom's notice CA20261117-01 (2026-11-17, Critical, 9.3) lists eleven AutoSys Workload Automation CVEs in the Workload Control Center (WCC) web tier and the AutoSys engine native clients, researcher David Carliez (DC CyberSecurity). Three are unauthenticated and critical (CVSS 4.0 9.3, AV:N/AC:L/AT:N/PR:N/UI:N):
+      CVE-2026-126551, use of a hard-coded cryptographic key in WCC allows an unauthenticated remote attacker to achieve remote code execution on managed System Agent hosts (WCC 12.1.x through 24.2.00); CVE-2026-126552, in older releases a WCC configuration endpoint was reachable without authentication and allows OS command execution on the WCC server (12.1.x through 24.0.01, route removed in 24.1.00);
+      CVE-2026-126553, in older releases a WCC endpoint deserializes untrusted data and allows command execution on the WCC server (12.1.x through 24.0.01, endpoint removed in 24.1.00). Further rows: CVE-2026-126547 missing authorization to invoke agent-control operations unauthenticated (7.8), CVE-2026-126558 Forecast reporting command injection by an authenticated user (8.7),
+      CVE-2026-126550 session identifiers written to logs enabling admin session takeover (8.6), CVE-2026-126548 SSRF in an export feature (7.1), CVE-2026-126549 credentials written to logs (5.1), CVE-2026-126555 reporting authorization (5.3), CVE-2026-126556 password exposure via command-line options in native clients (5.1, mitigation only), CVE-2026-126557 native-client crash (4.8).
+      Fix: upgrade to AutoSys 24.2.01 or later; for CVE-2026-126552 and -126553 any release from 24.1.00 removes the paths (platform migration, not a security fix); for CVE-2026-126556 set the ASPASSWORD environment variable and procfs hidepid. Windows and Linux. No exploitation or public PoC is stated; EUVD shows no exploited flag.
+    region_nexus: "global; AutoSys is an enterprise job scheduler used in banks, insurers and large administrations (assessment; no source names Swiss users)"
+    primary_sector_nexus: "indirect (batch and scheduling management plane)"
+    sector: "public-sector"
+    cves: [CVE-2026-126551, CVE-2026-126552, CVE-2026-126553, CVE-2026-126547, CVE-2026-126558, CVE-2026-126550]
+    techniques: [T1190, T1072, T1552.001, T1059]
+    affected_products: ["Broadcom AutoSys Workload Automation"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:broadcom-autosys-workload-automation", type: product, name: "Broadcom AutoSys Workload Automation", aliases: ["CA AutoSys", "AutoSys Workload Control Center", "WCC"], summary: "Enterprise job scheduler; notice CA20261117-01 (2026-11-17) fixes unauthenticated hard-coded-key RCE on agents and unauthenticated command execution on the WCC in 24.2.01." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-126551 - use of a hard-coded cryptographic key in WCC could allow an unauthenticated remote attacker to achieve remote code execution on managed System Agent hosts."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615"
+      - quote: "CVE-2026-126552 - in older releases, a WCC configuration endpoint was reachable without authentication, which could allow an unauthenticated remote attacker to execute operating-system commands on the WCC server."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615"
+      - quote: "Customers on any affected version should upgrade to AutoSys Workload Automation 24.2.01 or later."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615"
+    extended_notes: |
+      Exposure: WCC version and cumulative level in the About dialog of the AutoSys Web UI; AE native clients via `autoflags -a`. The WCC is normally internal, but the notice sets AV:N/PR:N, so any network path to the WCC web tier matters; managed System Agent hosts are the blast radius of the hard-coded-key flaw (a forged token yields agent-side code execution, so compromise of one forged session reaches job-running hosts).
+      Detection concept: unauthenticated requests to WCC configuration or agent-control routes; the WCC service spawning shells; agent hosts executing jobs that have no matching schedule; session identifiers and credentials appearing in WCC application logs (CVE-2026-126549, -126550) mean log access equals session takeover until patched.
+      Post-patch: rotate credentials seen in WCC logs and invalidate sessions; review job definitions for unauthorized commands.
+    classification_suggestion: "A / 2 (vendor primary; no exploitation claim)"
+  # ------------------------------------------------------------------ 9
+  - title: "ASUS Control Center Express through 1.7.27 and Control Center Enterprise and Datacenter: hard-coded cryptographic keys let a remote user forge an authentication token or a session token for administrative control of the management console and the clients it manages (CVE-2026-114202, CVSS 4.0 10.0; CVE-2026-114204, 9.0), plus low-privilege-to-administrator flaws (CVE-2026-114205, CVE-2026-126574, 9.4)"
+    sources:
+      - url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398"
+        publisher: "ENISA EUVD (EUVD-2026-128398, ASUS CNA text, CVE-2026-114202)"
+        date: "2026-11-18"
+        role: primary
+      - url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128399"
+        publisher: "ENISA EUVD (EUVD-2026-128399, CVE-2026-114205)"
+        date: "2026-11-18"
+        role: corroborating
+    discovery_trace: "first seen at: enisa-euvd search `url --direct https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-16&toDate=2026-11-18&page=0&size=100` (EUVD-2026-128397 to -128399 and -128402, updated 2026-11-18 02:01-02:02) -> https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398 ; the ASUS advisory page https://www.asus.com/security-advisory/ was fetched but its Control Center section did not render (no content)"
+    summary: |
+      ENISA EUVD records published 2026-11-18 about 02:00 UTC, carrying the ASUS CNA text, describe four flaws: CVE-2026-114202 (Control Center Express, versions through v1.7.27, CVSS 4.0 10.0, AV:N/PR:N): use of a hard-coded cryptographic key allows a remote user to gain administrative privileges via a forged authentication token;
+      CVE-2026-114204 (Express, 9.0): hard-coded key lets a remote user forge a session token for an account with a recent valid login and take administrative control of the management console and of the clients it manages; CVE-2026-114205 (Express, 9.4): a low-privileged remote authenticated user can create an administrator account;
+      CVE-2026-126574 (Control Center Enterprise 3.1.0.8 and earlier, Datacenter 4.0.0.2 and earlier, 9.4): a Viewer-role user can change an Administrator password. The records point to the ASUS Security Advisory sections for the updates ("Security Update for ASUS Control Center Express Agent"); fixed versions are not stated in the EUVD text, and the ASUS page did not render its content here.
+      No exploitation or public PoC is stated. Control Center is ASUS's fleet-management console for ASUS commercial PCs and servers, so administrative control reaches every managed client (inference from the CNA text).
+    region_nexus: "global; relevant only where ASUS commercial endpoints are managed with Control Center (no source ties it to Swiss public-sector use)"
+    primary_sector_nexus: "none shown"
+    sector: "technology"
+    cves: [CVE-2026-114202, CVE-2026-114204, CVE-2026-114205, CVE-2026-126574]
+    techniques: [T1190, T1078, T1072]
+    affected_products: ["ASUS Control Center Express", "ASUS Control Center Enterprise", "ASUS Control Center Datacenter"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:asus-control-center", type: product, name: "ASUS Control Center", aliases: ["ASUS Control Center Express", "Control Center Enterprise", "Control Center Datacenter"], summary: "ASUS fleet-management console; four CNA records of 2026-11-18 describe hard-coded-key authentication forgery (CVSS 4.0 10.0) and low-privilege admin takeover." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "CVSS 10.0 pre-auth management-console takeover, but the vendor page could not be read (fixed versions unknown) and nothing ties the product to the constituency; likely a one-line mention or drop"
+    evidence:
+      - quote: "Use of Hard-coded Cryptographic Key in ASUS Control Center Express allows a remote user to gain administrative privileges via a forged authentication token."
+        attribution: "ENISA EUVD (ASUS CNA text)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398"
+    extended_notes: |
+      Gaps: fixed Control Center Express and Enterprise versions not obtained; check https://www.asus.com/security-advisory/ in a browser or a later fire.
+  # ------------------------------------------------------------------ 10
+  - title: "Eclipse Mosquitto 2.1.0 to 2.1.2 with a built-in websockets listener: pre-authentication out-of-bounds write and potential remote code execution (CVE-2026-110486, critical); fixed in 2.1.3 per the advisory and 2.1.4 per the oss-security notice, mitigated by dropping websockets listeners or building with libwebsockets"
+    sources:
+      - url: "https://github.com/eclipse-mosquitto/mosquitto/security/advisories/GHSA-6j8m-r32v-4h38"
+        publisher: "Eclipse Mosquitto project (GHSA-6j8m-r32v-4h38)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://www.openwall.com/lists/oss-security/2026/11/17/14"
+        publisher: "oss-security (Roger Light, Mosquitto maintainer)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: oss-security index https://www.openwall.com/lists/oss-security/2026/11/17/ (fetched while following the Java4Shell post) -> https://www.openwall.com/lists/oss-security/2026/11/17/14 -> primary: https://github.com/eclipse-mosquitto/mosquitto/security/advisories/GHSA-6j8m-r32v-4h38 (extract)"
+    summary: |
+      The Mosquitto maintainer announced on 2026-11-17 that the built-in websockets implementation in Mosquitto 2.1.0 to 2.1.2 inclusive mishandles websockets frames, giving an out-of-bounds write and pre-authentication remote code execution on brokers that expose a websockets listener using the built-in implementation (credit: orosec).
+      The GitHub advisory lists patched version 2.1.3; the oss-security notice says to upgrade to 2.1.4, so the fixed release is stated inconsistently (2.1.4 is the safe reading). Mitigation: stop using websockets listeners or compile with libwebsockets support. No exploitation, PoC or CVSS vector is stated in the sources read.
+    region_nexus: "global; MQTT brokers sit in building-automation, IoT and OT messaging; no source ties this to the constituency"
+    primary_sector_nexus: "indirect (IoT and OT messaging brokers)"
+    sector: "technology"
+    cves: [CVE-2026-110486]
+    techniques: [T1190, T1059]
+    affected_products: ["Eclipse Mosquitto"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:eclipse-mosquitto", type: product, name: "Eclipse Mosquitto", aliases: ["Mosquitto MQTT broker"], summary: "Open-source MQTT broker; versions 2.1.0-2.1.2 with a built-in websockets listener have a pre-auth RCE (CVE-2026-110486, 2026-11-17)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "pre-auth RCE in a widely embedded IoT broker, but only the 2.1.0-2.1.2 line with a non-default websockets listener, no PoC or exploitation, and no constituency link"
+    evidence:
+      - quote: "If a Mosquitto broker version 2.1.0 to 2.1.2 is configured with a websockets listener using the built-in websockets implementation, then it is vulnerable to an out of bounds write and potential remote code execution."
+        attribution: "Eclipse Mosquitto project"
+        source_url: "https://github.com/eclipse-mosquitto/mosquitto/security/advisories/GHSA-6j8m-r32v-4h38"
+    extended_notes: |
+      Detection concept: broker config for `protocol websockets` listeners without libwebsockets; mosquitto process crashes or child processes. Hardening: remove public websockets listeners or front them with a TLS-terminating proxy; upgrade to 2.1.4.
+  # ------------------------------------------------------------------ 11
+  - title: "Microsoft agent-framework 1.26.1 and 1.26.2 on PyPI (published 2026-11-17) carry a .pth startup-hook credential stealer that also requests Azure managed-identity, Azure DevOps and GitHub Actions OIDC tokens; both removed, 1.26.0 is the last clean release"
+    sources:
+      - url: "https://socket.dev/blog/agent-framework-pypi-package-compromised-with-credential-stealer"
+        publisher: "Socket Research Team"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://safedep.io/blog/microsoft-agent-framework-pypi-compromise"
+        publisher: "SafeDep (independent detection, 22 minutes after publish)"
+        date: "2026-11-18"
+        role: primary
+    discovery_trace: "first seen at: socket-dev-blog RSS https://socket.dev/api/blog/feed.atom (item 'Microsoft agent-framework PyPI package Compromised with Credential Stealer', 2026-11-17 23:05Z) -> primary: https://socket.dev/blog/agent-framework-pypi-package-compromised-with-credential-stealer (extract) -> second independent detector: safedep RSS https://safedep.io/rss.xml -> https://safedep.io/blog/microsoft-agent-framework-pypi-compromise"
+    summary: |
+      Socket and SafeDep (independent detectors) report that Microsoft's official Python metapackage agent-framework was compromised on 2026-11-17: versions 1.26.1 and 1.26.2 ship a single wheel that installs a .pth file, so the stealer runs every time Python starts, without the package being imported (a pip install in a CI job is enough).
+      1.26.1 routes through agent_framework_meta.pth to an appended initializer hook and _telemetry module; after it was removed, 1.26.2 shipped the same stealer under af_runtime_diag.pth with the legitimate initializer restored, and adds GitHub Actions OIDC token requests. The code forks and detaches, collects environment variables matching about 31 name substrings, up to 60 credential files (Azure CLI, pip, npm, git, Docker, Hugging Face, Azure DevOps agent credentials),
+      up to 300 /proc/PID/environ files, and actively requests fresh Azure DevOps federation, Azure managed-identity and GitHub OIDC tokens, then POSTs a compressed, base64-encoded blob to a webhook.site endpoint. SafeDep flagged 1.26.1 22 minutes after publication and 1.26.2 4 minutes after upload; the package gets about 192,000 downloads a month, the number of installs of the bad versions is unknown, and how the attacker obtained publishing access is not known.
+      SafeDep notes this is the second Microsoft PyPI package with rogue releases in six months (durabletask in May, stolen API token) but finds no link. Affected: only 1.26.1 and 1.26.2; remove them and rotate credentials in any environment that installed them. No Microsoft statement was read.
+    region_nexus: "global; relevant to development and CI environments on Azure and GitHub (assessment)"
+    primary_sector_nexus: "indirect (supply chain into cloud CI)"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1552.001, T1528]
+    affected_products: ["Microsoft agent-framework (PyPI)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "supply-chain compromise belongs to the S3/S4 sweeps; kept here as a lead because it was in window (2026-11-17) with two independent detectors and the stolen material is cloud identity tokens"
+    evidence:
+      - quote: "Avoid installing either version; if installed, remove them and rotate potentially exposed credentials."
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/agent-framework-pypi-package-compromised-with-credential-stealer"
+      - quote: "Once 1.26.1 came off PyPI, 1.26.2 shipped the same stealer under different file names, and SafeDep flagged it 4 minutes after upload."
+        attribution: "SafeDep"
+        source_url: "https://safedep.io/blog/microsoft-agent-framework-pypi-compromise"
+    extended_notes: |
+      Detection concept: pip install of agent-framework 1.26.1 or 1.26.2 in CI logs or lockfiles; .pth files in site-packages named agent_framework_meta.pth or af_runtime_diag.pth; outbound HTTPS to webhook.site from build agents; Azure sign-ins by managed identities or federated credentials from unexpected sources after 2026-11-17.
+  # ------------------------------------------------------------------ 12
+  - title: "UPDATE: N-able N-central 2026.4 Hotfix 3 (build 2026.4.1.39, 2026-11-16) fixes 17 further CVE ids, permanently blocks the legacy APIs and hardens Agent and Probe authentication against impersonation; N-able does not map the fixes to the researcher's named chains"
+    sources:
+      - url: "https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/"
+        publisher: "N-able (N-central 2026.4 HF3 release notes)"
+        date: "2026-11-16"
+        role: primary
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4609"
+        publisher: "BSI CERT-Bund (WID-SEC-2026-4609, hoch, 17 CVEs)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: bsi-de `python3 tools/fetch_source.py bsi-rss` (WID-SEC-2026-4609 N-able N-Central, [NEU] [hoch], 2026-11-17 12:02) -> BSI CSAF `bsi-csaf WID-SEC-2026-4609` (references https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/) -> primary: N-able release notes (extract, served via jina)"
+    summary: |
+      N-able released N-central 2026.4 Hotfix 3 (build 2026.4.1.39) on 2026-11-16, labelled "a critical security update" that builds on and includes Hotfix 2 (2026.4.1.26) and Hotfix 1. It adds missing authentication and permission checks to further server operations, hardens how Agents and Probes authenticate with the server including session handling (separate from the Agent-to-Probe changes in Hotfix 2),
+      adds validation to file publishing, file paths and XML import, removes the configuration option for legacy APIs ("legacy APIs are now permanently blocked"), and improves user management. N-able states that Agents and Probes that are not upgraded are susceptible to impersonation; on-premises customers must upgrade servers, all customers must upgrade Agents and Probes, hosted servers are upgraded by N-able.
+      CVE ids fixed (17, CVE-2026-129271 to CVE-2026-129287): patch-management local privilege escalation (-129271); MMS3 appliance authentication bypass via predictable passcode (-129272); audit-export syslog injection to root command execution (-129273); missing authentication on ServerMMS2 task-result submission, asset-data submission and ServerMMS maintenance-action read, on repositoryItemGet (policy disclosure) and on ServerUI SOAP operations (-129274 to -129277, -129280);
+      Take Control audit-log tampering without authentication (-129278); user enumeration (-129279); view-only users can set DeviceExecute configuration (-129281); sendmail argument injection (-129282); custom-service-import XXE (-129283); Report Manager and Data Export SSRF (-129284); XMPP action response origin validation (-129285); SIS GenericFiles path traversal leading to RCE (-129286); SIS repository parser XXE (-129287).
+      Gaps: the release notes do not say which of these closes 4EverAble2Shell (Apache Axis CVE-2026-90436 chain plus root escalation against Hotfix 2 with the Legacy API on) or Agent2Shell (SYSTEM commands on managed agents) as described in the existing entry, so "no fix yet" for those two cannot be rewritten as "fixed"; the permanent legacy-API block removes the stated precondition of 4EverAble2Shell. Known issues: remote control other than Take Control is disabled and the Intune integration is blocked.
+      NCSC-CH advisory 13163 (edited 2026-11-16 09:34Z, before HF3) already states actively exploited and "additional fixes are still expected"; no new exploitation report was read in this window.
+    region_nexus: "global; N-central is an MSP RMM platform; Swiss municipalities and public bodies served by MSPs are exposed through the provider (assessment)"
+    primary_sector_nexus: "indirect (supplier management plane)"
+    sector: "public-sector"
+    cves: [CVE-2026-129271, CVE-2026-129272, CVE-2026-129273, CVE-2026-129274, CVE-2026-129275, CVE-2026-129276, CVE-2026-129277, CVE-2026-129278, CVE-2026-129279, CVE-2026-129280, CVE-2026-129281, CVE-2026-129282, CVE-2026-129283, CVE-2026-129284, CVE-2026-129285, CVE-2026-129286, CVE-2026-129287]
+    techniques: [T1190, T1068, T1059]
+    affected_products: ["N-able N-central"]
+    entity_keys: ["product:n-able-n-central", "incident:n-able-n-central-able2shell-disclosure-2026-11"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-11-10/n-able-n-central-33-unpatched-flaws-public-pocs-offline"
+    evidence:
+      - quote: "N-central 2026.4 Hotfix 3 is a critical security update."
+        attribution: "N-able"
+        source_url: "https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/"
+      - quote: "We have removed the configuration option for legacy APIs, and legacy APIs are now permanently blocked."
+        attribution: "N-able"
+        source_url: "https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/"
+      - quote: "Agents and Probes that are not upgraded are susceptible to impersonation."
+        attribution: "N-able"
+        source_url: "https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/"
+    extended_notes: |
+      Delta for the existing entry: patched-to version moves from Hotfix 2 (2026.4.1.26) to Hotfix 3 (2026.4.1.39); legacy-API toggle gone; new Inactive Assets tab and Network setup options for Agent token behaviour (Configuration > Asset Discovery > Discovered Assets; Administration > Mail and Network Settings > Network Setup); devices without SMBIOS ID or machine ID are rejected.
+      Post-patch check: review the Inactive Assets tab after Agents reconnect for cloned or impersonating agents; Set Active only for known devices.
+  # ------------------------------------------------------------------ 13
+  - title: "UPDATE: Axis OS 6.50.5.10 and later is affected by the Apache httpd mod_http2 RCE (CVE-2026-119618, CVSS 9.8 per Axis); Axis has no fixed release yet, calls for a service release within weeks and publishes an HTTP/2 workaround; no exploitation known to Axis"
+    sources:
+      - url: "https://www.axis.com/dam/public/permalink/294609/cve-2026-119618pdf-en-US_294609.pdf"
+        publisher: "Axis Communications (security advisory CVE-2026-119618 v1.0)"
+        date: "2026-11-16"
+        role: primary
+      - url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1549/"
+        publisher: "CERT-FR (CERTFR-2026-AVI-1549)"
+        date: "2026-11-17"
+        role: corroborating
+    discovery_trace: "first seen at: anssi-fr `python3 tools/fetch_source.py cert-fr avis-recent 25` (CERTFR-2026-AVI-1549 Axis OS, 2026-11-17) -> https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1549/ (extract) -> primary: Axis PDF https://www.axis.com/dam/public/permalink/294609/cve-2026-119618pdf-en-US_294609.pdf (`fetch_source.py pdf`)"
+    summary: |
+      Axis published a security advisory on 2026-11-16 (v1.0): AXIS OS 6.50.5.10 or higher bundles Apache HTTP Server, and Apache's 2.4.71 of 2026-11-11 fixes CVE-2026-119618, which Axis describes as a CVSS 9.8 remote code execution flaw that lets an unauthenticated attacker gain administrator access to the Axis network device. "To Axis' knowledge, no known exploits exist publicly as of today" and Axis is not aware of exploitation in its products.
+      Axis is working on a service release for all affected AXIS OS tracks within the next couple of weeks (more accurate timelines to follow; release notes will say Apache updated to 2.4.71); devices outside those tracks but still supported get a patch per their maintenance schedule. Immediate workaround: set System.HTTP2.AllowH2=no and System.HTTP2.AllowH2c=no through the device parameter interface (axis-cgi/param.cgi?action=update), deployable in bulk with Axis Device Manager; revert after updating.
+      CERT-FR lists the same advisory (remote code execution; affected: all versions from 6.50.5.10; correction available within weeks; workaround provided). The existing entry covers httpd 2.4.55 to 2.4.70 and distributions but not network cameras and other Axis devices. Note: Axis phrases the advisory as an HTTP/2 flaw reachable on the device web interface; the Apache project and Red Hat say it needs mod_http2 with HTTP/2 enabled, which the workaround disables.
+    region_nexus: "Axis network cameras and devices are widely deployed by Swiss police, municipalities, transport and critical-infrastructure operators for video surveillance (assessment; no source in this run names Swiss users)"
+    primary_sector_nexus: "direct (physical-security and video-surveillance estates)"
+    sector: "public-sector"
+    cves: [CVE-2026-119618]
+    techniques: [T1190, T1059]
+    affected_products: ["AXIS OS", "Apache HTTP Server"]
+    entity_keys: ["product:apache-http-server"]
+    new_entities:
+      - { key: "product:axis-os", type: product, name: "AXIS OS", aliases: ["Axis network cameras", "Axis Communications devices"], summary: "Axis Communications device firmware; bundles Apache httpd and is affected by CVE-2026-119618 from 6.50.5.10 with a service release pending (Axis, 2026-11-16)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-12/cve-2026-119618-apache-httpd-mod-http2-assign-headers-rce"
+    evidence:
+      - quote: "Axis déclare qu'un correctif sera disponible d'ici quelques semaines."
+        attribution: "CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1549/"
+      - quote: "Une mesure de contournement est fournie."
+        attribution: "CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1549/"
+      - quote: "Axis is working on a service release for all affected AXIS OS tracks within the next couple of weeks"
+        attribution: "Axis Communications"
+        source_url: "https://www.axis.com/dam/public/permalink/294609/cve-2026-119618pdf-en-US_294609.pdf"
+    extended_notes: |
+      Exposure: AXIS OS version on the device (Plain Config or the device web UI); whether the camera or recorder web interface is reachable from untrusted networks (it should not be). Detection concept: HTTP/2 or h2c upgrade requests to device web interfaces from unexpected hosts; device configuration changes, new accounts or unexpected outbound connections from cameras.
+      Hardening: apply the HTTP/2 workaround fleet-wide now, segment video-surveillance networks, and watch for the Axis service release.
+  # ------------------------------------------------------------------ 14
+  - title: "UPDATE: CVE-2026-111497 (Brotli, on CISA KEV since 2026-10-27): Siemens SSA-242944 and SSA-678870 (CISA ICSA-26-321-03 and -04, 2026-11-17) list 43 affected industrial products, most with no fix; Oracle's CSPU adds three unauthenticated 9.8 rows; Xerox and Lexmark ship precautionary firmware 261.202; Cisco advisory at v1.14 keeps its priority products not impacted"
+    sources:
+      - url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-03"
+        publisher: "CISA ICS advisory ICSA-26-321-03 (republishes Siemens SSA-242944; read through the CSAF JSON)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-04"
+        publisher: "CISA ICS advisory ICSA-26-321-04 (republishes Siemens SSA-678870; read through the CSAF JSON)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u"
+        publisher: "Cisco PSIRT (cisco-sa-oct2026-node-js, revision 1.14 of 2026-11-17)"
+        date: "2026-11-17"
+        role: primary
+      - url: "https://securitydocs.business.xerox.com/wp-content/uploads/2026/11/Xerox-Security-Bulletin-XRX26-020-Brotli-Decoder-Vulnerability-CVE-2026-111497-v1.pdf"
+        publisher: "Xerox (Security Bulletin XRX26-020, 2026-11-13)"
+        date: "2026-11-13"
+        role: primary
+      - url: "https://www.oracle.com/security-alerts/cspunov2026.html"
+        publisher: "Oracle (Critical Security Patch Update, 2026-11-17)"
+        date: "2026-11-17"
+        role: primary
+    discovery_trace: "first seen at: cisa-advisories `python3 tools/fetch_source.py cisa csaf-recent` (ICSA-26-321-03 and -04, 2026-11-17, Siemens products, CVE-2026-111497) -> CSAF JSON https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-321-03.json and -04.json -> cisco-psirt RSS (revision of 2026-11-17 23:53) -> https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u (`url --direct`) -> xerox-security-bulletins index (`url --direct`) -> XRX26-020 via `fetch_source.py pdf` -> Oracle CSPU rows via the Oracle extract"
+    summary: |
+      Vendor-impact deltas for the already-covered Brotli decoder flaw CVE-2026-111497 (Google Brotli C decoder, out-of-bounds write; CISA KEV 2026-10-27). Siemens SSA-242944 (industrial automation: SIMATIC WinCC V7/V8, WinCC Unified PC Runtime, WinCC OA V3.20 and V3.21, WinCC Runtime Professional, WinCC Unified for Industrial Edge and SIQENCE, WinCC Companion, SIMATIC BRAUMAT and SISTAR, Profiling Tool, TIA Administrator, User Management Component and others, 15 known affected, CVSS 9.8) and SSA-678870 (industrial software: Teamcenter, Opcenter family, Polarion, Calibre, Capital, PADS and others, 28 known affected, 9.8)
+      state "Currently no fix is available" for most products; the one vendor fix named is SIMATIC WinCC OA V3.20 P17.1 or later, and the mitigation for the rest is to disable Brotli compression and decompression at the application or proxy layer (IIS request-filtering rules for Content-Encoding for UMC and Teamcenter, firewall blocking of Brotli).
+      Oracle's CSPU of 2026-11-17 carries CVE-2026-111497 in three unauthenticated 9.8 rows: Communications Diameter Signaling Router (PMAC, Node.js), Communications Unified Assurance (Core, Brotli) and PeopleSoft PeopleTools (OpenSearch Dashboards, Node.js). Xerox bulletin XRX26-020 (2026-11-13, CVSS 4.0 9.2) covers Lexmark and Xerox printers and MFPs (firmware families such as MXTCT, MSTEH, MXTEH, CXTGV, MXTGW: affected 261.201 and earlier, fixed 261.202 and later; the decoder sits in the Chromium WebView) and says Xerox could not identify a reproducible exploitation scenario and ships the firmware as a precaution.
+      Cisco's advisory is at revision 1.14 (2026-11-17, routine product-list update): Catalyst SD-WAN, ISE, IOS XE, IOS XR, Secure Firewall ASA, FMC and FTD are not impacted, NX-OS is listed in the tables, fixed releases are dated into 2026-2027 for some products; Cisco PSIRT is aware that proof-of-concept exploit code is available and is not aware of malicious use against any Cisco product.
+      CISA's ICS republications carry no exploitation statement beyond the KEV listing; the Siemens summary describes the flaw as "Node2Shell".
+    region_nexus: "Siemens WinCC and UMC, Teamcenter and Opcenter, Oracle PeopleSoft and Communications, and Xerox and Lexmark printers are present in Swiss public-sector OT, ERP and print estates (assessment; no source names Swiss users)"
+    primary_sector_nexus: "indirect (OT and enterprise product impact lists)"
+    sector: "public-sector"
+    cves: [CVE-2026-111497]
+    techniques: [T1190, T1203]
+    affected_products: ["Siemens SIMATIC WinCC", "Siemens SIMATIC WinCC OA", "Siemens User Management Component", "Siemens Teamcenter", "Siemens Opcenter", "Oracle PeopleSoft PeopleTools", "Oracle Communications Unified Assurance", "Lexmark printers", "Xerox printers", "Cisco NX-OS"]
+    entity_keys: ["tool:node2shell", "product:google-brotli", "product:siemens-simatic-wincc", "product:siemens-simatic-wincc-oa", "product:siemens-user-management-component", "product:siemens-teamcenter", "product:siemens-opcenter", "product:oracle-peoplesoft-peopletools", "product:oracle-communications-unified-assurance"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-07/cve-2026-111497-brotli-desigo-cc-mitel-openscape-cisco-duo"
+    evidence:
+      - quote: "Currently no fix is available"
+        attribution: "Siemens ProductCERT via CISA ICSA-26-321-03"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-03"
+      - quote: "Temporarily disable Brotli compression and decompression at the application or proxy layer if it is not strictly required"
+        attribution: "Siemens ProductCERT via CISA ICSA-26-321-03"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-03"
+      - quote: "The Cisco PSIRT is not aware of any malicious use of these vulnerabilities against any Cisco product."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-oct2026-node-js-Jj3SQ19u"
+      - quote: "Xerox analysis was unable to identify a reproducible exploitation scenario on affected devices"
+        attribution: "Xerox"
+        source_url: "https://securitydocs.business.xerox.com/wp-content/uploads/2026/11/Xerox-Security-Bulletin-XRX26-020-Brotli-Decoder-Vulnerability-CVE-2026-111497-v1.pdf"
+    extended_notes: |
+      Detection concept unchanged from the covered entries: requests with Content-Encoding: br to the affected product front ends, and responses fetched from untrusted servers by products that decode Brotli. For Siemens, the IIS reverse proxy in front of UMC and Teamcenter is the control point named in the SSAs.
+      Sourcing caveat: the CISA ICS pages were cited as the human-facing URLs for the CSAF JSON read through the bridge (raw.githubusercontent.com/cisagov/CSAF), not fetched as HTML.
+  # ------------------------------------------------------------------ 15
+  - title: "UPDATE: Juniper Junos OS Evolved, all versions, is affected by the Linux kernel IPv4 TCP use-after-free CVE-2026-98432 (out-of-cycle bulletin JSA119568, 2026-11-16); a fix is announced as coming, a workaround exists"
+    sources:
+      - url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1551/"
+        publisher: "CERT-FR (CERTFR-2026-AVI-1551, relays Juniper JSA119568)"
+        date: "2026-11-17"
+        role: primary
+    discovery_trace: "first seen at: anssi-fr `python3 tools/fetch_source.py cert-fr avis-recent 25` (CERTFR-2026-AVI-1551 Juniper Junos OS Evolved, 2026-11-17) -> https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1551/ (extract); the Juniper bulletin https://supportportal.juniper.net/s/article/2026-11-Out-of-Cycle-Security-Bulletin-Junos-OS-Evolved-Linux-kernel-IPv4-TCP-use-after-free-vulnerability-CVE-2026-98432 is a Salesforce SPA that returned only a loading shell on extract and WebFetch"
+    summary: |
+      CERT-FR lists, for 2026-11-17, a Juniper out-of-cycle bulletin JSA119568 dated 2026-11-16: Junos OS Evolved, all versions, is affected by the Linux kernel IPv4 TCP use-after-free CVE-2026-98432 with risks of remote code execution and remote denial of service; Juniper says a fix will be available soon and provides a workaround (which CERT-FR does not describe). The Juniper page itself could not be read, so the workaround, the exploitation statement and the MPTCP precondition for Junos OS Evolved are unknown.
+      The existing entry covers the upstream bug, an Anthropic-built remote root exploit against MPTCP listeners that CloudLinux could not reproduce, and vendor statements from XenServer, XCP-ng, MikroTik, WatchGuard and others; Juniper is a network-operating-system vendor not yet listed there.
+    region_nexus: "Junos OS Evolved runs on Juniper PTX and some QFX and ACX platforms used by network operators and large campuses (assessment)"
+    primary_sector_nexus: "indirect (network infrastructure)"
+    sector: "technology"
+    cves: [CVE-2026-98432]
+    techniques: [T1190, T1068]
+    affected_products: ["Juniper Junos OS Evolved"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-31/cve-2026-98432-linux-kernel-tcp-uaf-mptcp-remote-root"
+    borderline: true
+    borderline_reason: "single-source vendor-impact delta from a national CERT; Juniper's own page unreadable; worth a one-line changelog record at most"
+    evidence:
+      - quote: "Juniper Networks déclare qu'un correctif sera disponible prochainement."
+        attribution: "CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1551/"
+      - quote: "Junos OS Evolved toutes versions"
+        attribution: "CERT-FR"
+        source_url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1551/"
+    extended_notes: |
+      Gap: Juniper support-portal pages are Salesforce SPAs; try a browser fetch or the Juniper security advisories feed in a later fire.
+cve_table:
+  - cve: CVE-2026-115731
+    product: Perforce Puppet Enterprise / Puppet Server
+    cvss: 9.4 (CVSS 4.0); 9.9 (CVSS 3.1, Red Hat and NVD)
+    epss: 0.00366
+    kev: true
+    exploited: 'CISA: evidence of active exploitation (KEV 2026-11-17); no actor or telemetry named'
+    affected: Puppet Enterprise 2023.8.0 to before 2023.8.13, 2025.0.0 to before 2025.12.1, 2026.0.0 to before 2026.0.1; OpenVox Server <=9.1.0 and <=8.17.0, OpenVox Agent <=9.2.0 and <=8.31.1
+    fixed: Puppet Enterprise 2023.8.13, 2025.12.1, 2026.0.1; OpenVox Server 9.2.0, 8.18.0; OpenVox Agent 9.3.0, 8.32.0
+    type: rce (CWE-502, CWE-94)
+    vector: network, PUT /puppet/v3/report
+    auth: low (CA-signed agent certificate; none where CA autosigns)
+    source: https://www.cisa.gov/news-events/alerts/2026/11/17/cisa-adds-one-known-exploited-vulnerability-catalog
+  - cve: CVE-2026-115732
+    product: Puppet Server / trapperkeeper-authorization (OpenVox, Puppet Enterprise)
+    cvss: 9.0 (CVSS 4.0)
+    epss: 0.00745
+    kev: false
+    exploited: none stated
+    affected: OpenVox Server and OpenVoxDB <=9.1.0 and <=8.17.0; Puppet Enterprise per Perforce record (not read)
+    fixed: OpenVox Server 9.2.0, 8.18.0; Puppet Enterprise fixed versions not read for this id
+    type: authorization bypass (certificate-name matching, CWE-697)
+    vector: network
+    auth: low (certificate whose name extends or shortens an authorized hostname, issued by approval or autosign)
+    source: https://smartscope.blog/en/blog/puppet-server-vulnerabilities-puppet-server-openvox-allow-server-2026/
+  - cve: CVE-2026-129448
+    product: Apache Roller
+    cvss: 9.8 (CVSS 3.1)
+    epss: null
+    kev: false
+    exploited: 'Apache CNA: being actively exploited (single source; CISA ADP SSVC none)'
+    affected: '4.0.0 before 6.1.5 (text: through 6.1.4); 6.1.5 per CVE-2026-82384'
+    fixed: 6.1.6 or later
+    type: rce (deserialization before authentication)
+    vector: network, /roller-services/xmlrpc
+    auth: none
+    source: https://www.openwall.com/lists/oss-security/2026/11/17/5
+  - cve: CVE-2026-114938
+    product: OpenJDK / Oracle Java SE / GraalVM (Java4Shell)
+    cvss: 8.1 (CVSS 3.1 Oracle and OpenJDK, AC:H); 9.2 (CVSS 4.0 Calif); 9.8 (Red Hat preliminary)
+    epss: null
+    kev: false
+    exploited: none reported (NCSC-CH, Tenable, Endor Labs, CISA SSVC none); safe trigger PoC public, weaponized chains withheld
+    affected: OpenJDK 17.0.6 and later (17, 21, 25, 27) on x86-64 with AVX-512 VBMI; Oracle Java SE 8u511b33-perf, 17.0.21.0.3, 21.0.13.0.3, 25.0.5.0.3, 27.0.1.0.3; GraalVM for JDK 17.0.21.0.3, 21.0.13.0.3;
+      GraalVM EE 21.3.20.0.3
+    fixed: Oracle 17.0.21.1, 21.0.13.1, 25.0.5.1, 27.0.1.1; Amazon Corretto 17.0.21.1.2; other distributions on their own schedules; upstream fix JDK-8393212; mitigation -XX:-UseBASE64Intrinsics or -XX:UseAVX=2
+    type: rce (CWE-122/787 heap out-of-bounds write)
+    vector: network, application path that decodes attacker Base64
+    auth: none (pre-auth in Keycloak, Jira, Confluence, Artifactory, Jenkins, PingFederate per Calif)
+    source: https://calif.io/java4shell/
+  - cve: CVE-2026-119621
+    product: 'TYPO3 CMS core: SA-025 Import/Export path traversal to RCE'
+    cvss: High
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: rce
+    vector: network
+    auth: admin, or non-admin with options.impexp.enableImportForNonAdminUser
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-025
+  - cve: CVE-2026-119622
+    product: 'TYPO3 CMS core: SA-026 online-media missing authorization (web-root file write)'
+    cvss: High
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: file write
+    vector: network
+    auth: low-privileged backend user
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-026
+  - cve: CVE-2026-119623
+    product: 'TYPO3 CMS core: SA-027 installer missing authentication (FIRST_INSTALL marker)'
+    cvss: Critical (vector AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: rce
+    vector: network
+    auth: none once a marker file exists; chained from SA-026 by a low-privileged backend user
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-027
+  - cve: CVE-2026-125159
+    product: 'TYPO3 CMS core: SA-028 image processing MVG file disclosure'
+    cvss: High
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: information disclosure
+    vector: network
+    auth: unauthenticated via an upload without MIME check (SA-032) plus ImageMagick with MVG coder
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-028
+  - cve: CVE-2026-125160
+    product: 'TYPO3 CMS core: SA-029 Form Framework error-message disclosure (stated actively exploited)'
+    cvss: Medium (vector E:A)
+    epss: null
+    kev: false
+    exploited: 'TYPO3: known to be actively exploited (advisory text, no telemetry named)'
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: information disclosure / XSS enabler
+    vector: network
+    auth: unauthenticated
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-029
+  - cve: CVE-2026-125161
+    product: 'TYPO3 CMS core: SA-030 open redirect (sanitizeLocalUrl)'
+    cvss: Medium
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: open redirect
+    vector: network
+    auth: victim logged in to backend
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-030
+  - cve: CVE-2026-125162
+    product: 'TYPO3 CMS core: SA-031 page cache flooding'
+    cvss: High
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: dos
+    vector: network
+    auth: unauthenticated; cacheHash enforceValidation off
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-031
+  - cve: CVE-2026-125163
+    product: 'TYPO3 CMS core: SA-032 Form Framework empty allowedMimeTypes upload'
+    cvss: Medium
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: file upload / XSS enabler
+    vector: network
+    auth: unauthenticated
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-032
+  - cve: CVE-2026-125164
+    product: 'TYPO3 CMS core: SA-033 eID=dumpFile token reuse'
+    cvss: Medium
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 10.0.0-10.4.62, 11.0.0-11.5.56, 12.0.0-12.4.51, 13.0.0-13.4.39, 14.0.0-14.3.11
+    fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+    type: information disclosure
+    vector: network
+    auth: unauthenticated
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-033
+  - cve: CVE-2026-125165
+    product: 'TYPO3 CMS core: SA-034 Dashboard RSS widget SSRF (14.x only)'
+    cvss: Medium
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 14.0.0-14.3.11
+    fixed: 14.3.12 LTS plus HTTP/allowed_hosts/dashboard_rss configuration
+    type: ssrf
+    vector: network
+    auth: backend user
+    source: https://news.typo3.com/security/advisory/typo3-core-sa-2026-034
+  - cve: CVE-2026-114835
+    product: Oracle Access Manager (Admin Console)
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.1.4.0, 14.1.2.1.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-91500
+    product: Oracle Access Manager (Authentication Engine)
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.1.4.0, 14.1.2.1.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-91510
+    product: Oracle Access Manager (Authentication Engine)
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.1.4.0, 14.1.2.1.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114824
+    product: Oracle Platform Security for Java (Centralized Thirdparty Jars)
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.1.4.0, 14.1.2.0.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-91569
+    product: Oracle WebLogic Server (TopLink Integration)
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.1.4.0, 14.1.1.0.0, 14.1.2.0.0, 15.1.1.0.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-91470
+    product: Oracle WebLogic Server (Core)
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.1.4.0, 14.1.1.0.0, 14.1.2.0.0, 15.1.1.0.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, T3, IIOP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114784
+    product: Oracle Business Intelligence Enterprise Edition (Platform Security)
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 8.2.0.0.0, 26.01.0.0.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114849
+    product: Oracle APEX and Oracle REST Data Services (General, Core)
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: APEX 24.1.22, 24.2.21, 26.1.5, 26.2.0
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTPS
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114924
+    product: Oracle E-Business Suite (Application Object Library)
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.3-12.2.15
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114925
+    product: Oracle E-Business Suite (Applications Framework REST Services)
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: none stated by Oracle; not on KEV
+    affected: 12.2.3-12.2.15
+    fixed: Oracle CSPU 2026-11-17 patch (per Patch Availability Document)
+    type: varies (Oracle does not state class)
+    vector: network, HTTP
+    auth: none (Remote Exploit without Auth = Yes)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114819
+    product: Oracle Database Server, Oracle Text
+    cvss: 9.9
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 19.3-19.32, 21.3-21.24, 23.4.0-23.26.3
+    fixed: Oracle CSPU 2026-11-17 patch
+    type: varies
+    vector: network, Oracle Net
+    auth: low (Create Session privilege)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114848
+    product: Oracle Database Server, Oracle Text
+    cvss: 9.9
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 19.3-19.33, 21.3-21.24, 23.4.0-23.26.3
+    fixed: Oracle CSPU 2026-11-17 patch
+    type: varies
+    vector: network, Oracle Net
+    auth: low (Create Session privilege)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: CVE-2026-114822
+    product: Oracle Database Server, RDBMS
+    cvss: 9.9
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 23.4.0-23.26.4
+    fixed: Oracle CSPU 2026-11-17 patch
+    type: varies
+    vector: network, Oracle Net
+    auth: low (Create Session privilege)
+    source: https://www.oracle.com/security-alerts/cspunov2026.html
+  - cve: MTLVULN-1864 (CVE pending)
+    product: Mitel MiCollab AWV
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: MiCollab 10.3 (10.3.0.18) and earlier
+    fixed: patch for 10.3.0.18 (KB000129195)
+    type: command injection (blind)
+    vector: network
+    auth: none
+    source: https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012
+  - cve: MTLVULN-1862 (CVE pending)
+    product: Mitel MiCollab AWV
+    cvss: 9.0
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: MiCollab 10.3 (10.3.0.18) and earlier
+    fixed: patch for 10.3.0.18 (KB000129195)
+    type: xml injection leading to command execution
+    vector: network (AC:H, pre-staged content)
+    auth: none
+    source: https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012
+  - cve: CVE-2026-126551
+    product: Broadcom AutoSys Workload Control Center
+    cvss: 9.3 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: WCC 12.1.x through 24.2.00
+    fixed: 24.2.01 or later
+    type: rce on managed System Agent hosts (hard-coded key)
+    vector: network
+    auth: none
+    source: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615
+  - cve: CVE-2026-126552
+    product: Broadcom AutoSys Workload Control Center
+    cvss: 9.3 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: WCC 12.1.x through 24.0.01
+    fixed: 24.1.00 or later (route removed); 24.2.01
+    type: os command injection (unauthenticated configuration endpoint)
+    vector: network
+    auth: none
+    source: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615
+  - cve: CVE-2026-126553
+    product: Broadcom AutoSys Workload Control Center
+    cvss: 9.3 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: WCC 12.1.x through 24.0.01
+    fixed: 24.1.00 or later (endpoint removed); 24.2.01
+    type: deserialization rce
+    vector: network
+    auth: none
+    source: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615
+  - cve: CVE-2026-114202
+    product: ASUS Control Center Express hard-coded key, forged authentication token
+    cvss: 10.0 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: Express through v1.7.27; Enterprise 3.1.0.8 and earlier; Datacenter 4.0.0.2 and earlier
+    fixed: not stated in EUVD text (ASUS advisory page did not render)
+    type: auth bypass / privilege escalation
+    vector: network
+    auth: none for 114202 and 114204; low for 114205 and 126574
+    source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398
+  - cve: CVE-2026-114204
+    product: ASUS Control Center Express hard-coded key, forged session token
+    cvss: 9.0 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: Express through v1.7.27; Enterprise 3.1.0.8 and earlier; Datacenter 4.0.0.2 and earlier
+    fixed: not stated in EUVD text (ASUS advisory page did not render)
+    type: auth bypass / privilege escalation
+    vector: network
+    auth: none for 114202 and 114204; low for 114205 and 126574
+    source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398
+  - cve: CVE-2026-114205
+    product: ASUS Control Center Express incorrect authorization, create administrator
+    cvss: 9.4 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: Express through v1.7.27; Enterprise 3.1.0.8 and earlier; Datacenter 4.0.0.2 and earlier
+    fixed: not stated in EUVD text (ASUS advisory page did not render)
+    type: auth bypass / privilege escalation
+    vector: network
+    auth: none for 114202 and 114204; low for 114205 and 126574
+    source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398
+  - cve: CVE-2026-126574
+    product: ASUS Control Center Enterprise and Datacenter, Viewer changes Administrator password
+    cvss: 9.4 (CVSS 4.0)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: Express through v1.7.27; Enterprise 3.1.0.8 and earlier; Datacenter 4.0.0.2 and earlier
+    fixed: not stated in EUVD text (ASUS advisory page did not render)
+    type: auth bypass / privilege escalation
+    vector: network
+    auth: none for 114202 and 114204; low for 114205 and 126574
+    source: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-128398
+  - cve: CVE-2026-110486
+    product: Eclipse Mosquitto (built-in websockets listener)
+    cvss: critical (no vector stated)
+    epss: null
+    kev: false
+    exploited: none stated
+    affected: 2.1.0 to 2.1.2
+    fixed: 2.1.3 (advisory) / 2.1.4 (oss-security notice)
+    type: rce (out-of-bounds write)
+    vector: network
+    auth: none
+    source: https://github.com/eclipse-mosquitto/mosquitto/security/advisories/GHSA-6j8m-r32v-4h38
+  - cve: CVE-2026-129271
+    product: 'N-able N-central: Patch Management local privilege escalation'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129272
+    product: 'N-able N-central: MMS3 appliance authentication bypass via predictable passcode'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129273
+    product: 'N-able N-central: Audit Export syslog injection to root command execution'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129274
+    product: 'N-able N-central: ServerMMS2 task result submission missing authentication'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129275
+    product: 'N-able N-central: repositoryItemGet missing authentication discloses policies'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129276
+    product: 'N-able N-central: ServerMMS2 asset data submission missing authentication'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129277
+    product: 'N-able N-central: ServerMMS maintenance action read missing authentication'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129278
+    product: 'N-able N-central: Take Control audit log tampering without authentication'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129279
+    product: 'N-able N-central: password reset user enumeration'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129280
+    product: 'N-able N-central: ServerUI SOAP operations missing authorization checks'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129281
+    product: 'N-able N-central: view-only users can set DeviceExecute configuration'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129282
+    product: 'N-able N-central: test email sendmail argument injection, missing authorization'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129283
+    product: 'N-able N-central: custom service import XXE'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129284
+    product: 'N-able N-central: Report Manager and Data Export settings SSRF'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129285
+    product: 'N-able N-central: XMPP action response origin validation error'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129286
+    product: 'N-able N-central: SIS GenericFiles version path traversal leads to RCE'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-129287
+    product: 'N-able N-central: SIS repository parser XXE'
+    cvss: null
+    epss: null
+    kev: false
+    exploited: none stated for these ids (existing entry carries exploitation of the researcher chains)
+    affected: N-central before 2026.4 Hotfix 3 (build 2026.4.1.39); vendor table gives no per-id range
+    fixed: 2026.4 Hotfix 3 (2026.4.1.39)
+    type: varies
+    vector: network
+    auth: varies per id
+    source: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - cve: CVE-2026-119618
+    product: Apache HTTP Server mod_http2 / AXIS OS
+    cvss: 9.8 (Axis, Red Hat, SUSE); 8.1 (CISA ADP)
+    epss: 0.01583
+    kev: false
+    exploited: none known to Axis; no exploitation reported
+    affected: AXIS OS 6.50.5.10 and higher
+    fixed: none yet (Axis service release in a couple of weeks; Apache 2.4.71 upstream); workaround System.HTTP2.AllowH2=no and System.HTTP2.AllowH2c=no
+    type: rce (race in mod_http2, heap corruption)
+    vector: network, HTTP/2 enabled
+    auth: none
+    source: https://www.axis.com/dam/public/permalink/294609/cve-2026-119618pdf-en-US_294609.pdf
+  - cve: CVE-2026-111497
+    product: Google Brotli decoder in Siemens WinCC/UMC/Teamcenter/Opcenter, Oracle Communications and PeopleSoft, Lexmark and Xerox printers
+    cvss: 9.8 (Siemens, Oracle); 9.2 (CVSS 4.0, Xerox)
+    epss: null
+    kev: true
+    exploited: CISA KEV since 2026-10-27; Cisco and Xerox state no malicious use against their products; PoC available (Cisco)
+    affected: Siemens SSA-242944 and SSA-678870 listed products; Xerox/Lexmark firmware 261.201 and earlier
+    fixed: 'Siemens: WinCC OA V3.20 P17.1 or later, none for most; Xerox/Lexmark 261.202 or later; Oracle per CSPU'
+    type: rce (out-of-bounds write)
+    vector: network
+    auth: none
+    source: https://www.cisa.gov/news-events/ics-advisories/icsa-26-321-03
+  - cve: CVE-2026-98432
+    product: Juniper Junos OS Evolved (Linux kernel IPv4 TCP UAF)
+    cvss: 9.8 (CNA, per covered entry)
+    epss: null
+    kev: false
+    exploited: none stated in the CERT-FR relay
+    affected: Junos OS Evolved all versions (CERT-FR)
+    fixed: not yet available; workaround provided (not read)
+    type: use-after-free, rce and dos
+    vector: network
+    auth: none
+    source: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1551/
+
+kev_disposition:
+- cve: CVE-2026-115731
+  vendor_product: Perforce Puppet Enterprise
+  date_added: '2026-11-17'
+  disposition: item (item 1 of this return); exploited per CISA KEV and ENISA EUVD, public report payload since 2026-11-03, management plane of Linux fleets
+  admiralty: A/1 for listing, exploitation basis unstated
+- note: No other KEV addition dated 2026-11-17 or later in catalogVersion 2026.11.17 (dateReleased 2026-11-17T17:53Z); the catalog was read through `python3 tools/fetch_source.py cisa-kev`. Rows 2026-11-10
+    to 2026-11-13 (BroadWorks CVE-2026-20320, Openwave CVE-2026-111793, UnrealIRCd CVE-2026-114713, Check Point CVE-2026-123039) already carry earlier dispositions in the run records and were not re-opened.
+    CVE-2026-111497 (Brotli, KEV 2026-10-27) is the only KEV id found inside the Oracle CSPU tables.
+row_a_typo3:
+  status: returned as item 5
+  advisories: TYPO3-CORE-SA-2026-025 to -034, released 2026-11-17 11:00-11:09 +0100
+  pre_announcement: TYPO3-PSA-2026-002 (2026-11-16)
+  cve_ids: CVE-2026-119621 to -119623, CVE-2026-125159 to -125165
+  fixed: 10.4.63 ELTS, 11.5.57 ELTS, 12.4.52 ELTS, 13.4.40 LTS, 14.3.12 LTS
+  exploitation: SA-029 states actively exploited (advisory text only); no PoC statement in any advisory
+  auth_prerequisite: 'SA-027 critical: none once a FIRST_INSTALL marker exists; reachable by an authenticated low-privileged backend user through SA-026; SA-025 needs admin or an impexp-enabled non-admin'
+row_b_oracle:
+  status: returned as item 6 (one entry) plus Java4Shell as item 3
+  rows_ge_9_0: 62
+  distinct_cves_ge_9_0: 57
+  unauth_rows_ge_9_0: 56
+  unauth_distinct_cves_ge_9_0: 51
+  exploited_or_kev: only CVE-2026-111497 (three rows, KEV 2026-10-27, covered; folded into the Brotli update-of item 14)
+  publicly_disclosed_with_detail: only CVE-2026-114938 (Java4Shell, 8.1, separate item); no write-ups found for the 10.0 OAM, WebLogic, Platform Security for Java and BI EE rows or the ZDI-credited APEX/ORDS
+    rows
+  pre_release_vs_published: pre-release 652 patches, published 655; EBS unauthenticated rows 19 (pre-release 22); Database unauthenticated rows at 9.9 do not exist (the three 9.9 rows need Create Session);
+    APEX unauthenticated rows 9.8
+  disposition_per_row: every row at 9.0 or above is dispositioned in item 6 extended_notes (grouped by product family with CVE, score, auth flag, component and protocol)
+revised_advisories_sweep:
+- advisory: N-able N-central (covered entry 2026-11-10/n-able-n-central-...)
+  result: 'REVISED: Hotfix 3 build 2026.4.1.39 of 2026-11-16 fixes 17 more CVE ids and blocks legacy APIs; returned as update-of item 12'
+- advisory: Apache httpd CVE-2026-119618 (covered 2026-11-12/cve-2026-119618-...)
+  result: 'REVISED by vendor impact: Axis OS 6.50.5.10+ affected, no fix yet, workaround; returned as update-of item 13'
+- advisory: CVE-2026-111497 Brotli (covered 2026-11-07/...brotli-desigo-cc-...)
+  result: 'REVISED by vendor impact: Siemens SSA-242944 and SSA-678870, Oracle CSPU rows, Xerox XRX26-020, Cisco v1.14; returned as update-of item 14'
+- advisory: CVE-2026-98432 Linux kernel TCP (covered 2026-10-31/...)
+  result: 'REVISED by vendor impact: Juniper Junos OS Evolved JSA119568, CERT-FR relay; returned as update-of item 15 (borderline)'
+- advisory: Cisco combined PHP and Brotli advisories
+  result: PHP advisory (cisco-sa-php-october26) last updated 2026-11-06, before the covered 2026-11-08 entry; Brotli advisory at v1.14 (routine product-list change, priority products not impacted) folded
+    into item 14
+- advisory: Fortinet 2026-11-10 advisories (FG-IR-26-190 to -273)
+  result: 'no revision: the PSIRT RSS carries only 2026-11-10 items; covered entry already updated 2026-11-17'
+- advisory: Check Point sk1000302
+  result: lastModified 2026-11-12 on the page data, before the covered entry; no revision in window
+- advisory: Citrix CTX697305
+  result: page dated 2026-11-12 still lists the same 28 CVEs; no revision seen
+- advisory: Ivanti EPM CVE-2026-121653
+  result: no new Ivanti statement found; covered entry already carries NCSC-NL public-PoC report of 2026-11-13; no KEV or EUVD exploited flag
+- advisory: Microsoft November 2026 Patch Tuesday and later revisions
+  result: 'SUG API revised-CVE sweep (latestRevisionDate ge 2026-11-12, isMariner eq false, 103 rows): all revisions informational (acknowledgements, Office added to NTLM CVE-2026-121680, SharePoint CVE-2026-124222
+    and -124223 published 2026-11-16 as 6.5 and 8.8 authenticated, Exploitation Less Likely and not exploited); no exploited or publicly-disclosed flag changed; only CVE-2026-111497 (.NET, publiclyDisclosed
+    Yes) carries a flag'
+- advisory: ConnectWise ScreenConnect, SonicWall, Barracuda
+  result: not re-fetched (ConnectWise trust center 403 per rotation list); CISA KEV and ENISA EUVD show no new rows or exploited flags for them since the covered entries
+dropped:
+- item: Google Chrome 158.0.8127.36 stable (2026-11-17, 204 security fixes, 6 Critical memory-safety bugs, several found by Anthropic with Claude)
+  reason: no in-the-wild statement on the release post; routine major release; EUVD 9.6 rows are Chrome scoring only
+  source: https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01699533288.html
+- item: 'Mozilla MFSA 2026-130 Firefox 160.0.1 (2026-11-17): Android CanvasWebGL privilege escalation CVE-2026-130020 and A/V playback use-after-free CVE-2026-130021'
+  reason: High, Mozilla-reported, no exploitation statement
+  source: https://www.mozilla.org/en-US/security/advisories/mfsa2026-130/
+- item: OpenSSL advisory 2026-11-17 (CVE-2026-107493, -124709)
+  reason: low-severity use-after-free in PEM_X509_INFO_read_bio_ex() and DoS; CERT-FR lists remote DoS only
+  source: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1554/
+- item: GitLab patch release 19.5.6, 19.4.8, 19.3.9 (2026-11-16)
+  reason: no critical or RCE row; DoS, SSRF, XSS; the earlier critical patch is covered
+  source: CERT-FR CERTFR-2026-AVI-1552 (fetched)
+- item: SmarterMail ZDI-26-997 authentication bypass (fixed in build 9735)
+  reason: advisory dated 2026-11-13, outside window; EUVD re-listed it 2026-11-17
+  source: https://www.zerodayinitiative.com/advisories/ZDI-26-997/
+- item: httpx 1.9.0 Oj object-mode RCE CVE-2026-129784 (JFrog 2026-11-16)
+  reason: niche Ruby gem, needs attacker-influenced fetch URL and Oj without multi_json
+  source: https://research.jfrog.com/vulnerabilities/httpx-is-vulnerable-to-remote-code-execution-via-oj-object-mode-deserialization-cve-2026-129784/
+- item: Siemens ICS advisories ICSA-26-321-01 to -11 other than the two Brotli ones
+  reason: CVSS 8.8 or lower, no exploitation; Dorsett InfoScan 8.1 niche
+  source: CISA CSAF changes index (fetched)
+- item: Palo Alto Networks 2026-11-11 advisories (CVE-2026-0323 to -0331)
+  reason: Low to Medium; Panorama authenticated RCE is Medium; no exploitation
+  source: https://security.paloaltonetworks.com/rss.xml (fetched)
+- item: CERT-PL posts of 2026-11-16/17 (Bludit, Batflat, visualTicket, Edito CMS)
+  reason: niche products, no exploitation
+  source: https://cert.pl/en/rss.xml (fetched)
+- item: Optimizely Web Experimentation supply-chain injection (Socket, 2026-11-18)
+  reason: already covered by entry optimjack-poisoned-vendor-scripts-skimmer-iphone-router (2026-11-17)
+  source: https://socket.dev/blog/optimizely-supply-chain-attack
+- item: Mozilla, SharePoint (CVE-2026-124222, -124223), Zyxel DX3301/EX3301 CVE-2026-79614, ZoneMinder CVE-2026-28273, phpMyFAQ, Radicale, Pi-hole, WeGIA, Rucio, ICRTouch POS, CIRCUTOR PowerStudio, Joomla
+    Easy File Uploader
+  reason: 'EUVD 9.0+ rows reviewed: authenticated, niche, or no constituency footprint and no exploitation signal; not drilled'
+  source: EUVD search 2026-11-16..2026-11-18 (fetched)
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: the org profile configures no product watchlist; sweep is a no-op
+candidate_sources:
+- id: typo3-security-advisories
+  publisher: TYPO3 Security Team (news.typo3.com/security)
+  url: https://news.typo3.com/security
+  rss_url: https://typo3.org/rss-security
+  category: vendor-psirt
+  why: Primary for TYPO3 core and extension advisories (ten core SAs on 2026-11-17, one stated exploited); `feed https://typo3.org/rss-security 20` returned all items with timestamps and `extract` reads
+    every advisory; TYPO3 is a core Swiss public-sector CMS (assessment) and the feed is not in sources.json.
+- id: mitel-security-advisories
+  publisher: Mitel Product Security Advisories
+  url: https://www.mitel.com/support/security-advisories
+  category: vendor-psirt
+  why: MISA-2026-0012 (MiCollab AWV, CVSS 10.0 unauthenticated command injection) read cleanly with `extract`; Mitel telephony and conferencing appears in public administrations and the store already tracks
+    several Mitel products.
+- id: broadcom-security-advisories
+  publisher: Broadcom Support security advisories (CA/Symantec/VMware notices)
+  url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39615
+  category: vendor-psirt
+  why: CA20261117-01 (AutoSys WCC, three unauthenticated 9.3 rows) reads with `extract`; Broadcom hosts the CA, VMware and Symantec enterprise advisories.
+coverage_gaps:
+- source_id: perforce-portal
+  reason: 'portal.perforce.com CVE page (CVE-2026-115731) is a Salesforce SPA; extract returned the page chrome, WebFetch and the jina reader returned only "Loading / CSS Error" (jina key pool: ten keys
+    answered HTTP 402). Content taken from the KEV, EUVD, Red Hat and OpenVox records instead.'
+- source_id: juniper-support-portal
+  reason: supportportal.juniper.net bulletin JSA119568 is the same Salesforce SPA shell on extract and WebFetch; CERT-FR relay used.
+- source_id: asus-security-advisory
+  reason: https://www.asus.com/security-advisory/ fetched with extract and url --direct but the Control Center section did not render; fixed versions unknown.
+- source_id: drupal-org
+  reason: 'extract of https://www.drupal.org/psa-2026-11-16 returns a Fastly client-challenge page; WebFetch reads it. Recipe note: use WebFetch for drupal.org (security listing and PSA).'
+- source_id: msrc-update-guide
+  reason: 'recipe change: `url --direct` and `msrc recent`/`msrc release` are 403 or uninformative for revised CVEs; the working read is the Python helper `fetch_source._msrc_fetch_strict_json` with `$filter=latestRevisionDate
+    ge <ISO> and isMariner eq false`, `$orderby=latestRevisionDate desc`, `$top=100`, paged with `$skip`, and NO `$select` (a `$select` clause returned HTTP 403).'
+- source_id: calif-io
+  reason: 'recipe note: `extract` of https://calif.io/java4shell/ returns only the blog-style summary; the technical write-up (Limitations, PoC, Affected products, Recommendations) is in the raw HTML (`url
+    --direct`, strip tags). Calif is in sources.json as calif-codex (blog.calif.io) but the PHP2Shell and Java4Shell write-ups live on calif.io.'
+- source_id: oss-security
+  reason: 'recipe note: message numbers in the day index (https://www.openwall.com/lists/oss-security/2026/11/17/) are the ordinal in listing order; the extract of the index prints them as relative links,
+    so /N was derived from list position and then verified by content (/5 Roller, /14 Mosquitto, /31 Java4Shell).'
+recipe_notes:
+- 'ncsc-ch-security-hub: `ncsc-csh recent 25` post 13198 was created 2026-11-17 11:53Z as the Oracle CSPU pre-release advisory and edited three times into the Java4Shell advisory; the `history[].reason`
+  strings show the edits and `content` holds the newest update first.'
+- 'cisa-advisories: WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories returned 10 of 20 requested rows with titles, dates and hrefs; `cisa csaf-recent` output is long (25 items) and
+  the changes.csv at raw.githubusercontent.com/cisagov/CSAF can be read with fetch_source.fetch for titles and CVEs of every ICSA released on a date.'
+- 'bsi-de: `bsi-rss` returns RSS XML (not JSON); filter [NEU] with hoch, kritisch or UNGEPATCHT, then `bsi-csaf WID-SEC-2026-NNNN` for CVEs and vendor references.'
+- 'anssi-fr: `cert-fr avis-recent 25` lists CERTFR-2026-AVI items; extract of each avis returns risks, affected versions and the vendor bulletin links.'
+- 'typo3: `feed https://typo3.org/rss-security 20` is the working listing; advisories under https://news.typo3.com/security/advisory/typo3-core-sa-2026-NNN extract cleanly.'
+source_ledger:
+- id: advisories-ncsc-nl
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-nl recent 30 + ncsc-nl csaf
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 1
+  note: NCSC-2026-0495 Oracle Java (CVE-2026-114938 only) used as corroboration for item 3
+- id: anssi-fr
+  tier: essential
+  attempted: true
+  transport: bridge:cert-fr avis-recent 25, actu-recent 15 + extract
+  horizon_hours: 26
+  in_horizon_items: 9
+  returned: 4
+  note: AVI-1547 Mitel, -1549 Axis, -1551 Juniper, -1553 TYPO3 returned; GLPI, Tenable Identity Exposure, GitLab, OpenSSL, SharePoint dropped
+- id: bsi-de
+  tier: essential
+  attempted: true
+  transport: bridge:bsi-rss + bsi-csaf
+  horizon_hours: 26
+  in_horizon_items: 14
+  returned: 3
+  note: '[NEU] hoch/kritisch rows of 2026-11-17 reviewed; TYPO3, Mitel MiCollab, N-able returned'
+- id: cert-eu
+  tier: essential
+  attempted: true
+  transport: bridge:cert-eu recent 12
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest advisory 2026-020 (Citrix) of 2026-11-12, already covered; no Java4Shell or Oracle advisory yet
+- id: cert-pl
+  tier: essential
+  attempted: true
+  transport: feed
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 0
+  note: Bludit post of 2026-11-17 dropped as niche
+- id: cisa-advisories
+  tier: essential
+  attempted: true
+  transport: WebFetch listing + cisa csaf-recent + CSAF changes.csv
+  horizon_hours: 26
+  in_horizon_items: 13
+  returned: 3
+  note: Java alert, KEV alert and Siemens ICSA-26-321-03/-04 used; the other nine ICS advisories dropped
+- id: cisa-kev
+  tier: essential
+  attempted: true
+  transport: bridge:cisa-kev
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 1
+  note: CVE-2026-115731 only
+- id: enisa-euvd
+  tier: essential
+  attempted: true
+  transport: url --direct search API (fromScore=9) + enisa-euvd recent exploited + enisaid records
+  horizon_hours: 26
+  in_horizon_items: 123
+  returned: 3
+  note: AutoSys, ASUS Control Center and the Puppet exploited flag returned; Oracle rows folded into item 6
+- id: ncsc-ch-security-hub
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-csh recent 25
+  horizon_hours: 26
+  in_horizon_items: 2
+  returned: 2
+  note: posts 13198 (Java4Shell/Oracle CSPU) and 13196 (Drupal PSA); edits of 13054, 13163, 13180 fall before the horizon
+- id: ncsc-uk
+  tier: essential
+  attempted: true
+  transport: feed
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 0
+  note: one blog post (threat hunting) in window, not a vulnerability item
+- id: watchtowr
+  tier: essential
+  attempted: true
+  transport: feed + extract of watchtowr.com/intelligence FAQ
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 0
+  note: labs feed has nothing since 2026-11-05; the Java4Shell FAQ of 2026-11-17 (watchtowr.com/intelligence) was read but its fixed-version table was stale ("not yet available") so it is not cited
+- id: fortinet-psirt
+  tier: essential
+  attempted: true
+  transport: feed
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: RSS shows only 2026-11-10 items; covered
+- id: msrc-update-guide
+  tier: essential
+  attempted: true
+  transport: python helper _msrc_fetch_strict_json (SUG OData revised-CVE sweep) + msrc recent + msrc cve
+  horizon_hours: 26
+  in_horizon_items: 11
+  returned: 0
+  note: 103 revised rows since 2026-11-12; all informational, no exploited or disclosed flag changed; see revised_advisories_sweep
+- id: paloalto-psirt
+  tier: essential
+  attempted: true
+  transport: feed
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: latest items 2026-11-11 (Low/Medium)
+- id: onapsis
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest posts 2026-11-10 (ICM2SHELL, PROXYGATE, Patch Day), covered by the SAP entry and outside the horizon
+- id: trustwave-spiderlabs
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 168
+  in_horizon_items: 2
+  returned: 0
+  note: two AI-ecosystem research posts (2026-11-11, 2026-11-16), no vulnerability content
+- id: jfrog-security-research
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 168
+  in_horizon_items: 2
+  returned: 1
+  note: Java4Shell post used as corroboration (item 3); httpx Oj RCE dropped
+- id: veeam-kb-security
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: no security bulletin in horizon (CVE-2026-98432 impact statement is 2026-11-06)
+- id: safedep
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 168
+  in_horizon_items: 3
+  returned: 1
+  lookback: true
+  note: agent-framework PyPI compromise returned (borderline item 11); wfx covered; wppconnect not drilled
+- id: xerox-security-bulletins
+  tier: standard
+  attempted: true
+  transport: url --direct index + pdf
+  horizon_hours: 168
+  in_horizon_items: 2
+  returned: 1
+  lookback: true
+  note: XRX26-020 Brotli (2026-11-13) folded into item 14; XRX26-016 v7 (2026-11-13) adds nothing to the covered Xerox entry
+- id: vates-security-advisories
+  tier: standard
+  attempted: true
+  transport: feed https://docs.vates.tech/vsa/rss.xml + extract of index
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest VSA-2026-059 to -063 dated 2026-11-10, covered (Xen Orchestra auth bypass)
+- id: cisco-psirt
+  tier: standard
+  attempted: true
+  transport: feed 25 + url --direct
+  horizon_hours: 147
+  in_horizon_items: 3
+  returned: 1
+  lookback: true
+  note: Brotli advisory v1.14 folded into item 14; BroadWorks XXE and eMudhra informational already covered or dispositioned
+- id: exodus-intelligence
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 147
+  in_horizon_items: 0
+  returned: 0
+  note: newest post 2026-07-27, as in the record note
+- id: github-advisory
+  tier: standard
+  attempted: true
+  transport: bridge:url --direct api.github.com/advisories?severity=critical
+  horizon_hours: 147
+  in_horizon_items: 40
+  returned: 0
+  note: 40 critical rows are the Oracle CSPU and ASUS records (already returned) plus SmarterMail and OwnTracks; no distinct new item
+- id: mozilla-mfsa
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 147
+  in_horizon_items: 1
+  returned: 0
+  note: MFSA 2026-130 Firefox 160.0.1 dropped (High, no exploitation)
+- id: shadowserver
+  tier: standard
+  attempted: true
+  transport: WebFetch
+  horizon_hours: 147
+  in_horizon_items: 0
+  returned: 0
+  note: only CastleRAT (2026-11-13) and a NATO announcement; no exposure scan of Java4Shell or Puppet
+- id: snyk-research
+  tier: standard
+  attempted: true
+  transport: feed
+  horizon_hours: 147
+  in_horizon_items: 0
+  returned: 0
+  note: newest relevant post 2026-10-28
+- id: socket-dev-blog
+  tier: standard
+  attempted: true
+  transport: feed + extract
+  horizon_hours: 147
+  in_horizon_items: 4
+  returned: 1
+  lookback: true
+  note: agent-framework returned (item 11); Optimizely already covered by optimjack entry
+priority_suggestions:
+- item: 1
+  short: Puppet Enterprise CVE-2026-115731 KEV
+  priority_suggestion: high
+  reason: CISA-confirmed exploitation of a management-plane RCE with a public payload; precondition of a CA-signed agent certificate limits reach unless autosign is on; not critical because no actor, victim
+    or scanning evidence
+- item: 2
+  short: Apache Roller CVE-2026-129448
+  priority_suggestion: routine or drop
+  reason: CNA-stated exploitation but niche product
+- item: 3
+  short: Java4Shell CVE-2026-114938
+  priority_suggestion: high; escalate to critical if the withheld weaponized chains are published or exploitation is reported
+  reason: public trigger PoC, pre-auth RCE demonstrated in six products common in public-sector identity and CI/CD estates, fixes and a flag available, CISA and NCSC-CH alerts, no ITW yet; hardware precondition
+    (AVX-512 VBMI) narrows exposure
+- item: 4
+  short: Drupal core PSA-2026-11-16
+  priority_suggestion: high (time-boxed heads-up; update the entry after 2026-11-18 21:00 UTC)
+  reason: anonymous-exploitable critical flaw with proof-of-concept rating and a stated hours-to-days exploit timeline on a core public-sector CMS
+- item: 5
+  short: TYPO3 core SA-2026-025 to -034
+  priority_suggestion: high
+  reason: critical installer re-enable chain from a low-privileged backend user plus a vendor statement that SA-029 is exploited, on a core public-sector CMS
+- item: 6
+  short: Oracle CSPU 2026-11-17
+  priority_suggestion: notable
+  reason: 56 unauthenticated rows at 9.0 or above but no exploitation or disclosure signal
+- item: 7
+  short: Mitel MiCollab MISA-2026-0012
+  priority_suggestion: notable
+  reason: unauthenticated CVSS 10.0 command injection on an internet-facing conferencing component, patch available, no exploitation stated, CVE pending
+- item: 8
+  short: Broadcom AutoSys WCC
+  priority_suggestion: notable or routine
+  reason: unauthenticated RCE rows at 9.3 on an internal scheduler console, patch available
+- item: 9-11
+  short: ASUS Control Center, Mosquitto, agent-framework
+  priority_suggestion: routine or drop
+  reason: borderline, no constituency link shown
+- item: 12-15
+  short: update-of items (N-able HF3, Axis OS, Brotli vendor impacts, Juniper)
+  priority_suggestion: update records on the named entries; Axis (camera fleets) and N-able (MSP RMM) deserve a non-internal update, Juniper at most internal
+  reason: new fixed versions or newly affected product families

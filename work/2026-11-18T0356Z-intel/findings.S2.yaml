@@ -1,0 +1,508 @@
+# work/2026-11-18T0356Z-intel/findings.S2.yaml  (S2 - home region and sector)
+domain: S2
+run_id: 2026-11-18T0356Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-18T03:58:05Z
+ended_at: 2026-11-18T04:19:35Z
+duration_seconds: 1290
+watchlist_duty: sector-lens
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 19
+  bridge_fetches: 100
+items:
+  - title: "Java4Shell (CVE-2026-114938): a memory-corruption flaw in OpenJDK's AVX-512 Base64 decoder gives pre-authentication code execution in Keycloak, Jira, Confluence, Artifactory, Jenkins and PingFederate; NCSC.ch/BACS warns and the 17 November Oracle and OpenJDK updates fix it together with ten other Java flaws"
+    sources:
+      - { url: "https://www.bacs.admin.ch/de/warnung-java-de", publisher: "BACS (NCSC.ch)", date: "2026-11-18", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13198", publisher: "NCSC.ch Cyber Security Hub", date: "2026-11-17", role: "primary" }
+      - { url: "https://openjdk.org/groups/vulnerability/advisories/2026-11-17", publisher: "OpenJDK Vulnerability Group", date: "2026-11-17", role: "primary" }
+      - { url: "https://calif.io/java4shell", publisher: "Calif (discoverer)", date: "2026-11-17", role: "primary" }
+      - { url: "https://www.oracle.com/security-alerts/cspunov2026.html", publisher: "Oracle", date: "2026-11-17", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Java-RCE-mit-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-11528561.html", publisher: "heise online", date: "2026-11-18", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Java4Shell-Gefaehrlicher-Bug-in-Java-11528499.html", publisher: "heise online", date: "2026-11-17", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-focus, URL https://www.bacs.admin.ch/de/im-fokus (card dated 18 November 2026) -> primary: BACS warning page, URL https://www.bacs.admin.ch/de/warnung-java-de -> pivot: NCSC.ch Cyber Security Hub post 13198 via `ncsc-csh post 13198` (also seen in `ncsc-csh recent 25`), URL https://security-hub.ncsc.admin.ch/#/posts/13198 -> primary: OpenJDK advisory, URL https://openjdk.org/groups/vulnerability/advisories/2026-11-17 -> primary: discoverer write-up, URL https://calif.io/java4shell -> corroborating: Oracle CSPU URL https://www.oracle.com/security-alerts/cspunov2026.html and heise (heise-sec feed) URLs above"
+    summary: |
+      The OpenJDK advisory of 2026-11-17 lists CVE-2026-114938 (hotspot/compiler, CVSS 3.1 8.1) as affecting the 17, 21, 25 and 27 families up to 17.0.21.0.3, 21.0.13.0.3, 25.0.5.0.3 and 27.0.1.0.3; the same release fixes nine more OpenJDK CVEs (CVE-2026-114939 to CVE-2026-114947) and CVE-2026-86144 in OpenJFX, and Oracle's November Critical Security Patch Update carries the Java SE fixes. The discoverer, Calif, calls it Java4Shell and rates it CVSS 4.0 9.2: in the hand-written assembly Base64 decoder that uses AVX-512 VBMI instructions on supported x86-64 CPUs, a 65-character input (64 'A' plus '=', 128 'A' on older 17 builds) makes the routine compute a negative output length and write 62 bytes past a 50-byte array. Calif reports it demonstrated pre-authentication code execution in default configurations of Keycloak, Atlassian Jira and Confluence, JFrog Artifactory, Jenkins and PingFederate, authenticated code execution in Kafka broker, Solr, Elasticsearch, Gerrit and Spinnaker, and sample Struts and Spring Boot applications; a researcher also supplied a client-side path in which a Java program opening a TLS connection to a malicious server is compromised. There is no universal exploit: each target needs its own chain (Calif: depending on how Base64 is used 'different steps may be required'), and heise notes Calif published no proof-of-concept for Jira or Keycloak. The flaw needs an AVX-512 VBMI CPU (heise names Intel Ice Lake, Sapphire Rapids, Emerald Rapids and Granite Rapids and AMD Zen 4 and newer); the Swiss hub states ARM64 is not affected by this CVE. Exploitation in the wild is not reported (Cyber Security Hub: UNKNOWN; heise: none known). NCSC.ch/BACS issued a pre-announcement on 17 November and on 18 November a public warning that asks operators to prioritise internet-reachable applications, central login services and business-critical systems, restart Java processes after the update, rebuild containers and check that the running application really uses the fixed runtime, and notes that an update does not remove an existing compromise; its hub advisory carries the Oracle fixed builds (17.0.21.1, 21.0.13.1, 25.0.5.1, 27.0.1.1), the Calif-documented interim JVM options and the caveat that WAF rules are only partial protection. Calif also lists an Oracle Java 8 performance build, 8u511b33-perf, in the affected set (per the hub).
+    region_nexus: "Switzerland: NCSC.ch/BACS public warning plus Security Hub advisory; BACS says banking software and other sector solutions may also be affected and that operators must clarify this with suppliers. No source names a Swiss deployment."
+    primary_sector_nexus: "direct (BACS addresses operators and administrations; Keycloak, Jira, Confluence, Jenkins and Artifactory are the products BACS names; Swiss public-sector use is not stated by the sources)"
+    sector: "public-sector"
+    cves: [CVE-2026-114938]
+    techniques: [T1190, T1203]
+    affected_products: ["OpenJDK", "Oracle Java SE", "Oracle GraalVM for JDK", "Keycloak", "Atlassian Jira", "Atlassian Confluence", "JFrog Artifactory", "Jenkins", "PingFederate", "Apache Kafka", "Apache Solr", "Elasticsearch"]
+    entity_keys: ["product:openjdk", "product:oracle-java-se", "product:keycloak", "product:jenkins", "product:jfrog-artifactory", "product:atlassian-confluence", "product:apache-struts", "product:spring-boot"]
+    new_entities:
+      - { key: "tool:java4shell", type: tool, name: "Java4Shell", aliases: ["CVE-2026-114938"], summary: "Calif's name for CVE-2026-114938, a memory-corruption flaw in the AVX-512 Base64 decoder of OpenJDK 17, 21, 25 and 27 builds that Calif turned into pre-authentication code execution in several widely used Java products (Calif, 2026-11-17)." }
+    relation_suggestions:
+      - { subject: "tool:java4shell", object: "product:openjdk", basis: "OpenJDK advisory of 2026-11-17 lists CVE-2026-114938 (hotspot/compiler) as affecting builds 17, 21, 25 and 27; Calif names it Java4Shell" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ermöglicht Angreifern, über das Netzwerk Schadcode auf betroffenen Systemen auszuführen, teilweise ohne Anmeldung"
+        attribution: "BACS (NCSC.ch)"
+        source_url: "https://www.bacs.admin.ch/de/warnung-java-de"
+      - quote: "Ein Sicherheits-Update beseitigt keine bereits erfolgte Kompromittierung."
+        attribution: "BACS (NCSC.ch)"
+        source_url: "https://www.bacs.admin.ch/de/warnung-java-de"
+      - quote: "The affected versions are 27.0.1.0.3, 25.0.5.0.3, 21.0.13.0.3, 17.0.21.0.3, 11.0.33, 8u512, and earlier."
+        attribution: "OpenJDK Vulnerability Group"
+        source_url: "https://openjdk.org/groups/vulnerability/advisories/2026-11-17"
+      - quote: "To speed up Base64 decoding, OpenJDK uses specialized AVX-512 VBMI instructions on supported x86-64 processors."
+        attribution: "Calif"
+        source_url: "https://calif.io/java4shell"
+      - quote: "A Java program that opens a TLS connection to a malicious server can be compromised, even if it exposes no service of its own."
+        attribution: "Calif"
+        source_url: "https://calif.io/java4shell"
+      - quote: "The published research demonstrates exploitation; it does not establish malicious exploitation in operational environments."
+        attribution: "NCSC.ch Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13198"
+      - quote: "Bislang sind keine Java4Shell-Angriffe in freier Wildbahn bekannt geworden."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/Java-RCE-mit-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA-11528561.html"
+    extended_notes: |
+      Exposure: the hub tells operators to record the Java distribution, the exact running build, the processor capabilities and the responsible supplier, to cover standalone runtimes, application-bundled Java, containers, appliances and externally managed services, and to check internal as well as public systems. Affected distributions named by the hub: Oracle Java SE, Oracle OpenJDK, Oracle GraalVM for JDK, Amazon Corretto, Eclipse Temurin, Microsoft Build of OpenJDK, Azul Zulu, BellSoft Liberica, SAP SapMachine, Red Hat OpenJDK; other vendors may use different build numbers.
+      Interim measure (hub, citing Calif): start the JVM with -XX:-UseBASE64Intrinsics, or on x86-64 only -XX:UseAVX=2 (on ARM the second option can stop the JVM from starting); the hub states WAF rules or request buffering are not a complete mitigation (IONIX WAF examples for Cloudflare, AWS WAF and Akamai give partial protection).
+      Detection concept: unexpected JVM crashes on internet-facing Java applications, unexpected child processes of the application server, and unusual authentication or administrative activity on identity, build and artefact platforms (BACS: ungewöhnliche Abstürze, unerwartete Prozesse und verdächtige Aktivitäten). Calif's published trigger shape is a Base64 field with a very long run of 'A' followed by '=' (real exploits will differ).
+      Single-vendor caveat: the Oracle page carries a pre-release blanket statement (11 Java SE patches remotely exploitable without credentials) that BACS and the hub relay; OpenJDK's own CVSS 3.1 for CVE-2026-114938 is 8.1, Calif's CVSS 4.0 is 9.2.
+      Deeper pivots on the named products' own advisories (Keycloak, Atlassian, Jenkins, JFrog, Ping) were not fetched; S1 owns the vendor-advisory sweep. Suggested Admiralty: reliability A, credibility 1.
+    priority_hint: "high to critical for the constituency: pre-auth RCE chain demonstrated in identity, build and wiki platforms; patch exists; no exploitation reported yet"
+
+  - title: "Drupal core: a critical security release for all supported branches is scheduled for 18 November 2026, 17:00 to 21:00 UTC; the Drupal security team says at least one flaw is reachable by anonymous users and a proof of concept exists"
+    sources:
+      - { url: "https://www.drupal.org/psa-2026-11-16", publisher: "Drupal Security Team (PSA-2026-11-16)", date: "2026-11-16", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13196", publisher: "NCSC.ch Cyber Security Hub", date: "2026-11-17", role: "corroborating" }
+    discovery_trace: "first seen at: `ncsc-csh recent 25` (Security Hub post 13196, created 2026-11-17T10:08Z) -> pivot: Security Hub post, URL https://security-hub.ncsc.admin.ch/#/posts/13196 -> primary: Drupal PSA, URL https://www.drupal.org/psa-2026-11-16 (extract hit a Fastly client challenge; read with WebFetch)"
+    summary: |
+      Drupal's security team announced in PSA-2026-11-16 (16 November) a core security release for all supported branches on 18 November 2026 between 17:00 and 21:00 UTC (18:00 to 22:00 Swiss time), not described as out of band. Per the WebFetch reading of the page, the affected lines are Drupal 11.4.x, 11.3.x and 10.6.x (plus the pre-releases 12.0.0-beta3 and 11.5.0-beta1), end-of-life versions get only interim mitigation steps, the vulnerabilities are rated critical (18 of 25), at least one can be exploited by anonymous users, only uncommon configurations are exploitable, the exploit field reads E:Proof (a proof of concept exists) and the team warns exploits could appear within hours or days; it does not state active exploitation. Site owners are asked to reserve time in the window, move to the latest patch release of their branch beforehand so upgrade problems surface early, and upgrade promptly, because Drupal Steward mitigates known attack paths but other advisories may be released the same day without that protection. The NCSC.ch Security Hub posted an advisory on 17 November that mirrors this and lists exploitation status as unknown. This is a pre-announcement: no CVE, component or patched version is public yet.
+    region_nexus: "Switzerland: NCSC.ch Security Hub advisory 13196; Drupal is used for public websites, so cantonal and communal sites are within scope (the sources do not name Swiss sites)."
+    primary_sector_nexus: "indirect to direct (website operators in the public sector running Drupal)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Drupal core"]
+    entity_keys: ["product:drupal-core"]
+    new_entities:
+      - { key: "incident:drupal-core-critical-pre-patch-warning-psa-2026-11-16", type: incident, name: "Drupal core pre-patch warning (PSA-2026-11-16)", aliases: [], summary: "Drupal security team announcement of 2026-11-16 of a critical core security release for all supported branches on 2026-11-18, 17:00 to 21:00 UTC, with at least one anonymously exploitable flaw and a proof of concept (drupal.org PSA-2026-11-16)." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "There will be a Drupal core security release for all supported branches on November 18, 2026 between 17:00 and 21:00 UTC."
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-11-16"
+      - quote: "The vulnerabilities are currently rated as critical and at least one can be exploited by anonymous users."
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-11-16"
+      - quote: "Security patches are upcoming; review and deploy the releases immediately when published"
+        attribution: "NCSC.ch Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13196"
+    extended_notes: |
+      Source caveat: the Drupal page was read through WebFetch's summariser (extract returned a bot challenge), so the branch list and the 18-of-25 score come from that summary and the three quotes are the verbatim passages it returned; confirm the branch list on the page before publishing. Primary-vendor pre-announcement, so the entry should be an update candidate once the 18 November release carries CVE ids (the window opens after this run's publish).
+      Action for the day: reserve the 17:00 to 21:00 UTC window, update to the latest patch release of the branch before it, and plan the same-day upgrade for internet-facing sites first.
+      Suggested Admiralty: reliability A, credibility 2 (no CVE or exploit details yet).
+    priority_hint: "notable to high: scheduled critical core release with anonymous attack vector and a PoC, released later today"
+
+  - title: "Danfoss AK-SM 800A: Midnight Blue's six pre-authentication stack-overflow flaws in the current firmware (up to 5.3.2) mean refrigeration controllers that were already patched stay exposed; BSI re-issued its warning on 17 November and the Belgian CCB says removing internet exposure comes first"
+    sources:
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2", publisher: "BSI (BITS-H 2026-306525-11e2, version 1.1)", date: "2026-11-17", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action", publisher: "Centre for Cybersecurity Belgium", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a", publisher: "Midnight Blue (discoverer)", date: "2026-11-11", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13180", publisher: "NCSC.ch Cyber Security Hub", date: "2026-11-16", role: "corroborating" }
+      - { url: "https://www.heise.de/en/news/Supermarket-attacks-Danfoss-controllers-remained-vulnerable-after-updates-11524473.html", publisher: "heise online", date: "2026-11-13", role: "corroborating" }
+    discovery_trace: "first seen at: `ncsc-csh recent 25` (Security Hub post 13180, 2026-11-16, 'Danfoss AK-SM 800A: Multiple Pre-Authentication Remote Code Execution') -> pivot: Security Hub post, URL https://security-hub.ncsc.admin.ch/#/posts/13180 -> pivot: heise EN, URL https://www.heise.de/en/news/Supermarket-attacks-Danfoss-controllers-remained-vulnerable-after-updates-11524473.html -> primary: BSI warning v1.1 of 2026-11-17 read with `pdf`, URL https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2 -> primary: CCB advisory, URL https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action -> primary: Midnight Blue write-up, URL https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a"
+    summary: |
+      The existing entry on the October-November refrigeration attacks (Danfoss AK-SM and AK-SC, Copeland and Dixell XWEB; Swiss cases reported by SRF) tells readers to apply the vendor firmware that fixes the disclosed CVEs. Midnight Blue (as dated by BSI, 11 November) reports that within about an hour of manual review it found six pre-authentication remote code execution flaws (stack-based buffer overflows) in the latest AK-SM 800A firmware, 5.3.2, with CVE ids pending and disclosure to Danfoss under way; the CCB confirmed it on 12 November, noting that no patch existed then and that the research also finds a flaw in the session-control mechanism itself, so strict session mode does not remove the risk. Heise, reading Midnight Blue, says the device lacks stack canaries, PIE and Secure Boot, so takeover could give persistence (the CCB says possibly surviving a reset or firmware update) or leave the controller permanently inoperable; Midnight Blue advises prioritising removal of internet exposure over patching. BSI re-issued its warning on 17 November (version 1.1, criticality 2/yellow): Danfoss firmware up to at least 5.3.2 is affected, no CVE numbers were assigned yet, it lists the Copeland XWEB EVO findings of 13 November (14 flaws, exploitation attempts against CVE-2026-124014 and CVE-2026-124010; support ended in March 2026) and says even new patches are no guarantee against further flaws, so controllers should sit behind a VPN at minimum. The NCSC.ch hub post of 16 November says vendor firmware updates are available and points back to its earlier recommendations; heise reads BSI as treating only the update of 12 November (version 5.4.0) as not compromised, a version number that the BSI PDF text itself does not state and that the Danfoss advisory index fetched this run does not list, so the fixed build is unconfirmed here. BSI's overview sheet marks the overall threat as active exploitation (it covers the earlier attacks and the Copeland probes); no source reports exploitation of the six new Danfoss flaws, and BSI warns that the researchers' reports may give attackers enough detail to exploit them.
+    region_nexus: "Switzerland and Europe: BACS advisory of 10 November and Security Hub advisory 13054 already cover Swiss refrigeration incidents; the Security Hub posted this development on 16 November. BSI reports a low three-digit number of exposed devices in Germany."
+    primary_sector_nexus: "indirect (cold-chain and refrigeration at hospitals, blood services, food retail and public kitchens; the French blood service was hit in the earlier wave)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1495]
+    affected_products: ["Danfoss AK-SM 800A", "Copeland XWEB EVO"]
+    entity_keys: ["product:danfoss-ak-sm-800a", "product:copeland-xweb-evo"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    evidence:
+      - quote: "Aktuellen Informationen zufolge sind die Firmwarestände bis mindestens 5.3.2 betroffen."
+        attribution: "BSI"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2"
+      - quote: "Auch neue Patches stellen keine Garantie dar"
+        attribution: "BSI"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2"
+      - quote: "This action remains necessary even where firmware has been updated, default passwords have been changed, or strict session control has been enabled."
+        attribution: "Centre for Cybersecurity Belgium"
+        source_url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action"
+      - quote: "The research also identifies a vulnerability in the session control mechanism itself, meaning that strict mode does not eliminate the risk."
+        attribution: "Centre for Cybersecurity Belgium"
+        source_url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action"
+      - quote: "uncovered 6 pre-authentication remote code execution 0-day vulnerabilities"
+        attribution: "Midnight Blue"
+        source_url: "https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a"
+      - quote: "only the latest update, dated Nov. 12, 2026 (version 5.4.0), is considered not to have been compromised"
+        attribution: "heise online"
+        source_url: "https://www.heise.de/en/news/Supermarket-attacks-Danfoss-controllers-remained-vulnerable-after-updates-11524473.html"
+    extended_notes: |
+      Delta against the covered entry: new unpatched pre-auth RCE class in the current AK-SM 800A firmware, strict session control shown insufficient, persistence and bricking risk, and BSI v1.1 (17 November). The previous run's changelog (15 November) cites neither Midnight Blue nor the CCB.
+      Conflict to surface: CCB (12 November) says no patch available; the Security Hub (16 November) says vendor firmware updates are available; heise attributes a 5.4.0 build of 12 November to BSI. Danfoss's own advisory index, fetched this run, lists no November 2026 AK-SM 800A advisory.
+      Exposure check (Midnight Blue, BSI): management web interface reachable from the internet, including through a 4G/5G modem (CCB: a modem alone is not a security measure). Hardening: VPN, private APN or highly restrictive IP allow-lists. Post-compromise: BSI says change all credentials and verify the connected refrigeration devices for correct operation; Midnight Blue and CCB warn of persistence that may survive a factory reset or firmware update.
+      Midnight Blue's page metadata reads 2026-11-07 while BSI dates the report 11 November; the source list uses BSI's date.
+      Suggested Admiralty: reliability A (BSI, CCB), credibility 2.
+
+  - title: "BACS weekly review 46: phishing that uses the PHP vulnerability as a lure to harvest website-admin credentials, and personalised phishing carrying names, addresses and AHV numbers from an earlier Swiss data leak"
+    sources:
+      - { url: "https://www.bacs.admin.ch/de/26w46-de", publisher: "BACS (NCSC.ch)", date: "2026-11-17", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-focus, URL https://www.bacs.admin.ch/de/im-fokus (card dated 17 November 2026, 'Woche 46') -> primary (no pivot needed): https://www.bacs.admin.ch/de/26w46-de"
+    summary: |
+      In its weekly review of 17 November, BACS describes two observed campaigns. First, phishing mails that exploit the attention around the critical PHP flaws (BACS warning of 21 October): recipients are asked to follow a link to install supposed updates or read more, the link leads to a phishing page, and entered credentials let attackers log in to the administration tool of the victim's website and manipulate or fully take it over. Second, a Swiss company offering employment and administration services for household helpers announced a data leak on 7 October 2026 and warned the people affected; on 24 October targeted phishing mails in the company's name followed, carrying recipients' names, addresses and AHV numbers and asking for credit-card data including the security code. BACS adds that, given recent cases in which AHV numbers and other personal details were stolen, it expects such data to be used more often to make mails, SMS and calls look credible, and that correct personal details are no proof of authenticity. BACS gives no victim count and does not name the company or the PHP-lure sender infrastructure.
+    region_nexus: "Switzerland: BACS observations from Swiss reports; the AHV-number remark follows recent Swiss leaks (the covered Publica / PK Softech incident is the public-sector case, the review does not name it)."
+    primary_sector_nexus: "indirect (website operators and staff of public bodies whose AHV numbers sit in leaked pension-fund data; the review does not name public bodies)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.002, T1078]
+    affected_products: []
+    entity_keys: ["tool:php2shell"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "weekly-review item; the PHP-lure phishing against CMS admin credentials and the BACS expectation of AHV-number-laden phishing after the Swiss pension-fund leaks are the transferable, constituency-relevant parts; the rest is consumer fraud awareness"
+    evidence:
+      - quote: "Aktuell beobachtet das BACS Phishing-Kampagnen, die sich auf die bekannte PHP-Schwachstelle beziehen"
+        attribution: "BACS (NCSC.ch)"
+        source_url: "https://www.bacs.admin.ch/de/26w46-de"
+      - quote: "Geben die Betroffenen dort ihre Zugangsdaten ein, können die Angreifer sich mit diesen Daten ins Administrations-Tool des Webauftritts einloggen und diesen manipulieren oder vollständig übernehmen."
+        attribution: "BACS (NCSC.ch)"
+        source_url: "https://www.bacs.admin.ch/de/26w46-de"
+      - quote: "Die Nachrichten enthielten unter anderem die Namen, Adressen und AHV-Nummern der Empfängerinnen und Empfänger und wirkten dadurch besonders glaubwürdig."
+        attribution: "BACS (NCSC.ch)"
+        source_url: "https://www.bacs.admin.ch/de/26w46-de"
+    extended_notes: |
+      Detection concept: login events to CMS administration back ends from unfamiliar sources shortly after a staff member opened a mail that cites a PHP or CMS vulnerability; mail-flow rules for messages that invoke an urgent security update and link to a non-vendor domain. Hardening named by BACS: install updates only through the vendor's official channels or established administration processes, call services from the known address rather than a mailed link.
+      Related covered entries: the PHP2Shell entries (BACS advisory of 21 October) and the Publica / PK Softech supplier intrusion (AHV numbers among the leaked data).
+
+  - title: "Operation Endgame dismantles Gootloader, CastleRAT and StealC infrastructure: 235 servers and 257 domains seized, 6.4 million victim credential datasets identified, 681 compromised websites cleaned, victims notified through Shadowserver, HIBP, DIVD and NL-NCSC"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/", publisher: "BleepingComputer", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.justice.gov/opa/pr/gootloader-malware-disrupted-international-cyber-operation", publisher: "US Department of Justice", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks", publisher: "Europol", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.inside-it.ch/europol-legt-drei-malware-netzwerke-lahm-20261113", publisher: "Inside IT", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.zataz.com/gootloader-une-operation-frappe-100-serveurs-infectes/", publisher: "ZATAZ", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: zataz, URL https://www.zataz.com/gootloader-une-operation-frappe-100-serveurs-infectes/ (feed item, 16 Nov) -> primary: DOJ release, URL https://www.justice.gov/opa/pr/gootloader-malware-disrupted-international-cyber-operation -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/ (quotes Europol) -> primary: Europol newsroom, URL https://www.europol.europa.eu/media-press/newsroom/news/64-million-victim-datasets-secured-in-international-operation-against-malware-networks (React page: only the og:description was readable) -> corroborating: inside-it (essential feed) URL https://www.inside-it.ch/europol-legt-drei-malware-netzwerke-lahm-20261113"
+    summary: |
+      Europol announced on 12 November that, with partners from nine countries (Bulgaria, Canada, Denmark, Germany, Moldova, the Netherlands, Poland, the UK and the US) and coordination by Europol and Eurojust, it seized 235 servers and 257 domains used by Gootloader, CastleRAT and StealC (BleepingComputer; Inside IT gives 14 servers and 218 domains for Gootloader, 120 servers and 39 domains for CastleRAT and 102 servers for StealC, 681 infected websites cleaned). It reports identifying more than 6 million victim credentials on the seized infrastructure that were stolen after infection and meant for resale and later attacks such as ransomware. Victim data is being made available through HaveIBeenPwned, DIVD, CheckjeHack, NoMoreLeaks, Sekoia, the Shadowserver Foundation and NL-NCSC, and WordPress operators are urged to rotate credentials, enable multi-factor authentication and patch. The US DOJ says it removed Gootloader from over 100 servers including compromised WordPress sites, seized US domains used to deliver and control it, that Gootloader has infected at least 25,000 computers since 2018 and been used in ransomware attacks on at least 44 US victims (about USD 28.8 million), and that Shadowserver worked with internet service providers and CSIRTs to identify infected systems and notify victims; the action was coordinated with Operation Endgame. None of the fetched sources names Switzerland or Swiss authorities.
+    region_nexus: "no Swiss nexus stated; Europe-wide action with victim notification routed through CSIRTs (the sources do not say whether NCSC.ch or Swiss ISPs were among them); WordPress sites are the compromised distribution layer"
+    primary_sector_nexus: "indirect (public-sector WordPress sites, and public-sector accounts that may sit in the 6.4 million credential datasets)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1189, T1555]
+    affected_products: ["WordPress"]
+    entity_keys: ["malware:castlerat", "campaign:operation-endgame-amadey-stealc"]
+    new_entities:
+      - { key: "malware:gootloader", type: malware, name: "Gootloader", aliases: ["GootKit ecosystem (ZATAZ)"], summary: "Malware loader distributed through compromised websites, often WordPress, whose operators sell access to ransomware actors; infrastructure disrupted in the Operation Endgame action announced 2026-11-12 (Europol, DOJ)." }
+      - { key: "malware:stealc", type: malware, name: "StealC", aliases: [], summary: "Information stealer exfiltrating credentials, cryptocurrency wallets and other data; 102 servers taken down in the Operation Endgame action announced 2026-11-12 (BleepingComputer, Inside IT)." }
+      - { key: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", type: campaign, name: "Operation Endgame - Gootloader, CastleRAT and StealC takedown (November 2026)", aliases: [], summary: "Europol-coordinated action announced 2026-11-12 that seized 235 servers and 257 domains and identified 6.4 million victim credential datasets (Europol via BleepingComputer)." }
+    relation_suggestions:
+      - { subject: "campaign:operation-endgame-gootloader-castlerat-stealc-2026-11", object: "malware:castlerat", basis: "BleepingComputer and Inside IT: the November Endgame action targeted CastleRAT infrastructure (120 servers, 39 domains per Inside IT)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "law-enforcement action against threat infrastructure (standing watch) with no Swiss nexus stated; the actionable parts are the victim-notification channels and the WordPress compromised-site cleanup advice; source dates are 12 to 16 November, inside the lookback of the ZATAZ record"
+    evidence:
+      - quote: "the authorities seized 257 domains and 235 servers."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/"
+      - quote: "WordPress users are urged to update credentials, enable multi-factor authentication, and patch vulnerabilities."
+        attribution: "BleepingComputer (quoting Europol)"
+        source_url: "https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure/"
+      - quote: "the Shadowserver Foundation assisted by working with internet service providers and Computer Security Incident Response Teams (CSIRTs) to identify infected systems, aid in notifying victims and assisting in remediation."
+        attribution: "US Department of Justice"
+        source_url: "https://www.justice.gov/opa/pr/gootloader-malware-disrupted-international-cyber-operation"
+    extended_notes: |
+      Partner lists differ between sources: BleepingComputer names nine countries (Bulgaria, Canada, Denmark, Germany, Moldova, the Netherlands, Poland, the UK, the US); the DOJ Gootloader release additionally names French and Australian units and Fraunhofer FKIE, OpenAI and Sharktech as technical helpers.
+      Action concept for defenders: check whether your network ranges appear in Shadowserver reports or HIBP/DIVD/NoMoreLeaks notifications from this action, and review WordPress sites for injected loader content and for reuse of administrator credentials. Gootloader is delivered through compromised WordPress pages; BACS separately observed compromised sites with fake CAPTCHAs in August (see the BACS Aktuelle-Vorfaelle list), which this action does not address.
+      The Europol page is a React shell: extract returned only the head metadata (og:description: 'Europol, alongside global partners, has dismantled the criminal infrastructure behind Gootloader, CastleRAT, and StealC malware... law enforcement seized 235 servers and 257 domains') and WebFetch only the headline; counts above come from BleepingComputer and Inside IT. The StealC figure is cumulative since the June action (BleepingComputer/Inside IT: investigation running since June 2026).
+      Techniques: T1189 for Gootloader delivery through compromised websites; T1555 for the credential theft by the stealers, which is the stated purpose of the seized data.
+      Suggested Admiralty: reliability B, credibility 1 (DOJ, Europol, BleepingComputer, Inside IT agree on the figures).
+
+  - title: "FBI and DOJ disrupt North Korea's FaceStealer scheme: video-meeting invites from stolen accounts, replayed recordings of known contacts and a fake audio fix that installs malware, now also aimed at open-source maintainers' repository accounts"
+    sources:
+      - { url: "https://www.justice.gov/opa/pr/justice-department-announces-actions-disrupt-north-koreas-massive-theft-cryptocurrency", publisher: "US Department of Justice", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.zataz.com/coree-du-nord-washington-frappe-les-voleurs-de-cryptos/", publisher: "ZATAZ", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: zataz, URL https://www.zataz.com/coree-du-nord-washington-frappe-les-voleurs-de-cryptos/ (feed item, 16 Nov) -> primary: DOJ release, URL https://www.justice.gov/opa/pr/justice-department-announces-actions-disrupt-north-koreas-massive-theft-cryptocurrency (links the FBI IC3 report https://www.ic3.gov/CSA/2026/261112.pdf and https://www.fbi.gov/facestealer, not fetched)"
+    summary: |
+      The US Department of Justice announced on 12 November the seizure of cloud infrastructure used in FaceStealer, a social-engineering scheme the FBI says has cost more than USD 400 million in cryptocurrency over 18 months, and court-authorised seizure or restraint of more than USD 1.2 billion stolen from Binance (the FBI attributes the 29 October Binance theft to TraderTraitor). Per DOJ, DPRK actors publicly known as Sapphire Sleet, UNC1069, Dangerous Password, CryptoCore, APT38, BlueNoroff and Stardust Chollima send video-meeting invitations from accounts stolen from earlier victims; in the meeting they record the target's webcam, play a prerecorded video of a previous victim or deepfake of a prominent figure to simulate trusted participants, then introduce a fake technical error (for example that the target cannot be heard) and offer a link or prompt to fix it, which installs malware. In several cases the actors waited months to more than a year before stealing cryptocurrency or hijacking communication accounts, and used contact lists and messaging apps for new targets; they have increasingly targeted developers and maintainers of open-source software and the repository accounts they control, which DOJ describes as aimed at software supply-chain attacks. The FBI seized over 900 webcam videos of victims and published a detailed report and a resource page.
+    region_nexus: "no Swiss nexus stated; transferable technique for Swiss software, open-source and finance staff; Swiss Armed Forces and public-sector developers are exposed only through the technique"
+    primary_sector_nexus: "indirect (developers and maintainers with repository or cloud access, including at public bodies)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566.003, T1204.001, T1078, T1195.002]
+    affected_products: []
+    entity_keys: ["actor:sapphire-sleet"]
+    new_entities:
+      - { key: "campaign:facestealer-dprk-video-meeting-lure-2026", type: campaign, name: "FaceStealer", aliases: [], summary: "FBI name for a North Korean social-engineering scheme using video-meeting invitations from stolen accounts, replayed and deepfake videos and a fake audio-fix prompt to install malware; infrastructure seized by DOJ 2026-11-12 (DOJ)." }
+    relation_suggestions:
+      - { subject: "campaign:facestealer-dprk-video-meeting-lure-2026", object: "actor:sapphire-sleet", basis: "DOJ: the actors are publicly known by names including Sapphire Sleet, UNC1069, APT38 and BlueNoroff (DOJ, 2026-11-12)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "US law-enforcement action with no Swiss nexus; included for the transferable meeting-lure technique and the open-source-maintainer targeting; S3 or S4 may carry it with fuller context (FBI IC3 report not fetched)"
+    evidence:
+      - quote: "During the meeting, the hackers then introduce a fake technical error into the meeting, such as claiming that the target cannot be heard, and provide a link or prompt to fix the error."
+        attribution: "US Department of Justice"
+        source_url: "https://www.justice.gov/opa/pr/justice-department-announces-actions-disrupt-north-koreas-massive-theft-cryptocurrency"
+      - quote: "increasingly targeted individuals involved in the development and maintenance of open-source software with the FaceStealer technique"
+        attribution: "US Department of Justice"
+        source_url: "https://www.justice.gov/opa/pr/justice-department-announces-actions-disrupt-north-koreas-massive-theft-cryptocurrency"
+    extended_notes: |
+      Detection concept: video-conferencing client or browser launching a script, installer or terminal command immediately after a meeting join (the 'fix audio' step); new device or session sign-ins for messaging and repository accounts weeks to months after such a meeting; meeting invitations received from known contacts' accounts outside the usual pattern. Hardening: verify unexpected meeting requests through a second channel; treat any 'fix' prompt inside a meeting as hostile.
+      Related coverage in the store: 2026-11-04 Binance fake-recruiter entry and the GTIG tracker (Sapphire Sleet); FaceStealer is a separate scheme from the TraderTraitor Binance theft that DOJ announced in the same release.
+
+  - title: "Quantum Systems: the German drone maker confirms an active cyberattack found in late October; Der Spiegel and the Financial Times report a malicious QBase update file pushed from its update server, and the Bundeswehr reportedly grounded the drones"
+    sources:
+      - { url: "https://quantum-systems.com/news/cyberattack-defeated/", publisher: "Quantum Systems (company statement)", date: "2026-11-12", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack/", publisher: "BleepingComputer", date: "2026-11-13", role: "corroborating" }
+      - { url: "https://www.zataz.com/quantum-systems-une-cyberattaque-inquiete-larmee-allemande/", publisher: "ZATAZ", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: zataz, URL https://www.zataz.com/quantum-systems-une-cyberattaque-inquiete-larmee-allemande/ (feed item, 16 Nov) -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack/ (cites Spiegel and FT) -> primary: company statement, URL https://quantum-systems.com/news/cyberattack-defeated/ (read through the reader fallback; cookie-banner page, title and date legible)"
+    summary: |
+      Quantum Systems, which builds reconnaissance and interceptor drones and their control software and supplies Germany's armed forces, said on 12 November that it detected an incident in late October that was part of an active cyberattack by hostile actors, that it contained it with the authorities and that its unmanned systems can resume operation; it attributes the targeting to its support of Ukraine and names no actor. According to Der Spiegel and the Financial Times (relayed by BleepingComputer, which links both), the compromise ran through a malicious update file for QBase, the ground-control and mission-planning software for drones including the Vector reconnaissance drone that the German forces call Falke, distributed from the vendor's update server; an unscheduled update reached customers and raised alarms inside the company, and it is unclear how many installed it. Press reports, not the company, say the Bundeswehr grounded the drones as a precaution and left them out of an exercise, with military counterintelligence, the domestic intelligence service and the BSI involved. No attribution, no compromise of drone hardware and no Swiss customer are reported.
+    region_nexus: "no Swiss nexus stated; German defence supplier incident with a transferable lesson for armed-forces and civil-protection software supply chains in Switzerland (update server compromise of mission-planning software)"
+    primary_sector_nexus: "indirect (armed-forces mission software update channel)"
+    sector: "defence"
+    cves: []
+    techniques: [T1195.002]
+    affected_products: ["Quantum Systems QBase"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:quantum-systems-qbase-update-server-compromise-2026-10", type: incident, name: "Quantum Systems QBase update-server compromise (October 2026)", aliases: [], summary: "German drone maker Quantum Systems confirmed on 2026-11-12 an active cyberattack found in late October; Der Spiegel and the Financial Times report a malicious QBase update file distributed from its update server (company statement; BleepingComputer)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "no Swiss nexus; included as a transferable armed-forces supplier update-channel compromise; S4 (incidents) will likely carry it with the German-press detail, and the grounding is press-reported only"
+    evidence:
+      - quote: "the compromise occurred via a malicious QBase update file."
+        attribution: "BleepingComputer (citing Der Spiegel and the Financial Times)"
+        source_url: "https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack/"
+      - quote: "Quantum Systems believes it was targeted because of its recent announcement of support for Ukraine and says it is working closely with state authorities to investigate the attack."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack/"
+      - quote: "The German outlet reports that the unscheduled update delivered to customers raised alarms within Quantum Systems, but it is unclear how many actually installed it."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack/"
+    extended_notes: |
+      Claims to keep attributed: update-server compromise and customer delivery are Spiegel/FT reporting; the grounding is press-reported and not in the company statement; the company says no risk to users.
+      Detection concept for similar supplier channels: unscheduled or unsigned update packages from a vendor channel outside the agreed release calendar, and mission-planning or ground-station software spawning unexpected processes; verification of update signatures and out-of-band confirmation with the vendor before installing.
+      The company statement page was read through the reader fallback; BleepingComputer links it as https://quantum-systems.com/news/cyberattack-defeated/.
+
+  - title: "Reka: Swiss holiday cooperative confirms a hack of about 8,200 customers' booking data, followed by WhatsApp, SMS and e-mail phishing that cites real bookings"
+    sources:
+      - { url: "https://www.inside-it.ch/reka-erleidet-hackerangriff-20261117", publisher: "Inside IT (relaying Keystone-SDA and SRF)", date: "2026-11-17", role: "primary" }
+      - { url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/ferienanbieter-gehackt-vorsicht-vor-phishing-im-namen-von-reka", publisher: "SRF Kassensturz Espresso", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item 'Reka erleidet Hackerangriff', 17 Nov) -> read with `url --direct` on https://www.inside-it.ch/reka-erleidet-hackerangriff-20261117 -> corroborating: SRF feed item, URL https://www.srf.ch/sendungen/kassensturz-espresso/espresso/ferienanbieter-gehackt-vorsicht-vor-phishing-im-namen-von-reka (srf-news feed); no Reka own statement page found (WebSearch returned nothing)"
+    summary: |
+      Reka (Schweizer Reisekasse), the cooperative behind the Reka holiday villages and Reka-Geld, says attackers gained access on late Sunday afternoon (15 November) to customers' personal details and travel data; affected people then received fraudulent WhatsApp, SMS or e-mail messages that contained concrete details of their holiday bookings and asked them to validate a booking through a link. Keystone-SDA, citing Reka, reports about 8,200 customers affected; Director Roland Ludwig told SRF it was the first larger attack on Reka and spoke of about 8,000 potentially affected bookings. How the data was obtained is unclear; Reka is investigating with cyber specialists, filed a criminal complaint, informed customers personally and strengthened its security; it says new bookings are safe and that Reka-Geld (Reka-Checks and payment cards) is not affected, and advises blocking the number, not clicking and blocking the credit card if payment data was entered. The messages arrived within hours of the access, which shows how quickly stolen booking data is turned into credible lures.
+    region_nexus: "Switzerland: Swiss non-profit cooperative whose customers are Swiss residents, including public-sector staff who receive Reka benefits (the sources do not say so)"
+    primary_sector_nexus: "indirect (private-sector victim; lesson on fast, booking-specific phishing after a data theft)"
+    sector: "tourism / consumer services"
+    cves: []
+    techniques: [T1566.003, T1657]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:reka-booking-data-theft-whatsapp-phishing-2026-11", type: incident, name: "Reka booking-data theft and phishing (November 2026)", aliases: [], summary: "Swiss holiday cooperative Reka confirmed on 2026-11-16 a hack that exposed customers' personal and booking data (about 8,200 customers per Keystone-SDA) and was followed by booking-specific WhatsApp, SMS and e-mail phishing (Inside IT; SRF)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss incident but private-sector victim with no public-sector link in the sources; relevance is the transferable pattern (booking-specific phishing within hours) and BACS's weekly review on leaked-data phishing; root cause unknown"
+    evidence:
+      - quote: "sind rund 8200 Kundinnen und Kunden betroffen"
+        attribution: "Inside IT (citing Keystone-SDA)"
+        source_url: "https://www.inside-it.ch/reka-erleidet-hackerangriff-20261117"
+      - quote: "Wie die Täterschaft an die Daten gelangte, sei noch unklar."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/reka-erleidet-hackerangriff-20261117"
+      - quote: "Reka sei zum ersten Mal Ziel eines grösseren Hackerangriffs geworden, bestätigt Direktor Roland Ludwig auf Anfrage von SRF."
+        attribution: "SRF"
+        source_url: "https://www.srf.ch/sendungen/kassensturz-espresso/espresso/ferienanbieter-gehackt-vorsicht-vor-phishing-im-namen-von-reka"
+    extended_notes: |
+      Both sources rely on Reka's statements to Keystone-SDA and SRF; no independent confirmation of the access date or the data fields beyond Reka's description. Detection concept for organisations whose staff are customers: reports of messages that cite a real booking and ask to 'validate' it by link.
+
+  - title: "Canton Zurich's cloud strategy (Regierungsrat decision 1155/2026): a four-level cloud model decides which information classes may sit in global, regulated, Swiss or cantonal clouds; secret factual data stays out of global and regulated clouds, the technical and organisational safeguards are still to be written"
+    sources:
+      - { url: "https://www.zh.ch/de/politik-staat/gesetze-beschluesse/beschluesse-des-regierungsrates/rrb/regierungsratsbeschluss-1155-2026.html", publisher: "Kanton Zürich, Regierungsrat (RRB 1155/2026)", date: "2026-11-05", role: "primary" }
+      - { url: "https://www.zh.ch/bin/zhweb/publish/regierungsratsbeschluss-unterlagen./2026/1155/RRB-2026-1155_Cloud-Strategie_des_Kantons_Zuerich.pdf", publisher: "Kanton Zürich, Cloud-Strategie (11 pages)", date: "2026-10-28", role: "primary" }
+      - { url: "https://www.netzwoche.ch/news/2026-11-17/zuerich-sieht-globale-clouds-auch-fuer-sensible-daten-vor", publisher: "Netzwoche", date: "2026-11-17", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/zuerich-definiert-cloud-strategie-20261116", publisher: "Inside IT", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item 'Zürich definiert Cloud-Strategie', 16 Nov; read with `url --direct` on https://www.inside-it.ch/zuerich-definiert-cloud-strategie-20261116) -> corroborating: Netzwoche (netzwoche.ch homepage list), URL https://www.netzwoche.ch/news/2026-11-17/zuerich-sieht-globale-clouds-auch-fuer-sensible-daten-vor -> WebSearch (\"Cloud-Strategie\" Kanton Zürich Regierungsrat festgesetzt November 2026 ... allowed_domains zh.ch) -> primary: RRB page, URL https://www.zh.ch/de/politik-staat/gesetze-beschluesse/beschluesse-des-regierungsrates/rrb/regierungsratsbeschluss-1155-2026.html -> primary: strategy PDF read with `pdf`"
+    summary: |
+      The Zurich Regierungsrat fixed the canton's Cloud-Strategie on 28 October 2026 (RRB 1155/2026, published 5 November; Inside IT and Netzwoche reported it on 16 and 17 November). It sorts cloud services into four levels by the legal order that applies to provider and delivery: level 1 global cloud (providers or delivery subject to foreign law with possible extraterritorial access, where the strategy says adequate control and data-protection level cannot be guaranteed by legal means alone), level 2 regulated cloud (one legal order with data protection comparable to Switzerland's), level 3 Swiss cloud, level 4 cantonal cloud, plus 'no cloud'. A matrix maps information categories (public, internal, confidential and secret factual data; personal data; special categories of personal data) to the levels: per Netzwoche, global clouds are not excluded even for special-category personal data but with increased protection requirements, confidential data and special-category personal data carry increased requirements at all four levels, and for secret factual data global and regulated clouds are excluded (only Swiss or cantonal clouds or non-cloud solutions). The strategy is a long-term target picture, says some prerequisites are not yet met, ties itself to the new ICT ordinance of 21 October 2026 (IKTV) and leaves the 'normal' and 'increased' protection-level requirements to be worked out under its Basis impact area; Netzwoche notes the administration still has to specify the technical and organisational safeguards and that no concrete targets for reducing dependence on foreign providers are set. The cantonal IT office (AFI) is responsible, with one temporary full-time post from 1 January 2027 (CHF 175,000 a year).
+    region_nexus: "Switzerland: canton of Zurich administration (directions and State Chancellery); compares itself with the federal Swiss Government Cloud tiering"
+    primary_sector_nexus: "direct (cantonal public administration; sets the rules for which data classes may go to which cloud tier)"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:zurich-cloud-strategy-rrb-1155-2026", type: policy, name: "Canton Zurich cloud strategy (RRB 1155/2026)", aliases: ["Cloud-Strategie des Kantons Zürich"], summary: "Cloud strategy fixed by the Zurich Regierungsrat on 2026-10-28 (published 2026-11-05): four-level cloud model by applicable legal order and an information-category matrix; secret factual data excluded from global and regulated clouds (RRB 1155/2026)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "policy item, not a threat; included because it sets cloud-tier rules for a Swiss cantonal administration and defenders there will be asked to implement the safeguards; the binding technical requirements do not exist yet, so the change in obligations is limited; primary date is 5 November, press coverage 16 to 17 November"
+    evidence:
+      - quote: "Bei geheimen Sachdaten zieht der Kanton eine strengere Grenze: Er schliesst dafür globale und regulierte Clouds aus."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-11-17/zuerich-sieht-globale-clouds-auch-fuer-sensible-daten-vor"
+      - quote: "Welche zusätzlichen technischen und organisatorischen Schutzvorgaben gelten sollen, muss die Verwaltung noch konkretisieren."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-11-17/zuerich-sieht-globale-clouds-auch-fuer-sensible-daten-vor"
+      - quote: "Für geheime Sachdaten sei beispielsweise keine Nutzung globaler oder regulierter Clouds vorgesehen."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/zuerich-definiert-cloud-strategie-20261116"
+    extended_notes: |
+      Primary reading: the strategy PDF was extracted with the stdlib `pdf` reader; the classification matrix is a graphic whose cell marks did not survive extraction, so the per-cell levels above rest on Netzwoche's description of it. The RRB page lists a 4-page decision and the 11-page strategy.
+      Context: Zurich's 2022 decision RRB 542/2022 admitted Microsoft 365 with a lawful-access risk method that a 2025 decision says is under review; the Aargau interpellation on the November Microsoft 365 outage (separate item) shows the same dependency debate.
+
+  - title: "Microsoft 365 global outage of 12 and 13 November: Microsoft's preliminary report blames a latent defect in a Windows-based internal process on its front-end gateway servers; Swiss institutions were affected and an Aargau parliamentarian asks the cantonal government about emergency plans"
+    sources:
+      - { url: "https://www.it-connect.fr/panne-microsoft-365-rapport-post-incident-bug-windows/", publisher: "IT-Connect (reading of Microsoft's preliminary report)", date: "2026-11-16", role: "primary" }
+      - { url: "https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116", publisher: "Inside IT", date: "2026-11-16", role: "primary" }
+    discovery_trace: "first seen at: it-connect, URL https://www.it-connect.fr/feed/ (feed item 'Microsoft 365 : un correctif Windows défectueux à l'origine de la panne mondiale', 16 Nov) -> read with `extract` on https://www.it-connect.fr/panne-microsoft-365-rapport-post-incident-bug-windows/ -> pivot: Swiss angle from inside-it-ch, URL https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116 (read with `url --direct`); WebSearch (Microsoft 365 outage 12 13 November 2026 post-incident report Windows update root cause) returned only secondary coverage and early network-upgrade explanations, Microsoft's report itself (a Word document in the admin center) is not publicly linkable"
+    summary: |
+      IT-Connect, reading Microsoft's preliminary post-incident report distributed through the Microsoft 365 admin center, says the outage ran from Thursday 12 November 17:20 to Friday 13 November 17:10 (French time), nearly 24 hours, that Microsoft first spoke of a network problem but the report points to a defect in an internal Windows process in a patch built for the front-end gateway servers, in service since July and not caught by load tests on weaker machines. The report's chain, as IT-Connect relays it: about 14 percent of gateway capacity was already down, Teams traffic was moved to the primary gateway that also serves Exchange Online at 02:07, load rose through the day, servers saturated, traffic redirection pushed the same defect onto the remaining servers, and within two hours more than 80 percent of the gateway servers stopped responding; recovery was slow because restarted servers were re-saturated, automatic recovery was not built for a near-total fleet failure and the months-old defect could not be rolled back quickly. Exchange Online was hit hardest, while Teams, OneDrive, SharePoint and Office apps could leave the failing gateway. Inside IT reports that the outage also affected Swiss companies and institutions and that Aargau Grossrat Lukas Huber (GLP) planned to file an interpellation on 17 November asking the Regierungsrat how cantonal administration, schools and courts were affected, how effective the emergency measures were, which state tasks could not be performed during a multi-day outage of central Microsoft services, and what improvements it will examine. No attack is reported; IT-Connect says the report is labelled preliminary and differs from the explanation given while the outage was running.
+    region_nexus: "Switzerland: Swiss companies and institutions affected; Aargau cantonal administration, schools and courts named in a pending parliamentary question"
+    primary_sector_nexus: "direct for availability and business-continuity planning (cantonal administrations on Microsoft 365); not an attack"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: ["Microsoft 365", "Exchange Online"]
+    entity_keys: ["product:microsoft-365", "product:microsoft-exchange-online"]
+    new_entities:
+      - { key: "incident:microsoft-365-exchange-online-global-outage-2026-11-12", type: incident, name: "Microsoft 365 / Exchange Online global outage (12-13 November 2026)", aliases: [], summary: "About 24-hour global Microsoft 365 outage, Exchange Online worst hit; Microsoft's preliminary report points to a defect in a Windows-based internal process on front-end gateway servers (IT-Connect reading of the report, 2026-11-16); Swiss institutions affected (Inside IT)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "availability incident, not an attack and no malicious actor; included for the Swiss cantonal-administration continuity angle (Aargau interpellation) and the Microsoft dependency lesson; Microsoft's report is preliminary and only relayed by one reader, so the root cause is secondary-sourced"
+    evidence:
+      - quote: "Dans un premier temps, Microsoft évoquait un problème lié au réseau, mais ce rapport désigne un défaut dans un processus interne de Windows."
+        attribution: "IT-Connect"
+        source_url: "https://www.it-connect.fr/panne-microsoft-365-rapport-post-incident-bug-windows/"
+      - quote: "Der weltweite Ausfall verschiedener Microsoft-365-Dienste am 12. und 13. November hat auch Schweizer Unternehmen und Institutionen beeinträchtigt."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116"
+    extended_notes: |
+      Related phishing: heise reported on 15 November a campaign that uses the outage as a lure (not fetched this run).
+      Continuity concept for defenders: test whether mail-dependent incident-response and alerting paths work when Exchange Online is unreachable for a day (out-of-band contacts, a second channel for security alerts); the sources do not prescribe this, it follows from the reported Exchange-only dependency on the failed gateway.
+      Suggested Admiralty: reliability C (secondary reading of Microsoft's report), credibility 3.
+
+  - title: "Google Project Zero moves to a fixed 'Full X' disclosure policy: details published 90 days after the report from 13 November, 60 days from 2 February 2027 and 30 days from 3 January 2028, with no patch soak period, because attackers can derive exploits from a patch almost at once"
+    sources:
+      - { url: "https://projectzero.google/2026/11/disclosure-policy.html", publisher: "Google Project Zero", date: "2026-11-13", role: "primary" }
+      - { url: "https://www.heise.de/news/Googles-Project-Zero-reduziert-Zeitraum-bis-zur-Veroeffentlichung-von-Luecken-11527956.html", publisher: "heise online", date: "2026-11-17", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item 'Googles Project Zero reduziert Zeitraum bis zur Veröffentlichung von Lücken', 17 Nov) -> read with `extract` on https://www.heise.de/news/Googles-Project-Zero-reduziert-Zeitraum-bis-zur-Veroeffentlichung-von-Luecken-11527956.html -> primary: Project Zero post, URL https://projectzero.google/2026/11/disclosure-policy.html"
+    summary: |
+      Project Zero's post of 13 November replaces its '90+30' policy (up to 90 days to fix plus 30 days of soak time for patch rollout) with 'Full X': vulnerabilities are disclosed X days after being reported to the vendor, 'Full 90' from that day, 'Full 60' on 2 February 2027 and 'Full 30' on 3 January 2028. Grace periods and the variant policy are removed; the exceptions are actively exploited flaws (handled under Google's application-security disclosure policy, which heise says allows 7 days), flaws already public, and vendor requests for earlier publication. Project Zero's reasoning, in its own words: LLMs have shortened the time attackers need to find and exploit flaws and to reverse a patch, so 'zero patch-to-exploitation time is a reasonable, though imperfect, model of attacker behavior', patch soak time is no longer meaningful, and vendors must reduce the patch gap between a fix being released and users installing it. For defenders the practical reading is that technical details of Project Zero-reported flaws will reach the public sooner and that the window between patch release and working exploits should be planned as near zero.
+    region_nexus: "global; no Swiss nexus stated"
+    primary_sector_nexus: "indirect (patch-SLA planning for any organisation running Google, Apple, Microsoft or open-source components that Project Zero reports against)"
+    sector: "cross-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "policy:project-zero-full-x-disclosure-policy-2026", type: policy, name: "Project Zero 'Full X' disclosure policy (November 2026)", aliases: ["Policy and Disclosure: 2026 Edition"], summary: "Google Project Zero policy announced 2026-11-13: disclosure X days after report, 90 now, 60 from 2027-02-02, 30 from 2028-01-03, no soak time or grace period (Project Zero)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "global ecosystem policy, not Swiss or sector-specific; it changes how fast defenders should expect details of reported flaws to appear and so what patch SLAs make sense; S3 (research) may carry it; a decision for the main agent whether a policy change with no obligation counts"
+    evidence:
+      - quote: "Patch soak time is no longer meaningful in a world where attackers can almost immediately determine bug details from a patch, and can put users at risk by creating a false sense of secrecy."
+        attribution: "Google Project Zero"
+        source_url: "https://projectzero.google/2026/11/disclosure-policy.html"
+      - quote: "zero patch-to-exploitation time is a reasonable, though imperfect, model of attacker behavior"
+        attribution: "Google Project Zero"
+        source_url: "https://projectzero.google/2026/11/disclosure-policy.html"
+    extended_notes: |
+      The 7-day figure for actively exploited vulnerabilities is heise's reading of Google's general policy page (not fetched here); Project Zero's post only says such flaws follow Google's application-security disclosure policy.
+
+candidate_sources:
+  - id: zh-regierungsrat-rrb
+    publisher: "Kanton Zürich, Regierungsratsbeschlüsse (RRB decision pages and PDFs)"
+    url: "https://www.zh.ch/de/politik-staat/gesetze-beschluesse/beschluesse-des-regierungsrates/rrb/regierungsratsbeschluss-1155-2026.html"
+    category: gov
+    why: "Cantonal primary for Swiss public-sector IT and security policy (here the cloud strategy, with the strategy PDF attached); decision pages publish about a week after the session and the trade press picks them up days later, so the primary is the earlier signal. The listing root was not fetched this run; the cited URL is one decision page."
+  - id: kanton-aargau-grosser-rat
+    publisher: "Kanton Aargau, Grosser Rat (interpellations and Regierungsrat answers)"
+    url: "https://www.inside-it.ch/aargau-soll-nach-m365-ausfall-notfallplaene-pruefen-20261116"
+    category: gov
+    why: "Weak candidate, listed only so the main agent can decide: cantonal parliaments publish questions and government answers on IT resilience (here the Microsoft 365 outage); no primary page was fetched, the lead came through Inside IT."
+
+coverage_gaps:
+  - source_id: europol-newsroom
+    reason: "Recipe gap: the Europol news page is a React shell. `extract` returned only the head metadata (og:description) and WebFetch only the headline ('6.4 million victim datasets secured...'); the release body needs the reader (jina) or a mirror. Facts in the item come from BleepingComputer (which quotes Europol), DOJ and Inside IT."
+  - source_id: drupal-security
+    reason: "Recipe note: `extract https://www.drupal.org/psa-2026-11-16` returns a Fastly 'Client Challenge' page; WebFetch with the outbound-links template reads the PSA (summary plus verbatim quotes). Suggest webfetch as the working transport for drupal.org PSA pages."
+  - source_id: enisa
+    reason: "Quiet: the news listing carries no dates; item extracts show 2026-11-10 (State of Cybersecurity in the Union), 2026-11-04 (joint statement on refrigeration-system incidents) and 2026-09-11 (CRA Single Reporting Platform). Nothing inside 26 h."
+  - source_id: cert-at
+    reason: "Quiet, fetch OK: warnings and current feeds both fetched direct; newest items 2026-10-21 (PHP warning) and 2026-10-20 (PHP pre-announcement). Nothing in window."
+  - source_id: watson-ch-digital
+    reason: "extract of https://www.watson.ch/digital returns the page chrome plus undated headlines; the security-relevant ones (Black Friday fakes, 'Dieser Fehler löste das Microsoft-Chaos aus') duplicate items covered elsewhere; no drill-down needed. Not a failure."
+  - source_id: swissinfo-ger
+    reason: "Worked through the dated cash.ch news sitemap (https://www.cash.ch/sitemap-news.xml, 266 items parsed): no item inside the 147 h lookback with a Swiss public-sector security nexus; a Deutsche Bank document leak and an AWP note on the Microsoft outage appear but add nothing defender-relevant."
+  - source_id: news-admin-ch
+    reason: "Listing reaches about one day, as the record note says. In window: 17 November UN sanctions list change for North Korea (SESAM database updated, no cyber detail), dropped."
+  - source_id: inside-it-ch
+    reason: "Recipe confirmed: `url --direct <article>` plus parsing the embedded __NEXT_DATA__ JSON returns full article text (used for Reka, Zürich cloud strategy, Aargau M365, Europol)."
+
+dropped_leads:
+  - lead: "Acronis: US DHS/FASC order of 30 October to remove Acronis (Swiss-headquartered, Schaffhausen) from federal civilian systems by 27 January 2027"
+    reason: "Nextgov article dated 2026-11-02, outside the 147 h lookback; no fresh Swiss or European development found by WebSearch. Flagged in case S4 or another domain finds a Swiss reaction."
+  - lead: "Deutsche Bank data leak (SRF, cash.ch 17 Nov)"
+    reason: "document leak about oligarch business, no technical or defender-relevant content for the constituency."
+  - lead: "IIHF website down after hacker attack (SRF, 17 Nov)"
+    reason: "one-line report about a Zurich-based sports federation, no detail."
+  - lead: "Maileva (La Poste) 22 million names and addresses (it-connect, 32 h)"
+    reason: "French postal subsidiary, no Swiss nexus stated, not fetched."
+  - lead: "Armee Sparc cyber-training procurement (Inside IT, 16 Nov) and E-ID volunteering initiative (Inside IT, 17 Nov)"
+    reason: "no change to security obligations or defender advice."
+  - lead: "BundID follow-up (Swiss delta)"
+    reason: "WebSearch found no update after 16 November and no Swiss portal reported affected; the covered entry stands."
+  - lead: "Swiss public-sector incidents (cantonal, communal) in the last 48 h"
+    reason: "German, French and Italian WebSearch queries plus the srf-news, inside-it, netzwoche and watson sweeps surfaced no new cantonal or communal incident; the Reka hack is the only new Swiss incident (private sector). Older cases the searches returned (Graubuenden SharePoint, Martigny-Combe, Vetroz, Ticino IPCT) are outside the window."
+
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-10-21 and 2026-10-20" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract (listing + 3 item pages for dates)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed + extract", horizon_hours: 26, in_horizon_items: 9, returned: 2, note: "Java4Shell corroboration (2 articles) and Project Zero policy; remaining items already covered (BundID, ScreenConnect, OptimJack, GTIG) or off-scope" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + url --direct (__NEXT_DATA__)", horizon_hours: 26, in_horizon_items: 8, returned: 4, note: "Reka (in window); Zurich cloud strategy, Aargau M365 interpellation and Europol Endgame are 16 and 13 November pieces used as corroboration or lookback" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 2, returned: 2, note: "Java4Shell (18 Nov), Woche 46 (17 Nov)" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "list ends at 10 November (refrigeration warning)" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest release 5 November (Beiratstreffen Digitale Schweiz)" }
+  - { id: anssi-cyber-gouv-actualites, tier: standard, attempted: true, transport: "url --direct sitemap.xml", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only /actualites/anssi-ecw-2026/ (12 Nov, event page); nothing else since 9 Nov" }
+  - { id: nl-times, tier: standard, attempted: true, transport: "feed + extract of tags/cybersecurity", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "tag page newest 13 Nov (insurance gap, PHP fix); feed has no security story" }
+  - { id: zataz, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 10, returned: 3, note: "Quantum Systems, Gootloader/Endgame, DPRK FaceStealer (all lookback)" }
+  - { id: vrt-nws, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "hospital cyber-resilience initiative in Limburg, no relevance" }
+  - { id: watson-ch-digital, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "undated headlines; Black Friday fakes and Microsoft-outage explainer duplicate covered ground" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-21" }
+  - { id: govcert-at, tier: standard, attempted: true, transport: "extract", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "static institutional page, no advisory stream (as the record says)" }
+  - { id: srf-news, tier: standard, attempted: true, transport: "feed", horizon_hours: 147, in_horizon_items: 4, returned: 1, note: "Reka corroboration; Deutsche Bank leak and IIHF dropped" }
+  - { id: news-admin-ch, tier: standard, attempted: true, transport: "url --direct + href parse", horizon_hours: 147, in_horizon_items: 1, returned: 0, note: "UN DPRK sanctions list change only" }
+  - { id: it-connect, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 147, in_horizon_items: 4, returned: 1, note: "Microsoft 365 outage report; OptimJack and NoisyTCP covered or S1" }
+  - { id: transluce, tier: standard, attempted: true, transport: "extract", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "single report dated 2026-09-23" }
+  - { id: swissinfo-ger, tier: standard, attempted: true, transport: "cash.ch news sitemap (per record note)", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "see coverage_gaps" }
+  - { id: nextgov-fcw, tier: standard, attempted: true, transport: "extract", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "category page lists FaceStealer (also carried via DOJ and ZATAZ) and the Acronis article of 2 Nov (outside lookback)" }
+  - { id: cash-ch-awp, tier: standard, attempted: true, transport: "url --direct sitemap-news.xml", horizon_hours: 147, in_horizon_items: 0, returned: 0, note: "no Swiss public-sector security item" }

@@ -1,0 +1,485 @@
+# Change Log for Amazon Corretto 25
+
+The following sections describe the changes for each release of Amazon Corretto 25.
+
+## Corretto version: 25.0.5.1.2
+Release Date: November 17, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macOS 15.0 and later, x86_64
++ macOS 15.0 and later, aarch64
+
+**1.** This is the platform targeted by the build. See [Using Amazon Corretto](https://aws.amazon.com/corretto/faqs/#Using_Amazon_Corretto)
+in the Amazon Corretto FAQ for supported platforms
+
+The following issues are addressed in 25.0.5.1.2:
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.5.1+2 | All | Updates Corretto baseline to OpenJDK 25.0.5.1+2 | [jdk-25.0.5.1+2](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.5.1+2) |
+| Remove emSign C1 and C3 roots from amazon-cacerts | All | Remove emSign C1 and C3 roots from amazon-cacerts | [#101](https://github.com/corretto/corretto-25/pull/101) |
+| JDK-8396048 | All | (tz) Update to tzdata2026f | [JDK-8396048](https://bugs.openjdk.org/browse/JDK-8396048) |
+
+
+The following CVEs are addressed in 25.0.5.1.2
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-114938 | 8.1 | hotspot/compiler |
+| CVE-2026-114939 | 7.4 | security-libs/org.ietf.jgss |
+| CVE-2026-114940 | 7.4 | security-libs/javax.net.ssl |
+| CVE-2026-114941 | 7.0 | hotspot/compiler |
+| CVE-2026-114942 | 7.0 | core-libs |
+| CVE-2026-114943 | 6.5 | hotspot/runtime |
+| CVE-2026-114944 | 5.9 | core-svc/java.lang.management |
+| CVE-2026-114945 | 5.3 | core-libs/java.lang |
+| CVE-2026-114946 | 4.8 | hotspot/compiler |
+| CVE-2026-114947 | 3.7 | security-libs/javax.net.ssl |
+
+## Corretto version: 25.0.5.0.10
+Release Date: October 24, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macOS 15.0 and later, x86_64
++ macOS 15.0 and later, aarch64
+
+The following CVEs are addressed in 25.0.5.0.10
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-114820 | 9.1 | security-libs/java.security |
+
+## Corretto version: 25.0.5.0.9
+Release Date: October 20, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macOs 15.0 and later, x86_64
++ macOs 15.0 and later, aarch64
+
+The following issues below are addressed in 25.0.5.0.9
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.5+8 | All | Updates Corretto baseline to OpenJDK 25.0.5+8 | [jdk-25.0.5+8](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.5+8) |
+| Fix timezone name caching and Windows registry handles | Windows | Fix timezone name caching and Windows registry handles | [#89](https://github.com/corretto/corretto-25/pull/89) |
+| Fix Windows timezone mappings | Windows | Fix Windows timezone mappings | [#88](https://github.com/corretto/corretto-25/pull/88) |
+| Align Corretto versioning to match openjdk | Linux | Align Corretto versioning to match openjdk | [#87](https://github.com/corretto/corretto-25/pull/87) |
+| Update timezone data to 2026e | All | Update timezone data to 2026e | [#86](https://github.com/corretto/corretto-25/pull/86) |
+| JDK-8390874 | All | MethodData::extra_data_lock memory leak | [#82](https://github.com/corretto/corretto-25/pull/82) |
+| JDK-8392730 | All | CLDRConverter interprets usesMetazone UTC timestamps in the build host default timezone | [#81](https://github.com/corretto/corretto-25/pull/81) |
+| JDK-8314323 | All | Implement JEP 527: TLS 1.3 Hybrid Key Exchange | [#662](github.com/openjdk/jdk25u-dev/pull/662) |
+
+The following CVEs are addressed in 25.0.5.0.9
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-91403 | 9.1 | security-libs/java.security |
+| CVE-2026-91415 | 7.0 | client-libs/2d |
+| CVE-2026-91398 | 6.8 | core-libs/java.net |
+| CVE-2026-91382 | 6.5 | client-libs/2d |
+| CVE-2026-91411 | 6.5 | security-libs/org.ietf.jgss |
+| CVE-2026-87294 | 6.5 | security-libs/java.security |
+| CVE-2026-83395 | 6.5 | core-libs/java.net |
+| CVE-2026-101516| 6.5 | security-libs/java.security |
+| CVE-2026-91394 | 5.9 | core-libs/java.net |
+| CVE-2026-83387 | 5.9 | core-libs/java.sql |
+| CVE-2026-91462 | 5.9 | security-libs/org.ietf.jgss |
+| CVE-2026-83374 | 5.9 | security-libs/java.security |
+| CVE-2026-91410 | 5.3 | core-libs/java.io |
+| CVE-2026-87291 | 5.3 | core-libs/java.net |
+| CVE-2026-91332 | 5.3 | core-libs/java.net |
+| CVE-2026-91451 | 5.3 | core-libs/java.net |
+| CVE-2026-91373 | 5.3 | security-libs/javax.net.ssl |
+| CVE-2026-83380 | 5.3 | security-libs/javax.security |
+| CVE-2026-83400 | 5.3 | xml/jaxp |
+| CVE-2026-91463 | 5.3 | security-libs/org.ietf.jgss |
+| CVE-2026-91464 | 5.3 | security-libs/org.ietf.jgss |
+| CVE-2026-91453 | 5.3 | core-libs/java.net |
+| CVE-2026-91452 | 5.3 | core-libs/java.net |
+| CVE-2026-91418 | 5.3 | client-libs/javax.imageio |
+| CVE-2026-91487 | 4.8 | hotspot/compiler |
+| CVE-2026-83381 | 4.8 | security-libs/java.security |
+| CVE-2026-91374 | 4.8 | core-svc/tools |
+| CVE-2026-91375 | 4.7 | tools/jlink |
+| CVE-2026-91379 | 4.7 | tools/jshell |
+| CVE-2026-91380 | 4.0 | core-libs/java.util |
+| CVE-2026-83378 | 4.8 | hotspot/compiler |
+| CVE-2026-87255 | 3.7 | hotspot/compiler |
+| CVE-2026-91333 | 3.7 | security-libs/java.security |
+| CVE-2026-91334 | 3.7 | client-libs/javax.imageio |
+| CVE-2026-87290 | 5.9 | xml/jaxp |
+| CVE-2026-87367 | 3.7 | xml/jaxp |
+| CVE-2026-87292 | 3.7 | core-libs/java.net |
+| CVE-2026-83376 | 3.7 | security-libs/javax.net.ssl |
+| CVE-2026-91461 | 3.7 | security-libs/java.security |
+| CVE-2026-91397 | 3.6 | core-svc |
+| CVE-2026-91400 | 3.1 | client-libs/javax.sound |
+| CVE-2026-91335 | 2.6 | client-libs/java.awt |
+
+## Corretto version: 25.0.4.10.1
+Release Date: September 29, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macos 14.0 and later, x86_64
++ macos 14.0 and later, aarch64
+
+The following issues above are addressed in 25.0.4.10.1
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| JDK-8388214 | All | (tz) Update Timezone Data to 2026c | Main: [JDK-8388214](https://bugs.openjdk.org/browse/JDK-8388214)<br>&nbsp;<br>Related: [8380223](https://bugs.openjdk.org/browse/JDK-8380223), [8381379](https://bugs.openjdk.org/browse/JDK-8381379), [8390388](https://bugs.openjdk.org/browse/JDK-8390388), [8390380](https://bugs.openjdk.org/browse/JDK-8390380), [8391256](https://bugs.openjdk.org/browse/JDK-8391256) |
+| JDK-8392377 | All | (tz) Update Timezone Data to 2026d | Main: [JDK-8392377](https://bugs.openjdk.org/browse/JDK-8392377)<br>&nbsp;<br>Related: [8392519](https://bugs.openjdk.org/browse/JDK-8392519), [8392526](https://bugs.openjdk.org/browse/JDK-8392526)|
+| JDK-8390874 | All | MethodData::extra_data_lock memory leak | [JDK-8390874](https://bugs.openjdk.org/browse/JDK-8390874) |
+| Fix macos info.plist version string metadata (#79) | macOS | Adds openjdk patch version string when it is non-zero | [Issue-76](https://github.com/corretto/corretto-25/issues/76)<br>&nbsp;<br>[PR-79](https://github.com/corretto/corretto-25/pull/79) |
+
+## Corretto version: 25.0.4.8.1
+Release Date: August 18, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macos 14.0 and later, x86_64
++ macos 14.0 and later, aarch64
+
+The following issues above are addressed in 25.0.4.8.1
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.4.1+1 | All | Updates Corretto baseline to OpenJDK 25.0.4.1+1 | [jdk-25.0.4.1+1](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.4.1+1) |
+
+The following CVEs are addressed in 25.0.4.8.1
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-70906 | 7.5 | client-libs/2d |
+| CVE-2026-61308 | 6.8 | core-libs/java.net |
+| CVE-2026-70907 | 5.3 | security-libs/javax.net.ssl |
+| CVE-2026-60589 | 3.7 | security-libs/javax.xml.crypto |
+
+## Corretto version: 25.0.4.7.1
+Release Date: July 21, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macos 14.0 and later, x86_64
++ macos 14.0 and later, aarch64
+
+The following issues above are addressed in 25.0.4.7.1
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.4+7 | All | Updates Corretto baseline to OpenJDK 25.0.4+7 | [jdk-25.0.4+7](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.4+7) |
+| Backport for JDK-8372584 (ThreadMXBean.getCurrentThreadUserTime() performance improvement) | Linux | Backport for JDK-8372584 (ThreadMXBean.getCurrentThreadUserTime() performance improvement) | [#74](https://github.com/corretto/corretto-25/pull/74) |
+| JDK-8386085 | All | Livelock in AbstractQueuedSyncronizer.cleanQueue() when multiple threads do tryAcquire() with a short timeout and no permits available | [#72](https://github.com/corretto/corretto-25/pull/72) |
+| JDK-8343606 | All | Test FinalizerTest.java intermittent fails Debuggee heap OOM | [#71](https://github.com/corretto/corretto-25/pull/71) |
+| Gzipinputstream downports and restoring of multi-member read behavior | All | Gzipinputstream downports and restoring of multi-member read behavior | [#70](https://github.com/corretto/corretto-25/pull/70) [Issue#69](https://github.com/corretto/corretto-25/issues/69) |
+| JDK-8381003 | aarch64 | [REDO] Mitigate Neoverse-N1 erratum 1542419 negative impact on GCs and JIT performance | [#60](https://github.com/corretto/corretto-25/pull/60) |
+| Recommend instead of Require dependencies for AL2023 headless | AL2023 | Improve dependencies for AL2023+ headless | [#57](https://github.com/corretto/corretto-25/pull/57) |
+
+The following CVEs are addressed in 25.0.4.7.1
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-41254 | 7.5 | client-libs/2d |
+| CVE-2026-47063 | 7.5 | security-libs/java.security |
+| CVE-2026-60147 | 6.5 | security-libs/java.security |
+| CVE-2026-46968 | 5.9 | security-libs/javax.net.ssl |
+| CVE-2026-47059 | 5.9 | client-libs/2d |
+| CVE-2026-47027 | 5.3 | security-libs/java.security |
+| CVE-2026-47021 | 5.3 | client-libs/2d |
+| CVE-2026-46917 | 5.3 | security-libs/javax.net.ssl |
+| CVE-2026-47010 | 3.7 | client-libs/javax.imageio |
+
+# Corretto version: 25.0.3.9.1
+Release Date: April 21, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 11 or later, x86_64
++ macOS 14.0 and later, x86_64
++ macOS 14.0 and later, aarch64
+
+The following issues above are addressed in 25.0.3.9.1
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.3+9 | All | Updates Corretto baseline to OpenJDK 25.0.3+9 | [jdk-25.0.3+9](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.3+9) |
+| JDK-8381670 | All | Revert the changes to GZIPInputStream related to InputStream… | [#56](https://github.com/corretto/corretto-25/pull/56) |
+| JDK-8373120 | All | Virtual thread stuck in BLOCKED state | [#53](https://github.com/corretto/corretto-25/pull/53) |
+| JDK-8376104 | All | C2 crashes in PhiNode::Ideal(PhaseGVN*, bool) accessing NULL pointer | [#51](https://github.com/corretto/corretto-25/pull/51) |
+| JDK-8361699 | All | C2: assert(can_reduce_phi(n->as_Phi())) failed: Sanity: previous reducible Phi is no longer reducible before SUT | [#50](https://github.com/corretto/corretto-25/pull/50) |
+| JDK-8339526 | All | C2: store incorrectly removed for clone() transformed to series of loads/stores | [#49](https://github.com/corretto/corretto-25/pull/49) |
+| JDK-8377932 | All | AOT cache is not rejected when JAR file has changed | [#48](https://github.com/corretto/corretto-25/pull/48) |
+| JDK-8370939 | All | C2: SIGSEGV in SafePointNode::verify_input when processing MH call from Compile::process_late_inline_calls_no_inline() | [#47](https://github.com/corretto/corretto-25/pull/47) |
+
+The following CVEs are addressed in 25.0.3.9.1
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-22016 | 7.5 | xml/jaxp |
+| CVE-2026-34282 | 7.5 | core-libs/java.net |
+| CVE-2026-22021 | 5.3 | security-libs/java.security |
+| CVE-2026-22013 | 5.3 | security-libs/org.ietf.jgss |
+| CVE-2026-23865 | 5.3 | client-libs/2d |
+| CVE-2026-22008 | 3.7 | core-libs/java.lang |
+| CVE-2026-22018 | 3.7 | core-libs/java.util |
+| CVE-2026-22007 | 2.9 | security-libs/java.security |
+| CVE-2026-34268 | 2.9 | security-libs/java.security |
+
+## Corretto version: 25.0.2.10.1
+Release Date: January 20, 2026
+
+**Target Platforms**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 10 or later, x86_64
++ macOS 14.0 and later, x86_64
++ macOS 14.0 and later, aarch64
+
+The following issues above are addressed in 25.0.2.10.1
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.2+10 | All | Updates Corretto baseline to OpenJDK 25.0.2+10 | [jdk-25.0.2+10](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.2+10) |
+| JDK-8373630 | aarch64 | r18_tls should not be modified on Windows AArch64 | [#38](https://github.com/corretto/corretto-25/pull/38) |
+| JDK-8371368 | aarch64 | SIGSEGV in JfrVframeStream::next_vframe() on arm64 | [#37](https://github.com/corretto/corretto-25/pull/37) |
+| JDK-8370405 | All | C2: mismatched store from MergeStores wrongly scalarized in allocation elimination | [#36](https://github.com/corretto/corretto-25/pull/36) |
+| JDK-8361492 | All | [IR Framework] Has too restrictive regex for load and store | [#35](https://github.com/corretto/corretto-25/pull/35) |
+| JDK-8369050 | All | DecimalFormat Rounding Errors for Fractional Ties Near Zero | [#34](https://github.com/corretto/corretto-25/pull/34) |
+| JDK-8368182 | All | AOT cache creation fails with class defined by JNI | [#33](https://github.com/corretto/corretto-25/pull/33) |
+| JDK-8370887 | All | DelayScheduler.replace method may break the 4-ary heap in certain scenarios | [#32](https://github.com/corretto/corretto-25/pull/32) |
+| Revert Update Corretto version | All | Revert "Update Corretto version to match upstream: 25.0.3.0.1" | [#31](https://github.com/corretto/corretto-25/pull/31) |
+| JDK-8371864 | All | GaloisCounterMode.implGCMCrypt0 AVX512/AVX2 intrinsics stubs cause AES-GCM encryption failure for certain payload sizes | [#30](https://github.com/corretto/corretto-25/pull/30) |
+| Add additional build targets option for Mac | macOS | Add additional build targets option for Mac | [#29](https://github.com/corretto/corretto-25/pull/29) |
+| JDK-8359472 | All | JVM crashes when attaching a dynamic agent before JVMTI_PHASE_LIVE | [#340](https://github.com/openjdk/jdk25u/pull/340) |
+| JDK-8370242 | All | JFR: Clear event reference eagerly when using EventStream | [#372](https://github.com/openjdk/jdk25u/pull/372) |
+| JDK-8372534 | All | Update Libpng to 1.6.51 | [JDK-8372534](https://bugs.openjdk.org/browse/JDK-8372534) |
+
+The following CVEs are addressed in 25.0.2.10.1
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2026-21945 | 7.5 | security-libs/java.security |
+| CVE-2026-21932 | 7.4 | client-libs/java.awt |
+| CVE-2026-21933 | 6.1 | core-libs/java.net |
+| CVE-2026-21925 | 4.8 | core-libs/java.rmi |
+
+## Corretto version: 25.0.1.9.1
+Release Date: November 3, 2025
+
+**Target Platforms <sup>1</sup>**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
+
+
+**1.** This is the platform targeted by the build. See [Using Amazon Corretto](https://aws.amazon.com/corretto/faqs/#Using_Amazon_Corretto)
+in the Amazon Corretto FAQ for supported platforms
+
+The following issues are addressed in 25.0.1.9.1:
+
+| Issue Name       | Platform | Description                                | Link                                                               |
+|------------------|----------|--------------------------------------------|--------------------------------------------------------------------|
+| JDK-8370572 | Linux | 8370572: cgroup v1 hierarchical memory limit is not honored after JDK-8322420 | [JDK-8370572](https://bugs.openjdk.org/browse/JDK-8370572) |
+| JDK-8365153 | All Aarch64 | AArch64: Set JVM flags for Neoverse N3 and V3 cores | [JDK-8365153](https://bugs.openjdk.org/browse/JDK-8365153) |
+
+## Corretto version: 25.0.1.8.1
+Release Date: October 21, 2025
+
+**Target Platforms <sup>1</sup>**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 10 or later, x86_64
++ macOS 14.0 and later, x86_64
++ macOS 14.0 and later, aarch64
+
+
+**1.** This is the platform targeted by the build. See [Using Amazon Corretto](https://aws.amazon.com/corretto/faqs/#Using_Amazon_Corretto)
+in the Amazon Corretto FAQ for supported platforms
+
+The following issues above are addressed in 25.0.1.8.1:
+
+| Issue Name | Platform | Description | Link |
+|------------|----------|-------------|------|
+| Import jdk-25.0.1+8 | All | Updates Corretto baseline to OpenJDK 25.0.1+8 | [jdk-25.0.1+8](https://github.com/openjdk/jdk25u/releases/tag/jdk-25.0.1+8)
+| JDK-8367333 | All | C2: Vector math operation intrinsification failure | [JDK-8367333](https://bugs.openjdk.org/browse/JDK-8367333) |
+| JDK-8362282 | All | runtime/logging/StressAsyncUL.java failed with exitValue = 134 | [JDK-8362282](https://bugs.openjdk.org/browse/JDK-8362282) |
+| JDK-8365726 | All | Test crashed with assert in C1 thread: Possible safepoint reached by thread that does not allow it | [JDK-8365726](https://bugs.openjdk.org/browse/JDK-8365726) |
+| JDK-8366948 | All | AOT cache creation crashes when iterating training data | [JDK-8366948](https://bugs.openjdk.org/browse/JDK-8366948) |
+| JDK-8368698 | All | runtime/cds/appcds/aotCache/OldClassSupport.java assert(can_add()) failed: Cannot add TrainingData objects | [JDK-8368698](https://bugs.openjdk.org/browse/JDK-8368698) |
+| JDK-8367689 | All | Revert removal of several compilation-related vmStructs fields | [JDK-8367689](https://bugs.openjdk.org/browse/JDK-8367689) |
+| JDK-8364184 | All | [REDO] AArch64: [VectorAPI] sve vector math operations are not supported after JDK-8353217 | [JDK-8364184](https://bugs.openjdk.org/browse/JDK-8364184) |
+| JDK-8366434 | All | THP not working properly with G1 after JDK-8345655 | [JDK-8366434](https://bugs.openjdk.org/browse/JDK-8366434) |
+| JDK-8366980 | All | TestTransparentHugePagesHeap.java fails when run with -UseCompressedOops | [JDK-8366980](https://bugs.openjdk.org/browse/JDK-8366980) |
+| JDK-8358535 | All | Changes in ClassValue (JDK-8351996) caused a 1-9% regression in Renaissance-PageRank | [JDK-8358535](https://bugs.openjdk.org/browse/JDK-8358535) |
+| JDK-8357959 | All | (bf) ByteBuffer.allocateDirect initialization can result in large TTSP spikes | [JDK-8357959](https://bugs.openjdk.org/browse/JDK-8357959) |
+| JDK-8368071 | All | Compilation throughput regressed 2X-8X after JDK-8355003 | [JDK-8368071](https://bugs.openjdk.org/browse/JDK-8368071) |
+| JDK-8368152 | All | Shenandoah: Incorrect behavior at end of degenerated cycle | [JDK-8368152](https://bugs.openjdk.org/browse/JDK-8368152) |
+| JDK-8357396 | All | 8357396: Refactor nmethod::make_not_entrant to use Enum instead of "const char*" | [JDK-8357396](https://bugs.openjdk.org/browse/JDK-8357396) |
+| JDK-8277444 | All | 8277444: Data race between JvmtiClassFileReconstituter::copy_bytecodes and class linking | [JDK-8277444](https://bugs.openjdk.org/browse/JDK-8277444) |
+| JDK-8362193 | aarch64 | 8362193: Re-work MacOS/AArch64 SpinPause to handle SB | [JDK-8362193](https://bugs.openjdk.org/browse/JDK-8362193) |
+| JDK-8359435 | aarch64 | 8359435: AArch64: add support for SB instruction to MacroAssembler::spin_wait | [JDK-8359435](https://bugs.openjdk.org/browse/JDK-8359435) |
+| Bundling async profiler | macOS, RPM-based Linux, Debian-based Linux, Alpine Linux | Binaries for the [async-profiler](https://github.com/async-profiler/async-profiler) are included in official builds for supported platforms | [#19](https://github.com/corretto/corretto-25/pull/19) |
+| Expose reason for marking nmethod non-entrant to JVMCI client | All | Backport of "Expose reason for marking nmethod non-entrant to JVMCI client". Relates to JDK-8359064 and JDK-8360049 | [#18](https://github.com/corretto/corretto-25/pull/18) |
+| Don't set OnSpinWaitInst to SB if VM_Version does not support it | All | Don't set OnSpinWaitInst to SB if VM_Version does not support it | [#17](https://github.com/corretto/corretto-25/pull/17) |
+| Set OnSpinWaitInst to SB for Graviton 4 | aarch64 | Sets the default value for the OnSpinWaitInst flag to "sb" if the CPU model matches 0xd4f (Neoverse-V2); otherwise, it remains "isb" | [#11](https://github.com/corretto/corretto-25/pull/11) |
+
+The following CVEs are addressed in 25.0.1.8.1:
+
+| CVE | CVSS | Component |
+|-----|------|-----------|
+| CVE-2025-53057 | 5.9 | security-libs/java.security |
+| CVE-2025-53066 | 4.8 | xml/jaxp |
+| CVE-2025-61748 | 3.7 | core-libs |
+
+## Corretto version: 25.0.0.36.2
+Release Date: September 16, 2025
+
+**Target Platforms <sup>1</sup>**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 10 or later, x86_64
++ macOS 13.0 and later, x86_64
++ macOS 13.0 and later, aarch64
+
+
+**1.** This is the platform targeted by the build. See [Using Amazon Corretto](https://aws.amazon.com/corretto/faqs/#Using_Amazon_Corretto)
+in the Amazon Corretto FAQ for supported platforms
+
+The following issues are addressed in 25.0.0.36.2:
+
+| Issue Name       | Platform | Description                                | Link                                                               |
+|------------------|----------|--------------------------------------------|--------------------------------------------------------------------|
+| JDK-8364159 | All | Shenandoah assertions after JDK-8361712 | [JDK-8364159](https://bugs.openjdk.org/browse/JDK-8364159) |
+| JDK-8365571 | All | GenShen: PLAB promotions may remain disabled for evacuation threads | [JDK-8365571](https://bugs.openjdk.org/browse/JDK-8365571) |
+| JDK-8364183 | All | Shenandoah: Improve commit/uncommit handling | [JDK-8364183](https://bugs.openjdk.org/browse/JDK-8364183) |
+| JDK-8361712 | All | Improve ShenandoahAsserts printing | [JDK-8361712](https://bugs.openjdk.org/browse/JDK-8361712) |
+| JDK-8357818 | All | Shenandoah doesn't use shared API for printing heap before/after GC | [JDK-8357818](https://bugs.openjdk.org/browse/JDK-8357818) |
+| JDK-8361948 | All | Shenandoah: region free capacity unit mismatch | [JDK-8361948](https://bugs.openjdk.org/browse/JDK-8361948) |
+| JDK-8361342 | All | Shenandoah: Evacuation may assert on invalid mirror object after JDK-8340297 | [JDK-8361342](https://bugs.openjdk.org/browse/JDK-8361342) |
+| JDK-8361363 | All | ShenandoahAsserts::print_obj() does not work for forwarded objects and UseCompactObjectHeaders | [JDK-8361363](https://bugs.openjdk.org/browse/JDK-8361363) |
+| JDK-8359868 | All | Shenandoah: Free threshold heuristic does not use SoftMaxHeapSize | [JDK-8359868](https://bugs.openjdk.org/browse/JDK-8359868) |
+| JDK-8358529 | All | GenShen: Heuristics do not respond to changes in SoftMaxHeapSize | [JDK-8358529](https://bugs.openjdk.org/browse/JDK-8358529) |
+
+## Corretto version: 25.0.0.36.1
+Release Date: August 21, 2025
+
+**Target Platforms <sup>1</sup>**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 10 or later, x86_64
++ macOS 13.0 and later, x86_64
++ macOS 13.0 and later, aarch64
+
+
+**1.** This is the platform targeted by the build. See [Using Amazon Corretto](https://aws.amazon.com/corretto/faqs/#Using_Amazon_Corretto)
+in the Amazon Corretto FAQ for supported platforms
+
+The following issues are addressed in 25.0.0.36.1:
+
+| Issue Name       | Platform | Description                                | Link                                                               |
+|------------------|----------|--------------------------------------------|--------------------------------------------------------------------|
+| Import jdk-25+36 | All      | Updates Corretto baseline to OpenJDK 25+36 | [jdk-25+36](https://github.com/openjdk/jdk/releases/tag/jdk-25+36) |
+| Turn off interface/abstract class optimization | All | Turn off interface/abstract class optimization for non-class metaspace allocation | [PR-5](https://github.com/corretto/corretto-25/pull/5) |
+| JDK-8343218 | All | Add option to disable allocating interface and abstract classes in non-class metaspace | [PR-3](https://github.com/corretto/corretto-25/pull/3) |
+| Backport: Upgrade to Gradle 8.14.3 | All | Upgrade to Gradle 8.14.3 | [PR-6](https://github.com/corretto/corretto-25/pull/6) |
+
+## Corretto version: 25.0.0.34.1
+Release Date: August 7, 2025
+
+**Target Platforms <sup>1</sup>**
+
++ RPM-based Linux using glibc 2.17 or later, x86_64
++ Debian-based Linux using glibc 2.17 or later, x86_64
++ RPM-based Linux using glibc 2.17 or later, aarch64
++ Debian-based Linux using glibc 2.17 or later, aarch64
++ Alpine-based Linux, x86_64
++ Alpine-based Linux, aarch64
++ Windows 10 or later, x86_64
++ macOS 13.0 and later, x86_64
++ macOS 13.0 and later, aarch64
+
+
+**1.** This is the platform targeted by the build. See [Using Amazon Corretto](https://aws.amazon.com/corretto/faqs/#Using_Amazon_Corretto)
+in the Amazon Corretto FAQ for supported platforms
+
+The following issues are addressed in 25.0.0.34.1:
+
+| Issue Name       | Platform | Description                                | Link                                                               |
+|------------------|----------|--------------------------------------------|--------------------------------------------------------------------|
+| Import jdk-25+34 | All      | Updates Corretto baseline to OpenJDK 25+34 | [jdk-25+34](https://github.com/openjdk/jdk/releases/tag/jdk-25+34) |

@@ -1,11 +1,11 @@
 ---
 schema: 1
 kind: vulnerability
-title: 'N-able N-central: a researcher published exploits for 33 alleged flaws and N-able shipped 2026.4 Hotfix 2 (build 2026.4.1.26) with seven CVE ids, but a second disclosure adds 4EverAble2Shell, a chain through Apache Axis (CVE-2026-90436) and a root escalation that works against Hotfix 2 when the Legacy API is on and is exploited on at least 21 production servers, and Agent2Shell, SYSTEM commands on managed Windows agents, with no fix yet for either'
-headline: 'N-central: 4EverAble2Shell exploited on 21+ servers, Agent2Shell adds SYSTEM on agents; disable Legacy API'
-summary: 'An independent researcher published proof-of-concept code on 2026-11-08 and 2026-11-09 for what Huntress counts as 33 critical flaws in N-able''s N-central remote monitoring and management appliance, and N-able released 2026.4 Hotfix 2 (build 2026.4.1.26) on 2026-11-10 with seven CVE ids; on-premises customers must upgrade their servers, and every customer its Agents and Probes. On 2026-11-12 the researcher published a second chain, 4EverAble2Shell, that pairs an Apache Axis 1.x flaw (CVE-2026-90436) with a separate root escalation and works against Hotfix 2 when the Legacy API is turned on and reachable: Huntback reports at least 21 production servers, 19 of them on Hotfix 2, running a cryptominer, Previdian''s honeypot recorded attempts at the chain, and Huntress''s latest guidance is that a Hotfix 2 server with the Legacy API disabled is not exposed to it. The same disclosure includes Agent2Shell, whose chains give an unauthenticated attacker who can reach the server SYSTEM commands on managed Windows endpoints and which N-able confirms also needs the Legacy API; N-able has published indicators of compromise for customers that have not disabled it, has no fix for the new claims and plans a follow-up hotfix; the Legacy API is off by default and keeping it disabled is the stated protection.'
+title: 'N-able N-central: 33 alleged flaws published, and Hotfix 3 (build 2026.4.1.39, 2026-11-16) now fixes 17 more CVE ids and blocks the Legacy API permanently, which 4EverAble2Shell (Apache Axis CVE-2026-90436, exploited on at least 21 servers) and Agent2Shell need; N-able does not say either chain is fixed, and public proof-of-concept code exists for the 17'
+headline: 'N-central: Hotfix 3 fixes 17 more CVEs and blocks the Legacy API; 4EverAble2Shell exploited; upgrade Agents too'
+summary: 'An independent researcher published proof-of-concept code on 2026-11-08 and 2026-11-09 for what Huntress counts as 33 critical flaws in N-able''s N-central appliance, and a second disclosure on 2026-11-12 added 4EverAble2Shell, a chain through Apache Axis (CVE-2026-90436) that works against Hotfix 2 when the Legacy API is on and is exploited on at least 21 production servers, and Agent2Shell, SYSTEM commands on managed Windows endpoints. Hotfix 2 (build 2026.4.1.26, 2026-11-10) fixed seven CVE ids and Hotfix 3 (build 2026.4.1.39, 2026-11-16) fixes 17 more, hardens how Agents and Probes authenticate and blocks the Legacy API permanently, but N-able does not name either chain or say it is fixed; Huntress reports public proof-of-concept code for all 17 and no exploitation of them in its partners'' environments. Every on-premises server and every Agent and Probe must be on Hotfix 3, including those already on Hotfix 2.'
 discovered_at: '2026-11-10T03:51:00Z'
-updated_at: "2026-11-14T04:00:03Z"
+updated_at: "2026-11-18T05:12:35Z"
 event_date: '2026-11-09'
 run_id: 2026-11-10T0255Z-intel
 priority: high
@@ -18,7 +18,6 @@ tags:
   - poc-public
   - actively-exploited
   - patch-available
-  - no-patch
 regions:
   - global
 sectors:
@@ -80,7 +79,7 @@ cves:
     epss: null
     type: path-traversal
     vector: zero-click
-    auth: post-auth
+    auth: admin-required
     status:
       - poc-public
       - patch-available
@@ -91,7 +90,7 @@ cves:
     epss: null
     type: priv-esc
     vector: local
-    auth: post-auth
+    auth: admin-required
     status:
       - poc-public
       - patch-available
@@ -127,9 +126,196 @@ cves:
     auth: pre-auth
     status:
       - exploited
-      - no-patch
+      - mitigation-only
     affected: Apache Axis 1.x through 1.4 as embedded in on-premises N-central with the Legacy API turned on and reachable, builds through 2026.4.1.26 (Hotfix 2)
-    fixed: 'none released: the Apache Axis project offers a source patch but does not expect to release an Axis 1.x fix (The Hacker News quotes Previdian saying patches were released on 2026-11-06); N-able has no fix for this chain and plans a follow-up hotfix'
+    fixed: 'Hotfix 3 (build 2026.4.1.39) blocks the Legacy API that the chain needs permanently, but N-able does not say it fixes the Axis flaw, and the Apache Axis project offers a source patch but does not expect to release an Axis 1.x fix'
+  - id: CVE-2026-129271
+    cvss: '8.5'
+    epss: null
+    type: priv-esc
+    vector: local
+    auth: post-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central Patch Management Component before 2.14.4.5829 per the CNA record; Patch Management Engine local privilege escalation through attacker-controlled metadata'
+    fixed: 'Patch Management Component 2.14.4.5829 or later; N-able lists the id under N-central 2026.4 Hotfix 3, build 2026.4.1.39'
+  - id: CVE-2026-129272
+    cvss: '9.3'
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); appliance authentication to an agent-facing API with a predictable credential, which lets an unauthenticated attacker impersonate an appliance'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129273
+    cvss: '8.6'
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: admin-required
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); Audit Export setting injected into the syslog configuration, command execution as root by a product administrator'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129274
+    cvss: '8.7'
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); ServerMMS2 RemoteExecutionTaskSubmit without authentication, forged task results for any customer'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129275
+    cvss: '8.2'
+    epss: null
+    type: info-disclosure
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); repositoryItemGet without authentication, download of any customer''s Automation Manager policy with embedded scripts and parameters'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129276
+    cvss: '6.9'
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); ServerMMS2 AssetDiscoSimplifiedInfoSubmit without authentication, overwrite of asset data'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129277
+    cvss: '6.9'
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); MaintActionGet without authentication, read and cancel of pending maintenance actions'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129278
+    cvss: '6.9'
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); remoteControlMSPAStartEndTimeSubmit without authentication, alteration of Take Control task state, times and audit log entries'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129279
+    cvss: '6.9'
+    epss: null
+    type: info-disclosure
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); password reset responses that distinguish valid accounts, user enumeration'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129280
+    cvss: '9.3'
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); ServerUI and ServerUI2 SOAP operations that do not verify session, permissions or customer scope, in some cases without authentication'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129281
+    cvss: '8.5'
+    epss: null
+    type: priv-esc
+    vector: zero-click
+    auth: post-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); view-only users can write device execution configuration that the Windows agent acts on'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129282
+    cvss: '8.7'
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: post-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); test email delivery passes option characters to the mail program, argument injection by an authenticated attacker'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129283
+    cvss: '7.1'
+    epss: null
+    type: info-disclosure
+    vector: zero-click
+    auth: post-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); XML external entity injection in the custom service import, file read and outbound requests by an authenticated attacker'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129284
+    cvss: '5.3'
+    epss: null
+    type: ssrf
+    vector: zero-click
+    auth: post-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); Report Manager and Data Export settings connect to arbitrary hosts, loopback and internal addresses included'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129285
+    cvss: '5.3'
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: post-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); XMPP action responses not tied to the appliance that received the request, forged responses between appliances'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129286
+    cvss: '9.2'
+    epss: null
+    type: path-traversal
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); software update metadata version and download location not validated, file write and code execution as the service account by an attacker who can supply the metadata'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
+  - id: CVE-2026-129287
+    cvss: '8.3'
+    epss: null
+    type: info-disclosure
+    vector: zero-click
+    auth: pre-auth
+    status:
+      - poc-public
+      - patch-available
+    affected: 'N-central builds before 2026.4 Hotfix 3 (CNA wording: before 2026.4.1 HF3); XML external entity injection in software repository files, file read and outbound requests by an attacker who can supply the files'
+    fixed: N-central 2026.4 Hotfix 3, build 2026.4.1.39, with Agents and Probes at 2026.4.1 HF3
 sources:
   - url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
     publisher: Huntress
@@ -195,6 +381,14 @@ sources:
     publisher: Huntress (updates of 2026-11-13)
     date: '2026-11-13'
     role: corroborating
+  - url: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+    publisher: N-able (N-central 2026.4 HF3 release notes)
+    date: '2026-11-16'
+    role: primary
+  - url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+    publisher: Huntress (updates of 2026-11-17)
+    date: '2026-11-17'
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: N-able said it has not seen active exploitation of the vulnerabilities as of November 9 at 15:15:00 UTC.
@@ -230,8 +424,17 @@ evidence:
   - quote: "on November 13 at 13:40:25 UTC, N-able said that it has identified Indicators of Compromise (IoCs) for customers that haven't disabled the Legacy API."
     publisher: Huntress
     source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
+  - quote: N-central 2026.4 Hotfix 3 is a critical security update.
+    publisher: N-able
+    source_url: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - quote: We have removed the configuration option for legacy APIs, and legacy APIs are now permanently blocked.
+    publisher: N-able
+    source_url: https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/
+  - quote: Public proof-of-concept code for all 17 CVEs was released on the evening of November 16, shortly after the hotfix.
+    publisher: Huntress (updates of 2026-11-17)
+    source_url: https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains
 verification: multi-source
-sourcing_note: 'N-able''s release notes for Hotfix 2 carry the build, the scope and the upgrade order; the CVE descriptions are those Huntress lists, with scores and affected-version wording from N-able''s CNA records in ENISA''s vulnerability database (the records say before 26.4.1 or 2026.4.1, and the build is 2026.4.1.26). Seven records do not map one to one onto the researcher''s 33 flaws, and the CNA records carry CVSS 4.0 vectors, which give the scores here: they require no privileges for CVE-2026-125883 and CVE-2026-125881, low privileges for CVE-2026-125878 and CVE-2026-91000 and high privileges for CVE-2026-125879, CVE-2026-125880 and CVE-2026-125882, and for some records they describe the flaw differently from Huntress, so the flaw types and vectors listed follow Huntress. The status page where N-able reports the scanning activity is a script-rendered page that could not be read, so that statement comes from Huntress. The count of 33 flaws, the tested build and every technical claim about them are the researcher''s, and no source has validated them individually. BleepingComputer dates the repository to the evening of 8 November, while Censys dates the disclosure to 8 November and the proof-of-concept release to 9 November. The researcher''s repository holds proof-of-concept exploit code and is deliberately not linked. The exploitation of the second chain rests on Huntback''s count from a mining pool''s public rig list and on Previdian''s honeypot, reported by BleepingComputer and Tenable; N-able said on 2026-11-12, as Tenable and BleepingComputer report, that it had seen no signs of compromise, and on 2026-11-13, as Huntress relays, that it has identified indicators of compromise for customers that have not disabled the Legacy API; N-able''s own status pages could not be read, so every N-able statement after 2026-11-10 is as relayed, and no victim has confirmed. Huntress''s Agent2Shell indicators come from static analysis of the proof of concept and none was observed in an attack. Previdian''s page shows no CVE assigned yet for the chain.'
+sourcing_note: 'N-able''s release notes carry the builds, scope and upgrade order; the CVE descriptions are Huntress''s, with CVSS 4.0 scores and affected versions from N-able''s CNA records in ENISA''s database. The 33-flaw count and every technical claim are the researcher''s and unvalidated; BleepingComputer dates the repository to the evening of 8 November, Censys the disclosure to 8 November and the proof of concept to 9 November. Exploitation of the second chain rests on Huntback''s mining-pool count and Previdian''s honeypot as BleepingComputer and Tenable report, the proof-of-concept claim for the 17 new ids on Huntress alone, and N-able''s statements are as those sources relay them.'
 confidence: medium
 references:
   - 2026-11-11/confluence-dc-cve-2026-90436-apache-axis-remote-api-rce
@@ -245,7 +448,7 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - Confirm on every on-premises N-central server, yours or your IT provider's, that the Legacy API is disabled and not reachable from the internet, and keep Hotfix 2 (build 2026.4.1.26) and the Agent and Probe upgrades in place; on any server that had the Legacy API on, check the web logs for POST requests to the Axis endpoint /dms/services/ServerUI carrying a SOAP fault and the host for a symlink at the N-central flag file path, and treat a hit as a full compromise, because Hotfix 2 does not fix the chain and 19 of the 21 compromised servers Huntback found already ran it.
+  - Upgrade every on-premises N-central server to 2026.4 Hotfix 3 (build 2026.4.1.39) and every Agent and Probe to 2026.4.1 HF3 even if already on Hotfix 2, confirm the Legacy API is disabled and not reachable from the internet, and on any server that had the Legacy API on check the web logs for POST requests to the Axis endpoint /dms/services/ServerUI carrying a SOAP fault and the host for a symlink at the N-central flag file path, treating a hit as a full compromise, because public proof-of-concept code exists for all 17 new CVE ids, Hotfix 2 did not stop 4EverAble2Shell and N-able does not say Hotfix 3 fixes it.
 updates:
   - at: '2026-11-11T03:49:03Z'
     run_id: 2026-11-11T0256Z-intel
@@ -298,19 +501,28 @@ updates:
       N-able requires every customer to upgrade Agents and Probes and recommends Agents first; the summary
       and the 2026-11-11 section no longer present the order as mandatory.
     fields: [summary, body]
+  - at: "2026-11-18T05:12:35Z"
+    run_id: 2026-11-18T0356Z-intel
+    type: update
+    summary: >
+      N-able released Hotfix 3 (build 2026.4.1.39, 2026-11-16): 17 more CVE ids fixed, Agent and Probe
+      authentication hardened, the Legacy API permanently blocked, and every Agent and Probe must be
+      upgraded even from Hotfix 2. N-able does not say Hotfix 3 fixes 4EverAble2Shell or Agent2Shell, and
+      Huntress reports public proof-of-concept code for all 17 ids.
+    fields: [actions, body, cves, evidence, headline, sources, sourcing_note, summary, tags, title]
 migrated_from: null
 ---
-An independent researcher published what Huntress counts as 33 critical flaws in the N-central appliance, chaining into four exploits, and N-able took its hosted environments offline on 2026-11-09 ([Huntress, 2026-11-09](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)); the chain BleepingComputer calls most critical abuses an unauthenticated XML external entity flaw to steal a trusted local session and run commands as the service user ([BleepingComputer, 2026-11-09](https://www.bleepingcomputer.com/news/security/n-able-takes-cloud-platform-offline-after-30-plus-zero-days-published/)).
+An independent researcher published what Huntress counts as 33 critical flaws in the N-central appliance, chaining into four exploits, and N-able took its hosted environments offline on 2026-11-09 ([Huntress, 2026-11-09](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
 
-On 2026-11-10 N-able released N-central 2026.4 Hotfix 2, build 2026.4.1.26, "a critical security update", for which Huntress lists seven CVE ids ([N-able, 2026-11-10](https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/); [Huntress, 2026-11-10](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains); [N-able CNA record, 2026-11-10](https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122942); [N-able CNA record, 2026-11-10](https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122961)). N-able reported scanning for that set but no successful exploitation ([Huntress, 2026-11-10](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)), and none of the seven is in CISA's catalog ([Tenable, 2026-11-12](https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities)).
+On 2026-11-10 N-able released N-central 2026.4 Hotfix 2, build 2026.4.1.26, for which Huntress lists seven CVE ids ([N-able, 2026-11-10](https://status.n-able.com/2026/11/10/n-central-2026-4-hf2-release-notes/); [Huntress, 2026-11-10](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains); [N-able CNA record, 2026-11-10](https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122942); [N-able CNA record, 2026-11-10](https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-122961)).
 
-On 2026-11-12 the researcher published a second set. 4EverAble2Shell is unauthenticated command execution as root that requires the Legacy API to be enabled, per BleepingComputer; it chains CVE-2026-90436, an Apache Axis 1.x deserialization flaw for which Apache does not expect a fix, with a root escalation in N-central's maintenance helper ([BleepingComputer, 2026-11-12](https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/); [Apache Axis project, 2026-11-06](https://openwall.com/lists/oss-security/2026/11/06/12); [Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)). Huntback counts at least 21 servers, 19 of them on Hotfix 2, in North America, South Africa and Europe but not Switzerland, and Previdian's honeypot recorded attempts at the chain ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers); [Previdian, 2026-11-12](https://previdian.com/VULN-2026-0009)). Agent2Shell is a set of more than ten issues in how the server talks to Windows Agents and Probes, two chains of which let an unauthenticated attacker who can reach the server run commands as SYSTEM on managed endpoints; N-able confirmed it also requires the non-default Legacy API ([The Hacker News, 2026-11-12](https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html); [Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). N-able has published indicators of compromise for customers that have not disabled the Legacy API, has no fix for the new claims and plans a follow-up hotfix ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains); [Tenable, 2026-11-12](https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities)).
+On 2026-11-12 the researcher published a second set. 4EverAble2Shell is unauthenticated command execution as root that requires the Legacy API to be enabled, per BleepingComputer; it chains CVE-2026-90436, an Apache Axis 1.x deserialization flaw for which Apache does not expect a fix, with a root escalation in N-central's maintenance helper ([BleepingComputer, 2026-11-12](https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/); [Apache Axis project, 2026-11-06](https://openwall.com/lists/oss-security/2026/11/06/12); [Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)). Huntback counts at least 21 servers, 19 of them on Hotfix 2, in North America, South Africa and Europe but not Switzerland, and Previdian's sensors recorded attempts at the chain ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers); [Previdian, 2026-11-12](https://previdian.com/VULN-2026-0009)). Agent2Shell is a set of more than ten issues in how the server talks to Windows Agents and Probes, two chains of which let an unauthenticated attacker who can reach the server run commands as SYSTEM on managed endpoints; N-able confirmed it also requires the non-default Legacy API ([The Hacker News, 2026-11-12](https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html); [Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). N-able has published indicators of compromise for customers that have not disabled the Legacy API ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Hotfix 3 of 2026-11-16 fixes 17 more CVE ids, hardens how Agents and Probes authenticate and blocks the Legacy API permanently, without naming 4EverAble2Shell or Agent2Shell or saying either is fixed ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/)); Huntress reports public proof-of-concept code for all 17 and no exploitation of them in its partners' environments ([Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
 
-**Exposure:** an on-premises N-central server, yours or an IT provider's: below build 2026.4.1.26 for the first set, and any build up to Hotfix 2 for the second when the Legacy API, off by default, is on and reachable ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). A compromised server reaches the systems N-central manages ([Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)).
+**Exposure:** an on-premises N-central server, yours or an IT provider's, below build 2026.4.1.39, and for the second set any build up to Hotfix 2 when the Legacy API, off by default, is on and reachable ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)); an Agent or Probe not on Hotfix 3 can be impersonated ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/)). A compromised server reaches the systems N-central manages ([Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)).
 
-**Detection:** in N-central's authentication and audit logs from 2026-11-08 onward, unexpected logins, new administrator accounts and changes to stored credentials or API integrations; on managed endpoints, unscheduled software deployments, scripts and remote-control sessions ([Huntress, 2026-11-09](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains); [Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)). For 4EverAble2Shell, Huntback names POST requests to the Axis endpoint /dms/services/ServerUI, a symlink at the N-central flag file path, a systemd unit or cron entry relaunching a miner and a hidden miner directory under /tmp or /var/tmp ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)). Huntress's Agent2Shell indicators come from static analysis of the proof of concept, not attacks seen: SYSTEM PowerShell with an encoded command spawned by the Agent, where PowerShell as an Agent child is common and the command is what matters ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
+**Detection:** in N-central's authentication and audit logs from 2026-11-08 onward, unexpected logins, new administrator accounts and changes to stored credentials or API integrations; on managed endpoints, unscheduled software deployments, scripts and remote-control sessions ([Huntress, 2026-11-09](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains); [Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)). For 4EverAble2Shell, Huntback names POST requests to the Axis endpoint /dms/services/ServerUI, a symlink at the N-central flag file path, a systemd unit or cron entry relaunching a miner and a hidden miner directory under /tmp or /var/tmp ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)). Huntress's Agent2Shell indicators are static analysis only: SYSTEM PowerShell with an encoded command spawned by the Agent, where an Agent child PowerShell is common and the command is what matters ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
 
-**Defender takeaway:** upgrade on-premises servers to Hotfix 2, then Agents and Probes, and confirm the Legacy API is disabled and not internet-reachable, because Hotfix 2 does not fix 4EverAble2Shell and 19 of the 21 compromised servers already ran it ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)); treat a hit as a full compromise, ask each IT provider managing your endpoints through N-central whether it runs a server on premises and has upgraded it, and rotate the administrator, service and integration credentials the platform holds where activity looks unauthorised ([Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)).
+**Defender takeaway:** upgrade on-premises servers to Hotfix 3, then every Agent and Probe, those already on Hotfix 2 included ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/)), and confirm the Legacy API is disabled and not internet-reachable, because Hotfix 2 did not stop 4EverAble2Shell, 19 of the 21 compromised servers already ran it ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)) and N-able does not say Hotfix 3 fixes it; treat a hit as a full compromise and rotate the administrator, service and integration credentials the platform holds where activity looks unauthorised ([Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)). Ask each IT provider managing your endpoints through N-central whether it runs a server on premises and has upgraded it.
 
 ## Update — 2026-11-11T03:49:03Z
 
@@ -318,8 +530,16 @@ N-able released N-central 2026.4 Hotfix 2, build 2026.4.1.26, on 2026-11-10 as a
 
 ## Update — 2026-11-13T03:54:38Z
 
-The researcher's second exploit set, 4EverAble2Shell, published on 2026-11-12, works against Hotfix 2 builds when the Legacy API is turned on and reachable, and no fix exists. It pairs CVE-2026-90436 in the Apache Axis 1.x SOAP engine ([Apache Axis project, 2026-11-06](https://openwall.com/lists/oss-security/2026/11/06/12)) with a separate root escalation ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers); [BleepingComputer, 2026-11-12](https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/)). Huntback counts at least 21 production servers, 19 of them on Hotfix 2, mining for one operator ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)), Previdian's honeypot recorded attempts at the chain ([Previdian, 2026-11-12](https://previdian.com/VULN-2026-0009)), and BleepingComputer relays both ([BleepingComputer, 2026-11-12](https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/)). N-able said on 2026-11-12 that it had seen no signs of compromise, had no fix for the new claims and planned a follow-up hotfix ([Tenable, 2026-11-12](https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities)); Huntress says a Hotfix 2 server with the Legacy API disabled is not exposed to this chain ([Huntress, 2026-11-12](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
+The researcher's second exploit set, 4EverAble2Shell, published on 2026-11-12, works against Hotfix 2 builds when the Legacy API is turned on and reachable, and no fix exists. It pairs CVE-2026-90436 in the Apache Axis 1.x SOAP engine ([Apache Axis project, 2026-11-06](https://openwall.com/lists/oss-security/2026/11/06/12)) with a separate root escalation ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers); [BleepingComputer, 2026-11-12](https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/)). Huntback counts at least 21 production servers, 19 of them on Hotfix 2, mining for one operator ([Huntback, 2026-11-12](https://huntback.io/blog/ncentral-4everable2shell-miners-on-live-servers)), Previdian's sensors recorded attempts at the chain ([Previdian, 2026-11-12](https://previdian.com/VULN-2026-0009)), and BleepingComputer relays both ([BleepingComputer, 2026-11-12](https://www.bleepingcomputer.com/news/security/new-n-able-4everable2shell-zero-day-exploited-hours-after-poc-released/)). N-able said on 2026-11-12 that it had seen no signs of compromise, had no fix for the new claims and planned a follow-up hotfix ([Tenable, 2026-11-12](https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities)); Huntress says a Hotfix 2 server with the Legacy API disabled is not exposed to this chain ([Huntress, 2026-11-12](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
 
 ## Update — 2026-11-14T04:00:03Z
 
 The researcher's 2026-11-12 disclosure also includes Agent2Shell, which The Hacker News describes as more than ten zero-day flaws used to run commands as SYSTEM on managed Windows agents, assuming the attacker knows the target appliance ID ([The Hacker News, 2026-11-12](https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html)). Huntress describes it as a set of more than ten issues in how the N-central server communicates with Windows Agents and Probes, two chains of which let an unauthenticated attacker who can reach the server run commands on managed Windows endpoints, including as SYSTEM ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Huntress relays that N-able confirmed Agent2Shell, like 4EverAble2Shell, requires the non-default Legacy API to be enabled, which settles the question Huntress and Tenable had left open on 2026-11-12, and that on 2026-11-13 at 13:40 UTC N-able said it had identified indicators of compromise for customers that have not disabled the Legacy API ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)); the statement that N-able had seen no signs of compromise dates from 2026-11-12 ([Tenable, 2026-11-12](https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities)). Huntress has not observed exploitation of these issues in its partners' environments, and its Agent2Shell indicators come from static analysis of the proof of concept, not from attacks seen ([Huntress, 2026-11-13](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Tenable adds that N-able has temporarily deactivated the Intune integration for on-premises customers running it ([Tenable, 2026-11-12](https://www.tenable.com/blog/able2shell-frequently-asked-questions-for-reported-n-able-n-central-zero-day-vulnerabilities)).
+
+## Update — 2026-11-18T05:12:35Z
+
+N-able released N-central 2026.4 Hotfix 3, build 2026.4.1.39, on 2026-11-16 as a critical security update that builds on and supersedes Hotfix 2; it fixes 17 further CVE ids, adds missing authentication and permission checks to server operations, hardens how Agents and Probes authenticate with the server, adds validation to file publishing, path and XML import handling, and permanently blocks the legacy APIs ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/)). Agents and Probes that are not upgraded are susceptible to impersonation, and all customers, hosted and on-premises, must upgrade every Agent and Probe to 2026.4.1 HF3 whether or not they already run Hotfix 2 ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/)).
+
+The release notes name neither 4EverAble2Shell nor Agent2Shell nor the Apache Axis flaw and do not say they are fixed; what changes is the Legacy API, which N-able itself said both chains need and which is now blocked permanently ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/); [Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Among the 17 ids, the release notes title CVE-2026-129272 "MMS3 appliance authentication bypass via predictable passcode", CVE-2026-129280 "ServerUI SOAP operations missing authorisation checks" and CVE-2026-129286 "SIS GenericFiles version path traversal leads to RCE", and Huntress counts three critical, eight high and six medium scores, all assigned by N-able as CVE numbering authority ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/); [Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
+
+Huntress reports that public proof-of-concept code for all 17 CVE ids appeared on the evening of 2026-11-16, shortly after the hotfix, says any unpatched server should be treated as exposed, and has not observed exploitation of them in its partners' environments ([Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Field Effect reports that technical details on 24 further N-central vulnerabilities were published and are reported to be addressed by Hotfix 3, a count that the 17 CVE ids in N-able's notes do not reconcile ([Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)). Huntress advises confirming the Patch Management Engine is at 2.14.4.5829 or later, rotating secrets embedded in Automation Manager policies on a server that was exposed before patching, not relying on Take Control audit records from an unpatched server, and enforcing MFA on all N-central accounts ([Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
