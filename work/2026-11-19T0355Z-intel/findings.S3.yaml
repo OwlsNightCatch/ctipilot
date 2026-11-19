@@ -1,0 +1,404 @@
+# work/2026-11-19T0355Z-intel/findings.S3.yaml  (chunk 1 of 4: header + items 1-2; later chunks appended)
+domain: S3
+run_id: 2026-11-19T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-19T03:57:35Z
+ended_at: 2026-11-19T04:23:34Z
+duration_seconds: 1559
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 8
+  bridge_fetches: 95
+items:
+  - title: "CyberPower PowerPanel Business used as a SYSTEM remote shell on a domain controller: Symantec traces ntds.dit extraction and a side-loaded implant back to the UPS management service"
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/power-management-software-attack-vector", publisher: "Symantec Threat Intelligence (security.com)", date: "2026-11-18", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-24-123-01", publisher: "CISA (ICSA-24-123-01, last revised 2025-08-12)", date: "2025-08-12", role: "corroborating" }
+      - { url: "https://zuso.ai/advisory/za-2023-02", publisher: "ZUSO ART advisory ZA-2023-02 (CVE-2023-25132)", date: "2023-03-31", role: "corroborating" }
+    discovery_trace: "first seen at: malware-news (slice record), feed https://malware.news/latest.rss?page=0..6 item 'Behind the Power Outage: Unmasking a New Intrusion Vector in Enterprise Infrastructure Tools', URL https://malware.news/t/behind-the-power-outage-unmasking-a-new-intrusion-vector-in-enterprise-infrastructure-tools/127416 (carries Article Link) → primary: Symantec, extract of https://www.security.com/threat-intelligence/power-management-software-attack-vector → pivot: Symantec's 'Public advisories' link, extract of https://zuso.ai/advisory/za-2023-02 → pivot: WebSearch ('CyberPower PowerPanel Business vulnerability hard-coded credentials default administrator password CVE advisory') → CISA ICS advisory, WebFetch of https://www.cisa.gov/news-events/ics-advisories/icsa-24-123-01"
+    summary: |
+      Symantec's Threat Intelligence team analysed an intrusion in which the attacker used CyberPower PowerPanel Business (PPB), UPS-management software installed on a Windows domain controller, as the execution channel. PPB has a documented event-action feature: a .cmd file placed in an extcmd folder is run by the PPB service (ppbed.exe, started by services.exe, running as SYSTEM) when a power event fires. The attacker placed their own scripts there through the product's web console (embedded Tomcat on TCP 3052, upload endpoint /local/rest/v1/file/upload), so every command carries ppbed.exe as its ancestor and no new service, scheduled task or memory-corruption exploit was needed. The scripts, named pp plus five random lowercase letters, were used as a general remote shell: certutil for reachability tests and decoding of staged base64 binaries, curl to pull tools, a PowerShell reflective load of a .NET assembly, and a .NET antivirus killer. For Active Directory theft the operator iterated several script versions until an ntdsutil "ifm" export of ntds.dit worked, then switched to esentutl /vss from a shadow copy plus a SYSTEM-hive save. A long-running implant (upnpcont.exe, a name of a Microsoft UPnP component, in a SYSTEM-profile AppData path) was then launched through the same channel and side-loads a DLL (atl.dll) from its own directory; its process tree leads back to ppbed.exe. Symantec has not attributed the activity, saw no exfiltration or final payload, and does not say how the console was reached; it points to public PPB advisories (hard-coded credentials, default administrator password, file-upload path traversal) or stolen administrator credentials. CISA's ICSA-24-123-01 independently documents hard-coded credentials, a hard-coded JWT signing key and a ZIP-import path traversal in PPB 4.9.0 and earlier (fixed in 4.10.1), and ZUSO's CVE-2023-25132 describes an unrestricted upload in default.cmd in PPB 4.8.6 and earlier; none of these is tied to the victim's version by any source.
+    region_nexus: "global; no victim country or sector named by Symantec. UPS-management software of this class sits on domain controllers, hypervisors and file servers in small and mid-size public and private networks (cantonal and communal IT included)."
+    primary_sector_nexus: "indirect: infrastructure-management software on privileged Windows servers is common in public-sector estates; no public-sector victim reported"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1072, T1059.003, T1059.001, T1105, T1140, T1620, T1003.003, T1574.001, T1685]
+    affected_products: ["CyberPower PowerPanel Business"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:cyberpower-powerpanel-dc-intrusion-2026-11", type: incident, name: "CyberPower PowerPanel Business domain-controller intrusion (Symantec, 2026-11)", aliases: [], summary: "Intrusion in which an attacker used the PowerPanel Business UPS-management service (ppbed.exe, extcmd event scripts) as a SYSTEM execution channel on a Windows domain controller to extract ntds.dit and launch a DLL side-loaded implant; unattributed (Symantec, 2026-11-18)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "PPB can run a script (a .cmd file in an extcmd folder) when a power-related event such as a voltage sag or outage is detected."
+        attribution: "Symantec Threat Intelligence (security.com)"
+        source_url: "https://www.security.com/threat-intelligence/power-management-software-attack-vector"
+      - quote: "The commands in this attack chain have ppbed.exe as their ancestor and run as SYSTEM."
+        attribution: "Symantec Threat Intelligence (security.com)"
+        source_url: "https://www.security.com/threat-intelligence/power-management-software-attack-vector"
+      - quote: "While we have not attributed this activity to a known actor, the interactive development of a data collection script during the attack points to a threat actor with live-human presence at the keyboard."
+        attribution: "Symantec Threat Intelligence (security.com)"
+        source_url: "https://www.security.com/threat-intelligence/power-management-software-attack-vector"
+      - quote: "If you find them, assume Active Directory credentials are exposed and plan a krbtgt reset and wider credential rotation."
+        attribution: "Symantec Threat Intelligence (security.com)"
+        source_url: "https://www.security.com/threat-intelligence/power-management-software-attack-vector"
+    extended_notes: |
+      FACT vs CLAIM vs INFERENCE. Facts (Symantec's own telemetry): the scripts-in-extcmd execution path, the upload endpoint and port, the command set, the ntdsutil to esentutl pivot, the implant lineage back to ppbed.exe. Not stated by any source: the PPB version on the victim, the entry vector to the console, the sector or country of the victim, whether credentials were then used. Symantec's "no attribution, no exfiltration or ransomware seen" means the domain compromise is an access-stage observation, not a completed impact.
+      EXPOSURE (vendor/source-documented): PPB web console on TCP 3052; Symantec's advice is to locate every PPB console instance and restrict 3052 to named administrator hosts, change the default administrator password and patch. CISA ICSA-24-123-01: PowerPanel Business 4.9.0 and prior affected, "Update to v4.10.1 or later version"; CISA records no public exploitation at its last revision (2025-08-12), which this intrusion post-dates. ZUSO ZA-2023-02: CVE-2023-25132 (default.cmd unrestricted upload, PPB for Windows/Linux/macOS 4.8.6 and earlier, CVSS 3.1 9.1 per ZUSO).
+      DETECTION concept (telemetry class first): (1) process-creation with parent lineage: ppbed.exe spawning cmd.exe/powershell.exe that then runs certutil -urlcache/-decode, curl, ntdsutil, esentutl /vss, vssadmin create shadow, robocopy; Windows 4688 or Sysmon EID 1; (2) file-creation under the PPB install tree: script files appearing in ...\temp\profile\extcmd\ and Tomcat upload temp files in web-server\work\tomcat\localhost\local, names matching pp?????.cmd; (3) network: inbound requests to TCP 3052 from hosts other than named administrators, outbound connections from a DC to unfamiliar hosts after a PPB request; (4) a signed Microsoft-named binary (upnpcont.exe) running from a SYSTEM-profile AppData directory and loading an unsigned/unknown DLL from the same folder; (5) object-access auditing on ntds.dit and shadow-copy creation on a DC outside backup windows.
+      POST-COMPROMISE CHECK: Symantec's own guidance: audit extcmd and temp\profile\extcmd on every PPB host against product defaults, treat unknown scripts as hostile, review the console's event-to-command assignments; if found, assume AD credentials exposed and plan krbtgt reset plus wider rotation.
+      TRIAGE: benign lookalike is the product's intended behaviour: PPB launching scripts from extcmd on a power event looks like "a power-management product launching cmd.exe, which defenders may dismiss as a standard power-related recovery process" (Symantec). Discriminator that follows from the source: what the child commands do (certutil decode, ntdsutil, esentutl, PowerShell reflective load) and whether any power event preceded them, not that ppbed.exe is the parent.
+      MITRE mapping notes: T1072 for the management-console script execution channel (Symantec likens PPB to RMM tools); T1620 for the in-memory .NET load; T1574.001 (DLL side-loading, successor of revoked T1574.002) for upnpcont.exe + atl.dll; T1685 (successor of revoked T1562.001) for the .NET antivirus killer wupd.exe that Symantec flags as a killav; T1003.003 for ntdsutil/esentutl. Admiralty hint: B (Symantec first-hand telemetry), credibility 2 (single-source for the intrusion; product weakness class is multi-source).
+  - title: "tcherber: Cyderes finds an access broker's FortiGate and SonicWall VPN toolkit that tunnels in with default or guessed credentials and runs automated LDAP and SMB enumeration, with a live bot panel and ENIGMA Locker artifacts"
+    sources:
+      - { url: "https://www.cyderes.com/howler-cell/exposing-tcherber", publisher: "Cyderes Howler Cell", date: "2026-11-17", role: "primary" }
+      - { url: "https://www.vmray.com/news/one-leftover-build-path-links-an-infostealer-a-remote-access-tool-and-a-ransomware-family/", publisher: "VMRay Labs", date: "2026-09-01", role: "corroborating" }
+    discovery_trace: "first seen at: malware-news (slice record), feed https://malware.news/latest.rss?page=1..6 item 'Exposing tcherber: VPN Access Brokerage, Custom Malware, & C2 Panel', URL https://malware.news/t/exposing-tcherber-vpn-access-brokerage-custom-malware-c2-panel/127368 → primary: Cyderes Howler Cell (also a slice record cyderes-howler-cell), extract and raw url of https://www.cyderes.com/howler-cell/exposing-tcherber → pivot: Cyderes' own link to VMRay, extract (jina fallback) of https://www.vmray.com/news/one-leftover-build-path-links-an-infostealer-a-remote-access-tool-and-a-ransomware-family/"
+    summary: |
+      Cyderes' Howler Cell followed a Rust loader delivered as a fake Windows Update installer back, through a build-path string (/home/tcherber/) in the Rust binaries, to a Go toolkit, a credential database and operational logs of an initial access broker. The toolkit wraps OpenConnect (--protocol=fortinet) for FortiGate and NetExtender for SonicWall, brings the tunnel up, parses the routes and DNS servers the VPN hands out, then runs a NetExec-style LDAP enumeration of users, groups, domain structure and domain controllers, followed by SMB host and share enumeration and credential validation; the orchestrator runs this chain without operator input. The recovered master credential file holds more than 500 FortiGate VPN entries across multiple countries, a mix of default credentials (guest, admin, test) and organisation-specific passwords, which Cyderes reads as brute-force harvesting plus credential-dump sourcing; operational logs show successful root-level tunnels into multiple victim environments in May and June 2026, held for multi-hour sessions. Cyderes also reached an unauthenticated panel with 178 active bots and September 2026 builds, and found forum adverts for VPN access, custom C2, loader and crypting services with an explicit CIS exclusion, from which it assesses a combined access-broker and malware-as-a-service operation with Russian-language tooling. The loader chain adds a Rust stealer (browser, FTP, mail, VPN client, wallet and file theft, sent by Telegram and to the operator's backend), an HVNC implant with AMSI and ETW patching and a fodhelper UAC bypass, and an ENIGMA Locker ransomware build that kills processes and services, deletes shadow copies and clears event logs. VMRay Labs independently linked the same build path to Zer0day Stealer, an HVNC tool and ENIGMA Locker on 2026-09-01. Cyderes does not name victims, sectors or countries, and gives no CVE: the VPN access described rests on weak, default and reused credentials, not on a disclosed flaw.
+    region_nexus: "global; credential database spans multiple unnamed countries; forum advert excludes CIS countries (Cyderes). No Swiss or EU victim named."
+    primary_sector_nexus: "direct technology exposure: FortiGate and SonicWall SSL-VPN gateways are the standard remote-access layer in federal, cantonal and communal networks; no public-sector victim reported"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1133, T1078.001, T1087.002, T1018, T1135, T1046, T1204.002, T1036.005, T1685, T1486]
+    affected_products: ["Fortinet FortiGate (SSL VPN)", "SonicWall SSL VPN (NetExtender)"]
+    entity_keys: ["product:fortinet-fortios", "product:sonicwall-ssl-vpn"]
+    new_entities:
+      - { key: "actor:tcherber", type: actor, name: "tcherber", aliases: [], summary: "Handle Cyderes Howler Cell derives from the /home/tcherber/ build path in Rust malware; assessed as an initial access broker and malware-as-a-service operator (FortiGate/SonicWall VPN access, Zer0day Stealer, Rust HVNC, ENIGMA Locker); VMRay independently linked the build path to the same families (Cyderes, 2026-11-17; VMRay, 2026-09-01)." }
+      - { key: "malware:enigma-locker", type: malware, name: "ENIGMA Locker", aliases: ["ENIGMA"], summary: "Ransomware family (ChaCha12 file encryption with ECIES-wrapped key material, _README_ENIGMA.txt note, Run-key persistence with a watchdog) sharing a developer build path with Zer0day Stealer and an HVNC tool (Cyderes, 2026-11-17; VMRay, 2026-09-01)." }
+      - { key: "malware:zer0day-stealer", type: malware, name: "Zer0day Stealer", aliases: ["Zer0day Framework"], summary: "Rust information stealer reporting to a backend Cyderes calls the Zer0day Framework, delivered by a fake Windows Update installer and a Rust loader; build path links it to the tcherber toolset (Cyderes, 2026-11-17; VMRay, 2026-09-01)." }
+    relation_suggestions:
+      - { subject: "actor:tcherber", object: "malware:zer0day-stealer", basis: "Cyderes: the /home/tcherber/ build path in the Rust stealer, HVNC and Enigma binaries is the pivot linking them to one developer; VMRay (2026-09-01) independently linked the path to the same stealer" }
+      - { subject: "actor:tcherber", object: "malware:enigma-locker", basis: "Cyderes and VMRay both report the /home/tcherber/ build path inside the ENIGMA Locker ransomware" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "together with VPN connection records showing successful root-level network tunnels into multiple victim environments during May and June 2026"
+        attribution: "Cyderes Howler Cell"
+        source_url: "https://www.cyderes.com/howler-cell/exposing-tcherber"
+      - quote: "Contains a mix of default credentials (guest:guest, admin:admin, test:test) and organization-specific passwords, indicating both brute-force harvesting and credential dump sourcing."
+        attribution: "Cyderes Howler Cell"
+        source_url: "https://www.cyderes.com/howler-cell/exposing-tcherber"
+      - quote: "FortiGate VPN client wrapper using OpenConnect with --protocol=fortinet."
+        attribution: "Cyderes Howler Cell"
+        source_url: "https://www.cyderes.com/howler-cell/exposing-tcherber"
+      - quote: "That path is the thread."
+        attribution: "VMRay Labs"
+        source_url: "https://www.vmray.com/news/one-leftover-build-path-links-an-infostealer-a-remote-access-tool-and-a-ransomware-family/"
+    extended_notes: |
+      FACT vs CLAIM vs INFERENCE. Facts (Cyderes reverse engineering of recovered files): toolkit file inventory and orchestration order; credential-file format; default-credential mix. Inferences (Cyderes, labelled): "brute-force harvesting and credential dump sourcing"; the operator is both an IAB and a MaaS seller (based on forum posts sharing a Tox contact and capability match with the toolkit); Russian-speaking operator (UI strings, CIS exclusion). VMRay corroborates only the build-path link between stealer, HVNC and ENIGMA Locker, not the VPN-brokerage activity. Cyderes does not say how the 500+ entries were obtained, whether any entry is still valid, or which victims were tunnelled into.
+      EXPOSURE: any FortiGate or SonicWall SSL-VPN portal reachable from the internet that still accepts a local or reused account with a default or weak password (guest, admin, test) or without MFA; the toolkit takes ip:port:login:password lines, so non-standard ports do not help.
+      DETECTION concept (telemetry class first; all derived from the recovered toolkit's behaviour): (1) VPN gateway authentication and session logs: successful logins for guest/admin/test or other local accounts, repeated reconnects at roughly 30-second intervals from one source (the wrapper's reconnect loop), OpenConnect or NetExtender-class clients where the fleet is Forticlient-only, long multi-hour sessions; (2) within about 20 seconds of a tunnel coming up, from the VPN-assigned address: route/DNS lookups followed by a full LDAP enumeration of users, groups, trusts and domain controllers (domain-controller LDAP query logging, Windows 4624 type 3 from the VPN pool), then SMB host/share enumeration (5140/5145) and credential validation across many hosts; (3) the delivery-side chain for the stealer: a fake Windows Update installer dropping scripts into C:\Users\Public, a Defender exclusion for that folder, a certutil decode of a certificate-looking file into svchost.exe, short-lived scheduled tasks and an HKCU Run value named SecurityHealth.
+      HARDENING: retire local or default accounts on SSL-VPN, enforce MFA and certificate-based or SAML-backed identities, restrict management and portal exposure, alert on VPN-pool addresses that enumerate LDAP broadly.
+      TRIAGE: legitimate VPN users also reconnect and may run OpenConnect on Linux workstations; the discriminators the source supports are the account (default/guest/test), the immediate LDAP and SMB sweep from the VPN address, and the absence of a normal client posture. Admiralty hint: B (Cyderes first-hand reverse engineering), credibility 2 (VMRay corroborates the malware link; the brokerage activity is single-source).
+  - title: "UAT-12643: Talos finds a Go RAT that reads its C2 from Solana transaction memos, pairs it with LOLBin loaders and survives a Windows 'Reset this PC' through WinRE OEM scripts"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/", publisher: "Cisco Talos", date: "2026-11-18", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/the-challenge-of-defending-against-bulletproof-dead-drops-on-public-blockchains/", publisher: "Cisco Talos", date: "2026-11-18", role: "primary" }
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal", publisher: "Proofpoint", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: talos (standing lab check), feed https://blog.talosintelligence.com/rss/ items of 2026-11-18 (UAT-12643 and 'The challenge of defending against bulletproof dead drops on public blockchains') → primary: Talos, extract of both post URLs → pivot: Talos' own link to the Overlord/UNK_DeadDrop reporting, extract of https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal (confirms Overlord is an open-source Go C2 framework)"
+    summary: |
+      Cisco Talos found an exposed staging server of a financially motivated cluster it tracks as UAT-12643 and assesses, with low confidence, as North Korea-aligned on TTP overlap. Delivery is by three loader types whose own delivery to victims Talos did not observe: LNK files posing as PDFs that download with the signed Windows Defender utility MpCmdRun.exe -DownloadFile or with certutil -urlcache, a JavaScript HTA run by mshta.exe that writes to %TEMP% through ADODB.Stream, and an MSBuild project with an inline C# task compiled in memory. The payloads are the Go modular Overlord RAT (35 commands: keylogging, webcam and audio capture, file operations, reverse SOCKS pivot, reflective plugin loading), a public Python stealer (Good Game) and a multi-currency clipboard hijacker. Overlord discovers its WebSocket C2 by walking a wallet's Solana transaction history and decrypting the one memo of exactly 43 characters, so the operator re-points every implant with one transaction and no domain takedown helps. The RAT also sets itself critical with NtSetInformationProcess (ProcessBreakOnTermination) so killing it bluescreens the host, and persists in an HKCU Run value and in WinRE: it writes a randomly named payload and a batch file to the Recovery\OEM folder and patches ResetConfig.xml, so a Reset this PC runs it before the OS is restored. Stolen archives go to a file-sharing service and a Discord webhook posts the victim fingerprint. Victimology is inferred from the stealer's keyword harvesting (English, French, Spanish, Portuguese file names), the lures (finance statements, Viber and softphone installers) and crypto/gaming themes: Talos says Europe is potentially targeted and does not name a victim. A companion Talos post argues that blockchain dead drops (Bitcoin, EVM contracts via EtherHiding, TRON, Solana memo) defeat domain blocklists and sinkholing and recommends monitoring outbound JSON-RPC and endpoint memory instead. Proofpoint documented Overlord, an open-source Go C2 framework, in an earlier developer-targeting campaign (UNK_DeadDrop, 2026-06-05).
+    region_nexus: "Europe potentially (Talos: file-name keywords in English, French, Spanish, Portuguese); no named victim country"
+    primary_sector_nexus: "indirect: finance/accounting staff and VoIP softphone operators named as lure targets; techniques (MpCmdRun/certutil/MSBuild/mshta loaders, WinRE persistence, blockchain C2) transfer to any Windows estate"
+    sector: "finance"
+    cves: []
+    techniques: [T1204.002, T1218.005, T1127.001, T1105, T1547.001, T1102.001, T1071.001, T1567.002, T1567.004, T1555.003, T1056.001, T1113, T1090, T1620, T1497.001]
+    affected_products: ["Microsoft Windows", "Microsoft Defender Antivirus (MpCmdRun.exe abused)", "Windows Recovery Environment"]
+    entity_keys: ["tool:overlord-rat", "campaign:unk-deaddrop-2026"]
+    new_entities:
+      - { key: "actor:uat-12643", type: actor, name: "UAT-12643", aliases: [], summary: "Cisco Talos designation for a financially motivated cluster using the Overlord RAT with Solana-memo C2, LOLBin loaders and the Good Game stealer, assessed with low confidence as North Korea-aligned (Talos, 2026-11-18)." }
+      - { key: "tool:good-game-stealer", type: tool, name: "Good Game stealer", aliases: ["GoodGame"], summary: "Public Python infostealer (version 1.1.2, PyInstaller-packed) harvesting browser, Discord, Roblox, wallet and game-launcher data and keyword-filtered documents; used by UAT-12643 (Cisco Talos, 2026-11-18)." }
+    relation_suggestions:
+      - { subject: "actor:uat-12643", object: "tool:overlord-rat", basis: "Talos: UAT-12643 uses the Overlord RAT as one of its payloads, with a Solana-memo C2 resilience routine" }
+      - { subject: "actor:uat-12643", object: "campaign:unk-deaddrop-2026", basis: "Talos notes UNK_DeadDrop employed the Overlord RAT in earlier campaigns (Proofpoint, June 2026) as one of the TTP overlaps behind its low-confidence North Korea-aligned assessment; an overlap, not an attribution" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Constituency nexus is weak: financially motivated, crypto/gaming/VoIP-themed lures, Europe only 'potentially' and by keyword inference. Kept because the tradecraft is transferable and detection-relevant (WinRE OEM persistence that survives device reset, Solana-memo dead-drop C2 that domain blocklists cannot reach, signed-binary LNK loaders)."
+    evidence:
+      - quote: "The Overlord RAT implements a command-and-control (C2) resilience technique in which encrypted server URLs are embedded in Solana blockchain transaction memos."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/"
+      - quote: "Talos assesses with low confidence that UAT-12643 is a North Korea-aligned advanced persistent threat (APT) actor"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/"
+      - quote: "ensuring the implant survives a full system reset."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/"
+      - quote: "Modern cybersecurity requires a fundamental shift away from static domain blocklists toward monitoring anomalous outbound JSON-RPC traffic, analyzing endpoint memory, and treating blockchain infrastructure as an active threat communication channel."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-challenge-of-defending-against-bulletproof-dead-drops-on-public-blockchains/"
+    extended_notes: |
+      FACT vs INFERENCE. Facts (Talos reverse engineering of an exposed server): loader types, the 43-character memo filter, Recovery\OEM and ResetConfig.xml handling, ProcessBreakOnTermination, exfiltration via file-sharing upload plus webhook. Inferences (Talos, labelled): low-confidence North Korea-aligned; potential European targeting; target verticals from lure names. Talos did not observe how the initial files reach victims.
+      DETECTION concept (telemetry class first): (1) process creation with parent lineage: MpCmdRun.exe with -DownloadFile launched from a user shortcut, certutil -urlcache -f from an LNK, mshta.exe spawning scripting-host downloads, msbuild.exe compiling an inline task from a user-writable path with a BITS-impersonating user agent in the proxy log; (2) registry/file artifacts: modification of ResetConfig.xml and new files under Recovery\OEM on an end-user device, an HKCU Run value pointing into the user's AppData Network folder, a binary named RuntimeBroker.exe outside System32; (3) network: workstation processes issuing JSON-RPC calls (getSignatures/getTransaction for Solana, eth_call for EVM) to public blockchain RPC endpoints, and outbound uploads to a file-sharing site followed by a Discord webhook post; (4) a process holding SeDebugPrivilege that calls NtSetInformationProcess to mark itself critical, visible as an unexplained CRITICAL_PROCESS_DIED stop code.
+      HARDENING: block or alert on MpCmdRun.exe -DownloadFile and certutil -urlcache from non-admin contexts; constrain mshta.exe and msbuild.exe for standard users (WDAC/AppLocker); treat WinRE configuration as monitored state and re-image rather than 'reset' a suspect device.
+      TRIAGE: certutil, MSBuild and MpCmdRun are legitimate admin tools; the discriminator is user-level shortcut parentage plus an external download to a user-writable path. Legitimate blockchain RPC traffic is expected from crypto-related business apps only. Admiralty hint: B, credibility 2 (Talos first-hand; Overlord framework and port reuse corroborated by Proofpoint; attribution is low-confidence).
+  - title: "AuditTeam: Securelist reverses OpsAgent, a Cobalt Strike-class implant used by an extortion crew that sells a 'forced audit', with victims in Italy and Finland, a signed antivirus-driver killer and C2 discovery through a public GitHub page"
+    sources:
+      - { url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/", publisher: "Kaspersky Securelist", date: "2026-11-18", role: "primary" }
+      - { url: "https://www.dexpose.io/auditteam-strikes-russian-software-leader-i-sys/", publisher: "DeXpose (leak-site tracker)", date: "2026-06-25", role: "corroborating" }
+    discovery_trace: "first seen at: kaspersky-securelist (standing lab check), feed https://securelist.com/feed/ item 'The forced audit: how AuditTeam's OpsAgent framework masks ransomware as consulting' (2026-11-18 07:00) → primary: extract of https://securelist.com/auditteam-opsagent-forced-audit/122031/ → pivot: Securelist's own link to the first public leak-site sighting, extract of https://www.dexpose.io/auditteam-strikes-russian-software-leader-i-sys/ (claim-tracker only)"
+    summary: |
+      Kaspersky says a group it calls AuditTeam, active since January 2026 and still active in October at least, uses a custom C++ and now Rust post-exploitation framework, OpsAgent, against organisations in at least seven countries; it observed dozens of infected organisations in Russia, Italy, the Philippines, Hong Kong, Senegal, Finland and China, and the leak site claims seven more countries. The ransom note is formatted as an audit log and offers a vulnerability report for an 'Audit & Consulting fee' in place of publication of stolen data; the note is dropped by a cryptor module, so files are already encrypted when it is seen. OpsAgent (version 5.2.8) has Cobalt Strike-class tradecraft: shellcode injection into msiexec.exe (a C loader with CreateRemoteThread, a .NET loader with NtQueueApcThread, a Rust loader that runs in-process), mimikatz and pass-the-hash run as remote shellcode through named pipes, token theft and impersonation, SMB or HTTP-linked child agents, SOCKS pivoting and keylogging. It optionally reads its C2 address, AES-encrypted, from a public GitHub page and uses Amazon CloudFront subdomains as C2 endpoints; the GitHub page was removed in November but the newest Rust builds disable that feature. An AV/EDR killer module installs a digitally signed Beijing Jiangmin antivirus driver and terminates roughly 220 named processes including Microsoft Defender, Sysmon, Splunk and Wazuh agents, TeamViewer, Veeam and Acronis; the cryptor module (AES-CBC or ChaCha20 with X25519 key exchange) terminates database and backup services, removes shadow copies and overwrites files before deleting them. Kaspersky attributes the campaign to AuditTeam with high confidence from the ransom-note wording, leak site and model, and sees LLM-assisted code patterns, but names no initial access vector and no victim organisations.
+    region_nexus: "Europe: confirmed victims in Italy and Finland (Kaspersky telemetry); further victims in Asia, Africa and Russia; leak-site claims also name Spain, Turkey and Ukraine"
+    primary_sector_nexus: "indirect: 'all identified victims belong to different industries'; no public-sector victim named"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1486, T1489, T1490, T1685, T1543.003, T1055, T1055.004, T1003, T1550.002, T1134.001, T1090.001, T1056.001, T1113, T1102.001]
+    affected_products: ["Microsoft Windows", "Beijing Jiangmin Antivirus driver (abused signed driver)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:auditteam", type: actor, name: "AuditTeam", aliases: [], summary: "Extortion group active since January 2026 that frames ransom as an 'Audit & Consulting fee' for a vulnerability report; uses the OpsAgent framework, a signed Jiangmin antivirus-driver killer and a cryptor module; victims in Italy, Finland and at least five other countries (Kaspersky Securelist, 2026-11-18)." }
+      - { key: "malware:opsagent", type: malware, name: "OpsAgent", aliases: ["OpsAgent-rs"], summary: "Custom Windows post-exploitation framework (C++ implant 5.2.8 and a Rust rewrite) with injection loaders, named-pipe shellcode jobs, pivoting, an AV/EDR-killer driver module and a cryptor module; C2 over WebSocket with CloudFront subdomains discovered via a public GitHub page (Kaspersky Securelist, 2026-11-18)." }
+    relation_suggestions:
+      - { subject: "actor:auditteam", object: "malware:opsagent", basis: "Kaspersky attributes the OpsAgent campaign to AuditTeam with high confidence (ransom-note wording, leak site, remediation-report model)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "During this period, the group has infected dozens of organizations in Russia, Italy, the Philippines, Hong Kong, Senegal, Finland and China."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+      - quote: "An antivirus/endpoint detection and response (AV/EDR) killer module installs a digitally signed Beijing Jiangmin Antivirus driver to terminate security products."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+      - quote: "Its command-and-control domains use Amazon CloudFront subdomains, which OpsAgent discovers via a public GitHub repository."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+      - quote: "We attribute the OpsAgent campaign to AuditTeam with high confidence."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+    extended_notes: |
+      FACT vs CLAIM. Facts (Kaspersky telemetry and reverse engineering): loader variants and dates (C in April, .NET in June, Rust in September 2026), command set, driver module behaviour, C2 discovery via GitHub, CloudFront C2 hosting. Claims: AuditTeam's leak-site victim list (a criminal claim; DeXpose and dbdigest are leak-site trackers, reliability C, and only establish that the group's brand exists since March 2026). Inference (Kaspersky): LLM-assisted development from uniform injection-command scaffolding and plaintext function names before hashing. Not stated: initial access vector, any Italian or Finnish victim's name or sector, dwell time.
+      DETECTION concept (telemetry class first): (1) driver and service installs: a Jiangmin KV-series antivirus kernel driver loaded on a host that has no Jiangmin product (Windows 7045 / Sysmon EID 6) and a filter-port connection to it from a user-mode process; (2) process creation and injection: msiexec.exe (and notepad.exe for the keylogging job) spawning no installer but holding a named pipe and receiving remote threads or APCs from another process (Sysmon EID 8/10/17/18), msiexec.exe making outbound WebSocket/TLS connections; (3) security-tool tampering: sudden termination of Defender, Sysmon, Splunk or Wazuh agents and backup agents, then a flurry of database and backup service stops and shadow-copy deletion; (4) egress: non-browser processes fetching a GitHub repository README, followed by TLS to freshly seen CloudFront subdomains; (5) file artifacts: a cache-looking data file written beside Windows cache or CLR folders by an injected process, and a debug log in the Public profile.
+      HARDENING: block loading of known-abusable signed drivers (Microsoft vulnerable driver blocklist / WDAC), tamper protection on EDR, restrict GitHub and CloudFront egress for servers, and keep offline backups. Kaspersky notes the GitHub page, now removed, was a takedown point; the newest builds no longer use it.
+      TRIAGE: msiexec.exe is a normal installer host, so the discriminator is msiexec.exe without a Windows Installer service parent, with a named pipe and network connections. A ransom note formatted as an audit log from a cryptor module means encryption has already happened. Admiralty hint: B, credibility 3 (single-source first-hand research; Italy/Finland victim identity unverified; leak-site claims unverified).
+  - title: "Optimizely names the flaw behind OptimJack (account signup flow, user impersonation) and Zscaler ThreatLabz counts more than 450 domains serving the injected script"
+    sources:
+      - { url: "https://status.optimizely.com/incidents/ftw0fh9wx43z", publisher: "Optimizely status page", date: "2026-11-18", role: "primary" }
+      - { url: "https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript", publisher: "Zscaler ThreatLabz", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: zscaler-threatlabz (slice record), feed https://www.zscaler.com/blogs/feeds/security-research item 'Attackers Exploit Optimizely Flaw To Inject Malicious JavaScript' (Thu, 19 Nov 2026 00:45 GMT) → primary: extract of https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript → pivot: Zscaler's link to the vendor, extract of https://status.optimizely.com/incidents/ftw0fh9wx43z (page carries a 'Posted Nov 18, 2026 - 14:49 UTC' statement newer than the 2026-11-17 01:02 UTC post the covered entry cites)"
+    summary: |
+      Delta on the covered OptimJack entry. Optimizely's status entry now carries a longer statement posted 2026-11-18 14:49 UTC, after the covered entry was written: on 16 November an unauthorized third party exploited a flaw in the Web Experimentation account signup flow and used it to impersonate users on targeted customer accounts and insert malicious JavaScript into those customers' projects; Optimizely says it detected the activity the day it began, blocked delivery of the code and closed the vulnerability within three hours of detection, removed the injected code from all affected projects, that this was not a credentials breach, that the incident was limited to Web Experimentation and that less than 5% of its customers were impacted. This replaces the covered entry's reading that Optimizely named no flaw class. Zscaler ThreatLabz reports a separate count: more than 450 unique domains and more than 3,000 URLs serving the malicious script, across airlines, banking, e-commerce, insurance, media, telecommunications and other sectors, which it says suggests a broader impact than previously reported (Report URI's 178 organisations and 188 snippets, a floor from one vantage point). Zscaler adds that modified snippets were served from Optimizely's CDN and in some cases from customer domains, which is why sites that already allowed Optimizely scripts were reached, and that wallet replacement, skimming, cookie theft and screen capture act inside the page context while the iOS/iPadOS exploit-delivery branch is the one that could exceed the browser sandbox. Customer-side guidance in the Zscaler post: audit every Project JavaScript field and recent project changes, account-creation events and administrative access, rotate Optimizely tokens and reset administrator credentials, enforce MFA, and run Content-Security-Policy in enforcement mode with reporting. Tension to carry: Optimizely says the vulnerability was closed within three hours of detection and no malicious code remains, while the covered entry records Report URI's observation of a snippet cleaned and then re-infected during the clean-up window; the status page does not give the detection time.
+    region_nexus: "global; the covered entry already records the University of Basel site as a victim of the StorifyMe branch of the same campaign"
+    primary_sector_nexus: "indirect: any public or university web property that loads Optimizely Web Experimentation snippets"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1190, T1078.004, T1195.002, T1059.007, T1189]
+    affected_products: ["Optimizely Web Experimentation"]
+    entity_keys: ["campaign:optimjack-poisoned-vendor-scripts-2026-11", "product:optimizely"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-17/optimjack-poisoned-vendor-scripts-skimmer-iphone-router"
+    evidence:
+      - quote: "On 16 November 2026, an unauthorized third party exploited a flaw in the Optimizely Web Experimentation account signup flow. They used it to impersonate users on targeted customer accounts and insert malicious JavaScript into those customers’ projects."
+        attribution: "Optimizely status page"
+        source_url: "https://status.optimizely.com/incidents/ftw0fh9wx43z"
+      - quote: "This was not a credentials breach."
+        attribution: "Optimizely status page"
+        source_url: "https://status.optimizely.com/incidents/ftw0fh9wx43z"
+      - quote: "Less than 5% of our customers were impacted."
+        attribution: "Optimizely status page"
+        source_url: "https://status.optimizely.com/incidents/ftw0fh9wx43z"
+      - quote: "ThreatLabz identified more than 450 unique domains and more than 3,000 URLs serving the malicious script."
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript"
+    extended_notes: |
+      Update-of record fields the composer will likely need to move on the covered entry: headline/summary (the flaw is now named: signup-flow user impersonation), sources (add the 2026-11-18 vendor statement and ThreatLabz), evidence, and the body paragraph that says Optimizely names no flaw class or count. Priority of the covered entry stays high (Swiss victim on the StorifyMe branch). New actionable delta for customers: check the Optimizely project change history and account-creation events for 2026-11-16 (Zscaler: 'Review recent changes, user activity, account creation events, and administrative access'), not only the served JavaScript. Counts differ by vantage: Report URI 178 organisations (floor), ThreatLabz more than 450 domains and 3,000 URLs; do not average them. Provenance nuance: a Hudson Rock post of 2026-11-17 ('Beyond Optimizely', seen only through its malware.news summary, not fetched) already says Optimizely 'has confirmed a signup vulnerability'; the vendor's own written statement of the flaw location is the status-page entry stamped 2026-11-18 14:49 UTC, so the covered entry's 'names no flaw class' reflected the 2026-11-17 01:02 UTC status post only. Admiralty hint: A for the vendor statement on its own incident, B for ThreatLabz; credibility 1 on the flaw location (vendor and ThreatLabz agree), 2 on the 450-domain count (single measurement).
+  - title: "ANNUAL REPORT - Check Point Research, The State of Ransomware Q3 2026: record 2,830 leak-site victims, 117 active brands, top-10 share down to 49%, Qilin and The Gentlemen trading first place"
+    flag: "ANNUAL REPORT — Check Point Research: The State of Ransomware Q3 2026"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/", publisher: "Check Point Research", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research (standing lab check), feed https://research.checkpoint.com/feed/ item 'The State of Ransomware Q3 2026' (feed stamp 2026-11-17T22:01:28Z, page body dated November 18, 2026) → primary (no pivot needed): extract of https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/; the full report is gated behind a registration form on engage.checkpoint.com and was not read"
+    summary: |
+      Periodic report, blog summary only (the full report is registration-gated). Check Point Research counts 2,830 victims published on data leak sites in Q3 2026 (964 in July, 1,042 in August, 824 in September), the highest quarter on record. The ecosystem fragmented further: the top 10 groups' share of victims fell from 71% in Q1 to 58% in Q2 and 49% in Q3, groups outside the top ten account for the majority for the first time, and 117 distinct brands claimed at least one victim, up from 91 in Q2, 42 of them making their first claim in Q3. Qilin stayed first over the quarter by a narrow gap, with The Gentlemen overtaking it in September; LockBit fell out of the top ten. Check Point names Stadler Rail (Swiss), the Berlin state government and Manchester Airports Group among organisations that publicly refused high-value demands, reports average payments down 45% quarter on quarter to just over 1 million dollars while the median rose 167% to 400,000 dollars, and mentions a ShinyHunters-Clop dispute in which ShinyHunters reportedly breached and defaced Clop's leak site. All counts are leak-site claims by criminals as tallied by Check Point, not victim-confirmed incidents, and the post gives no sector, region or technique breakdown.
+    region_nexus: "global; names one Swiss victim-side case (Stadler Rail, already covered in the store) and one German state government"
+    primary_sector_nexus: "indirect: leak-site counting across all sectors; the post carries no public-sector figure"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: ["actor:qilin", "actor:thegentlemen", "actor:clop", "actor:shinyhunters"]
+    new_entities:
+      - { key: "report:checkpoint-state-of-ransomware-q3-2026", type: report, name: "Check Point Research - The State of Ransomware Q3 2026", aliases: [], summary: "Quarterly leak-site tally: 2,830 victims, 117 active brands, top-10 share 49%, Qilin first by a narrow gap over The Gentlemen, LockBit out of the top ten; full report gated (Check Point Research, 2026-11-18)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Periodic vendor leak-site statistics with no technique or sector content; kept as a flagged periodic report because it carries the group-ranking context (Qilin, The Gentlemen) the store's ransomware entries use and names a Swiss victim-side case. Feed timestamp 2026-11-17T22:01Z is about four hours outside the 26 h window; the page body itself is dated 2026-11-18."
+    evidence:
+      - quote: "Q3 2026 was the highest-volume quarter on record, with 2,830 victims published on data leak sites."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/"
+      - quote: "The top 10 groups’ share of victims fell for the third consecutive quarter, from 71% in Q1 to 58% in Q2 and 49% in Q3."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/"
+      - quote: "Stadler Rail, the Berlin state government and Manchester Airports Group were among the high-profile organizations that publicly refused ransom demands during the quarter."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/"
+    extended_notes: |
+      Attribute every number to Check Point's leak-site tally. Not stated: how victims were de-duplicated or how brands were counted, the payment data source, or any claim that groups listed are the ones that attack the public sector. Admiralty hint: B, credibility 3 (single vendor statistic from a blog summary; consistent with the store's Qilin and The Gentlemen entries but not independently re-counted).
+  - title: "Elastic's own analysis of the agent-framework PyPI compromise: flagged six minutes after upload, with the IMDS and OIDC token requests, hunting telemetry and an honest unknown on the Azure DevOps token"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/threat-command/we-caught-the-agent-framework-pypi-compromise-six-minutes-after-it-published", publisher: "Elastic Security Labs", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: elastic-seclabs (standing lab check), feed https://www.elastic.co/security-labs/rss/feed.xml item dated 2026-11-18 → primary (no pivot needed): extract of https://www.elastic.co/security-labs/threat-command/we-caught-the-agent-framework-pypi-compromise-six-minutes-after-it-published"
+    summary: |
+      Delta on the covered agent-framework entry, which rests on Socket and SafeDep. Elastic Security Labs, a third independent analyst, says its supply-chain monitor flagged 1.26.1 as malicious at 20:41 UTC, six minutes after it went live on PyPI at 20:35 UTC on 2026-11-17, and that 1.26.2 followed at 21:08 UTC with the same stealer under new filenames; PyPI removed both within the hour. Elastic confirms the startup hook, the 300-process environment read and the credential-file sweep, and adds three details: a table of what differs in 1.26.2 (new .pth and module names, a changed exfil user agent, and the GitHub Actions OIDC request that 1.26.1 lacks); the managed-identity branch requests a separate token for each of 12 Azure resources (Resource Manager, Graph, Key Vault, Storage, AI Foundry, Machine Learning, Container Registry, Azure DevOps and others) via the local identity endpoint or the instance metadata service; and a hedge: because the Azure DevOps OIDC request omits the service-connection identifier of Microsoft's documented flow, Elastic says it is unclear whether it returns a token matching any federated credential. Detection and response content: a hunt for creation of the two .pth files in site-packages and for DNS to the web-hook service, plus three Elastic Defend behaviour rules (package-manager install ancestry, suspicious metadata-service requests, secret-file access followed by an IMDS request); advice to rotate secrets, review activity for short-lived tokens that cannot be revoked, search proxy and DNS logs for the two exfil user agents and consider a delay before adopting newly published packages.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect: Azure and GitHub-hosted build pipelines in public-sector software teams"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1546.018, T1552.005, T1528, T1567]
+    affected_products: ["Microsoft Agent Framework"]
+    entity_keys: ["incident:microsoft-agent-framework-pypi-compromise-2026-11", "product:microsoft-agent-framework"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-18/microsoft-agent-framework-pypi-credential-stealer-pth-hook"
+    borderline: true
+    borderline_reason: "Third independent write-up of an already covered incident; the delta is detection telemetry (package-manager ancestry then IMDS request, 12 token audiences) and one explicit unknown, not a change of exposure or action. Worth an `improvement` or `update` record only if the composer wants the detection concept and the Azure DevOps OIDC hedge on the entry."
+    evidence:
+      - quote: "flagged it as malicious at 20:41 UTC"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/we-caught-the-agent-framework-pypi-compromise-six-minutes-after-it-published"
+      - quote: "so it is unclear whether these requests return a token that matches any federated credential."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/we-caught-the-agent-framework-pypi-compromise-six-minutes-after-it-published"
+      - quote: "Each token lets the attacker act as the managed identity against that service for as long as the token remains valid, with whatever permissions the identity has been granted."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/threat-command/we-caught-the-agent-framework-pypi-compromise-six-minutes-after-it-published"
+    extended_notes: |
+      Telemetry class first: endpoint file-creation events for .pth files added to site-packages by an install; process ancestry from a package manager to a Python process reading /proc/<pid>/environ of other processes; metadata-service (169.254.169.254 class) and identity-endpoint requests from a build or developer process that just read credential files; outbound POSTs to a web-hook service. Admiralty hint: B, credibility 1 on the shared facts (Socket, SafeDep and Elastic agree on versions, times and behaviour).
+  - title: "Hostile Inference: ZDI chains Docker Desktop's unauthenticated Model Runner API into host file writes and code execution on macOS and Windows; fixed in Docker Desktop 4.61.0 and later"
+    sources:
+      - { url: "https://www.thezdi.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes", publisher: "Zero Day Initiative", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: malware-news (slice record), feed https://malware.news/latest.rss?page=0 item 'Hostile Inference: Exploiting Docker Model Runner for Container Escapes', URL https://malware.news/t/hostile-inference-exploiting-docker-model-runner-for-container-escapes/127445 → WebSearch ('\"Hostile Inference\" Exploiting Docker Model Runner for Container Escapes zerodayinitiative.com blog', no primary found) → primary: ZDI blog Squarespace feed https://www.zerodayinitiative.com/blog/?format=rss (item link on thezdi.com, published 2026-11-18 17:23 UTC), extract of https://www.thezdi.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes"
+    summary: |
+      Zero Day Initiative describes a container-to-host chain in Docker Desktop for macOS and Windows built around Docker Model Runner (DMR), the local-model feature. DMR's REST API is unauthenticated and reachable from any container at its internal DNS name; its /engines/_configure endpoint appends caller-supplied runtime flags to the llama.cpp server command line (ZDI-26-150 / CVE-2026-28400, reported 2025-11-05, Docker confirmed the fix 2026-03-03). Because on macOS and Windows the inference process runs on the host as a child of the Docker Backend with the user's privileges, inside a Seatbelt (macOS) or Job Object (Windows) sandbox, the argument injection gives host file read and write, ZDI shows how to control the written content through log output, and the payoff is arbitrary host code execution through Docker Extensions. By default a stock container can only corrupt the Docker Desktop VM data disk (a denial of service on macOS); code execution needs non-default configurations. ZDI adds a macOS Seatbelt sandbox escape (ZDI-26-451, public advisory 2026-07-23, fixed by a tightened profile merged 2026-02-27) and a WSL2 VM-to-host pivot through Docker Extensions (ZDI-26-258) that abuses the backend socket to toggle the marketplace-only extensions flag from inside the VM. Per ZDI, Docker Desktop users received the fixed DMR in version 4.61.0 and later. No exploitation in the wild is reported.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect: developer workstations in public-sector software teams running Docker Desktop on macOS or Windows"
+    sector: "technology"
+    cves: [CVE-2026-28400]
+    techniques: [T1611, T1068]
+    affected_products: ["Docker Desktop", "Docker Model Runner"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "All three issues are fixed (Docker Desktop 4.61.0 and later; the macOS profile fix since February), code execution needs non-default configuration, there is no exploitation and the exposure is developer workstations rather than internet-facing services. Kept only as research that shows the local-AI stack's trust boundary; a one-line `research` entry at most."
+    evidence:
+      - quote: "Docker Desktop users received the fixed DMR via version 4.61.0 and later."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.thezdi.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes"
+      - quote: "Further analysis, under non-default configurations, turned the same primitive into arbitrary code execution on the host, on both macOS and Windows."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.thezdi.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes"
+    extended_notes: |
+      CVE-2026-28400 was verified only through ZDI's post (NVD and MITRE pages are not cite-able per policy and the post links the CVE record); fixed-version statement is ZDI's. Detection class: container processes calling the model-runner internal DNS name's configure endpoint with runtime-flag fields; host-side Docker Backend child processes writing outside the model directory; Docker Extensions installed from outside the marketplace. Admiralty hint: B, credibility 2.
+  - title: "ROMULUS: Blackpoint names CNCMachineRMS as the unnamed RAT behind the ClickFix delivery platform, via a trojanized Stardock installer that sideloads a DLL and hides shellcode in a NuGet package"
+    sources:
+      - { url: "https://blackpointcyber.com/blog/romulus-cncmachinerms/", publisher: "Blackpoint Cyber Adversary Pursuit Group", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: blackpoint-cyber (slice record), raw listing https://blackpointcyber.com/blog/ (href /blog/romulus-cncmachinerms/) → primary (no pivot needed): extract of https://blackpointcyber.com/blog/romulus-cncmachinerms/"
+    summary: |
+      Blackpoint's Adversary Pursuit Group assesses with high confidence that the previously unnamed RAT delivered through the ROMULUS ClickFix platform (Huntress, 2026-09-28; Forescout Vedere Labs, 2026-10-15) is CNCMachineRMS, the family LevelBlue SpiderLabs documented in August as the payload of a BabaDeda chain, on a matching payload hash, family-specific strings and storage structures. The recovered chain: an obfuscated PowerShell stager fetches an MSI (decimal-notation IP in the URL), strips the Mark of the Web and runs it silently through msiexec.exe; the MSI masquerades as a Stardock tool, hides itself from the installed-programs list and launches a signed Stardock executable whose companion library has been altered to import a malicious DLL; that DLL reads a payload hidden inside the compressed data of a System.Net.Http NuGet package entry, decodes about 341 KB of shellcode with a position-dependent XOR and runs it through the EnumSystemCodePagesW callback. Persistence is a Run key plus a scheduled task, and the RAT adds persistent remote access, surveillance, reconnaissance and further payload execution; Blackpoint saw no post-exploitation. The ROMULUS platform also delivers LegionLoader through a separate chain. Blackpoint says the findings support shared tooling across the BabaDeda and ROMULUS ecosystems but do not establish a shared operator, and assesses that delivery platforms of this kind will keep being offered over the next 12 months.
+    region_nexus: "global; no victim region named"
+    primary_sector_nexus: "indirect: business and MSP environments (Blackpoint); ClickFix lures reach any office worker"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1204.002, T1059.001, T1218.007, T1574.001, T1620, T1547.001, T1053.005, T1071.004, T1036.005]
+    affected_products: ["Stardock (abused signed installer components)", "Microsoft Windows Installer"]
+    entity_keys: ["malware:cncmachinerms"]
+    new_entities:
+      - { key: "campaign:romulus-clickfix-delivery-platform-2026", type: campaign, name: "ROMULUS", aliases: ["ROMULUS ClickFix delivery platform"], summary: "Multi-payload ClickFix delivery platform (Forescout Vedere Labs, 2026-10-15) distributing CNCMachineRMS and LegionLoader through separate chains; CNCMachineRMS attribution to the Stardock chain by Blackpoint APG (2026-11-18)." }
+    relation_suggestions:
+      - { subject: "campaign:romulus-clickfix-delivery-platform-2026", object: "malware:cncmachinerms", basis: "Blackpoint APG assesses with high confidence the unnamed RAT delivered through the ROMULUS Stardock chain is CNCMachineRMS (matching payload hash, strings and storage structures)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "A family-naming and chain-linking contribution on commodity ClickFix delivery; no victim, sector or post-exploitation, and the Huntress and Forescout chains it builds on are not in the cited sources of this run. Kept for the behavioural detection list (PowerShell to msiexec with MotW removal, ARPSYSTEMCOMPONENT-hidden installs, sideloading from user-writable paths, non-browser DoH)."
+    evidence:
+      - quote: "Blackpoint’s APG assesses with high confidence that the unnamed RAT delivered through the ROMULUS Stardock chain is CNCMachineRMS."
+        attribution: "Blackpoint Cyber Adversary Pursuit Group"
+        source_url: "https://blackpointcyber.com/blog/romulus-cncmachinerms/"
+      - quote: "Defenders should prioritize recurring behaviors, including PowerShell to MSI execution, dependency sideloading from user-writable paths, combined Run Key and scheduled task persistence, and non-browser DNS over HTTPS traffic."
+        attribution: "Blackpoint Cyber Adversary Pursuit Group"
+        source_url: "https://blackpointcyber.com/blog/romulus-cncmachinerms/"
+    extended_notes: |
+      Blackpoint states the linkage "does not establish a shared or connected operator" between BabaDeda and ROMULUS users; do not upgrade it. Techniques T1218.007 (msiexec), T1053.005 (scheduled task) and T1071.004 (DoH-based C2 is listed as a defender priority, not described as CNCMachineRMS's observed C2) should be checked against the composer's evidence before mirroring; drop T1071.004 if only the 'non-browser DoH' defender note supports it. Admiralty hint: B, credibility 2 (independent reverse engineering that agrees with LevelBlue's earlier family research).
+# Cross-domain leads for the main agent (not S3 items; surfaced because they are not in the store and fall in S1's lane)
+cross_domain_leads:
+  - lead: "NGINX HTTP/2 critical flaws CVE-2026-123633 (use-after-free in HTTP/2 connection handling, reverse-proxy path, NGINX OSS from 1.19.7) and CVE-2026-123007 (integer underflow in send_window flow-control accounting, versions back to 1.9.5, code execution shown against static-file serving with no backend or third-party module), both CVSS 4.0 9.2, unauthenticated, HTTP/2 must be enabled; F5 released fixes on 2026-11-18 (NGINX OSS 1.30.7 stable and 1.31.9 mainline; NGINX Plus 37.0.7.1 and 37.2.0.1 for the first, 37.0.8.1 and 37.3.0.1 for the second); found independently by Wiz Research, Ikotas Labs, Metnir, Rapid7 and Xint. SANS ISC calls it 'NGINX2Shell' and says no exploit is public yet. Zero hits for these CVE ids or for NGINX in prior_coverage.json and the entries store. No F5/NGINX advisory page, KEV or EUVD row was fetched by S3 (Imperva's page surfaces no link to the F5 advisory), so every version and CVSS figure here rests on Imperva Threat Research and must be re-read from F5's advisory by S1."
+    sources_fetched:
+      - { url: "https://www.imperva.com/blog/critical-nginx-http-2-vulnerabilities-cve-2026-123633-and-cve-2026-123007-what-imperva-customers-need-to-know/", publisher: "Imperva Threat Research", date: "2026-11-18" }
+      - { url: "https://isc.sans.edu/diary/33532", publisher: "SANS Internet Storm Center", date: "2026-11-18" }
+    quotes:
+      - { quote: "Both require HTTP/2 to be enabled on the affected NGINX server.", attribution: "Imperva Threat Research", source_url: "https://www.imperva.com/blog/critical-nginx-http-2-vulnerabilities-cve-2026-123633-and-cve-2026-123007-what-imperva-customers-need-to-know/" }
+      - { quote: "Researchers demonstrated code execution against NGINX serving ordinary static files, with no backend application or third-party module involved.", attribution: "Imperva Threat Research", source_url: "https://www.imperva.com/blog/critical-nginx-http-2-vulnerabilities-cve-2026-123633-and-cve-2026-123007-what-imperva-customers-need-to-know/" }
+      - { quote: "You will not be able to patch nginx2shell across a large organization before the exploit is released.", attribution: "SANS Internet Storm Center (Johannes Ullrich)", source_url: "https://isc.sans.edu/diary/33532" }
+  - lead: "Java4Shell (covered by 2026-11-18/cve-2026-114938-java4shell-openjdk-avx512-base64-decoder-rce, which says 'no exploitation reported'): GreyNoise published a 'Live Activity Report' on 2026-11-18 saying it is monitoring scanning and exploitation attempts (summary page only: no counts, no window, full report link a placeholder; read via WebFetch), while SANS ISC's 2026-11-18 diary says its Java honeypots see many attacks 'but none that exploit Java4Shell (yet)'. Net: no confirmed exploitation as of 2026-11-18; re-check GreyNoise Labs and CISA KEV at the next fire. Zscaler ThreatLabz also posted its Java4Shell advisory on 2026-11-19 02:39 GMT (affected-CPU check via /proc/cpuinfo flags avx512f, avx512bw, avx512vbmi and bmi2; workarounds -XX:-UseBASE64Intrinsics or -XX:UseAVX=2); the covered entry may already carry both."
+    sources_fetched:
+      - { url: "https://www.greynoise.io/blog/global-event-java4shell-cve-2026-114938-live-activity-report", publisher: "GreyNoise", date: "2026-11-18" }
+      - { url: "https://isc.sans.edu/diary/33532", publisher: "SANS Internet Storm Center", date: "2026-11-18" }
+dropped_leads:
+  - { lead: "Bitdefender EggStreme update (2026-11-18)", reason: "borderline-drop: the operation keeps targeting Philippine government organisations (Taiwan at low-to-medium confidence); no European or Swiss nexus; the transferable point (operators rebuilt tooling within 12 to 14 days of the first report) is a generic Pyramid-of-Pain lesson." }
+  - { lead: "ThreatFabric Bazuka mobile fraud framework (2026-11-18 via malware.news)", reason: "borderline-drop: Android NFC-relay and overlay framework with ADB bridging and LLM-assisted operator panel; the post names no target country or bank; the page metadata date is unreliable (2024-10-01); no constituency decision." }
+  - { lead: "Natto Thoughts, ZRON leak special report, Tx RAT (2026-11-18)", reason: "paywalled: only the introduction is readable; a previously undocumented cross-platform Chinese contractor RAT is noted for a later fire if the full text opens." }
+  - { lead: "Dream Research, Mustang Panda ASEAN-summit lures against Philippine officials (2026-11-16, lookback)", reason: "borderline-drop: PlugX through DLL sideloading with a diplomatic-agenda lure; Philippine and ASEAN targeting only, consistent with the 2026-11-18 run's drop of Asian-operator-only reports." }
+  - { lead: "Securelist Operation ShadowCloud parts 1 and 2 (2026-11-17)", reason: "already borderline-dropped by run 2026-11-18T0356Z; no new development." }
+  - { lead: "Java4Shell vendor posts (Zscaler 2026-11-19, Datadog 2026-11-17, Talos 2026-11-18, Blackpoint, Imperva)", reason: "covered by the 2026-11-18 Java4Shell entry; see cross_domain_leads for the two exploitation-status data points." }
+  - { lead: "SpecterOps 'Black October Made Attack Path Management a Now Problem' (2026-11-17)", reason: "vendor commentary on Gartner and Patch Tuesday counts; no technical content." }
+  - { lead: "Unit 42 'Borrowed Code, Real Consequences: What OPTIMJACK Teaches Us' (2026-11-17 20:43 UTC)", reason: "outside the 26 h window by feed stamp and the topic is covered; not read in full." }
+  - { lead: "Microsoft Threat Intelligence newest posts (2026-11-17 device-code risk for AI coding agents; 2026-11-16 Microsoft 365 outage-lure phishing)", reason: "device-code piece already borderline-dropped on 2026-11-18; the outage-lure phishing post is outside the window and not in the store (read as a listing teaser only via WebFetch)." }
+  - { lead: "Retadup/CoffeeLoader (Securelist 11-16), SANSAR Linux miner (Elastic 11-12), GeoVision XMRig (Huntress 11-13), PaperWall (Trend 11-12), CAIRN autonomous-AI framework (Unit 42 11-12), Elastic five AI attack frameworks (11-13)", reason: "standing-lab items outside the 26 h window (the 2026-11-18 run could have taken them)." }
+  - { lead: "SOCRadar ArgonHunt and XaocMail, Arctic Wolf BlueNoroff, Genians NodeLinkRAT, AhnLab October APT trends, ANY.RUN US-logistics campaigns (malware.news leads, 2026-11-12 to 2026-11-17)", reason: "not drilled: crypto-theft, Korea, US-logistics or monthly roll-up content with no stated Swiss or EU public-sector nexus." }
+  - { lead: "Mozilla CA Certificate Compliance Bugzilla rows (2026-11-18/19: IdenTrust, TWCA, CFCA, TrustAsia, SSL.com, Telekom Security, DigiCert)", reason: "routine CA-incident churn; no new distrust or key-compromise decision affecting browsers or Swiss relying parties." }
+candidate_sources:
+  - id: vmray-labs
+    publisher: "VMRay Labs (malware research notes)"
+    url: "https://www.vmray.com/news/"
+    category: research
+    why: "First-hand malware lineage research (its 2026-09-01 build-path note independently corroborated Cyderes' tcherber findings); articles read through the jina fallback only (extract returned a cookie-consent page first), so a feed or sitemap route should be probed before promotion."
+coverage_gaps:
+  - { source_id: sygnia, reason: "RECIPE FIX: `WebFetch https://www.sygnia.co/blog/` now reads the blog listing (titles, DD.MM.YYYY dates, hrefs); newest post 2026-11-08, so nothing in the 168 h lookback. direct, extract and jina were not retried this run (previous notes: all blocked); set fetch_method to webfetch for the listing and reset consecutive_fetch_failures." }
+  - { source_id: dream-research, reason: "RECIPE: `extract https://dreamgroup.com/blog` returns only the oldest listed post (2026-09-03); `url https://dreamgroup.com/blog` (raw HTML) carries every card with a 'Month D, 2026' date and /blog/<slug> hrefs, then `extract` per post. Newest: 2026-11-16 Mustang Panda ASEAN lures." }
+  - { source_id: blick-ch, reason: "RECIPE: https://www.blick.ch/news.xml is a news sitemap, not RSS, so `feed` fails (jina fallback then hit exhausted keys, exit 1); `url --direct https://www.blick.ch/news.xml` works but today spans only about 48 h (273 URLs, 2026-11-17 to 2026-11-18), so the 146 h lookback was only partly served. No Swiss public-sector cyber item in that span (IIHF site defacement and US outage coverage only)." }
+  - { source_id: blackpoint-cyber, reason: "RECIPE: `extract https://blackpointcyber.com/blog/` returns navigation only; raw `url` gives the /blog/<slug> hrefs; per-post `extract` carries the date." }
+  - { source_id: cyderes-howler-cell, reason: "RECIPE: neither `extract` nor raw `url` of /howler-cell lists post links (script-rendered); posts surface through malware.news or search. `extract` of a post can drop its Key Findings; raw `url` plus tag stripping returns the full text." }
+  - { source_id: imperva-threat-research, reason: "RECIPE: raw `url https://www.imperva.com/blog/` gives hrefs (wp-json also present); `extract` per post reads with date; the listing mixes Threat Research with marketing posts." }
+  - { source_id: binarly-blog, reason: "RECIPE: `extract https://www.binarly.io/blog` returns the raw page payload (about 630 KB, served direct-raw) with publishDate fields; newest 2026-11-03, nothing in lookback." }
+  - { source_id: zdi, reason: "RECIPE (record is fetch_method webfetch): `feed https://www.zerodayinitiative.com/blog/?format=rss 8` reads directly with dated items whose links sit on the thezdi.com host; `extract` of the thezdi.com post URL returns the full body." }
+  - { source_id: malware-news, reason: "RECIPE CONFIRMED: `feed https://malware.news/latest.rss?page=N 30` for N=0..6 reaches back to 2026-11-12 16:25 UTC (about 210 topics); each topic summary carries the originating article link. The Symantec CyberPower and ZDI Docker leads came from this route." }
+  - { source_id: sans-isc, reason: "OPERATIONAL: isc.sans.edu answered the first `extract` of a diary normally but served an 'Access Restricted' block page to a second `extract` of the same URL minutes later (container IP temporarily locked out); read ISC through its rssfeed.xml record and avoid repeat fetches of diary pages." }
+  - { source_id: jina-reader, reason: "OPERATIONAL: five jina reader keys answered HTTP 402 (balance exhausted) during the blick feed attempt; a later key still served the VMRay page. Nothing in this run depended on the reader except VMRay." }
+# REQUIRED: one row per record of the slice, in slice order.
+source_ledger:
+  - { id: sygnia, tier: standard, attempted: true, transport: "webfetch listing (direct/feed/extract/jina not retried; blocked per notes) + WebSearch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-11-08; recipe fix reported" }
+  - { id: air-security, tier: standard, attempted: true, transport: "url raw listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-29 (SolanaCry); marketing posts only since" }
+  - { id: binarly-blog, tier: standard, attempted: true, transport: "extract (direct-raw payload)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-11-03" }
+  - { id: datadog-security-labs, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only Java4Shell (2026-11-17), covered by the 2026-11-18 entry; MongoDB UAF 2026-11-11 and ARTEX-on-AWS 2026-11-09 are before the horizon and the latter is covered" }
+  - { id: dream-research, tier: standard, attempted: true, transport: "url raw listing + extract of post", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Mustang Panda ASEAN lures 2026-11-16, borderline-dropped (Philippine targeting only)" }
+  - { id: mozilla-ca-compliance-bugzilla, tier: standard, attempted: true, transport: "url --direct REST", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "ten routine CA-compliance rows changed 2026-11-18/19; no security-significant development" }
+  - { id: specterops, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Black October commentary dropped; 2026-11-10 and earlier are before the horizon" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 1, note: "Optimizely post is the delta item; Java4Shell post covered" }
+  - { id: blackpoint-cyber, tier: standard, attempted: true, transport: "url raw listing + extract", horizon_hours: 149, in_horizon_items: 4, returned: 1, note: "ROMULUS/CNCMachineRMS returned borderline; adversary-in-the-middle explainer, Threat Pulse 72 digest and Java4Shell note not returned" }
+  - { id: blick-ch, tier: standard, attempted: true, transport: "url --direct news sitemap (feed fails: sitemap, not RSS)", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "sitemap covers about 48 h only; no Swiss public-sector cyber item" }
+  - { id: cyderes-howler-cell, tier: standard, attempted: true, transport: "extract + raw url; post found via malware.news", horizon_hours: 149, in_horizon_items: 1, returned: 1, note: "tcherber access-broker toolkit (lookback)" }
+  - { id: forescout-research, tier: standard, attempted: true, transport: "url raw listing + extract of posts", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-11-03" }
+  - { id: imperva-threat-research, tier: standard, attempted: true, transport: "url raw listing + extract", horizon_hours: 146, in_horizon_items: 4, returned: 0, note: "NGINX2Shell post (2026-11-18) surfaced as a cross-domain lead for S1; Java4Shell customer note and marketing posts not returned" }
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "extract research listing + per-post extract", horizon_hours: 146, in_horizon_items: 0, returned: 0, note: "newest 2026-10-23 (Qilin and Japan); gated report landing pages" }
+  - { id: malware-news, tier: standard, attempted: true, transport: "feed pages 0..6", horizon_hours: 146, in_horizon_items: 180, returned: 0, note: "discovery roll-up: yielded the Symantec CyberPower, Cyderes tcherber, ZDI Docker and Bitdefender/ThreatFabric/Natto leads recorded above as items or dropped_leads" }

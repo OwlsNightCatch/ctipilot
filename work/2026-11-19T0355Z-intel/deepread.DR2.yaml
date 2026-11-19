@@ -1,0 +1,2223 @@
+domain: DR2
+run_id: 2026-11-19T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+note: Scoped deep read of eight pending changelog updates. Every claim_table passage was checked verbatim against the saved body named in saved_body (grep -F for single-line passages; python substring for the multi-line ones, marked in check).
+  Entry sentences quoted in supersedes/entry_sentences_checked were checked verbatim against the entry files (68 of 68). Bodies are under work/2026-11-19T0355Z-intel/deepread/<n>_<topic>/; absence checks in deepread/absence_checks.txt.
+totals:
+  source_claims: 226
+  source_claims_verified: 226
+  entry_quotes: 68
+  entry_quotes_verified: 68
+items:
+- n: 1
+  entry: entries/2026-11-18/drupal-core-critical-release-2026-11-18-psa-2026-11-16.md
+  finding: findings.S1.yaml items[10]
+  new_sources:
+  - url: https://www.drupal.org/sa-core-2026-017
+    role: primary
+    transport: extract (description/solution) + url --direct (risk, CVE, affected-versions fields)
+    published: 2026-11-18 17:43:11 UTC (Drupal security RSS pubDate)
+  - url: https://www.drupal.org/sa-core-2026-018
+    role: primary
+    transport: page returned Drupal Client Challenge to url --direct and extract twice each; jina pool exhausted (402); fields read from the Drupal Security RSS item (https://www.drupal.org/security/rss.xml, full field HTML) and cross-checked
+      with WebFetch (summary only)
+    published: 2026-11-18 17:50:21 UTC (RSS pubDate)
+  - url: https://advisories.ncsc.nl/2026/ncsc-2026-0507.html
+    role: corroborating (restates; priority Normaal; published 18-11-2026 20:01 Europe/Amsterdam)
+    transport: extract
+  reader_delta:
+  - 'The pre-announced release shipped on 2026-11-18 as TWO advisories. SA-CORE-2026-017 (CVE-2026-132165, Critical 18/25, AC:Complex/A:None/CI:All/II:All/E:Proof/TD:Uncommon) is the anonymous-reachable flaw: core ships install.php and, under
+    unspecified specific conditions, an attacker can use the installer to attempt to reinstall Drupal, leading to site takeover or RCE. SA-CORE-2026-018 (CVE-2026-132166, Moderately critical 14/25, AC:Complex/A:Admin/E:Theoretical) is a gadget
+    chain, not directly exploitable, usable only when a separate flaw lets an attacker pass unsafe input to unserialize().'
+  - Both share affected "<10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13" and the same fixes 11.4.13, 11.3.22, 10.6.22; 11.2.x and below and 10.5.x and below are end-of-life with no security coverage.
+  - 'Only workaround offered, for every branch: follow Drupal''s instructions for securing the installer. Drupal says SOME exploit paths are mitigated if the web server cannot write to or change permissions on settings.php (so non-writable settings.php
+    is not a full mitigation). NCSC-NL reads the flaw as exploitable when the installer was not correctly secured or removed after the initial installation (NCSC-NL reading, not Drupal text).'
+  - Drupal Steward already protects known attack vectors of SA-017 (Steward statement absent from SA-018). SA-017 was found by Anthropic's OSS Scanner (ANT-2026-GMRPK0BU).
+  supersedes:
+  - where: title / headline / summary / actions[0] / sourcing_note
+    entry_sentence: scheduled for 2026-11-18 between 17:00 and 21:00 UTC
+    status: superseded
+    now: 'released 17:43 and 17:50 UTC on 2026-11-18; "The release was not published at the time of writing" (sourcing_note) is obsolete; actions[0] "Reserve time on the evening of 2026-11-18" becomes: update to 11.4.13 / 11.3.22 / 10.6.22 now'
+  - where: frontmatter cves
+    entry_sentence: 'cves: []'
+    status: superseded
+    now: 'add CVE-2026-132165 (critical, RCE, pre-auth: Drupal A:None, E:Proof, no source reports exploitation, fixed 11.4.13/11.3.22/10.6.22; affected <10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13) and CVE-2026-132166 (gadget chain, A:Admin,
+      E:Theoretical, same versions; not directly exploitable)'
+  - where: body para 1
+    entry_sentence: It rates the vulnerabilities critical, 18 of 25, with access complexity Complex, exploit status Proof of concept and target distribution Uncommon
+    status: refined
+    now: the 18/25 and that exact vector are SA-017 alone; SA-018 is Moderately critical 14/25 (A:Admin, E:Theoretical). The PSA vector equals SA-017 vector character for character.
+  - where: body para 1
+    entry_sentence: it also says at least one can be exploited by anonymous users and that more than one configuration is affected
+    status: refined
+    now: SA-017 is the anonymous one (A:None); SA-018 needs administrator authentication and is not directly exploitable. No fetched source says whether the PSA phrase "more than one configuration is affected" refers to these two advisories.
+  - where: body para 1
+    entry_sentence: no CVE id, component or fixed version has been published
+    status: superseded
+    now: CVE ids, component (install.php installer / gadget chain) and fixed versions are published
+  - where: body para 1
+    entry_sentence: plus the pre-releases 12.0.0-beta3 and 11.5.0-beta1; Drupal before 10.6 and Drupal 11 before 11.3 are end-of-life and are to get interim mitigation steps in the advisory
+    status: contradicted-in-part
+    now: 'Neither SA page mentions pre-releases (grep -c beta = 0 on both); keep that clause attributed to the PSA only. For end-of-life lines the SAs offer no EOL-specific mitigation: they state 11.2.x and below / 10.5.x and below "do not receive
+      security coverage" and the only interim step (all branches) is securing the installer.'
+  - where: body para 1
+    entry_sentence: and other advisories released the same day may lack Steward mitigation
+    status: resolved
+    now: SA-017 has Drupal Steward protection; SA-018 carries no Steward statement
+  - where: Exposure line
+    entry_sentence: so the version decides until the advisory publishes
+    status: superseded
+    now: 'advisory published: version below the fixed release AND the installer path reachable/insecure (Drupal: "specific conditions", unspecified; some paths mitigated if web server cannot write settings.php). Do not state "settings.php writable"
+      as the exposure condition: the S1 extended_notes phrasing is an inference, Drupal says only SOME exploit paths are mitigated.'
+  - where: frontmatter verification
+    entry_sentence: 'verification: single-source'
+    status: refined
+    now: Drupal SA pages are the primary; NCSC-NL NCSC-2026-0507 restates them (two SA pages + NCSC-NL = multi-source by publisher count but one assessor)
+  - where: sources
+    entry_sentence: NCSC.ch Cyber Security Hub
+    status: unchanged
+    now: hub post 13196 still the 2026-11-17 pre-announcement, history shows only the Published record, exploitation UNKNOWN; no post-release update as of this fetch
+  entry_sentences_checked:
+  - where: title
+    entry_sentence: a critical security release for all supported branches (11.4.x, 11.3.x and 10.6.x) is scheduled for 2026-11-18 between 17:00 and 21:00 UTC
+    verbatim_in_entry: true
+  - where: sourcing_note
+    entry_sentence: The release was not published at the time of writing; the first Drupal advisory for it will carry the CVE ids, component and fixed versions.
+    verbatim_in_entry: true
+  - where: frontmatter cves
+    entry_sentence: 'cves: []'
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: It rates the vulnerabilities critical, 18 of 25, with access complexity Complex, exploit status Proof of concept and target distribution Uncommon
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: it also says at least one can be exploited by anonymous users and that more than one configuration is affected
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: no CVE id, component or fixed version has been published
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: plus the pre-releases 12.0.0-beta3 and 11.5.0-beta1; Drupal before 10.6 and Drupal 11 before 11.3 are end-of-life and are to get interim mitigation steps in the advisory
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: and other advisories released the same day may lack Steward mitigation
+    verbatim_in_entry: true
+  - where: Exposure
+    entry_sentence: so the version decides until the advisory publishes
+    verbatim_in_entry: true
+  - where: actions[0]
+    entry_sentence: plan interim mitigation for sites on end-of-life Drupal lines
+    verbatim_in_entry: true
+  - where: frontmatter verification
+    entry_sentence: 'verification: single-source'
+    verbatim_in_entry: true
+  - where: frontmatter priority
+    entry_sentence: 'priority: notable'
+    verbatim_in_entry: true
+  version_table:
+    affected: <10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13 (both SAs)
+    fixed: Drupal 11.4.x -> 11.4.13; 11.3.x -> 11.3.22; 10.6.x -> 10.6.22
+    end_of_life_no_coverage: Drupal 11.2.x and below; 10.5.x and below; Drupal 8 and 9 EOL
+  exploitation:
+    status: no source reports exploitation
+    as_of: 2026-11-19 ~05:00Z
+    sources: Drupal SA-017/-018 (no exploitation statement; SA-017 exploit-status field E:Proof = "Proof of concept exists (documented methods for developing exploit exist in the wild)", SA-018 E:Theoretical); NCSC-NL (none); NCSC.ch hub 13196
+      (UNKNOWN, 2026-11-17, not updated)
+  flags:
+  - SA-018 page was behind Drupal's Client Challenge on every direct transport; verbatim SA-018 passages come from the RSS item body, not the page HTML.
+  - Drupal pages additionally Client-Challenged the securing-the-installer doc and the 11.4.13 release page (not read).
+  - 'S1 title/summary say CVE-2026-132165 "same vector the PSA gave": verified true (character-identical vector).'
+  claim_table:
+  - claim: SA-CORE-2026-017 published as Critical / Remote code execution
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.raw.txt
+    passage: Drupal core - Critical - Remote code execution - SA-CORE-2026-017
+    check: grep -F
+    verified: true
+  - claim: SA-017 date
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.raw.txt
+    passage: 2026-November-18
+    check: grep -F
+    verified: true
+  - claim: SA-017 risk vector (A:None, E:Proof, AC:Complex, TD:Uncommon)
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.raw.txt
+    passage: Critical 18 ∕ 25 AC:Complex/A:None/CI:All/II:All/E:Proof/TD:Uncommon
+    check: grep -F
+    verified: true
+  - claim: SA-017 E:Proof tooltip definition
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.rss.html
+    passage: Proof of concept exists (documented methods for developing exploit exist in the wild)
+    check: grep -F
+    verified: true
+  - claim: SA-017 A:None tooltip definition
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.rss.html
+    passage: 'A - Authentication: None (all/anonymous users)'
+    check: grep -F
+    verified: true
+  - claim: SA-017 affected versions
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.raw.txt
+    passage: <10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13
+    check: grep -F
+    verified: true
+  - claim: SA-017 CVE id
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.raw.txt
+    passage: CVE-2026-132165
+    check: grep -F
+    verified: true
+  - claim: SA-017 mechanism
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: Under specific conditions, an attacker can use the installer to attempt to reinstall Drupal. This can lead to a site takeover or remote code execution.
+    check: grep -F
+    verified: true
+  - claim: SA-017 partial mitigation
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.raw.txt
+    passage: Some exploit paths are mitigated if the web server cannot write to or change permissions on settings.php.
+    check: grep -F
+    verified: true
+  - claim: SA-017 finder
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: Discovered by Anthropic's OSS Scanner, as vulnerability ANT-2026-GMRPK0BU.
+    check: grep -F
+    verified: true
+  - claim: SA-017 Steward
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: Sites that use Drupal Steward are already protected from known attack vectors, but sites should upgrade in the near future in case additional attack vectors are discovered.
+    check: grep -F
+    verified: true
+  - claim: SA-017 fixed 11.4.13
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: If you use Drupal 11.4.x, update to [Drupal 11.4.13](https://www.drupal.org/project/drupal/releases/11.4.13).
+    check: grep -F
+    verified: true
+  - claim: SA-017 fixed 11.3.22
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: If you use Drupal 11.3.x, update to [Drupal 11.3.22](https://www.drupal.org/project/drupal/releases/11.3.22).
+    check: grep -F
+    verified: true
+  - claim: SA-017 fixed 10.6.22
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: If you use Drupal 10.6.x, update to [Drupal 10.6.22](https://www.drupal.org/project/drupal/releases/10.6.22).
+    check: grep -F
+    verified: true
+  - claim: SA-017 EOL 11.2.x and below
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: Drupal 11.2.x and below are end-of-life and do not receive security coverage.
+    check: grep -F
+    verified: true
+  - claim: SA-017 EOL 10.5.x and below
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: Drupal 10.5.x and below are end-of-life and do not receive security coverage.
+    check: grep -F
+    verified: true
+  - claim: SA-017 interim step (only one offered, for every branch)
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa017.extract.md
+    passage: Follow the [instructions for securing the Drupal installer](https://www.drupal.org/docs/administering-a-drupal-site/security-in-drupal/securing-the-installer-installphp) to protect your site from attacks.
+    check: grep -F
+    verified: true
+  - claim: SA-018 title Moderately critical / Gadget chain (RSS item title)
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/drupal_security_rss.json
+    passage: Drupal core - Moderately critical - Gadget chain - SA-CORE-2026-018
+    check: grep -F
+    verified: true
+  - claim: SA-018 risk vector (A:Admin, E:Theoretical)
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa018.rss.txt
+    passage: Moderately critical 14 ∕ 25 AC:Complex/A:Admin/CI:All/II:All/E:Theoretical/TD:Uncommon
+    check: grep -F
+    verified: true
+  - claim: SA-018 affected versions
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa018.rss.txt
+    passage: <10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13
+    check: grep -F
+    verified: true
+  - claim: SA-018 CVE id
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa018.rss.txt
+    passage: CVE-2026-132166
+    check: grep -F
+    verified: true
+  - claim: SA-018 not directly exploitable
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa018.rss.txt
+    passage: This issue is not directly exploitable.
+    check: grep -F
+    verified: true
+  - claim: SA-018 needs a separate unserialize() flaw
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa018.rss.txt
+    passage: a separate vulnerability must be present to allow an attacker to pass unsafe input to unserialize().
+    check: grep -F
+    verified: true
+  - claim: SA-018 fixed 11.4.13 (same fixed set)
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/sa018.rss.txt
+    passage: If you use Drupal 11.4.x, update to [[href=https://www.drupal.org/project/drupal/releases/11.4.13]]Drupal 11.4.13.
+    check: grep -F
+    verified: true
+  - claim: NCSC-NL NCSC-2026-0507 priority Normaal / published 18-11-2026 20:01
+    source_url: https://advisories.ncsc.nl/2026/ncsc-2026-0507.html
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/ncscnl.extract.md
+    passage: 18-11-2026 20:01 (Europe/Amsterdam)
+    check: grep -F
+    verified: true
+  - claim: 'NCSC-NL: installer flaw exploitable when installer not secured/removed after initial installation'
+    source_url: https://advisories.ncsc.nl/2026/ncsc-2026-0507.html
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/ncscnl.extract.md
+    passage: Dit gebeurt wanneer de installer niet correct is beveiligd of verwijderd na de initiële installatie
+    check: grep -F
+    verified: true
+  - claim: 'NCSC-NL: gadget chain not directly exploitable on its own'
+    source_url: https://advisories.ncsc.nl/2026/ncsc-2026-0507.html
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/ncscnl.extract.md
+    passage: Deze kwetsbaarheid is op zichzelf niet direct exploiteerbaar
+    check: grep -F
+    verified: true
+  - claim: RSS pubDate SA-018 17:50:21 UTC
+    source_url: https://www.drupal.org/sa-core-2026-018
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/drupal_security_rss.json
+    passage: Wed, 18 Nov 2026 17:50:21 +0000
+    check: grep -F
+    verified: true
+  - claim: RSS pubDate SA-017 17:43:11 UTC
+    source_url: https://www.drupal.org/sa-core-2026-017
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/drupal_security_rss.json
+    passage: Wed, 18 Nov 2026 17:43:11 +0000
+    check: grep -F
+    verified: true
+  - claim: NCSC.ch hub 13196 still the pre-announcement (single Published history record, exploitation UNKNOWN)
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13196
+    saved_body: work/2026-11-19T0355Z-intel/deepread/1_drupal/hub13196.json
+    passage: '"title": "[Advisory] Drupal: Upcoming Critical Security Release Nov. 2026"'
+    check: grep -F
+    verified: true
+- n: 2
+  entry: entries/2026-11-18/cve-2026-114938-java4shell-openjdk-avx512-base64-decoder-rce.md
+  finding: findings.S1.yaml items[16] + findings.S2.yaml items[1]
+  new_sources:
+  - url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    role: primary
+    transport: extract + url --direct (dates) + CSAF json (revision history only; CSAF carries no product_status)
+    published: first published 2026-11-18 16:00 GMT; version 1.1 (Interim) last updated 2026-11-18 21:16 GMT (re-confirmed 2026-11-19)
+  - url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    role: primary
+    transport: extract + url --direct (Published Date, Known Exploited, CVSS)
+    published: '2026-11-18 (Timeline: Initial publication)'
+  - url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    role: primary - THE page for every BACS statement in the entry
+    transport: extract + url --direct
+    published: Veröffentlicht am 18. November 2026
+  - url: https://www.bacs.admin.ch/de/warnung-java-de
+    role: the page the entry cites - pre-announcement only
+    transport: extract + url --direct
+    published: Veröffentlicht am 17. November 2026
+  - url: https://security-hub.ncsc.admin.ch/#/posts/13198
+    role: BACS Cyber Security Hub post (bridge ncsc-csh post 13198; English; created 2026-11-17T11:53Z, last edited 2026-11-17T21:57Z)
+    transport: bridge ncsc-csh post
+    published: '2026-11-17'
+  reader_delta:
+  - 'Cisco (v1.1, Interim, 2026-11-18): 13 products affected, every fixed release "TBD": Catalyst Center, Smart PHY, Connected Mobile Experiences 11.2, Secure Network Analytics 7.6.0, Secure Workload, Cisco IQ Virtual Appliance v1.3.2, Smart
+    Software Manager On-Prem, Native Broadband Network Gateway (cnBNG), Optical Network Planner (26.4.1 and later only), Services as Code - Common Automation Framework, Splunk AppDynamics On-Premises Virtual Appliance 27.1.0, Ultra Cloud Core
+    - Subscriber Microservices Infrastructure, Intersight Virtual Appliance. Under investigation: IOS XE, UCS Central. Not affected: Catalyst SD-WAN Controller/Manager/Validator, ISE, IOS XR, Nexus Dashboard, NX-OS, ASA, FMC, FTD, UCS Director.
+    No workarounds. PoC known to Cisco PSIRT; no malicious use known (as of 2026-11-18 21:16 GMT).'
+  - 'Fortinet FG-IR-26-278 (published 2026-11-18, severity High, CVSSv3 8.1, Known Exploited: No): NO product is confirmed affected; the page says it is "currently investigating the impact"; 50 distinct products are listed "under investigation"
+    (51 lines, FortiSandbox PaaS twice) incl. FortiMail, FortiManager, FortiAnalyzer, FortiAuthenticator, FortiSIEM, FortiSandbox, FortiNAC-F, FortiPAM, FortiClient EMS, FortiSOAR, FortiADC, FortiSwitch NMS, FortiVoice; 25 products confirmed
+    not impacted incl. FortiOS, FortiProxy, FortiWeb, FortiNAC (note: FortiNAC-F is under investigation, FortiNAC is not impacted). No fixed builds.'
+  - 'BACS warnung-java-2-de (18 Nov) adds what the 17 Nov page lacked: the Calif product list, operators must clarify other Java software (banking software, industry applications) with suppliers, internal systems must be checked too, outbound-connection
+    attack path (per Calif), restart + container rebuild + verify the running application uses the corrected Java, confirm remediation of externally run services, interim measures do not replace updates, and "Ein Sicherheits-Update beseitigt
+    keine bereits erfolgte Kompromittierung." The same compromise sentence exists in English on hub post 13198 ("Updating does not remove an existing compromise.").'
+  bacs_statement_map:
+  - entry_location: frontmatter summary (last sentence)
+    entry_sentence: NCSC.ch and BACS warn operators to update internet-reachable Java applications and identity services first.
+    correct_page: https://www.bacs.admin.ch/de/warnung-java-2-de (identity services appear only here) and hub 13198
+    verbatim_bacs: Priorisieren Sie aus dem Internet erreichbare Anwendungen, zentrale Anmeldedienste und geschäftskritische Systeme.
+    note: 'page 1 says only "Priorisieren Sie aus dem Internet erreichbare und geschäftskritische Systeme." (Anmeldedienste count 0 on page 1). Hub (English): "Prioritise internet-facing applications, identity infrastructure and business-critical
+      systems."'
+  - entry_location: frontmatter sources[] row 5 (url warnung-java-de, date 2026-11-18, role corroborating)
+    entry_sentence: 'url: "https://www.bacs.admin.ch/de/warnung-java-de"  date: "2026-11-18"'
+    correct_page: 'https://www.bacs.admin.ch/de/warnung-java-2-de, date 2026-11-18, title "Java4Shell: Kritische Schwachstelle in Java - Sicherheits-Updates sofort einspielen"'
+    verbatim_bacs: Veröffentlicht am 18. November 2026
+    note: 'warnung-java-de is dated "Veröffentlicht am 17. November 2026", title "Sicherheits-Updates für Java angekündigt: Betreiber sollen ihre Systeme prüfen"; keep it only as the 2026-11-17 pre-announcement if cited at all'
+  - entry_location: frontmatter evidence[] (BACS quote) and Detection line
+    entry_sentence: A security update does not remove a compromise that has already happened.
+    correct_page: https://www.bacs.admin.ch/de/warnung-java-2-de
+    verbatim_bacs: Ein Sicherheits-Update beseitigt keine bereits erfolgte Kompromittierung.
+    note: 'sentence is NOT on warnung-java-de (Kompromittierung count 0 there; 1 on page 2). Full sentence pair on page 2: "Untersuchen Sie betroffene Systeme auf ungewöhnliche Abstürze, unerwartete Prozesse und verdächtige Aktivitäten. Ein Sicherheits-Update
+      beseitigt keine bereits erfolgte Kompromittierung."'
+  - entry_location: Defender takeaway / actions[0] (restart, rebuild containers, identity first)
+    entry_sentence: update and restart, internet-reachable and identity services first.
+    correct_page: https://www.bacs.admin.ch/de/warnung-java-2-de
+    verbatim_bacs: Starten Sie betroffene Anwendungen und Java-Prozesse nach dem Update neu. Container müssen gegebenenfalls neu erstellt und bereitgestellt werden. Prüfen Sie, ob die laufenden Anwendungen tatsächlich die korrigierte Java-Version
+      verwenden.
+    note: not cited to BACS in the entry; BACS-2 is the supporting page
+  - entry_location: body para 2 (hub-cited)
+    entry_sentence: the NCSC.ch Cyber Security Hub says the published research demonstrates exploitation without establishing malicious exploitation
+    correct_page: https://security-hub.ncsc.admin.ch/#/posts/13198 (correct)
+    verbatim_bacs: '**Exploitation in the wild:** UNKNOWN. The published research demonstrates exploitation; it does not establish malicious exploitation in operational environments.'
+    note: citation is right (hub, not a BACS web page)
+  - entry_location: Exposure line (hub-cited)
+    entry_sentence: the running build, not the installed package, decides
+    correct_page: https://security-hub.ncsc.admin.ch/#/posts/13198 and BACS-2
+    verbatim_bacs: Record the Java distribution, exact running build, processor capabilities and responsible supplier.
+    note: 'neither source says "not the installed package"; BACS-2 closest: "Prüfen Sie, ob die laufenden Anwendungen tatsächlich die korrigierte Java-Version verwenden." and hub: "Verify that the running applications actually use the patched
+      runtime." The contrast is the entry''s own inference'
+  - entry_location: NOT in entry (missing BACS content)
+    entry_sentence: (absent)
+    correct_page: https://www.bacs.admin.ch/de/warnung-java-2-de
+    verbatim_bacs: Laut Calif bestehen zudem Angriffswege gegen Java-Anwendungen, die selbst Verbindungen zu einem bösartigen Server aufbauen.
+    note: 'the entry already carries the outbound path from Calif; BACS adds that it applies to internal systems: "Berücksichtigen Sie neben öffentlich erreichbaren Diensten auch interne Systeme."'
+  supersedes:
+  - where: frontmatter affected_products + Exposure
+    entry_sentence: 'affected_products: ["OpenJDK", "Oracle Java SE", "Oracle GraalVM for JDK"]'
+    status: incomplete
+    now: Cisco-affected products and the Fortinet under-investigation products are new exposure surface; S1 items[16] lists FortiMail/FortiManager/FortiAnalyzer/FortiSIEM in affected_products - Fortinet has NOT confirmed any of them affected
+      (under investigation), so they must not be recorded as affected; Cisco "Affected" rows (13) may be.
+  - where: body para 2
+    entry_sentence: Talos has seen no exploitation in the wild yet and expects probing
+    status: consistent
+    now: 'Cisco PSIRT: "not aware of any malicious use" (2026-11-18 21:16 GMT); Fortinet: Known Exploited No (2026-11-18); CVE-2026-114938 not in KEV (catalogue 2026.11.18, 1786 entries checked)'
+  - where: Defender takeaway
+    entry_sentence: update and restart, internet-reachable and identity services first.
+    status: refined
+    now: 'for appliances: Cisco lists no fixed releases and no workaround yet (TBD) and Fortinet has no determination, so the only lever for those boxes is vendor update tracking and access restriction; BACS adds internal systems are in scope'
+  entry_sentences_checked:
+  - where: summary
+    entry_sentence: NCSC.ch and BACS warn operators to update internet-reachable Java applications and identity services first.
+    verbatim_in_entry: true
+  - where: sources[] row
+    entry_sentence: "url: \"https://www.bacs.admin.ch/de/warnung-java-de\"\n    publisher: \"BACS (NCSC.ch)\"\n    date: \"2026-11-18\"\n    role: corroborating"
+    verbatim_in_entry: true
+  - where: evidence[]
+    entry_sentence: "quote: \"A security update does not remove a compromise that has already happened.\"\n    original: \"Ein Sicherheits-Update beseitigt keine bereits erfolgte Kompromittierung.\"\n    publisher: \"BACS (NCSC.ch)\"\n    source_url:\
+      \ \"https://www.bacs.admin.ch/de/warnung-java-de\""
+    verbatim_in_entry: true
+  - where: Detection line
+    entry_sentence: An update does not remove a compromise that has already happened ([BACS, 2026-11-18](https://www.bacs.admin.ch/de/warnung-java-de)).
+    verbatim_in_entry: true
+  - where: body para 2
+    entry_sentence: the NCSC.ch Cyber Security Hub says the published research demonstrates exploitation without establishing malicious exploitation ([NCSC.ch, 2026-11-17](https://security-hub.ncsc.admin.ch/#/posts/13198))
+    verbatim_in_entry: true
+  - where: Exposure line
+    entry_sentence: the running build, not the installed package, decides ([NCSC.ch, 2026-11-17](https://security-hub.ncsc.admin.ch/#/posts/13198))
+    verbatim_in_entry: true
+  - where: Defender takeaway
+    entry_sentence: '**Defender takeaway:** update and restart, internet-reachable and identity services first.'
+    verbatim_in_entry: true
+  - where: actions[0]
+    entry_sentence: then restart the Java processes and rebuild containers, internet-reachable applications and the identity, build and artifact servers Calif names (Keycloak, Jira, Confluence, Artifactory, Jenkins, PingFederate) first
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: a client-side path in which a Java program that opens a TLS connection to a malicious server is compromised ([Calif, 2026-11-17](https://calif.io/java4shell))
+    verbatim_in_entry: true
+  - where: frontmatter affected_products
+    entry_sentence: 'affected_products: ["OpenJDK", "Oracle Java SE", "Oracle GraalVM for JDK"]'
+    verbatim_in_entry: true
+  - where: Detection line start
+    entry_sentence: Detection:** unexplained hs_err_pid crash logs
+    verbatim_in_entry: true
+  version_table:
+    cisco_fixed: all TBD (Catalyst Center, Smart PHY, SNA 7.6.0, Secure Workload, CMX 11.2, IQ VA 1.3.2, SSM On-Prem, cnBNG, Optical Network Planner 26.4.1+, CAF, Splunk AppDynamics On-Prem VA 27.1.0, UCC SMI, Intersight VA)
+    fortinet_fixed: none; no product confirmed affected
+    fortinet_oracle_text_affected: 'Oracle Java SE: 8u511b33-perf, 17.0.21.0.3, 21.0.13.0.3, 25.0.5.0.3, 27.0.1.0.3; Oracle GraalVM for JDK: 17.0.21.0.3 and 21.0.13.0.3; Oracle GraalVM Enterprise Edition: 21.3.20.0.3 (GraalVM Enterprise 21.3.20.0.3
+      is not in the entry)'
+  exploitation:
+    status: no malicious use reported by Cisco or Fortinet; PoC exists (Cisco)
+    as_of: Cisco 2026-11-18 21:16 GMT; Fortinet 2026-11-18; BACS/hub UNKNOWN 2026-11-17
+    sources: Cisco PSIRT, Fortinet PSIRT, hub 13198
+  flags:
+  - 'Entry cites the wrong BACS page for the post-update compromise quote (confirmed): correct page https://www.bacs.admin.ch/de/warnung-java-2-de.'
+  - 'Cisco CSAF json has an empty product_status (interim advisory): the HTML tables are the only structured product status.'
+  - Fortinet extract metadata date says 2020-03-21 (template junk); the real date is in the page body (Published Date Nov 18, 2026).
+  claim_table:
+  - claim: BACS-2 title
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: 'Java4Shell: Kritische Schwachstelle in Java - Sicherheits-Updates sofort einspielen'
+    check: grep -F
+    verified: true
+  - claim: BACS-2 publication date
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.raw.txt
+    passage: Veröffentlicht am 18. November 2026
+    check: grep -F
+    verified: true
+  - claim: BACS-1 title
+    source_url: https://www.bacs.admin.ch/de/warnung-java-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java1.extract.md
+    passage: 'Sicherheits-Updates für Java angekündigt: Betreiber sollen ihre Systeme prüfen'
+    check: grep -F
+    verified: true
+  - claim: BACS-1 publication date
+    source_url: https://www.bacs.admin.ch/de/warnung-java-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java1.raw.txt
+    passage: Veröffentlicht am 17. November 2026
+    check: grep -F
+    verified: true
+  - claim: BACS-2 post-update compromise sentence (ONLY on page 2)
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Ein Sicherheits-Update beseitigt keine bereits erfolgte Kompromittierung.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 compromise check context
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Untersuchen Sie betroffene Systeme auf ungewöhnliche Abstürze, unerwartete Prozesse und verdächtige Aktivitäten. Ein Sicherheits-Update beseitigt keine bereits erfolgte Kompromittierung.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 prioritisation incl. central login services
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Priorisieren Sie aus dem Internet erreichbare Anwendungen, zentrale Anmeldedienste und geschäftskritische Systeme.
+    check: grep -F
+    verified: true
+  - claim: BACS-1 prioritisation (no login services)
+    source_url: https://www.bacs.admin.ch/de/warnung-java-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java1.extract.md
+    passage: Priorisieren Sie aus dem Internet erreichbare und geschäftskritische Systeme.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 outbound-connection attack path (per Calif)
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Laut Calif bestehen zudem Angriffswege gegen Java-Anwendungen, die selbst Verbindungen zu einem bösartigen Server aufbauen.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 internal systems too
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Berücksichtigen Sie neben öffentlich erreichbaren Diensten auch interne Systeme.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 restart / rebuild / verify running version
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Starten Sie betroffene Anwendungen und Java-Prozesse nach dem Update neu. Container müssen gegebenenfalls neu erstellt und bereitgestellt werden. Prüfen Sie, ob die laufenden Anwendungen tatsächlich die korrigierte Java-Version verwenden.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 other Java apps incl. banking software; clarify with suppliers
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Auch weitere Java-Anwendungen, beispielsweise Banken-Software und andere Branchenlösungen, können betroffen sein. Betreiber müssen dies mit ihren Software-Lieferanten klären.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 pre-auth product list
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Keycloak, Atlassian Jira, Atlassian Confluence, JFrog Artifactory, Jenkins und PingFederate.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 post-auth product list
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Apache Kafka Broker, Apache Solr, Elasticsearch, Gerrit und Netflix Spinnaker.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 confirm remediation of externally operated services
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Lassen Sie sich bei extern betriebenen Diensten die Behebung bestätigen.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 interim measures do not replace updates
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Übergangsmassnahmen ersetzen die Sicherheits-Updates nicht.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 where update not yet possible
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: Beschränken Sie zusätzlich nicht benötigte Zugriffe.
+    check: grep -F
+    verified: true
+  - claim: BACS-2 links technical details to hub post 13198
+    source_url: https://www.bacs.admin.ch/de/warnung-java-2-de
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/bacs_java2.extract.md
+    passage: https://security-hub.ncsc.admin.ch/#/posts/13198
+    check: grep -F
+    verified: true
+  - claim: 'Hub 13198: post-update compromise sentence (English, same BACS-run hub)'
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13198
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/hub13198.content.md
+    passage: Updating does not remove an existing compromise.
+    check: grep -F
+    verified: true
+  - claim: 'Hub 13198: exploitation UNKNOWN; research demonstrates exploitation'
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13198
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/hub13198.content.md
+    passage: '**Exploitation in the wild:** UNKNOWN. The published research demonstrates exploitation; it does not establish malicious exploitation in operational environments.'
+    check: grep -F
+    verified: true
+  - claim: 'Hub 13198: prioritise identity infrastructure'
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13198
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/hub13198.content.md
+    passage: Prioritise internet-facing applications, identity infrastructure and business-critical systems.
+    check: grep -F
+    verified: true
+  - claim: 'Hub 13198: exact running build'
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13198
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/hub13198.content.md
+    passage: Record the Java distribution, exact running build, processor capabilities and responsible supplier.
+    check: grep -F
+    verified: true
+  - claim: 'Hub 13198: verify running apps use patched runtime'
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13198
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/hub13198.content.md
+    passage: Verify that the running applications actually use the patched runtime.
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: first published 2026-11-18 16:00 GMT'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.raw.txt
+    passage: 2026 November 18 16:00 GMT
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: last updated 2026-11-18 21:16 GMT'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.raw.txt
+    passage: 2026 November 18 21:16 GMT
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: revision table v1.1/v1.0 both Interim'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Version Description Section Status Date 1.1 Updated the status of affected products. Affected Products Interim 2026-NOV-18 1.0 Initial public release. - Interim 2026-NOV-18
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: Catalyst Center affected, release TBD'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Catalyst Center Affected Release No. TBD
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: IOS XE under investigation / IOS XR not affected'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: IOS XE Software Under investigation IOS XR Software Not affected
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: UCS Central under investigation / UCS Director not affected'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: UCS Central Software Under investigation UCS Director Not affected
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: ISE and SD-WAN not affected'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Catalyst SD-WAN Controller Not affected - Catalyst SD-WAN Manager Not affected - Catalyst SD-WAN Validator Not affected - Identity Services Engine (ISE) Not affected
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: ASA/FMC/FTD not affected'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Secure Firewall Adaptive Security Appliance (ASA) Software Not affected - Secure Firewall Management Center (FMC) Software Not affected - Secure Firewall Threat Defense (FTD) Software Not affected
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: Nexus Dashboard / NX-OS not affected'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Nexus Dashboard Not affected - NX-OS Software Not affected
+    check: grep -F
+    verified: true
+  - claim: 'Cisco affected list: Smart PHY, CMX 11.2, SNA 7.6.0, Secure Workload'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Cable Devices Smart PHY Affected Release no. TBD Collaboration and Social Media Connected Mobile Experiences Affected 11.2 (TBD) Network and Content Security Devices Secure Network Analytics Affected 7.6.0 (TBD) Secure Workload Affected
+      Release no. TBD
+    check: grep -F
+    verified: true
+  - claim: 'Cisco affected list: IQ VA 1.3.2, SSM On-Prem, cnBNG, ONP 26.4.1+ only, CAF'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Cisco IQ Virtual Appliance Affected v1.3.2 (TBD) License (Smart Software Manager) On-Prem Affected Release no. TBD Native Broadband Network Gateway (cnBNG) Affected Release no. TBD Optical Network Planner Affected in releases 26.4.1
+      and later only Release no. TBD Services as Code - Common Automation Framework Affected Release no. TBD
+    check: grep -F
+    verified: true
+  - claim: 'Cisco affected list: Splunk AppDynamics On-Prem VA 27.1.0, UCC SMI, Intersight VA'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Splunk AppDynamics On-Premises Virtual Appliance Affected 27.1.0 (TBD) Routing and Switching - Enterprise and Service Provider Ultra Cloud Core - Subscriber Microservices Infrastructure Affected Release no. TBD Unified Computing
+      Intersight Virtual Appliance Affected Release no. TBD
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: AVX-512 VBMI scope'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Available details indicate that systems that use x86-64 CPU architectures with AVX-512 VBMI support are affected. Hardware families that use x86-64 without AVX-512 or that use different CPU architectures like ARM or Cisco Silicon
+      One are not affected.
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: no workarounds'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: There are no workarounds that address this vulnerability.
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: PoC exists, no malicious use known'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: The Cisco PSIRT is aware that proof-of-concept exploit code is available for the vulnerability described in this advisory. The Cisco PSIRT is not aware of any malicious use of the vulnerability that is described in this advisory.
+    check: grep -F
+    verified: true
+  - claim: 'Cisco: fixed releases listed only when affected; table updated as investigation progresses'
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.extract.md
+    passage: Cisco is investigating its product line to determine which products may be affected by this vulnerability.
+    check: grep -F
+    verified: true
+  - claim: Cisco CSAF carries no product_status (interim) - revision history 1.1.0 at 2026-11-18T21:16:38
+    source_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z/csaf/cisco-sa-nov2026-java-rce-eCa6ss9z.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/cisco.csaf.json
+    passage: '"summary": "Updated the status of affected products."'
+    check: grep -F
+    verified: true
+  - claim: 'Fortinet: investigating; impact not yet determined'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: Fortinet is currently investigating the impact of this CVE over Fortinet Products.
+    check: grep -F
+    verified: true
+  - claim: 'Fortinet: Products Under Investigation heading'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: '##### Products Under Investigation:'
+    check: grep -F
+    verified: true
+  - claim: Fortinet under-investigation includes FortiMail
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiMail \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: Fortinet under-investigation includes FortiManager
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiManager \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: Fortinet under-investigation includes FortiAnalyzer
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiAnalyzer \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: Fortinet under-investigation includes FortiSIEM
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiSIEM \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: Fortinet under-investigation includes FortiClient EMS
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiClient EMS \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: 'Fortinet: confirmed NOT impacted heading'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: '##### Products confirmed NOT Impacted:'
+    check: grep -F
+    verified: true
+  - claim: Fortinet not impacted includes FortiOS
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiOS \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: Fortinet not impacted includes FortiProxy
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: "FortiProxy \n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: Fortinet not impacted includes FortiWeb
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: 'FortiWeb
+
+      '
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: 'Fortinet: published 2026-11-18, initial publication'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.raw.txt
+    passage: ' 2026-11-18: Initial publication'
+    check: grep -F
+    verified: true
+  - claim: 'Fortinet: Known Exploited No'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.raw.txt
+    passage: " Known Exploited\n No\n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: 'Fortinet: CVSS 3.1 vector (8.1)'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.raw.txt
+    passage: AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H/E:X/RL:O/RC:X
+    check: grep -F
+    verified: true
+  - claim: 'Fortinet: Oracle-text affected builds incl. GraalVM Enterprise'
+    source_url: https://fortiguard.fortinet.com/psirt/FG-IR-26-278
+    saved_body: work/2026-11-19T0355Z-intel/deepread/2_java/fortinet.extract.md
+    passage: 'Supported versions that are affected are Oracle Java SE: 8u511b33-perf, 17.0.21.0.3, 21.0.13.0.3, 25.0.5.0.3, 27.0.1.0.3; Oracle GraalVM for JDK: 17.0.21.0.3 and 21.0.13.0.3; Oracle GraalVM Enterprise Edition: 21.3.20.0.3.'
+    check: grep -F
+    verified: true
+- n: 3
+  entry: entries/2026-09-22/cve-2026-13684-synology-dsm-unauth-file-read-write.md
+  finding: findings.S1.yaml items[11]
+  new_sources:
+  - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    role: primary (KEV catalogue, catalogVersion 2026.11.18, dateReleased 2026-11-18T19:17:41Z)
+    transport: bridge cisa-kev
+    published: '2026-11-18'
+  - url: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog
+    role: primary (alert)
+    transport: WebFetch (summary; verbatim fragment only)
+    published: '2026-11-18'
+  - url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    role: primary (fixed-build table)
+    transport: extract + url --direct
+    published: 2024-11-05 15:15:05 UTC+8; Last Updated 2025-03-28 09:15:30 UTC+8 (no revision after the KEV listing)
+  - url: https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions
+    role: primary (notice, unchanged)
+    transport: extract
+    published: '2026-10-29'
+  reader_delta:
+  - CISA added CVE-2024-10441 to KEV on 2026-11-18 (dueDate 2026-11-21 under BOD 26-04, knownRansomwareCampaignUse "Unknown", forensicTriage "Yes", CWE-116), citing "evidence of active exploitation" without describing it. This is the first authority
+    statement of exploitation for any Synology CVE in the C3RB3R story and it is consistent with Synology's own 2026-10-29 pointer to SA-24:20 (the KEV notes link the same advisory).
+  - 'It does NOT corroborate the 360 claim: CVE-2026-13684, CVE-2026-13639, CVE-2026-13673 and CVE-2026-6205 are not in KEV (catalogue 2026.11.18). CISA does not mention ransomware or C3RB3R; any link between the KEV addition and C3RB3R is the
+    reader''s inference (timing: 20 days after Synology''s notice).'
+  - 'Synology''s own pages are unchanged: SA-24:20 (Last Updated 2025-03-28) and the C3RB3R notice still name no CVE. SA-24:20 lists Mitigation: None.'
+  - 'Observation, not a finding: Synology says the exploited flaw was "patched in December 2024"; SA-24:20 fixed the CVE-2024-10441 branches named in its per-CVE text (7.2, 7.2.1, 7.2.2 and BSM 1.1) from 2024-11-05 (7.2.1 on 2024-11-12), and
+    the only 2024-12-05 revision is the DSM 6.2 update (DSM 6.2 severity Moderate). So the mapping between Synology''s wording and CVE-2024-10441 stays an inference even after the KEV listing.'
+  supersedes:
+  - where: sourcing_note
+    entry_sentence: CVE-2026-13684, CVE-2026-13639 and CVE-2024-10441 are therefore not marked exploited.
+    status: superseded-for-CVE-2024-10441-only
+    now: CVE-2024-10441 is now KEV-listed (exploited, due 2026-11-21); CVE-2026-13684 and CVE-2026-13639 stay unmarked (not in KEV, only 360 claims them)
+  - where: frontmatter cves[] CVE-2024-10441
+    entry_sentence: 'status: [patch-available]'
+    status: superseded
+    now: 'status: [patch-available, cisa-kev]; epss 0.01251 (FIRST, 2026-11-18); affected/fixed text unchanged and still right: DSM before 7.2-64570-4, 7.2.1-69057-6 and 7.2.2-72806-1 (BSM before 1.1-65374); table fixes 7.2.2-72806-1 / 7.2.1-69057-6
+      / 7.2-64570-4 / 7.1.1-42962-7 / 6.2.4-25556-8'
+  - where: body para 3 + summary
+    entry_sentence: The accounts conflict and no source reconciles them.
+    status: refined
+    now: still no source reconciles Synology (pointer to SA-24:20) with 360 (the 2026-09 pair), but CISA's KEV listing independently marks CVE-2024-10441 exploited, which fits Synology's side; the 360 claim for the 2026 pair remains uncorroborated
+  - where: frontmatter classification / verification
+    entry_sentence: 'verification: contradicted'
+    status: for main agent
+    now: the contradiction is partially resolved in favour of the Synology/SA-24:20 reading for exploitation of CVE-2024-10441; whether C3RB3R specifically used it is still not stated by CISA or Synology
+  - where: frontmatter tags
+    entry_sentence: 'tags: [vulnerabilities, ransomware, actively-exploited, path-traversal, pre-auth, patch-available]'
+    status: incomplete
+    now: add cisa-kev
+  entry_sentences_checked:
+  - where: sourcing_note
+    entry_sentence: CVE-2026-13684, CVE-2026-13639 and CVE-2024-10441 are therefore not marked exploited.
+    verbatim_in_entry: true
+  - where: body para 3
+    entry_sentence: The accounts conflict and no source reconciles them.
+    verbatim_in_entry: true
+  - where: cves[] CVE-2024-10441 record
+    entry_sentence: "    status: [patch-available]\n    affected: \"DSM before 7.2-64570-4, 7.2.1-69057-6 and 7.2.2-72806-1 (Synology-SA-24:20; BeeStation OS before 1.1-65374)\""
+    verbatim_in_entry: true
+  - where: frontmatter verification
+    entry_sentence: 'verification: contradicted'
+    verbatim_in_entry: true
+  - where: summary
+    entry_sentence: The two accounts conflict and no source reconciles them;
+    verbatim_in_entry: true
+  version_table:
+    sa_24_20_fixed_table: DSM 7.2.2 -> 7.2.2-72806-1; DSM 7.2.1 -> 7.2.1-69057-6; DSM 7.2 -> 7.2-64570-4; DSM 7.1 -> 7.1.1-42962-7; DSM 6.2 -> 6.2.4-25556-8 (severity Moderate)
+    cve_2024_10441_per_cve_text: BSM before 1.1-65374; DSM before 7.2-64570-4, 7.2.1-69057-6 and 7.2.2-72806-1 (names no 7.1 or 6.2 build)
+    other_two_cves_name_7_1_and_6_2: CVE-2024-50629 DSM before 7.1.1-42962-7 ...; CVE-2024-10445 DSM before 6.2.4-25556-8 ... (read from the advisory detail text)
+  exploitation:
+    status: 'CISA KEV: exploited, ransomware use Unknown, forensic triage required'
+    as_of: 2026-11-18 (dateAdded; catalogue re-fetched 2026-11-19)
+    sources: CISA KEV json + CISA alert; Synology notice 2026-10-29
+  flags:
+  - CISA alert page was read through WebFetch only (summary); the verbatim exploitation fragment "based on evidence of active exploitation" is from that summary and also matches S1's evidence quote.
+  claim_table:
+  - claim: KEV catalogue version/date
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: '"catalogVersion": "2026.11.18"'
+    check: grep -F
+    verified: true
+  - claim: KEV dateAdded 2026-11-18
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: '"dateAdded": "2026-11-18"'
+    check: grep -F
+    verified: true
+  - claim: KEV due date 2026-11-21
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: '"dueDate": "2026-11-21"'
+    check: grep -F
+    verified: true
+  - claim: KEV ransomware use Unknown
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: '"knownRansomwareCampaignUse": "Unknown"'
+    check: grep -F
+    verified: true
+  - claim: KEV forensic triage required
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: '"forensicTriage": "Yes"'
+    check: grep -F
+    verified: true
+  - claim: KEV description
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: Synology DSM contains an improper encoding or escaping of output vulnerability in the system plugin daemon in Synology BeeStation OS (BSM) that could allow a remote attacker to execute arbitrary code via unspecified vectors.
+    check: grep -F
+    verified: true
+  - claim: KEV notes point to Synology SA-24:20 (zh-tw URL)
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: https://www.synology.com/zh-tw/security/advisory/Synology_SA_24_20
+    check: grep -F
+    verified: true
+  - claim: KEV CWE-116
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/kev_record.json
+    passage: '"CWE-116"'
+    check: grep -F
+    verified: true
+  - claim: 'CISA alert: added based on evidence of active exploitation (WebFetch summary)'
+    source_url: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/cisa_alert.webfetch.txt
+    passage: based on evidence of active exploitation
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 CVE-2024-10441 per-CVE text (BSM before 1.1-65374; DSM before 7.2-64570-4, 7.2.1-69057-6, 7.2.2-72806-1)
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: Improper encoding or escaping of output vulnerability in the system plugin daemon in Synology BeeStation OS (BSM) before 1.1-65374 and Synology DiskStation Manager (DSM) before 7.2-64570-4, 7.2.1-69057-6 and 7.2.2-72806-1 allows
+      remote attackers to execute arbitrary code via unspecified vectors.
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 CVSS 9.8
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: 'CVSS3 Base Score: 9.8'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 ZDI-CAN-25403 RCE (Abstract)
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: The vulnerability reported in ZDI-CAN-25403 allows remote attackers to execute arbitrary code.
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 fixed table DSM 7.2.2
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| DSM 7.2.2 | Critical | Upgrade to 7.2.2-72806-1 or above. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 fixed table DSM 7.2.1
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| DSM 7.2.1 | Critical | Upgrade to 7.2.1-69057-6 or above. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 fixed table DSM 7.2
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| DSM 7.2 | Critical | Upgrade to 7.2-64570-4 or above. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 fixed table DSM 7.1
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| DSM 7.1 | Critical | Upgrade to 7.1.1-42962-7 or above. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 fixed table DSM 6.2 (severity Moderate)
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| DSM 6.2 | Moderate | Upgrade to 6.2.4-25556-8 or above. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 mitigation none
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '**Mitigation**
+
+
+      None'
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: SA-24:20 CVE-2024-50629 text (DSM before 7.1.1-42962-7 ...; read limited files)
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: Synology DiskStation Manager (DSM) before 7.1.1-42962-7, 7.2-64570-4, 7.2.1-69057-6 and 7.2.2-72806-1 allow remote attackers to read limited files via unspecified vectors.
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 CVE-2024-10445 text (DSM before 6.2.4-25556-8 ...; write limited files)
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: Synology DiskStation Manager (DSM) before 6.2.4-25556-8, 7.1.1-42962-7, 7.2-64570-4, 7.2.1-69057-6 and 7.2.2-72806-1 allow remote attackers to write limited files via unspecified vectors.
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 revision 6 DSM 6.2 update dated 2024-12-05
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| 6 | 2024-12-05 | Update for DSM 6.2 is now available in Affected Products. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 revision 4 DSM 7.1 update dated 2024-11-26
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| 4 | 2024-11-26 | Update for DSM 7.1 is now available in Affected Products. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 last revision 9 on 2025-03-27 (no revision after the KEV listing)
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.extract.md
+    passage: '| 9 | 2025-03-27 | Disclosed vulnerability details. |'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 publish time
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.raw.txt
+    passage: 'Publish Time: 2024-11-05 15:15:05 UTC+8'
+    check: grep -F
+    verified: true
+  - claim: SA-24:20 last updated
+    source_url: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/sa2420.raw.txt
+    passage: 'Last Updated: 2025-03-28 09:15:30 UTC+8'
+    check: grep -F
+    verified: true
+  - claim: 'Synology notice: exploiting a vulnerability patched in December 2024 vs outdated DSM; encrypt and extort'
+    source_url: https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/c3rb3r.extract.md
+    passage: Synology has identified threat actors exploiting a vulnerability patched in December 2024 to target devices running outdated versions of DSM. These attacks aim to encrypt data and extort ransom.
+    check: grep -F
+    verified: true
+  - claim: 'Synology notice: update immediately; automatic updates'
+    source_url: https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/c3rb3r.extract.md
+    passage: Synology strongly urges all users running vulnerable versions to update DSM immediately to protect their systems.
+    check: grep -F
+    verified: true
+  - claim: Synology notice points to SA-24:20 (zh-tw URL), names no CVE
+    source_url: https://www.synology.com/en-global/company/news/article/C3RB3R/Synology%20urges%20users%20to%20update%20DSM%20following%20ransomware%20attacks%20on%20outdated%20DSM%20versions
+    saved_body: work/2026-11-19T0355Z-intel/deepread/3_synology/c3rb3r.extract.md
+    passage: For more information, refer to [<u>Synology-SA-24:20</u>](https://www.synology.com/zh-tw/security/advisory/Synology_SA_24_20).
+    check: grep -F
+    verified: true
+- n: 4
+  entry: entries/2026-06-16/obsidian-security-a-three-cve-chain-turns-any-litellm-user-i.md
+  finding: findings.S1.yaml items[12]
+  new_sources:
+  - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    role: primary
+    transport: bridge cisa-kev
+    published: '2026-11-18'
+  - url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    role: primary (vendor advisory; extract + url --direct for structured fields)
+    transport: extract + url --direct
+    published: May 7, 2026 (GHSA published)
+  - url: https://github.com/BerriAI/litellm/releases/tag/v1.83.10-stable
+    role: GHSA "Patched release" link
+    transport: extract
+    published: '2026-04-27'
+  reader_delta:
+  - 'CISA added CVE-2026-40217 to KEV on 2026-11-18 (dueDate 2026-12-02, forensicTriage "No", ransomware use Unknown, CWE-420), on unspecified evidence of active exploitation; KEV description: "bytecode rewriting at the /guardrails/test_custom_code
+    URI". EPSS 0.1702 (percentile 0.97134, FIRST 2026-11-18). CVE-2026-47101 and CVE-2026-47102 are NOT in KEV.'
+  - 'LiteLLM''s own advisory GHSA-wxxx-gvqv-xp7p: POST /guardrails/test_custom_code runs user-supplied Python in a hand-rolled sandbox that can be escaped with bytecode-level techniques, giving arbitrary code execution in the proxy process, which
+    runs as root in the default Docker image; reaching it needs a proxy-admin credential in default configurations; workaround: block POST /guardrails/test_custom_code at the reverse proxy or API gateway. Vendor severity Moderate, CVSS 4.0 5.9
+    (AV:N/AC:H/AT:N/PR:H/VC:L/VI:L/VA:H), CWE-913.'
+  - 'The vendor advisory is internally inconsistent on the fixed version: prose says "Fixed in 1.83.11" (RestrictedPython replaces the sandbox) while the structured fields say affected ">= 1.81.8, < 1.83.10", patched ">= 1.83.10" and link "Patched
+    release: v1.83.10-stable" (release page dated 2026-04-27); the v1.83.11-stable tag page returned 404. The entry''s stricter ">= 1.83.14" (Obsidian''s chain fix) covers either.'
+  - KEV does not say whether attackers hold admin credentials or chain CVE-2026-47101/-47102; the entry's "any LiteLLM user into root" framing is Obsidian's chain claim, the KEV fact is only about the final-stage flaw.
+  supersedes:
+  - where: frontmatter cves[] CVE-2026-40217
+    entry_sentence: 'cvss: "8.8"'
+    status: unsupported
+    now: the vendor scores it CVSS 4.0 5.9 Moderate; the only 8.8 in the entry body is VulnCheck's score for CVE-2026-47102 ("VulnCheck scores CVE-2026-47102 at CVSS 8.8 (3.1)"), so the 8.8 on the -40217 record has no cited basis (not verified
+      against NVD, which may not be cited)
+  - where: frontmatter cves[] CVE-2026-40217
+    entry_sentence: 'status: poc-public, patch-available'
+    status: incomplete
+    now: add cisa-kev (exploited); keep patch-available; auth stays post-auth (proxy-admin credential); epss 0.1702
+  - where: body para 1
+    entry_sentence: '**CVE-2026-40217** (RCE) — the Custom Code Guardrails feature runs attacker-supplied Python via `exec()` with `__builtins__` available, giving arbitrary code execution.'
+    status: refined
+    now: vendor and CISA describe a sandbox escape via bytecode-level techniques at POST /guardrails/test_custom_code, not an exec()/__builtins__ gap; whether Obsidian's description and the vendor's are the same defect is not stated by any source
+  - where: body para 1 / actions[0]
+    entry_sentence: Fixed in **v1.83.14-stable**
+    status: refined
+    now: for CVE-2026-40217 alone the vendor fix is earlier (1.83.10 per structured fields, 1.83.11 per prose); 1.83.14 remains the version that fixes all three per Obsidian
+  - where: frontmatter priority / tags
+    entry_sentence: 'priority: notable'
+    status: for main agent
+    now: KEV listing of an RCE in an AI-gateway product; S1 suggested high. Tags lack cisa-kev
+  - where: frontmatter evidence
+    entry_sentence: 'evidence: []'
+    status: incomplete
+    now: the entry has no evidence[] records; the KEV description and the GHSA passages in the claim table are verbatim-checked candidates
+  entry_sentences_checked:
+  - where: cves[] CVE-2026-40217 record
+    entry_sentence: "  - id: CVE-2026-40217\n    cvss: \"8.8\"\n    epss: null\n    type: rce\n    vector: zero-click\n    auth: post-auth\n    status:\n      - poc-public\n      - patch-available"
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: '**CVE-2026-40217** (RCE) — the Custom Code Guardrails feature runs attacker-supplied Python via `exec()` with `__builtins__` available, giving arbitrary code execution.'
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: Fixed in **v1.83.14-stable**
+    verbatim_in_entry: true
+  - where: actions[0]
+    entry_sentence: '**Pin LiteLLM to version ≥ 1.83.14 and keep admin endpoints off the internet (CVE-2026-47101/-47102/-40217)**'
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: VulnCheck scores CVE-2026-47102 at CVSS 8.8 (3.1)
+    verbatim_in_entry: true
+  - where: frontmatter priority
+    entry_sentence: 'priority: notable'
+    verbatim_in_entry: true
+  - where: frontmatter evidence
+    entry_sentence: 'evidence: []'
+    verbatim_in_entry: true
+  version_table:
+    ghsa_structured_affected: '>= 1.81.8, < 1.83.10'
+    ghsa_structured_patched: '>= 1.83.10'
+    ghsa_prose_fixed: 1.83.11
+    ghsa_patched_release_link: v1.83.10-stable (2026-04-27)
+    obsidian_chain_fix: v1.83.14-stable (entry)
+  exploitation:
+    status: 'CISA KEV: exploited (no detail), ransomware use Unknown, forensic triage not required'
+    as_of: 2026-11-18 (dateAdded)
+    sources: CISA KEV json; EPSS FIRST 0.1702 on 2026-11-18
+  flags:
+  - 'Possible registry duplicate: entities/registry.yaml has both product:litellm and product:berriai-litellm (and product:litellm-proxy); S1 used product:litellm.'
+  claim_table:
+  - claim: KEV dateAdded
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/kev_record.json
+    passage: '"dateAdded": "2026-11-18"'
+    check: grep -F
+    verified: true
+  - claim: KEV due date 2026-12-02
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/kev_record.json
+    passage: '"dueDate": "2026-12-02"'
+    check: grep -F
+    verified: true
+  - claim: KEV forensic triage not required
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/kev_record.json
+    passage: '"forensicTriage": "No"'
+    check: grep -F
+    verified: true
+  - claim: KEV ransomware use Unknown
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/kev_record.json
+    passage: '"knownRansomwareCampaignUse": "Unknown"'
+    check: grep -F
+    verified: true
+  - claim: KEV description
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/kev_record.json
+    passage: BerriAI LiteLLM contains an unprotected alternate channel vulnerability that could allow remote attackers to execute arbitrary code via bytecode rewriting at the /guardrails/test_custom_code URI.
+    check: grep -F
+    verified: true
+  - claim: KEV name and CWE-420
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/kev_record.json
+    passage: '"vulnerabilityName": "BerriAI LiteLLM Unprotected Alternate Channel Vulnerability"'
+    check: grep -F
+    verified: true
+  - claim: 'GHSA mechanism: hand-rolled sandbox escaped via bytecode-level techniques, root in default Docker image'
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.extract.md
+    passage: The sandbox can be escaped using bytecode-level techniques, allowing arbitrary code execution in the proxy process — which runs as root in the default Docker image.
+    check: grep -F
+    verified: true
+  - claim: GHSA endpoint runs user-supplied Python in hand-rolled sandbox
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.extract.md
+    passage: runs user-supplied Python inside a hand-rolled sandbox.
+    check: grep -F
+    verified: true
+  - claim: 'GHSA prerequisite: proxy-admin credential in default configurations'
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.extract.md
+    passage: '**Reaching the endpoint requires a proxy-admin credential** in default configurations.'
+    check: grep -F
+    verified: true
+  - claim: 'GHSA prose: fixed in 1.83.11, sandbox replaced by RestrictedPython'
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.extract.md
+    passage: Fixed in **`1.83.11`**. The hand-rolled sandbox has been replaced with `RestrictedPython`. Upgrade to `1.83.11` or later.
+    check: grep -F
+    verified: true
+  - claim: 'GHSA workaround: block the endpoint at proxy/gateway'
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.extract.md
+    passage: If upgrading is not immediately possible, block `POST /guardrails/test_custom_code` at your reverse proxy or API gateway.
+    check: grep -F
+    verified: true
+  - claim: GHSA structured affected versions (>= 1.81.8, < 1.83.10)
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: 'Affected versions
+
+      >= 1.81.8, < 1.83.10
+
+      '
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: GHSA structured patched versions (>= 1.83.10) - contradicts prose 1.83.11
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: 'Patched versions
+
+      >= 1.83.10
+
+      '
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: GHSA patched release link v1.83.10-stable
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: 'Patched release: [[href=https://github.com/BerriAI/litellm/releases/tag/v1.83.10-stable]]v1.83.10-stable'
+    check: grep -F
+    verified: true
+  - claim: GHSA severity Moderate, CVSS 4.0 5.9
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: " Moderate\n 5.9\n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: GHSA CVSS 4.0 vector (PR:H)
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: CVSS:4.0/AV:N/AC:H/AT:N/PR:H/UI:N/VC:L/VI:L/VA:H/SC:N/SI:N/SA:N
+    check: grep -F
+    verified: true
+  - claim: GHSA CVE id / CWE-913
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: CVE-2026-40217
+    check: grep -F
+    verified: true
+  - claim: GHSA published May 7, 2026
+    source_url: https://github.com/BerriAI/litellm/security/advisories/GHSA-wxxx-gvqv-xp7p
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/ghsa.raw.txt
+    passage: May 7, 2026
+    check: grep -F
+    verified: true
+  - claim: v1.83.10-stable release page dated 2026-04-27
+    source_url: https://github.com/BerriAI/litellm/releases/tag/v1.83.10-stable
+    saved_body: work/2026-11-19T0355Z-intel/deepread/4_litellm/rel_1.83.10-stable.extract.md
+    passage: 'date: "2026-04-27"'
+    check: grep -F
+    verified: true
+  - claim: EPSS CVE-2026-40217 0.1702 (2026-11-18)
+    source_url: https://api.first.org/data/v1/epss?cve=CVE-2026-40217
+    saved_body: work/2026-11-19T0355Z-intel/deepread/epss.json
+    passage: '{"cve":"CVE-2026-40217","epss":"0.170200000","percentile":"0.971340000","date":"2026-11-18"}'
+    check: grep -F
+    verified: true
+- n: 5
+  entry: entries/2026-11-11/confluence-dc-cve-2026-90436-apache-axis-remote-api-rce.md
+  finding: findings.S1.yaml items[13]
+  new_sources:
+  - url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    role: primary
+    transport: bridge cisa-kev
+    published: '2026-11-18'
+  - url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    role: primary (Apache Axis announcement on java-user; identical text to the oss-security copy the entry already cites)
+    transport: extract (served via jina)
+    published: '2026-11-06'
+  - url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118323
+    role: corroborating
+    transport: bridge enisa-euvd advisory
+    published: datePublished Nov 6, 2026; dateUpdated Nov 18, 2026; exploitedSince Nov 18, 2026
+  reader_delta:
+  - 'Does the entry already state exploitation? YES, of the CVE: summary "the same flaw is exploited against N-able N-central servers that embed Axis" and the 2026-11-13 update, sourced to Huntback (mining-pool rig count), Previdian (honeypot)
+    and BleepingComputer. It also says "No source reports exploitation of Confluence." That sentence is STILL TRUE: KEV names no product.'
+  - 'What the KEV listing adds: (1) the first authority statement of exploitation for CVE-2026-90436 itself (CISA, dateAdded 2026-11-18); (2) a federal due date 2026-11-21 (3 days) and forensicTriage "Yes", i.e. CISA expects a compromise check,
+    which matches Atlassian''s unexplained request to check instances; (3) CISA''s own note that the flaw "could affect an open-source component, third-party library, protocol, or proprietary implementation that could be used by different products"
+    and that the product could be end-of-life, "Users are advised to discontinue use and/or transition to a supported version"; (4) knownRansomwareCampaignUse Unknown. EUVD mirrors it (exploitedSince 2026-11-18, CVSS 3.1 9.8 from the Apache CNA,
+    alias GHSA-988f-c54m-f8jj); FIRST EPSS 0.01128.'
+  - 'What the Apache EOL/no-fix statement adds beyond the entry: the entry already carries "does not expect to release an Axis 1.x fix" and the unauthenticated SOAP-fault class instantiation. Missing and worth one sentence: the fault is parsed
+    before any per-service handler chain runs, so authentication handlers configured on a service do not protect against it; RCE needs a suitable class on the application classpath (a gadget precondition); remedy is migrate to Axis 2/Java or
+    a self-built Axis with commit 41f3b4e8d04e310ca81f86b92630ab2c11d608bd; the CVE is flagged "UNSUPPORTED WHEN ASSIGNED"; finder OKIOK (José Apari-Pantigozo). Net: exposure generalises to ANY product bundling Axis 1.x (Confluence DC with Remote
+    API, N-central, others); for Confluence the Remote API toggle and 9.2.28 remain the levers.'
+  - 'Atlassian advisory re-read 2026-11-19: unchanged (no exploitation statement: grep -c exploit = 0), still "Atlassian cannot confirm if your instances have been affected ... check all affected instances for evidence of compromise", fixed 9.2.28.'
+  supersedes:
+  - where: frontmatter cves[] CVE-2026-90436
+    entry_sentence: 'status: patch-available, mitigation-only'
+    status: incomplete
+    now: add cisa-kev; epss 0.01128 (FIRST 2026-11-18; EUVD shows 1.13 in percent); the entry's cvss "9.3" is Atlassian's CVSS 4.0 for Confluence, the Apache CNA scores the Axis CVE 9.8 (CVSS 3.1) per EUVD
+  - where: sourcing_note
+    entry_sentence: The exploitation reported against N-able N-central rests on Huntback's count from a mining pool's public rig list and on Previdian's honeypot, relayed by BleepingComputer.
+    status: superseded-in-part
+    now: exploitation of the CVE now also rests on CISA KEV (an authority) and ENISA EUVD exploitedSince 2026-11-18; the Confluence-specific "no source reports exploitation" is unchanged
+  - where: frontmatter affected_products / tags
+    entry_sentence: 'tags: [vulnerabilities, pre-auth, rce, patch-available]'
+    status: incomplete
+    now: add cisa-kev tag; affected_products may add Apache Axis 1.x and N-able N-central (S1 proposed)
+  - where: Defender takeaway
+    entry_sentence: '**Defender takeaway:** switch the Remote API off today and upgrade to 9.2.28, because the flaw is already exploited against another product''s embedded Axis'
+    status: reinforced
+    now: CISA due date 2026-11-21 and forensic-triage flag strengthen it; unchanged otherwise
+  entry_sentences_checked:
+  - where: summary
+    entry_sentence: no source reports exploitation of Confluence, but the same flaw is exploited against N-able N-central servers that embed Axis.
+    verbatim_in_entry: true
+  - where: Update 2026-11-13
+    entry_sentence: No source reports exploitation of Confluence.
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: The Apache Axis project says the flaw allows unauthenticated remote class instantiation through a SOAP fault and that it does not expect to release an Axis 1.x fix
+    verbatim_in_entry: true
+  - where: cves[] status
+    entry_sentence: "    status:\n      - patch-available\n      - mitigation-only"
+    verbatim_in_entry: true
+  - where: sourcing_note
+    entry_sentence: The exploitation reported against N-able N-central rests on Huntback's count from a mining pool's public rig list and on Previdian's honeypot, relayed by BleepingComputer.
+    verbatim_in_entry: true
+  - where: cves[] epss
+    entry_sentence: '    epss: null'
+    verbatim_in_entry: true
+  version_table:
+    axis_affected: Apache Axis 1.x (EOL) through 1.4 (also commit range aac718c6... before 41f3b4e8...)
+    axis_fixed: none planned ("does not expect to create an Axis 1.x release fixing this problem"); self-built patch commit 41f3b4e8d04e310ca81f86b92630ab2c11d608bd
+    confluence_dc_fixed: 9.2.28 (Atlassian, unchanged); Confluence 10.x not affected
+  exploitation:
+    status: exploited (CISA KEV); exploitation of Confluence specifically not reported
+    as_of: KEV 2026-11-18; EUVD exploitedSince 2026-11-18; N-central exploitation reports 2026-11-12
+    sources: CISA KEV json; ENISA EUVD EUVD-2026-118323; Huntback/Previdian/BleepingComputer (already in entry)
+  flags:
+  - extract served lists.apache.org through the jina reader (it still had a working credential for that fetch); the oss-security copy is byte-identical text and was read direct.
+  claim_table:
+  - claim: KEV dateAdded
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: '"dateAdded": "2026-11-18"'
+    check: grep -F
+    verified: true
+  - claim: KEV due date 2026-11-21
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: '"dueDate": "2026-11-21"'
+    check: grep -F
+    verified: true
+  - claim: KEV forensic triage required
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: '"forensicTriage": "Yes"'
+    check: grep -F
+    verified: true
+  - claim: KEV ransomware use Unknown
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: '"knownRansomwareCampaignUse": "Unknown"'
+    check: grep -F
+    verified: true
+  - claim: KEV description + EoL note
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: The impacted product(s) could be end-of-life (EoL) and/or end-of-service (EoS). Users are advised to discontinue use and/or transition to a supported version.
+    check: grep -F
+    verified: true
+  - claim: KEV names no product; flags shared-component risk
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: This vulnerability could affect an open-source component, third-party library, protocol, or proprietary implementation that could be used by different products.
+    check: grep -F
+    verified: true
+  - claim: KEV product Apache Axis
+    source_url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/kev_record.json
+    passage: '"vulnerabilityName": "Apache Axis Unsafe Reflection Vulnerability"'
+    check: grep -F
+    verified: true
+  - claim: 'Apache: mechanism and unauthenticated'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: Deserialization of an inbound SOAP fault in Apache Axis 1.x allows unauthenticated remote class instantiation.
+    check: grep -F
+    verified: true
+  - claim: 'Apache: auth handlers do not protect'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: The fault is parsed while the engine resolves the target service, before any per-service handler chain runs, so authentication handlers configured on a service do not protect against it.
+    check: grep -F
+    verified: true
+  - claim: 'Apache: no Axis 1.x fix expected'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: The Apache Axis project does not expect to create an Axis 1.x release fixing this problem.
+    check: grep -F
+    verified: true
+  - claim: 'Apache: migrate to Axis 2/Java or apply patch commit'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: As Axis 1 has been EOL we recommend you migrate to a different SOAP engine, such as Apache Axis 2/Java.
+    check: grep -F
+    verified: true
+  - claim: 'Apache: all 1.x through 1.4; UNSUPPORTED WHEN ASSIGNED'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: This affects all Apache Axis 1.x versions through 1.4.
+    check: grep -F
+    verified: true
+  - claim: 'Apache: suitable class on classpath required'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: With a suitable class on the application's classpath this leads to remote code execution.
+    check: grep -F
+    verified: true
+  - claim: 'Apache: finder OKIOK'
+    source_url: https://lists.apache.org/thread/8slf0j9gz35z56t0glt5h0ncwlbn4bdz
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/apache_list.extract.md
+    passage: José Apari-Pantigozo from OKIOK (finder)
+    check: grep -F
+    verified: true
+  - claim: Same text on oss-security (the copy the entry cites), 2026-11-06
+    source_url: https://openwall.com/lists/oss-security/2026/11/06/12
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/openwall.extract.md
+    passage: 'Date: Fri, 06 Nov 2026 15:32:01 +0000'
+    check: grep -F
+    verified: true
+  - claim: EUVD exploitedSince 2026-11-18
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118323
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/euvd.json
+    passage: '"exploitedSince": "Nov 18, 2026, 12:00:00 AM"'
+    check: grep -F
+    verified: true
+  - claim: EUVD CVSS 3.1 9.8 (Apache CNA)
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118323
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/euvd.json
+    passage: '"baseScore": 9.8'
+    check: grep -F
+    verified: true
+  - claim: EUVD alias GHSA-988f-c54m-f8jj
+    source_url: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118323
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/euvd.json
+    passage: GHSA-988f-c54m-f8jj
+    check: grep -F
+    verified: true
+  - claim: EPSS CVE-2026-90436 0.01128 (2026-11-18)
+    source_url: https://api.first.org/data/v1/epss?cve=CVE-2026-90436
+    saved_body: work/2026-11-19T0355Z-intel/deepread/epss.json
+    passage: '{"cve":"CVE-2026-90436","epss":"0.011280000","percentile":"0.670070000","date":"2026-11-18"}'
+    check: grep -F
+    verified: true
+  - claim: 'Atlassian advisory unchanged: cannot confirm; check for compromise'
+    source_url: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/atlassian.extract.md
+    passage: Atlassian cannot confirm if your instances have been affected by this vulnerability. You should engage your local security team to check all affected instances for evidence of compromise.
+    check: grep -F
+    verified: true
+  - claim: 'Atlassian: fixed 9.2.28'
+    source_url: https://confluence.atlassian.com/security/cve-2026-90436-remote-code-execution-in-confluence-data-center-and-server-1874560038.html
+    saved_body: work/2026-11-19T0355Z-intel/deepread/5_axis/atlassian.extract.md
+    passage: '| Confluence Data Center | 9.2.28 | '
+    check: grep -F
+    verified: true
+- n: 6
+  entry: entries/2026-11-17/optimjack-poisoned-vendor-scripts-skimmer-iphone-router.md
+  finding: findings.S3.yaml items[4]
+  new_sources:
+  - url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    role: primary (vendor)
+    transport: extract + url --direct
+    published: statement "Posted Nov 18, 2026 - 14:49 UTC" (the entry cites the earlier "Posted Nov 17, 2026 - 01:02 UTC")
+  - url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    role: primary (ThreatLabz)
+    transport: extract + url --direct
+    published: page datePublished 2026-11-18 (S3 noted feed pubDate Thu 19 Nov 00:45 GMT; feed not re-fetched)
+  - url: https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/
+    role: already cited; re-read for its 17 Nov 09:17 UTC update
+    transport: extract
+    published: 2026-11-16 (update 2026-11-17 09:17 UTC)
+  reader_delta:
+  - 'Optimizely''s 18 Nov statement names the flaw LOCATION and effect: a flaw in the Web Experimentation account signup flow, used to impersonate users on targeted customer accounts and insert malicious JavaScript into customers'' projects.
+    It also says: detected on the day the activity began, delivery of the code blocked and the vulnerability closed within three hours of detection, injected code removed from all affected projects, "No malicious code remains in our systems",
+    "This was not a credentials breach", incident limited to Web Experimentation, "Less than 5% of our customers were impacted", every Web Experimentation customer contacted directly. It still gives no CVE, no CWE, no detection timestamp and
+    no absolute count.'
+  - 'Zscaler ThreatLabz (2026-11-18): the signup-flow flaw gave unauthorized write access to the Project JavaScript (projectJS) field of multiple customer projects; modified snippets were served from Optimizely''s CDN (cdn.optimizely.com) and
+    in some cases customer domains; ThreatLabz counts more than 450 unique domains and more than 3,000 URLs serving the malicious script (vantage and time window not stated: telemetry/sensor/time window all 0 hits), spanning 12 sector labels
+    incl. Airlines and Travel, Banking and Finance, Telecommunications; this "suggest[s] a broader impact" than Report URI''s 178 organisations. Guidance for Optimizely customers: audit every Project JavaScript field; review recent changes, user
+    activity, account creation events and administrative access; reset admin credentials; rotate API/session tokens/integration keys; enforce MFA; run CSP in enforcement mode with reporting.'
+  - 'Provenance trap: Zscaler writes that Optimizely "ended active sessions, revoked tokens, reset access for affected accounts" - the current status page does NOT say that (revoked = 0, "active sessions" = 0; it says "taken steps to secure affected
+    user accounts" in the 17 Nov post). Carry those steps only as Zscaler''s wording, not as an Optimizely statement.'
+  - 'Timeline tension (Report URI update, 2026-11-17 09:17 UTC): "As of 16 Nov 23:11 UTC we observed that all infected Optimizely files were cleaned, and have remained clean since." First injection seen 04:21 UTC 16 Nov; mass clean-up 20:40-21:10;
+    so the final-clean time is 23:11 UTC, which the entry does not carry. Optimizely''s "closed within three hours of detection" cannot be placed on that timeline because the status page gives no detection time.'
+  supersedes:
+  - where: body para 1
+    entry_sentence: naming no flaw class or count ([Optimizely, 2026-11-17](https://status.optimizely.com/incidents/ftw0fh9wx43z))
+    status: superseded
+    now: the 2026-11-18 14:49 UTC statement names the signup flow and user impersonation, and a relative count ("Less than 5% of our customers"); still no CVE/CWE or absolute count
+  - where: Detection line
+    entry_sentence: Optimizely names only an exploited vulnerability ([Optimizely, 2026-11-17](https://status.optimizely.com/incidents/ftw0fh9wx43z))
+    status: superseded
+    now: vendor and ThreatLabz name the account signup flow / impersonation; the post-removal check should add account-creation events, administrative access and user activity (Zscaler) to "project change history, API credentials and integrations"
+  - where: body Update 2026-11-18
+    entry_sentence: the status entry names no flaw class, CVE, count or stolen credentials
+    status: superseded
+    now: 'status now says "This was not a credentials breach" and "Less than 5% of our customers were impacted"; CVE still absent. (Append-only history: correct it in the new section or in place per the 2026-08-28 directive.)'
+  - where: frontmatter headline / summary
+    entry_sentence: 'headline: "OptimJack: Optimizely confirms an exploited flaw; Report URI counts 178 organisations served poisoned scripts"'
+    status: incomplete
+    now: add ThreatLabz 450+ domains / 3,000+ URLs; 178 is a floor from one vantage, 450+ another; do not average (S3 note); the 178-vs-450 gap is unreconciled
+  - where: body para 1
+    entry_sentence: counted 188 infected snippets of 178 organisations, a floor
+    status: unchanged
+    now: still Report URI's figure; ThreatLabz figure is a separate vantage
+  - where: body para 2
+    entry_sentence: and a snippet that was cleaned and then re-infected shows the writer still had access at that point
+    status: unchanged
+    now: still Report URI's observation; Optimizely's "closed within three hours of detection" is a vendor claim with no detection time; Report URI's later update puts the all-clean point at 23:11 UTC
+  - where: frontmatter sources / evidence
+    entry_sentence: (Optimizely status row dated 2026-11-17)
+    status: incomplete
+    now: 'keep the row, add the 2026-11-18 14:49 UTC statement and Zscaler (2026-11-18); sources[] row for the status page: both postings live on one URL'
+  - where: Admiralty (S3 hint)
+    entry_sentence: classification reliability B, credibility 2
+    status: for main agent
+    now: 'S3 hint: A for the vendor statement on its own incident, B for ThreatLabz; credibility 1 on the flaw location (vendor and ThreatLabz agree; note ThreatLabz derives from Optimizely''s statement and public reporting - its page says "Optimizely
+      reported" - so independence is limited), 2 on the 450-domain count'
+  entry_sentences_checked:
+  - where: body para 1
+    entry_sentence: naming no flaw class or count ([Optimizely, 2026-11-17](https://status.optimizely.com/incidents/ftw0fh9wx43z))
+    verbatim_in_entry: true
+  - where: Detection line
+    entry_sentence: Optimizely names only an exploited vulnerability ([Optimizely, 2026-11-17](https://status.optimizely.com/incidents/ftw0fh9wx43z))
+    verbatim_in_entry: true
+  - where: Update 2026-11-18
+    entry_sentence: the status entry names no flaw class, CVE, count or stolen credentials
+    verbatim_in_entry: true
+  - where: summary
+    entry_sentence: Report URI counts 178 organisations that served the code on 2026-11-16
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: counted 188 infected snippets of 178 organisations, a floor
+    verbatim_in_entry: true
+  - where: headline
+    entry_sentence: 'headline: "OptimJack: Optimizely confirms an exploited flaw; Report URI counts 178 organisations served poisoned scripts"'
+    verbatim_in_entry: true
+  - where: Detection line
+    entry_sentence: After removal, review the provider-side project change history, API credentials and integrations, because the poisoned output does not show how the attacker got in
+    verbatim_in_entry: true
+  - where: body para 2
+    entry_sentence: and a snippet that was cleaned and then re-infected shows the writer still had access at that point
+    verbatim_in_entry: true
+  version_table:
+    note: no product versions; no CVE
+  exploitation:
+    status: exploited, vendor-confirmed (flaw in account signup flow)
+    as_of: vendor statement 2026-11-18 14:49 UTC; ThreatLabz 2026-11-18
+    sources: Optimizely status page; Zscaler ThreatLabz
+  flags:
+  - 'Zscaler page contains IOC tables (domains, wallet addresses): not for the entry (no-IOC rule).'
+  - ThreatLabz says Coruna/DarkSword entry paths A8, B9, D11, D12 and a C10 path "Selected by boot.js for iOS 26" - C10 is unlabeled by name; the entry's router reading (iOS 13-17 Coruna-associated, iOS 18 DarkSword-labelled) is Hudson Rock's
+    and is not re-verified here.
+  claim_table:
+  - claim: 'Optimizely 18 Nov statement: flaw in account signup flow; impersonation; JS into customers projects'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: On 16 November 2026, an unauthorized third party exploited a flaw in the Optimizely Web Experimentation account signup flow. They used it to impersonate users on targeted customer accounts and insert malicious JavaScript into those
+      customers’ projects.
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: detected same day, closed within three hours of detection, not a credentials breach'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: On the day the activity began, we detected it, blocked delivery of the malicious code and closed the vulnerability within three hours of detection. We also removed the injected code from all affected projects. No malicious code remains
+      in our systems. This was not a credentials breach. The incident was limited to Web Experimentation.
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: less than 5% of customers'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: Less than 5% of our customers were impacted. No other Optimizely product was affected.
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: contacted every Web Experimentation customer'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: We have contacted every Web Experimentation customer directly to confirm whether they were affected.
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: statement timestamp'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: Posted Nov 18, 2026 - 14:49 UTC
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: earlier statement timestamp (the one the entry cites)'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: Posted Nov 17, 2026 - 01:02 UTC
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: earlier statement text (vulnerability in Experimentation; secured affected user accounts)'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: We've also taken steps to secure affected user accounts and put additional protections in place to prevent unauthorized code from being delivered.
+    check: grep -F
+    verified: true
+  - claim: 'Optimizely: scope Snippet Delivery'
+    source_url: https://status.optimizely.com/incidents/ftw0fh9wx43z
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/optimizely_status.extract.md
+    passage: 'This incident affects: Web Experimentation (Snippet Delivery).'
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: signup-flow flaw; Project JavaScript (projectJS) field editable'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: The flaw allowed the attacker to edit the Project JavaScript (projectJS) field.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: vulnerability in account signup flow on Nov 16'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: On November 16, 2026, an attacker exploited a vulnerability in Optimizely's Web Experimentation account signup flow.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: 450 domains / 3,000 URLs'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: ThreatLabz identified more than 450 unique domains and more than 3,000 URLs serving the malicious script.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: broader than previously reported'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: These findings suggest a broader impact across organizations and industry verticals than
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: sectors Airlines and Travel'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: '- Airlines and Travel'
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: sectors Banking and Finance'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: '- Banking and Finance'
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: sectors Telecommunications'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: '- Telecommunications'
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: delivery via Optimizely CDN and in some cases customer domains'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: Modified snippets were served through existing delivery paths, including Optimizely’s CDN (including cdn.optimizely.com) and, in some cases, customer domains.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: trusted allow-listed script reason'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: This made the attack more effective because many affected websites already trusted and allowed Optimizely scripts.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler guidance: review changes, user activity, account creation, admin access'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: Review recent changes, user activity, account creation events, and administrative access.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler guidance: audit Project JavaScript fields'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: Audit all Project JavaScript fields for unauthorized or unexpected code.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler guidance: rotate tokens'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: Rotate API tokens, session tokens, and integration keys associated with Optimizely.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler guidance: MFA'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: Enforce multi-factor authentication (MFA) for all users with access to experimentation or web personalization platforms.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler guidance: CSP enforcement mode'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: Deploy Content Security Policy (CSP) in enforcement mode where possible
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler attributes to Optimizely: ended sessions, revoked tokens, reset access (NOT in current status text)'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: that it blocked the vulnerable path, deployed a fix, removed the injected code from affected projects, ended active sessions, revoked tokens, reset access for affected accounts, and notified impacted customers.
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: scope - page-context except iOS exploit-delivery branch'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.extract.md
+    passage: 'The main exception is the iOS/iPadOS exploit-delivery branch: if one of the delivered exploit chains succeeds, the resulting impact could potentially exceed normal web-page sandbox restrictions.'
+    check: grep -F
+    verified: true
+  - claim: 'Zscaler: published 2026-11-18 (page metadata)'
+    source_url: https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/zscaler.raw.html
+    passage: '"datePublished":"2026-11-18"'
+    check: grep -F
+    verified: true
+  - claim: 'Report URI: update - all infected Optimizely files cleaned as of 16 Nov 23:11 UTC'
+    source_url: https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/reporturi.extract.md
+    passage: As of 16 Nov 23:11 UTC we observed that all infected Optimizely files were cleaned, and have remained clean since.
+    check: grep -F
+    verified: true
+  - claim: 'Report URI: first injection 04:21 UTC'
+    source_url: https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/reporturi.extract.md
+    passage: '| **Nov 16 04:21** | **First Optimizely injection seen** (BBC snippet loading `webshell.lol`) | '
+    check: grep -F
+    verified: true
+  - claim: 'Report URI: Optimizely acknowledged on status page (17 Nov update)'
+    source_url: https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/
+    saved_body: work/2026-11-19T0355Z-intel/deepread/6_optimizely/reporturi.extract.md
+    passage: Optimizely has acknowledged the incident on their [status page]
+    check: grep -F
+    verified: true
+- n: 7
+  entry: entries/2026-10-29/php2shell-trend-micro-apex-quest-kace-netapp-ontap.md
+  finding: findings.S1.yaml items[15]
+  new_sources:
+  - url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    role: primary
+    transport: extract (DROPS the Deep Discovery Inspector and Web Security rows) + url --direct (full table; read from raw)
+    published: 'Last updated: 2026/11/18; table "Current Status as of Nov. 18"'
+  - url: https://downloadcenter.trendmicro.com/index.php?regs=nabu&prodid=83
+    role: primary (Mobile Security for Enterprise 9.8 SP5 Critical Patch)
+    transport: url --direct
+    published: Critical Patch dated 2026-11-17
+  - url: https://files.trendmicro.com/documentation/readme/tmms-ee_9.8_sp5_patch10_readme_server.txt
+    role: primary (readme of CP10 build 3461)
+    transport: url --direct
+    published: readme dated November 17, 2026
+  - url: https://downloadcenter.trendmicro.com/index.php?regs=nabu&prodid=1646
+    role: primary (Deep Discovery Analyzer 7.7)
+    transport: url --direct
+    published: Critical Patch dated 2026-11-18
+  - url: https://files.trendmicro.com/documentation/readme/DDAN/7.7/EN/CriticalPatch/ddan_77_lx_en_criticalpatch_b1020.7z_EN_critical_patch_Readme.txt
+    role: primary (readme of DDAN 7.7 CP build 1020)
+    transport: url --direct
+    published: readme header "November 13th, 2026"; Download Center dates the package 2026-11-18
+  reader_delta:
+  - 'CORRECTION TO S1: S1 reads Mobile Security for Enterprise as "still shows no patch after its 17 November ETA". True only of the KA-0024802 row ("Impacted - Contact support for mitigation Critical Patch ETA: Nov. 17", unchanged). Trend''s
+    Download Center lists "Trend Micro Mobile Security (Enterprise) 9.8sp5 Critical Patch", file TMMS-9.8-SP5-CP10-x86-EN-B3461.exe, release date 2026-11-17, and its readme (dated November 17, 2026) says the release "updates the PHP runtime used
+    by the Management Server web console to version 8.3.36. This version includes the official fixes for CVE-2026-109618 and CVE-2026-109619." So the patch has shipped; the advisory row lags it. (The earlier entry text "no patch on the Download
+    Center" was true on 2026-11-13 and is now false.)'
+  - 'Deep Discovery Analyzer: KA row is now "Impacted / Engine: Fixed via Active Update on Nov.6. / OS Image: 7.7: Critical Patch 1020, 7.6: Critical Patch 1082 / CP for DDAN 7.5 is not planned, please upgrade to 7.6." The Download Center lists
+    the DDAN 7.7 critical patch (b1020, 854 MB) dated 2026-11-18; its readme (header date 13 Nov 2026) lists CVE-2026-109618 and CVE-2026-109619 (Issue 3) with other fixes. The 7.6 CP 1082 is stated by the advisory; I did not locate its Download
+    Center page (prodid for 7.6 not exposed), so it is advisory-only.'
+  - 'Unchanged vs the 2026-11-12 table: Apex Central CP B7351, Apex One server CP B20113, DDEI 5.1 CP 4902, DDI CPs (7.0: 1077, 6.82: 1064, 6.71: 1098, 6.70: 1119, 6.60: 1110, 6.5: 1200), TMWS cloud fixed Oct. 30 and TWS Authentication Agent
+    impacted with a mitigation link (KA-0024829), no-exploitation statement, trusted-IP restriction advice. New or newly visible: Vision One Standard Endpoint Security (Apex One as a Service) "Addressed via emergency maintenance (10/23)". Gone
+    from the page: the "Mitigation Steps (Interim)" links the 2026-11-12 table (per work/2026-11-13T0256Z-intel/deepread.D.yaml) showed on the Apex rows (grep -c = 0 now).'
+  - 'Exploitation: Trend still says it has not seen successful exploitation in its products or services; CISA KEV has listed both PHP CVEs since 2026-10-26 (dateAdded checked in the 2026.11.18 catalogue).'
+  supersedes:
+  - where: frontmatter headline
+    entry_sentence: 'headline: ''PHP2Shell: Trend Micro Apex Central and Apex One patched; Analyzer due 18 Nov; Quest KACE, NetApp ONTAP fixed'''
+    status: superseded
+    now: Analyzer patched (engine 2026-11-06 Active Update; OS image CP 1020 / 1082; none for 7.5); Mobile Security for Enterprise CP10 out on the Download Center since 2026-11-17
+  - where: frontmatter title
+    entry_sentence: while Mobile Security for Enterprise and Deep Discovery Analyzer still await theirs
+    status: superseded
+    now: neither awaits a patch on the Download Center; the advisory row for Mobile Security still shows the 17 Nov ETA and mitigation-via-support
+  - where: frontmatter summary
+    entry_sentence: lists Mobile Security for Enterprise (due on 2026-11-17) and Deep Discovery Analyzer (due on 2026-11-18) as impacted
+    status: superseded
+    now: both still "Impacted" in the table but both patches exist (see delta)
+  - where: frontmatter cves[].fixed
+    entry_sentence: Mobile Security for Enterprise due 2026-11-17 and Deep Discovery Analyzer due 2026-11-18 per the advisory of 2026-11-12, no patch on the Download Center on 2026-11-13
+    status: superseded
+    now: 'Mobile Security for Enterprise: Critical Patch 10 build 3461 (PHP 8.3.36), 2026-11-17; Deep Discovery Analyzer: 7.7 Critical Patch 1020, 7.6 Critical Patch 1082, engine via Active Update 2026-11-06, no patch for 7.5 (upgrade to 7.6)'
+  - where: actions[0]
+    entry_sentence: for Mobile Security for Enterprise (patch due 2026-11-17, mitigation from Trend Micro support) and Deep Discovery Analyzer (due 2026-11-18) keep the interim mitigation until the patch ships
+    status: superseded
+    now: install TMMS 9.8 SP5 CP10 (build 3461) and the DDAN critical patch for the installed train; DDAN 7.5 has no patch, upgrade to 7.6 first
+  - where: frontmatter affected_products
+    entry_sentence: "  - Trend Micro Mobile Security for Enterprise\n  - Quest KACE Systems Management Appliance"
+    status: incomplete
+    now: Deep Discovery Analyzer is absent from affected_products (S1 proposes adding it); Deep Discovery Inspector / Email Inspector are also on the advisory table but not in the entry's product list
+  - where: body Update 2026-11-13 (history)
+    entry_sentence: the Download Center pages of both products still list no 2026-11 patch
+    status: superseded-by-time
+    now: true on 2026-11-13; false on 2026-11-19 for both (DDAN 7.7 2026-11-18, TMMS 2026-11-17)
+  - where: body para 1
+    entry_sentence: Trend Micro says it has not seen successful exploitation in its products or services ([Trend Micro, 2026-11-12]
+    status: unchanged
+    now: still on the 2026-11-18 page; cite the 2026-11-18 revision
+  entry_sentences_checked:
+  - where: headline
+    entry_sentence: 'headline: ''PHP2Shell: Trend Micro Apex Central and Apex One patched; Analyzer due 18 Nov; Quest KACE, NetApp ONTAP fixed'''
+    verbatim_in_entry: true
+  - where: title
+    entry_sentence: while Mobile Security for Enterprise and Deep Discovery Analyzer still await theirs
+    verbatim_in_entry: true
+  - where: summary
+    entry_sentence: lists Mobile Security for Enterprise (due on 2026-11-17) and Deep Discovery Analyzer (due on 2026-11-18) as impacted
+    verbatim_in_entry: true
+  - where: cves[].fixed
+    entry_sentence: Mobile Security for Enterprise due 2026-11-17 and Deep Discovery Analyzer due 2026-11-18 per the advisory of 2026-11-12, no patch on the Download Center on 2026-11-13
+    verbatim_in_entry: true
+  - where: actions[0]
+    entry_sentence: for Mobile Security for Enterprise (patch due 2026-11-17, mitigation from Trend Micro support) and Deep Discovery Analyzer (due 2026-11-18) keep the interim mitigation until the patch ships
+    verbatim_in_entry: true
+  - where: Update 2026-11-13 (history)
+    entry_sentence: the Download Center pages of both products still list no 2026-11 patch
+    verbatim_in_entry: true
+  - where: affected_products (no Deep Discovery Analyzer)
+    entry_sentence: "Trend Micro Mobile Security for Enterprise\n  - Quest KACE Systems Management Appliance"
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: Trend Micro says it has not seen successful exploitation in its products or services ([Trend Micro, 2026-11-12]
+    verbatim_in_entry: true
+  version_table:
+    deep_discovery_analyzer: engine fixed by Active Update 2026-11-06; OS image CP 1020 (7.7), CP 1082 (7.6, advisory-stated); none planned for 7.5 (upgrade to 7.6)
+    mobile_security_for_enterprise: 9.8 SP5 Critical Patch 10, build 3461, PHP 8.3.36, Download Center date 2026-11-17 (advisory row still shows ETA Nov. 17)
+    apex_central: CP B7351 (unchanged)
+    apex_one_server: CP B20113 (unchanged)
+    ddei: '5.1: CP 4902 (unchanged)'
+    ddi: '7.0: CP 1077; 6.82: CP 1064; 6.71: CP 1098; 6.70: CP 1119; 6.60: CP 1110; 6.5: CP 1200 (unchanged)'
+  exploitation:
+    status: 'Trend: no successful exploitation seen in its products; CISA KEV lists CVE-2026-109618 and CVE-2026-109619 (dateAdded 2026-10-26)'
+    as_of: Trend 2026-11-18; KEV catalogue 2026.11.18
+    sources: KA-0024802; CISA KEV json
+  flags:
+  - 'trafilatura extract of KA-0024802 silently drops table rows (Deep Discovery Inspector, Web Security): always read this page from raw HTML.'
+  - 'S1 evidence quote "Impacted - Contact support for mitigation Critical Patch ETA: Nov. 17" is verbatim and still true of the advisory row, but must not be used to support "no patch exists".'
+  claim_table:
+  - claim: KA-0024802 last updated 2026/11/18
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: 'Last updated: 2026/11/18'
+    check: grep -F
+    verified: true
+  - claim: KA-0024802 table header Nov. 18
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: Current Status as of Nov. 18
+    check: grep -F
+    verified: true
+  - claim: DDAN row (engine via Active Update Nov 6; CP 1020 on 7.7; CP 1082 on 7.6; none for 7.5)
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: 'Impacted Engine: Fixed via Active Update on Nov.6. OS Image: 7.7: Critical Patch 1020 7.6: Critical Patch 1082 CP for DDAN 7.5 is not planned, please upgrade to 7.6.'
+    check: grep -F
+    verified: true
+  - claim: TMMS row still impacted with ETA Nov. 17
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: 'Impacted - Contact support for mitigation Critical Patch ETA: Nov. 17'
+    check: grep -F
+    verified: true
+  - claim: Apex Central CP B7351
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: 'Impacted - Critical Patch: CP B7351'
+    check: grep -F
+    verified: true
+  - claim: Apex One server CP B20113
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: 'Impacted - Critical Patch: CP B20113'
+    check: grep -F
+    verified: true
+  - claim: DDEI 5.1 CP 4902
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: 'DDEI 5.1: CP 4902'
+    check: grep -F
+    verified: true
+  - claim: DDI 7.0 CP 1077 (row dropped by extract; present in raw)
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'DDI 7.0: CP 1077'
+    check: grep -F
+    verified: true
+  - claim: DDI 6.82 CP 1064
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'DDI 6.82: CP 1064'
+    check: grep -F
+    verified: true
+  - claim: DDI 6.71 CP 1098
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'DDI 6.71: CP 1098'
+    check: grep -F
+    verified: true
+  - claim: DDI 6.70 CP 1119
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'DDI 6.70: CP 1119'
+    check: grep -F
+    verified: true
+  - claim: DDI 6.60 CP 1110
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'DDI 6.60: CP 1110'
+    check: grep -F
+    verified: true
+  - claim: DDI 6.5 CP 1200
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'DDI 6.5: CP 1200'
+    check: grep -F
+    verified: true
+  - claim: 'TMWS: authentication agent impacted, mitigation; cloud fixed Oct. 30'
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'TWS Authentication Agent: Impacted - '
+    check: grep -F
+    verified: true
+  - claim: TMWS cloud fixed (Oct. 30)
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: 'TMWS Cloud: Fixed (Oct. 30)'
+    check: grep -F
+    verified: true
+  - claim: Vision One SEP / Apex One as a Service addressed via emergency maintenance (10/23)
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.raw.txt
+    passage: Addressed via emergency maintenance (10/23)
+    check: grep -F
+    verified: true
+  - claim: No exploitation seen in Trend products
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: At this time, TrendAI has not seen any active instances or scenarios of successful exploitation of either of the vulnerabilities in our products or services.
+    check: grep -F
+    verified: true
+  - claim: Restrict consoles to trusted IPs
+    source_url: https://success.trendmicro.com/en-US/solution/KA-0024802
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ka0024802.extract.md
+    passage: can be minimized by utilizing restricted access to trusted IP addressed (where applicable) to the impacted management servers and consoles.
+    check: grep -F
+    verified: true
+  - claim: 'DC: DDAN 7.7 critical patch b1020 listed, dated 2026-11-18'
+    source_url: https://downloadcenter.trendmicro.com/index.php?regs=nabu&prodid=1646
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/dc_ddan.raw.txt
+    passage: " Critical Patch\n English \n 2026-11-18\n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: 'DC: DDAN 7.7 patch file name'
+    source_url: https://downloadcenter.trendmicro.com/index.php?regs=nabu&prodid=1646
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/dc_ddan.raw.txt
+    passage: ddan-77-lx-en-criticalpatch-b1020.7z.zip.tar
+    check: grep -F
+    verified: true
+  - claim: 'DC: TMMS CP10 dated 2026-11-17'
+    source_url: https://downloadcenter.trendmicro.com/index.php?regs=nabu&prodid=83
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/dc_tmms.raw.txt
+    passage: " Critical Patch\n English \n 2026-11-17\n"
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: 'DC: TMMS CP10 file name (build B3461)'
+    source_url: https://downloadcenter.trendmicro.com/index.php?regs=nabu&prodid=83
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/dc_tmms.raw.txt
+    passage: TMMS-9.8-SP5-CP10-x86-EN-B3461.exe
+    check: grep -F
+    verified: true
+  - claim: 'TMMS CP10 readme: PHP runtime updated to 8.3.36 with fixes for both CVEs'
+    source_url: https://files.trendmicro.com/documentation/readme/tmms-ee_9.8_sp5_patch10_readme_server.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/tmms_cp10_readme.txt
+    passage: includes the official fixes for CVE-2026-109618 and CVE-2026-109619.
+    check: grep -F
+    verified: true
+  - claim: TMMS CP10 readme PHP 8.3.36
+    source_url: https://files.trendmicro.com/documentation/readme/tmms-ee_9.8_sp5_patch10_readme_server.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/tmms_cp10_readme.txt
+    passage: Management Server web console to version 8.3.36. This version
+    check: grep -F
+    verified: true
+  - claim: TMMS CP10 readme build
+    source_url: https://files.trendmicro.com/documentation/readme/tmms-ee_9.8_sp5_patch10_readme_server.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/tmms_cp10_readme.txt
+    passage: Mobile Security for Enterprise 9.8 SP5 Critical Patch 10
+    check: grep -F
+    verified: true
+  - claim: DDAN 7.7 CP1020 readme names both PHP CVEs
+    source_url: https://files.trendmicro.com/documentation/readme/DDAN/7.7/EN/CriticalPatch/ddan_77_lx_en_criticalpatch_b1020.7z_EN_critical_patch_Readme.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ddan77_cp1020_readme.txt
+    passage: (CVE-2026-109618, CVE-2026-109619) is found in, Deep
+    check: grep -F
+    verified: true
+  - claim: DDAN 7.7 CP1020 readme header date 13 Nov 2026 (vs Download Center 2026-11-18)
+    source_url: https://files.trendmicro.com/documentation/readme/DDAN/7.7/EN/CriticalPatch/ddan_77_lx_en_criticalpatch_b1020.7z_EN_critical_patch_Readme.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/7_trend/ddan77_cp1020_readme.txt
+    passage: November 13th, 2026
+    check: grep -F
+    verified: true
+- n: 8
+  entry: entries/2026-10-23/hpesbnw05162-hpe-aruba-aos-8-aos-10-72-cves-19-unauth.md
+  finding: findings.S1.yaml items[14]
+  new_sources:
+  - url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    role: primary (CSAF revision 2, status final, current_release_date 2026-11-17T16:00:00Z)
+    transport: url --direct
+    published: '2026-11-17'
+  - url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.txt
+    role: 'primary (text advisory: Revision 2, Last Updated 2026-Nov-17; PGP-signed text)'
+    transport: url --direct
+    published: '2026-11-17'
+  reader_delta:
+  - 'Revision 2 (2026-11-17T16:00Z, final) replaced CVE-2026-79845 with CVE-2026-95787 (same AOS-10 PAPI authentication bypass, CVSS 3.1 10.0 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N; affected 10.8.0.0-10.8.1.1, 10.7.0.0-10.7.2.6, 10.4.0.0-10.4.1.13;
+    fixed 10.8.1.2, 10.7.2.7, 10.4.1.14 - field-for-field identical to the stored CVE-2026-79845 record), added CVE-2026-95788, -95789, -95790, -95791 "inadvertently omitted from Revision 1 due to an editorial error", and added a FIPS note: customers
+    operating AP-5xx access points in a FIPS-compliant environment must upgrade to AOS 8.13.3.2 FIPS or later. The CSAF now has 76 vulnerability records (72 before).'
+  - 'The FIPS build is a new fixed line for AOS-8: the CSAF adds product AOS-8.13.3.2-FIPS ("HPE Networking ArubaOS (AOS-8) FIPS") to product_status.fixed of ALL 49 CVE records that affect AOS-8, and each vendor_fix text now reads "AOS-8.13.x.x
+    FIPS: 8.13.3.2 FIPS and above(*)". The entry''s fixed-build list and action text do not name it.'
+  - 'Counts are unchanged because the replacement is also a 10.0: 33 of 76 at CVSS 3.1 >= 9.0 (10.0: 8, 9.8: 10, 9.6: 10, 9.4: 1, 9.3: 4), 19 of those AV:N/PR:N, 14 AV:A. The four added CVEs are all below 9.0: CVE-2026-95788 7.1 (AV:A/PR:N, DoS,
+    AOS-10 and AOS-8), CVE-2026-95789 7.2 (AV:N/PR:H command injection, both), CVE-2026-95790 6.5 (AV:N/PR:L authorization bypass, AOS-8 controllers only), CVE-2026-95791 4.9 (AV:N/PR:H arbitrary file read, both). HPE exploitation statement is
+    verbatim unchanged ("not aware of any public discussion or exploit code ... as of the release date of this advisory"); the advisory does not say it was re-assessed at revision 2.'
+  cves_records_to_change:
+    replace_id:
+      old: CVE-2026-79845
+      new: CVE-2026-95787
+      other_fields: identical (cvss 10.0 CVSS 3.1, type auth-bypass, vector zero-click, auth pre-auth, affected AOS-10 10.8.0.0 to 10.8.1.1 / 10.7.0.0 to 10.7.2.6 / 10.4.0.0 to 10.4.1.13, fixed AOS-10.8.1.2 / 10.7.2.7 / 10.4.1.14)
+      note: CVE-2026-79845 appears in the CSAF only inside the revision-history summary (no vulnerability record); state/cves_seen.json carries CVE-2026-79845 and has no CVE-2026-95787 row
+    append_fips_to_fixed:
+      field: fixed
+      add: AOS-8.13.3.2-FIPS (FIPS builds)
+      records:
+      - CVE-2026-79846
+      - CVE-2026-79848
+      - CVE-2026-79849
+      - CVE-2026-79850
+      - CVE-2026-79852
+      - CVE-2026-79855
+      - CVE-2026-79856
+      - CVE-2026-79857
+      - CVE-2026-79858
+      - CVE-2026-79859
+      - CVE-2026-79860
+      - CVE-2026-79872
+      note: 12 of the 19 stored records are AOS-8 rows; CVE-2026-79852 and CVE-2026-79872 are the two cross-train rows (AOS-10 and AOS-8)
+    unchanged_fields: 'cvss, affected ranges (all 19 compared programmatically to CSAF known_affected: 0 mismatches), types, auth'
+    no_new_cves_records_needed: 'the entry''s own rule (sourcing_note: only unauthenticated network-reachable rows scored 9.0 or higher) excludes the four added CVEs (7.1, 7.2, 6.5, 4.9); mention them in prose only'
+    counts_to_edit: 72 -> 76 everywhere (title "72 CVEs fixed in one bulletin", summary "fixes 72 CVEs", body "fixes 72 CVEs" and "33 of the 72"); 33 / 19 / eight at 10.0 / ten at 9.8 / ten at 9.6 / one at 9.4 / four at 9.3 / 14 adjacent all
+      stay
+  supersedes:
+  - where: frontmatter title
+    entry_sentence: 72 CVEs fixed in one bulletin, 19 of them unauthenticated and network-reachable at CVSS 9.0 or above
+    status: superseded
+    now: 76 CVEs; 19 unchanged
+  - where: frontmatter summary
+    entry_sentence: fixes 72 CVEs in AOS-8 and AOS-10
+    status: superseded
+    now: 76 CVEs (revision 2)
+  - where: body para 1
+    entry_sentence: By the CSAF's CVSS 3.1 scores, 33 of the 72 rate 9.0 or higher (eight at 10.0, ten at 9.8, ten at 9.6, one at 9.4 and four at 9.3)
+    status: refined
+    now: 33 of the 76; every sub-count verified unchanged
+  - where: frontmatter cves[]
+    entry_sentence: "  - id: CVE-2026-79845\n    cvss: \"10.0 (CVSS 3.1)\""
+    status: superseded
+    now: id CVE-2026-95787
+  - where: frontmatter cves[] fixed (AOS-8 rows)
+    entry_sentence: 'fixed: "AOS-8.13.3.1, AOS-8.10.0.24"'
+    status: incomplete
+    now: add AOS-8.13.3.2-FIPS on the 12 AOS-8 rows
+  - where: actions[0]
+    entry_sentence: (10.8.1.2, 10.7.2.7, 10.4.1.14, 8.13.3.1 or 8.10.0.24)
+    status: incomplete
+    now: 'add: FIPS deployments (notably AP-5xx in a FIPS-compliant environment) must take AOS 8.13.3.2 FIPS or later'
+  - where: body para 2
+    entry_sentence: fixed builds are AOS-10.8.1.2, 10.7.2.7 and 10.4.1.14 and AOS-8.13.3.1 and 8.10.0.24
+    status: incomplete
+    now: 'add AOS-8.13.x.x FIPS: 8.13.3.2 FIPS and above (HPE: "(*) NOTE: Customers operating AP-5xx access points in a FIPS-compliant environment must upgrade to AOS 8.13.3.2 FIPS or later version.")'
+  - where: frontmatter verification
+    entry_sentence: 'verification: single-source'
+    status: unchanged
+    now: HPE remains the only source; ENISA EUVD EUVD-2026-128865 independently lists the HPE CNA record CVE-2026-95787 (S1, published 2026-11-18)
+  entry_sentences_checked:
+  - where: title
+    entry_sentence: 72 CVEs fixed in one bulletin, 19 of them unauthenticated and network-reachable at CVSS 9.0 or above
+    verbatim_in_entry: true
+  - where: summary
+    entry_sentence: fixes 72 CVEs in AOS-8 and AOS-10
+    verbatim_in_entry: true
+  - where: summary
+    entry_sentence: 33 of them at CVSS 3.1 9.0 or higher and 19 of those reachable over the network without authentication
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: By the CSAF's CVSS 3.1 scores, 33 of the 72 rate 9.0 or higher (eight at 10.0, ten at 9.8, ten at 9.6, one at 9.4 and four at 9.3)
+    verbatim_in_entry: true
+  - where: cves[] record to replace
+    entry_sentence: "  - id: CVE-2026-79845\n    cvss: \"10.0 (CVSS 3.1)\""
+    verbatim_in_entry: true
+  - where: sourcing_note
+    entry_sentence: CVE records below list only the unauthenticated network-reachable rows scored 9.0 or higher
+    verbatim_in_entry: true
+  - where: cves[] fixed for AOS-8 rows (x6)
+    entry_sentence: 'fixed: "AOS-8.13.3.1, AOS-8.10.0.24"'
+    verbatim_in_entry: true
+  - where: actions[0]
+    entry_sentence: (10.8.1.2, 10.7.2.7, 10.4.1.14, 8.13.3.1 or 8.10.0.24)
+    verbatim_in_entry: true
+  - where: body para 1
+    entry_sentence: HPE Networking's bulletin HPESBNW05162 (initial release 2026-10-22) fixes 72 CVEs
+    verbatim_in_entry: true
+  - where: body para 2
+    entry_sentence: fixed builds are AOS-10.8.1.2, 10.7.2.7 and 10.4.1.14 and AOS-8.13.3.1 and 8.10.0.24
+    verbatim_in_entry: true
+  - where: frontmatter verification
+    entry_sentence: 'verification: single-source'
+    verbatim_in_entry: true
+  version_table:
+    csaf_vulnerabilities: 76
+    ge_9_0: 33
+    unauth_network_ge_9_0: 19
+    adjacent_ge_9_0: 14
+    score_10: 8
+    fixed_products: AOS-10.8.1.2, AOS-10.7.2.7, AOS-10.4.1.14, AOS-8.13.3.1, AOS-8.13.3.2-FIPS, AOS-8.10.0.24
+    affected_ranges: AOS-10 10.8.0.0-10.8.1.1, 10.7.0.0-10.7.2.6, 10.4.0.0-10.4.1.13; AOS-8 8.13.0.0-8.13.3.0, 8.10.0.0-8.10.0.23 (unchanged)
+  exploitation:
+    status: 'HPE: not aware of public discussion or exploit code as of the release date of the advisory (text unchanged at revision 2)'
+    as_of: advisory text, revision 2 2026-11-17
+    sources: CSAF json notes[Exploitation and Public Discussion]
+  flags:
+  - HPE support page for the bulletin renders only a login shell (S1); the CSAF json and the signed text advisory are the readable primaries.
+  - Revision 1 CSAF was not saved by any earlier run, so the per-record comparison is entry-vs-revision-2, not revision-1-vs-revision-2.
+  claim_table:
+  - claim: CSAF revision 2 summary (id swap, four additions, FIPS note)
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Corrected the CVE listing by replacing CVE-2026-79845 with CVE-2026-95787 and adding CVE-2026-95788, CVE-2026-95789, CVE-2026-95790, and CVE-2026-95791, which were inadvertently omitted from Revision 1 due to an editorial error.
+      Added a NOTE for FIPS customers to upgrade to AOS 8.13.3.2 FIPS and later versions due to an issue affecting AP-5xx access points.
+    check: grep -F
+    verified: true
+  - claim: CSAF version 2 / final
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: "\"status\": \"final\",\n      \"version\": \"2\""
+    check: str-in (multi-line passage; grep -F cannot match newlines)
+    verified: true
+  - claim: CSAF current release 2026-11-17T16:00Z
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: '"current_release_date": "2026-11-17T16:00:00.000Z"'
+    check: grep -F
+    verified: true
+  - claim: 'Text advisory: Revision 2 / 2026-Nov-17'
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.txt
+    passage: Revision 2 / 2026-Nov-17 / Corrected the CVE listing by replacing CVE-2026-79845
+    check: grep -F
+    verified: true
+  - claim: 'Text advisory: Last Updated 2026-Nov-17, Revision 2'
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.txt
+    passage: 'Last Updated: 2026-Nov-17'
+    check: grep -F
+    verified: true
+  - claim: FIPS fix train line
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.txt
+    passage: 'AOS-8.13.x.x FIPS: 8.13.3.2 FIPS and above(*)'
+    check: grep -F
+    verified: true
+  - claim: FIPS NOTE (AP-5xx in FIPS-compliant environment)
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.txt
+    passage: 'NOTE: Customers operating AP-5xx access points in a FIPS-compliant'
+    check: grep -F
+    verified: true
+  - claim: FIPS NOTE continued
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.txt
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.txt
+    passage: environment must upgrade to AOS 8.13.3.2 FIPS or later version.
+    check: grep -F
+    verified: true
+  - claim: CSAF product id AOS-8.13.3.2-FIPS
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: '"AOS-8.13.3.2-FIPS"'
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95787 title
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Authentication Bypass Vulnerabilities in the PAPI Protocol of AOS-10 allow Unauthorized Access and Modification of Sensitive Data
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95787 details (unauthenticated remote, PAPI, AOS-10)
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Vulnerabilities in the PAPI protocol of AOS-10 could allow an unauthenticated remote attacker to circumvent existing authentication controls.
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95787 consequence (admin access, config change)
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Successful exploitation could allow an attacker to gain administrative access, modify system configurations, and access or manipulate sensitive data.
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95788 title
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Unauthenticated Adjacent Buffer Overflow Vulnerability leads to Denial-of-Service in AOS-10 or AOS-8
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95789 title
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Authenticated Remote Command Injection Vulnerability in a Management Interface of AOS-8 or AOS-10
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95790 title
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Authenticated Authorization Bypass allows Sensitive Information Disclosure in API Interface
+    check: grep -F
+    verified: true
+  - claim: CVE-2026-95791 title
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: Authenticated Arbitrary File Read in AOS allows Sensitive Information Disclosure
+    check: grep -F
+    verified: true
+  - claim: Exploitation statement unchanged (no public discussion or exploit code)
+    source_url: https://csaf.arubanetworking.hpe.com/2026/hpe_networking_-_hpesbnw05162.json
+    saved_body: work/2026-11-19T0355Z-intel/deepread/8_hpe/csaf.json
+    passage: HPE Networking is not aware of any public discussion or exploit code that targets the listed vulnerabilities as of the release date of this advisory.
+    check: grep -F
+    verified: true

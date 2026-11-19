@@ -1,23 +1,41 @@
 ---
 schema: 1
 kind: vulnerability
-title: "Drupal core: a critical security release for all supported branches (11.4.x, 11.3.x and 10.6.x) is scheduled for 2026-11-18 between 17:00 and 21:00 UTC; the Security Team says at least one flaw can be exploited by anonymous users and that exploits might follow within hours or days"
-headline: "Drupal core critical release due 18 Nov 17:00 to 21:00 UTC; at least one flaw reachable by anonymous users"
+title: "Drupal core 11.4.13, 11.3.22 and 10.6.22 fix CVE-2026-132165 (SA-CORE-2026-017, Critical): under specific conditions an attacker can use the installer to reinstall Drupal, which can lead to site takeover or remote code execution; the only workaround is securing the installer, and no exploitation is reported"
+headline: "Drupal 11.4.13, 11.3.22, 10.6.22 fix an installer reinstall to takeover or RCE (SA-017, Critical); update now"
 summary: >
-  The Drupal Security Team announced in PSA-2026-11-16 a core security release for Drupal 11.4.x, 11.3.x and 10.6.x on 2026-11-18 between 17:00 and 21:00 UTC. It rates the vulnerabilities critical (18 of 25), says at least one can be exploited by anonymous users and that exploits might be developed within hours or days, and publishes no CVE id, component or fixed version before the release. End-of-life lines are to get interim mitigation steps in the advisory.
+  Drupal published SA-CORE-2026-017 (CVE-2026-132165, Critical 18 of 25) and SA-CORE-2026-018 (CVE-2026-132166, Moderately critical, not directly exploitable) on 2026-11-18: under specific conditions an attacker can use the installer to attempt to reinstall Drupal, which can lead to site takeover or remote code execution. Fixed in 11.4.13, 11.3.22 and 10.6.22, the only workaround is securing the installer, and no source reports exploitation, although the Security Team had warned that exploits might be developed within hours or days.
 discovered_at: "2026-11-18T05:09:00Z"
-updated_at: null
-event_date: "2026-11-16"
+updated_at: "2026-11-19T05:02:14Z"
+event_date: "2026-11-18"
 run_id: 2026-11-18T0356Z-intel
 priority: notable
 immediate_action: null
-tags: [vulnerabilities, pre-auth]
+tags: [vulnerabilities, pre-auth, rce, patch-available]
 regions: [global]
 sectors: [technology]
 entities: []
 techniques: [T1190]
 affected_products: ["Drupal Core"]
-cves: []
+cves:
+  - id: CVE-2026-132165
+    cvss: "n/a"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "<10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13"
+    fixed: "11.4.13, 11.3.22, 10.6.22"
+  - id: CVE-2026-132166
+    cvss: "n/a"
+    epss: null
+    type: deserialization
+    vector: zero-click
+    auth: admin-required
+    status: [patch-available]
+    affected: "<10.6.22 || >=11.0.0 <11.3.22 || >=11.4.0 <11.4.13"
+    fixed: "11.4.13, 11.3.22, 10.6.22"
 sources:
   - url: "https://www.drupal.org/psa-2026-11-16"
     publisher: "Drupal Security Team (PSA-2026-11-16)"
@@ -26,6 +44,18 @@ sources:
   - url: "https://security-hub.ncsc.admin.ch/#/posts/13196"
     publisher: "NCSC.ch Cyber Security Hub"
     date: "2026-11-17"
+    role: corroborating
+  - url: "https://www.drupal.org/sa-core-2026-017"
+    publisher: "Drupal Security Team (SA-CORE-2026-017)"
+    date: "2026-11-18"
+    role: primary
+  - url: "https://www.drupal.org/sa-core-2026-018"
+    publisher: "Drupal Security Team (SA-CORE-2026-018)"
+    date: "2026-11-18"
+    role: primary
+  - url: "https://advisories.ncsc.nl/2026/ncsc-2026-0507.html"
+    publisher: "NCSC-NL"
+    date: "2026-11-18"
     role: corroborating
 closed_sources: []
 evidence:
@@ -38,9 +68,15 @@ evidence:
   - quote: "Neither the Security Team nor any other party is able to release any more information about this vulnerability until the announcement is made."
     publisher: "Drupal Security Team (PSA-2026-11-16)"
     source_url: "https://www.drupal.org/psa-2026-11-16"
+  - quote: "Under specific conditions, an attacker can use the installer to attempt to reinstall Drupal. This can lead to a site takeover or remote code execution."
+    publisher: "Drupal Security Team (SA-CORE-2026-017)"
+    source_url: "https://www.drupal.org/sa-core-2026-017"
+  - quote: "This issue is not directly exploitable."
+    publisher: "Drupal Security Team (SA-CORE-2026-018)"
+    source_url: "https://www.drupal.org/sa-core-2026-018"
 verification: single-source
 sourcing_note: >
-  The Drupal Security Team is the disclosing party and the only source for the flaws; NCSC.ch's Security Hub restates the pre-announcement and rates exploitation unknown. The release was not published at the time of writing; the first Drupal advisory for it will carry the CVE ids, component and fixed versions.
+  The Drupal Security Team is the disclosing party and the only source for the flaws; NCSC-NL restates the advisories and NCSC.ch's Security Hub rated exploitation unknown on 2026-11-17, before the release. The SA-CORE-2026-018 page answered the fetch tools with a client challenge, so its fields were read from Drupal's own advisory feed item for it.
 confidence: high
 references: []
 deep_dive: false
@@ -51,13 +87,30 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Reserve time on the evening of 2026-11-18 (the release window is 17:00 to 21:00 UTC, 18:00 to 22:00 in Switzerland) to update every Drupal 10.6, 11.3 and 11.4 site as soon as the security release publishes, after moving each site to the latest patch release of its branch now as the Security Team recommends; plan interim mitigation for sites on end-of-life Drupal lines."
-updates: []
+  - "Update every Drupal site to 11.4.13, 11.3.22 or 10.6.22 now and move sites on end-of-life lines (Drupal 11.2.x and 10.5.x and below) to a supported branch, and where the update has to wait secure the installer as Drupal's instructions for securing install.php describe, because SA-CORE-2026-017 lets an attacker who reaches the installer attempt a reinstall that can end in site takeover or remote code execution."
+updates:
+  - at: "2026-11-19T05:02:14Z"
+    run_id: 2026-11-19T0355Z-intel
+    type: update
+    summary: >
+      Drupal published the announced core security release on 2026-11-18: SA-CORE-2026-017
+      (CVE-2026-132165, Critical, installer reinstall leading to site takeover or remote code execution)
+      and SA-CORE-2026-018 (CVE-2026-132166, not directly exploitable), fixed in 11.4.13, 11.3.22 and
+      10.6.22. No exploitation is reported.
+    fields: [actions, body, cves, event_date, evidence, headline, priority, sources, sourcing_note, summary, tags, title, updated_at]
 migrated_from: null
 ---
 
-The Drupal Security Team announced on 2026-11-16 that a core security release for all supported branches will ship on 2026-11-18 between 17:00 and 21:00 UTC and urges administrators to reserve time for core updates then, because exploits might be developed within hours or days ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)). It rates the vulnerabilities critical, 18 of 25, with access complexity Complex, exploit status Proof of concept and target distribution Uncommon, which the Security Team defines as only uncommon module configurations being exploitable; it also says at least one can be exploited by anonymous users and that more than one configuration is affected, so sites should not assume they are safe ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)). Neither the team nor any other party can release more until the announcement, so no CVE id, component or fixed version has been published ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)). The affected lines are Drupal 11.4.x, 11.3.x and 10.6.x, plus the pre-releases 12.0.0-beta3 and 11.5.0-beta1; Drupal before 10.6 and Drupal 11 before 11.3 are end-of-life and are to get interim mitigation steps in the advisory ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)). Sites that use Drupal Steward are already protected from known attack vectors, and other advisories released the same day may lack Steward mitigation ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)). The NCSC.ch Security Hub rates exploitation unknown ([NCSC.ch, 2026-11-17](https://security-hub.ncsc.admin.ch/#/posts/13196)).
+Drupal shipped its announced core security release on 2026-11-18. SA-CORE-2026-017 (CVE-2026-132165, rated Critical 18 of 25, with access complexity Complex, access none, exploit status Proof, meaning a proof of concept exists with documented methods for developing an exploit in the wild, and target distribution Uncommon, meaning only uncommon module configurations are exploitable) says that under specific conditions an attacker can use the installer to attempt to reinstall Drupal, which can lead to a site takeover or remote code execution ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-017)). SA-CORE-2026-018 (CVE-2026-132166, Moderately critical 14 of 25) is a gadget chain that Drupal says is not directly exploitable: a separate vulnerability must be present to let an attacker pass unsafe input to unserialize() ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-018)).
 
-**Exposure:** any Drupal 10.6.x, 11.3.x or 11.4.x site, and every site on an end-of-life line (Drupal before 10.6 and Drupal 11 before 11.3); the PSA names no module, and although it rates only uncommon module configurations as exploitable it warns that more than one configuration is affected, so the version decides until the advisory publishes ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)).
+Both advisories cover core before 10.6.22, from 11.0.0 before 11.3.22 and from 11.4.0 before 11.4.13, fixed in 11.4.13, 11.3.22 and 10.6.22; Drupal 11.2.x and below and 10.5.x and below are end-of-life and receive no security coverage ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-017)). The only workaround Drupal gives is to secure the installer; it adds that some exploit paths are mitigated if the web server cannot write to or change permissions on settings.php, and that sites on Drupal Steward are already protected from SA-CORE-2026-017's known attack vectors ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-017)). The pre-announcement had warned that exploits might be developed within hours or days ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)); NCSC.ch's Security Hub rated exploitation unknown on 2026-11-17 ([NCSC.ch, 2026-11-17](https://security-hub.ncsc.admin.ch/#/posts/13196)), and neither advisory reports exploitation.
 
-**Defender takeaway:** update each site to the latest patch release of its branch before the window, so that other upgrade problems are settled beforehand, and apply the security release as soon as it publishes ([Drupal Security Team, 2026-11-16](https://www.drupal.org/psa-2026-11-16)). Sites on end-of-life lines apply the interim mitigation from the advisory and move to a supported branch.
+**Exposure:** any Drupal site on core before 10.6.22, 11.3.22 or 11.4.13, though Drupal's own rating says only uncommon module configurations are exploitable, and every site on an end-of-life line, which has no fix; NCSC-NL says the condition arises when the installer is not correctly secured or removed after the initial installation (translated from Dutch) ([NCSC-NL, 2026-11-18](https://advisories.ncsc.nl/2026/ncsc-2026-0507.html)).
+
+**Detection:** web access logs for requests to the installer on a site that is already installed, which follows from the mechanism; Drupal's advisory names no indicators of compromise.
+
+**Defender takeaway:** update each site to 11.4.13, 11.3.22 or 10.6.22 now and move end-of-life sites to a supported branch; where the update waits, secure the installer. Drupal advises upgrading even behind Steward, in case additional attack vectors are discovered ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-017)).
+
+## Update — 2026-11-19T05:02:14Z
+
+The release the pre-announcement described is out. Drupal published SA-CORE-2026-017 (CVE-2026-132165, Critical 18 of 25) and SA-CORE-2026-018 (CVE-2026-132166, Moderately critical 14 of 25, not directly exploitable) on 2026-11-18, fixed in Drupal 11.4.13, 11.3.22 and 10.6.22 ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-017), [Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-018)). SA-CORE-2026-017 says an attacker can use the installer to attempt to reinstall Drupal, which can lead to a site takeover or remote code execution, and the only workaround is to secure the installer ([Drupal Security Team, 2026-11-18](https://www.drupal.org/sa-core-2026-017)). The 18 of 25 rating in the pre-announcement is SA-CORE-2026-017's; neither advisory reports exploitation.
