@@ -1,0 +1,145 @@
+
+Elastic is aware of a remote code execution vulnerability (CVE-2026-114938, also known as Java4Shell) affecting OpenJDK and Oracle Java SE that was disclosed on November 17, 2026.
+Elastic continues to monitor emerging information and will release further details as applicable and when available.
+Kibana, Beats, Elastic Agent, APM Server, Elastic Cloud on Kubernetes (ECK) Operator, and Elastic Maps Server do not use Java and are not affected.
+Affected components
+Elasticsearch
+Elastic has confirmed that Elasticsearch versions 7.17.3 and later are vulnerable to this CVE, with some mitigating factors. The vulnerability can only be exploited on affected CPU architectures by an authenticated user with at least "read" access to achieve Remote Code Execution (RCE) and by unauthenticated actors to achieve Denial of Service (DoS) against Elasticsearch nodes.
+Elastic is also preparing an update to remediate this vulnerability by updating the bundled JDK to 27.0.1.1+4. This is expected to ship with the upcoming 8.19.26, 9.4.10, 9.5.7, and 9.6.0 Elastic releases.
+Logstash
+Elastic has confirmed that Logstash versions 8.6.2 and later are vulnerable to this CVE. Logstash 7.17.x and versions before 8.6.2 are not affected at this time. The Logstash API, the Ruby plugins, and the common inputs (such as Beats, HTTP and TCP) do not use the affected Java function.
+The vulnerability can be exploited on affected CPU architectures only through the Elastic Integration filter (
+logstash-filter-elastic_integration
+) 
+and
+ if an Elasticsearch ingest pipeline decodes Base64 fields processes events from an untrusted source. In that case, unauthenticated actors who can send events to Logstash can achieve Denial of Service (DoS) against Logstash nodes.
+Elastic is also preparing an update to remediate this vulnerability by disabling the affected JVM optimization by default. This is expected to ship with the upcoming 8.19.26, 9.4.10, 9.5.7, and 9.6.0 Elastic releases.
+Elastic Cloud Serverless
+Elastic Cloud Serverless was only vulnerable in extremely rare cases related to the CPU architecture. We have deployed a hotfix to mitigate those rare cases during Wednesday 18th November.
+Elastic has also developed detection rules for exploitation of CVE-2026-114938 within the Elastic Cloud infrastructure; alerts are continuously monitored by the Elastic Information Security team.
+Elastic Cloud Hosted
+A small percentage (approximately <5%) of Elastic Cloud Hosted deployments use a vulnerable CPU architecture in Microsoft Azure; Elastic Cloud Hosted deployments in GCP and AWS are not affected at this time.
+Given the complexity – including successful authentication – required to exploit CVE-2026-114938 in this operating context, Elastic is deploying a configuration change to mitigate this vulnerability for impacted hosts.
+Elastic has also developed detection rules for exploitation of CVE-2026-114938 within the Elastic Cloud infrastructure; alerts are continuously monitored by the Elastic Information Security team.
+The mitigation configuration for Elastic Cloud Hosted is also applicable to self-managed customers which is shared below. Elastic is also preparing an update to remediate this vulnerability by updating the bundled JDK to 27.0.1.1+4. This is expected to ship with the upcoming 8.19.26, 9.4.10, 9.5.7, and 9.6.0 Elastic releases.
+Customer mitigation recommendations
+Mitigation for Self-Managed Elasticsearch Customers
+Mitigation Option 1
+Self-managed customers can mitigate this vulnerability by disabling the affected JVM optimization. Only Elasticsearch nodes on x86-64 CPUs that support the 
+AVX512_VBMI
+ instruction set are affected (for example Intel Xeon Ice Lake and later, and AMD Zen 4 and later). Nodes on ARM CPUs and on older x86 CPUs are not affected at this time.
+To check a host, run 
+grep -c avx512vbmi /proc/cpuinfo
+; a result greater than 0 means the host is affected.
+To apply the mitigation, create a file in the 
+config/jvm.options.d/
+ or 
+/etc/elasticsearch/jvm.options.d/
+ directory depending on your 
+installation method
+ on each affected node (for example 
+config/jvm.options.d/cve-2026-114938.options
+) that contains the single line 
+-XX:-UseBASE64Intrinsics
+, then restart the node. Docker users can mount this file into 
+/usr/share/elasticsearch/config/jvm.options.d/
+, and ECK users can add the option to the 
+ES_JAVA_OPTS
+ environment variable in the pod template. A rolling restart avoids cluster downtime. To confirm the mitigation is active, check that 
+-XX:-UseBASE64Intrinsics
+ appears in the 
+jvm.input_arguments
+ of each node in the output of 
+GET _nodes/jvm
+.
+Customers should still upgrade to a release that includes the updated bundled JDK as soon as it is available.
+Mitigation Option 2
+Download and point Elasticsearch to use the latest JDK in a bring-your-own-JDK model. Note that this mitigation will not work with Docker.
+Mitigation for Self Managed Elastic Cloud Enterprise (ECE) Customers
+For ECE customers running on vulnerable CPU architecture, upgrading to ECE 4.2.2 / 3.8.7 (once released), and then restarting all deployments will remediate the vulnerability in all hosted Elasticsearch clusters.
+Before the ECE 4.2.2 / 3.8.7 release is available, the API or advanced editor can be used to inject the mitigating JVM flags into each cluster. Please contact support for details.
+Mitigation for Elastic Cloud on Kubernetes (ECK) Customers
+The ECK operator does not use Java and is therefore not affected. Kibana, Beats, Elastic Agent, APM Server and Elastic Maps Server that ECK manages do not use Java and are not affected at this time.
+Elasticsearch clusters that ECK manages are affected in the same way as other self-managed Elasticsearch clusters. Only Elasticsearch Pods on Kubernetes nodes with x86-64 CPUs that support the 
+AVX512_VBMI
+ instruction set are affected.
+To check the node of an Elasticsearch Pod, run:
+kubectl exec <pod-name> -c elasticsearch -- grep -c avx512vbmi /proc/cpuinfo
+A result greater than 0 means that the node is affected. Kubernetes can move a Pod to a different node. If a node pool has a mix of CPU types, apply the mitigation to all x86-64 nodeSets.
+To apply the mitigation, add 
+-XX:-UseBASE64Intrinsics
+ to the 
+ES_JAVA_OPTS
+ environment variable in the 
+podTemplate
+ of each affected nodeSet. If 
+ES_JAVA_OPTS
+ already has a value, for example to set the heap size, add the option to the end of the existing value. Do not add a second 
+ES_JAVA_OPTS
+ entry.
+spec:
+  nodeSets:
+  - name: default
+    podTemplate:
+      spec:
+        containers:
+        - name: elasticsearch
+          env:
+          - name: ES_JAVA_OPTS
+            value: "-XX:-UseBASE64Intrinsics" # keep your existing options
+When you apply the change, ECK restarts the Elasticsearch Pods automatically, one at a time (a rolling restart). You do not have to restart the Pods manually.
+To confirm that the mitigation is active, make sure that 
+-XX:-UseBASE64Intrinsics
+ appears in 
+jvm.input_arguments
+ of each node in the output of 
+GET _nodes/jvm
+.
+Upgrade to a release that includes the updated bundled JDK as soon as it is available. To upgrade, change 
+spec.version
+ of the Elasticsearch resource. After the upgrade, you can remove the option.
+Logstash on ECK
+Logstash is affected only if it runs the 
+elastic_integration
+ filter on Base64 data that an attacker controls. The result is a crash, not code execution. To apply the mitigation, add 
+-XX:-UseBASE64Intrinsics
+ to the 
+LS_JAVA_OPTS
+ environment variable in the 
+podTemplate
+ of the Logstash resource. If 
+LS_JAVA_OPTS
+ already has a value, add the option to the end of the existing value.
+spec:
+  podTemplate:
+    spec:
+      containers:
+      - name: logstash
+        env:
+        - name: LS_JAVA_OPTS
+          value: "-XX:-UseBASE64Intrinsics" # keep your existing options
+Mitigation for Self-Managed Logstash customers
+Self-managed customers can mitigate this vulnerability by disabling the affected JVM optimization. Only Logstash nodes on x86-64 CPUs that support the 
+AVX512_VBMI
+ instruction set are affected (for example Intel Xeon Ice Lake and later, and AMD Zen 4 and later). Nodes on ARM CPUs and on older x86 CPUs are not affected based on our analysis at this time.
+To check a host, run 
+grep -c avx512vbmi /proc/cpuinfo
+; a result greater than 0 means the host is affected.
+To apply the mitigation, add the single line 
+-XX:-UseBASE64Intrinsics
+ to the 
+config/jvm.options
+ file of each affected node, then restart Logstash. Docker and ECK users can add the option to the 
+LS_JAVA_OPTS
+ environment variable. To confirm the mitigation is active, check that 
+-XX:-UseBASE64Intrinsics
+ appears in the JVM bootstrap flags line of the Logstash log at startup.
+Customers should still upgrade to a release that includes the updated default as soon as it is available. After the upgrade, the manual setting is no longer needed. Customers must not set 
+-XX:+UseBASE64Intrinsics
+, because it re-enables the affected optimization.
+Questions?
+Please reach out to Elastic Support via the Support Portal 
+support.elastic.co
+ or via email 
+support@elastic.co
+ if you have questions.

