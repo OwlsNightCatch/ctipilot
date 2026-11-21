@@ -1,0 +1,427 @@
+# work/2026-11-21T0355Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-21T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-21T03:57:46Z
+ended_at: 2026-11-21T04:18:55Z
+duration_seconds: 1269
+self_telemetry:
+  webfetch_calls: 10        # 1 returned a harness safeguard error (greynoise listing), 1 returned HTTP 403 (f6.security)
+  websearch_calls: 6
+  bridge_fetches: 150       # feed / extract / url / msft-secblog / cisa-kev, incl. a 68-feed parallel sweep of the active research/news records
+window_note: >
+  window_hours=26 (published since 2026-11-20T01:56Z). Slice records carry their own lookback_hours (50 / 145 / 149 / 168);
+  items that are older than the window but inside their record's lookback are marked lookback: true.
+items:
+
+  # ------------------------------------------------------------------ 1. Cisco Expressway: first in-the-wild report (update)
+  - title: "Cisco Expressway CVE-2026-76466: F6 reports the first in-the-wild exploitation, two internet-facing Expressway nodes rooted and two internal cluster nodes reached, then AI-assisted Python tooling for SMB, SQL Server, WinRM and GitLab credential theft; Cisco's own advisory still says no known malicious use, and CISA listed the flaw on 2026-11-20"
+    sources:
+      - { url: "https://thehackernews.com/2026/11/hackers-exploit-critical-cisco.html", publisher: "The Hacker News (relaying F6, 2026-11-19)", date: "2026-11-20", role: "primary" }
+      - { url: "https://securityaffairs.com/203598/hacking/hackers-exploit-cisco-expressway-flaw-cve-2026-76466-to-breach-russian-organization.html", publisher: "Security Affairs (quotes the F6 report)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t", publisher: "Cisco PSIRT", date: "2026-10-21", role: "vendor-reference" }
+    discovery_trace: "first seen at: hackernews feed https://feeds.feedburner.com/TheHackersNews (68-feed research/news sweep, item 2026-11-20T10:32Z) -> pivot: THN article https://thehackernews.com/2026/11/hackers-exploit-critical-cisco.html -> pivot: Security Affairs https://securityaffairs.com/203598/hacking/hackers-exploit-cisco-expressway-flaw-cve-2026-76466-to-breach-russian-organization.html (quotes the F6 text) -> primary F6 press release https://f6.security/media-center/press-releases/cisco-vulnerability-exploitation/ (UNREACHABLE: direct 403 on extract, 403 on WebFetch, jina pool exhausted; claims below are carried through the two outlets' verbatim quotes of F6) -> vendor: Cisco PSIRT https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t (fetched this run: still revision 1.0 of 2026-OCT-21) -> exploitation status cross-check: python3 tools/fetch_source.py cisa-kev (catalogue 2026.11.20) shows CVE-2026-76466 dateAdded 2026-11-20, dueDate 2026-11-23, forensicTriage Yes"
+    summary: |
+      F6, a Russian security company, reports what it calls the first case of in-the-wild exploitation of CVE-2026-76466 (CVSS 9.8; unauthenticated root command execution on clustered Cisco Expressway-C and Expressway-E through the database service and its persistent-cookie / unvalidated client-certificate weakness), against Expressway X15.5.3 devices, after a proof-of-concept exploit became public on GitHub. The attackers first rooted two internet-facing Expressway devices and, through one, two further cluster nodes on the victim's internal network. After root they staged custom Python scripts (F6 judges from comments and fix descriptions that AI tools probably helped write them) to scan the network, find reachable SMB shares, interact with SQL Server and WinRM and read GitLab repositories to take credentials and other sensitive data. The attack is not attributed to any known actor, and the victim is a Russian organisation. Cisco's advisory (fetched this run) is still revision 1.0 of 2026-10-21 and says PSIRT is not aware of any public announcements or malicious use, so the vendor has not caught up with the F6 report. CISA added the flaw to KEV on 2026-11-20 with a federal due date of 2026-11-23 and its forensic-triage flag set. Fixes are X15.5.20 for X15.5.3 and earlier; X14 and earlier must migrate; there is no workaround; the flaw bites only on devices configured in a cluster.
+    region_nexus: "global; the reported victim is a Russian organisation, exposure is any internet-facing clustered Expressway-E/C; no public-sector victim reported"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-76466]
+    techniques: [T1190, T1059.006, T1046, T1021.006, T1213.003]
+    affected_products: ["Cisco Expressway Series"]
+    entity_keys: ["product:cisco-expressway-series"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce"
+    classification_hint: { reliability: "B", credibility: "2", why: "F6 (telemetry-holding IR vendor) is the origin, relayed by two outlets that trace to one report; independent corroboration of exploitation status is the CISA KEV listing of 2026-11-20; the F6 page itself could not be fetched" }
+    evidence:
+      - quote: "it observed what appears to be the first case of in-the-wild exploitation of the flaw to gain remote command execution on compromised Cisco Expressway X15.5.3 devices with root privileges"
+        attribution: "The Hacker News (reporting F6)"
+        source_url: "https://thehackernews.com/2026/11/hackers-exploit-critical-cisco.html"
+      - quote: "The attackers initially compromised two Cisco Expressway internet-facing devices."
+        attribution: "Security Affairs (quoting F6)"
+        source_url: "https://securityaffairs.com/203598/hacking/hackers-exploit-cisco-expressway-flaw-cve-2026-76466-to-breach-russian-organization.html"
+      - quote: "The attack has not been attributed to any known threat actor or group."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/hackers-exploit-critical-cisco.html"
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t"
+    extended_notes: |
+      Delta against the existing entry (updated_at null, says "not known to be actively exploited"): exploitation status flips to exploited in the wild (F6 report of 2026-11-19, THN 2026-11-20) and on CISA KEV (2026-11-20, due 2026-11-23). S1's kev_window_diff lists this CVE as COVERED-STALE, so the main agent should write ONE update record that carries both the KEV listing and the F6 post-exploitation detail.
+      Exposure: Expressway-C and Expressway-E, virtual and appliance, configured in a cluster and running X15.5.3 or earlier (vendor); a reachable database service between nodes is the attack path.
+      Detection (all from F6 as relayed by the two outlets): a nodeup entry in the Erlang system log (erlang.log) for a specific Erlang node identity marks a connection from a node matching the exploitation mechanism (F6 publishes the identity; not repeated here); Python scripts staged on the device disk; outbound scanning from the Expressway toward internal SMB, SQL Server, WinRM and GitLab. Behavioural hunt: an appliance that has no business initiating SMB/WinRM/SQL sessions doing so; cluster-node database-service connections from outside the cluster. Post-patch: patching does not evict an attacker who already holds root and has pivoted, so review the cluster nodes and every credential reachable from them.
+      Triage: nothing benign in the F6 text resembles the exploitation sequence; cluster-internal Erlang node traffic is normal between peers, so the discriminator is a node name or source that is not a cluster peer.
+      Hardening: upgrade to X15.5.20 (or migrate off X14 and earlier), segment the Expressway-E/C pair from internal admin and file-share networks.
+      No IOCs carried: F6 published two IP addresses, which are deliberately not repeated here.
+
+  # ------------------------------------------------------------------ 2. SOCRadar PHP2Shell AI-agent operator
+  - title: "PHP2Shell exploited at scale by a human-directed, AI-augmented operator: SOCRadar reads the open directories of its C2 and AI-agent lab (about 595 targets in 57 countries, 393-404 hosts compromised) and the cloud-key, secret and database collection pipeline behind it"
+    sources:
+      - { url: "https://socradar.io/blog/php2shell-ai-agents-credential-harvesting/", publisher: "SOCRadar Threat Research Unit", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: socradar, URL https://socradar.io/blog/ (extract of the listing, featured card; the listing's own date metadata is stale 2026-09-10) -> primary: SOCRadar STRU article https://socradar.io/blog/php2shell-ai-agents-credential-harvesting/ (per-article extract date 2026-11-18). Independent corroboration attempted: WebSearch (\"PHP2Shell exploitation campaign AI agent operator open directory C2 credential harvesting DeepSeek omp maq\") returned only SOCRadar's own pages for this operator; related but separate store coverage of PHP2Shell abuse exists (Dream/Fragnesia campaign key in registry)"
+    summary: |
+      SOCRadar found two open directories (the operator's C2/loot server and, on 2026-11-08, the operator's AI-agent lab, an 18 GB working tree) that document how public PHP2Shell (CVE-2026-109618 / CVE-2026-109619) proofs of concept released on 2026-10-21 became an automated exploitation, persistence and credential-theft pipeline within days. The operator adapted the exploit to default-configuration PHP on Apache (it works under mod_php and FrankenPHP and fails under FPM) and to individual PHP builds, sourced targets from a Shodan pool of about 68,000 PHP/Apache hosts, filtered out CDN/WAF fronts and queued targets as numbered jobs; a self-built queue dispatched 39 parallel agent workers against two self-hosted DeepSeek endpoints, with the C2 database synchronised to the lab every 15 seconds. SOCRadar's own caveat: the snapshot cannot show whether the actions came from autonomous agents or manual execution, "the true degree of automation remains unconfirmed", and no chain completed without manual oversight; an agent goal file instructing the agent to pursue a USDT payout autonomously did not produce theft. Post-exploitation per shell: reverse shell to a per-job high port, SSH key append, per-minute cron beacon, token-protected PHP webshells with random names in the document root, application-level backdoors (Nextcloud app, Laravel route cache), a localhost-only Dropbear reached through an auto_prepend_file directive, then a standard collector and secret scanners (gitleaks, trufflehog) over web roots and git history, theft of ECS/IMDS role credentials and enumeration of STS, S3, Secrets Manager, SSM and RDS, and exfiltration as tar archives by HTTP POST to the C2. SOCRadar counts about 595 unique targeted IPs in 57 countries, about 393 compromised hosts, 217 interactive shells but only 12 with root, most as www-data inside containers (68% of jobs in Docker or Podman, Amazon EC2 the most common host), with custom PHP applications (200 jobs) and Nextcloud (163) the main victim classes. SOCRadar assesses with moderate confidence a financially motivated initial-access-broker pattern and with low confidence on identity (no named actor match). Fixed PHP builds are 8.2.35, 8.3.36, 8.4.27 and 8.5.12 (the store already carries the upstream release).
+    region_nexus: "global; victims in 57 countries, none named; Switzerland not mentioned"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2026-109618, CVE-2026-109619]
+    techniques: [T1190, T1595.002, T1059.004, T1505.003, T1098.004, T1053.003, T1572, T1571, T1552.001, T1552.005, T1560.001, T1074.001]
+    affected_products: ["PHP", "Nextcloud Server", "Apache HTTP Server"]
+    entity_keys: ["tool:php2shell", "product:php"]
+    new_entities:
+      - { key: "campaign:php2shell-ai-agent-credential-harvesting-2026-10", type: campaign, name: "PHP2Shell AI-agent credential-harvesting operation (SOCRadar, October to November 2026)", aliases: [], summary: "SOCRadar STRU's reconstruction of one operator's PHP2Shell exploitation pipeline from two open directories: forked public PoCs, a per-target job C2 with persistence and a standard collector, and a queue of AI-agent workers on self-hosted DeepSeek models; human-directed and AI-augmented, assessed as an initial-access-broker pattern (SOCRadar, 2026-11-18)." }
+    relation_suggestions:
+      - { subject: "campaign:php2shell-ai-agent-credential-harvesting-2026-10", object: "tool:php2shell", basis: "SOCRadar: the operator forked public PHP2Shell PoCs into its own default-configuration exploit and per-build profiles (SOCRadar, 2026-11-18)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    classification_hint: { reliability: "C", credibility: "2", why: "single first-party analysis of exposed operator infrastructure; SOCRadar is a vendor (record reliability C) and itself hedges the automation claim; no independent report of this operator found; consistent with other PHP2Shell abuse and agentic-attacker reporting in the store" }
+    evidence:
+      - quote: "Within days of the public proofs of concept released on October 21, 2026, the operator adapted the exploit to default-configuration PHP/Apache and to individual PHP builds."
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/php2shell-ai-agents-credential-harvesting/"
+      - quote: "Because this snapshot cannot clarify if the actions stemmed from autonomous agents or manual operator execution within unarchived tmux/maq sessions, the true degree of automation remains unconfirmed."
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/php2shell-ai-agents-credential-harvesting/"
+      - quote: "Web-server children spawning sh, curl or bash -i"
+        attribution: "SOCRadar Threat Research Unit"
+        source_url: "https://socradar.io/blog/php2shell-ai-agents-credential-harvesting/"
+    extended_notes: |
+      Related store entry that MUST be declared in references[] (CVE overlap): 2026-10-21/php-critical-release-pre-announced-cve-2026-109618-109619; the PHP2Shell vendor-fix entries are separate. This item is the operator/campaign layer, not a vendor patch.
+      Exposure (SOCRadar): PHP 8.2 to 8.5 before the 2026-10-21 fixed builds running as mod_php or FrankenPHP on Apache prefork with default memory_limit and post_max_size; FPM deployments were not exploited by this toolkit (worker exit on start-up out-of-memory). The exploit trigger is a multipart POST near post_max_size with more than 1,000 fields and one part holding a very large number of tiny header lines, followed by a second request on the same keep-alive connection; Nextcloud endpoints (status, cron, public) were used as entry points.
+      Detection (telemetry classes): web/access logs for oversized multipart POSTs with HTTP 500 and an X-Powered-By header, followed by a second POST on the same connection; process-creation telemetry for web-server children spawning sh, curl or an interactive bash with a network redirect; outbound connections from a web server host to arbitrary high ports; file-integrity monitoring on authorized_keys of the web service account and on web roots for new randomly named PHP files; PHP configuration scans for an unexpected auto_prepend_file; a loopback-only SSH daemon; cloud audit logs showing web-application roles or keys calling STS, S3, Secrets Manager, SSM or RDS enumeration from non-VPC addresses, and metadata-endpoint requests from web processes; execution of secret scanners (gitleaks, trufflehog, linPEAS) on a web host.
+      Triage: gitleaks/trufflehog and cron jobs are also used by legitimate DevOps; the discriminator is the parent (web server user, no TTY, spawned by the PHP worker) and a collector writing fixed-layout archives under a temp directory followed by an HTTP POST to a non-corporate host.
+      Post-patch compromise check: the toolkit installs SSH keys, cron beacons, webshells and application backdoors that survive a PHP upgrade, and harvests cloud keys and database credentials, so rotate every secret reachable from an exposed PHP host first exposed after 2026-10-21 and reimage where feasible (SOCRadar's advice).
+      Hardening: IMDSv2 with restricted task roles, WAF limits on multipart field and header counts, disable display_errors in production. Do not carry the C2 and lab IP addresses (omitted deliberately; they appear in the source).
+
+  # ------------------------------------------------------------------ 3. Unit 42 Com vishing
+  - title: "Unit 42 on Com-affiliated vishing extortion: seven named actors and clusters, new CL-CRI-1264 (Vortex) and CL-CRI-1274 (Cinder) since September 2026, healthcare now the most-targeted sector, and a sideloaded 'Google Chrome' extension giving DevTools remote control"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/", publisher: "Palo Alto Networks Unit 42", date: "2026-11-20", role: "primary" }
+      - { url: "https://deoxy.net/blog/inside-unc6671s-browser-implant/", publisher: "Kevin Pham (deoxy)", date: "2026-09-10", role: "corroborating" }
+    discovery_trace: "first seen at: unit42 feed https://unit42.paloaltonetworks.com/feed/ (standing lab check; item 2026-11-20T22:00Z) -> primary: Unit 42 https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/ -> pivot (its References list): deoxy https://deoxy.net/blog/inside-unc6671s-browser-implant/ for the browser implant. The store already carries 2026-05-16/gtig-unc6671-blackfile-vishing-aitm-rogue-mfa-programmatic-s, 2026-07-10/helix-data-extortion-devicecode-vishing-sharepoint-exfil and 2026-08-07/unc6671-blackfile-multi-brand-passkey-vishing-aitm"
+    summary: |
+      Unit 42 describes persistent Com-affiliated vishing, cloud data-theft and extortion waves since August 2026 and splits them into Bling Libra (ShinyHunters) and clusters CL-CRI-1116 (Redact, formerly BlackFile), -1147 (Pink), -1182 (Falcon), -1192 (Helix, which Google tracks as UNC6671) and two it newly uncovered in September 2026, CL-CRI-1264 (Vortex) and CL-CRI-1274 (Cinder), both overlapping activity Google tracks as UNC6671. The chain is a caller posing as internal IT sending the employee to an organisation-specific subdomain of a short-lived SSO, passkey or IT-support lookalike domain that runs an adversary-in-the-middle proxy relaying credentials and MFA approvals in real time; Vortex then enrols its own MFA device within minutes and automates python-httpx collection of Microsoft 365 mail, OneDrive and SharePoint, while Cinder replays a persistent keep-me-signed-in token from proxy infrastructure to avoid a second Duo prompt and collects through python-requests and the Microsoft Graph SDK; both then message employees in Teams or internal email pointing to a Tor negotiation site. In a Helix case Unit 42 found a Chrome extension named after the browser, sideloaded in Developer Mode from an attacker server (not the Web Store), that keylogs, harvests Microsoft and Google cookies and local storage, scans pages for QR codes, streams the webcam and gives operators Chrome DevTools Protocol control through chrome.debugger; deoxy had analysed the implant in September and Unit 42 credits that write-up. Unit 42 lists persistence by unauthorised MFA devices and workstation objects, unapproved third-party OAuth apps and secondary accounts, mailbox-rule and calendar changes, clearing of security alerts, and exfiltration with rclone, SaaS APIs and SaaS-to-SaaS transfers. Victims are mainly financial, healthcare and legal organisations in the US, UK and Australia; healthcare overtook financial services in September and Australia rose from under 1% to about 13% of observed subdomains in October. The cluster split is Unit 42's taxonomy, while GTIG groups several of these brands under one operator, so the attributions compete rather than agree.
+    region_nexus: "global; targeted organisations primarily in the US, UK and Australia, no Swiss or EU public-sector victim stated; the playbook (help-desk impersonation, passkey/MFA re-enrolment, SharePoint exfiltration) transfers to any Entra or Okta tenant with centralised SSO"
+    primary_sector_nexus: "indirect"
+    sector: "healthcare, finance, legal"
+    cves: []
+    techniques: [T1566.004, T1557, T1539, T1550.004, T1098.005, T1078.004, T1213, T1567, T1176.001, T1056.001, T1185, T1564.008, T1583.001]
+    affected_products: ["Microsoft 365", "Okta", "Cisco Duo", "Google Chrome"]
+    entity_keys: ["actor:shinyhunters", "actor:unc6671", "actor:helix-extortion"]
+    new_entities:
+      - { key: "actor:cl-cri-1264", type: actor, name: "CL-CRI-1264 (Vortex)", aliases: ["Vortex"], summary: "Unit 42 activity cluster first seen September 2026: vishing into organisation-specific adversary-in-the-middle subdomains, rapid enrolment of an unauthorised MFA device, python-httpx collection of Microsoft 365 mail, OneDrive and SharePoint, Teams extortion messages; mostly healthcare, pharmaceutical and medical targets; overlaps activity Google tracks as UNC6671 (Unit 42, 2026-11-20)." }
+      - { key: "actor:cl-cri-1274", type: actor, name: "CL-CRI-1274 (Cinder)", aliases: ["Cinder"], summary: "Unit 42 activity cluster first seen September 2026: vishing for access, replay of a persistent keep-me-signed-in token to avoid repeated Duo MFA, Graph SDK and python-requests collection from SharePoint and OneDrive, internal extortion by email and Teams; overlaps activity Google tracks as UNC6671 (Unit 42, 2026-11-20)." }
+      - { key: "tool:dokos-panel", type: tool, name: "Doko's Panel", aliases: [], summary: "Operator-controlled adversary-in-the-middle phishing kit that Unit 42 says some Com-affiliated actors share; Okta-targeting variants replace the default backend handler with a renamed endpoint, per Push Security as cited by Unit 42 (2026-11-20)." }
+    relation_suggestions:
+      - { subject: "actor:cl-cri-1264", object: "actor:unc6671", basis: "Unit 42: CL-CRI-1264 (Vortex) overlaps with activity Google tracks as UNC6671 (Unit 42, 2026-11-20)" }
+      - { subject: "actor:cl-cri-1274", object: "actor:unc6671", basis: "Unit 42: CL-CRI-1274 (Cinder) overlaps with activity Google tracks as UNC6671 (Unit 42, 2026-11-20)" }
+      - { subject: "actor:helix-extortion", object: "actor:unc6671", basis: "Unit 42: CL-CRI-1192, which Google tracks under UNC6671, is the cluster whose case yielded the sideloaded Chrome extension (Unit 42, 2026-11-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    classification_hint: { reliability: "B", credibility: "2", why: "Unit 42 holds first-hand IR telemetry; the new cluster designations and victimology rest on Unit 42 alone, while the playbook and the browser implant are corroborated by deoxy and by the store's earlier GTIG and ReliaQuest-based entries" }
+    evidence:
+      - quote: "In September 2026, we identified a new activity cluster that we track as CL-CRI-1264."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+      - quote: "We have observed attackers behind CL-CRI-1264 enrolling an unauthorized MFA device within minutes of authenticating to establish persistence."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+      - quote: "required the victim to manually sideload it using Developer Mode"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+      - quote: "Our monitoring of domains linked to Com-related activity showed that their targeting shifted from financial services to healthcare in early September 2026."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+    extended_notes: |
+      Related store entries (may be declared in references[]; no CVEs involved): 2026-05-16/gtig-unc6671-blackfile-vishing-aitm-rogue-mfa-programmatic-s, 2026-07-10/helix-data-extortion-devicecode-vishing-sharepoint-exfil, 2026-08-07/unc6671-blackfile-multi-brand-passkey-vishing-aitm. This is new on the cluster split, healthcare shift, Vortex/Cinder and the extension, so it is a new entry rather than an update of the August one.
+      Exposure: any Microsoft 365 / Entra or Okta tenant with a help desk that can be talked into resetting or enrolling authentication methods, centralised SSO and SharePoint/OneDrive holding bulk data; Unit 42 names healthcare, finance and legal.
+      Detection (telemetry classes): identity-provider sign-in and authentication-method audit logs for a new MFA device or passkey registered within minutes of a sign-in from a residential-proxy or commercial-VPN address, the same device name reused across unrelated accounts (Unit 42 stresses standard phone models are not standalone indicators), and a persistent-session token replayed from a second network; cloud audit logs for scripted collection with python-httpx / python-requests / Microsoft Graph SDK (kiota) user agents against mail, OneDrive and SharePoint, bulk download volume and new OAuth app consents or data-sync utilities; Teams and mail logs for extortion text from an internal account; endpoint/browser management for an extension installed through Developer Mode, a debugging-banner extension and chrome.debugger permission; DNS and certificate-transparency monitoring for lookalike SSO, passkey and IT-support domains carrying the organisation name as a subdomain.
+      Triage: scripted Graph SDK access and new-device enrolment are also legitimate admin and onboarding activity; the discriminator is an enrolment that follows a call or an AiTM-like sign-in, from a proxy address, with no help-desk ticket, and a bulk read pattern that no service account owns.
+      Post-incident check: removing the MFA device is not enough; revoke sessions and refresh tokens, review OAuth consents, mailbox rules and workstation or device objects the attacker registered.
+      Hardening (Unit 42): tighten help-desk verification, move to phishing-resistant MFA (FIDO2/passkeys), enforce a browser extension allowlist, build visibility into identity actions and alert on unauthorised data exports. No domains, hashes or addresses carried.
+
+  # ------------------------------------------------------------------ 4. Rapid7 Webworm NtMonitor
+  - title: "Webworm's custom SoftEther rebuild 'NtMonitor': Rapid7 finds a stealth-hardened VPN bridge with renamed endpoints, an in-binary resource archive and an encrypted config in the toolkit of the China-aligned APT that targets European governments"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/tr-spying-on-governments-no-malware-custom-webworms-toolkit-softether-bridge", publisher: "Rapid7 Intelligence", date: "2026-11-19", role: "primary" }
+      - { url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/", publisher: "ESET Research", date: "2026-05-20", role: "context" }
+    discovery_trace: "first seen at: rapid7-research feed https://www.rapid7.com/rss.xml (parsed in the 68-feed research sweep; item 2026-11-19T15:05Z; the record was last swept 2026-11-08 so this post has not been seen by a prior fire) -> primary: Rapid7 https://www.rapid7.com/blog/post/tr-spying-on-governments-no-malware-custom-webworms-toolkit-softether-bridge -> context pivot (cited by Rapid7): ESET https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/. WebSearch (\"Webworm SoftEther NtMonitor custom VPN bridge government Rapid7\") found no second report of the NtMonitor build"
+    summary: |
+      Rapid7 describes a so-far unknown custom tool built from the SoftEther VPN Bridge source (version 4.44 build 9807) that it attributes to Webworm with moderate confidence. Webworm is the China-aligned APT that ESET documented in May 2026 as shifting to European government targets and to dual-use tools such as SoftEther. The rebuild keeps SoftEther's bridging function (it cascades a remote network into the victim LAN) and removes its detection surface: PE metadata and internal strings are rebranded as a network-monitor product ("NtMonitor VPN", inconsistently: the service name and many registry paths still say SEVPNBRIDGE and SoftEther Project), the HTTP handshake endpoints are renamed to update-style paths, the GIF watermark is replaced by a custom PNG header so stock SoftEther peers cannot handshake with it (and cannot be fingerprinted by the stock watermark), the normally separate resource archive is embedded in the executable as a PE resource, and the configuration file is stored under a new name with a custom RC4-like encryption. Rapid7 found no additional malware capability, and says the actor prioritises stealth over capability; only one antivirus engine detected the sample on VirusTotal although it had been public since January. Attribution rests on consistency with ESET's reporting and on decrypted configurations whose remote addresses sit on the Constant Company/Vultr network that has been tied to Webworm before. Rapid7 recommends TLS inspection hunts for the renamed endpoint with an image content type and a PNG-header body, and a config decryptor and YARA ruleset in its public repository; defenders in government are told to learn intrinsic SoftEther behaviour because the renaming is the easiest change to repeat.
+    region_nexus: "Europe; Webworm's focus per ESET and Rapid7 is governmental organisations, especially in Europe; Switzerland is not named in either source"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1587.001, T1027.005, T1027.013, T1140, T1036.005, T1686.003, T1599, T1090.001, T1071]
+    affected_products: ["SoftEther VPN Bridge"]
+    entity_keys: ["actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu"]
+    new_entities:
+      - { key: "tool:ntmonitor-vpn", type: tool, name: "NtMonitor VPN", aliases: ["NtMonitor"], summary: "Rapid7's name for a custom SoftEther VPN Bridge 4.44 rebuild attributed with moderate confidence to Webworm: rebranded metadata, renamed handshake endpoints, custom PNG watermark, embedded resource archive, custom-encrypted configuration (Rapid7, 2026-11-19)." }
+    relation_suggestions:
+      - { subject: "tool:ntmonitor-vpn", object: "actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu", basis: "Rapid7 attributes the custom SoftEther-based tool to Webworm with moderate confidence, citing consistency with ESET's TTPs and decrypted configurations (Rapid7, 2026-11-19)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    classification_hint: { reliability: "B", credibility: "2", why: "Rapid7 Intelligence is the discoverer of the build and states its attribution as moderate confidence; ESET's May report independently supports the actor's SoftEther use and European government focus but does not cover this build" }
+    evidence:
+      - quote: "we share our analysis of what we believe to be a so-far unknown custom SoftEther-based tool, which implements various tricks to hide itself from security tools, and which we attribute to Webworm with moderate confidence."
+        attribution: "Rapid7 Intelligence"
+        source_url: "https://www.rapid7.com/blog/post/tr-spying-on-governments-no-malware-custom-webworms-toolkit-softether-bridge"
+      - quote: "NtMonitor replaces these endpoints with much more innocent-sounding names"
+        attribution: "Rapid7 Intelligence"
+        source_url: "https://www.rapid7.com/blog/post/tr-spying-on-governments-no-malware-custom-webworms-toolkit-softether-bridge"
+      - quote: "Clearly, the threat actor prioritizes stealth above raw capability."
+        attribution: "Rapid7 Intelligence"
+        source_url: "https://www.rapid7.com/blog/post/tr-spying-on-governments-no-malware-custom-webworms-toolkit-softether-bridge"
+    extended_notes: |
+      Related store entry (same actor, earlier finding): 2026-05-21/webworm-china-aligned-shifts-to-eu-government-targets-echocr... (ESET EchoCreep/GraphWorm). Not a CVE overlap, so a new entry referencing it is the clean shape.
+      Exposure: Windows hosts inside government networks that have been compromised by another route (the build is a persistence/pivot tool, not an initial-access exploit); the VPN bridge cascades the attacker network into the local one and the host becomes an internal proxy.
+      Detection (telemetry classes): process-creation and service-installation events for a service named like a SoftEther bridge (SEVPNBRIDGE) running a binary with network-monitor-style version metadata; registry keys still referencing the SoftEther Project; Windows Firewall rule creation by that service (stock SoftEther behaviour); PE files about 1.5 MB larger than stock with an embedded resource archive; egress from servers to cloud hosting (Vultr/Constant Company) over HTTPS with update-style paths and an image content type but a PNG-header body (visible only with TLS inspection); a single host bridging two network segments.
+      Triage: legitimate SoftEther or other VPN bridges exist in some estates; the discriminator is an unmanaged install on a server with no change record, rebranded metadata that disagrees with the product, and bridging toward internet hosting infrastructure.
+      Post-incident: because the actor already holds access that enabled the install, treat the host as one node of a broader intrusion; review where the bridge's configuration points and what internal ranges it exposes. Detection logic and decryptor are in Rapid7's public repository (not reproduced). No hashes or addresses carried.
+
+  # ------------------------------------------------------------------ 5. Arctic Wolf EVTX
+  - title: "Cleared Windows event logs are not empty: Arctic Wolf IR shows cleared EVTX files keep earlier records in chunk free space that standard forensic tools neither parse nor flag, recovering a ransomware encryptor's command line from a cleared System log"
+    sources:
+      - { url: "https://arcticwolf.com/resources/blog/windows-event-log-cleared-think-outside-the-box/", publisher: "Arctic Wolf Incident Response", date: "2026-11-20", role: "primary" }
+      - { url: "https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc", publisher: "libyal libevtx (EVTX format documentation)", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: arctic-wolf-labs feed https://arcticwolf.com/resources/blog/feed/ (item 2026-11-20T01:24Z, 32 minutes before the window; record lookback 149 h) -> primary: Arctic Wolf https://arcticwolf.com/resources/blog/windows-event-log-cleared-think-outside-the-box/ -> corroborating mechanism: libevtx format documentation https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc (the page Arctic Wolf cites for the chunk-header layout)"
+    summary: |
+      During a ransomware investigation Arctic Wolf found that clearing a Windows event log does not wipe the EVTX file: Windows truncates after the first 64 KB cluster and resets the first and last record numbers, but that first chunk keeps its earlier records in its free space. On a domain controller, the System log held 104 allocated events after the final clear at 16:01, yet a keyword search of the physical image found the encryptor's full command line (including the password argument it needed in order to run) inside the allocated System.EVTX itself, stamped about three hours before the clear, and a netscan execution record plus an attacker hostname survived in another log. A second incident's PowerShell log held 44 records of which only one was allocated, every one the same Get-WinEvent ClearLog one-liner, showing repeated clearing. Arctic Wolf reports that parsing with Event Viewer, EvtxECmd and Magnet AXIOM did not show the pre-clear records and that it identified no forensic tool that flags records left in EVTX slack space; one tool that parses sequentially without the header might surface them but does not label which records predate the clear. Because EVTX uses substitution templates, recovered records lose some repeated fields but keep basic data verbatim. Arctic Wolf built a proof-of-concept carver (whether it is published is not stated) and asks tool vendors to at least alert on EVTX files with possible old data and to mark recovered records as partial. The libevtx documentation independently describes scanning a chunk's free space for event records and notes that free space often holds former versions of existing records.
+    region_nexus: "global; forensic technique, no regional nexus"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1685.005, T1036.005]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    classification_hint: { reliability: "B", credibility: "2", why: "original IR research with a reproducible mechanism; the format documentation corroborates the free-space mechanism but not Arctic Wolf's case findings or its claim about tool coverage" }
+    evidence:
+      - quote: "clearing a Windows Event Log does not wipe the underlying Windows Event Log (EVTX) file"
+        attribution: "Arctic Wolf Incident Response"
+        source_url: "https://arcticwolf.com/resources/blog/windows-event-log-cleared-think-outside-the-box/"
+      - quote: "When a log is cleared, Windows truncates everything after the first 64 KB cluster and resets the first and last record numbers in the log."
+        attribution: "Arctic Wolf Incident Response"
+        source_url: "https://arcticwolf.com/resources/blog/windows-event-log-cleared-think-outside-the-box/"
+      - quote: "In our testing, we didn’t identify any forensic tool that flags records left in EVTX slack space after a log is cleared."
+        attribution: "Arctic Wolf Incident Response"
+        source_url: "https://arcticwolf.com/resources/blog/windows-event-log-cleared-think-outside-the-box/"
+    extended_notes: |
+      Why it matters to the audience: a DFIR technique class for the point where an intrusion ends with log clearing (ransomware encryptors do it by design). Defender actions are forensic rather than preventive: when a log shows "cleared", image the EVTX file and carve its first chunk and free space instead of accepting the empty log; record numbers and timestamps that run backwards between allocated and free records show records that predate the clear.
+      Detection note: the log-cleared event records themselves (and a PowerShell ClearLog one-liner left in a PowerShell log) are a high-value alert; Arctic Wolf says clearing often triggers EDR/IDS alerts and is frequently what exposes an attack.
+      Caveat: the claim that no mainstream tool flags this is Arctic Wolf's test result at time of writing. No hashes or addresses carried; ATT&CK note: T1070.001 is revoked in the pinned v20 dataset, T1685.005 is the active id.
+
+  # ------------------------------------------------------------------ 6. ZDI Docker Model Runner  (borderline)
+  - title: "Docker Desktop Model Runner: ZDI publishes the full container-to-host chain behind CVE-2026-28400 (argument injection into llama-server, host file read/write, code execution through Docker Extensions); fixed in Docker Desktop 4.61.0, but the WSL2 VM-to-host extension pivot is declared out of Docker's threat model"
+    sources:
+      - { url: "https://www.zerodayinitiative.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes", publisher: "Zero Day Initiative (Nitesh Surana, Trend Research)", date: "2026-11-17", role: "primary" }
+      - { url: "https://github.com/docker/model-runner/security/advisories/GHSA-m456-c56c-hh5c", publisher: "Docker (GitHub security advisory)", date: "2026-02-27", role: "vendor-reference" }
+      - { url: "https://www.zerodayinitiative.com/advisories/ZDI-26-150/", publisher: "Zero Day Initiative", date: "2026-03-03", role: "corroborating" }
+    discovery_trace: "first seen at: zdi, URL https://www.zerodayinitiative.com/blog/ (WebFetch listing; item displayed 2026-11-18, per-post date 2026-11-17) -> primary: ZDI post https://www.zerodayinitiative.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes (extract) -> vendor: Docker GHSA https://github.com/docker/model-runner/security/advisories/GHSA-m456-c56c-hh5c -> ZDI advisory https://www.zerodayinitiative.com/advisories/ZDI-26-150/. Companion Trend write-up (2026-03-12) https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/cracking-the-isolation-novel-docker-desktop-vm-escape-techniques-under-wsl2 read for context"
+    summary: |
+      ZDI's write-up shows how the unauthenticated Docker Model Runner (DMR) API, reachable from any container at its internal DNS name on macOS and Windows Docker Desktop, let a default-privilege container append arbitrary command-line arguments to the host-side llama-server process through the configure endpoint (CVE-2026-28400, GHSA-m456-c56c-hh5c, ZDI-26-150 rated as a denial of service). Three llama-server flags that touch files give host read and write bounded by the sandbox: on macOS a Seatbelt profile limits them to Docker Desktop's data tree (which holds logs, extension assets and the VM data disk, so overwriting the disk destroys all containers, images and volumes); on Windows a Job Object has no filesystem limit, so the whole user profile is reachable, and a UNC path in a flag or an error message leaks the Windows username (the UNC path also exposes a capturable NTLMv2 value). Because llama-server logs model metadata and prompts, an attacker steers the log content and so writes a partly controlled file, and the payoff is overwriting an installed Docker Extension's UI file so that when the user opens the extension, JavaScript runs in the Electron renderer and drives the extension SDK to drop and run a host executable as the Docker Desktop user; prerequisites are an installed extension, a malicious image or compromised container, and the user opening the extension. A second macOS escape (ZDI-26-451) abused a Seatbelt profile that did not deny the LaunchServices Mach service, so a replaced llama-server script could launch unsandboxed apps; Docker fixed it in February 2026. A third, ZDI-26-258, moves from a compromised WSL2 Docker Desktop VM to the Windows host by flipping the marketplace-only extensions setting over the VM's backend socket; Docker replied that it is outside its threat model. Fixes: Model Runner 1.0.16 and Docker Desktop 4.61.0 or later; Docker's advisory says Model Runner is on by default from 4.46.0 and that enabling Enhanced Container Isolation blocks container access to it (not if the API is exposed to localhost over TCP in specific configurations).
+    region_nexus: "global; developer workstations running Docker Desktop on macOS or Windows"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-28400]
+    techniques: [T1611, T1485, T1187, T1552.001]
+    affected_products: ["Docker Desktop", "Docker Model Runner"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:docker-desktop", type: product, name: "Docker Desktop", aliases: [], summary: "Docker's desktop container platform for macOS, Windows and Linux; ships Docker Model Runner (default on since 4.46.0) and Docker Extensions (ZDI, Docker GHSA-m456-c56c-hh5c, 2026-11-17 and 2026-02-27)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "technically solid and vendor-confirmed, but the CVE was fixed in February 2026 (Docker Desktop 4.61.0); the reader value now is the unfixed-by-design WSL2 VM-to-host extension pivot and the Enhanced Container Isolation lever on developer workstations, which is narrow for a public-sector constituency; main agent to decide"
+    classification_hint: { reliability: "B", credibility: "1", why: "discoverer's write-up confirmed by the vendor's own GitHub advisory for versions and workaround, and by the ZDI advisory" }
+    evidence:
+      - quote: "a container created with default privileges can supply arbitrary command-line arguments to the llama-server process that runs on the host."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes"
+      - quote: "Docker Desktop users should update to 4.61.0 or later, which includes the fixed Model Runner."
+        attribution: "Docker (GHSA-m456-c56c-hh5c)"
+        source_url: "https://github.com/docker/model-runner/security/advisories/GHSA-m456-c56c-hh5c"
+      - quote: "enabling Enhanced Container Isolation (ECI) blocks container access to Model Runner, preventing exploitation"
+        attribution: "Docker (GHSA-m456-c56c-hh5c)"
+        source_url: "https://github.com/docker/model-runner/security/advisories/GHSA-m456-c56c-hh5c"
+      - quote: "Docker responded that the attack scenario falls outside of their threat model since the container-to-VM escape prerequisite is privileged in the first place."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/blog/2026/11/17/hostile-inference-exploiting-docker-model-runner-for-container-escapes"
+    extended_notes: |
+      Exposure: Docker Desktop for macOS or Windows from 4.46.0 (Model Runner on by default) to before 4.61.0; check with the Docker Desktop version dialog or docker version. ZDI-26-258 (WSL2 VM to host through the settings API on the VM's backend socket, flipping the marketplace-only extensions flag) has no vendor fix by Docker's own statement; it needs a prior container-to-VM escape or an exposed Docker API.
+      Detection (telemetry classes): process-creation telemetry for the Docker Desktop backend's child llama-server started with file-operation flags (a log file pointing outside the model store, a grammar or chat-template file, UNC paths on Windows); file-integrity monitoring on Docker Desktop's data directory and extension asset directories (index.html and host/ directories) and unexpected writes to the VM data disk; Windows SMB egress from the Docker Desktop user session to an unexpected host; new Docker Extensions or extension files changing outside an install.
+      Triage: llama-server child processes and model pulls are normal when developers run local models; the discriminator is flags that contain paths outside the model store or UNC paths, spawned after a container call to the model-runner endpoint.
+      Hardening: update to 4.61.0 or later, enable Enhanced Container Isolation, restrict extensions to the marketplace allowlist and review installed extensions, do not expose the Docker daemon over TCP on WSL2 hosts (Trend, March 2026). No hashes or addresses carried.
+
+  # ------------------------------------------------------------------ 7. Apiiro Blank Canvas  (borderline)
+  - title: "Blank Canvas: Apiiro finds 133 dormant VS Code Marketplace listings from one operator, each shipping a 20-byte no-op file until a silent update armed three as loaders that run whatever a server sends; Microsoft removed 131 extensions on 2026-11-03"
+    sources:
+      - { url: "https://apiiro.com/blog/blank-canvas", publisher: "Apiiro Research", date: "2026-11-17", role: "primary" }
+      - { url: "https://yeethsecurity.com/blog/2026-11-03-Server-Is-The-Extension", publisher: "Yeeth Security", date: "2026-11-03", role: "corroborating" }
+    discovery_trace: "first seen at: apiiro-research, URL https://apiiro.com/blog/ (extract of the listing; served via the reader transport) -> primary: Apiiro https://apiiro.com/blog/blank-canvas (extract, Published Time 2026-11-17) -> pivot (its Prior work list): Yeeth Security https://yeethsecurity.com/blog/2026-11-03-Server-Is-The-Extension, which independently analysed one of the three armed loaders on 2026-11-03"
+    summary: |
+      Apiiro found a fleet of 133 VS Code Marketplace listings created in bulk in two script-driven bursts on 2026-09-23 and 2026-09-24, each shipping the same 20-byte console.log file, a generic description, no icon and an activation setting that runs on every VS Code start, with names pairing a corporate-sounding publisher to a board, canvas or desk product, and with install counters padded far above download counts. Three were later armed by silent update (Trellis Board on 2026-10-12, Studio Plan about four days after Trellis Board's removal on 2026-10-23, and Mesa Panel, still blank on 2026-11-01 and analysed as armed by Yeeth on 2026-11-03): the extension joins a board on an attacker server, polls it every 60 seconds, saves a note and runs it as a script (cscript on Windows, sh elsewhere) with the developer's permissions and every token in the editor's environment; the signature check meant to restrict notes is turned off in one package's shipped settings file and bypassed by a board-ID substring in the other two, and the server chooses the board. Microsoft removed the fleet in four waves (1, 2, 4 and 126 extensions between 2026-10-23 and 2026-11-03, the last day being the most in a single day in its removal log; the previous busiest day had 19), but the armed Trellis Board stayed listed for 11 days after arming despite Microsoft saying it scans updates. A victim account, taken from an anonymous report and not independently confirmed by Apiiro, describes a fake-recruiter lure on Discord pushing a Roblox developer to install an earlier build and join a board, delivering a script chain that created a logon task and injected a .NET remote access tool into explorer.exe; the payload matches earlier Knostic, Pluto Security and Yeeth write-ups of fake task-board extensions since June. Apiiro's analysis was static only; it never ran extension code or contacted an attacker host. Its transferable control advice: treat an extension update like a new install, switch off extension auto-update on managed editors and keep an allowlist.
+    region_nexus: "global; targeted at individual developers (Roblox developers via fake recruiters), no regional nexus"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: []
+    techniques: [T1176.002, T1608.001, T1566.003, T1059.005, T1059.004, T1053.005]
+    affected_products: ["Visual Studio Code"]
+    entity_keys: ["product:visual-studio-code"]
+    new_entities:
+      - { key: "campaign:blank-canvas-vscode-extension-fleet-2026-11", type: campaign, name: "Blank Canvas (VS Code Marketplace dormant-extension fleet)", aliases: ["Blank Canvas"], summary: "Apiiro's name for 133 dormant VS Code Marketplace extensions from one operator, blank until a silent update turns them into server-driven script loaders; Microsoft removed 131 extensions on 2026-11-03 (Apiiro, 2026-11-17)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "sound primary with an independent corroborating analysis, but the victim class is individual developers lured by fake recruiters and the fleet was removed on 2026-11-03; value for the constituency is the sleeper-extension technique and the extension auto-update lever for managed developer workstations; main agent to decide against the existing Cursor/Claude Code extension entry"
+    classification_hint: { reliability: "B", credibility: "2", why: "Apiiro static analysis of Marketplace data and Microsoft's removal log; Yeeth independently analysed one armed loader; the victim narrative rests on an anonymous report" }
+    evidence:
+      - quote: "On November 3, 2026, Microsoft removed 131 extensions from the Visual Studio Code Marketplace as malware, the most in one day in its public removal log."
+        attribution: "Apiiro Research"
+        source_url: "https://apiiro.com/blog/blank-canvas"
+      - quote: "Microsoft says it scans updates too, yet the armed Trellis Board stayed listed for 11 days."
+        attribution: "Apiiro Research"
+        source_url: "https://apiiro.com/blog/blank-canvas"
+      - quote: "so the blank a developer installed can become the loader without another decision."
+        attribution: "Apiiro Research"
+        source_url: "https://apiiro.com/blog/blank-canvas"
+    extended_notes: |
+      Related store entry: 2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor (different mechanism: tampered release of a real extension).
+      Exposure: developer machines with VS Code (and forks) that auto-update extensions, from the Marketplace, where an extension installed weeks ago can change behaviour overnight.
+      Detection (telemetry classes): process-creation telemetry for cscript or sh started by the VS Code extension host; creation of per-extension storage folders holding board and hook files and temp log files; for the Windows payload chain a hidden folder under ProgramData and a logon scheduled task with a driver-service name; egress from the editor process to a newly registered domain every 60 seconds; extension inventory (code --list-extensions or managed-IDE telemetry) for publishers with no history, an activation event of "*", and a trivial entry file.
+      Triage: legitimate extensions poll servers and run helper scripts; the discriminator is a script executed from a note fetched from a remote board with unsigned execution, an extension that was empty at install and changed with a minor update, and a publisher created days before a burst of listings.
+      Hardening: extensions.autoUpdate off on managed editors, extension allowlist, review new versions before they reach developers; rotate tokens, git credentials and cloud CLI logins on any machine that ran one. No extension IDs, domains or hashes carried.
+
+  # ------------------------------------------------------------------ 8. Recorded Future Insikt GreenJuliett / ARTEX (borderline update)
+  - title: "Insikt Group: ARTEX servers it observes doubled in 30 days (1,506 on October 21, 2,978 on November 19 across 58 countries) and likely-GreenJuliett (CyberAv3ngers) infrastructure scans FortiGate in six Gulf states while a LiteLLM gateway shows AI inside the group's operating environment"
+    sources:
+      - { url: "https://www.recordedfuture.com/blog/ai-industrial-attack-workflow", publisher: "Recorded Future Insikt Group", date: "2026-11-20", role: "primary" }
+    discovery_trace: "first seen at: recordedfuture-insikt feed https://www.recordedfuture.com/feed (standing lab check; item 2026-11-20) -> primary: Insikt https://www.recordedfuture.com/blog/ai-industrial-attack-workflow (extract). Read against the store's Danfoss/French refrigeration entry, which already carries the French attribution of 2026-11-09 to Shahid Kaveh, and the ARTEX main entry, which carries the FBI's 1,600-console figure"
+    summary: |
+      Insikt Group (Recorded Future) reports that between August and October it saw infrastructure it assesses as GreenJuliett (also known as CyberAv3ngers and Bauxite, activity it says likely belongs to an element of the IRGC unit Shahid Kaveh) scanning or attempting to exploit Fortinet FortiGate firewalls in Bahrain, Israel, Jordan, Kuwait, Saudi Arabia and Qatar, after months of building infrastructure aimed at internet-facing PLCs that continued at least until October 30. It says it has not independently tied that infrastructure to the October refrigeration-controller attacks in France, which France attributed to Shahid Kaveh on November 9. Insikt found a LiteLLM gateway configuration and self-hosted Persian-language chat applications on infrastructure likely used by the group, and saw servers in its anonymisation network communicating with infrastructure that hosts Claude, but has not confirmed specific misuse. Separately, from material recovered from exposed ARTEX servers it describes an agent issuing roughly 7,000 shell commands, logging more than 1,000 facts and filing 54 findings on one server, and counts 1,506 ARTEX servers on October 21 and 2,978 on November 19 in 58 countries (observed servers, not attacks), of which only about one in six was present for 30 consecutive days with about 90 new ones a day, which it uses to argue that hand-maintained blocklists age within days. The ARTEX figures are Insikt's own telemetry claim; the GreenJuliett-to-AI link is explicitly unconfirmed.
+    region_nexus: "Middle East (FortiGate scanning), France and Switzerland through the refrigeration campaign context; ARTEX servers in 58 countries"
+    primary_sector_nexus: "indirect"
+    sector: "ot-ics, cross-sector"
+    cves: []
+    techniques: [T1595.002, T1190, T1588.007]
+    affected_products: ["Fortinet FortiGate", "ARTEX"]
+    entity_keys: ["tool:artex", "actor:cyberav3ngers", "actor:shahid-kaveh"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "actor:cyberav3ngers", object: "actor:shahid-kaveh", basis: "Recorded Future Insikt: GreenJuliett (also known as CyberAv3ngers and Bauxite) is activity that likely belongs to an element of Shahid Kaveh (Insikt, 2026-11-20); the registry already carries a cyberav3ngers to shahid-kaveh edge, so this is alias evidence for GreenJuliett and Bauxite" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    borderline: true
+    borderline_reason: "single-vendor telemetry; the ARTEX server count is a measurable trend point but small against an entry that already has seven updates, and the GreenJuliett AI link is explicitly unconfirmed; fit as one sentence in the ARTEX or Danfoss entry rather than a new entry"
+    classification_hint: { reliability: "B", credibility: "3", why: "Insikt holds the network telemetry but the counts and the GreenJuliett attribution are its own assessments, with no independent confirmation" }
+    evidence:
+      - quote: "We observed 1,506 servers running ARTEX on October 21 and 2,978 on November 19, hosted across 58 countries."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ai-industrial-attack-workflow"
+      - quote: "While we have not independently tied GreenJuliett infrastructure to the refrigeration attacks"
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ai-industrial-attack-workflow"
+      - quote: "Only about one in six ARTEX servers we observed was present continuously for 30 days, and roughly 90 new ones appear on a typical day."
+        attribution: "Recorded Future Insikt Group"
+        source_url: "https://www.recordedfuture.com/blog/ai-industrial-attack-workflow"
+    extended_notes: |
+      Exposure/hardening carried by the source: CERT-FR named Copeland XWEB, Danfoss AK-SC and AK-SM and Dixell XWEB in the French attacks (already in the store); restrict FortiGate management interfaces to known addresses. Not an IOC item: infrastructure is available to Recorded Future customers only.
+
+watchlist_sweep: null   # watchlist duty none
+
+standing_checks:
+  # labs read over the 26 h window (NOT in source_ledger); window start 2026-11-20T01:56Z
+  - { lab: "Microsoft Threat Intelligence / Security blog", transport: "WebFetch topic page + msft-secblog recent 12", in_window: 0, note: "newest TI post 2026-11-17; only 2026-11-20 post is a Gartner SIEM Magic Quadrant announcement (marketing, dropped)" }
+  - { lab: "GTIG / Mandiant", transport: "feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v", in_window: 0, note: "newest 2026-11-19 'ARMORY CASTLE Exploits vSphere', already carried by 2026-11-20/vmware-vcenter-cve-2026-123890-auth-bypass-exploited-gtig" }
+  - { lab: "Cisco Talos", transport: "feed", in_window: 0, note: "newest 2026-11-19 19:00 opinion post; 2026-11-18 UAT-12643 and blockchain dead-drop posts are out of window and uncovered (see out_of_window_leads)" }
+  - { lab: "Palo Alto Unit 42", transport: "feed + extract", in_window: 1, note: "'Dialing for Data: Inside the Com's High-Profile Heists' 2026-11-20 returned as item 3" }
+  - { lab: "Check Point Research", transport: "feed", in_window: 0, note: "newest 2026-11-19 13:19 LLM paper; 2026-11-17 State of Ransomware Q3 2026 out of window" }
+  - { lab: "ESET WeLiveSecurity", transport: "feed", in_window: 0, note: "newest 2026-11-19 consumer post; last research item 2026-11-10 (Turla Cereal, covered)" }
+  - { lab: "Kaspersky Securelist", transport: "feed", in_window: 0, note: "newest 2026-11-18; ShadowCloud (2026-11-17) and AuditTeam OpsAgent (2026-11-18) out of window and uncovered" }
+  - { lab: "SentinelOne SentinelLabs", transport: "feed", in_window: 0, note: "newest 2026-11-18 LABScon replay (conference video, not CTI)" }
+  - { lab: "Proofpoint Threat Insight", transport: "feed", in_window: 0, note: "newest 2026-11-09 (BluePhishing, covered)" }
+  - { lab: "Trend Micro (TrendAI) Research", transport: "feed", in_window: 0, note: "newest 2026-11-19 18:37 patch-window opinion; 2026-11-18 BYOD ransomware post out of window and uncovered" }
+  - { lab: "Huntress", transport: "feed", in_window: 1, note: "2026-11-20 NIST 800-171 Rev 3 transition (compliance guidance, dropped); 2026-11-19 'Detecting Timeroasting the Hard Way' out of window and uncovered" }
+  - { lab: "Elastic Security Labs", transport: "feed", in_window: 1, note: "2026-11-20 'MITRE ATLAS comes to Elastic Security' is product detection-coverage news, dropped" }
+  - { lab: "Datadog Security Labs", transport: "feed", in_window: 0, note: "newest 2026-11-19 Entra access packages part 1 (fundamentals, series opener; out of window, background)" }
+  - { lab: "Sekoia", transport: "WebFetch listing (https://www.sekoia.com/blog)", in_window: 0, note: "newest 2026-11-19 SOC deployment-model post (product); 2026-11-17 India-China espionage overview names no actors; note the record URL now redirects from sekoia.io to sekoia.com" }
+  - { lab: "Recorded Future Insikt", transport: "feed + extract", in_window: 1, note: "2026-11-20 'AI Joins the Industrial Attack Workflow' returned as borderline item 8; 2026-11-19 regional SOTI summaries are survey content" }
+  - { lab: "Sophos X-Ops / Symantec / Rapid7 / Wordfence / Tenable / others", transport: "68-feed parallel sweep (active research/news/discovery records with an rss_url, minus the labs above)", in_window: "n/a", note: "Rapid7 Webworm post 2026-11-19 (item 4) and the F6/Cisco report relayed by THN and Security Affairs (item 1) came from this sweep; the rest were covered or product posts. Symantec threat-intelligence listing (WebFetch) newest 2026-11-19 'African Stock Exchange AI-assisted attack' out of window" }
+
+extra_sweeps:
+  - { id: "rapid7-research", reason: "last_successful_fetch 2026-11-08, not in any slice; sweep found a government-targeting Webworm post of 2026-11-19 not yet seen by the pipeline", returned: 1 }
+
+out_of_window_leads:
+  # Not items: published before the 26 h window, not in the store (grep of entries/ and registry), relevant enough that the main agent or the audit may want them. Each was fetched this run.
+  - { title: "BYOD ransomware: identity-first extortion campaign moving into hospitals and universities (Trend Micro/TrendAI, 2026-11-18)", url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/byod-ransomware-hospitals-universities", why: "new ransomware/extortion group, nine claimed victims in five weeks including a US trauma centre and two universities; access through Active Directory, Group Policy, a cloud identity tenant, domain controller and a RAT, no CVE; Trend tells higher education, healthcare and the public sector to hunt now; sector-relevant for cantonal hospitals and universities" }
+  - { title: "Operation ShadowCloud: MeshAgent drops GraphDoor and GitDoor backdoors with C2 over SharePoint, GitHub and Ably against government networks in Asia and Africa (Kaspersky Securelist, 2026-11-17, two parts)", url: "https://securelist.com/operation-shadowcloud-gitdoor/122004/", why: "government-targeting, cloud-service C2 that blends into normal traffic; transferable detection (MeshAgent installs, SharePoint/GitHub/Ably egress from servers)" }
+  - { title: "UAT-12643: suspected North Korea-aligned infostealing with Solana-memo C2 resilience (Cisco Talos, 2026-11-18)", url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/", why: "financially motivated, Europe-leaning victimology by file-harvest languages (English, French, Spanish, Portuguese); blockchain-memo C2 technique" }
+  - { title: "Unsolicited audits: how AuditTeam masks ransomware with the OpsAgent framework (Kaspersky Securelist, 2026-11-18)", url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/", why: "ransomware group selling a 'forced audit', signed-driver AV/EDR killer, victims in Italy and Finland among seven countries" }
+  - { title: "Detecting Timeroasting the Hard Way (Huntress, 2026-11-19)", url: "https://www.huntress.com/blog/detecting-timeroasting", why: "detection-engineering write-up that reverses the MS-SNTP authenticator forms in netlogon.dll to detect timeroasting (no authentication log exists) beyond a volumetric UDP/123 counter, including the extended form that has no public coverage; Active Directory relevance; read only the opening, not the full 58 KB body" }
+  - { title: "US bank, IRS and Social Security logins stolen by a Russian-speaking operation (Hunt.io HavoX open directory, 2026-11-16; Security Affairs relay 2026-11-20)", url: "https://hunt.io/blog/us-bank-irs-ssa-logins-stolen-russian-speaking-operator", why: "US-centred; techniques with transfer value: Chrome app-bound-encryption bypass, ESTSAUTHPERSISTENT cookie replay to Graph tokens, token theft from 35 AI developer tools; report date 2026-11-16 is outside the window" }
+  - { title: "Zscaler ThreatLabz on Optimizely: the page says the malicious script was served by more than 450 domains and more than 3,000 URLs (2026-11-18)", url: "https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript", why: "possible scale delta on the OptimJack entry (covered 2026-11-17, updated 2026-11-19); page fetched this run, the 450/3,000 figures were read but the surrounding context was not checked against the entry" }
+
+source_ledger:
+  - { id: sygnia, tier: standard, attempted: true, transport: "webfetch (listing; extract and every in-container transport still refused)", horizon_hours: 50, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-08; listing dates are DD.MM.YYYY" }
+  - { id: reliaquest, tier: standard, attempted: true, transport: "bridge:url sitemap.xml + extract per article", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "sitemap lastmod is NOT a publication date: about 20 old Threat Spotlight posts (March to May 2026) were bulk-republished at 2026-11-18T22:00Z; genuine in-lookback posts are the ARTEX explainer (2026-11-19, vendor pitch, no new delta) and a 138% intrusion-volume statistics post (2026-11-18, vanity metrics)" }
+  - { id: sans-newsbites, tier: standard, attempted: true, transport: "extract (listing + issues xxviii-86, xxviii-87)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "annotated aggregator; every story was already covered or belongs to S2/S4 (Java4Shell, Optimizely, NGINX, PHP, European Commission, Equinor, TfL, Project Zero 'Full X' policy of 2026-11-13)" }
+  - { id: schneier, tier: standard, attempted: true, transport: "extract (served via the reader; direct blocked)", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "newest posts are an AlphaProof Code/Signal formal-verification item and a DEF CON AI-hacking essay, commentary not CTI" }
+  - { id: searchlight-cyber, tier: standard, attempted: true, transport: "webfetch (listing; extract shows no posts)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest research post 2026-10-28" }
+  - { id: socradar, tier: standard, attempted: true, transport: "extract (listing + per-article date)", horizon_hours: 168, in_horizon_items: 5, returned: 1, note: "PHP2Shell AI-agent operator study 2026-11-18 returned; vCenter, NGINX2Root, Java4Shell, Optimizely and Danfoss AK-SM800A posts are covered by store entries; SeverVault dark-forum shop is noise" }
+  - { id: sonatype, tier: standard, attempted: true, transport: "feed (rss) + extract", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "PHP three-critical-flaws post 2026-11-20 re-states CVEs already in 2026-11-20/php-8-5-13-release-fpm-request-smuggling-session-flaws; Ruby, OpenJDK, Optimizely posts covered; one SCA marketing post" }
+  - { id: sysdig, tier: standard, attempted: true, transport: "feed (rss) + extract on the canonical www.sysdig.com URL", horizon_hours: 168, in_horizon_items: 6, returned: 0, note: "ARTEX vs LLMjacking comparison 2026-11-20 re-states known FBI/Microsoft facts; NGINX2Root post's SCTP kernel chain is already in the existing nginx2root entry; Java4Shell covered; agent-accountability and product posts dropped" }
+  - { id: volexity, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-10-16" }
+  - { id: xlab-qianxin, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-11-05 (CWPdoor), outside the lookback" }
+  - { id: zdi, tier: standard, attempted: true, transport: "webfetch (listing) + extract (per-post)", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "Docker Model Runner container-escape write-up 2026-11-17 returned as borderline; listing shows 2026-11-18 while the post's own date is 2026-11-17" }
+  - { id: aikido-security, tier: standard, attempted: true, transport: "bridge:url --direct (106 slugs, alphabetical not dated) + 16 per-post extract date probes", horizon_hours: 145, in_horizon_items: 3, returned: 0, note: "agent-framework PyPI compromise (2026-11-17), Ruby2Shell and PHP release (2026-11-19) are all covered; remaining slugs are 2026-08 to 2026-11-09 or product content" }
+  - { id: apiiro-research, tier: candidate, attempted: true, transport: "extract (served via the reader)", horizon_hours: 145, in_horizon_items: 1, returned: 1, note: "Blank Canvas VS Code extension fleet 2026-11-17 returned as borderline" }
+  - { id: arctic-wolf-labs, tier: standard, attempted: true, transport: "feed (rss) + extract", horizon_hours: 149, in_horizon_items: 3, returned: 1, note: "EVTX cleared-log recovery returned; 'Black October' IR statistics and a CISO five-steps post are vanity metrics and marketing" }
+
+candidate_sources:
+  - id: yeethsecurity
+    publisher: "Yeeth Security (yeethsecurity.com briefings)"
+    url: "https://yeethsecurity.com/blog/"
+    rss_url: "https://yeethsecurity.com/feed.xml"
+    category: research
+    why: "first-hand analyses of malicious VS Code Marketplace and developer-tooling packages at a near-daily cadence (eight dated posts between 2026-10-22 and 2026-11-03 on the feed, which parses on the direct transport); an independent analyst of the Mesa Panel loader that Apiiro's Blank Canvas study builds on; useful as a corroborating source for developer-supply-chain items"
+
+coverage_gaps:
+  - source_id: f6-security (not a slice record)
+    reason: "https://f6.security/media-center/press-releases/cisco-vulnerability-exploitation/ is walled on every transport this run (extract: direct 403 and no readable body; WebFetch: HTTP 403; jina pool exhausted HTTP 402). The F6 Cisco Expressway report (item 1) was therefore carried through verbatim quotes in The Hacker News and Security Affairs; a later fire should retry the primary."
+  - source_id: greynoise
+    reason: "WebFetch of https://www.greynoise.io/blog was refused by the harness cyber safeguard (API error, not a transport failure); not retried (bounded retries); not a slice record."
+  - source_id: sygnia / searchlight-cyber / zdi
+    reason: "recipe confirmations, not gaps: all three read through WebFetch listing (extract returns no posts for searchlight-cyber and zdi listings; sygnia refuses every in-container transport); per-post extract works on zdi (served from thezdi.com canonical)."
+
+recipe_notes:
+  - "reliaquest: the sitemap lastmod values are a bulk republish (about 20 posts stamped 2026-11-18T22:00:5x Z, actual dates March to May 2026); never use sitemap lastmod as a publication date, read the per-article extract date field. Also noted: article extract dates are reliable."
+  - "aikido-security: `url --direct https://www.aikido.dev/blog` returns about 106 slugs in alphabetical, not date, order; the date field of `extract <post>` is the only reliable date, so probe the slugs that look recent (about 16 extract calls) instead of reading the listing order."
+  - "sysdig: RSS item links point at webflow.sysdig.com; replacing the host with www.sysdig.com/blog/<slug> extracts cleanly with the true date (confirmed again 2026-11-21)."
+  - "socradar: confirmed again that the listing page's date metadata is stale and the per-article extract date is true (PHP2Shell AI-agent study dated 2026-11-18)."
+  - "apiiro-research: `extract https://apiiro.com/blog/` and the article extract were served via the jina reader even though two keys reported 402 and a later credential answered; works but spends reader credit; per-post extract carries a Published Time field."
+  - "schneier: `extract https://www.schneier.com/blog/` was served via the reader again (ten keys reported 402 before one answered); direct and the atom feed are blocked."
+  - "sans-newsbites: `extract https://www.sans.org/newsletters/newsbites/` lists issue numbers and dates (issue 87 = 2026-11-20, 86 = 2026-11-17); `extract .../xxviii-<n>` reads a full issue."
+  - "rapid7-research: https://www.rapid7.com/rss.xml parsed with the feed subcommand this run (the 2026-11-11/13 notes call it malformed XML); per-post extract of /blog/post/<slug> carries the date."
+  - "sekoia: the record URL sekoia.io/en/blog redirects to sekoia.com; WebFetch of https://www.sekoia.com/blog lists dated posts."
+  - "yeethsecurity.com: feed https://yeethsecurity.com/feed.xml parses on the direct transport (candidate source)."

@@ -1,0 +1,571 @@
+# work/2026-11-21T0355Z-intel/findings.S1.yaml  (written in parts: header + items 1-3 here, rest appended)
+domain: S1
+run_id: 2026-11-21T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-21T03:57:46Z
+ended_at: 2026-11-21T04:30:35Z
+duration_seconds: 1969
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 31
+  bridge_fetches: 115
+items:
+  # ---------------------------------------------------------------- 1. update-of Cisco Expressway
+  - title: "Cisco Expressway CVE-2026-76466 is now exploited: CISA KEV listing of 2026-11-20 and F6's report of a clustered X15.5.3 compromise after a public proof of concept (Cisco's advisory still says no malicious use)"
+    novelty: "update-of:2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce"
+    update_type: update
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.f6.ru/media-center/press-releases/cisco-cve-2026-76466/", publisher: "F6 (press release, Russian)", date: "2026-11-18", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107382", publisher: "ENISA EUVD (EUVD-2026-107382)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://zoom.cnews.ru/news/item/714192", publisher: "CNews (Russian; relays F6)", date: "2026-11-18", role: "corroborating" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t", publisher: "Cisco PSIRT (advisory still v1.0 of 2026-10-21)", date: "2026-10-21", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-76466", publisher: "CVE Program record (CISA-ADP SSVC and KEV container)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev), catalogue 2026.11.20, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog, CVE-2026-76466 dateAdded 2026-11-20 and kev-window.txt COVERED-STALE row -> CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog -> Cisco advisory re-read, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t (still v1.0, 'not aware of malicious use') -> WebSearch ('CVE-2026-76466 Cisco Expressway exploited CISA KEV') surfaced techora.ru (anti-bot challenge, unreadable) -> WebSearch ('f6.ru Cisco Expressway CVE-2026-76466 расследование атака Erlang порты 4371', allowed_domains f6.ru) -> primary: F6 press release, URL https://www.f6.ru/media-center/press-releases/cisco-cve-2026-76466/ -> CNews relay, URL https://zoom.cnews.ru/news/item/714192 -> ENISA EUVD record, URL https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-107382"
+    summary: |
+      CISA added CVE-2026-76466 (Cisco Expressway-C and Expressway-E, clustered, unauthenticated root command execution, CVSS 3.1 9.8) to its Known Exploited Vulnerabilities catalog on 2026-11-20 with a 2026-11-23 due date and a forensic-triage flag under BOD 26-04; the CISA alert gives no per-CVE exploitation detail, the CVE record carries a CISA SSVC "Exploitation: active", and ENISA EUVD lists exploitedSince 2026-11-20. The first-hand observation behind it, or at least a public one, is F6's (Russian vendor, press release of 2026-11-18): its cybersecurity centre investigated what it calls the first case of exploitation, at a Russian organisation. F6 states that attackers used a public proof of concept shortly after it appeared, compromised two internet-reachable Expressway X15.5.3 devices, and through one reached two further cluster nodes on the internal network; with root they ran home-written Python scripts for network scanning, SMB share discovery, SQL Server and WinRM interaction and review of GitLab repositories to take credentials, and F6 assesses from comments in the code that an AI assistant helped adapt the scripts during the intrusion. F6's hunt pointer is an unexpected Erlang node-up record in the Expressway Erlang system log, and its stop-gap when patching is not possible is to limit TCP 4371-4372 to the trusted cluster peers. Cisco's advisory is unchanged at version 1.0 (2026-10-21) and still says its PSIRT is not aware of malicious use; fixed release X15.5.20, X14 and earlier must migrate, no workaround. What is not known: who the actor is, whether CISA's evidence is the F6 case or another, and whether Expressway-C or only Expressway-E was the entry point (F6 says internet-reachable devices). A French consultancy blog dated 2026-11-13 names a PoC author and says it was tested on X15.3.2 in a two-node cluster with permissive TLS; that is a lead only (low reliability, contradicts Cisco on the root cause), not carried. F6's indicator values (two IP addresses, a node name, file-path pattern) are indicators and must not be carried into the entry.
+    region_nexus: "global; Expressway is a widely deployed video-conferencing and firewall-traversal gateway (Cisco collaboration estates in cantonal and federal administrations are plausible but no Swiss deployment is evidenced in the sources); the F6 victim is Russian"
+    primary_sector_nexus: "indirect; exposed Expressway-E in a cluster is the case to check first"
+    sector: "public-sector"
+    cves: [CVE-2026-76466]
+    techniques: [T1190, T1210, T1059.006, T1046, T1135, T1213.003]
+    affected_products: ["Cisco Expressway Series"]
+    entity_keys: ["product:cisco-expressway-series"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Вскоре после появления общедоступного эксплойта (PoC) злоумышленники успешно атаковали устройства"
+        attribution: "F6"
+        source_url: "https://www.f6.ru/media-center/press-releases/cisco-cve-2026-76466/"
+      - quote: "Первоначально атакующие скомпрометировали два устройства Cisco Expressway, доступных из интернета, затем через одно из них получили доступ к двум другим узлам кластера, расположенным во внутренней сети организации."
+        attribution: "F6"
+        source_url: "https://www.f6.ru/media-center/press-releases/cisco-cve-2026-76466/"
+      - quote: "Если обновление временно невозможно, рекомендуется ограничить подключения к портам TCP/4371–4372 на межсетевом экране, разрешив доступ только с IP-адресов доверенных узлов кластера."
+        attribution: "F6"
+        source_url: "https://www.f6.ru/media-center/press-releases/cisco-cve-2026-76466/"
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t"
+      - quote: "Potential KEV additions must have a CVE ID, evidence of exploitation, and clear mitigation guidance."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      Store delta for the existing entry (fields: cves[].status to exploited, summary/headline/title, sources, evidence, actions, body; priority candidate raise notable to high: confirmed exploitation + public PoC + root RCE on an edge-class collaboration gateway + 3-day KEV due date).
+      The existing entry says "Cisco knows of no malicious use" for the Expressway flaw; it is now contradicted by CISA KEV and F6, while Cisco's own advisory has not been revised (conflict held openly, not averaged).
+      Detection concept (telemetry class first): Expressway OS/application logs (the Erlang system log named by F6) for node-up or node-connect events from hosts that are not cluster peers; network flow/firewall logs for connections to TCP 4371-4372 (and Erlang port mapper) from non-peer addresses; post-compromise: egress scanning, SMB, MSSQL and WinRM traffic originating from Expressway management/DMZ addresses, and unexpected Python processes on the appliance.
+      Triage: legitimate cluster peers also connect to these ports, so discriminate on source address (peer list) and on whether the appliance subsequently initiates internal scans or SMB/WinRM sessions it never did before.
+      Hardening: upgrade to X15.5.20 (clustered units first), restrict the cluster database ports to peer addresses, keep Expressway-E cluster peers off routable segments. Post-patch compromise check: patching does not evict an attacker who already holds root; review erlang.log history and outbound connections from before the upgrade.
+      Suggested rating: reliability A (CISA, first-hand vendor-independent report from F6 as B), credibility 1-2 (exploitation corroborated by two independent parties, details single-sourced to F6).
+  # ---------------------------------------------------------------- 2. update-of nginx2root downstream vendors
+  - title: "nginx2root downstream: Palo Alto Networks lists PAN-OS and Panorama (HTTP/2 enabled) with fixed builds, Cisco lists ISE 3.5 and NX-OS, Siemens Industrial Edge has no fix, Fortinet is still investigating about 50 products, AWS says its WAF cannot block the HTTP/2 flaws"
+    novelty: "update-of:2026-11-19/nginx-nginx2root-five-unauth-memory-corruption-flaws"
+    update_type: update
+    sources:
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-123633", publisher: "Palo Alto Networks PSIRT (CVE-2026-123633 / CVE-2026-123007 portfolio status)", date: "2026-11-20", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s", publisher: "Cisco PSIRT (cisco-sa-nginx-nov-2026-e8jska2s v1.0)", date: "2026-11-20", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-935812.html", publisher: "Siemens ProductCERT (SSA-935812)", date: "2026-11-20", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279", publisher: "Fortinet PSIRT (FG-IR-26-279)", date: "2026-11-20", role: "primary" }
+      - { url: "https://aws.amazon.com/security/security-bulletins/rss/2026-192-aws/", publisher: "AWS Security Bulletins (2026-192-AWS)", date: "2026-11-19", role: "corroborating" }
+    discovery_trace: "first seen at: paloalto-psirt feed, URL https://security.paloaltonetworks.com/rss.xml (CVE-2026-123633 'Portfolio Status: Impact of NGINX Vulnerabilities', 2026-11-20T23:00Z) -> primary: PAN CVE JSON record, URL https://security.paloaltonetworks.com/json/CVE-2026-123633 (read for the version table; citation URL is the advisory page https://security.paloaltonetworks.com/CVE-2026-123633) -> fortinet-psirt feed, URL https://filestore.fortinet.com/fortiguard/rss/ir.xml (FG-IR-26-279) -> siemens-productcert atom feed, URL https://cert-portal.siemens.com/productcert/rss/advisories.atom (SSA-935812) -> cisco-psirt feed, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml (nginx advisory 2026-11-20) -> aws-security-bulletins feed, URL https://aws.amazon.com/security/security-bulletins/feed/ (2026-192-AWS, 2026-11-19T23:00Z, read through https://aws.amazon.com/security/security-bulletins/rss/2026-192-aws/)"
+    summary: |
+      Four vendors published product-impact statements for the NGINX flaws (nginx2root, fixed upstream 2026-11-18) in the window; the store entry covers only the upstream fixes. Palo Alto Networks (published 2026-11-20 23:00Z) says PAN-OS and Panorama are affected by CVE-2026-123633 (HTTP/2 use-after-free) and CVE-2026-123007 (HTTP/2 flow-control integer underflow) only when the HTTP/2 option is enabled; the fixed builds are PAN-OS 12.2.4-h3, 12.1.10-h6 (12.1.8 to 12.1.10), 12.1.7-h15 or 12.1.10-h6 (12.1.5 to 12.1.7), 11.2.16-h3 (11.2.15 to 11.2.16), 11.2.13-h6 or 11.2.16-h3 (11.2.11 to 11.2.13) and 11.2.10-h19 or 11.2.16-h3 (11.2.8 to 11.2.10), with 12.1.2 to 12.1.4 and 11.2.0 to 11.2.7 needing no action; the workaround is to disable HTTP/2 on PAN-OS and Panorama, and PAN is not aware of malicious exploitation. Cisco's advisory (v1.0 interim, 2026-11-20) lists NX-OS as affected, ISE only on release 3.5 (fix in 3.5 Patch 5, December 2026), Smart PHY (27.1.0, March 2027), Intersight Virtual Appliance (1.1.9-0, December 2026) and Cloud Hosted Services Vulnerability Management (1.30.7, November 2026) as affected, Catalyst Center, SD-WAN Controller and Manager, ASA, FMC, FTD, UCS Central and Nexus Dashboard as not affected, and IOS XE, IOS XR, SD-WAN Validator and UCS Director under investigation; Cisco's PSIRT is aware of proof-of-concept code and not of malicious use. Siemens (SSA-935812, V1.0, 2026-11-20) lists Industrial Edge Cloud Device, Device Kit (arm64 and x86-64), Own Device and Virtual Device, all versions, as affected by all five CVEs with no fix yet and mitigations of disabling HTTP/2 and HTTP/3 on affected listeners and avoiding SSI and mirror directives; Industrial Edge Hub and the Management products are not affected because HTTP/2 is disabled there. Fortinet (FG-IR-26-279, initial publication 2026-11-20, not-impacted list updated 2026-11-21) says none of its products use NGINX Plus, lists roughly 50 products under investigation including FortiManager, FortiAnalyzer, FortiADC, FortiAuthenticator, FortiSIEM, FortiSandbox and FortiWeb, and confirms FortiOS, FortiProxy, FortiMail, FortiNAC and FortiPAM not impacted. AWS (bulletin 2026-192-AWS, 2026-11-19, a lookback item) adds that because the HTTP/2 issues act before a complete HTTP request is formed, AWS WAF managed and custom rules cannot effectively detect or block them, that patched nginx packages exist for Amazon Linux 2, 2023 and 2027, and that Elastic Beanstalk environments are affected only where the customer enabled HTTP/2 on their own nginx listener, with disabling HTTP/2 as the interim mitigation for the two Critical HTTP/2 flaws. No vendor reports exploitation; EPSS (FIRST, 2026-11-20) is 0.0609 for CVE-2026-123633 and 0.0603 for CVE-2026-123007 (about the 94th percentile).
+    region_nexus: "global; PAN-OS and Panorama firewalls, Cisco ISE and Siemens Industrial Edge are common in Swiss public-sector and utility estates (assessment, no Swiss-specific source)"
+    primary_sector_nexus: "direct for the HTTP/2 option on PAN-OS management/portal listeners; indirect otherwise"
+    sector: "public-sector"
+    cves: [CVE-2026-123007, CVE-2026-123633, CVE-2026-123634, CVE-2026-121810, CVE-2026-113425]
+    techniques: [T1190]
+    affected_products: ["Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama", "Cisco Identity Services Engine", "Cisco NX-OS Software", "Siemens Industrial Edge", "NGINX Open Source"]
+    entity_keys: ["product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama", "product:siemens-industrial-edge", "product:nginx-open-source"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Customers can disable the HTTP/2 option on PAN-OS and Panorama."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+      - quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+      - quote: "Upgrade to 12.2.4-h3 or later."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+      - quote: "The Cisco PSIRT is aware that proof-of-concept exploit code is available for the vulnerabilities that are described in this advisory. The Cisco PSIRT is not aware of any malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s"
+      - quote: "Siemens is currently assessing the impact of NGINX2Root (CVE-2026-123007, CVE-2026-123633, CVE-2026-123634, CVE-2026-121810, CVE-2026-113425) on Industrial Edge."
+        attribution: "Siemens ProductCERT"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-935812.html"
+      - quote: "Fortinet is currently investigating the impact of these CVEs over Fortinet Products."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279"
+      - quote: "Because these issues can be leveraged at the HTTP/2 protocol layer before a complete HTTP request is formed, AWS WAF managed and custom rules cannot effectively detect or block them."
+        attribution: "AWS"
+        source_url: "https://aws.amazon.com/security/security-bulletins/rss/2026-192-aws/"
+    extended_notes: |
+      Store delta for the existing entry: affected_products, entities, sources, evidence, actions (PAN-OS/Panorama HTTP/2 check is a concrete do-now task: disable HTTP/2 or upgrade to the listed build), body. Priority candidate: stays high; the PAN-OS exposure is the Swiss-relevant addition.
+      Exposure check on PAN-OS/Panorama: the HTTP/2 option (documented by PAN) must be enabled for the flaws to apply; the vendor-stated way to tell is the HTTP/2 setting in the PAN-OS configuration, and the version table above.
+      Detection concept: worker or management-plane process crashes/restarts (web server core dumps, repeated service restarts) correlated with unusual HTTP/2 stream or window-update volume from one source; Rapid7's PoC (per store) needs very large HTTP/2 traffic volumes, so sustained high-volume HTTP/2 flows to a single listener are the discriminating pattern against ordinary traffic.
+      Other downstream statements seen but not carried here: Cloudflare says no action for its proxied traffic (Cloudflare Radar write-up, not primary); Kubernetes ingress-nginx is reported (secondary only) as vulnerable to CVE-2026-123633 without a fix, unverified here.
+  # ---------------------------------------------------------------- 3. update-of Java4Shell (Cisco v1.3 correction + Siemens)
+  - title: "Java4Shell product impact moves: Cisco's advisory v1.3 now lists Catalyst Center, IOS XE, ISE and UCS Central as not affected; Siemens lists Siveillance Control and Siveillance Control Pro and Industrial Edge Management Pro/Virtual with no fix"
+    novelty: "update-of:2026-11-18/cve-2026-114938-java4shell-openjdk-avx512-base64-decoder-rce"
+    update_type: update
+    also_correction: true
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z", publisher: "Cisco PSIRT (cisco-sa-nov2026-java-rce-eCa6ss9z v1.3)", date: "2026-11-20", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-810379.html", publisher: "Siemens ProductCERT (SSA-810379)", date: "2026-11-19", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-272816.html", publisher: "Siemens ProductCERT (SSA-272816)", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: cisco-psirt feed, URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml ('Vulnerability in Oracle OpenJDK (Java4Shell) Affecting Cisco Products', 2026-11-20T20:37Z) -> primary: Cisco advisory v1.3, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z -> siemens-productcert atom feed, URL https://cert-portal.siemens.com/productcert/rss/advisories.atom (SSA-810379, SSA-272816) -> primary SSA pages (fetched with url --direct for the product tables)"
+    summary: |
+      The store entry (as of 2026-11-20) says Cisco lists Catalyst Center, Secure Network Analytics and Secure Workload as affected and IOS XE and UCS Central as under investigation; Cisco's combined advisory is now at version 1.3 (2026-11-20), whose change log reads that Catalyst Center was changed from affected to not affected, and whose priority-product table now shows Catalyst Center, SD-WAN Controller, Manager and Validator, ISE, IOS XE, IOS XR, Nexus Dashboard, NX-OS, ASA, FMC, FTD, UCS Central and UCS Director as not affected. The affected list is the non-network-OS portfolio: Smart PHY, Connected Mobile Experiences 11.2, Secure Network Analytics (patches planned for 7.6.1, 7.6.0 and 7.5.3, date to be determined), Secure Workload, Cisco IQ, the Crosswork products, Smart Software Manager On-Prem, cnBNG, Optical Networking Controller, Splunk AppDynamics on-premises products, Ultra Cloud Core, HyperFlex HX Data Platform, Intersight Virtual Appliance and the Finesse and Unified Contact Center family, mostly with fixed releases still to be determined; Cisco says affected systems are x86-64 with AVX-512 VBMI support, offers no workaround, and (per the store entry) is aware of PoC code but not of malicious use. Siemens published two advisories: SSA-810379 (2026-11-19) lists Siveillance Control and Siveillance Control Pro, a physical-security information management and command-and-control product line aimed at critical-infrastructure sites, all versions, with no fix and the interim measure of starting the JVM with the Base64 intrinsics disabled; SSA-272816 (2026-11-18) lists Industrial Edge Management Pro V1 and V2 and Industrial Edge Management Virtual, all versions, with no fix and the advice to block direct internet access to the instance or shut it down. No new exploitation report appeared in the window; Group-IB and others still report none confirmed (the store entry carries GreyNoise's attempts-seen statement).
+    region_nexus: "global; Siveillance Control (Pro) is used in control rooms (emergency services and critical infrastructure operators are plausible users; no Swiss deployment evidenced)"
+    primary_sector_nexus: "indirect; relevant to emergency-services control-room and building/industrial estates"
+    sector: "public-sector"
+    cves: [CVE-2026-114938]
+    techniques: [T1190]
+    affected_products: ["Siemens Siveillance Control", "Siemens Siveillance Control Pro", "Siemens Industrial Edge Management Pro", "Siemens Industrial Edge Management Virtual", "Cisco Secure Network Analytics", "Cisco Secure Workload", "Oracle Java SE"]
+    entity_keys: ["product:openjdk", "product:oracle-java-se", "product:siemens-industrial-edge"]
+    new_entities:
+      - { key: "product:siemens-siveillance-control-pro", type: product, name: "Siemens Siveillance Control Pro", aliases: ["Siveillance Control Pro"], summary: "Siemens command-and-control and security-management product for critical-infrastructure sites; listed as affected by Java4Shell with no fix (Siemens SSA-810379, 2026-11-19)." }
+      - { key: "product:siemens-siveillance-control", type: product, name: "Siemens Siveillance Control", aliases: ["Siveillance Viewpoint"], summary: "Siemens physical security information management (PSIM) system, formerly Siveillance Viewpoint; listed as affected by Java4Shell with no fix (Siemens SSA-810379, 2026-11-19)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "Changed Catalyst Center from affected to not affected."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z"
+      - quote: "Available details indicate that systems that use x86-64 CPU architectures with AVX-512 VBMI support are affected."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nov2026-java-rce-eCa6ss9z"
+      - quote: "Update Java to a version that addresses the vulnerability once available. Until the update can be applied, add the following parameter to the client's JVM startup arguments:"
+        attribution: "Siemens ProductCERT"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-810379.html"
+      - quote: "Siveillance Control Pro is a command and control solution, specifically designed to support security management at critical infrastructure sites such as ports, airports, oil and gas power generation and distribution, chemical and pharma industries, heavy industries and campus environments."
+        attribution: "Siemens ProductCERT"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-810379.html"
+    extended_notes: |
+      Store delta: this is a correction of a vendor-status statement (Catalyst Center, IOS XE, UCS Central) plus new vendor impact (Siemens); the existing entry's Cisco sentence ("Catalyst Center ... affected ... IOS XE and UCS Central under investigation") is now wrong as written. Suggest record type update (new Siemens impact floats) with the Cisco fix declared in the same record, or a correction if the main agent prefers not to float.
+      Not carried: Fortinet FG-IR-26-278 is already in the entry; Splunk SVD-2026-1102 and PAN's Java portfolio status (2026-11-20) are informational/portfolio statements already summarised by the 2026-11-20 record.
+  # ---------------------------------------------------------------- 4. update-of Danfoss refrigeration controllers
+  - title: "Danfoss publishes DSA-2026-12-01 and DSA-2026-12-02: CVE-2026-129713 (AK-SM 8xxA unauthenticated CGI stack overflow, fix only in an upcoming 5.5.x) and CVE-2026-127057 (default credentials on all AK-SC 355 and AK-SM 800, no fix, migrate to AK-SM 800A)"
+    novelty: "update-of:2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack"
+    update_type: update
+    sources:
+      - { url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/", publisher: "Danfoss (DSA-2026-12-01)", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/", publisher: "Danfoss (DSA-2026-12-02)", date: "2026-11-20", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd search sweep, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-19&toDate=2026-11-21&page=0&size=100 (EUVD-2026-131448 and EUVD-2026-131451, Danfoss, 9.3 and 9.9) -> EUVD text search, URL https://euvdservices.enisa.europa.eu/api/search?text=Danfoss&fromDate=2026-11-18&toDate=2026-11-21&page=0&size=30 -> primary: Danfoss advisories, URL https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/ and .../dsa-2026-12-02/"
+    summary: |
+      The store entry notes that, as read on 2026-11-14, Danfoss's advisories page named none of the six unpatched AK-SM 800A flaws Midnight Blue reported and that the entry carries no CVE ids. On 2026-11-20 Danfoss published two advisories. DSA-2026-12-01 assigns CVE-2026-129713 (CVSS 9.3) to a stack-based buffer overflow in an unauthenticated CGI handler of the AK-SM 8xxA series, firmware 5.4.0 and earlier: crafted HTTP or HTTPS POST requests cause memory corruption and a web-server restart and, Danfoss says, hypothetically code execution with web-server privileges, without authentication; the remediation is a software version 5.5.x that is not yet released (so there is no fix today), Danfoss will also remove the option to disable Strict mode, and its mitigations are to avoid internet exposure, reach units only through a VPN or protected network, run Strict mode and use strong passwords. DSA-2026-12-02 assigns CVE-2026-127057 (CVSS 9.9) to the legacy AK-SC 355 and AK-SM 800 series: all versions are vulnerable to unauthorised access through default credentials documented in the product manual, with no fix, and Danfoss recommends removing internet exposure, VPN-only access, unique strong passwords and migrating the fleet to the AK-SM 800A series to keep receiving security updates. The advisories name a single AK-SM 8xxA CVE where Midnight Blue reported six flaws, so whether the other five are covered by CVE-2026-129713 or still unassigned is not stated.
+    region_nexus: "switzerland (Swiss stores were hit in the October campaign per the existing entry; NCSC.ch warned on 2026-10-13 and 2026-11-16) and europe"
+    primary_sector_nexus: "indirect; refrigeration controllers in retail, food chain and blood-service cold rooms, not public-sector systems themselves"
+    sector: "retail"
+    cves: [CVE-2026-129713, CVE-2026-127057]
+    techniques: [T1190, T1078.001, T1133]
+    affected_products: ["Danfoss AK-SM 800A", "Danfoss AK-SM 800", "Danfoss AK-SC 355"]
+    entity_keys: ["product:danfoss-ak-sm-800a", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    evidence:
+      - quote: "This vulnerability will be addressed in Danfoss AK-SM 8xxA Series upcoming software version 5.5.x."
+        attribution: "Danfoss"
+        source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/"
+      - quote: "Authentication is not required to exploit this vulnerability."
+        attribution: "Danfoss"
+        source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/"
+      - quote: "These products were manufactured with default credentials documented in the product manual. All versions are affected."
+        attribution: "Danfoss"
+        source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/"
+      - quote: "Update the fleet (AK-SC355, AK-SM800) to current generation products (AK-SM800A series), to ensure receiving continuous cybersecurity updates."
+        attribution: "Danfoss"
+        source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/"
+    extended_notes: |
+      Single-source for the CVE assignment (the vendor is the disclosing party for its own product; no independent restatement found in window, though EUVD indexed both on 2026-11-20 with the same scores, which derives from Danfoss's CNA records). Store delta fields: cves (two new records, no fix for either), actions (check firmware version and default credentials, remove internet exposure), sources, evidence, body. The entry's sentence "no CVE identifier, no fixed version" for the AK-SM 800A is now partly outdated.
+      Exposure: AK-SM 8xxA on firmware up to 5.4.0 (the build the store says BSI would not rule out flaws in), AK-SC 355 and AK-SM 800 in any version; the web interface or CGI handler reachable from the internet is the exposure test (Danfoss: avoid public IP exposure).
+      Detection concept: web-server access logs on the controller or a front proxy for unusual POST requests to CGI endpoints followed by web-server restarts; authentication logs for logins using the documented default accounts; configuration-change audit (defrost ranges, setpoints) as the safety-relevant post-compromise check.
+      Defender takeaway: remove public exposure first (no fix exists for either flaw today); change default credentials on legacy units; plan replacement of AK-SC 355 / AK-SM 800 with the 800A series.
+  # ---------------------------------------------------------------- 5. update-of vCenter (KEV listing) - low delta
+  - title: "VMware vCenter CVE-2026-123890: CISA adds it to KEV on 2026-11-20 (due 2026-11-23, forensic triage required) and NCSC-NL says it is already actively exploited; VMSA-2026-0009.1 only clarifies VMware Tools versions"
+    novelty: "update-of:2026-11-20/vmware-vcenter-cve-2026-123890-auth-bypass-exploited-gtig"
+    update_type: update
+    borderline: true
+    borderline_reason: "the store entry already states exploitation (GTIG) and already carries the VMSA-2026-0009.1 Tools versions; the delta is the CISA KEV listing with a 3-day BOD 26-04 deadline and NCSC-NL's matching statement; kev_window_diff marks this CVE COVERED, so no record is required"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-20", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0510", publisher: "NCSC-NL (NCSC-2026-0510)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495", publisher: "Broadcom (VMSA-2026-0009.1)", date: "2026-11-20", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-130196", publisher: "ENISA EUVD (EUVD-2026-130196)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CVE-2026-123890 dateAdded 2026-11-20, due 2026-11-23, forensicTriage Yes) -> advisories-ncsc-nl feed, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0510) -> primary: Broadcom VMSA-2026-0009.1, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495"
+    summary: |
+      CISA added CVE-2026-123890 to the KEV catalog on 2026-11-20 with a due date of 2026-11-23 and the forensic-triage flag, naming no actor; NCSC-NL's advisory of the same day says the flaw is already actively exploited, and EUVD lists exploitedSince 2026-11-20. Broadcom's advisory is now version 0009.1 (2026-11-20), whose change log reads that it clarifies the impacted VMware Tools versions; the store entry already shows VMware Tools for Windows 13.x and 12.3 to 12.5 and the fixed builds 13.1.5.0 and 12.5.5, and the vCenter 7.0 row still reads "contact Broadcom Support if you have an extended support contract", so no fixed 7.0 build exists. No public proof of concept or new attribution surfaced in the window; EPSS (FIRST, 2026-11-20) is 0.0084.
+    region_nexus: "global; vCenter is core estate in Swiss federal, cantonal and communal data centres (assessment)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-123890]
+    techniques: [T1210, T1606.002]
+    affected_products: ["VMware vCenter Server"]
+    entity_keys: ["product:vmware-vcenter-server", "actor:verdantbamboo"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "De kwetsbaarheid met kenmerk CVE-2026-123890 wordt al actief misbruikt."
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0510"
+      - quote: "Updated advisory to clarify the impacted VMware Tools versions."
+        attribution: "Broadcom"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495"
+    extended_notes: |
+      Optional record only: cves[].status already exploited; add KEV date and due date 2026-11-23 and the NCSC-NL statement if the main agent wants the entry to name CISA. No priority change needed.
+  # ---------------------------------------------------------------- 6. NEW SAP NetWeaver Enterprise Portal CVE-2025-42884 (KEV)
+  - title: "SAP NetWeaver Enterprise Portal CVE-2025-42884: a year-old JNDI-injection flaw (SAP Security Note 3660969, November 2025 Patch Day) is added to CISA KEV on 2026-11-20 as exploited"
+    novelty: new
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-20", role: "primary" }
+      - { url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/bulletin-2025.html", publisher: "SAP (Security Patch Day bulletins 2025, November 2025 section)", date: "2025-11-11", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2025-42884", publisher: "CVE Program record (SAP CNA; CISA-ADP SSVC and KEV container)", date: "2026-11-20", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2025-60994", publisher: "ENISA EUVD (EUVD-2025-60994)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://www.cybersecurity-help.cz/vdb/SB2025112117", publisher: "Cybersecurity Help (SB2025112117, page updated 2026-11-20)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CVE-2025-42884 dateAdded 2026-11-20, kev-window.txt NOT COVERED row) -> CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog -> primary: SAP bulletin page named in the KEV notes, URL https://support.sap.com/en/my-support/knowledge-base/security-notes-news/bulletin-2025.html (November 2025 section) -> CVE record (SAP CNA), URL https://cveawg.mitre.org/api/cve/CVE-2025-42884 -> WebSearch ('CVE-2025-42884 SAP NetWeaver Enterprise Portal JNDI exploited') found no exploitation report beyond the KEV listing"
+    summary: |
+      CISA added CVE-2025-42884 to its KEV catalog on 2026-11-20 (due 2026-11-23, forensic triage not required); the catalog describes an unauthenticated attacker who injects JNDI environment properties or a URL used in JNDI lookups in SAP NetWeaver Enterprise Portal to disclose or modify server information. The flaw is a year old: SAP fixed it on its November 2025 Patch Day through Security Note 3660969 (priority Medium, CVSS 3.1 6.5, vector AV:N/AC:L/PR:N/UI:N/C:L/I:L/A:N, CWE-943), for EP-BASIS 7.50 and EP-RUNTIME 7.50; the note text is behind SAP's login, so the exact patch level per support package is not public, and SAP's CVE record says there is no availability impact. The CVE record now carries CISA's SSVC decision "Exploitation: active, Automatable: yes, Technical Impact: partial" and ENISA EUVD lists exploitedSince 2026-11-20. No source names an actor, victim, campaign, or the way it is chained; no public exploit report was found in the window (EPSS 0.0028, 20th percentile on 2026-11-20), so the exploitation claim rests on CISA alone. A third-party aggregator describes the impact as arbitrary code execution; SAP's own record does not, and that wording is not carried. This is not CVE-2025-31324 or CVE-2025-42999 (the 2025 Visual Composer chain), which are separate KEV entries.
+    region_nexus: "global; SAP is widely used in Swiss federal and cantonal administrations (assessment); NetWeaver Enterprise Portal 7.50 specifically is not evidenced in any Swiss source and is exposed only where the portal is internet-facing"
+    primary_sector_nexus: "indirect; SAP portal estates"
+    sector: "public-sector"
+    cves: [CVE-2025-42884]
+    techniques: [T1190]
+    affected_products: ["SAP NetWeaver Enterprise Portal"]
+    entity_keys: ["product:sap-enterprise-portal"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    evidence:
+      - quote: "JNDI Injection vulnerability in SAP NetWeaver Enterprise Portal"
+        attribution: "SAP"
+        source_url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/bulletin-2025.html"
+      - quote: "SAP NetWeaver Enterprise Portal allows an unauthenticated attacker to inject JNDI environment properties or pass a URL used during JNDI lookup operations, enabling access to an unintended JNDI provider."
+        attribution: "SAP (CVE record)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2025-42884"
+      - quote: "Potential KEV additions must have a CVE ID, evidence of exploitation, and clear mitigation guidance."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      Disposition for the KEV row: new entry (suggest priority notable, short) or borderline-drop if the main agent judges a 6.5 SAP portal flaw out of scope; the KEV listing with a 3-day due date and a year-old patch argues for a short entry. The credibility ceiling is "exploited per CISA, mechanism unreported".
+      Exposure: SAP NetWeaver AS Java with Enterprise Portal (EP-BASIS and EP-RUNTIME 7.50); the vendor-documented check is whether SAP Security Note 3660969 is implemented (SNOTE / Support Package level); reachable portal URL path from the internet is the exposure condition.
+      Detection concept: web/application access logs of the portal for requests carrying JNDI-style URLs (ldap, rmi, dns schemes) in parameters, and portal JVM outbound connections to LDAP/RMI endpoints it does not normally contact; there is no source-stated post-compromise artefact.
+      Defender takeaway: confirm Note 3660969 is applied on every Enterprise Portal; if it is not, treat the portal as potentially compromised since KEV states exploitation.
+  # ---------------------------------------------------------------- 7. NEW Apache Roller CVE-2026-129448 (KEV)
+  - title: "Apache Roller CVE-2026-129448: unauthenticated XML-RPC deserialization RCE, Apache says it is being exploited, on CISA KEV 2026-11-20; same bug as CVE-2026-82384, public PoC since September, fixed in 6.1.6 (6.1.7 current)"
+    novelty: new
+    borderline: true
+    borderline_reason: "KEV-listed with Apache-confirmed exploitation and a public PoC, but a niche Java blog server with no evidence of Swiss public-sector deployment; two or three sentences are enough, or a borderline-drop line if the main agent applies PD-11 strictly"
+    sources:
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/17/5", publisher: "Apache Software Foundation via oss-security (CVE-2026-129448 announcement)", date: "2026-11-17", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/09/25/17", publisher: "Apache Roller via oss-security (CVE-2026-82384 announcement)", date: "2026-09-25", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-11-20", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-129448", publisher: "CVE Program record (Apache CNA; CISA-ADP SSVC and KEV container)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/apache-warns-of-roller-rce-vulnerability-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-11-18", role: "corroborating" }
+      - { url: "https://roller.apache.org/downloads/downloads.html", publisher: "Apache Roller (downloads, 6.1.7 'best available')", date: "2026-11-21", role: "corroborating" }
+      - { url: "https://corgea.com/research/cve-2026-129448-82384-apache-roller-xml-rpc-deserialization-exploited-november-2026", publisher: "Corgea (secondary analysis; PoC date and 6.1.7 details)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CVE-2026-129448, notes link https://lists.apache.org/thread/cc0jck13nb9vvcmzxzwotr6n16mx28z9, dateAdded 2026-11-20, kev-window.txt NOT COVERED) -> that thread is the September CVE-2026-82384 post -> WebSearch ('CVE-2026-129448 Apache Roller XML-RPC deserialization exploited') -> primary: oss-security copy of the Apache announcement, URL https://www.openwall.com/lists/oss-security/2026/11/17/5 (same text as https://lists.apache.org/thread/lnz4s26tv6hdo03wngtdbpfj4hg4gtds) -> BleepingComputer, URL https://www.bleepingcomputer.com/news/security/apache-warns-of-roller-rce-vulnerability-exploited-in-attacks/ -> Corgea analysis, URL https://corgea.com/research/cve-2026-129448-82384-apache-roller-xml-rpc-deserialization-exploited-november-2026 -> Roller downloads, URL https://roller.apache.org/downloads/downloads.html"
+    summary: |
+      Apache's announcement of 2026-11-17 assigns CVE-2026-129448 (CVSS 3.1 9.8, CWE-502) to Apache Roller 4.0.0 through 6.1.4 and says it is the same vulnerability as CVE-2026-82384, which Apache disclosed on 2026-09-25 for 6.1.5 only, adding "This issue is being actively exploited". The XML-RPC endpoint (/roller-services/xmlrpc in the Roller web application) accepts the XML-RPC library's vendor extension types, including serialized Java objects, and deserializes them while parsing the request, before authentication; the September post adds that the servlet is mapped unconditionally, so parsing happens even when the XML-RPC feature is switched off and no non-default configuration is needed. Apache's fix is Roller 6.1.6 or later (the project's downloads page now offers 6.1.7 as the best available build); without upgrading, set enabledForExtensions to false in WEB-INF/web.xml or remove the XML-RPC servlet mapping and restart, because disabling XML-RPC in the administration UI does not help older versions. CISA added CVE-2026-129448 to KEV on 2026-11-20 with a 2026-11-23 due date and the forensic-triage flag, and the CVE record carries CISA's SSVC "Exploitation: active, Automatable: yes, Technical Impact: total". Apache has published no detail on the attacks, the actor or the number of compromised servers (BleepingComputer); Corgea, a secondary source, states a Python PoC has been public since 2026-09-28 and that a separate client-side deserialization flaw, CVE-2026-123374, is fixed in 6.1.7, neither of which was confirmed against a primary here. EPSS (FIRST, 2026-11-20) is 0.0119 (69th percentile). Roller runs as a WAR, typically in Tomcat, and is not a Maven library, so dependency scanners reading lockfiles will not see it.
+    region_nexus: "global; Roller is niche (group-blog server); no Swiss public-sector deployment is evidenced in any source (assessment: possible at universities and legacy intranet blogs only)"
+    primary_sector_nexus: "indirect, low"
+    sector: "public-sector"
+    cves: [CVE-2026-129448, CVE-2026-82384]
+    techniques: [T1190]
+    affected_products: ["Apache Roller"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:apache-roller", type: product, name: "Apache Roller", aliases: ["Roller"], summary: "Apache's open-source Java multi-user blog server; unauthenticated XML-RPC deserialization RCE CVE-2026-129448 / CVE-2026-82384 is exploited and on CISA KEV (Apache, 2026-11-17; CISA, 2026-11-20)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    evidence:
+      - quote: "This is the same vulnerability as CVE-2026-82384, which listed only Apache Roller 6.1.5 as affected. This issue is being actively exploited."
+        attribution: "Apache Software Foundation"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/17/5"
+      - quote: "Disabling XML-RPC in the administration UI is not enough, because older versions deserialize the request before checking that setting."
+        attribution: "Apache Software Foundation"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/17/5"
+      - quote: "The servlet is mapped unconditionally, so parsing occurs even when the global XML-RPC feature is set to disabled; no non-default configuration is required for this path."
+        attribution: "Apache Roller"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/09/25/17"
+      - quote: "Apache has not yet provided details about these ongoing attacks, including who is responsible and how many servers have already been compromised."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/apache-warns-of-roller-rce-vulnerability-exploited-in-attacks/"
+    extended_notes: |
+      Exposure: any Roller 4.0.0 to 6.1.5 where /roller-services/xmlrpc is reachable, including sites that switched XML-RPC off in the admin UI; the check is the deployed WAR version against the affected range and the enabledForExtensions setting in web.xml (Apache names both).
+      Detection concept: web/reverse-proxy access logs for POST requests to the XML-RPC servlet path from unfamiliar sources, especially large base64 bodies, followed by child processes spawned by the Tomcat/JVM user (shell, curl, wget) and new files under the web application directory; KEV flags forensic triage, so check the host before patching over it.
+      Triage: legitimate desktop blogging clients also POST to this endpoint; discriminate on source address, request size and any following JVM child process.
+      Defender takeaway: upgrade to 6.1.6 or later (6.1.7 preferred), or remove the servlet mapping; block the XML-RPC path at the proxy if no desktop blogging client is used.
+  # ---------------------------------------------------------------- 8. NEW F5 BIG-IP November 2026 quarterly notification (published 2026-11-18, uncovered)
+  - title: "F5 BIG-IP quarterly notification of 2026-11-18: six unauthenticated CVSS 9.8 TMM stack overflows (iRule commands PSC::ip_address, MR::message route, GENERICMESSAGE::route, PEM::subscriber, DNS::scrape; APM Client Information plus Endpoint Security agents) that can crash TMM or give code execution, fixed only by engineering hotfixes"
+    novelty: new
+    borderline: true
+    borderline_reason: "published 2026-11-18, about 36 h before the window start and never covered by a store entry (the 2026-11-19 and 2026-11-20 fires did not carry it); sources inside the window do not exist, but six pre-auth 9.8 flaws in the data plane of an edge product with hotfix-only fixes meet the critical/high completeness duty; main agent decides"
+    sources:
+      - { url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html", publisher: "The Hacker News", date: "2026-11-18", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-116953", publisher: "F5 CNA record (CVE-2026-116953; referenced K000163941)", date: "2026-11-18", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-123637", publisher: "F5 CNA record (CVE-2026-123637; referenced K000163937)", date: "2026-11-18", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0508", publisher: "NCSC-NL (NCSC-2026-0508)", date: "2026-11-19", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl feed, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0508 'Kwetsbaarheden verholpen in F5 BIG-IP', 2026-11-19T13:29Z; ncsc-nl csaf NCSC-2026-0508 lists 12 CVEs and the F5 K-article references) -> F5 K-articles are unreadable (my.f5.com SPA shell on extract and WebFetch) -> WebSearch ('F5 BIG-IP November 2026 quarterly security notification CVE-2026-116953 CVE-2026-120285 TMM') -> The Hacker News, URL https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html -> primary: F5 CNA CVE records read through the CVE Services API, URLs https://cveawg.mitre.org/api/cve/CVE-2026-116953 and https://cveawg.mitre.org/api/cve/CVE-2026-123637"
+    summary: |
+      F5's quarterly security notification of 2026-11-18 (K000164058, 22 advisories including 10 for NGINX, unreadable on this transport) fixes six CVSS 3.1 9.8 (CVSS 4.0 9.3) vulnerabilities in the BIG-IP data plane: stack-based buffer overflows in the Traffic Management Microkernel that a remote unauthenticated attacker can use to terminate TMM, disrupting traffic until it restarts, and that "may lead to remote code execution". Each needs a specific configuration on a virtual server, per F5's CNA records and The Hacker News: CVE-2026-120285 (HTTP profile plus an iRule using PSC::ip_address), CVE-2026-120292 (HTTP profile plus an iRule using MR::message route), CVE-2026-116953 (an iRule using GENERICMESSAGE::route on client traffic), CVE-2026-121805 (an iRule using PEM::subscriber on client traffic), CVE-2026-120722 (an iRule using DNS::scrape on client traffic) and CVE-2026-123637 (an APM per-request policy containing both the Client Information and Endpoint Security agents). The branches listed as affected are BIG-IP 21.1.0, 17.5.0 and 17.1.0 and BIG-IP Next for Kubernetes 2.2 to 2.4 (and BIG-IP Next CNF for some of them); F5 lists no workaround, and the only fixes are engineering hotfixes issued between scheduled releases, which F5 says do not undergo the full QA of scheduled releases (a system on a custom hotfix needs a new one from F5 support). WatchTowr researcher Sina Kheirkhah reported four of the six, F5 found two; F5's advisories state no exploitation, CISA's SSVC entries for four of the CVEs (CVE-2026-120285, -120292, -120722, -121805) read "Exploitation: none, Automatable: yes", and EPSS (FIRST, 2026-11-20) is about 0.007 for the iRule flaws. The same notification carries lower-rated BIG-IP and BIG-IQ flaws, notably CVE-2026-125274 (iControl SOAP, 8.8, authenticated Guest role or higher, command execution; fixed in 21.1.0.3, 17.5.1.10, 17.1.3.6 and BIG-IQ 8.4.2.3) and several APM TMM crash flaws (7.5). This is separate from the 2026-09-22 APM heap overflow CVE-2026-94127 that was exploited and is on KEV.
+    region_nexus: "global; BIG-IP (LTM, APM, DNS) is widely deployed in Swiss federal, cantonal and university networks (assessment); the APM and iRule configurations are the check"
+    primary_sector_nexus: "direct where APM per-request policies with Client Information and Endpoint Security agents, or the named iRule commands, are in use"
+    sector: "public-sector"
+    cves: [CVE-2026-120285, CVE-2026-120292, CVE-2026-116953, CVE-2026-121805, CVE-2026-120722, CVE-2026-123637, CVE-2026-125274]
+    techniques: [T1190, T1499.004]
+    affected_products: ["F5 BIG-IP", "F5 BIG-IP Access Policy Manager (APM)", "F5 BIG-IP Next for Kubernetes"]
+    entity_keys: ["product:f5-big-ip", "product:f5-big-ip-access-policy-manager-apm"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - quote: "None of the company's advisories says the flaws have been exploited."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html"
+      - quote: "For the six critical flaws, the only fixes are engineering hotfixes, builds that the company issues between its normal software releases."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html"
+      - quote: "undisclosed requests can cause the Traffic Management Microkernel (TMM) to terminate and may lead to remote code execution (RCE)."
+        attribution: "F5 (CNA record)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-116953"
+      - quote: "When BIG-IP APM is provisioned and a per-request policy that includes the Client Information agent and Endpoint Security agents is applied to a virtual server, undisclosed requests can cause the Traffic Management Microkernel (TMM) to terminate and may lead to remote code execution (RCE)."
+        attribution: "F5 (CNA record)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-123637"
+    extended_notes: |
+      Fixed-version precision gap: F5's K-articles (hotfix build names per branch) could not be read; the only fixed builds confirmed from sources are for the lower-rated flaws (CVE-2026-125274: 21.1.0.3, 17.5.1.10, 17.1.3.6) and BIG-IP Next for Kubernetes EHF builds (BNK-2.4.2-EHF1, BNK-2.3.4-EHF1, BNK-2.2.5-EHF1, per The Hacker News). The F5 CNA records list affected branches as 21.1.0, 17.5.0 and 17.1.0 with a wildcard upper bound, so "all builds on these branches until a hotfix is applied" is the supportable statement; the first-party K-articles are the open work. Sources are two vendor CNA records and one trade-press article plus NCSC-NL's relay; a supplementary read of K000163937-K000163946 needs a transport that renders the myF5 SPA.
+      Exposure: virtual servers carrying the named iRule commands (PSC::ip_address, MR::message route, GENERICMESSAGE::route, PEM::subscriber, DNS::scrape) or an APM per-request policy with both the Client Information and Endpoint Security agents; the data plane is exposed, the management interface is not (F5, via THN).
+      Detection concept: TMM restarts or core files (traffic disruption events) correlated with requests to the affected virtual servers; HA failover events on the BIG-IP pair; no source-stated exploitation artefact.
+      Defender takeaway: inventory iRules for the five commands and APM policies for the agent pair, and request the engineering hotfix for the branch; where the iRule is not needed, remove it (F5 lists no workaround, so removal is the only configuration lever, an assessment).
+  # ---------------------------------------------------------------- 9. NEW Splunk November 2026 advisories (published 2026-11-18, uncovered)
+  - title: "Splunk Enterprise SVD-2026-1103 (2026-11-18): unauthenticated authentication bypass through an empty pass4SymmKey on standalone instances (CVE-2026-76535 RapidDiag 9.1, CVE-2026-76536 cluster configuration REST API 9.4, CVE-2026-131192 7.5), fixed in 10.6.1, 10.4.5, 10.2.9, 10.0.12 and 9.4.17; Enterprise Security 8.7.0 and SOAR 8.8.0 also carry Critical advisories"
+    novelty: new
+    borderline: true
+    borderline_reason: "published 2026-11-18, outside the 26 h window by more than two days and absent from the store; unauthenticated, network-reachable flaws in a platform most SOCs run, with a documented configuration lever, so the critical/high completeness duty argues for a short entry; no exploitation reported"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1103", publisher: "Splunk (SVD-2026-1103, Splunk Enterprise)", date: "2026-11-18", role: "primary" }
+      - { url: "https://advisory.splunk.com/", publisher: "Splunk Security Advisories (index: SVD-2026-1104 to -1113 titles and severities)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/search?text=Splunk&fromDate=2026-11-18&toDate=2026-11-21&page=0&size=30", publisher: "ENISA EUVD (Splunk records EUVD-2026-130697 and -130587)", date: "2026-11-19", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd search sweep, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-19&toDate=2026-11-21&page=0&size=100 (EUVD-2026-130697, Splunk 9.4, 'empty clustering shared secret') -> WebSearch ('Splunk Security Advisory SVD-2026 November 2026 ... empty shared secret clustering unauthenticated') -> advisory index, URL https://advisory.splunk.com/ (SVD-2026-1103 to -1113) -> primary: SVD-2026-1103, URL https://advisory.splunk.com/advisories/SVD-2026-1103"
+    summary: |
+      Splunk's November 2026 advisory release (2026-11-18) rates the Splunk Enterprise advisory SVD-2026-1103 Critical, highest CVSS 3.1 9.4, and fixes it in 10.6.1, 10.4.5, 10.2.9, 10.0.12 and 9.4.17. Three of its flaws need no authentication and rest on Splunk accepting an empty shared secret: CVE-2026-76535 (9.1; an unauthenticated user can run arbitrary SPL searches through RapidDiag task collection as an authenticated user, because the empty shared secret is accepted for RapidDiag requests), CVE-2026-76536 (9.4; an unauthenticated user can read and modify clustering configuration through the cluster configuration REST API on a standalone instance with clustering turned off) and CVE-2026-131192 (7.5; an unauthenticated user can read live event data from the indexing pipeline through the REST API on a standalone instance or a search head that is not a cluster member). Splunk's documented workaround is to set a non-empty pass4SymmKey (at least 12 characters, identical on every participating node) in the clustering stanza of server.conf, including on standalone instances, and restart. The release also carries High SPL-injection and authorization flaws needing a low-privilege account (up to 8.8), and Splunk lists Critical advisories for Enterprise Security (SVD-2026-1106, fixed 8.7.0), SOAR (SVD-2026-1108, fixed 8.8.0) and third-party package updates (SVD-2026-1104, -1107, -1109), plus informational notices on Java4Shell, NGINX and PHP. No exploitation is reported; EPSS (FIRST, 2026-11-20) is about 0.003 for the three unauthenticated CVEs.
+    region_nexus: "global; Splunk Enterprise is a common SIEM in public-sector SOCs (assessment)"
+    primary_sector_nexus: "indirect; a Splunk REST API reachable by untrusted networks is the exposure"
+    sector: "public-sector"
+    cves: [CVE-2026-76535, CVE-2026-76536, CVE-2026-131192]
+    techniques: [T1190, T1078]
+    affected_products: ["Splunk Enterprise"]
+    entity_keys: ["product:splunk-enterprise"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    evidence:
+      - quote: "an unauthenticated user could use an empty clustering shared secret to read and modify clustering configuration through the cluster configuration Representational State Transfer (REST) API endpoint on a standalone instance."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "an unauthenticated user could run arbitrary Search Processing Language (SPL) searches through RapidDiag task collection as an authenticated user."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "Upgrade Splunk Enterprise versions 10.6.1, 10.4.5, 10.2.9, 10.0.12, and 9.4.17 or higher."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "Turn off requests authenticated with an empty shared secret by setting"
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+    extended_notes: |
+      Single vendor source (Splunk is the disclosing party for its own product; EUVD mirrors Splunk's records). The advisory page does not name a management port; carry none.
+      Exposure: splunkd REST API reachable by untrusted networks on standalone Splunk Enterprise instances or non-cluster-member search heads with an empty clustering pass4SymmKey; the check is the pass4SymmKey value in the clustering stanza of server.conf (Splunk's own mitigation text).
+      Detection concept: splunkd REST access logs (_internal splunkd_access) for requests to the cluster configuration, RapidDiag and pipeline endpoints from non-cluster addresses and without a user session; changes to clustering configuration on standalone nodes; unexpected RapidDiag task collection or ad-hoc searches attributed to a service context.
+      Defender takeaway: set a strong pass4SymmKey everywhere (including standalone), then upgrade to the fixed build for the branch; Enterprise Security and SOAR users also need 8.7.0 and 8.8.0.
+  # ---------------------------------------------------------------- 10. NEW WordPress 7.1.5 security release (lookback item, 2026-11-18)
+  - title: "WordPress 7.1.5 security release (2026-11-18): twenty fixes including an unauthenticated Template Part block-attribute privilege escalation that can lead to remote code execution through an editor's session, an unauthenticated SQL injection in WP_Meta_Query, multisite Super Admin takeover and an unauthenticated XML-RPC pingback denial of service"
+    novelty: new
+    lookback: true
+    sources:
+      - { url: "https://wordpress.org/news/2026/11/wordpress-7-1-5-release/", publisher: "WordPress.org News (7.1.5 release)", date: "2026-11-18", role: "primary" }
+      - { url: "https://patchstack.com/articles/wordpress-7-1-5-security-release/", publisher: "Patchstack (code-level analysis)", date: "2026-11-18", role: "corroborating" }
+    discovery_trace: "first seen at: wordpress-org-news feed, URL https://wordpress.org/news/category/security/feed/ (WordPress 7.1.5 Release, 2026-11-18T17:08Z, inside the 168 h lookback) -> primary: release post, URL https://wordpress.org/news/2026/11/wordpress-7-1-5-release/ -> WebSearch ('WordPress 7.1.5 security release SQL injection WP_Meta_Query CVE multisite privilege escalation November 2026') -> Patchstack analysis, URL https://patchstack.com/articles/wordpress-7-1-5-security-release/"
+    summary: |
+      WordPress 7.1.5 (2026-11-18, a short-cycle security release; the next major release 7.2 is planned for 2026-12-08) lists fixes for multiple issues; Patchstack counts twenty fixes, eighteen of them exploitable vulnerabilities and two hardening changes, and the release follows 7.1.4, which three weeks earlier fixed an unauthenticated core-update race (CVE-2026-119977). The ones that start without credentials are: privilege escalation via Template Part block attributes that WordPress says can lead to remote code execution (Patchstack's code reading is REST path injection through an unchecked entity key in the block editor, reaching the administrator's own plugin-installation endpoints with the administrator's credentials when an editor or administrator opens the crafted block markup, so it needs one privileged user interaction), an SQL injection in WP_Meta_Query via nested relation values (reachable only where a plugin or theme passes request data into meta_query), stored XSS via shortcode attributes in comments (needs a page with a Latest Comments block), unauthenticated denial of service via batched XML-RPC pingbacks, and unauthenticated disclosure of private taxonomy terms through the REST search endpoint; further fixes include a multisite privilege escalation from site Administrator to Super Admin through Customizer menu previews, an SQL injection through the front-page setting in Customizer changeset previews (administrator), and many XSS and disclosure flaws at Contributor, Author, Editor and Subscriber level. Security fixes were backported to all branches eligible for them, currently through 4.7, with backports shipping as they become ready. No CVE identifiers were found in the release post or Patchstack's article, no exploitation is reported, and the backport branch build numbers were not captured (the release post says the backports are in progress and ship as they become ready), so no per-branch fixed list is carried.
+    region_nexus: "global; WordPress core runs a large share of communal and cantonal websites (assessment, no Swiss-specific source)"
+    primary_sector_nexus: "direct for sites that run WordPress core, indirect otherwise"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1059.007]
+    affected_products: ["WordPress Core"]
+    entity_keys: ["product:wordpress-core"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    evidence:
+      - quote: "This security release features fixes for multiple issues."
+        attribution: "WordPress.org"
+        source_url: "https://wordpress.org/news/2026/11/wordpress-7-1-5-release/"
+      - quote: "Unauthenticated privilege escalation via Template Part block attributes that could lead to remote code execution"
+        attribution: "WordPress.org"
+        source_url: "https://wordpress.org/news/2026/11/wordpress-7-1-5-release/"
+      - quote: "It counts as unauthenticated because the attacker only has to get the block markup in front of someone who can open it."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/wordpress-7-1-5-security-release/"
+      - quote: "As a courtesy, the security fixes were backported to all branches eligible to receive security fixes (currently through 4.7)."
+        attribution: "WordPress.org"
+        source_url: "https://wordpress.org/news/2026/11/wordpress-7-1-5-release/"
+    extended_notes: |
+      Lookback item (wordpress-org-news lookback 168 h): published inside the record's lookback and not yet in the store. Suggest priority notable at most: no exploitation, the headline RCE needs a privileged user to open attacker-controlled content, and the release post says sites that support automatic background updates will start the update on their own. Short entry advised.
+      Exposure: the WordPress version shown in the dashboard Updates screen (7.1.4 and earlier on the 7.1 branch; backport branches per the release post); whether automatic background updates are enabled; multisite installations for the Super Admin flaw.
+      Detection concept: web access logs for comment submissions containing hex or octal escape sequences in shortcode attributes and for batched xmlrpc.php pingback requests; for the editor-session path, REST requests with dot-segment or encoded-slash entity keys issued from an admin session, and unexpected plugin installation events after an editor opens untrusted content.
+      Defender takeaway: confirm 7.1.5 (or the backported build) installed; on multisite review Super Admin accounts created after the preview-path exposure.
+  # ---------------------------------------------------------------- 11. NEW Poste.io CVE-2026-127027 (CERT.PL, in window)
+  - title: "Poste.io CVE-2026-127027: unauthenticated root command injection in DMARC report processing through an email to port 25, fixed in 2.5.22 (CERT Polska, 2026-11-20)"
+    novelty: new
+    borderline: true
+    borderline_reason: "in window with a first-class CERT primary and a pre-auth root RCE reachable by plain SMTP, but Poste.io is a niche self-hosted mail-server container with no evidence of Swiss public-sector use and no exploitation or public PoC reported"
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/11/CVE-2026-127027/", publisher: "CERT Polska (CVE-2026-127027)", date: "2026-11-20", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd search sweep, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-19&toDate=2026-11-21&page=0&size=100 (EUVD-2026-131592, Analogic Poste.io, CVSS 4.0 9.2, references cert.pl) -> primary: CERT Polska advisory, URL https://cert.pl/en/posts/2026/11/CVE-2026-127027/"
+    summary: |
+      CERT Polska's coordinated disclosure of 2026-11-20 describes CVE-2026-127027 (CVSS 4.0 9.2, CWE-78) in all Analogic Poste.io versions before 2.5.22: email sent to the dmarc-reports mailbox of a domain is stored without sender verification, and a script running as root unpacks the attachments with unsafe shell commands, so command injection through crafted attachment names or archive contents lets a remote unauthenticated attacker who can send mail to the server's port 25 run commands as root inside the Poste.io container. The fix is version 2.5.22; no workaround, exploitation or public exploit is stated in the advisory, and the finder is credited as logrox.
+    region_nexus: "global; Poste.io is a niche self-hosted mail server (assessment: small organisations and communes would be the plausible users)"
+    primary_sector_nexus: "indirect, low"
+    sector: "public-sector"
+    cves: [CVE-2026-127027]
+    techniques: [T1190, T1566.001]
+    affected_products: ["Poste.io"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:poste-io", type: product, name: "Poste.io", aliases: ["Analogic Poste.io"], summary: "Analogic's self-hosted mail-server container; CVE-2026-127027 unauthenticated root command injection through DMARC report email, fixed in 2.5.22 (CERT Polska, 2026-11-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    evidence:
+      - quote: "A remote unauthenticated attacker who can send an email to the server's port 25 can execute arbitrary commands as root within the Poste.io container."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/11/CVE-2026-127027/"
+      - quote: "This issue was fixed in version 2.5.22."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/11/CVE-2026-127027/"
+    extended_notes: |
+      Technique T1566.001 is a stretch (the delivery is an email to a service mailbox, not user phishing); the main agent may keep only T1190. Exposure: any Poste.io before 2.5.22 reachable on SMTP (the advisory names the dmarc-reports mailbox of the domain as the entry point). Detection concept: mail-server logs for messages to the DMARC reports mailbox from non-reporting senders with archive attachments, followed by shell child processes of the report-processing script in the container.
+cve_table:
+  - { cve: CVE-2026-76466, product: "Cisco Expressway-C and Expressway-E (virtual and appliance)", cvss: "9.8 (CVSS 3.1)", epss: 0.00417, kev: true, exploited: true, affected: "devices configured in a cluster on X15.5.3 and earlier, and on X14 and earlier", fixed: "X15.5.20 (X14 and earlier: migrate to a fixed release); no workaround", type: rce, vector: zero-click, auth: pre-auth, source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t" }
+  - { cve: CVE-2025-42884, product: "SAP NetWeaver Enterprise Portal", cvss: "6.5 (CVSS 3.1)", epss: 0.00276, kev: true, exploited: true, affected: "EP-BASIS 7.50 and EP-RUNTIME 7.50", fixed: "SAP Security Note 3660969 (November 2025 Patch Day; note text login-gated)", type: injection, vector: zero-click, auth: pre-auth, source: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/bulletin-2025.html" }
+  - { cve: CVE-2026-129448, product: "Apache Roller", cvss: "9.8 (CVSS 3.1)", epss: 0.01191, kev: true, exploited: true, affected: "4.0.0 through 6.1.4 (this CVE); 6.1.5 is CVE-2026-82384, the same bug", fixed: "6.1.6 or later (6.1.7 current); stop-gap: enabledForExtensions=false in WEB-INF/web.xml or remove the XML-RPC servlet mapping", type: deserialization, vector: zero-click, auth: pre-auth, source: "https://www.openwall.com/lists/oss-security/2026/11/17/5" }
+  - { cve: CVE-2026-82384, product: "Apache Roller", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: true, affected: "6.1.5 (original disclosure 2026-09-25)", fixed: "6.1.6 or later", type: deserialization, vector: zero-click, auth: pre-auth, source: "https://www.openwall.com/lists/oss-security/2026/09/25/17" }
+  - { cve: CVE-2026-123890, product: "VMware vCenter Server", cvss: "9.8 (CVSS 3.1)", epss: 0.00843, kev: true, exploited: true, affected: "vCenter 7.0; 8.0 before 8.0 U3m; 9.0 before 9.0.2.0200; 9.1 before 9.1.1.0200; VCF 5.x before 5.2.5; Telco Cloud Platform and Infrastructure per KB463116", fixed: "8.0 U3m; 9.0.2.0200; 9.1.1.0200; VCF 5.2.5; vCenter 7.0: contact Broadcom Support with an extended support contract", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495" }
+  - { cve: CVE-2026-123007, product: "NGINX Open Source (and PAN-OS, Panorama, Siemens Industrial Edge, Cisco NX-OS and ISE 3.5 downstream)", cvss: "9.2 (CVSS 4.0, NCSC-NL, Rapid7 and Siemens); 8.1 (CVSS 3.1, Siemens)", epss: 0.06033, kev: false, exploited: false, affected: "nginx 1.9.5 to 1.30.6 and 1.31.0 to 1.31.8 with HTTP/2; PAN-OS 11.2.8 to 12.2.4-h* and Panorama with HTTP/2 enabled; Siemens Industrial Edge Cloud, Own, Virtual Device and Device Kit all versions; Cisco NX-OS and ISE 3.5", fixed: "nginx 1.30.7 and 1.31.9; PAN-OS 12.2.4-h3, 12.1.10-h6, 12.1.7-h15, 11.2.16-h3, 11.2.13-h6, 11.2.10-h19; Cisco ISE 3.5 Patch 5 (December 2026); Siemens: no fix yet", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://security.paloaltonetworks.com/CVE-2026-123633" }
+  - { cve: CVE-2026-123633, product: "NGINX Open Source (and PAN-OS, Panorama downstream)", cvss: "9.2 (CVSS 4.0)", epss: 0.06086, kev: false, exploited: false, affected: "nginx 1.19.7 to 1.30.6 and 1.31.0 to 1.31.8 with HTTP/2 proxying; PAN-OS and Panorama with HTTP/2 enabled", fixed: "nginx 1.30.7 and 1.31.9; PAN-OS builds as for CVE-2026-123007", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://security.paloaltonetworks.com/CVE-2026-123633" }
+  - { cve: CVE-2026-114938, product: "Oracle Java SE / OpenJDK (Siemens Siveillance Control and Control Pro, Industrial Edge Management Pro and Virtual downstream)", cvss: "9.2 (Calif); 8.1 (CVSS 3.1, Siemens); 8.8 (CVSS 3, Amazon Linux)", epss: 0.00907, kev: false, exploited: false, affected: "Oracle Java SE 8u511b33-perf, 17.0.21.0.3, 21.0.13.0.3, 25.0.5.0.3, 27.0.1.0.3 on x86-64 with AVX-512 VBMI; Siemens Siveillance Control, Control Pro and Industrial Edge Management Pro V1/V2 and Virtual, all versions", fixed: "Oracle November 2026 builds; Siemens: no fix, interim JVM option disabling the Base64 intrinsics; Cisco Secure Network Analytics patches planned for 7.6.1, 7.6.0 and 7.5.3, dates TBD", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cert-portal.siemens.com/productcert/html/ssa-810379.html" }
+  - { cve: CVE-2026-129713, product: "Danfoss AK-SM 8xxA series", cvss: "9.3 (CVSS 4.0)", epss: null, kev: false, exploited: false, affected: "firmware 5.4.0 and earlier", fixed: "none today; upcoming 5.5.x", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/" }
+  - { cve: CVE-2026-127057, product: "Danfoss AK-SC 355 and AK-SM 800 (legacy)", cvss: "9.9 (CVSS 4.0)", epss: null, kev: false, exploited: false, affected: "all versions (default credentials documented in the manual)", fixed: "none; migrate to the AK-SM 800A series; remove internet exposure", type: default-credentials, vector: zero-click, auth: none-required-default-credentials, source: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/" }
+  - { cve: CVE-2026-120285, product: "F5 BIG-IP (HTTP profile plus iRule PSC::ip_address); BIG-IP Next for Kubernetes and CNF", cvss: "9.8 (CVSS 3.1) / 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: false, affected: "BIG-IP branches 21.1.0, 17.5.0, 17.1.0; BNK 2.2 to 2.4; CNF 2.2 to 2.4", fixed: "engineering hotfixes only (K-article build names not read); BNK-2.4.2-EHF1, BNK-2.3.4-EHF1, BNK-2.2.5-EHF1 and CNF-2.4.2-EHF1, CNF-2.3.4-EHF1, CNF-2.2.5-EHF1 per The Hacker News; no workaround", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cveawg.mitre.org/api/cve/CVE-2026-120285" }
+  - { cve: CVE-2026-120292, product: "F5 BIG-IP (HTTP profile plus iRule MR::message route); BIG-IP Next for Kubernetes", cvss: "9.8 (CVSS 3.1) / 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: false, affected: "BIG-IP branches 21.1.0, 17.5.0, 17.1.0; BNK 2.2 to 2.4", fixed: "engineering hotfixes only; no workaround", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cveawg.mitre.org/api/cve/CVE-2026-120292" }
+  - { cve: CVE-2026-116953, product: "F5 BIG-IP (iRule GENERICMESSAGE::route on client traffic); BIG-IP Next for Kubernetes", cvss: "9.8 (CVSS 3.1) / 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: false, affected: "BIG-IP branches 21.1.0, 17.5.0, 17.1.0; BNK 2.2 to 2.4", fixed: "engineering hotfixes only; no workaround", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cveawg.mitre.org/api/cve/CVE-2026-116953" }
+  - { cve: CVE-2026-121805, product: "F5 BIG-IP PEM (iRule PEM::subscriber on client traffic); BIG-IP Next for Kubernetes and CNF", cvss: "9.8 (CVSS 3.1) / 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: false, affected: "BIG-IP branches 21.1.0, 17.5.0, 17.1.0; BNK and CNF 2.2 to 2.4", fixed: "engineering hotfixes only; no workaround", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cveawg.mitre.org/api/cve/CVE-2026-121805" }
+  - { cve: CVE-2026-120722, product: "F5 BIG-IP DNS (iRule DNS::scrape on client traffic); BIG-IP Next for Kubernetes", cvss: "9.8 (CVSS 3.1) / 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: false, affected: "BIG-IP branches 21.1.0, 17.5.0, 17.1.0; BNK 2.2 to 2.4 (CNF status conflicts between F5's advisory and CVE record)", fixed: "engineering hotfixes only; no workaround", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cveawg.mitre.org/api/cve/CVE-2026-120722" }
+  - { cve: CVE-2026-123637, product: "F5 BIG-IP APM (per-request policy with Client Information and Endpoint Security agents)", cvss: "9.8 (CVSS 3.1) / 9.3 (CVSS 4.0)", epss: 0.00772, kev: false, exploited: false, affected: "BIG-IP APM on branches 21.1.0, 17.5.0, 17.1.0", fixed: "engineering hotfixes only; no workaround", type: memory-corruption, vector: zero-click, auth: pre-auth, source: "https://cveawg.mitre.org/api/cve/CVE-2026-123637" }
+  - { cve: CVE-2026-125274, product: "F5 BIG-IP iControl SOAP; BIG-IQ", cvss: "8.8 (CVSS 3.1)", epss: 0.00517, kev: false, exploited: false, affected: "BIG-IP 21.x, 17.5.x and 17.1.x before the fixed builds; BIG-IQ 8.4.x before 8.4.2.3 (F5 CNA record and The Hacker News)", fixed: "BIG-IP 21.1.0.3, 17.5.1.10, 17.1.3.6; BIG-IQ 8.4.2.3", type: command-injection, vector: network, auth: post-auth-guest, source: "https://cveawg.mitre.org/api/cve/CVE-2026-125274" }
+  - { cve: CVE-2026-76535, product: "Splunk Enterprise (RapidDiag REST API)", cvss: "9.1 (CVSS 3.1)", epss: 0.00367, kev: false, exploited: false, affected: "below 10.6.1, 10.4.5, 10.2.9, 10.0.12 and 9.4.17", fixed: "10.6.1, 10.4.5, 10.2.9, 10.0.12, 9.4.17; workaround: non-empty pass4SymmKey", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://advisory.splunk.com/advisories/SVD-2026-1103" }
+  - { cve: CVE-2026-76536, product: "Splunk Enterprise (cluster configuration REST API, standalone instance)", cvss: "9.4 (CVSS 3.1)", epss: 0.0031, kev: false, exploited: false, affected: "below 10.4.5, 10.2.9, 10.0.12 and 9.4.17", fixed: "10.4.5, 10.2.9, 10.0.12, 9.4.17 (the advisory table also lists 10.6.1); workaround: strong unique pass4SymmKey (12 or more characters) in the clustering stanza", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://advisory.splunk.com/advisories/SVD-2026-1103" }
+  - { cve: CVE-2026-131192, product: "Splunk Enterprise (REST API, standalone or non-member search head)", cvss: "7.5 (CVSS 3.1)", epss: 0.00354, kev: false, exploited: false, affected: "below 10.6.1, 10.4.5, 10.2.9, 10.0.12 and 9.4.17", fixed: "10.6.1, 10.4.5, 10.2.9, 10.0.12, 9.4.17; workaround: strong pass4SymmKey", type: auth-bypass, vector: zero-click, auth: pre-auth, source: "https://advisory.splunk.com/advisories/SVD-2026-1103" }
+  - { cve: CVE-2026-127027, product: "Analogic Poste.io", cvss: "9.2 (CVSS 4.0)", epss: null, kev: false, exploited: false, affected: "all versions before 2.5.22", fixed: "2.5.22", type: command-injection, vector: zero-click, auth: pre-auth, source: "https://cert.pl/en/posts/2026/11/CVE-2026-127027/" }
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured; the sweep is a no-op (empty sweep line as instructed)"
+candidate_sources:
+  - id: danfoss-security-advisories
+    publisher: "Danfoss coordinated vulnerability disclosure (security advisories)"
+    url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/"
+    category: vulns
+    why: "First-party advisories (DSA-2026-12-01 and -02, 2026-11-20) with CVE ids for the AK-SM and AK-SC refrigeration controllers behind the Swiss-nexus October campaign; the store entry notes the advisories page named none of the flaws on 2026-11-14, so a per-run check is the only way a vendor fix or CVE reaches the entry. The detail pages read cleanly with extract; the listing page was not fetched in this run (add the listing as the record URL after a probe)."
+  - id: f6-press-releases
+    publisher: "F6 (Russian cyber-security vendor, press releases and blog)"
+    url: "https://www.f6.ru/media-center/press-releases/"
+    category: vendor-research
+    why: "First-hand incident-response reporting in Russian that led by days: the first observed exploitation of Cisco Expressway CVE-2026-76466 (press release of 2026-11-18, extract reads it; CNews relayed it in Russian). Reliability B for its own casework (vendor telemetry, not independently verified); the listing page was not fetched, only the detail page."
+  - id: apache-tomcat-security
+    publisher: "Apache Tomcat security pages (security-9, -10, -11)"
+    url: "https://tomcat.apache.org/security-11.html"
+    category: vulns
+    why: "Tomcat is the application server under most Java public-sector web applications (and under Apache Roller); the page lists fixes with report and public dates and reads with extract; the 2026-11-19 critical (CVE-2026-133325, cluster TLS-PSK on TLS 1.3, fix pending in 11.0.30) is an example of an item no slice record covers."
+coverage_gaps:
+  - source_id: f5-k-articles
+    reason: "Rotation-priority gap: no such record exists in sources/sources.json. my.f5.com is a Salesforce SPA: `extract https://my.f5.com/manage/s/article/K000164058` returns the HTML shell and WebFetch returns a myF5 loading placeholder (two articles tried). Working recipe found: F5 publishes its CVE records as a CNA, so `python3 tools/fetch_source.py url --direct https://cveawg.mitre.org/api/cve/<CVE-ID>` returns the affected branches, descriptions, references (K-article ids) and the CISA-ADP SSVC block; The Hacker News and NCSC-NL (`ncsc-nl csaf <id>` lists every F5 K-article id) fill the hotfix and fixed-version detail. Fixed-build names for the six critical BIG-IP flaws remain unread."
+  - source_id: perforce-portal
+    reason: "Rotation-priority gap: no such record exists in sources/sources.json. The Puppet Enterprise advisory (CVE-2026-115731 and -115732) was not re-read at Perforce's portal in this run; the store entry already carries the KEV listing (2026-11-17) and the NCSC.ch advisory of 2026-11-19 exists; WebSearch surfaced no in-window revision and no source named a new fixed build."
+  - source_id: belden-psirt
+    reason: "HTML listing 403 on every transport (known); the reader pool is dead (all keys answer HTTP 402). WebSearch surfaced only PSIRT-4 to -7 PDFs (newest 2026-09-09 / 2026-09-04 per the header and revision log) and nothing in the 168 h lookback; no recipe change."
+  - source_id: techora.ru
+    reason: "Not a slice record: techora.ru serves a JS/video 'checking your browser' interstitial to extract and WebFetch, so the Russian re-report of the F6 case was unreadable; F6's own press release (extract) and CNews carry the same content. Recipe note: `url --direct https://zoom.cnews.ru/...` returns cp1251 text that the bridge decodes as latin-1, so the stdout is double-encoded mojibake; recover it with s.encode('latin-1').decode('cp1251') (the `extract` output of the same page is mojibake as well)."
+  - source_id: securitylab.ru
+    reason: "HTTP 403 ('Access to www.securitylab.ru is forbidden') on extract; not a slice record; no recipe."
+  - source_id: jina-reader
+    reason: "All ten jina reader keys answered HTTP 402 during this run (extract fell through them and still returned content from trafilatura-direct for most hosts); two hosts (lists.apache.org announce thread, n-able.com blog) were served by the reader after rotation."
+  - source_id: cisa-advisories
+    reason: "Working recipe confirmed today: WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories returns a clean 10-item listing with titles, dates and hrefs, and WebFetch of the per-alert URL reads the alert text; `cisa csaf-recent` returned the newest ICS advisories (icsa-26-323-01 to -03, released 2026-11-19, outside the window), so no ICS advisory fell inside the window. The cisa.gov all.xml feed was not retried (known 403)."
+triage_drops:
+  # One-line drop reasons for in-window or near-window candidates that did not clear the gates (the main agent may overrule; none was dropped silently)
+  - "Mitel MISA-2026-0013 (OpenScape 4000, existing entry): advisory page still v1.0 of 2026-11-18 and still says CVE ids are requested but not assigned (read 2026-11-21); EUVD and NVD keyword searches for OpenScape returned nothing; no update. MISA-2026-0012 CVE ids (CVE-2026-133323, -133303 and three more) are already in the store entry."
+  - "Ruby Veria Labs exploit (announced for 2026-11-25): no development in window and no earlier release found; AWS bulletin 2026-193-AWS (2026-11-19, revised 2026-11-20) adds only cloud-platform fix status (Elastic Beanstalk platform 4.15.4, Lambda managed runtimes rolling), optional note, not a record."
+  - "Java4Shell exploitation status: no new report in window (Group-IB none as of 2026-11-18, CISA not KEV, Calif/VulnCheck exploit withheld); AWS 2026-189-AWS (revised 2026-11-20) says no evidence of leverage and lists Corretto fixed builds 17.0.21.1.2, 21.0.13.1.2, 25.0.5.1.2, 27.0.1.1.4; recorded in the update item only as a status, not carried as a delta."
+  - "Puppet CVE-2026-115731 (existing entry): no in-window revision found; NCSC.ch advisory of 2026-11-19 exists; Perforce portal not readable (gap above)."
+  - "Drupal SA-CORE-2026-017 and TYPO3 SA-027/029: searches found no exploitation or revision beyond what the store entries state."
+  - "N-able N-central: vendor page last updated 2026-11-16 (HF3, 17 CVEs), already in the entry; no HF4 or new exploitation in window. Confluence/Axis CVE-2026-90436: nothing beyond the KEV listing of 2026-11-18 already in the entry."
+  - "Apache Tomcat CVE-2026-133325 (Critical, cluster TLS-PSK on TLS 1.3 does not validate the peer, unauthenticated node can join the cluster; Tomcat 11.0.28 to 11.0.29; fix pending in 11.0.30; workaround TLS 1.2; public 2026-11-19): borderline-drop, rare configuration and outside the window; candidate source proposed."
+  - "Atlassian security bulletin of 2026-11-17 (NCSC-NL 2026-0496): bundle of third-party library updates, Atlassian itself rates exploitation unlikely; outside window."
+  - "Dell PowerStore DSA-2026-479 (2026-11-18/19; CVE-2026-116440 and -116439 unauthenticated 9.8 SDNAS flaws, -116441 9.6): vendor bulletin not read, outside window, no exploitation signal; flagged as unread, storage appliances are rarely internet-facing."
+  - "Ubiquiti UniFi Access Security Advisory Bulletin 073 (2026-11-19): the 9.9 flaws need a low-privilege network account, the one unauthenticated flaw (CVE-2026-132805, SSRF) is 8.3; outside window."
+  - "IBM Guardium Data Protection (CVE-2026-84236 9.8 insecure deserialization, CVE-2026-87977 9.8 SQL injection, CVE-2026-82339 9.1 missing authentication; 2026-11-19): IBM bulletin not read, outside window, no exploitation signal; flagged as unread."
+  - "JetBrains TeamCity CVE-2026-132891 (9.8 RCE before 2026.2, 2026.1.4, 2025.11.8; EUVD 2026-11-19): JetBrains page not read, outside window; the TeamCity 2026.2.1 stored-XSS batch is authenticated."
+  - "Wing FTP Server CVE-2026-133310 (9.2, NUL byte in Upload Link filename plants a Lua session file, OS commands as the service account; fixed in 8.2.8; EUVD 2026-11-19): vendor page not read, outside window, technique resembles an earlier Wing FTP bug that was exploited; flagged for the next run."
+  - "Low-relevance 9.0+ EUVD rows in the window, no exploitation signal: WatchGuard Dimension CVE-2026-86130, Etherpad CVE-2026-114516, WP Duplicate CVE-2026-14492, Tribulant Newsletters CVE-2026-129039 and -129043, Netatalk CVE-2026-62318, Tegsoft CVE-2026-14914, MONAI Label CVE-2026-133968, D-Link DIR-600L CVE-2026-133493 (end of life), XOneManager CVE-2026-124770 and -124772, NukeViet CVE-2026-94565 and -94567, Flyto2 CVE-2026-77312."
+  - "Cisco eMudhra informational advisory v1.13 (2026-11-20): product status lists only (the store entry tracks version 1.8 and earlier); pip 26.2.2 certifi CVE-2026-133949 is the same eMudhra distrust already in the entry."
+  - "Siemens revisions in the 168 h lookback not read in detail: SSA-566435 V1.7 (PHP2Shell, 2026-11-20), SSA-166980 V1.5 and SSA-045512 V1.3 (2026-11-18), SSA-566512 V1.3 (PAN-OS on RUGGEDCOM APE1808, 2026-11-18): product-list revisions of PHP2Shell and Node2Shell advisories; flagged as unread."
+  - "MSRC: revised-CVE sweep (isMariner eq false, latestRevisionDate since 2026-11-18) returned 74 rows, all dated 2026-11-19 (73) or 2026-11-18 (1); the only exploited or publicly-disclosed flag is CVE-2026-111497 (Brotli, publicly disclosed, already covered); nothing revised after 2026-11-19T20:00Z."
+  - "Synology SA-26:15 (Node2Shell, Moderate, last updated 2026-11-18), Zammad (newest advisories 2026-11-11), Android bulletin (2026-11-02), Balbooa (newest 2026-11-04), Keycloak (Java4Shell post 2026-11-18, already in the Java entry), AWS bulletins other than nginx, Ruby and Java: nothing new or out of lookback."
+  - "Scheduled releases in window: none vendor-scheduled fell inside the window itself (Microsoft, SAP, Adobe, Fortinet and Ivanti cycles landed on 2026-11-10, Oracle CPU on 2026-11-17/18, F5 quarterly and Splunk on 2026-11-18, all before the window start); the F5 and Splunk cycles are the two uncovered ones and are returned above as borderline items."
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 4, returned: 4, note: "catalogue 2026.11.20; 4 additions of 2026-11-20 (SAP, Cisco, vCenter, Roller); dispositions: SAP new, Roller new (borderline), Cisco update-of, vCenter optional update-of" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "webfetch listing + webfetch alert page + bridge:cisa csaf-recent", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "only the 2026-11-20 KEV alert is in window (cited as source); newest ICS advisories icsa-26-323-01..03 released 2026-11-19, outside window" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct euvdservices (exploitedvulnerabilities, search 9.0+ 2026-11-19..21, enisaid, text search)", horizon_hours: 26, in_horizon_items: 98, returned: 3, note: "exploited list = 4 rows, all KEV additions of 2026-11-20; 94 rows at 9.0+; led to Danfoss update, Splunk, Poste.io; EUVD epss field is a percent, FIRST values used" }
+  - { id: watchtower, tier: essential, attempted: true, transport: "feed + extract (watchtowr.com/intelligence)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest labs post 2026-11-05; intelligence page FAQs (Ruby2Shell, PHP sessions, NGINX2root) already covered; watchTowr credited with four of the six F5 BIG-IP flaws via THN" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (filestore ir.xml) + extract", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "FG-IR-26-279 (NGINX, 2026-11-20) merged into the nginx update item; FG-IR-26-278 already in the Java entry" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "api OData revised-CVE sweep + bridge:msrc recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no CVE revised after 2026-11-19T20:00Z; no exploited flag in window" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed + url --direct json/CVE-<id>", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "NGINX portfolio status (PAN-OS and Panorama, HTTP/2) merged into the nginx update; Java portfolio status already in the 2026-11-20 Java record" }
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent + csaf", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "NCSC-2026-0509 PHP, -0510 VMware, -0511 IBM Aspera Faspex all covered; -0508 F5 BIG-IP (2026-11-19) uncovered and returned via the F5 item" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-022 (nginx) and 2026-021 (Java) of 2026-11-18, both covered" }
+  - { id: belden-psirt, tier: candidate, attempted: true, transport: "WebSearch (HTML 403, reader pool dead)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "no advisory inside the lookback found; newest PSIRT PDFs 2026-09" }
+  - { id: ruby-lang-news, tier: candidate, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "the 2026-11-18 posts (Ruby 4.0.10, 3.4.13, 3.3.14 and the Regexp/String advisory) are already covered by the 2026-11-20 entry" }
+  - { id: siemens-productcert, tier: standard, attempted: true, transport: "feed (atom) + url --direct SSA pages", horizon_hours: 168, in_horizon_items: 7, returned: 2, note: "SSA-935812 (nginx2root, Industrial Edge) and SSA-810379/-272816 (Java4Shell) merged into update items; four PHP2Shell/Node2Shell revisions not read" }
+  - { id: synology-security-advisories, tier: standard, attempted: true, transport: "bridge:url --direct listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "SA-26:15 Node2Shell (Moderate) last updated 2026-11-18, not read in detail" }
+  - { id: wordpress-org-news, tier: standard, attempted: true, transport: "feed (security category) + extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "WordPress 7.1.5 (2026-11-18) returned as a lookback item" }
+  - { id: zammad-github-advisories, tier: standard, attempted: true, transport: "bridge:url api.github.com security-advisories", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest advisories 2026-11-11, outside the lookback; cve_id still null on the four newest" }
+  - { id: android-security-bulletin, tier: standard, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "November bulletin published 2026-11-02, revised 2026-11-06, outside the lookback" }
+  - { id: aws-security-bulletins, tier: candidate, attempted: true, transport: "feed + extract (rss item URLs)", horizon_hours: 145, in_horizon_items: 8, returned: 0, note: "2026-192-AWS (nginx HTTP/2) merged into the nginx update; 2026-193 (Ruby) and 2026-189 (Java) are cloud-platform status for covered entries; remaining bulletins AWS-specific low severity" }
+  - { id: balbooa-blog, tier: candidate, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-04" }
+  - { id: keycloak, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 1, returned: 0, note: "Java4Shell admin guidance post of 2026-11-18 is covered by the Java entry (Keycloak named there)" }
+  - { id: msrc-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "no post inside the lookback (newest 2026-10)" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "bridge:url (__NEXT_DATA__ JSON) + WebSearch", horizon_hours: 121, in_horizon_items: 0, returned: 0, note: "record URL is the fixed SK sk185222 (CVE-2026-18574, created 2026-08-01); WebSearch found no November 2026 Check Point advisory" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed (not in the S1 slice; read as part of the vendor-PSIRT sweep)", horizon_hours: 26, in_horizon_items: 3, returned: 2, note: "nginx advisory (2026-11-20), Java4Shell v1.3 (2026-11-20) merged into update items; eMudhra v1.13 product churn dropped" }
+  - { id: splunk-advisories, tier: standard, attempted: true, transport: "extract (not in the S1 slice)", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "SVD-2026-1103 of 2026-11-18 returned as a borderline item; informational SVD-2026-1112/-1113 (NGINX, PHP) on 2026-11-19/20" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "extract of bulletin-2025 page (not in the S1 slice)", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "used for CVE-2025-42884 primary" }
+  - { id: mitel-security-advisories, tier: standard, attempted: true, transport: "extract (not in the S1 slice)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "MISA-2026-0012/-0013 re-read; no new CVE ids for -0013" }
+  - { id: f5-k-articles, tier: gap, attempted: true, transport: "extract, WebFetch (both SPA shell); recovery via cveawg CNA records + THN + NCSC-NL csaf", note: "no record in sources.json; rotation-priority gap partially closed; see coverage_gaps" }
+  - { id: perforce-portal, tier: gap, attempted: false, note: "no record in sources.json; not read; Puppet entry already tracks the KEV listing; see coverage_gaps" }

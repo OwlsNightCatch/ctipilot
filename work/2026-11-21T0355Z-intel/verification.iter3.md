@@ -1,0 +1,55 @@
+**Model:** Sonnet 5.5 (`claude-sonnet-5-5`)
+**Timestamps:** started_at=2026-11-21T05:35:27Z · ended_at=2026-11-21T05:52:45Z · duration_seconds=1038
+
+## Verification report — 2026-11-21T0355Z-intel (iteration 3)
+
+Scope: post-fix pass. 130 claim rows in `verification.iter3.claims.yaml`: all 10 changed claims, every claim of the five entries the remediations touched (Danfoss 32, Cisco 31, Java4Shell 28, USI 9, vCenter 6 = 106), plus a random quarter of the other 89 claims (24, `random.seed(20261121)`: nginx, Roller, SAP, Basel, Hokkaido, Webworm, EVTX). Beyond the sample I also read all six new entries, the nginx update (diff and PAN-OS, Cisco, Siemens, Fortinet pages) and the run record end to end.
+
+Pages read live this iteration: BSI PDF (`pdf` transport, plus `pdftotext` on the WebFetch copy for page 1), Danfoss DSA-2026-12-01 and -02, CERT-FR, NCSC.ch hub posts 13054/13198/13203, AFP/Khaleej Times, French foreign ministry, Midnight Blue, CCB, BleepingComputer (two), heise, SRF, BACS (two), Le Monde, BFMTV, CSIRT Italia, EFS, Censys, four Cisco Expressway/hardening advisories, the Cisco Java advisory and the Cisco nginx advisory, F6 (extract and raw HTML), CISA KEV alert and CISA Java alert (WebFetch), Oracle, OpenJDK, Calif (raw HTML), Tenable, Talos, Upwind, Equixly, Fortinet (two), Siemens (four, one in raw HTML), Broadcom VMSA-2026-0009 and Q&A, CdT interview, CdT communiqué, laRegione, Ticinonline, SAP bulletin, ENISA EUVD, Rapid7, Arctic Wolf, Apache oss-security (two), Roller downloads, nginx.org, CERT-EU, NCSC-NL, Xint, PAN-OS, Polizeiticker, Inside IT, the three Hokkaido notices and ITmedia (Japanese). The Basel-Landschaft FAQ page returned HTTP 403 on every rung for me; I used the body the gate saved at 04:50 (`quote-bodies/431e2579d8f1d601.extract.txt`) and the two relays that carry the same figures.
+
+### Prior-iteration findings: remediation check
+
+1. Danfoss `evidence[]` BSI quote (F4): fixed. The PDF at the cited URL is "BITS-H # 2026-306525-11e2 | Version 1.1 vom 17.11.2026". The new `original:` is a contiguous substring of the extracted text (line wrap after "im"): "Kurz nach der Veröffentlichung der CVE-Einträge registrierten Sensoren bereits aktive Ausnutzungsversuche im Internet gegen die Schwachstellen CVE-2026-124014 und CVE-2026-124010." It sits under "Update 1" about the 14 Copeland XWEB-EVO flaws VulnCheck published; the English translation is faithful; the publisher label names version 1.1. The takeaway wording ("take internet-reachable devices offline", "change all credentials") matches "sollten die Geräte offline genommen werden" and "sollten alle Zugangsdaten gewechselt werden".
+2. Danfoss 2026-11-14 section (F3): acceptable. "BSI's first notice of 2026-11-13 (version 1.0, since revised) ... listed no fixed version, said nothing was known about active exploitation" is true of version 1.0 and honestly labelled: the live PDF's version history lists "Version 1.0 — 13.11.2026" and "Version 1.1 — 17.11.2026". I confirmed the v1.0 text from the capture the 2026-11-14 run saved (`work/2026-11-14T0255Z-intel/dr/A/flat/bsi_raw_all.txt.flat`): "BITS-H Nr. 2026-306525-10e2, Version 1.0, 13.11.2026 Kritikalität*: 3 / Orange", "Über eine bereits aktive Ausnutzung der gefundenen Schwachstellen ist nichts bekannt", "Behebende Versionen - ... CVEs noch keine vergeben", "Möglicherweise enthält der Bericht ... genügend Hinweise". The live URL no longer shows those lines, so a reader cannot re-check them there; labelling is the right fix. No finding.
+3. Cisco "a public proof of concept used against" (F13): fixed in summary, actions[0], Defender takeaway and the record summary. F6: "Вскоре после появления общедоступного эксплойта (PoC) злоумышленники успешно атаковали устройства Cisco Expressway X15.5.3". The new wording ("soon after a public proof of concept appeared, attackers compromised ...") is a sequence, as F6 states it. One residual copy of the old wording sits in the run record (F13 #2 below).
+4. Cisco T1210 removed: correct. F6 gives no mechanism for the lateral step; the remaining ids (T1190, T1059.006 Python scripts, T1046 network scanning, T1135 SMB share discovery, T1021.006 WinRM, T1213.003 GitLab repositories) each follow a behaviour F6 states.
+5. USI "8,000 people" (F14): fixed. The interview says "Abbiamo inviato oltre 8000 e-mail per avvertire le persone interessate dal furto di dati"; title, headline, section and record summary now say e-mails warned those concerned.
+6. Basel Exposure/takeaway length (F11): declined, accepted. The narrative is two sentences with the nexus clause first; the labelled lines carry facts from the canton's FAQ (affected persons since 2016-11-28, completed procedures included, documents not excluded, phishing warning), all present in the page body.
+7. vCenter `cisa-kev` source (F11): fixed. CISA's alert of 2026-11-20 lists "CVE-2026-123890 VMWare vCenter Authentication Bypass Using an Alternate Path or Channel Vulnerability"; the evidence quote is that row; the internal record declares cves, tags, sources and evidence, has no body section, and `updated_at` stays null.
+8. Danfoss 2026-11-21 section carries the BSI v1.1 statement with its citation: yes; it matches the record summary.
+9. Java4Shell 2026-11-21 section: "so the Cisco product list above follows that version" is accurate. Cisco v1.3 change log reads "Changed Catalyst Center from affected to not affected." (2026-NOV-20); the table shows Catalyst Center, IOS XE, ISE and UCS Central as "Not affected" and Secure Network Analytics and Secure Workload as affected. Siemens SSA-810379 (2026-11-19, Siveillance Control and Control Pro, "Currently no fix is available", `-XX:-UseBASE64Intrinsics`) and SSA-272816 (2026-11-18, Industrial Edge Management Pro V1/V2 and Virtual, no fix, shut down or cut internet access) match the section.
+10. Run-record note on Java4Shell body length: holds (analysis 548 words measured, body about 1,170 words with the new section).
+11. Hokkaido per-municipality counts (F11): declined, accepted. Rumoi 71,002 and 4,503, Shintoku 6,001 and 986, Iwamizawa 10,348 land parcels and 7,037 buildings all match the municipal notices; the entry is routine.
+
+### Quantifier without source
+
+- **F14 #1 — Danfoss entry, `updates[]` record 2026-11-21T04:39:53Z, summary.** "Danfoss published its first CVE ids for the controllers: CVE-2026-129713 ... and CVE-2026-127057 ...". The entry's own 2026-10-15 section, from Censys, says Danfoss patched AK-SM 800A flaws CVE-2025-41450, CVE-2025-41451 and CVE-2025-41452 in 2025 (Censys: "Danfoss patched several vulnerabilities in its AK-SM 800A controllers more than a year earlier"), and NCSC.ch's hub post links Danfoss's DSA-2025-08-01. So these are not Danfoss's first CVE ids for the controllers. The body section does not say "first"; only the record summary does (it renders in the changelog). Fix: "Danfoss published CVE ids for two controller flaws", without "first".
+
+### Analytical-link-as-fact
+
+- **F13 #2 — run record, verification notes, "Priority calls" (low confidence).** "an F6-investigated intrusion through a public proof of concept". F6 writes that soon after a public exploit appeared the attackers successfully attacked X15.5.3 devices; it does not say the intrusion was carried out with that PoC. The entry text was corrected on this exact point in iteration 2; the note still carries it. Suggest "an F6-investigated intrusion that followed a public proof of concept".
+
+### Editorial / less-is-more flags (advisory)
+
+- **F11 A1 — Danfoss 2026-11-21 section (low confidence).** "Neither advisory mentions exploitation" is false read literally (DSA-2026-12-01: "Authentication is not required to exploit this vulnerability."; DSA-2026-12-02 is titled "Exploitation of Weak or Known Passwords ..."). Intent is exploitation in the wild; say so.
+- **F11 A2 — Cisco evidence[] F6 `original:` (low confidence).** Carries literal markdown asterisks around "Cisco Expressway X15.5.3"; the page has `<strong>` tags (raw HTML checked), so the original is not verbatim page text.
+- **F11 A3 — Cisco `wombat@127.0.0.1` (low confidence).** F6 lists the literal under its indicators-of-compromise heading; previously declined with a reason. Borderline but defensible as the single post-patch discriminator; may be left.
+
+### Checks with no finding
+
+- Changelog contract (4c): all six updated entries' last record carries this run's id; non-internal records have the matching `## Update — <at>` section and `updated_at` equal to `at`; the vCenter internal record has no section and `updated_at: null`; `git diff HEAD` shows no change outside the declared `fields` (Cisco, nginx, Java4Shell, Danfoss, USI, vCenter). Supersession: Cisco headline, summary, actions and cves agree with the KEV listing and F6; Java4Shell's Cisco statements follow v1.3; Danfoss summary and analysis no longer say "no CVE" or "no known exploitation".
+- New entries: Roller (oss-security 2026-11-17 and 2026-09-25, CVSS 9.8, 4.0.0 through 6.1.4, 6.1.6 or later, 6.1.7 best available, BleepingComputer on niche product and undisclosed attackers), SAP (SAP Patch Day row 3660969, Medium 6.5; ENISA EUVD text and `exploitedSince` 2026-11-20; CISA row names SAP NetWeaver only), Basel (97,000 records, since 2016-11-28, assumes all, platform out of service, documents not excluded), Hokkaido (all counts and dates), Webworm (Rapid7 4.44 build 9807, moderate confidence, one AV vendor, easiest change), EVTX (104 events, 44 records of which one allocated, 12:53 vs 16:01 clear): every clause checked against its page.
+- CVE ids and scores against per-CVE authorities: Danfoss DSA-2026-12-01/-02, Cisco (four advisories), Oracle/OpenJDK, Broadcom VMSA-2026-0009.1, Apache, SAP, PAN-OS. All match. No run CVE appears in an earlier entry outside its own.
+- Priorities: Cisco high (KEV plus an F6 root intrusion; upgrade decision within days), Danfoss high, no critical, Roller/SAP/Webworm/EVTX notable, Hokkaido/Basel/USI routine: calibrated. Classification blocks present on all six new entries and consistent with the sources. `actions[]` lists are concrete; none is generic.
+- Style: no em dash outside `## Update — <at>` headings, no hash, address or attacker domain, no workflow vocabulary in reader-facing fields of the twelve entries.
+- Coverage: all four KEV additions (SAP, Cisco, vCenter, Roller) have a disposition; two web searches (Swiss municipal and cantonal incidents; exploited zero-days around 2026-11-20) found nothing in-window the run missed (the F5 BIG-IP APM item the second search returned is 2026-09-24). No F10.
+
+### Verdict
+
+NEEDS_FIXES (truth: 2, editorial: 0, advisory: 3)
+
+Truth: F14 #1 is firm (the record summary's "first CVE ids" is contradicted by the entry's own Censys-sourced section); F13 #2 is low confidence and sits in the run-record notes. All other iteration-2 remediations check out. Advisory items A1 to A3 may be left.
+
+### Findings summary (machine-readable)
+
+See `work/2026-11-21T0355Z-intel/verification.iter3.findings.yaml` (5 records).

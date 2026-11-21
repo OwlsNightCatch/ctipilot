@@ -4,9 +4,9 @@ kind: incident
 title: "Danfoss AK-SM and AK-SC, Copeland xweb and Dixell xweb refrigeration controllers compromised in France, six more European countries and Switzerland, with France blaming the IRGC unit Shahid Kaveh for the October campaign; Midnight Blue reports six unpatched pre-authentication flaws in AK-SM 800A firmware up to 5.3.2"
 headline: "Danfoss AK-SM 800A: six unpatched pre-auth RCE flaws, Strict mode does not remove them; France blames IRGC"
 summary: >
-  Coopérative U, Intermarché and E. Leclerc confirmed a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026, a remotely forced defrost at hundreds of French stores, and on 2026-11-09 France's foreign ministry attributed that campaign, and only that campaign, to the Iranian unit Shahid Kaveh. More followed: more than 115 stores in at least six more countries and the first German shops on 2026-11-02, altered cold-room settings at three sites of the French blood service through a supplier, and, per SRF on 2026-11-05, a Köniz butcher and three Volg stores in Switzerland. CERT-FR reports numerous compromises of Danfoss AK-SM and AK-SC controllers and of Copeland xweb and Dixell xweb, and NCSC Switzerland rates the activity actively exploited. On 2026-11-11 Midnight Blue reported six pre-authentication remote-code-execution flaws in all Danfoss AK-SM 800A firmware up to 5.3.2, with no CVE identifier or fixed version and no known exploitation (BSI); CCB says updating, new passwords and Strict mode are insufficient, so removing internet exposure comes first, and BACS's statement of 2026-11-10 that updates fix the known flaws predates the report and does not cover the six.
+  Coopérative U, Intermarché and E. Leclerc confirmed a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026, a remotely forced defrost at hundreds of French stores, and on 2026-11-09 France's foreign ministry attributed that campaign, and only that campaign, to the Iranian unit Shahid Kaveh. More followed: more than 115 stores in at least six more countries and the first German shops on 2026-11-02, altered cold-room settings at three sites of the French blood service through a supplier, and, per SRF on 2026-11-05, a Köniz butcher and three Volg stores in Switzerland. CERT-FR reports numerous compromises of Danfoss AK-SM and AK-SC controllers and of Copeland xweb and Dixell xweb, and NCSC Switzerland rates the activity actively exploited. On 2026-11-11 Midnight Blue reported six pre-authentication remote-code-execution flaws in all Danfoss AK-SM 800A firmware up to 5.3.2, and on 2026-11-20 Danfoss published CVE-2026-129713 (CVSS 9.3, an unauthenticated stack overflow in AK-SM 8xxA firmware 5.4.0 and earlier, fix only in an announced 5.5.x) and CVE-2026-127057 (CVSS 9.9, default credentials on every legacy AK-SC 355 and AK-SM 800, no fix); CCB says updating, new passwords and Strict mode are insufficient, so removing internet exposure comes first, and BACS's statement of 2026-11-10 that updates fix the known flaws predates the report and does not cover the six.
 discovered_at: "2026-10-13T03:41:00Z"
-updated_at: "2026-11-14T03:55:09Z"
+updated_at: "2026-11-21T04:39:53Z"
 event_date: "2026-10-12"
 run_id: 2026-10-13T0256Z-intel
 priority: high
@@ -15,9 +15,27 @@ tags: [ot-ics, actively-exploited, nation-state, vulnerabilities, zero-day, rce,
 regions: [europe, switzerland]
 sectors: [retail, healthcare]
 entities: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "actor:shahid-kaveh", "actor:cyberav3ngers", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "product:danfoss-ak-sm-800a", "product:copeland-xweb", "product:dixell-xweb"]
-techniques: [T1190, T1133, T1078, T1595.001, T1596.005]
+techniques: [T1190, T1133, T1078, T1078.001, T1595.001, T1596.005]
 affected_products: ["Danfoss AK-SM 800", "Danfoss AK-SC 355", "Danfoss AK-SM 800A", "Copeland xweb", "Dixell xweb"]
-cves: []
+cves:
+  - id: CVE-2026-129713
+    cvss: "9.3"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [no-patch, mitigation-only]
+    affected: "Danfoss AK-SM 8xxA firmware 5.4.0 and earlier"
+    fixed: "none yet; Danfoss announces a 5.5.x release that is not yet published"
+  - id: CVE-2026-127057
+    cvss: "9.9"
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: default-config
+    status: [no-patch, mitigation-only]
+    affected: "Danfoss legacy AK-SC 355 and AK-SM 800, all versions"
+    fixed: "none; Danfoss tells owners to replace the units with the AK-SM 800A series"
 sources:
   - url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012)"
@@ -235,6 +253,18 @@ sources:
     publisher: "Danfoss (AK-SM 800A software readme, as read)"
     date: "2026-11-14"
     role: corroborating
+  - url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/"
+    publisher: "Danfoss (DSA-2026-12-01)"
+    date: "2026-11-20"
+    role: primary
+  - url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/"
+    publisher: "Danfoss (DSA-2026-12-02)"
+    date: "2026-11-20"
+    role: primary
+  - url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2"
+    publisher: "BSI (BITS-H 2026-306525-11e2, version 1.1)"
+    date: "2026-11-17"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "CERT-FR is aware of numerous compromises of the remote refrigeration-installation controllers Danfoss AK-SM and AK-SC series as well as Copeland xweb and Dixell xweb. (translated from French)"
@@ -394,13 +424,19 @@ evidence:
     original: "Neuere Firmware-Versionen aktivieren zudem zusätzliche Schutzmechanismen und erzwingen die verschlüsselte Kommunikation über HTTPS."
     publisher: "BACS"
     source_url: "https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de"
-  - quote: "Nothing is known about active exploitation of the vulnerabilities found. (translated from German)"
-    original: "Über eine bereits aktive Ausnutzung der gefundenen Schwachstellen ist nichts bekannt."
-    publisher: "BSI"
+  - quote: "Shortly after the CVE entries were published, sensors registered active exploitation attempts on the internet against the vulnerabilities CVE-2026-124014 and CVE-2026-124010. (translated from German)"
+    original: "Kurz nach der Veröffentlichung der CVE-Einträge registrierten Sensoren bereits aktive Ausnutzungsversuche im Internet gegen die Schwachstellen CVE-2026-124014 und CVE-2026-124010."
+    publisher: "BSI (BITS-H 2026-306525-11e2, version 1.1)"
     source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2"
   - quote: "Removing direct public internet exposure is the immediate priority and must not be delayed while awaiting patches."
     publisher: "CCB"
     source_url: "https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action"
+  - quote: "Authentication is not required to exploit this vulnerability."
+    publisher: "Danfoss (DSA-2026-12-01)"
+    source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/"
+  - quote: "These products were manufactured with default credentials documented in the product manual. All versions are affected."
+    publisher: "Danfoss (DSA-2026-12-02)"
+    source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/"
 verification: multi-source
 sourcing_note: >
   CERT-FR's alert is the national authority's own statement, in its revision of 2026-10-16 (its page does not show which sentences changed), while NCSC Switzerland adds the exploitation rating and relays an older CERT-FR remediation sequence, and the retailers' confirmations, Danfoss's statement and the Paris prosecutor's investigation come through AFP. The forced 50-degree defrost and the "older than version 4" scope are BFMTV's reporting alone, store counts differ between AFP, BFMTV and Infosecurity, and ANSSI's account of the cause is its director general's testimony as Public Sénat and Le Monde Informatique report it, with no transcript read, while Forescout says the access vector, exploited vulnerabilities and actors remain unconfirmed and Censys points to three patched 2025 AK-SM 800A flaws and says Danfoss has not confirmed the vector.
@@ -578,12 +614,21 @@ updates:
       section no longer points to another by its timestamp, and two news sources that no sentence cites
       are removed.
     fields: [sources, evidence, body]
+  - at: "2026-11-21T04:39:53Z"
+    run_id: 2026-11-21T0355Z-intel
+    type: update
+    summary: >
+      Danfoss published CVE ids for two controller flaws: CVE-2026-129713 (CVSS 9.3, unauthenticated stack
+      overflow in AK-SM 8xxA firmware 5.4.0 and earlier, fix only in a coming 5.5.x) and CVE-2026-127057
+      (CVSS 9.9, documented default credentials on every legacy AK-SC 355 and AK-SM 800, no fix). BSI's
+      version 1.1 warning reports exploitation attempts against two Copeland XWEB EVO flaws.
+    fields: [summary, techniques, cves, sources, evidence, body]
 migrated_from: null
 ---
 
-Coopérative U, Intermarché and E. Leclerc confirmed to AFP a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026 ([AFP, 2026-10-12](https://www.khaleejtimes.com/world/europe/french-supermarkets-refrigerator-shutdown-cyberattack)). CERT-FR knows of numerous compromises of Danfoss AK-SM and AK-SC controllers and of Copeland xweb and Dixell xweb ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)); NCSC Switzerland rates the activity actively exploited ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)). On 2026-11-09 France's foreign ministry attributed the 11 to 12 October campaign, and only that campaign, to the Iranian unit Shahid Kaveh ([French foreign ministry, 2026-11-09](https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france)).
+Coopérative U, Intermarché and E. Leclerc confirmed to AFP on 2026-10-12 a cyberattack on their refrigeration systems ([AFP, 2026-10-12](https://www.khaleejtimes.com/world/europe/french-supermarkets-refrigerator-shutdown-cyberattack)). CERT-FR knows of numerous compromises of Danfoss AK-SM and AK-SC controllers and of Copeland xweb and Dixell xweb ([CERT-FR, 2026-10-16](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)); NCSC Switzerland rates the activity actively exploited ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)). On 2026-11-09 France's foreign ministry attributed the 11 to 12 October campaign, and only that campaign, to the Iranian unit Shahid Kaveh ([French foreign ministry, 2026-11-09](https://www.diplomatie.gouv.fr/fr/presse-et-ressources/decouvrir-et-informer/actualites/declaration-d-attribution-a-l-iran-de-cyberattaques-visant-la-france)).
 
-Midnight Blue reports six pre-authentication remote-code-execution flaws, stack-based buffer overflows, in the Danfoss AK-SM 800A in every firmware version up to and including 5.3.2, with no CVE identifiers yet ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)). CCB says the research also finds a flaw in the session-control mechanism itself, so Strict mode does not eliminate the risk ([CCB, 2026-11-12](https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action)). BSI lists no fixed version and knows of no active exploitation (translated from German) ([BSI, 2026-11-13](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)); heise reports that BSI will not rule out vulnerabilities in firmware 5.4.0 either ([heise, 2026-11-13](https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html)), and Danfoss's advisories page lists no advisory on them as of 2026-11-14 ([Danfoss, read 2026-11-14](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/)).
+Midnight Blue reports six pre-authentication remote-code-execution stack overflows in every Danfoss AK-SM 800A firmware up to 5.3.2 ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)). Danfoss assigned CVE-2026-129713 (CVSS 9.3) to an unauthenticated stack overflow in AK-SM 8xxA firmware 5.4.0 and earlier, fixed only in a coming 5.5.x, without saying if it is one of the six ([Danfoss, 2026-11-20](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/)). CCB says the research also finds a flaw in session control, so Strict mode does not remove the risk ([CCB, 2026-11-12](https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action)). BSI reports exploitation attempts against two Copeland XWEB EVO flaws (translated from German) ([BSI, 2026-11-17](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)).
 
 On 2026-11-02 refrigeration failures reached retailers in at least six more countries ([BleepingComputer, 2026-11-02](https://www.bleepingcomputer.com/news/security/hackers-disrupt-refrigeration-systems-at-european-supermarkets/)) and the first German cases followed ([heise, 2026-11-03](https://www.heise.de/news/Cyberangriffe-auf-Kuehlschraenke-Erste-deutsche-Faelle-in-Bayern-und-NRW-11508922.html)); SRF reported on 2026-11-05 the first publicly known Swiss cases, at a butcher in Köniz and three Volg stores ([SRF, 2026-11-05](https://www.srf.ch/news/schweiz/kuehlanlage-manipuliert-berner-metzgerei-opfer-von-hackerangriff-auch-volg-betroffen)).
 
@@ -593,7 +638,7 @@ On 2026-11-02 refrigeration failures reached retailers in at least six more coun
 
 **Triage:** a defrost cycle is normal; BFMTV reports that installations can be programmed for two hours of defrost per 24 hours, whereas the reported attack is a continuous forced defrost at a 50-degree setpoint (translated from French) ([BFMTV, 2026-10-12](https://www.bfmtv.com/economie/consommation/la-temperature-est-montee-jusqu-a-50-degres-une-cyberattaque-contre-les-systemes-frigorifiques-provoque-la-destruction-de-produits-frais-dans-des-centaines-d-intermarche-et-de-super-u_AN-202610120327.html)).
 
-**Defender takeaway:** take any Danfoss AK-SM or AK-SC, Copeland xweb or Dixell xweb management interface off the internet now and restore access only through a secure VPN or protected network, as CERT-FR advises ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). For the AK-SM 800A, patching and Strict mode do not close the exposure: CCB calls updating, new passwords and Strict mode insufficient on their own ([CCB, 2026-11-12](https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action)), while BSI still asks operators to check patch levels and, on suspicion of compromise, to change all credentials and check the attached devices (translated from German) ([BSI, 2026-11-13](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)). The AK-SM800 and AK-SC355 have no fix ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054)).
+**Defender takeaway:** take any Danfoss AK-SM or AK-SC, Copeland xweb or Dixell xweb management interface off the internet and restore access only through a secure VPN or protected network, as CERT-FR advises ([CERT-FR, 2026-10-13](https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/)). For the AK-SM 800A, patching and Strict mode do not close the exposure: CCB calls updating, new passwords and Strict mode insufficient on their own ([CCB, 2026-11-12](https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action)), while BSI asks operators to take internet-reachable devices offline and, on suspicion of compromise, to change all credentials (translated from German) ([BSI, 2026-11-17](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)). The legacy AK-SM 800 and AK-SC 355 have no fix and accept documented default credentials (CVE-2026-127057); Danfoss says to move to the AK-SM 800A ([NCSC Switzerland, 2026-10-13](https://security-hub.ncsc.admin.ch/#/posts/13054); [Danfoss, 2026-11-20](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/)).
 
 ## Update — 2026-10-14T03:44:00Z
 
@@ -673,6 +718,10 @@ What is new is the wider population: BACS lists butchers and food producers, res
 
 ## Update — 2026-11-14T03:55:09Z
 
-Midnight Blue published on 2026-11-11 a report on six pre-authentication remote-code-execution flaws in the Danfoss AK-SM 800A, which it says it found within an hour of manual investigation and which affect all versions up to and including 5.3.2 ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)). It says the exploited application runs as root, that the controller does not use the processor's secure-boot features, which makes malicious firmware that survives a factory reset or bricks a device feasible, and that the strict session-control mechanism also has at least one trivial pre-authentication memory-corruption flaw; it recommends against spending scarce effort on patching and in favour of reducing exposure ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)). No CVE identifiers exist yet and technical details are withheld during coordinated disclosure with Danfoss ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)).
+Midnight Blue published on 2026-11-11 a report on six pre-authentication remote-code-execution flaws in the Danfoss AK-SM 800A, which it says it found within an hour of manual investigation and which affect all versions up to and including 5.3.2 ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)). It says the exploited application runs as root, that the controller does not use the processor's secure-boot features, which makes malicious firmware that survives a factory reset or bricks a device feasible, and that the strict session-control mechanism also has at least one trivial pre-authentication memory-corruption flaw; it recommends against spending scarce effort on patching and in favour of reducing exposure ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)). At that date no CVE identifiers existed yet and technical details were withheld during coordinated disclosure with Danfoss ([Midnight Blue, 2026-11-11](https://www.midnightblue.nl/blog/multiple-rce-danfoss-aksm800a)).
 
-BSI's notice of 2026-11-13, criticality 3 (Orange), lists no fixed version, says nothing is known about active exploitation and warns that the report may give attackers enough hints; its worst case is a remote attacker loading malicious firmware that leaves the devices unusable until they are replaced or restored by hand (translated from German) ([BSI, 2026-11-13](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)). CCB's advisory of 2026-11-12 relays the research, says no patches were available and that removing direct public internet exposure must not wait for them, and says Strict mode does not eliminate the risk because the research identifies a flaw in the session-control mechanism itself ([CCB, 2026-11-12](https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action)). heise reports that BSI told it that it does not want to rule out vulnerabilities in firmware 5.4.0 of 12 November either ([heise, 2026-11-13](https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html)). Danfoss's advisories page lists no advisory on the six as of 2026-11-14 ([Danfoss, read 2026-11-14](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/)), and the readme for software release 5.4.0 says an update from 4.x leaves the security settings unchanged and names no vulnerability ([Danfoss, read 2026-11-14](https://www.danfoss.com/en/service-and-support/downloads/dcs/adap-kool-software/ak-sm-800a/license-agreement/)). BACS's statement of 2026-11-10 that updates fix the known flaws ([BACS, 2026-11-10](https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de)) predates the report and does not address these six.
+BSI's first notice of 2026-11-13 (version 1.0, since revised), criticality 3 (Orange), listed no fixed version, said nothing was known about active exploitation and warned that the report may give attackers enough hints; its worst case is a remote attacker loading malicious firmware that leaves the devices unusable until they are replaced or restored by hand (translated from German) ([BSI, 2026-11-13](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)). CCB's advisory of 2026-11-12 relays the research, says no patches were available and that removing direct public internet exposure must not wait for them, and says Strict mode does not eliminate the risk because the research identifies a flaw in the session-control mechanism itself ([CCB, 2026-11-12](https://ccb.belgium.be/advisories/warning-six-new-danfoss-vulnerabilities-refrigeration-controllers-risk-immediate-action)). heise reports that BSI told it that it does not want to rule out vulnerabilities in firmware 5.4.0 of 12 November either ([heise, 2026-11-13](https://www.heise.de/news/Supermarkt-Angriffe-Danfoss-Kuehlsteuerungen-blieben-trotz-Updates-angreifbar-11524376.html)). Danfoss's advisories page lists no advisory on the six as of 2026-11-14 ([Danfoss, read 2026-11-14](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/)), and the readme for software release 5.4.0 says an update from 4.x leaves the security settings unchanged and names no vulnerability ([Danfoss, read 2026-11-14](https://www.danfoss.com/en/service-and-support/downloads/dcs/adap-kool-software/ak-sm-800a/license-agreement/)). BACS's statement of 2026-11-10 that updates fix the known flaws ([BACS, 2026-11-10](https://www.bacs.admin.ch/de/warnung-kuehlanlagen-de)) predates the report and does not address these six.
+
+## Update — 2026-11-21T04:39:53Z
+
+Danfoss published two advisories on 2026-11-20. DSA-2026-12-01 assigns CVE-2026-129713 (CVSS 9.3) to a stack-based buffer overflow in an unauthenticated CGI handler of the AK-SM 8xxA series, firmware 5.4.0 and earlier: crafted HTTP or HTTPS POST requests cause memory corruption and a web-server restart and, in Danfoss's words, hypothetically arbitrary code execution with web-server privileges, with no authentication; the fix is an announced 5.5.x release that is not yet published, Danfoss will remove the option to disable Strict mode, and its mitigations are no internet exposure, access only through a VPN or protected network, Strict mode and strong passwords ([Danfoss, 2026-11-20](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-01/)). DSA-2026-12-02 assigns CVE-2026-127057 (CVSS 9.9) to default or known passwords on all versions of the legacy AK-SC 355 and AK-SM 800, which shipped with default credentials documented in the product manual; Danfoss's remediation is to replace the fleet with the AK-SM 800A series ([Danfoss, 2026-11-20](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/)). Neither advisory reports exploitation in the wild or says whether CVE-2026-129713 is one of the six flaws Midnight Blue reported. BSI's warning, now at version 1.1 (2026-11-17), reports sensor-observed exploitation attempts against two Copeland XWEB EVO flaws (translated from German) ([BSI, 2026-11-17](https://www.bsi.bund.de/SharedDocs/Cybersicherheitswarnungen/DE/2026/2026-306525-1032.pdf?__blob=publicationFile&v=2)).
