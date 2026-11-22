@@ -41,7 +41,7 @@ sources:
     role: corroborating
 closed_sources: []
 evidence:
-  - quote: "The forensic investigations carried out in the meantime have confirmed that the perpetrators were able to gain access to a database related to work permits for cross-border commuters and to extract data from it. (translated from German)"
+  - quote: "It has been confirmed that the perpetrators were able to gain access to a database related to work permits for cross-border commuters and to extract data from it. (translated from German)"
     original: "hat sich bestätigt, dass sich die Täterschaft Zugriff auf eine Datenbank im Zusammenhang mit Arbeitsbewilligungen für Grenzgängerinnen und Grenzgänger verschaffen und daraus Daten abziehen konnte"
     publisher: "Canton Basel-Landschaft (FAQ-Data page)"
     source_url: "https://www.baselland.ch/politik-und-behorden/direktionen/sicherheitsdirektion/amt_fuer_migration/bewilligungen/faq-data/"
@@ -73,6 +73,14 @@ updates:
       emergency numbers might be restricted was withdrawn within hours, the numbers having stayed
       reachable.
     fields: [sources, sourcing_note, body, summary]
+  - at: "2026-11-22T14:42:57Z"
+    run_id: 2026-11-22T1407Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The English rendering of the canton's FAQ evidence quote opened with a clause its German original
+      did not carry; the translation now covers only the quoted German span.
+    fields: [evidence]
 migrated_from: null
 ---
 

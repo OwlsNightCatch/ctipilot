@@ -1,0 +1,112 @@
+batch: TF
+model: Sonnet 5.5 (claude-sonnet-5-5)
+timestamps:
+  started: '2026-11-22T14:13:50Z'
+  ended: '2026-11-22T14:32:09Z'
+entries:
+- entry: 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: 4bde764d50
+    where: body, **Exposure:** line (cited to Expel)
+    defect: '"any tenant that relies on password sign-in or grants OAuth consent to applications, and any Okta org with self-service registration enabled; not using ConnectWise does not exclude exposure" ([Expel, 2026-10-21])  (low confidence)'
+    ground_truth: 'Expel: "Am I at risk if I never used ConnectWise or SkyKick? Possibly. The target set is wider than ConnectWise customers. Expel saw Storm-0940 infrastructure hit a customer''s Okta tenant in October 2026, using self-service registration to create its own accounts and enroll Okta Verify." The page does not state that any tenant relying on password sign-in or OAuth consent is exposed; only the Okta self-registration case and the "wider than ConnectWise" point are carried.'
+    ground_truth_url: https://expel.com/blog/storm-0940-artex-attacks-connectwise-app-abuse-and-okta-sign-ups/
+    fix: Limit the Expel-cited clause to "any Okta org with self-service registration enabled; not using ConnectWise does not exclude exposure", and cite Microsoft (password spraying and OAuth application abuse are Storm-0940 techniques) for the broader password/OAuth-consent exposure statement, or drop it.
+  length_note: main analysis 726 words (over the 550-word bound); headline 114 characters (within bound)
+- entry: 2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: 5e3637ae17
+    where: body paragraph 1, first sentence (cited to Cisco cisco-sa-vcs-static-cred-hr7EWZ8t)
+    defect: '"...because clustering uses persistent cookies and validates client certificates insufficiently even with TLS Verify Mode enabled"  (low confidence)'
+    ground_truth: 'Cisco: "This vulnerability is due to the use of persistent cookies. Additionally, there is insufficient validation of client certificates when the TLS Verify Mode is set to Enabled for clustering, which means that client certificates are not validated." The advisory does not say that clustering is what uses the persistent cookies.'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t
+    fix: 'Reword to track the advisory: "because of the use of persistent cookies, and because client certificates are not validated when TLS Verify Mode is enabled for clustering".'
+  length_note: null
+- entry: 2026-11-20/usi-lugano-online-forms-vulnerability-exploited
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: null
+    where: evidence[1] (translated quote vs original)
+    defect: 'quote: "The data stolen are essentially first names, surnames, e-mail addresses and phone numbers, and to a minimal extent also job applications or scholarship requests (translated from Italian)." original: "sostanzialmente nomi, cognomi, indirizzi e-mail, numeri di telefono, ma in minima parte anche candidature o richieste di borse di studio"  (low confidence; cosmetic)'
+    ground_truth: 'Page: "Valnegri parla poi del tipo di dati trafugati, che sono sostanzialmente nomi, cognomi, indirizzi e-mail, numeri di telefono, ma in minima parte anche candidature o richieste di borse di studio." The English lead "The data stolen are" translates words ("del tipo di dati trafugati, che sono") that the `original:` field does not contain; the original span starts at "sostanzialmente".'
+    ground_truth_url: https://www.cdt.ch/news/ticino/lattacco-hacker-allusi-messo-a-segno-da-agenti-ia-abbiamo-avvisato-8-mila-utenti-444981
+    fix: Extend `original:` to "i dati trafugati, che sono sostanzialmente nomi, ..." or drop "The data stolen are" from the English quote.
+  length_note: null
+- entry: 2026-11-20/vmware-vcenter-cve-2026-123890-auth-bypass-exploited-gtig
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 4f6b5119e2
+    where: body, **Detection:** line, first telemetry clause (cited to GTIG)
+    defect: '"in the vCenter appliance management audit log, SSH switched on and then off again, a new local or SSO administrator, and reads of the Directory Service database, the master key and the PostgreSQL credential file"  (low confidence)'
+    ground_truth: GTIG describes the SSH enable/disable via the VAMI API, the new local administrator and the credential-file reads over SSH as observed activity, but names no "appliance management audit log" as the place the file and database reads are visible; its only log-side artefact is the SecOps rule name "VMware vCenter VAMI API SSH Enablement". The telemetry location for the reads is the entry's inference.
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-vsphere/
+    fix: Say which of the three behaviours GTIG ties to a log source (VAMI SSH enablement) and present the file and database reads as behaviours to hunt for in host/SSH session telemetry without asserting the audit log carries them.
+  - code: F5
+    claim_id: null
+    where: frontmatter tags / cves[CVE-2026-123890].status vs body
+    defect: tags and status assert `cisa-kev`, sources[] lists CISA and evidence[] quotes CISA, but the body prose never states that CISA listed the flaw (no CISA/KEV mention, no inline citation)  (low confidence; the internal improvement record 2026-11-21T05:11:01Z added them without a body statement)
+    ground_truth: CISA alert 2026-11-20 lists "CVE-2026-123890 VMWare vCenter Authentication Bypass Using an Alternate Path or Channel Vulnerability"; KEV catalogue 2026.11.20 dateAdded 2026-11-20.
+    ground_truth_url: https://www.cisa.gov/news-events/alerts/2026/11/20/cisa-adds-four-known-exploited-vulnerabilities-catalog
+    fix: Add one inline-cited sentence to the exposure/summary paragraph that CISA listed CVE-2026-123890 as exploited on 2026-11-20 (a non-internal record), or accept that the tag is metadata only.
+  - code: F8
+    claim_id: null
+    where: frontmatter affected_products[] and cves[CVE-2026-123893].affected
+    defect: affected_products lists vCenter Server, VMware Cloud Foundation, SDDC Manager and VMware Tools; CVE-2026-123893 affected reads "SDDC Manager and VCF Installer in VMware Cloud Foundation 9.1, 9.0 and 5.x"  (low confidence)
+    ground_truth: 'VMSA-2026-0009.1 "1. Impacted Products": VMware vCenter, VMware Cloud Foundation, VMware vSphere Foundation, VMware Tools, VMware Telco Cloud Platform, VMware Telco Cloud Infrastructure; response-matrix rows for CVE-2026-123893 read "VMware Cloud Foundation, VMware vSphere Foundation | SDDC Manager / VCF Installer | 9.1.x.x" and "...9.0.x.x".'
+    ground_truth_url: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495
+    fix: Add "VMware vSphere Foundation" to affected_products and to the CVE-2026-123893 affected text.
+  length_note: null
+- entry: 2026-11-21/apache-roller-cve-2026-129448-xmlrpc-deserialization-kev
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-21/basel-landschaft-97000-cross-border-work-permits-stolen
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: null
+    where: evidence[0] (translated quote vs original)
+    defect: 'quote: "The forensic investigations carried out in the meantime have confirmed that the perpetrators were able to gain access to a database related to work permits for cross-border commuters and to extract data from it. (translated from German)" original: "hat sich bestätigt, dass sich die Täterschaft Zugriff auf eine Datenbank im Zusammenhang mit Arbeitsbewilligungen für Grenzgängerinnen und Grenzgänger verschaffen und daraus Daten abziehen konnte"  (cosmetic)'
+    ground_truth: 'FAQ page: "Im Rahmen der inzwischen durchgeführten forensischen Untersuchungen hat sich bestätigt, dass sich die Täterschaft Zugriff auf eine Datenbank im Zusammenhang mit Arbeitsbewilligungen für Grenzgängerinnen und Grenzgänger verschaffen und daraus Daten abziehen konnte." The English opening clause ("The forensic investigations carried out in the meantime") has no counterpart in the `original:` span, which starts at "hat sich bestätigt". Both quotes are otherwise verbatim and every claim of the entry is supported. Note: the cited URL returns HTTP 403 to every transport in the container; the page was read through the canton''s short link https://www.baselland.ch/FAQData, which resolves to the cited page.'
+    ground_truth_url: https://www.baselland.ch/politik-und-behorden/direktionen/sicherheitsdirektion/amt_fuer_migration/bewilligungen/faq-data/
+    fix: Extend `original:` to start at "Im Rahmen der inzwischen durchgeführten forensischen Untersuchungen hat sich bestätigt, ...".
+  length_note: null
+- entry: 2026-11-21/cleared-evtx-logs-keep-earlier-records-in-chunk-free-space
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-21/hokkaido-municipal-data-subcontractor-pc-k2f-infostealer
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-21/sap-netweaver-enterprise-portal-cve-2025-42884-kev
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-21/webworm-ntmonitor-custom-softether-vpn-bridge-rapid7
+  verdict: clean
+  findings: []
+  length_note: null
+- entry: 2026-11-22/monai-label-path-traversal-zero-day-found-by-cairn-ai-agents
+  verdict: imprecision
+  findings:
+  - code: F3
+    claim_id: '8700829790'
+    where: body, **Detection:** first clause (cited to the 0.8.6 release notes)
+    defect: '"web or reverse-proxy access logs for PUT requests to the two datastore endpoints whose `image` parameter carries parent-directory sequences or a leading dot, which the fix neutralises or rejects, and for tar uploads to `PUT /session/` with `uncompress=true`" ([Project MONAI release notes, 2026-11-22])  (low confidence)'
+    ground_truth: 'The 0.8.6 release notes name the two datastore endpoints and the `PUT /session/?uncompress=true` tar upload but say nothing about the `image` query parameter, parent-directory sequences or dot-prefixed IDs. That detail is in the GHSA: "The /datastore/image endpoint also reduces the image ID to its basename and rejects empty or dot-prefixed IDs with HTTP 400" and "a value such as ../../../tmp/x writes the uploaded content to any location".'
+    ground_truth_url: https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94
+    fix: Cite the GHSA alongside the release notes for the image-parameter / dot-prefix clause (the release notes only for the session tar-upload clause).
+  length_note: null
+notes:
+- 'Claim ledger: 218 of 218 claims decided (214 ok, 3 F3, 1 F4); no claim unreadable. All 50 evidence quotes across the batch were confirmed as contiguous substrings of the cited pages (Basel FAQ quotes against the page read via the canton short link).'
+- 'techniques[]: every id in all 11 entries is active in attack/enterprise-attack.json (ATT&CK 20.1).'
+- 'KEV: CVE-2026-76466, CVE-2026-123890, CVE-2026-129448, CVE-2025-42884 all dateAdded 2026-11-20 in catalogue 2026.11.20, knownRansomwareCampaignUse Unknown for all four; entries make no ransomware claim.'
+- 'Publisher revisions: no source revised after an entry last record in a way that contradicts it (Cisco Expressway advisory still v1.0; Cisco voice/Expressway hardening v1.1 2026-10-27 and Snort v1.1 2026-10-22 match the entry; Broadcom VMSA-2026-0009.1 of 2026-11-20 only clarified VMware Tools versions and the entry already carries the .1 ranges).'
+- 'updated_at mirrors checked: ARTEX 2026-11-20T05:12:58Z, Cisco 2026-11-21T04:36:32Z, USI 2026-11-21T04:40:53Z match the last non-internal update record; vCenter (internal improvement) and Basel (improvement) correctly null.'

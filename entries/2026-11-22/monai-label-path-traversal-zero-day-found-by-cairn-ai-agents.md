@@ -69,7 +69,15 @@ watchlist_hit: false
 actions:
   - "Upgrade every MONAI Label server to 0.8.6 (pip install -U monailabel==0.8.6, or the projectmonai/monailabel:0.8.6 image), because CVE-2026-133968 is exploited and every version through 0.8.5 is affected."
   - "On every MONAI Label 0.8.5 or older server that was reachable from an untrusted network, review it for unexpected file changes before it returns to service, starting with sitecustomize.py, authorized_keys and cron entries that the service account wrote and nobody deployed, because the upgrade does not evict an attacker who is already in."
-updates: []
+updates:
+  - at: "2026-11-22T14:43:20Z"
+    run_id: 2026-11-22T1407Z-audit
+    type: improvement
+    internal: true
+    summary: >
+      The Detection line's image-parameter and dot-prefix detail comes from the project's security
+      advisory, not the 0.8.6 release notes; the clause now cites the advisory beside the release notes.
+    fields: [body]
 migrated_from: null
 ---
 
@@ -79,6 +87,6 @@ Amazon Threat Intelligence found on 2026-09-10 a publicly reachable, unauthentic
 
 **Exposure:** any MONAI Label server through 0.8.5 that untrusted clients can reach; authentication is off by default (`MONAI_LABEL_AUTH_ENABLE=False`), so any client that can connect can write files, and with authentication on the ANNOTATOR role is enough ([Project MONAI, 2026-11-22](https://github.com/Project-MONAI/MONAILabel/releases/tag/0.8.6); [Project MONAI, 2026-11-18](https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94)).
 
-**Detection:** web or reverse-proxy access logs for PUT requests to the two datastore endpoints whose `image` parameter carries parent-directory sequences or a leading dot, which the fix neutralises or rejects, and for tar uploads to `PUT /session/` with `uncompress=true` ([Project MONAI, 2026-11-22](https://github.com/Project-MONAI/MONAILabel/releases/tag/0.8.6)); unexpected creation or change of `sitecustomize.py`, `authorized_keys` or cron entries by the service account; and a Python interpreter started by the service after a training-endpoint call that then opens an outbound connection ([Project MONAI, 2026-11-18](https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94); [Amazon Threat Intelligence, 2026-11-20](https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/)).
+**Detection:** web or reverse-proxy access logs for PUT requests to the two datastore endpoints whose `image` parameter carries parent-directory sequences or a leading dot, which the fix neutralises or rejects, and for tar uploads to `PUT /session/` with `uncompress=true` ([Project MONAI, 2026-11-22](https://github.com/Project-MONAI/MONAILabel/releases/tag/0.8.6); [Project MONAI, 2026-11-18](https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94)); unexpected creation or change of `sitecustomize.py`, `authorized_keys` or cron entries by the service account; and a Python interpreter started by the service after a training-endpoint call that then opens an outbound connection ([Project MONAI, 2026-11-18](https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94); [Amazon Threat Intelligence, 2026-11-20](https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/)).
 
 **Defender takeaway:** upgrade to 0.8.6, which the project calls a security release for every deployment, and whatever the version keep the server off untrusted networks, turn authentication on with roles only for trusted users and run it as an unprivileged account that can write only to the datastore; on a 0.8.5 or older server that was reachable from an untrusted network, the project asks for a review for unexpected file changes before it returns to service ([Project MONAI, 2026-11-22](https://github.com/Project-MONAI/MONAILabel/releases/tag/0.8.6)). Amazon's own advice is to favour high-confidence detections that trigger automated response, because the agents ran for hours without a break ([Amazon Threat Intelligence, 2026-11-20](https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/)).

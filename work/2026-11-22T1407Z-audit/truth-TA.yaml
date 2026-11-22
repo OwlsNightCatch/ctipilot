@@ -1,0 +1,127 @@
+batch: TA
+model: Sonnet 5.5 (`claude-sonnet-5-5`)
+timestamps:
+  started: '2026-11-22T14:13:51Z'
+  ended: '2026-11-22T14:35:10Z'
+entries:
+- entry: 2026-06-16/obsidian-security-a-three-cve-chain-turns-any-litellm-user-i
+  verdict: imprecision
+  findings:
+  - code: F4
+    claim_id: 1976a6f635
+    where: cves[CVE-2026-47101].cvss and sourcing_note
+    defect: 'cvss: "n/a" and sourcing_note "no listed source scores CVE-2026-47101 on its own", while the entry records VulnCheck''s score for the sibling CVE-2026-47102'
+    ground_truth: 'VulnCheck per-CVE advisory (the CNA for 47101): "LiteLLM < 1.83.14 Privilege Escalation via API Key Generation ... Severity: HIGH ... CVSS: 8.7 ... CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"; GitHub-reviewed GHSA-qrc4-49gv-mv9m: CVSS 3.1 8.8, CVSS 4.0 8.7'
+    ground_truth_url: https://www.vulncheck.com/advisories/litellm-privilege-escalation-via-api-key-generation
+    fix: Record cvss "8.7 (CVSS 4.0, VulnCheck)" for CVE-2026-47101, cite the VulnCheck advisory, and drop the "no listed source scores" clause of sourcing_note.
+  - code: F14
+    claim_id: null
+    where: sourcing_note ("CISA's catalog entry is the only statement of exploitation, which names no actor, victim or observed behaviour")
+    defect: 'Absolute quantifier: CISA is presented as the only statement of exploitation of CVE-2026-40217'
+    ground_truth: 'Google Threat Intelligence Group / Mandiant (2026-11-02, two weeks before the update; already in the store as entry 2026-11-09/llmjacking-stolen-cloud-keys-enable-model-services-resale): "a follow-on cluster executed targeted application logic exploitation against the victim''s LiteLLM gateway. The actor exploited a user ID rebind vulnerability in the /key/regenerate endpoint (CVE-2026-40217) to elevate standard Virtual Keys into full PROXY_ADMIN master administrative credentials"'
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models
+    fix: Narrow the clause to the listed sources or add GTIG as a second, mechanism-conflicting statement of in-the-wild use.
+  - code: F9
+    claim_id: null
+    where: main analysis / 2026-11-19 section (mechanism of CVE-2026-40217)
+    defect: Entry and vendor advisory describe CVE-2026-40217 as a custom-code guardrail sandbox escape (RCE); no Contradiction line for the conflicting exploitation report
+    ground_truth: GTIG attributes the exploited CVE-2026-40217 to a "user ID rebind vulnerability in the /key/regenerate endpoint" giving PROXY_ADMIN (likely a conflation with the allowed_routes/role-escalation flaws, but the sources disagree and the entry does not say so)
+    ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/llmjacking-monetizing-compromised-cloud-models
+    fix: Add a one-sentence Contradiction line naming GTIG's description versus the vendor advisory and CISA's "Unprotected Alternate Channel" listing.
+  - code: F3
+    claim_id: null
+    where: sources[0] date 2026-06-11 (low confidence)
+    defect: 'Obsidian source dated 2026-06-11 '
+    ground_truth: 'Page JSON-LD "datePublished": "2026-09-08T05:01:12.759Z", "dateModified": "2026-09-08T04:54:52.106Z"; the page''s own timeline ends "June 11, 2026 - Published the research" and The Hacker News linked it on 2026-06-15, so the entry date is substantively right and the metadata looks like a CMS re-save'
+    ground_truth_url: https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce
+    fix: None required; optionally note the page was re-saved 2026-09-08.
+  length_note: null
+  notes:
+  - KEV (dateAdded 2026-11-18), GHSA-wxxx-gvqv-xp7p fields (>= 1.81.8, < 1.83.10; CVSS 4.0 5.9; text says 1.83.11, patched_versions >= 1.83.10) and the Obsidian/THN claims all verified; the GitHub-reviewed global advisory scores CVE-2026-40217 higher (3.1 8.8, 4.0 7.5, high) than the vendor record the entry uses, noted not counted.
+- entry: 2026-09-12/cve-2026-84869-connectwise-screenconnect-worm-file-transfer
+  verdict: factual-error
+  findings:
+  - code: F13
+    claim_id: 08080c17e7
+    where: title, headline, summary ("Huntress traced worm-like exploitation back to 20 August"; "Huntress had already watched ..."; "Huntress documented exploitation from 20 August 2026")
+    defect: Asserts that the 20 August worm-like activity was exploitation of CVE-2026-84869 and that Huntress documented it as such weeks before the patch
+    ground_truth: Huntress 2026-09-03 post (with the 9/8 update) describes rogue ScreenConnect clients deployed by social engineering and a modified client that propagates over new connections; its 9/8 update only notes "ConnectWise has released a security update to address a vulnerability (CVE-2026-84869)" and never says the August incidents exploited it. Huntress 2026-11-16 dates confirmed exploitation to a canary push "On November 13", spray from "October 20 to November 16", traversal pushes "October 23, 24 and 27" and a near-miss "On October 19"; SecurityWeek (2026-09-07) and the SCKit post ("In September 2026, Huntress stood up a Rapid Response to similar worm-like activity") make no CVE link either
+    ground_truth_url: https://www.huntress.com/blog/cve-2026-84869-screenconnect-technician-exploitation
+    fix: 'Rephrase title/headline/summary to what the sources state: Huntress saw worm-like rogue-client spread from 20 August, ConnectWise then disclosed the file-transfer flaw on 8 September, and Huntress confirmed exploitation of CVE-2026-84869 from October.'
+  - code: F13
+    claim_id: 6ddc069a14
+    where: body para 3 ("the exact abuse path CVE-2026-84869 patches") and para 2 ("Huntress had been tracking the exploitation since 20 August", claim 3491a80055)
+    defect: States as fact that the modified client's auto-run file-transfer message is the CVE-2026-84869 abuse path and that the August incidents were exploitation of it
+    ground_truth: 'Huntress rogue-screenconnect-installations: "This creates a worm-like behavior: propagating infections over new ScreenConnect connections." ConnectWise advisory: "file-transfer actions could be processed through an active remote session without proper authorization or Host confirmation". No cited source equates the two.'
+    ground_truth_url: https://www.huntress.com/blog/rogue-screenconnect-installations
+    fix: Mark the link as the entry's inference ("matches the behaviour ConnectWise describes") or cut it; the 11-16 Update section already carries the sourced exploitation.
+  - code: F3
+    claim_id: eac01247ef
+    where: body para 3 ("A technician's ScreenConnect client that has been infected this way silently re-infects every subsequent host it connects to") and actions[1] ("propagated the infection to every host that client connected to") (low confidence)
+    defect: Reverses the direction of propagation
+    ground_truth: '"Connecting to an infected ScreenConnect client can cause the server-side Host system to receive and execute the same four-stage VBScript chain": the infection flows to Hosts that connect TO the infected client; Huntress 11-16: "A malicious guest ... can push a file to the technician''s machine"'
+    ground_truth_url: https://www.huntress.com/blog/rogue-screenconnect-installations
+    fix: Say that every Host that joins a session with an infected client can be re-infected.
+  length_note: headline 133 characters (bound 120); main analysis 536 words
+  notes:
+  - ConnectWise disclosure (9.9, prior to 26.6.5, servers not impacted), KEV dateAdded 2026-09-11 and the 2026-11-17 section (688,000 requests, 42 servers, 29 sources, nine seconds) verified; ConnectWise bulletin page returns 403 to WebFetch, GitHub disclosure has a single commit (2026-09-08).
+- entry: 2026-09-22/cve-2026-13684-synology-dsm-unauth-file-read-write
+  verdict: clean
+  findings: []
+  length_note: null
+  notes:
+  - SA-26:13 (eight CVEs, scores, fixed builds, Mitigation None, revision 1 only), SA-24:20 (revisions through 2025-03-27), Synology notice, 360, BleepingComputer, NCSC hub 12960 (Published only), CERT-FR (21 Sep) and KEV (CVE-2024-10441 added 2026-11-18, none of the four September flaws) verified.
+- entry: 2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach
+  verdict: clean
+  findings: []
+  length_note: main analysis 1,068 words (bound 550); headline 112 characters
+  notes:
+  - 'Every DIVD, NCSC-NL, Zammad (advisory, community statement, release notes 7.2.1/7.2.2/6.5.5/7.2.3, GHSA records, advisory API: 27 advisories of 2026-10-06 = 2 critical/12 high/10 medium/3 low, no CVE ids), Horizon3 and KEV claim verified; no 7.2.4 exists; sourcing_note dates the EPSS values to 2026-10-05.'
+- entry: 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack
+  verdict: imprecision
+  findings:
+  - code: F14
+    claim_id: null
+    where: title ("compromised in France, six more European countries and Switzerland") (low confidence)
+    defect: Fixed count "six more European countries" while the entry's own body lists more
+    ground_truth: BleepingComputer counts six (Belgium, the Netherlands, Sweden, Luxembourg, Ireland, Estonia) but The Guardian adds Finland and heise/WDR/Tagesschau add Germany (Rewe confirmed an attack aimed at Danfoss), so the body names at least eight; the summary correctly says "at least six more countries"
+    ground_truth_url: https://www.theguardian.com/world/2026/nov/02/supermarket-freezers-across-europe-hit-by-second-suspected-cyber-attack
+    fix: 'Title: "at least six more European countries" or "more than six".'
+  - code: F5
+    claim_id: f6ffd02ba8
+    where: 2026-10-25 section ("the earlier report that ANSSI had identified a vulnerability in a Danish company's software")
+    defect: Factual clause without an inline citation
+    ground_truth: 'AFP: "France''s cyber security agency had already identified ''a vulnerability in software supplied by a Danish company and has contacted the vendor''" (attributed to a person close to the Prime Minister)'
+    ground_truth_url: https://www.khaleejtimes.com/world/europe/french-supermarkets-refrigerator-shutdown-cyberattack
+    fix: Add [AFP, 2026-10-12] after the clause and attribute it to the person close to the Prime Minister.
+  - code: F11
+    claim_id: aed9c332c1
+    where: 2026-10-19 correction section, final sentence of paragraph 1
+    defect: Record-keeping narration in reader-facing text ("The earlier update section's statements about XWEB PRO firmware 1.12.1, a CISA advisory and a March 2024 bulletin are no longer on that page and are removed from the summary and the body")
+    ground_truth: 'Style rule: a section carries the cited delta only; the retraction belongs in the record summary'
+    ground_truth_url: https://dixell.fr/wp-content/uploads/2026/10/Recommandations-pour-une-utilisation-securisee-des-superviseurs-XWEB-v1.0.pdf
+    fix: Cut the sentence (advisory).
+  length_note: null
+  notes:
+  - 'Two claims left unreadable, not defects: (1) 2026-10-14 section, NCSC hub 13054 "could affect other sectors, such as healthcare for specialized cooling equipment": the post was edited 2026-11-06 and 2026-11-16 and the current text no longer carries that sentence; (2) 2026-11-14 section, BSI v1.0 "criticality 3 (Orange)": the same URL now serves v1.1 (17.11.2026) showing Kritikalität 2 / Gelb and Gefährdung Aktive Ausnutzung, v1.0 is not retrievable (heise 13 Nov: BSI urges "unverzüglichen Handeln" is consistent with Orange). Danfoss advisories index (current) pairs CVE-2026-127057 with DSA-2026-12-01 and shows a blank CVE for DSA-2026-12-02; the advisories and the CVE records (CVE-2026-129713 9.3 stack overflow, CVE-2026-127057 9.9 default credentials) agree with the entry. NCSC hub post also gained (2026-11-16) VulnCheck''s 14 XWEB EVO flaws; BSI v1.1 CVE-2026-124014/124010 are covered by entry 2026-11-13/dixell-copeland-xweb-evo-vulncheck-cves-end-of-service. DSA-2026-12-01/-02, CCB,
+    Midnight Blue, CERT-FR (versions 12/13/16 Oct), French MFA, CERTFR-2026-CTI-009 and the other cited pages verified.'
+- entry: 2026-10-15/cve-2026-76519-cisco-secure-email-gateway-file-write-root
+  verdict: imprecision
+  findings:
+  - code: F16
+    claim_id: null
+    where: 'priority: critical and immediate_action (low confidence)'
+    defect: critical retained five weeks after the 2026-10-14 advisory; the only in-window development is an improvement record (public Metasploit module, merged 2026-11-05, Rapid7 wrap-up 2026-11-20)
+    ground_truth: 'Phase 4 critical bar requires action "time-critical to the hour or day" and lists "patches >=1 week old without new exploitation" as a disqualifier; Cisco: "Customers who have enabled automatic Content Scanner Tools updates are not required to take any action"; no source reports new exploitation or verified scanning since October'
+    ground_truth_url: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-esa-afw-zqYJkjxp
+    fix: Consider high; or, if the public module counts as new weaponisation, keep critical but record the change as a type update so the entry floats.
+  - code: F11
+    claim_id: null
+    where: updates[] record 2026-11-22T04:34:04Z (type improvement)
+    defect: A new in-the-wild development (public Metasploit module) is typed improvement, so updated_at stays null and the entry does not float
+    ground_truth: 'Rapid7 2026-11-20: "Adds a new exploit module for CVE-2026-76519 an unauth RCE in Cisco Secure Email Gateway ... giving us RCE with root privs."'
+    ground_truth_url: https://www.rapid7.com/blog/post/pt-metasploit-wrap-up-breaking-zimbra-s-identity-boundaries/
+    fix: Retype as update (advisory).
+  length_note: null
+  notes:
+  - Cisco advisory (9.8, conditions, fixed builds 15.5.5-014 / 16.5.0-780 / CST 25.3.0.5525, log check, cluster guidance, revision 1.0 only), BleepingComputer, KEV (2026-10-14; CVE-2026-76461 added 2026-09-14), Rapid7 and Metasploit PR 22028 (merge event 2026-11-05) verified.

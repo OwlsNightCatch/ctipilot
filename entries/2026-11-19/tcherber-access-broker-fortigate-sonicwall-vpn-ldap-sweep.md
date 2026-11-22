@@ -54,8 +54,16 @@ classification:
   credibility: 2
 watchlist_hit: false
 actions:
-  - "Audit every FortiGate and SonicWall VPN gateway for local accounts with default or guessed passwords (guest, admin, test) or passwords that appear in credential dumps, reset or remove them, and search VPN logs since May 2026 for logins by such accounts that are followed by a broad LDAP enumeration from the VPN address pool, because Cyderes found a broker's toolkit and logs showing root-level tunnels into multiple victims."
-updates: []
+  - "Audit every FortiGate and SonicWall VPN gateway for VPN accounts with default or guessed passwords (guest, admin, test) or passwords that appear in credential dumps, reset or remove them, and search VPN logs since May 2026 for logins by such accounts that are followed by a broad LDAP enumeration from the VPN address pool, because Cyderes found a broker's toolkit and logs showing root-level tunnels into multiple victims."
+updates:
+  - at: "2026-11-22T14:42:37Z"
+    run_id: 2026-11-22T1407Z-audit
+    type: correction
+    internal: true
+    summary: >
+      The Exposure line and the action said the abused VPN logins were local gateway accounts; Cyderes
+      does not say whether they are local or directory-backed, so both now say VPN accounts.
+    fields: [actions, body]
 migrated_from: null
 ---
 
@@ -63,7 +71,7 @@ Cyderes' Howler Cell identified a database holding more than 500 FortiGate VPN c
 
 The orchestrator launches the FortiGate client in the background with a 20-second stabilization delay, maps internal subnets and gateways from the established tunnel, and runs an LDAP module that enumerates users, groups, domain structure and domain controllers; port scanning, SMB reconnaissance and credential validation sit in separate tools that the operator runs by hand ([Cyderes, 2026-11-17](https://www.cyderes.com/howler-cell/exposing-tcherber)). Cyderes assesses a Russian-speaking operator working as both an initial access broker and a malware-as-a-service provider, with operations ongoing as of September 2026, and notes that the handle comes from a build-path username that one machine or several could share ([Cyderes, 2026-11-17](https://www.cyderes.com/howler-cell/exposing-tcherber)). VMRay independently links the same build path to Zer0day Stealer and ENIGMA Locker and calls the same developer the likely author of an HVNC remote-control sample, without mentioning VPN access brokerage ([VMRay, 2026-09-01](https://www.vmray.com/news/one-leftover-build-path-links-an-infostealer-a-remote-access-tool-and-a-ransomware-family/)).
 
-**Exposure:** a FortiGate or SonicWall VPN gateway reachable from the internet that accepts a local account with a default or guessed password, or a password that appears in a credential dump; Cyderes names no vulnerability or firmware version and does not discuss multi-factor authentication ([Cyderes, 2026-11-17](https://www.cyderes.com/howler-cell/exposing-tcherber)).
+**Exposure:** a FortiGate or SonicWall VPN gateway reachable from the internet that accepts a VPN account with a default or guessed password, or a password that appears in a credential dump; Cyderes names no vulnerability or firmware version and does not discuss multi-factor authentication ([Cyderes, 2026-11-17](https://www.cyderes.com/howler-cell/exposing-tcherber)).
 
 **Detection:** VPN gateway logs for successful logins by default-named accounts and for repeated reconnect attempts from one source about every 30 seconds, the interval of the FortiGate client's retry loop; after the tunnel is up, route parsing and a broad LDAP enumeration of users, groups and domain controllers from an address in the VPN pool follow from the toolkit's orchestrator ([Cyderes, 2026-11-17](https://www.cyderes.com/howler-cell/exposing-tcherber)).
 

@@ -5,7 +5,7 @@ title: 'N-able N-central: 33 alleged flaws published, and Hotfix 3 (build 2026.4
 headline: 'N-central: Hotfix 3 fixes 17 more CVEs and blocks the Legacy API; 4EverAble2Shell exploited; upgrade Agents too'
 summary: 'An independent researcher published proof-of-concept code on 2026-11-08 and 2026-11-09 for what Huntress counts as 33 critical flaws in N-able''s N-central appliance, and a second disclosure on 2026-11-12 added 4EverAble2Shell, a chain through Apache Axis (CVE-2026-90436) that works against Hotfix 2 when the Legacy API is on and is exploited on at least 21 production servers, and Agent2Shell, SYSTEM commands on managed Windows endpoints. Hotfix 2 (build 2026.4.1.26, 2026-11-10) fixed seven CVE ids and Hotfix 3 (build 2026.4.1.39, 2026-11-16) fixes 17 more, hardens how Agents and Probes authenticate and blocks the Legacy API permanently, but N-able does not name either chain or say it is fixed; Huntress reports public proof-of-concept code for all 17 and no exploitation of them in its partners'' environments. Every on-premises server and every Agent and Probe must be on Hotfix 3, including those already on Hotfix 2.'
 discovered_at: '2026-11-10T03:51:00Z'
-updated_at: "2026-11-18T05:12:35Z"
+updated_at: "2026-11-22T14:52:29Z"
 event_date: '2026-11-09'
 run_id: 2026-11-10T0255Z-intel
 priority: high
@@ -17,6 +17,7 @@ tags:
   - pre-auth
   - poc-public
   - actively-exploited
+  - cisa-kev
   - patch-available
 regions:
   - global
@@ -126,6 +127,7 @@ cves:
     auth: pre-auth
     status:
       - exploited
+      - cisa-kev
       - mitigation-only
     affected: Apache Axis 1.x through 1.4 as embedded in on-premises N-central with the Legacy API turned on and reachable, builds through 2026.4.1.26 (Hotfix 2)
     fixed: 'Hotfix 3 (build 2026.4.1.39) blocks the Legacy API that the chain needs permanently, but N-able does not say it fixes the Axis flaw, and the Apache Axis project offers a source patch but does not expect to release an Axis 1.x fix'
@@ -389,6 +391,14 @@ sources:
     publisher: Huntress (updates of 2026-11-17)
     date: '2026-11-17'
     role: corroborating
+  - url: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog
+    publisher: CISA
+    date: '2026-11-18'
+    role: corroborating
+  - url: https://www.n-able.com/blog/n-able-vulnerability-remediation-update
+    publisher: N-able (vulnerability remediation update)
+    date: '2026-11-13'
+    role: primary
 closed_sources: []
 evidence:
   - quote: N-able said it has not seen active exploitation of the vulnerabilities as of November 9 at 15:15:00 UTC.
@@ -510,6 +520,14 @@ updates:
       upgraded even from Hotfix 2. N-able does not say Hotfix 3 fixes 4EverAble2Shell or Agent2Shell, and
       Huntress reports public proof-of-concept code for all 17 ids.
     fields: [actions, body, cves, evidence, headline, sources, sourcing_note, summary, tags, title]
+  - at: "2026-11-22T14:52:29Z"
+    run_id: 2026-11-22T1407Z-audit
+    type: update
+    summary: >
+      CISA listed the Apache Axis flaw CVE-2026-90436 behind 4EverAble2Shell as exploited on 2026-11-18.
+      N-able's remediation page reads agent impersonation more narrowly than Huntress reads Agent2Shell:
+      it needs an existing foothold on an endpoint and yields only what an agent receives.
+    fields: [cves, sources, tags]
 migrated_from: null
 ---
 An independent researcher published what Huntress counts as 33 critical flaws in the N-central appliance, chaining into four exploits, and N-able took its hosted environments offline on 2026-11-09 ([Huntress, 2026-11-09](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
@@ -543,3 +561,7 @@ N-able released N-central 2026.4 Hotfix 3, build 2026.4.1.39, on 2026-11-16 as a
 The release notes name neither 4EverAble2Shell nor Agent2Shell nor the Apache Axis flaw and do not say they are fixed; what changes is the Legacy API, which N-able itself said both chains need and which is now blocked permanently ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/); [Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Among the 17 ids, the release notes title CVE-2026-129272 "MMS3 appliance authentication bypass via predictable passcode", CVE-2026-129280 "ServerUI SOAP operations missing authorisation checks" and CVE-2026-129286 "SIS GenericFiles version path traversal leads to RCE", and Huntress counts three critical, eight high and six medium scores, all assigned by N-able as CVE numbering authority ([N-able, 2026-11-16](https://status.n-able.com/2026/11/16/n-central-2026-4-hf3-release-notes/); [Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
 
 Huntress reports that public proof-of-concept code for all 17 CVE ids appeared on the evening of 2026-11-16, shortly after the hotfix, says any unpatched server should be treated as exposed, and has not observed exploitation of them in its partners' environments ([Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)). Field Effect reports that technical details on 24 further N-central vulnerabilities were published and are reported to be addressed by Hotfix 3, a count that the 17 CVE ids in N-able's notes do not reconcile ([Field Effect, 2026-11-09](https://fieldeffect.com/blog/n-central-offline-alleged-zero-days)). Huntress advises confirming the Patch Management Engine is at 2.14.4.5829 or later, rotating secrets embedded in Automation Manager policies on a server that was exposed before patching, not relying on Take Control audit records from an unpatched server, and enforcing MFA on all N-central accounts ([Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
+
+## Update — 2026-11-22T14:52:29Z
+
+CISA added the Apache Axis flaw CVE-2026-90436 to its Known Exploited Vulnerabilities catalog on 2026-11-18 ([CISA, 2026-11-18](https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog)). N-able's own remediation update reads the agent-side risk more narrowly than Huntress: it says the Legacy API is off by default, and that exploiting agent impersonation needs an existing foothold on an endpoint and yields only the information an agent receives and the values an agent can set ([N-able, 2026-11-13](https://www.n-able.com/blog/n-able-vulnerability-remediation-update)), while Huntress describes two Agent2Shell chains that let an unauthenticated attacker who can reach the server run commands on managed Windows endpoints ([Huntress, 2026-11-17](https://www.huntress.com/blog/n-able-disables-cloud-services-following-disclosure-of-able2shell-exploit-chains)).
