@@ -4,9 +4,9 @@ kind: vulnerability
 title: "NGINX nginx2root: five unauthenticated memory-corruption flaws (CVE-2026-123007 and CVE-2026-123633 in HTTP/2, CVE-2026-121810 in HTTP/3, CVE-2026-123634 in the resolver, CVE-2026-113425 in the mail proxy) can lead to code execution as the worker process; fixed in nginx 1.31.9 and 1.30.7 and NGINX Plus 37.3.0.1 and 37.0.8.1, Rapid7 proof of concept public, no exploitation reported (CVSS 4.0 9.2)"
 headline: "NGINX nginx2root: five unauthenticated flaws reach worker RCE, Rapid7 PoC public; update 1.31.9, 1.30.7 or Plus 37.3.0.1"
 summary: >
-  F5 and the nginx project fixed five memory-corruption flaws in the nginx data plane on 2026-11-18, two in HTTP/2 and one each in HTTP/3, the resolver and the mail proxy, which CERT-EU says can lead to unauthenticated code execution with the privileges of the worker process; NCSC-NL scores all five CVSS 4.0 9.2, NCSC.ch and Wiz the two HTTP/2 flaws and Rapid7 CVE-2026-123007. The fixes are in nginx 1.31.9 and 1.30.7 and NGINX Plus 37.3.0.1 and 37.0.8.1, while NGINX Plus R33 to R36 have no update. Rapid7 published a proof of concept for CVE-2026-123007, CERT-EU reports no exploitation, and NCSC.ch, CERT-EU, CERT.at and NCSC-NL issued warnings. Palo Alto Networks lists PAN-OS and Panorama with HTTP/2 enabled as affected, Cisco and Siemens list products with fixes pending or none, and Fortinet is still investigating its portfolio.
+  F5 and the nginx project fixed five memory-corruption flaws in the nginx data plane on 2026-11-18, two in HTTP/2 and one each in HTTP/3, the resolver and the mail proxy, which CERT-EU says can lead to unauthenticated code execution with the privileges of the worker process; NCSC-NL scores all five CVSS 4.0 9.2, NCSC.ch and Wiz the two HTTP/2 flaws and Rapid7 CVE-2026-123007. The fixes are in nginx 1.31.9 and 1.30.7 and NGINX Plus 37.3.0.1 and 37.0.8.1, while NGINX Plus R33 to R36 have no update. Rapid7 published a proof of concept for CVE-2026-123007, CERT-EU reports no exploitation, and NCSC.ch, CERT-EU, CERT.at and NCSC-NL issued warnings. Palo Alto Networks lists PAN-OS and Panorama with HTTP/2 enabled as affected, Cisco, Siemens and Synology list products with fixes pending or none, Fortinet confirms FortiOS, FortiProxy and FortiMail not impacted and is still investigating FortiManager, FortiAnalyzer, FortiAuthenticator and dozens of other products.
 discovered_at: "2026-11-19T05:12:00Z"
-updated_at: "2026-11-21T04:37:47Z"
+updated_at: "2026-11-22T04:34:41Z"
 event_date: "2026-11-18"
 run_id: 2026-11-19T0355Z-intel
 priority: high
@@ -14,9 +14,9 @@ immediate_action: null
 tags: [vulnerabilities, rce, pre-auth, poc-public, patch-available]
 regions: [global]
 sectors: [technology]
-entities: ["product:f5-nginx-open-source", "product:f5-nginx-plus", "product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama", "product:cisco-identity-services-engine", "product:cisco-nx-os-software", "product:siemens-industrial-edge"]
+entities: ["product:f5-nginx-open-source", "product:f5-nginx-plus", "product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama", "product:cisco-identity-services-engine", "product:cisco-nx-os-software", "product:siemens-industrial-edge", "product:cisco-ucs-director", "product:cisco-unified-contact-center-express", "product:cisco-finesse", "product:synology-diskstation-manager-dsm"]
 techniques: [T1190, T1059.004, T1499.004, T1068, T1611]
-affected_products: ["NGINX Open Source", "NGINX Plus", "Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama", "Cisco Identity Services Engine", "Cisco NX-OS Software", "Siemens Industrial Edge"]
+affected_products: ["NGINX Open Source", "NGINX Plus", "Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama", "Cisco Identity Services Engine", "Cisco NX-OS Software", "Siemens Industrial Edge", "Cisco UCS Director", "Cisco Unified Contact Center Express", "Cisco Finesse", "Synology DiskStation Manager (DSM)"]
 cves:
   - id: CVE-2026-123007
     cvss: "9.2 (CVSS 4.0)"
@@ -116,6 +116,14 @@ sources:
     publisher: "Fortinet PSIRT (FG-IR-26-279)"
     date: "2026-11-20"
     role: corroborating
+  - url: "https://usn.ubuntu.com/USN-9159-1"
+    publisher: "Ubuntu security notices (USN-9159-1)"
+    date: "2026-11-19"
+    role: corroborating
+  - url: "https://www.synology.com/en-global/support/security/Synology_SA_26_20"
+    publisher: "Synology (security advisory SA-26:20)"
+    date: "2026-11-19"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "All five vulnerabilities can lead to unauthenticated code execution with the privileges of the NGINX worker process"
@@ -159,7 +167,8 @@ classification:
 watchlist_hit: false
 actions:
   - "On every PAN-OS firewall and Panorama with the HTTP/2 option enabled, upgrade to 12.2.4-h3, 12.1.10-h6 or 11.2.16-h3 or later (12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 are listed with a 2026-11-23 ETA) or disable HTTP/2, because Palo Alto Networks lists CVE-2026-123007 and CVE-2026-123633 as affecting them with that option on."
-  - "Update every internet-facing nginx to 1.31.9 or 1.30.7 (NGINX Plus to 37.3.0.1 or 37.0.8.1) and restart the process, because a reload does not replace the running executable; where the update waits, disable HTTP/2 on exposed listeners, which blocks only CVE-2026-123007 and CVE-2026-123633, since five unauthenticated flaws reach code execution as the worker and Rapid7's proof of concept for one of them is public."
+  - "Update every internet-facing nginx to 1.31.9 or 1.30.7 (NGINX Plus to 37.3.0.1 or 37.0.8.1) and restart the process, because a reload does not replace the running executable; Ubuntu lists the fixes in USN-9159-1 for 16.04 LTS to 26.10, those for 16.04, 18.04 and 20.04 being available with Ubuntu Pro; where the update waits, disable HTTP/2 on exposed listeners, which blocks only CVE-2026-123007 and CVE-2026-123633, since five unauthenticated flaws reach code execution as the worker and Rapid7's proof of concept for one of them is public."
+  - "Update every Synology DSM 7.4 to 7.4.1-90080-2 and every DSM 7.3 to 7.3.2-86009-6 (Synology recommends 7.3.2-86009-6 or above for DSM 7.2.x), and on DSM 7.2.x, 7.1 and BeeStation OS, where the fix is listed as ongoing, turn HTTP/2 off under Control Panel, Network, Connectivity, because CVE-2026-123007 affects DSM with HTTP/2 enabled."
 updates:
   - at: "2026-11-21T04:37:47Z"
     run_id: 2026-11-21T0355Z-intel
@@ -170,6 +179,16 @@ updates:
       workaround), Cisco lists NX-OS and ISE 3.5 among affected products, Siemens Industrial Edge has no
       fix, and Fortinet is still investigating. None reports exploitation.
     fields: [summary, affected_products, entities, sources, evidence, actions, body]
+  - at: "2026-11-22T04:34:41Z"
+    run_id: 2026-11-22T0355Z-intel
+    type: update
+    summary: >
+      Cisco's advisory, now at version 1.1, moves UCS Director to affected and adds Unified Contact Center
+      Express, Finesse and other products with fixes dated November 2026 to February 2027 or still to be
+      determined; Synology lists DSM as affected with fixed builds for 7.4 and 7.3; Fortinet confirms
+      FortiOS, FortiProxy and FortiMail not impacted while 51 product names stay under investigation; and
+      Ubuntu publishes USN-9159-1.
+    fields: [summary, affected_products, sources, actions, body, entities]
 migrated_from: null
 ---
 
@@ -192,3 +211,7 @@ The fixes are in nginx 1.31.9 and 1.30.7 ([nginx.org, 2026-11-18](https://nginx.
 Palo Alto Networks lists PAN-OS and Panorama (virtual and M-Series) as affected by CVE-2026-123633 and CVE-2026-123007 only where the HTTP/2 option is enabled, and says it knows of no malicious exploitation; disabling HTTP/2 is its workaround ([Palo Alto Networks PSIRT, 2026-11-20](https://security.paloaltonetworks.com/CVE-2026-123633)). The fixed builds are PAN-OS 12.2.4-h3, 12.1.10-h6 and 11.2.16-h3; 12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 carry an ETA of 2026-11-23, and 12.1.2 to 12.1.4 and 11.2.0 to 11.2.7 need no action ([Palo Alto Networks PSIRT, 2026-11-20](https://security.paloaltonetworks.com/CVE-2026-123633)).
 
 Cisco's interim advisory (version 1.0, 2026-11-20) lists NX-OS Software, Smart PHY (fix 27.1.0, March 2027), the Intersight Virtual Appliance (1.1.9-0, December 2026), Cloud Hosted Services Vulnerability Management (1.30.7, November 2026) and Identity Services Engine 3.5 (3.5 Patch 5, December 2026) as affected, lists Catalyst Center, the SD-WAN Controller and Manager, ASA, FMC, FTD and UCS Central as not affected, and has IOS XE, IOS XR and UCS Director under investigation; its PSIRT knows of proof-of-concept code and of no malicious use ([Cisco PSIRT, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)). Siemens (SSA-935812, 2026-11-20) lists Industrial Edge products as affected in all versions with no fix available and names disabling HTTP/2 or HTTP/3 on the affected listeners as the mitigation ([Siemens ProductCERT, 2026-11-20](https://cert-portal.siemens.com/productcert/html/ssa-935812.html)). Fortinet says none of its products uses NGINX Plus and is still investigating FortiManager, FortiAnalyzer, FortiAuthenticator and dozens of others ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)).
+
+## Update — 2026-11-22T04:34:41Z
+
+Cisco's advisory is at version 1.1 (2026-11-21): UCS Director moves from under investigation to affected with the release still to be determined, Identity Services Engine is affected only on release 3.5 (3.5 Patch 5, December 2026), NX-OS Software is fixed in 10.7.2F (December 2026), and IOS XE and IOS XR remain under investigation; the affected-products table now also names Unified Contact Center Express and NextFusion Platform (release to be determined), Finesse (15.0 US3, date to be determined), License (Smart Software Manager) On-Prem (10-202701, February 2027), AI PODs for Collaboration (1.0.3, December 2026) and Webex Assistant for Meetings (1.15.16, November 2026), among others ([Cisco PSIRT, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)). Fortinet's timeline records an update of its not-impacted list on 2026-11-21: FortiOS, FortiProxy, FortiMail, FortiNAC and FortiPAM are not impacted, while 51 product names, among them FortiManager, FortiAnalyzer, FortiAuthenticator, FortiADC, FortiWeb and FortiSIEM, remain under investigation; Fortinet lists ten nginx CVEs, five more than the five above ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). Ubuntu lists the fixes in USN-9159-1 for releases 16.04 LTS to 26.10, those for 16.04, 18.04 and 20.04 being available with Ubuntu Pro ([Ubuntu, 2026-11-19](https://usn.ubuntu.com/USN-9159-1)). Synology's SA-26:20 lists DSM 7.4, 7.3, 7.2.2, 7.2.1 and 7.1, DSM Enterprise, BeeStation OS and APM as affected by CVE-2026-123007, scores it CVSS 3.1 8.1, names DSM 7.4.1-90080-2 and 7.3.2-86009-6 as the fixed releases with the other branches ongoing, and gives turning HTTP/2 off under Control Panel, Network, Connectivity as the mitigation ([Synology, 2026-11-19](https://www.synology.com/en-global/support/security/Synology_SA_26_20)).

@@ -1,0 +1,301 @@
+# work/2026-11-22T0355Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-11-22T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-22T03:57:34Z
+ended_at: 2026-11-22T04:15:01Z
+duration_seconds: 1047
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 22
+  bridge_fetches: 64
+items:
+  # ---------------------------------------------------------------------------
+  - title: "Microsoft Entra Connect Health: an API flaw live from 2026-07-23 to the 2026-11-19 server-side fix let unauthorized parties read tenant metadata, administrator e-mail addresses included; Microsoft is notifying tenants and says no customer patch is needed"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/", publisher: "BleepingComputer", date: "2026-11-21", role: "primary" }
+      - { url: "https://www.neowin.net/news/after-outage-microsoft-confirms-another-july-bug-that-led-to-entra-data-breach/", publisher: "Neowin", date: "2026-11-21", role: "corroborating" }
+      - { url: "https://windowsforum.com/news/microsoft-entra-connect-health-api-flaw-exposed-admin-emails-and-tenant-data.453553/", publisher: "WindowsForum", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (feed item 'Microsoft Entra Connect Health flaw exploited to steal tenant data', 2026-11-21) → primary reporting: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/ (cites the Microsoft customer notification shared on Reddit, https://www.reddit.com/r/sysadmin/comments/1y1of2u/important_security_notification_regarding/ — not fetchable from any transport; plus a Microsoft spokesperson statement to BleepingComputer) → WebSearch ('Entra Connect Health API flaw tenant metadata exposed notification admins phishing-resistant MFA') → Neowin, URL https://www.neowin.net/news/after-outage-microsoft-confirms-another-july-bug-that-led-to-entra-data-breach/ and WindowsForum, URL https://windowsforum.com/news/microsoft-entra-connect-health-api-flaw-exposed-admin-emails-and-tenant-data.453553/. Microsoft's own notice (Azure Service Health message) not publicly fetchable; no MSRC/Learn page found."
+    summary: |
+      Facts per Microsoft's customer notification as quoted by BleepingComputer and Neowin: Microsoft detected on 2026-11-09 a vulnerability in the Microsoft Entra Connect Health API that had been introduced on 2026-07-23, deployed a server-side fix on 2026-11-19 and concluded its investigation on 2026-11-20, finding that unauthorized read-only access to tenant-level metadata had occurred for the notified organisations and that no unauthorized configuration change was identified. The API returned email addresses of tenant technical contacts and administrator accounts; tenant ID, display name, initial domain name, country code and region scope; Entra license tier; directory-synchronization status including whether sync is enabled and the last sync timestamp; Connect Health onboarding status; and an expired certificate once used to register Connect Health agents with an internal Microsoft service decommissioned in late 2024 (no longer in use but still held in Connect Health storage and returned by the API). Microsoft says passwords, password hashes, authentication tokens, valid cryptographic keys, on-premises server and Active Directory topology, and Azure subscription information were not exposed, and that no software update or other customer remediation is required. Microsoft's advice, as relayed by BleepingComputer: alert security teams to targeted phishing and social engineering aimed at the exposed administrator addresses, make sure privileged accounts use phishing-resistant MFA, review Connect Health configurations and examine Entra audit and sign-in logs; Microsoft also published a PowerShell script that shows the types of tenant metadata that could have been exposed, but BleepingComputer notes it displays current configuration values, not what was accessed. Unknown: how many tenants were affected, who exploited the flaw, and when exploitation began (July 23 is only the earliest possible date); MSPs report separate notices for several customer tenants. Microsoft declined further detail to BleepingComputer. Assessment (WindowsForum, not Microsoft): the data lets an attacker write a convincing "Entra sync failure" lure addressed to the right administrator; it names the vulnerable call as GetTenant, which Microsoft has not confirmed.
+    region_nexus: "global SaaS control-plane incident; Swiss public-sector tenants running hybrid identity (Entra Connect / Connect Health agents) are plausible recipients of the notice, but no Swiss recipient is named in any source"
+    primary_sector_nexus: "indirect: administrator and technical-contact addresses of government tenants are the exposed asset; the follow-on risk is targeted phishing of identity administrators"
+    sector: "public-sector, cross-sector"
+    cves: []
+    techniques: [T1190, T1589.002]
+    affected_products: ["Microsoft Entra Connect Health"]
+    entity_keys: ["product:microsoft-entra-id"]
+    new_entities:
+      - { key: "product:microsoft-entra-connect-health", type: product, name: "Microsoft Entra Connect Health", aliases: ["Azure AD Connect Health"],
+          summary: "Cloud monitoring service in the Microsoft Entra admin center for the health, performance and alerts of on-premises identity infrastructure (BleepingComputer, 2026-11-21)." }
+      - { key: "incident:microsoft-entra-connect-health-api-tenant-metadata-2026-11", type: incident, name: "Microsoft Entra Connect Health API tenant-metadata exposure (July to November 2026)",
+          aliases: [],
+          summary: "Microsoft says an API flaw introduced 2026-07-23 and fixed server-side on 2026-11-19 let unauthorized parties read tenant-level contact and configuration metadata, administrator e-mail addresses included; notifications began 2026-11-20 (BleepingComputer, Neowin, 2026-11-21)." }
+    relation_suggestions:
+      - { subject: "incident:microsoft-entra-connect-health-api-tenant-metadata-2026-11", object: "product:microsoft-entra-connect-health",
+          basis: "Microsoft says the flaw sat in the Connect Health API (Microsoft notification via BleepingComputer, 2026-11-21)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "On 20 November 2026, we concluded our investigation and determined that unauthorized read-only access to tenant-level metadata associated with your organization had occurred."
+        attribution: "BleepingComputer (quoting Microsoft's customer notification)"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "We deployed a fix on November 19, 2026, and have notified impacted customers through Azure Service Health, providing guidance and support"
+        attribution: "BleepingComputer (quoting a Microsoft spokesperson)"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "The notification says no software updates or other customer remediation are required to address the vulnerability."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "Microsoft has not disclosed who exploited the vulnerability, how many tenants were impacted, or when the attacks first began."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+    extended_notes: |
+      Exposure: the notice reaches tenants through Azure Service Health; a tenant that never ran Connect Health agents may still hold onboarding data. Detection (telemetry class first): mail-gateway logs for messages that impersonate Microsoft Entra or a Connect Health alert and are addressed to tenant technical-contact or Global Administrator mailboxes; identity sign-in and audit logs for privileged accounts (Microsoft's own advice). There is no post-patch eviction step because Microsoft says no credential, token or key was exposed and no configuration change was seen; the residual risk is social engineering with correct tenant details. WindowsForum quotes SecurityOnline advising administrators to open the Azure portal directly to verify any such notice instead of following links in e-mail: that is the outlet's advice, not Microsoft's. Context only: Neowin ties the story to a Microsoft 365 outage in the same week that Microsoft traced to a July software defect; the sources do not link the two. aka.ms/ConnectHealth/scripts (Microsoft's script link) resolved to a GitHub page that was not read.
+      No Triage line: no source offers a discriminator beyond verifying the notice in the portal.
+      Admiralty suggestion: source B (BleepingComputer), credibility 2: the underlying document is Microsoft's own notification, confirmed to the press by a Microsoft spokesperson, but the notice itself could not be read first-hand.
+
+  # ---------------------------------------------------------------------------
+  - title: "European Commission: an AI-assisted cyber campaign first seen on 2026-10-22 disrupted HR, medical-reimbursement and translation systems for more than ten days; the Commission confirms an 'AI-generated cyber campaign', Politico says CERT-EU identified the ARTEX tool"
+    sources:
+      - { url: "https://www.politico.eu/newsletter/brussels-playbook/cyberattack-hits-the-commission/", publisher: "Politico Europe (Brussels Playbook)", date: "2026-11-19", role: "primary" }
+      - { url: "https://therecord.media/european-commission-confirms-cyberattack-using-ai", publisher: "The Record (Recorded Future News)", date: "2026-11-19", role: "primary" }
+      - { url: "https://www.netzwoche.ch/news/2026-11-20/kriminelle-greifen-systeme-der-eu-kommission-mit-ki-tool-an", publisher: "Netzwoche", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/eu-kommission-bestaetigt-cyberangriff-20261119", publisher: "Inside IT", date: "2026-11-19", role: "corroborating" }
+      - { url: "https://www.ic3.gov/CSA/2026/261113.pdf", publisher: "FBI (FLASH-2026-1113-001, ARTEX threat overview)", date: "2026-11-13", role: "context" }
+    discovery_trace: "first seen at: inside-it-ch RSS, URL https://www.inside-it.ch/rss.xml (item 'EU-Kommission bestätigt Cyberangriff', 2026-11-19) → pivot: Inside IT article, URL https://www.inside-it.ch/eu-kommission-bestaetigt-cyberangriff-20261119 → primary reporting: Politico Brussels Playbook, URL https://www.politico.eu/newsletter/brussels-playbook/cyberattack-hits-the-commission/ → WebSearch ('CERT-EU ARTEX AI tool threat advisory European Commission cyberattack Sysper') → The Record, URL https://therecord.media/european-commission-confirms-cyberattack-using-ai (carries the Commission spokesperson's own briefing statements) → Netzwoche, URL https://www.netzwoche.ch/news/2026-11-20/kriminelle-greifen-systeme-der-eu-kommission-mit-ki-tool-an → FBI FLASH via Borncity link, URL https://www.ic3.gov/CSA/2026/261113.pdf (read with the pdf transport). No CERT-EU page naming the Commission case could be fetched; The Register body was nav-only on every transport."
+    summary: |
+      Facts (Commission spokesperson Thomas Regnier, as reported by The Record from a 2026-11-19 briefing): the first signs of the attack were detected on 2026-10-22; the Commission calls it an "AI-generated cyber campaign" and did not name the tool or the attackers' motive; several services were taken offline as a protective measure, affected individuals were notified, other systems are being checked preventively, CERT-EU and the European Data Protection Supervisor are in the loop, investigators found no evidence of a data breach affecting staff broadly and know of no ransom demand, and the investigation is open. Reporting (Politico, from an anonymous EU official and a leaked internal mail): disruption lasted over ten days; the HR platform Sysper (payslips, leave, timesheets) and the medical-reimbursement system MyPMO were restored earlier in the week although Sysper crashed again on 2026-11-18, translation services were hit on 2026-11-17, salaries were paid but some staff could not submit timesheets or request leave, the Corporate Management Board met urgently and the digital services department ordered stepped-up security checks; the same official says CERT-EU detected that international hackers used ARTEX, an openly available AI tool built to find vulnerabilities, and that investigators do not yet know whether staff personal data was compromised. The Commission itself did not confirm ARTEX; the tool attribution rests on Politico's anonymous source citing CERT-EU, and no initial access vector or actor has been named. Assessment owner: SentinelOne's Shaun Williams (via The Record) reads the case as showing that tools like ARTEX let actors find and exploit flaws in internet-facing devices faster, cheaper and with less skill, not as proof of any one actor. Context from the FBI's 2026-11-13 FLASH: since at least August 2026 a variety of actors have used ARTEX against government and other sectors, some intrusions going from initial targeting to privileged access in under three hours, and the framework favours overlooked peripheral systems such as partner and supplier portals and self-service applications. Disclosure lag: detection on 2026-10-22, first public report on 2026-11-19; the Commission says it did not hide the incident and that publicising defensive measures could weaken them. The Commission's third disclosed incident this year (Ivanti in January, cloud infrastructure in March); officials have not linked them (The Record).
+    region_nexus: "EU institution (Brussels); not Swiss, but a government employer's internal HR and self-service systems hit by the AI-assisted tooling that the FBI says targets government; the Swiss federal administration and cantons run comparable HR/self-service platforms"
+    primary_sector_nexus: "direct (public-sector comparable): government administration"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1595.002, T1190]
+    affected_products: []
+    entity_keys: ["tool:artex"]
+    new_entities:
+      - { key: "incident:european-commission-ai-assisted-cyber-campaign-2026-10", type: incident, name: "European Commission AI-assisted cyber campaign (October to November 2026)",
+          aliases: [],
+          summary: "Cyber campaign first detected 2026-10-22 that disrupted the Commission's HR (Sysper), medical-reimbursement (MyPMO) and translation systems for more than ten days; the Commission calls it AI-generated, Politico reports CERT-EU identified ARTEX (Politico, The Record, 2026-11-19)." }
+    relation_suggestions:
+      - { subject: "incident:european-commission-ai-assisted-cyber-campaign-2026-10", object: "tool:artex",
+          basis: "Politico, citing an anonymous EU official, says CERT-EU detected attackers' use of ARTEX; the Commission itself did not name the tool (Politico and The Record, 2026-11-19)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: duplicate
+    duplicate_of: "2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse (update record 2026-11-20T05:12:58Z, run 2026-11-20T0356Z-intel; the update and body already carry the Commission's 2026-11-19 statement from the EC midday-briefing transcript, Politico, and Cyber Security News)"
+    developing_window: true
+    evidence:
+      - quote: "CERT-EU, detected earlier this month that international hackers used ARTEX, a publicly available AI-powered tool designed to identify vulnerabilities in IT systems"
+        attribution: "Politico Europe"
+        source_url: "https://www.politico.eu/newsletter/brussels-playbook/cyberattack-hits-the-commission/"
+      - quote: "the full extent of any damage remains unclear"
+        attribution: "Politico Europe (anonymous EU official)"
+        source_url: "https://www.politico.eu/newsletter/brussels-playbook/cyberattack-hits-the-commission/"
+      - quote: "said the first signs of the attack were detected October 22"
+        attribution: "The Record"
+        source_url: "https://therecord.media/european-commission-confirms-cyberattack-using-ai"
+      - quote: "He described the incident as an “AI-generated cyber campaign” but did not identify the tool used"
+        attribution: "The Record"
+        source_url: "https://therecord.media/european-commission-confirms-cyberattack-using-ai"
+      - quote: "Regnier said investigators had found no evidence of a data breach affecting Commission staff broadly and were unaware of any ransom demand."
+        attribution: "The Record"
+        source_url: "https://therecord.media/european-commission-confirms-cyberattack-using-ai"
+    extended_notes: |
+      DEDUP NOTE (found after drafting): the existing ARTEX entry already has an update record (2026-11-20T05:12:58Z) and a body paragraph on this Commission campaign, cited to the European Commission's midday-briefing transcript (https://audiovisual.ec.europa.eu/en/media/video/I-298222, not fetched in this run), Politico and Cyber Security News; prior_coverage.json shows only the entry headline, so the match was invisible at the headline level. Treat this item as a duplicate and use it only as optional enrichment. Residual details not in that paragraph: The Record quotes Regnier that the Commission has had three disclosed incidents this year (Ivanti in January, cloud infrastructure in March; not linked by officials) and that it saw 'no hiding whatsoever'; Politico adds Sysper's second crash on 2026-11-18, the translation-service hit on 2026-11-17, the Corporate Management Board's urgent meeting, the digital services department's stepped-up security checks, salaries paid but timesheets and leave requests blocked, and an IT reply to staff that cited a general Sysper problem without naming an attack. The existing paragraph says the Commission confirmed detection on 2026-10-22 and confirmation on 2026-10-26 (from the EC transcript); The Record gives only the 2026-10-22 detection date.
+      Technique mapping: T1595.002 follows from Politico's description of ARTEX as a tool built to identify vulnerabilities; T1190 is the tool's documented purpose (FBI FLASH, SentinelOne comment), not a Commission-specific fact: no source states the Commission's initial access vector, so the entry should say so and keep the mapping hedged.
+      Exposure: no product named; the FBI FLASH advises organisations "operating internet-exposed applications, self-service portals, cloud infrastructure, and partner/supplier systems" to apply its mitigations. Detection: the FLASH describes forensically noisy traffic (directory fuzzing across 500+ requests, rapid permission probing) with little time to respond; web and application access logs on peripheral portals and cloud control-plane audit records are the telemetry classes. Defender takeaway: ARTEX use against a government employer is now reported at an EU institution; the Commission could not tell for weeks whether personal data left, which explains thin staff communication, and disclosure came four weeks after detection.
+      Related items already in the store: ARTEX entries of 2026-10-22, 2026-11-06, 2026-11-15, 2026-11-18 (Barracuda, ARTEX-consistent); the FBI FLASH-2026-1113-001 itself (13 November) is not the subject of any prior entry that this run's prior_coverage lists by that name: S3/S1 may carry it as research.
+      Admiralty suggestion: B2: Politico plus The Record independently report the Commission's statements; the ARTEX attribution is single-sourced to an anonymous official and flagged as such.
+
+  # ---------------------------------------------------------------------------
+  - title: "Publica commissions an external review of its own supplier selection, data handling, controls and oversight after the PK Softech attack, and says the data that left came from the supplier's test environment"
+    sources:
+      - { url: "https://publica.ch/de/ueber-uns/aktuell/cyberangriff-auf-softwarelieferanten-publica-laesst-umgang-mit-personendaten-und-sicherheitskontrollen-extern-untersuchen", publisher: "Publica (Pensionskasse des Bundes)", date: "2026-11-19", role: "primary" }
+      - { url: "https://publica.ch/de/dokumente/publica-laesst-sicherheitsvorkehrungen-unabhaengig-ueberpruefen", publisher: "Publica (newsletter to insured persons, PDF)", date: "2026-11-19", role: "primary" }
+      - { url: "https://www.inside-it.ch/publica-laesst-cybervorfall-extern-pruefen-20261119", publisher: "Inside IT", date: "2026-11-19", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch RSS, URL https://www.inside-it.ch/rss.xml (item 'Publica lässt Cybervorfall extern prüfen', 2026-11-19) → pivot: Inside IT article, URL https://www.inside-it.ch/publica-laesst-cybervorfall-extern-pruefen-20261119 → primary: Publica event page, URL https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten (2026-11-19 'Stand' section; body of that section only readable through WebFetch, which surfaced the two links below) → primary: Publica press page, URL https://publica.ch/de/ueber-uns/aktuell/cyberangriff-auf-softwarelieferanten-publica-laesst-umgang-mit-personendaten-und-sicherheitskontrollen-extern-untersuchen and Publica newsletter PDF, URL https://publica.ch/de/dokumente/publica-laesst-sicherheitsvorkehrungen-unabhaengig-ueberpruefen"
+    summary: |
+      New in Publica's own words (press page and newsletter, both dated 2026-11-19): Publica says it must assume personal data of insured, former and retired persons left "from the test environment at the software supplier" (aus der Testumgebung beim Softwarelieferanten) and that its production systems were not affected; the Kassenkommission, its highest body, ordered an independent external review of how a possible data outflow could occur despite existing safeguards, whether responsibilities were properly exercised and where improvements are needed, including the Kassenkommission's own supervision. The review has four areas: procurement and contracts (selection of the supplier, agreed data-protection and information-security requirements); handling of personal data (transfer, processing, protection, access rights); controls (security requirements, effectiveness of existing controls); and leadership and oversight (responsibilities, information paths, decisions between the commission, committees and management). The approach is to be fixed by the end of January 2027 and a first report is planned by the end of March 2027; the external firm must report immediately any security risk that needs instant action. The review excludes the criminal investigation and the investigation at the supplier, which Publica leaves to the Federal Prosecutor's Office and the Federal Data Protection and Information Commissioner. The newsletter tells insured persons to assume their own data may be affected as a precaution; Publica still cannot say which data left or whose, knows of no person demonstrably harmed, and has no indication of publication on the darkweb. The entry's existing statements on actor, ransom demand and customers are untouched.
+    region_nexus: "Switzerland, federal level (Publica insures federal administration and ETH-domain staff)"
+    primary_sector_nexus: "direct (federal pension fund; supplier-held test data)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199]
+    affected_products: []
+    entity_keys: ["incident:pk-softech-publica-cyberattack-2026-09", "actor:akira"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_suggestion: { reliability: A, credibility: 2 }
+    novelty: "update-of:2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow"
+    developing_window: true
+    borderline: true
+    borderline_reason: "the 2026-11-21 run already dropped Publica's external review as 'governance only' (its run record lists it as a borderline-drop); re-surfaced because Publica's own press page now states the data came from the supplier's test environment and lists four review areas (procurement and contracts, handling of personal data, controls, leadership and oversight) that read as a supplier-governance checklist for Swiss public bodies; no new technical detail on vector or actor, so the main agent may keep the earlier drop or add a short update record"
+    evidence:
+      - quote: "Wir müssen davon ausgehen, dass Personendaten von versicherten, ehemals versicherten und rentenbeziehenden Personen von Publica aus der Testumgebung beim Softwarelieferanten abgeflossen sind."
+        attribution: "Publica"
+        source_url: "https://publica.ch/de/ueber-uns/aktuell/cyberangriff-auf-softwarelieferanten-publica-laesst-umgang-mit-personendaten-und-sicherheitskontrollen-extern-untersuchen"
+      - quote: "Ein erster Untersuchungsbericht ist bis Ende März 2027 vorgesehen."
+        attribution: "Publica"
+        source_url: "https://publica.ch/de/ueber-uns/aktuell/cyberangriff-auf-softwarelieferanten-publica-laesst-umgang-mit-personendaten-und-sicherheitskontrollen-extern-untersuchen"
+      - quote: "Die strafrechtlichen Ermittlungen sowie Untersuchungen beim Softwarelieferanten sind nicht Teil dieses Auftrags."
+        attribution: "Publica"
+        source_url: "https://publica.ch/de/ueber-uns/aktuell/cyberangriff-auf-softwarelieferanten-publica-laesst-umgang-mit-personendaten-und-sicherheitskontrollen-extern-untersuchen"
+    extended_notes: |
+      Suggested record type: update (a new governance development from the victim body plus Publica's own explicit "test environment" statement; the existing entry only says apparently project/test/migration data). Defender takeaway worth carrying: the four review areas read as a ready checklist for any Swiss public body that hands personal data to a software supplier (what data goes into supplier test environments, who may access it, whether deletion promises are verified, who oversees it); the existing entry already records that PK Softech confirmed deletion of 2019 migration data in writing and apparently had not done it. No new technical detail on access vector or actor exists in any source; Publica's page text says only that the 2026-11-19 'Stand' section carries these items (the section body was not visible to the trafilatura extract; WebFetch surfaced it, and the two Publica documents above were then fetched in full).
+      Inside IT (relay) additionally quotes Publica as saying the review should clarify how the attack could occur despite earlier precautions; the 2026-11-19 report date sits inside the 72 h developing-story window.
+
+  # ---------------------------------------------------------------------------
+  - title: "Basel-Landschaft: the first phase of the attack on the cantonal administration, from Sunday 2026-11-15, hit about twenty applications on six servers that were reinstalled, and an Alertswiss warning said the emergency numbers 112, 117 and 118 might be restricted before it was withdrawn"
+    sources:
+      - { url: "https://www.watson.ch/schweiz/digital/951471601-20-kantonale-applikationen-von-cyberangriff-im-baselbiet-betroffen", publisher: "watson.ch (Keystone-SDA, relaying the Landeskanzlei communiqué)", date: "2026-11-18", role: "primary" }
+      - { url: "https://www.netzwoche.ch/news/2026-11-19/cyberkriminelle-greifen-it-des-kantons-basel-landschaft-an", publisher: "Netzwoche", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch RSS, URL https://www.inside-it.ch/rss.xml (item 'Cyberangriff auf Baselbieter Verwaltung führte zu Datenabfluss', 2026-11-20, already covered) → WebSearch ('Basel-Landschaft Cyberangriff Verwaltung Update Grenzgänger Datenabfluss Täterschaft') → Netzwoche, URL https://www.netzwoche.ch/news/2026-11-19/cyberkriminelle-greifen-it-des-kantons-basel-landschaft-an (original report of 2026-11-19 plus update of 2026-11-20) → primary reporting: watson.ch / Keystone-SDA, URL https://www.watson.ch/schweiz/digital/951471601-20-kantonale-applikationen-von-cyberangriff-im-baselbiet-betroffen. The canton's own communiqués of 2026-11-18 and its FAQ page returned 403 on every transport in this run (WebFetch included)."
+    summary: |
+      Gap-fill for the covered Basel-Landschaft entry, which says only that other applications had been switched off earlier in the week. Per the Landeskanzlei communiqué of Wednesday evening 2026-11-18 as relayed by Keystone-SDA (watson.ch) and Netzwoche: various attacks on the cantonal administration had been running since Sunday 2026-11-15 and affected about twenty cantonal applications (the tax calculator, already replaced, among them), which run on six servers that were being reinstalled; the cantonal cyber-security sub-staff of the leadership staff took countermeasures and disconnected individual servers from the internet, which could interrupt cantonal digital applications. During the night to Wednesday 2026-11-18 the Alertswiss app warned that the emergency numbers 112, 117 and 118 in the canton might be restricted because of technical problems; a few hours later the warning was withdrawn. Government spokesperson Nic Kaufmann says the numbers were reachable throughout and that the warning was precautionary because it was unknown whether more servers would have to be isolated from the internet. The authorities and organisations for rescue and security (BORS) confirmed their IT was never affected and that they stayed operational. Entry point, tool and actor are still unnamed.
+    region_nexus: "Switzerland, cantonal administration; touches police, fire and ambulance emergency-call access"
+    primary_sector_nexus: "direct (cantonal government; emergency services)"
+    sector: "public-sector, emergency-services"
+    cves: []
+    techniques: [T1213]
+    affected_products: []
+    entity_keys: ["incident:basel-landschaft-cantonal-administration-cyberattack-2026-11"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-11-21/basel-landschaft-97000-cross-border-work-permits-stolen"
+    developing_window: true
+    evidence:
+      - quote: "In der Nacht auf Mittwoch hatte die Warn-App Alertswiss mitgeteilt, dass die Notrufnummern 112, 117 und 118 im Kanton Basel-Landschaft aufgrund von technischen Problemen eingeschränkt sein könnten."
+        attribution: "watson.ch (Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/digital/951471601-20-kantonale-applikationen-von-cyberangriff-im-baselbiet-betroffen"
+      - quote: "Die erwähnten Applikationen werden auf sechs Servern betrieben."
+        attribution: "watson.ch (Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/digital/951471601-20-kantonale-applikationen-von-cyberangriff-im-baselbiet-betroffen"
+      - quote: "Doch habe man die Warnung als Vorsichtsmassnahme herausgegeben, da man nicht gewusst habe, ob noch weitere Server vom Internet isoliert werden müssten."
+        attribution: "watson.ch (Keystone-SDA)"
+        source_url: "https://www.watson.ch/schweiz/digital/951471601-20-kantonale-applikationen-von-cyberangriff-im-baselbiet-betroffen"
+    extended_notes: |
+      Suggested record type: improvement (an earlier-phase detail the entry lacks; not a new development, so it should not re-float the entry). Emergency-service lesson, only as the sources state it: a cantonal IT response that isolates servers from the internet can put the access path of the emergency numbers in question, and the canton chose a public precautionary Alertswiss warning before knowing; the warning was lifted within hours. The sources give no entry point, no actor and no tool, so techniques stay at T1213 (data taken from a database, per the canton's 2026-11-20 confirmation).
+      Netzwoche's page was updated 2026-11-20 and carries the 97,000-record update the entry already cites.
+      Dedup note: the 2026-11-19 intel run saw these first-phase facts (its record lists the Alertswiss notice, six servers, BORS unaffected) and held them in the backlog until a behaviour or data-taken statement existed; the 2026-11-21 entry, written after the data-theft confirmation, does not carry them. The facts are therefore an enrichment of the entry, not a new development.
+
+  # ---------------------------------------------------------------------------
+  - title: "Bell Canada: a victim-confirmed 'agentic' intruder reached the pre-production environment of the system that provisions telecom circuits and took enterprise-customer business data and network-element IP addresses"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/bell-canada-says-agentic-hacker-stole-enterprise-customer-data/", publisher: "BleepingComputer", date: "2026-11-20", role: "primary" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (feed item 'Bell Canada says agentic hacker stole enterprise customer data', 2026-11-20) → primary reporting: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/bell-canada-says-agentic-hacker-stole-enterprise-customer-data/ (Bell's customer notification plus Bell's statement to BleepingComputer). WebSearch ('Bell Canada \"agentic threat actor\" Maximo breach enterprise customers November 17') found no second outlet."
+    summary: |
+      Facts per Bell's statement to BleepingComputer: on 2026-11-17 an "agentic threat actor" accessed several Bell systems, including the system used to order and provision circuits, and exfiltrated some enterprise customer data; Bell contained the incident, reports no impact on customer services and does not know the attribution. The customer notification says the intruder reached a pre-production environment of the Maximo system; data that may be exposed is business contact information (names, job titles, corporate email addresses, phone numbers, business addresses), information in ticket titles and some IP addresses of network elements or systems, with limited context; credentials, highly sensitive personal data, PDFs and attachments were not in the dataset. Bell shares indicators and hunting information with enterprise customers and the Canadian Centre for Cyber Security but has not published them. Bell has not said how many customers are affected. Inference to keep separate: BleepingComputer reads "agentic" as AI-powered tooling; Bell does not name ARTEX or any tool.
+    region_nexus: "Canada; no Swiss nexus stated. Supplier-held network inventory of enterprise (including government) customers is the transferable exposure"
+    primary_sector_nexus: "indirect: telecom supplier to enterprise and public customers"
+    sector: "telecommunications"
+    cves: []
+    techniques: [T1213]
+    affected_products: []
+    entity_keys: ["tool:artex"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "no Swiss nexus and single-source (BleepingComputer relaying Bell's own notice); kept because the victim itself says an agentic actor was used, the intruder sat in a pre-production environment holding real customer data (the same non-production-data lesson as Publica's test environment), and it adds a victim-confirmed 'agentic' supplier intrusion on the same day (2026-11-17) as the Rackspace Spot access and alongside the Commission campaign already in the ARTEX entry; the main agent may fold it into the ARTEX entries or drop it"
+    evidence:
+      - quote: "Bell is investigating a cybersecurity incident that occurred on November 17 in which an agentic threat actor accessed some of our systems, including a system used for ordering and provisioning circuits, and exfiltrated some enterprise customer data"
+        attribution: "BleepingComputer (quoting Bell)"
+        source_url: "https://www.bleepingcomputer.com/news/security/bell-canada-says-agentic-hacker-stole-enterprise-customer-data/"
+      - quote: "We currently do not know the attribution"
+        attribution: "BleepingComputer (quoting Bell)"
+        source_url: "https://www.bleepingcomputer.com/news/security/bell-canada-says-agentic-hacker-stole-enterprise-customer-data/"
+    extended_notes: |
+      No ARTEX relation is claimed: entity key tool:artex is listed only so the main agent can cross-link the agentic-actor cluster if it chooses; no source links Bell to ARTEX.
+
+  # ---------------------------------------------------------------------------
+  - title: "Rackspace Spot: leaked credentials let an unauthorized party act as legitimate users in some customer organisations on 2026-11-17, create pods, read Kubernetes Secrets and list nodes and volumes"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/rackspace-spot-breach-let-hackers-access-customer-kubernetes-secrets/", publisher: "BleepingComputer", date: "2026-11-21", role: "primary" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/feed/ (feed item 'Rackspace Spot breach let hackers access customer Kubernetes secrets', 2026-11-21) → primary reporting: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/rackspace-spot-breach-let-hackers-access-customer-kubernetes-secrets/ (Rackspace's customer notification obtained by BleepingComputer). WebSearch ('Rackspace Spot unauthorized party leaked credentials Kubernetes Secrets November 17 2026 customers') found no second outlet; the Reddit thread BleepingComputer cites was not fetched."
+    summary: |
+      Facts per Rackspace's customer notification as quoted by BleepingComputer: an unauthorized party used leaked credentials to access parts of Rackspace Spot between about 00:20 and 22:00 UTC on 2026-11-17; Rackspace learned of it on 2026-11-18 from a customer report and confirmed that customer's organisation was affected the same day. The intruder could act as legitimate users in some customer organisations: create pods in Kubernetes clusters, read Kubernetes Secrets, and list nodes and volumes, so any Secret in an affected user's clusters and any Spot API or refresh token held by that user must be treated as readable. Rackspace revoked tokens and sessions, removed the unauthorized pods, rotated keys and tightened access controls and monitoring, and tells affected customers to reissue Spot API tokens, replace refresh tokens in automation, download fresh Kubernetes configuration files, rotate credentials stored in cluster Secrets, and review logs of databases, container registries, Git repositories, cloud storage and third-party services back to 2026-11-17. The Spot console was down for an extended period because the platform and Platform9, which co-developed it, shut access while sanitising the environment; service was restored on 2026-11-21 (Platform9's co-founder, via a Reddit post BleepingComputer quotes). Rackspace has not said how many customers were affected or whether data was stolen. The notice shares indicators (an IP address, a range and pod-name prefixes) that are deliberately not repeated here.
+    region_nexus: "global cloud platform; no Swiss nexus stated"
+    primary_sector_nexus: "indirect at most: Kubernetes secrets as the pivot into databases, registries, Git and cloud storage"
+    sector: "technology / cloud"
+    cves: []
+    techniques: [T1078.004, T1552.007]
+    affected_products: ["Rackspace Spot"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    classification_suggestion: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "no Swiss or public-sector nexus and single-source (BleepingComputer relaying Rackspace's customer notice); transferable TTP only (leaked credential used as a legitimate tenant user to read Kubernetes Secrets, detected through a customer report); the main agent should drop unless a Swiss customer appears or a source links it to the same-day Bell intrusion; no source links them"
+    evidence:
+      - quote: "On 17 November 2026 (about 00:20–22:00 UTC), an unauthorized party used leaked credentials to access parts of Rackspace Spot"
+        attribution: "BleepingComputer (quoting Rackspace's notification)"
+        source_url: "https://www.bleepingcomputer.com/news/security/rackspace-spot-breach-let-hackers-access-customer-kubernetes-secrets/"
+      - quote: "Rackspace warned that the attackers could have read any Secret stored in an affected user's clusters, as well as any Spot API tokens or refresh tokens held by that user."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/rackspace-spot-breach-let-hackers-access-customer-kubernetes-secrets/"
+    extended_notes: |
+      Technique check: T1078.004 (Cloud Accounts) and T1552.007 (Unsecured Credentials: Container API) are both active in the pinned dataset (checked in this run); T1613 (Container and Resource Discovery) is also active and fits the node and volume listing if the main agent wants a third id.
+
+# ---------------------------------------------------------------------------
+borderline_drops:
+  - { item: "N-able Mail Assure / SpamExperts Hosted Cloud server compromise (BleepingComputer, The Hacker News, 2026-11-19/20)", reason: "incident floor: N-able names no vector or actor, says mail flow and filtering were unaffected and it has no evidence customer data or mailboxes were reached; only the management portal, API, quarantine and logging were taken offline; N-able says it is unrelated to the N-central flaws; no Swiss customer named" }
+  - { item: "FBI NCIC criminal-database breach (CNN via BleepingComputer, 2026-11-21)", reason: "unconfirmed: the FBI has not confirmed, how access occurred and whether data left are unknown, and BleepingComputer sees no indication it is linked to the earlier ShinyHunters FBI case; no Swiss nexus" }
+  - { item: "USDA multi-day application shutdown after a security incident (Nextgov, 2026-11-20)", reason: "incident floor: no vector, actor or exfiltration finding; US federal, no Swiss nexus; DataBreaches.net body unreadable (403), Nextgov seen only as a search snippet" }
+  - { item: "FIFA listed on the Handsome Boy Hacking Club leak site (ransomware.live, discovered 2026-11-20)", reason: "PD-6: leak-site claim only, no victim statement or Admiralty A/B corroboration found; a sports federation, not public sector" }
+  - { item: "France Travail 2.6 million-row sale and Nexway/Tsume/Seazon/LocService/Voyages Rive Gauche/Clevermate/Gotronic/La Maison des Travaux/Robot Advance notices (Fuites Infos, 2026-11-19 to 2026-11-21)", reason: "French consumer and SME incidents or forum sale claims without victim confirmation; no Swiss nexus and no transferable TTP; the France Travail file is a seller's claim, France Travail had not commented as of 2026-11-20" }
+  - { item: "SBC Medical Group 1.6 million customers (BleepingComputer, SEC 8-K 8.01, 2026-11-19), iQSTEL 8-K 8.01 (2026-11-20), Chase/Visa/Mastercard vendor breach, Hitachi Vantara employee data, Nvidia/The Gentlemen claim, TfL Oyster 265,000 (2026-11-19 to 2026-11-20)", reason: "no Swiss or public-sector nexus, outside the 26 h window for most, no new TTP; Nvidia is a leak-site claim with Nvidia saying a third-party partner may be behind it" }
+  - { item: "NSA classified-network outage (2026-11-17)", reason: "not a cyber incident: US officials and the DNI say there is no evidence of an attack and tie it to maintenance and PHP patches; no Swiss nexus" }
+  - { item: "Threema Android/iOS audit (CyberInsider, 2026-11-21)", reason: "not an incident: one low-rated Android biometric-lock finding, no critical flaws, fix due in December; Swiss product used by public bodies, so S1/S3 may note it, but there is no exploitation" }
+  - { item: "Concevis AG ransomware press release on baselland.ch (undated)", reason: "an older 2023 event; the page is undated and unrelated to the November 2026 cantonal attack" }
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no supplier watchlist: sweep is a no-op"
+candidate_sources:
+  - id: publica-ch-ereignisseite
+    publisher: "Publica (Pensionskasse des Bundes) incident page and newsletters"
+    url: "https://www.publica.ch/de/cyberangriff-auf-softwarelieferanten"
+    category: breaches
+    why: "Victim-owned, dated 'Stand' log of the PK Softech incident for the federal pension fund; the newest sections (including the external-review decision) are only visible through WebFetch, not the trafilatura extract; worth a standing check while the story is open, but it is a single-incident page, not a general source"
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "feed reads (10 items, newest 2026-11-21 12:59 UTC) but every article body returns 403 on direct, trafilatura and jina; USDA, FBI NCIC and Algonquin Dam items were chased through BleepingComputer, Nextgov snippets and search instead. Recipe unchanged (matches the 2026-11-18 note)."
+  - source_id: infostealers-hudson-rock
+    reason: "quiet: newest feed item 2026-11-17 06:30 UTC, nothing inside the 73 h lookback"
+  - source_id: ransom-isac
+    reason: "quiet: newest feed item 2026-11-17, nothing inside the 73 h lookback; recipe `feed https://ransom-isac.org/feed.xml 15` still works"
+  - source_id: bitdefender-threat-debrief
+    reason: "quiet: newest item 2026-11-18 (EggStreme, research), nothing inside 26 h; `feed https://www.bitdefender.com/nuxt/api/en-us/rss/businessinsights/` still works"
+  - source_id: cyberdaily-au
+    reason: "quiet: `extract https://www.cyberdaily.au/security` lists items to 2026-11-20 only, all outside 26 h; recipe works"
+  - source_id: baselland-ch
+    reason: "baselland.ch pages returned 403 on direct, trafilatura, jina and WebFetch for the FAQ page this run (the Concevis press page read through jina once); the canton's 2026-11-18 communiqué and FAQ updates could not be read first-hand, so the Basel-Landschaft item rests on Keystone-SDA via watson.ch. Not a slice record."
+  - source_id: publica-ch
+    reason: "publica.ch event page: the trafilatura extract returns the 2026-11-19 and 2026-11-18 'Stand' headings with empty bodies (accordion content); WebFetch surfaces the section text and the two linked documents, which then extract (via jina) in full. Recipe: WebFetch for link discovery, then `extract` on each linked page. Not a slice record."
+  - source_id: reddit
+    reason: "Microsoft's Entra Connect Health customer notification is shared only on Reddit (r/sysadmin); Reddit returns a JS proof-of-work shell to extract and is refused by WebFetch, so the notice text is read only as quoted by BleepingComputer and Neowin."
+source_ledger:
+  - { id: fuitesinfos, tier: candidate, attempted: true, transport: "url --direct /articles/ (trailing slash) + extract per article", horizon_hours: 73, in_horizon_items: 10, returned: 0, note: "all French consumer/SME or unconfirmed forum claims, none with a Swiss nexus (borderline_drops)" }
+  - { id: infostealers-hudson-rock, tier: candidate, attempted: true, transport: "feed https://www.infostealers.com/feed/ 20", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest item 2026-11-17" }
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "feed https://ransom-isac.org/feed.xml 15", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest item 2026-11-17 (Blatant and Beyond)" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "api: url --direct countryvictims/CH + countrycyberattacks/CH", horizon_hours: 73, in_horizon_items: 1, returned: 0, note: "one CH leak-site record (FIFA, claim only, dropped); newest cyberattack record added 2026-11-18 is the covered Basel-Landschaft incident" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "sec-edgar 8k 2026-11-19 2026-11-22 1.05 + full-text supplement", horizon_hours: 73, in_horizon_items: 4, returned: 0, note: "Item 1.05: 0 hits; Item 8.01 cyber filings (SBC Medical, iQSTEL) have no Swiss nexus" }
+  - { id: bitdefender-threat-debrief, tier: standard, attempted: true, transport: "feed https://www.bitdefender.com/nuxt/api/en-us/rss/businessinsights/ 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest item 2026-11-18" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "feed https://www.bleepingcomputer.com/feed/ 20 + extract per article", horizon_hours: 26, in_horizon_items: 4, returned: 3, note: "Entra Connect Health item; Rackspace Spot and Bell Canada (the latter from the 2026-11-20 listing, drilled as the Commission case developed) returned as borderline; FBI NCIC dropped" }
+  - { id: cyberdaily-au, tier: candidate, attempted: true, transport: "extract https://www.cyberdaily.au/security", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest listed item 2026-11-20" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "feed https://cyberinsider.com/feed/ 25", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "Threema audit (not an incident) dropped" }
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "feed https://databreaches.net/feed/ 25 (article bodies 403)", horizon_hours: 26, in_horizon_items: 6, returned: 0, note: "FBI NCIC, Algonquin Dam, India Agniveers, SG YMCA, RansomwareHelp indictment, PHP updates: none cleared the gate" }

@@ -1,0 +1,479 @@
+domain: S3
+run_id: 2026-11-22T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-22T03:57:34Z
+ended_at: 2026-11-22T04:15:45Z
+duration_seconds: 1091
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 3
+  bridge_fetches: 64
+items:
+  - title: "Amazon: a Chinese-nexus operator's Cairn AI agents found and exploited an unpatched path traversal in MONAI Label on their own, going from API mapping to arbitrary file write in about 11 minutes and on to a root shell"
+    sources:
+      - { url: "https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/", publisher: "Amazon Threat Intelligence (AWS Security Blog)", date: "2026-11-20", role: "primary" }
+      - { url: "https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94", publisher: "Project MONAI (GitHub Security Advisory)", date: "2026-11-18", role: "primary" }
+      - { url: "https://github.com/Project-MONAI/MONAILabel/pull/1915", publisher: "Project MONAI (fix pull request #1915)", date: "2026-10-12", role: "corroborating" }
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-monai-label-agent-discovered-zero-day-2026/", publisher: "Cloud Security Alliance Lab Space (secondary re-report)", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/ (listing via extract; research note 'MONAI Label Zero-Day: AI Agents Exploit Medical Imaging Research Servers', 2026-11-21) -> pivot: CSA research note, URL https://labs.cloudsecurityalliance.org/research/csa-research-note-monai-label-agent-discovered-zero-day-2026/ (its References list) -> primary: AWS Security Blog, URL https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/ -> primary: Project MONAI advisory, URL https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94 -> fix PR, URL https://github.com/Project-MONAI/MONAILabel/pull/1915. A WebSearch (\"Amazon Threat Intelligence MONAI Label zero-day autonomous AI agents Cairn framework exploited\") did not surface the post, and the Register article fetched (URL https://www.theregister.com/security/2026/11/20/china-attackers-deployed-ai-agents-that-autonomously-found-and-exploited-a-0-day-to-take-over-a-university-server/5311382) returned only page chrome, so it is not cited."
+    summary: |
+      Amazon Threat Intelligence reports that a Chinese-nexus operator ran Cairn, the open-source autonomous AI penetration-testing framework (also documented by Gambit Security in a criminal retail campaign), from a server left publicly reachable without authentication, which exposed the project configurations, prompts and AI output; Amazon found it on 2026-09-10. In an approximately 48-hour run from 2026-09-08 the agents were pointed at IP addresses of East Asian universities outside mainland China with variations of the goal "obtain shell access". Hardened targets held: roughly 16 hours and 148 actions against an unauthenticated Redis instance (replication abuse, scripting-sandbox escape, config-file writes, memory corruption, a Log4Shell attempt, then an SSRF in a co-located Qdrant instance to map the Docker network and credential sprays), and more than 30,000 credential combinations against a GPU server using about 80 usernames the agents compiled from faculty directories, lab sites and archived pages. Against a medical-imaging annotation server the agents identified the framework, mapped the API, found an upload endpoint whose filename parameter allowed path traversal, and in about 11 minutes went from API mapping to arbitrary file write; in a later session they wrote a Python reverse shell to sitecustomize.py and triggered a training endpoint to spawn a new interpreter, which imported it and gave a root shell. In another session the operator stepped in, supplied a proxy tunnelled into a second university network (the same vulnerable software ran there) and directed the agents at other hosts. Amazon assesses with high confidence the flaw was a zero-day (no fix, issue, advisory or prior mention) and with moderate confidence the actor is Chinese-nexus (Simplified Chinese prompts, China Standard Time script timestamps, targeting of universities of likely strategic interest). The project advisory GHSA-qc22-rmgc-vg94 describes the flaw in MONAI Label's PUT /datastore/image and PUT /datastore/label (LocalDatastore.add_image() and save_label() join a caller-controlled image ID into a filesystem path without checking it stays inside the datastore); authentication is off by default so any client that can reach the server can exploit it, and with authentication on the ANNOTATOR role suffices. The advisory lists workarounds only and states the fix (PR #1915) "will be included in the next MONAI Label release"; the advisory page read carries no CVE identifier and says it was re-reported to generate one. AWS notified the maintainers and, because the affected organisations were not AWS customers, worked with a government partner to notify them. The agent-autonomy characterisation (agents, not the operator, chose each step and found the flaw) is Amazon's own assessment from the exposed operator logs and rests on that single first-party source; the project advisory independently confirms the flaw, its mechanics and the pending fix.
+    region_nexus: "global; targeted East Asian universities; any internet-reachable MONAI Label server worldwide is exposed (Swiss university hospitals and research groups running medical-imaging AI tooling are in the exposure class)"
+    primary_sector_nexus: "indirect (public universities, research institutes and university hospitals that run research-grade AI tooling with default settings)"
+    sector: "public-sector (education, research, healthcare)"
+    cves: []
+    techniques: [T1595.002, T1190, T1059.006, T1546.018, T1110, T1090]
+    affected_products: ["MONAI Label"]
+    entity_keys: ["tool:cairn-exploitation-engine"]
+    new_entities:
+      - { key: "product:monai-label", type: product, name: "MONAI Label", aliases: ["monailabel", "Project MONAI MONAI Label"], summary: "Open-source server (Project MONAI) for AI-assisted annotation of medical images and serving of segmentation models; path traversal GHSA-qc22-rmgc-vg94 in its datastore upload endpoints was exploited as a zero-day by AI agents (Amazon Threat Intelligence, 2026-11-20)." }
+    relation_suggestions:
+      - { subject: "tool:cairn-exploitation-engine", object: "product:monai-label", basis: "Amazon Threat Intelligence: Cairn agents found and exploited the MONAI Label path traversal during the September 2026 campaign (AWS Security Blog, 2026-11-20)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Amazon Threat Intelligence assesses with high confidence that it was a zero-day based on the absence of any corresponding fix, issue, advisory, or prior mention in vulnerability databases for the affected open-source project."
+        attribution: "Amazon Threat Intelligence (AWS Security Blog)"
+        source_url: "https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/"
+      - quote: "In about 11 minutes, the agents went from mapping the application’s API to arbitrarily writing files on the server."
+        attribution: "Amazon Threat Intelligence (AWS Security Blog)"
+        source_url: "https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/"
+      - quote: "Amazon Threat Intelligence assesses with moderate confidence that this is a Chinese-nexus threat actor based on the Simplified Chinese prompts, the China Standard Time script timestamps, and the targeting of universities likely of strategic interest to China."
+        attribution: "Amazon Threat Intelligence (AWS Security Blog)"
+        source_url: "https://aws.amazon.com/blogs/security/chinese-nexus-actors-cairn-ai-agents-found-a-zero-day-on-their-own/"
+      - quote: "so in the default configuration any network client that can reach the server can exploit this"
+        attribution: "Project MONAI (GitHub Security Advisory)"
+        source_url: "https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94"
+      - quote: "The fix will be included in the next MONAI Label release."
+        attribution: "Project MONAI (GitHub Security Advisory)"
+        source_url: "https://github.com/Project-MONAI/MONAILabel/security/advisories/GHSA-qc22-rmgc-vg94"
+    extended_notes: |
+      Exposure: any MONAI Label server reachable from untrusted networks; read the running configuration for MONAI_LABEL_AUTH_ENABLE (False is the default per the advisory). Affected range: the CSA re-report states monailabel 0.8.5 and earlier and that 0.8.5 (PyPI, November 2024) was still the newest installable release on 2026-11-21 with the fix merged to the source tree on 2026-10-19; I could not confirm either on PyPI (Fastly client challenge) and the advisory page read does not list the range, so treat the range and release status as CSA-reported, to be checked against the project.
+      Detection (derived from the described mechanics): web or reverse-proxy access logs for PUT requests to the two datastore endpoints whose image query parameter carries parent-directory sequences or a leading dot (the fix rejects such IDs with HTTP 400, so legitimate annotation uploads do not need them); unexpected creation or modification of sitecustomize.py, ~/.ssh/authorized_keys or cron entries by the MONAI Label service account; a Python interpreter spawned by the service after a training-endpoint call that makes an outbound connection. Post-patch/post-hardening check: turning authentication on afterwards does not evict an attacker already in, so inspect those write targets on every instance that was reachable.
+      Hardening named by the advisory: enable authentication and withhold ANNOTATOR from untrusted users, keep the server off untrusted networks, run it unprivileged with write access limited to the datastore directory. Amazon's defender guidance: prioritise high-confidence detections that trigger automated response, because agents ran 16 hours without breaks and compress the triage window.
+      Triage: Amazon states the agents that failed against hardened targets still ran continuously; high-volume, adaptive probing of exposed Redis, Qdrant, SSH and portals from one source is the campaign's footprint, but the MONAI traversal itself is a single successful request pattern.
+      Context for the composer: the store already carries the Gambit Security report on Cairn (registry tool:cairn-exploitation-engine; CSA's note of 2026-10 on Cairn control panels is also a lead). This item is the first-party Amazon observation that adds the zero-day-discovery and espionage-use facts; do not merge with the ARTEX entries (different tool). The stored Zammad/DIVD entry (2026-10-02) is a different case: DIVD says its attacker used AI agents after reaching root, whereas here Amazon says agents found the zero-day. Registry note: tool:cairn-talos is the unrelated Cisco Talos CAIRN toolkit.
+  - title: "Unit 42 on Com-affiliated vishing extortion since August 2026: IT-support callers send staff to adversary-in-the-middle SSO pages, enrol their own MFA device within minutes, exfiltrate Microsoft 365 data through scripts and Graph, and extort by Teams message; two new clusters, Vortex and Cinder"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/", publisher: "Palo Alto Networks Unit 42", date: "2026-11-20", role: "primary" }
+    discovery_trace: "first seen at: unit42 (standing major-lab check), feed URL https://unit42.paloaltonetworks.com/feed/ (item 'Dialing for Data: Inside the Com’s High-Profile Heists', 2026-11-20 22:00 UTC) -> primary (no pivot needed): https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/ (read with extract; its outbound references to Google GTIG UNC6671, ReliaQuest Helix, Microsoft passkey-themed social engineering and Push Security were not separately fetched)"
+    summary: |
+      Unit 42 reports numerous waves of vishing by Com-affiliated actors since August 2026, drawn from its telemetry and incident-response cases: Bling Libra (ShinyHunters), the clusters CL-CRI-1116 (Redact, formerly BlackFile), CL-CRI-1147 (Pink), CL-CRI-1182 (Falcon), CL-CRI-1192 (Helix) and two it newly describes, CL-CRI-1264 (Vortex, September 2026, mostly healthcare, pharmaceutical and medical organisations) and CL-CRI-1274 (Cinder, September 2026), the latter two overlapping what Google tracks as UNC6671. The common chain: a caller poses as internal IT support and directs the employee to an organisation-specific lookalike SSO, MFA or passkey page on a throwaway apex domain with short-lived per-target subdomains; the page is an adversary-in-the-middle proxy that relays credentials and MFA approvals in real time (in one financial case telemetry showed a full sequence to an MFA number-match prompt). The attackers then enrol their own MFA device within minutes (CL-CRI-1264 reused one device name across accounts), replay a persistent "keep me signed in" token from proxy infrastructure so Duo does not re-prompt (CL-CRI-1274), authenticate through residential proxy networks and commercial VPNs, and use native cloud utilities rather than custom tools: scripted python-httpx or python-requests access and the Microsoft Graph SDK against mailbox, OneDrive and SharePoint content, Rclone, SaaS-to-SaaS transfers, extra OAuth applications, mailbox-rule and calendar changes and clearing of security alert events. Extortion arrives as internal email or Teams messages from a compromised account pointing to a Tor negotiation site, without encryption. In one CL-CRI-1192 case the actor had the victim sideload a malicious extension named Google Chrome from an attacker server with Developer Mode, giving keylogging, cookie and storage theft, QR-code capture and chrome.debugger-based remote control; Unit 42 assesses with moderate confidence it was built as an alternative way to pull credentials from desktops. Targeting moved from financial services to healthcare in September 2026, US organisations dominate, Australian share of observed subdomains rose from under 1 percent to about 13 percent in October, and actors return weeks after a failed attempt. Unit 42 recommends tighter help-desk verification, phishing-resistant MFA (FIDO2/passkeys), browser-extension allow-lists, visibility into identity actions and alerts on unauthorised data exports. Attribution is Unit 42's cluster-level assessment from infrastructure and tradecraft overlap, not an identity claim.
+    region_nexus: "US, UK, Australia primarily; transferable to any Microsoft 365 or Okta-centred organisation with a help desk and distributed workforce, including Swiss administrations"
+    primary_sector_nexus: "indirect (healthcare, finance and legal are the stated targets; public bodies share the identity and help-desk exposure)"
+    sector: "healthcare; financial services; legal (public-sector transferable)"
+    cves: []
+    techniques: [T1566.004, T1557, T1111, T1098.005, T1539, T1550.004, T1078.004, T1090, T1213.002, T1567, T1176.001]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID", "Okta", "Cisco Duo"]
+    entity_keys: ["actor:shinyhunters", "actor:unc6671", "actor:helix-extortion", "tool:rclone", "product:microsoft-365"]
+    new_entities:
+      - { key: "actor:cl-cri-1264", type: actor, name: "CL-CRI-1264 (Vortex)", aliases: ["Vortex"], summary: "Unit 42 activity cluster of Com-affiliated vishing and extortion, first seen September 2026, targeting mainly healthcare, pharmaceutical and medical organisations; AiTM proxies, MFA-device enrolment within minutes, Teams extortion (Unit 42, 2026-11-20)." }
+      - { key: "actor:cl-cri-1274", type: actor, name: "CL-CRI-1274 (Cinder)", aliases: ["Cinder"], summary: "Unit 42 activity cluster of Com-affiliated vishing and extortion, first seen September 2026; replays a persistent keep-me-signed-in session token to avoid Duo re-prompts and exfiltrates SharePoint and OneDrive through python-requests and the Graph SDK (Unit 42, 2026-11-20)." }
+    relation_suggestions:
+      - { subject: "actor:cl-cri-1264", object: "actor:unc6671", basis: "Unit 42: CL-CRI-1264 and CL-CRI-1274 overlap with activity Google tracks as UNC6671 (Unit 42, 2026-11-20)" }
+      - { subject: "actor:cl-cri-1274", object: "actor:unc6671", basis: "Unit 42: CL-CRI-1264 and CL-CRI-1274 overlap with activity Google tracks as UNC6671 (Unit 42, 2026-11-20)" }
+      - { subject: "actor:helix-extortion", object: "actor:unc6671", basis: "Unit 42 states CL-CRI-1192 (Helix) is the activity Google tracks under UNC6671 (Unit 42, 2026-11-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Unit 42 has tracked and responded to numerous waves of vishing attacks conducted by Com-affiliated threat actors in recent months."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+      - quote: "Attackers associated with CL-CRI-1264 establish initial access through vishing, where they pose as internal IT support and direct employees to servers using subdomains tailored to each targeted organization."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+      - quote: "enrolling an unauthorized MFA device within minutes of authenticating to establish persistence"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+      - quote: "avoided re-prompting for Duo MFA by replaying a persistent “keep me signed in” session token"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/com-affiliate-vishing-attacks/"
+    extended_notes: |
+      Why a lookback item: Unit 42's post is dated 2026-11-20 22:00 UTC, about four hours before the 26-hour window opens, and the unit42 record's last successful fetch was 2026-11-18, so no earlier fire has read it; nothing in the store covers this post (UNC6671 and Helix entries exist from GTIG and ReliaQuest reporting, registry actor:unc6671 and actor:helix-extortion).
+      Exposure: Microsoft 365 or Okta tenants with SSO, a help desk that resets or re-enrols MFA by phone, staff on personal mobile devices, Duo-protected apps, and browser-extension installation not restricted by policy.
+      Detection (telemetry class first): Entra/Okta sign-in logs showing a sign-in then an authentication-method or device registration within minutes from a new residential-proxy or VPN address; the same registered-device name appearing across several accounts; python-httpx or python-requests user agents and Microsoft Graph SDK access to mail, OneDrive and SharePoint at bulk-download volume; new OAuth application consents or data-sync tools; mailbox-rule, calendar and alert-clearing changes; Teams messages from a compromised internal account carrying extortion text; proxy or DNS logs for newly registered lookalike SSO/MFA/passkey domains; endpoint telemetry for an unpacked, sideloaded extension named Google Chrome and the Chrome 'started debugging this browser' banner. Post-compromise check: revoke refresh tokens and sessions and review registered MFA devices and OAuth grants, since the persistence is the enrolled device and the replayed session token, not malware.
+      Triage: help-desk-initiated MFA re-enrolment and passkey enrolment campaigns are normal admin activity; the discriminators are that the employee was called (not ticket-initiated), the destination is a lookalike apex domain rather than the real IdP, and a second device is enrolled within minutes of the first sign-in from an unfamiliar network.
+      Hardening named by Unit 42: help-desk verification, FIDO2/passkeys, browser-extension allow-lists, identity-action visibility, alerts on unauthorised data exports. Reliability: telemetry is Unit 42's own; the ShinyHunters-member arrests it mentions are cited from Reuters and Krebs in the post, not independently fetched here.
+  - title: "Huntress reverses MS-SNTP on a patched Server 2025 DC: timeroasting leaves no authentication event, the 120-byte extended authenticator that modern clients send has no public cracker, and the detection that holds is a host asking for a RID other than its own"
+    sources:
+      - { url: "https://www.huntress.com/blog/detecting-timeroasting", publisher: "Huntress", date: "2026-11-19", role: "primary" }
+      - { url: "https://cybersecurity.bureauveritas.com/uploads/whitepapers/Secura-WP-Timeroasting-v3.pdf", publisher: "Secura (Bureau Veritas Cybersecurity) whitepaper, Tom Tervoort", date: "2023", role: "corroborating" }
+    discovery_trace: "first seen at: huntress (standing major-lab check), feed URL https://www.huntress.com/blog/rss.xml (item 'Detecting Timeroasting the Hard Way', 2026-11-19 14:00 UTC) -> primary (no pivot needed): https://www.huntress.com/blog/detecting-timeroasting (read with extract) -> background pivot from its Research section: Secura whitepaper, URL https://cybersecurity.bureauveritas.com/uploads/whitepapers/Secura-WP-Timeroasting-v3.pdf (read with the pdf subcommand; confirms the original unauthenticated-RID technique)"
+    summary: |
+      Huntress researcher Andrew Schwartz reads w32time.dll and netlogon.dll from a live, fully patched Windows Server 2025 domain controller (build 26100.33438) to show how timeroasting, the unauthenticated MS-SNTP abuse that Secura's Tom Tervoort published in 2023, works in its two authenticator forms. A client names an account by RID in an NTP request and the DC returns a password-derived MAC that can be cracked offline. The legacy form is 68 bytes with an MD5 MAC and is the only one hashcat mode 31300, timeroast.py and NetExec handle; the extended form is 120 bytes, uses a SP800-108 counter-mode KDF (label "sntp-ms" including its null, the RID as little-endian context) and HMAC-SHA512, is the form modern Windows clients send by default, and is live on patched DCs (it answered extended requests carrying the old-key flag, five times out of five; the current-key timeout he saw is an open observation he does not explain). He supplies a verified reference implementation, a hash format and a hashcat module that only needs an upstream mode number. The DC signs only for computer, server-trust and interdomain-trust accounts, so plain users get no reply unless an attacker with write access first flips a user to a machine-looking account (a trailing $ and a workstation-trust userAccountControl), the loud targeted variant that Defender for Identity's Suspicious SAM Account Name Change alert covers; the quiet unauthenticated RID sweep has no identity-product coverage. Defender claims, all from the author's own lab validation: timeroasting produces no 4768, 4769, 4624 or 4776 for the targeted account; it is visible as UDP/123 connections accepted by w32time (Windows Filtering Platform audit event 5156 on the DC) and as host EDR network connections; packet size is a baseline question, not a signal (modern members send 120 bytes and the public tools only 68); the signal that holds for both sizes, even for a single packet, is the requested RID versus the source system (a member normally asks for its own computer account; DCs legitimately use trust RIDs and need an allow-list), with many distinct RIDs per source in a short window as the weaker fallback. Mitigations named: limit UDP/123 on DCs to trusted networks, keep automatic machine-account password rotation, fix predictable pre-Windows 2000 computer-account passwords, monitor authenticated NTP for anomalous sources and RIDs, and roll over the AZUREADSSOACC Kerberos key at least every thirty days where Seamless SSO is enabled.
+    region_nexus: "global; any on-premises Active Directory estate, which includes Swiss federal, cantonal and communal domains"
+    primary_sector_nexus: "direct (Active Directory domain controllers are the standard identity backbone of public administrations)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1110.002]
+    affected_products: ["Microsoft Windows Server (Active Directory domain controllers, Windows Time service MS-SNTP)"]
+    entity_keys: ["product:microsoft-windows"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Timeroasting leaves no authentication event for the targeted account."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/detecting-timeroasting"
+      - quote: "The signal that actually holds, for both sizes and even for a single packet, is the requested RID relative to the source system."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/detecting-timeroasting"
+      - quote: "Do not build on packet size."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/detecting-timeroasting"
+      - quote: "the extended form is live on a fully patched DC"
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/detecting-timeroasting"
+    extended_notes: |
+      Why a lookback item: published 2026-11-19 14:00 UTC; Huntress's record was last fetched 2026-11-18, so no earlier fire read it; the store has no timeroasting entry.
+      This is a technique and detection note, not a vulnerability: the behaviour is by design in MS-SNTP and Huntress reports no patch. Verification is the author's reverse engineering and live-DC proof (single researcher, own lab), with the underlying 2023 technique independently documented by Secura; the extended-form cracking claims and the old-key/current-key behaviour are the author's alone and he flags the current-key timeout as unexplained. The Secura whitepaper (read via pdf extraction) confirms that the client need not authenticate and can pick any RID.
+      Exposure check: which domain members send 120-byte versus 68-byte authenticated NTP requests in your fleet (baseline before alerting), which DCs expose UDP/123 to non-server networks, and which computer/trust accounts have never-rotated or predictable passwords (image-built machines, hand-set trusts, non-Windows joins are the crackable population the author names).
+      Detection concept: per-source role-aware check of NTP authenticator RID against the source host's own computer-account RID using DHCP/DNS-to-account mapping, DCs allow-listed for trust RIDs; fallback a many-distinct-RIDs-per-source rate. Telemetry hooks: DC Windows Filtering Platform audit (Event ID 5156) for w32time UDP/123, EDR DeviceNetworkEvents-style records of UDP/123 from non-time-service processes, and Defender for Identity's SAM-account-name-change alert for the targeted variant.
+      Triage: normal domain-member time sync also produces authenticated NTP requests to the DC; what separates an attacker is a request for an RID that is not the sender's own account (not packet size, not volume alone) and, on an attacker host, a process other than the Windows time service sending UDP/123 to a DC.
+      Defender takeaway: authentication-log analytics are blind to this technique; add network-level or host-network telemetry for UDP/123 to DCs and rotate or randomise any machine-account password that is not auto-rotated.
+  - title: "Kaspersky's Operation ShadowCloud: MeshAgent-dropped GitDoor and GraphDoor backdoors hide C2 in GitHub, Microsoft Graph/SharePoint and Ably against government networks in Asia and Africa, with overlaps to FamousSparrow and CopperTurtle staging"
+    sources:
+      - { url: "https://securelist.com/operation-shadowcloud-gitdoor/122004/", publisher: "Kaspersky GReAT (Securelist), part 1", date: "2026-11-17", role: "primary" }
+      - { url: "https://securelist.com/operation-shadowcloud-graphdoor/122005/", publisher: "Kaspersky GReAT (Securelist), part 2", date: "2026-11-17", role: "primary" }
+      - { url: "https://www.sophos.com/en-us/blog/bronze-sandcastle-deploys-modified-meterpreter-shells", publisher: "Sophos Counter Threat Unit", date: "2026-10-20", role: "corroborating" }
+    discovery_trace: "first seen at: kaspersky-securelist (standing major-lab check), feed URL https://securelist.com/feed/ (items 'Operation ShadowCloud: cloud service-based backdoors targeting government networks in Asia and Africa', parts 1 and 2, 2026-11-17 08:00 UTC) -> primary: https://securelist.com/operation-shadowcloud-gitdoor/122004/ and https://securelist.com/operation-shadowcloud-graphdoor/122005/ (read with extract) -> pivot: Sophos BRONZE SANDCASTLE post linked from part 1, URL https://www.sophos.com/en-us/blog/bronze-sandcastle-deploys-modified-meterpreter-shells (independent partial corroboration of the loader pattern)"
+    summary: |
+      Kaspersky GReAT describes Operation ShadowCloud, active since early 2026, in which the operator abuses the legitimate open-source MeshCentral agent to drop two new backdoors, GitDoor and GraphDoor, whose C2 traffic hides in GitHub, Microsoft SharePoint (through the Microsoft Graph API) and the Ably messaging service. Kaspersky found victims in Asia and Africa, primarily in the government sector; the entry point is unknown, with evidence pointing to reuse of an earlier infection already on the network of a Taiwanese organisation. After the MeshAgent session the operator drops a legitimate binary, a malicious loader DLL and an encrypted payload file: signed hosts such as the Sandboxie start binary, OpenJDK javaw.exe, a Python application binary and Sysinternals ZoomIt (started as a Windows service) side-load loaders (jli.dll, SbieDll.dll, python39.dll, WINMM.dll, libcef.dll), which decode the payload (custom-alphabet Base64, RC4 and XOR) and map it into memory, one loader abusing the Windows MAC-address string conversion APIs to decode the payload bytes. GitDoor takes commands through GitHub; GraphDoor authenticates a malicious application (client-credentials grant, not a user) to login.microsoftonline.com, then uses Graph calls to a SharePoint site as its mailbox: victim data goes up as a file disguised as a JavaScript source map, plug-ins (screenshot, process listing, keylogger) and command files are fetched by listing SharePoint list items by title prefix. Both backdoors resolve APIs by hashing and call them through exception handlers, download plug-ins on demand and inject shellcode in memory, and the operator uses a modified Erfrp reverse-proxy client and Ably channel plug-ins to proxy traffic; the C2 host and port are obtained through the proxy plug-in's info command or an Ably channel rather than hard-coded. Kaspersky says it lacks sufficient information to attribute the activity to a group, but reports overlaps with the Chinese-speaking clusters FamousSparrow and CopperTurtle: on several victims their implants sat in the same staging directories as GitDoor and were deployed within a one-day window, which it says suggests but does not prove that a Chinese-speaking group develops or uses the backdoors. Sophos CTU's 2026-10-20 post on BRONZE SANDCASTLE independently documents the same family of tradecraft (Sandboxie, javaw.exe and libcef sideloading with an encrypted config.ini payload and reflective PE loader), and Kaspersky says Sophos touched on a fragment of this campaign; neither source states that BRONZE SANDCASTLE and the ShadowCloud operator are the same actor.
+    region_nexus: "Asia (Taiwan named) and Africa government networks; no Swiss or European victim stated; transferable technique class for any Microsoft 365 or GitHub-permitting egress policy"
+    primary_sector_nexus: "indirect (government networks are the stated victim sector; the cloud-service C2 class applies to Swiss administrations that permit Graph and GitHub egress)"
+    sector: "public-sector (government)"
+    cves: []
+    techniques: [T1219, T1574.001, T1102.002, T1620, T1055, T1056.001, T1113, T1090]
+    affected_products: ["MeshCentral MeshAgent", "Microsoft Graph API (abused as C2)", "GitHub (abused as C2)"]
+    entity_keys: ["actor:famoussparrow", "product:meshcentral-meshagent"]
+    new_entities:
+      - { key: "campaign:operation-shadowcloud", type: campaign, name: "Operation ShadowCloud", aliases: [], summary: "Kaspersky-named intrusion campaign (early 2026 onward) using MeshAgent to deploy the GitDoor and GraphDoor backdoors with GitHub, Microsoft Graph/SharePoint and Ably C2, against government networks in Asia and Africa; overlaps with FamousSparrow and CopperTurtle staging, no attribution (Kaspersky, 2026-11-17)." }
+      - { key: "malware:gitdoor", type: malware, name: "GitDoor", aliases: [], summary: "Backdoor with GitHub-based C2 and on-demand plug-in and in-memory shellcode loading, used in Operation ShadowCloud (Kaspersky, 2026-11-17)." }
+      - { key: "malware:graphdoor", type: malware, name: "GraphDoor", aliases: [], summary: "Backdoor that authenticates an attacker application to Microsoft Graph and uses a SharePoint site for C2, plug-in delivery and exfiltration, used in Operation ShadowCloud (Kaspersky, 2026-11-17)." }
+      - { key: "actor:copperturtle", type: actor, name: "CopperTurtle", aliases: [], summary: "Chinese-speaking cluster named by Kaspersky whose PLEAD RAT staging overlapped with GitDoor deployments within one day (Kaspersky, 2026-11-17)." }
+      - { key: "actor:bronze-sandcastle", type: actor, name: "BRONZE SANDCASTLE", aliases: [], summary: "China-based threat group tracked by Sophos CTU, distinguished by Sandboxie DLL sideloading and encrypted config.ini payloads loaded as a custom reflective PE (Sophos CTU, 2026-10-20)." }
+    relation_suggestions:
+      - { subject: "campaign:operation-shadowcloud", object: "actor:famoussparrow", basis: "Kaspersky: overlap, FamousSparrow implants shared GitDoor's staging directory and were deployed within a one-day window; it does not claim attribution (Kaspersky, 2026-11-17)" }
+      - { subject: "campaign:operation-shadowcloud", object: "actor:copperturtle", basis: "Kaspersky: overlap, CopperTurtle's PLEAD RAT staging and GitDoor deployment one day apart on the same victim; no attribution claimed (Kaspersky, 2026-11-17)" }
+      - { subject: "campaign:operation-shadowcloud", object: "malware:gitdoor", basis: "Kaspersky: GitDoor is one of the two backdoors the operator deploys (Kaspersky, 2026-11-17)" }
+      - { subject: "campaign:operation-shadowcloud", object: "malware:graphdoor", basis: "Kaspersky: GraphDoor is one of the two backdoors the operator deploys (Kaspersky, 2026-11-17)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "We found victims in Asia and Africa, primarily within the government sector."
+        attribution: "Kaspersky GReAT (Securelist)"
+        source_url: "https://securelist.com/operation-shadowcloud-gitdoor/122004/"
+      - quote: "The exact entry point that let the attackers install the agent is unknown, but evidence points to the reuse of a prior infection already present on the network."
+        attribution: "Kaspersky GReAT (Securelist)"
+        source_url: "https://securelist.com/operation-shadowcloud-gitdoor/122004/"
+      - quote: "This call authenticates the malicious application – not a user – and returns an access token that the backdoor later uses to communicate with the Microsoft Graph API."
+        attribution: "Kaspersky GReAT (Securelist)"
+        source_url: "https://securelist.com/operation-shadowcloud-graphdoor/122005/"
+      - quote: "Currently, we lack sufficient information to definitively attribute this activity to a specific threat group."
+        attribution: "Kaspersky GReAT (Securelist)"
+        source_url: "https://securelist.com/operation-shadowcloud-graphdoor/122005/"
+      - quote: "The sideloaded DLLs typically read and execute payloads stored in encrypted config.ini files."
+        attribution: "Sophos Counter Threat Unit"
+        source_url: "https://www.sophos.com/en-us/blog/bronze-sandcastle-deploys-modified-meterpreter-shells"
+    extended_notes: |
+      Why a lookback item: Securelist published both parts 2026-11-17; the kaspersky-securelist record's last successful fetch was 2026-11-14, so no earlier fire read them, and the store has no ShadowCloud entry.
+      Exposure: networks that permit non-browser processes to reach login.microsoftonline.com, graph.microsoft.com, GitHub APIs or Ably; hosts running MeshCentral agents that are not in your inventory (the agent connects out over WebSocket to an operator-controlled server); legitimate signed binaries (Sandboxie, javaw.exe, pythonw.exe, ZoomIt, Krita and similar per Sophos) executing from system or ProgramData directories beside an unexpected DLL and a config.ini.
+      Detection (telemetry class first; derived from the described request pattern): proxy/egress logs for non-Office, non-browser processes obtaining an app-only token (client-credentials grant) and then calling Graph /sites/.../drives or /lists endpoints with title-prefix filters; process-creation and image-load events for DLL side-loading beside renamed trusted binaries; MeshCentral agent installation as a service or from an unusual path; named-pipe and vectored-exception-handler tradecraft is an EDR-level hunt, not a log source. Because the SharePoint site belongs to the operator, the victim tenant's Entra and SharePoint audit logs show nothing; egress inspection or tenant-restriction controls are the visibility lever (inference from the described authentication to an attacker application).
+      Triage: Graph and GitHub traffic is normal for developers and Office clients; the discriminator is the process (a side-loaded javaw.exe, ZoomIt or Sandboxie binary rather than a browser or Office) and an app-only token flow without any signed-in user.
+      Attribution caution: Kaspersky explicitly declines to attribute; the FamousSparrow and CopperTurtle overlap is shared staging directories and deployment timing on several victims, with detailed group reporting only to Kaspersky's private customers, and Sophos's BRONZE SANDCASTLE link is a pattern similarity (shared sideloading and payload design) rather than a stated identity. Report as overlap, not attribution. Sophos is independent corroboration of the loader tradecraft only.
+  - title: "Talos tracks UAT-12643, a suspected low-confidence North Korea-aligned cluster using the Overlord RAT with C2 URLs hidden in Solana transaction memos, and publishes the defender view on blockchain dead drops"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/", publisher: "Cisco Talos", date: "2026-11-18", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/the-challenge-of-defending-against-bulletproof-dead-drops-on-public-blockchains/", publisher: "Cisco Talos", date: "2026-11-18", role: "corroborating" }
+    discovery_trace: "first seen at: talos (standing major-lab check), feed URL https://blog.talosintelligence.com/rss/ (items 'UAT-12643: Suspected North Korea-aligned actor blends blockchain resilience with targeted infostealing' and 'The challenge of defending against bulletproof dead drops on public blockchains', both 2026-11-18 11:00 UTC) -> primary (no pivot needed): https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/ and https://blog.talosintelligence.com/the-challenge-of-defending-against-bulletproof-dead-drops-on-public-blockchains/ (both read with extract; the Proofpoint UNK_DeadDrop, breakglass.tech and Hacker News references in the primary were not separately fetched)"
+    summary: |
+      Cisco Talos found malicious infrastructure of a financially motivated cluster it tracks as UAT-12643, whose payloads are the Go-based Overlord RAT, a Python infostealer labelled Good Game (a publicly available stealer, repackaged with PyInstaller; the actor is not its developer) and a multi-cryptocurrency clipboard hijacker; an operational-security failure left the staging server's root folder exposed, which gave Talos the toolset. Lure and payload names suggest targeting of cryptocurrency holders, gaming-account owners, VoIP softphone users and finance and accounting staff, and the stealer's file harvesting matches English, French, Spanish and Portuguese keywords, so Talos considers European victims possible. Talos did not observe delivery; the three initial-access artefacts are a fake-PDF shortcut that downloads the payload with Defender's MpCmdRun.exe -DownloadFile (saved as RuntimeBroker.exe) or with certutil -urlcache, an HTA run by mshta that writes the payload to a temp file through ADODB.Stream, and an MSBuild project file whose inline C# task runs in memory and downloads with a spoofed BITS user agent. The Overlord variant requires admin rights and SeDebugPrivilege, marks itself a critical process through NtSetInformationProcess (ProcessBreakOnTermination) so that killing it bluescreens the host, persists through a per-user Run key and through Windows Recovery Environment OEM scripts registered in ResetConfig.xml (so it survives Reset this PC), exposes 35 commands (keylogging, webcam and audio capture, file operations, script execution, a reverse SOCKS tunnel, in-memory plug-ins), and finds its C2 by walking a wallet's Solana transactions with getSignatures and getTransaction for a memo of exactly 43 characters, the length of an AES-encrypted Base58 WebSocket URL, so the operator moves C2 by posting a new transaction. Stolen data goes to gofile with a Discord webhook notification. Talos assesses with low confidence that UAT-12643 is North Korea-aligned from TTP overlap, notably the UNK_DeadDrop cluster's earlier Overlord use (Proofpoint, June 2026) and the Solana-memo technique first reported for Lazarus in March 2026, while also noting other actors use Overlord and Solana hosting. In its companion piece Talos argues that blockchain dead drops (Bitcoin, EVM contracts via EtherHiding, TRON, Solana memos) defeat domain seizure and sinkholing, and recommends baselining and flagging automated, high-frequency read-only RPC calls (eth_call, getTransaction, getSignaturesForAddress) to node providers such as Infura, QuickNode and Tatum, inspecting JSON-RPC payloads for unexpected base-encoded data and lengths, blocking those providers where the business does not need them, and prioritising endpoint detection of lightweight in-memory decrypters.
+    region_nexus: "Europe possible (document-harvest keywords in English, French, Spanish, Portuguese); no Swiss victim or Swiss-language keyword stated; technique class transferable"
+    primary_sector_nexus: "indirect (finance and accounting staff and VoIP environments are named lure targets; crimeware cluster, not a government-targeting campaign)"
+    sector: "financial services; telecom/VoIP users; cryptocurrency and gaming users"
+    cves: []
+    techniques: [T1204.002, T1218, T1218.005, T1127.001, T1105, T1547.001, T1102.001, T1567, T1555.003, T1056.001, T1113, T1090, T1620, T1036.005]
+    affected_products: ["Microsoft Windows", "Microsoft Defender Antivirus (MpCmdRun.exe abused)", "Windows Recovery Environment (persistence)"]
+    entity_keys: ["tool:overlord-rat", "campaign:unk-deaddrop-2026", "actor:lazarus-group", "product:microsoft-windows"]
+    new_entities:
+      - { key: "actor:uat-12643", type: actor, name: "UAT-12643", aliases: [], summary: "Cisco Talos cluster designation for a financially motivated, low-confidence North Korea-aligned actor using the Overlord RAT with Solana-memo C2, the Good Game stealer and a clipboard hijacker; initial access via LNK, HTA and MSBuild downloaders (Cisco Talos, 2026-11-18)." }
+    relation_suggestions:
+      - { subject: "actor:uat-12643", object: "tool:overlord-rat", basis: "Talos: the cluster uses the Overlord RAT as a payload (Cisco Talos, 2026-11-18)" }
+      - { subject: "actor:uat-12643", object: "campaign:unk-deaddrop-2026", basis: "Talos: low-confidence overlap with UNK_DeadDrop, which used Overlord in earlier campaigns (Cisco Talos, 2026-11-18)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Talos assesses with low confidence that UAT-12643 is a North Korea-aligned advanced persistent threat (APT) actor based on overlaps in tactics, techniques, and procedures (TTPs) with those of the other known North Korean APT actors."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/"
+      - quote: "The Overlord RAT implements a command-and-control (C2) resilience technique in which encrypted server URLs are embedded in Solana blockchain transaction memos."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/"
+      - quote: "In this campaign, we have not observed how the actor delivers these malicious initial vector files to victims’ machines."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing/"
+      - quote: "monitoring or blocking outbound traffic to public node providers like Infura, QuickNode, Tatum, and native chain endpoints could help reduce the attack surface significantly, if they aren’t required for business operations"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-challenge-of-defending-against-bulletproof-dead-drops-on-public-blockchains/"
+    extended_notes: |
+      Why a lookback item: both Talos posts are dated 2026-11-18; the talos record's last successful fetch was 2026-11-15; the store has no UAT-12643 or Solana-memo entry (registry carries tool:overlord-rat from a Jamf macOS report and campaign:unk-deaddrop-2026).
+      Exposure: Windows endpoints where users can run LNK/HTA files and where certutil, mshta, MSBuild and MpCmdRun.exe may reach the internet; any estate that allows direct egress to public blockchain RPC endpoints from non-developer hosts.
+      Detection (telemetry class first): process-creation events with parent lineage: a shortcut-launched MpCmdRun.exe with -DownloadFile or certutil -urlcache writing an executable named like a system process (RuntimeBroker.exe) into a user-writable path; mshta spawning a script that writes a binary via ADODB.Stream; msbuild.exe loading a project file from a user path and making a BITS-like network request; persistence artefacts: a randomly named Run-key value pointing into the user's Network folder, new files under %SystemDrive%\Recovery\OEM and a modified ResetConfig.xml; network telemetry: non-developer hosts making repeated Solana (getSignatures/getTransaction) or EVM JSON-RPC calls, and gofile uploads plus Discord webhook posts after a stealer run. Post-removal check: inspect the WinRE OEM folder and ResetConfig.xml on any host that ran the RAT, since a Reset this PC would re-run the payload.
+      Triage: certutil and MpCmdRun.exe download switches appear in some admin scripts; the discriminators are a shortcut or HTA as parent, a double-extension document lure, and the downloaded file being renamed to a system-process name. Blockchain RPC calls are normal for crypto, developer and Web3 teams; elsewhere they are anomalous.
+      Attribution: low-confidence, TTP-overlap based, Talos itself notes other actors use Overlord and the Solana technique. Single-vendor source, Talos holds the telemetry and the exposed server contents. Hunters should treat the technique class (Solana/EVM dead-drop C2 plus living-off-the-land downloaders) as the durable lesson regardless of the label.
+  - title: "Kaspersky: AuditTeam's OpsAgent implant turns ransomware into a paid 'forced audit', abuses a signed Jiangmin antivirus driver to kill about 220 security and backup processes, and finds C2 through a GitHub repository, with victims including Italy and Finland"
+    sources:
+      - { url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/", publisher: "Kaspersky (Securelist)", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist (standing major-lab check), feed URL https://securelist.com/feed/ (item 'The forced audit: how AuditTeam’s OpsAgent framework masks ransomware as consulting', 2026-11-18 07:00 UTC) -> primary (no pivot needed): https://securelist.com/auditteam-opsagent-forced-audit/122031/ (read with extract; the dbdigest and DeXpose leak-site reports it cites were not separately fetched)"
+    summary: |
+      Kaspersky reports that AuditTeam, active at least from January through October 2026, compromises organisations in at least seven countries and territories with the OpsAgent framework, and has infected dozens in Russia, Italy, the Philippines, Hong Kong, Senegal, Finland and China; the leak site claims seven more countries. The group's ransom note demands an Audit and Consulting fee in return for a vulnerability report instead of leaking the stolen archive; Kaspersky notes the note does not mention encryption but is dropped by the cryptor module, so a victim who sees it already has encrypted files. OpsAgent, built to resemble a penetration-testing tool and described as rivalling Cobalt Strike, offers file and process management, shellcode injection through named pipes, token theft and creation, pass-the-hash and Mimikatz launched as remotely delivered shellcode, keylogging, screenshots and SMB or HTTP pivoting; commands run as jobs in separate processes (msiexec.exe by default, notepad.exe for monitoring). Loaders moved from a C injector (April 2026) to a .NET APC-queue loader (June) and an in-process Rust loader (September), and the implant was rewritten from C++ to Rust with an HTTP-then-WebSocket-over-TLS channel. C2 domains are Amazon CloudFront subdomains that the implant can read from a public GitHub repository (the Rust version stores the address with reworked encryption); Kaspersky notes shared CloudFront IP space makes IP blocking impractical, that the repository was removed in November 2026 and that the newest Rust implants carry the GitHub feature disabled, so the campaign is not over. An AV/EDR-killer module installs a digitally signed driver disguised as a Beijing Jiangmin antivirus product that terminates about 220 named processes on command, covering major security products, Sysmon, splunkd and wazuh-agent, remote-access tools, Veeam, Acronis and database services; the cryptor uses AES-CBC or ChaCha20 with X25519 key exchange, kills database processes and backup services, deletes shadow copies and overwrites files before deletion. Kaspersky attributes the campaign to AuditTeam with high confidence from the unique note format and the leak site, and says code patterns suggest LLM-assisted development, which it reads as lowering the barrier for ransomware crews to build APT-grade multi-module tooling. Kaspersky is the sole source and the telemetry owner; the victim countries are its observations plus the group's own leak-site claims.
+    region_nexus: "Europe (Italy and Finland among victims), Asia, Africa, Russia; no Swiss victim stated"
+    primary_sector_nexus: "indirect (victims span industries; Italy is a Swiss neighbour, and the BYOVD-style EDR kill and shadow-copy destruction apply to every Windows estate)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1055, T1685, T1486, T1490, T1489, T1102.001, T1071.001, T1090, T1134.001, T1550.002, T1056.001, T1113]
+    affected_products: ["Microsoft Windows", "Amazon CloudFront (abused as C2 front)", "GitHub (abused as C2 address store)", "Beijing Jiangmin Antivirus driver (signed driver abused)"]
+    entity_keys: ["product:microsoft-windows"]
+    new_entities:
+      - { key: "actor:auditteam", type: actor, name: "AuditTeam", aliases: [], summary: "Data-leak and extortion group active since at least January 2026 that sells a vulnerability report as an 'Audit & Consulting fee' and operates the OpsAgent framework; victims in at least seven countries including Italy and Finland (Kaspersky, 2026-11-18)." }
+      - { key: "malware:opsagent", type: malware, name: "OpsAgent", aliases: ["OpsAgent-rs"], summary: "Cobalt Strike-class implant framework of the AuditTeam group, rewritten from C++ to Rust in 2026, with a signed-driver AV/EDR killer module and a cryptor module; C2 via CloudFront subdomains discovered through a public GitHub repository (Kaspersky, 2026-11-18)." }
+    relation_suggestions:
+      - { subject: "actor:auditteam", object: "malware:opsagent", basis: "Kaspersky: AuditTeam uses the OpsAgent framework, attributed with high confidence (Kaspersky, 2026-11-18)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "During this period, the group has infected dozens of organizations in Russia, Italy, the Philippines, Hong Kong, Senegal, Finland and China."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+      - quote: "An antivirus/endpoint detection and response (AV/EDR) killer module installs a digitally signed Beijing Jiangmin Antivirus driver to terminate security products."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+      - quote: "Its command-and-control domains use Amazon CloudFront subdomains, which OpsAgent discovers via a public GitHub repository."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+      - quote: "While the note does not mention file encryption, it is left by the cryptor module."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/auditteam-opsagent-forced-audit/122031/"
+    extended_notes: |
+      Why a lookback item: Securelist published 2026-11-18; the kaspersky-securelist record's last successful fetch was 2026-11-14; the store has no AuditTeam entry.
+      Exposure: Windows servers and endpoints where signed third-party AV drivers can be loaded by a SYSTEM-level process; mixed backup, database and EDR agents on the same hosts (all in the kill list); estates that allow outbound traffic to arbitrary CloudFront subdomains and to GitHub.
+      Detection (telemetry class first): driver-load events for an AV-vendor driver (kvcore.sys, KvCorePortX0 filter port) on hosts that do not run that product, and Service Control Manager or kernel-driver install events for it; sudden termination of Sysmon, SIEM forwarders, EDR and backup services across hosts; process-creation with msiexec.exe or notepad.exe as a host for injected shellcode and named-pipe creation between them; shadow-copy deletion plus database-process kills preceding mass file modification; outbound requests from a server process to a GitHub raw or README page followed by a connection to a CloudFront subdomain; ransom note formatted as an audit log. A signed legitimate driver is the reason application-control and driver block-lists (vulnerable-driver block rules) matter here.
+      Triage: shadow-copy deletion, database-service stops and backup-agent stops also occur during maintenance; the discriminators are the sequence (security-agent kill via driver first, then database and backup kill, then encryption), a driver for an AV product not installed on the host, and the absence of a change ticket.
+      Attribution: AuditTeam attribution is Kaspersky's high-confidence assessment from note format, leak site and operating model; the LLM-assisted-development remark is Kaspersky's inference from code patterns, not proof. The earlier public mentions (dbdigest, DeXpose) are leak-site reports and were not fetched.
+  - title: "Check Point's State of Ransomware Q3 2026 (periodic report): record 2,830 leak-site victims, top-ten share down to 49 percent, 117 active brands, and Stadler Rail and the Berlin state government among organisations that refused ransom demands"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/", publisher: "Check Point Research", date: "2026-11-17", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research, feed URL https://research.checkpoint.com/feed/ (item 'The State of Ransomware Q3 2026', 2026-11-17 22:01 UTC) -> primary (no pivot needed): https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/ (read with extract; the full report on engage.checkpoint.com is a form-gated HTML page and was not readable)"
+    summary: |
+      ANNUAL REPORT — Check Point Research, The State of Ransomware Q3 2026 (quarterly periodic). Check Point counts 2,830 victims published on leak sites in Q3 2026 (July 964, August 1,042, September 824), the highest-volume quarter on record, and reports an increasingly fragmented ecosystem: the top ten groups' share of victims fell from 71 percent in Q1 to 58 percent in Q2 and 49 percent in Q3, so for the first time groups outside the top ten account for the majority; 117 brands claimed at least one victim, up from 91 in Q2, with 51 returning after a Q2 gap and 42 making first-ever claims. Qilin stayed first by a narrow margin over The Gentlemen (which overtook it in September), and LockBit declined each quarter and fell out of the top ten. Check Point lists Stadler Rail, the Berlin state government and Manchester Airports Group among organisations that publicly refused high-value demands, reports that average payments fell 45 percent quarter over quarter to just over one million dollars while the median rose 167 percent to 400,000 dollars, and notes the ShinyHunters-Clop dispute, in which ShinyHunters reportedly breached and defaced Clop's leak site, alongside higher law-enforcement pressure. Only the landing-page key findings were read; the full report is gated, and the counts are leak-site postings (criminal claims, not victim-confirmed incidents), so the figures show brand and posting trends rather than confirmed compromise.
+    region_nexus: "global; Swiss and neighbouring-state items named (Stadler Rail, Berlin state government)"
+    primary_sector_nexus: "indirect (a state government and a Swiss rail manufacturer are named refusals; public-sector victims are inside the leak-site population)"
+    sector: "cross-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:qilin", "actor:thegentlemen", "actor:clop", "actor:shinyhunters", "incident:stadler-rail-everest-supplier-breach-2026", "incident:berlin-landesnetz-compromise-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "periodic report with leak-site statistics (criminal claims, gated full report); kept because the assignment flags periodic reports and it names a Swiss and a German state-government refusal, but the main agent may reduce it to a short note or fold it into the Stadler and Berlin entries"
+    evidence:
+      - quote: "Q3 2026 was the highest-volume quarter on record, with 2,830 victims published on data leak sites."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/"
+      - quote: "For the first time, groups outside the top ten collectively accounted for the majority of observed victims."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/"
+      - quote: "Stadler Rail, the Berlin state government and Manchester Airports Group were among the high-profile organizations that publicly refused ransom demands during the quarter."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q3-2026/"
+    extended_notes: |
+      The store already holds the Stadler Rail supplier-platform entry (registry incident:stadler-rail-everest-supplier-breach-2026) and the Berlin Landesnetz entry (incident:berlin-landesnetz-compromise-2026-08); this report adds only the quarter-level context. Annual/periodic flag: ANNUAL REPORT — Check Point Research State of Ransomware Q3 2026. Defender relevance: a fragmented brand landscape lowers the value of group-specific blocklists and favours behaviour-level detection of pre-encryption activity.
+  - title: "Microsoft Threat Intelligence: high-volume phishing on 13 November used Microsoft 365 outage notices as the lure, a day after the 12 November Exchange Online disruption; link-based, likely credential phishing, no actor named"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/11/16/high-volume-phishing-campaign-uses-microsoft-365-outage-lures-target-multiple-industry-sectors-2/", publisher: "Microsoft Threat Intelligence", date: "2026-11-16", role: "primary" }
+    discovery_trace: "first seen at: msft-ti, listing URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ (raw url fetch; card dated 2026-11-16) -> primary (no pivot needed): https://www.microsoft.com/en-us/security/blog/2026/11/16/high-volume-phishing-campaign-uses-microsoft-365-outage-lures-target-multiple-industry-sectors-2/ (read with extract)"
+    summary: |
+      Microsoft Threat Intelligence observed a coordinated, high-volume phishing campaign on 2026-11-13 that disguised emails as Microsoft 365 service-health notifications, telling recipients that mail had been held during a service disruption (one sample cited an Exchange Online incident on 12 November) and would be deleted within 24 hours unless they acted. Subjects follow a pattern of Outage followed by a random token, display names combine a three-character organisation-style prefix with Outage Notification or Service Health, bodies contain a fake hidden email conversation (an apparent filter-evasion measure), and a prominent restore-messages call to action leads through recipient-specific click-tracking links to a common non-Microsoft destination. The samples were link-based only (no QR codes, attachments or payloads). Microsoft assesses the activity was likely credential phishing but says the evidence does not include the final page, credential-submission telemetry or any post-compromise activity, and it has not attributed the campaign to a named actor or family. It says Defender for Office 365 blocks and quarantines the messages and that no indicators of compromise from the attack were seen in protected environments, and advises searching mail telemetry for the sender-domain, display-name, subject and tracking-host patterns, identifying users who clicked, and for anyone who may have entered credentials resetting the password, revoking sessions and refresh tokens and verifying MFA registrations.
+    region_nexus: "global, multiple sectors; Microsoft 365 tenants anywhere, including Swiss federal, cantonal and communal tenants"
+    primary_sector_nexus: "indirect (generic lure against any Microsoft 365 customer)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566.002]
+    affected_products: ["Microsoft 365", "Exchange Online"]
+    entity_keys: ["product:microsoft-365"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "generic outage-themed credential-phishing lure with no confirmed compromise, no actor and no payload; included for the Microsoft 365 population and the concrete mail-flow hunt patterns, six days old (lookback), the main agent may drop or fold into a Microsoft 365 phishing entry"
+    evidence:
+      - quote: "Microsoft therefore has not attributed the campaign to a named threat actor or malware family."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/16/high-volume-phishing-campaign-uses-microsoft-365-outage-lures-target-multiple-industry-sectors-2/"
+      - quote: "The messages created a false sense of urgency by claiming that emails had been held during a service disruption and would be deleted within 24 hours unless the recipient took action to restore them."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/16/high-volume-phishing-campaign-uses-microsoft-365-outage-lures-target-multiple-industry-sectors-2/"
+    extended_notes: |
+      Detection (mail telemetry class): messages whose subject matches Outage plus a random alphanumeric token and whose display name is a short prefix plus Outage Notification or Service Health, sent from non-Microsoft sender domains through bulk-mail delivery infrastructure, with a click-tracking URL that redirects to an off-brand site; proxy click telemetry for users who reached the destination. Triage: genuine Microsoft 365 service-health notices come from the tenant's Message Center or Service Health dashboard, never from an external display name asking users to restore held messages by clicking a link. Single vendor source with first-party mail telemetry; Microsoft states what it could not confirm (credential capture), so do not report compromise.
+  - title: "TrendAI's BYOD ransomware analysis: a new group went from small businesses to a trauma centre, two US universities and a Texas state agency listing in five weeks, with identity infrastructure (AD, Group Policy, Entra) as the claimed pivot and no CVE, malware sample or indicator published"
+    sources:
+      - { url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/byod-ransomware-hospitals-universities", publisher: "TrendAI (Trend Micro)", date: "2026-11-18", role: "primary" }
+    discovery_trace: "first seen at: trendmicro-research (standing major-lab check), feed URL https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/rss.xml (item 'BYOD Ransomware: An Identity-First Extortion Campaign Moving Into Hospitals and Universities', 2026-11-18 14:00 UTC) -> primary (no pivot needed): https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/byod-ransomware-hospitals-universities (read with extract; the BleepingComputer, The Record and other victim reports it links were not separately fetched)"
+    summary: |
+      TrendAI reports that a ransomware and data-extortion group calling itself BYOD, first observed in September 2026, publicly claimed at least nine organisations between 2026-10-05 and 2026-11-09, including the University of New Mexico Health Sciences Center (ambulance diversion for two hours and more than 30 clinics closed), Michigan State University, Vanderbilt University (the university told its community to shut down devices) and the Texas Health and Human Services Commission, which has not confirmed an incident. TrendAI states that this is an analysis assembled from victim statements, public reporting and the group's own claims, labelled as confirmed, reported or claimed, and that no vulnerability, malware sample or indicator has been published, no CVE has been tied to any BYOD attack, and the group's claims are larger than what victims have confirmed (UNM says some end-user devices were affected but core systems were not penetrated; Michigan State links its claim to a credential compromise it detected in early October). The only initial-access routes on record are that credential compromise and BYOD's own claim of a remote access trojan on a third-party employee's computer; claimed pivots are Active Directory forests, Group Policy, the Entra tenant and domain controllers; encryption is implied at UNM by BYOD's offer of free decryption keys to healthcare facilities, and staff report audio ransom messages played on many machines. TrendAI lists hunting starting points (privileged-group membership changes and new accounts, Group Policy object changes with new scheduled tasks or startup scripts, domain-controller sign-ins from workstations, new privileged cloud roles and application credentials, bursts of MFA prompts, unusual remote-access tools on staff and contractor endpoints, mass file renaming and shadow-copy deletion, large database exports and outbound transfers) and mitigations (privileged-account review, phishing-resistant MFA with number matching, protection of identity-sync systems, restricted remote-access software, downtime and communication readiness). It is a synthesis of public claims by a vendor without first-hand incident data; the group's capabilities beyond what victims state are unverified.
+    region_nexus: "US (state agency, universities, hospital system); transferable to Swiss cantonal health bodies and universities"
+    primary_sector_nexus: "indirect (public universities, a state health agency and a university hospital are the listed victims)"
+    sector: "public-sector (healthcare, higher education, state government)"
+    cves: []
+    techniques: [T1078, T1078.002, T1078.004, T1484.001, T1486]
+    affected_products: ["Microsoft Active Directory", "Microsoft Entra ID"]
+    entity_keys: ["product:microsoft-entra-id"]
+    new_entities:
+      - { key: "actor:byod-ransomware", type: actor, name: "BYOD (ransomware group)", aliases: ["BYOD"], summary: "Ransomware and data-extortion group first observed September 2026, claimed at least nine organisations between 2026-10-05 and 2026-11-09 including UNM Health Sciences Center, Michigan State, Vanderbilt and the Texas HHSC; claims exceed what victims confirm; no CVE or indicator published (TrendAI, 2026-11-18)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "analytic synthesis of public reporting and unverified group claims, no first-hand telemetry; belongs mostly to the incident domain (S4) and the hunting guidance is generic; included because the listed victims are public-sector health, higher-education and state-government bodies"
+    evidence:
+      - quote: "Its claims are larger than what victims have confirmed."
+        attribution: "TrendAI"
+        source_url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/byod-ransomware-hospitals-universities"
+      - quote: "No CVE has been tied to any BYOD attack."
+        attribution: "TrendAI"
+        source_url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/byod-ransomware-hospitals-universities"
+      - quote: "No vulnerability, malware sample or indicator of compromise has been published for BYOD."
+        attribution: "TrendAI"
+        source_url: "https://www.trendaisecurity.com/en-us/resources-insights/trendai-security-blog/byod-ransomware-hospitals-universities"
+    extended_notes: |
+      The Texas HHSC listing is an extortion-site claim that the agency has not confirmed; the UNM, Michigan State and Vanderbilt statements are victim statements as relayed by TrendAI. The incident domain should check the victim-side disclosures directly before any entry names a victim as compromised.
+  - title: "React2STEAL: 45 repositories on hijacked GitHub accounts use Actions runners to scan for and exploit React2Shell and a Next.js middleware bypass, then commit stolen environment files and cloud and AI keys to public repositories"
+    sources:
+      - { url: "https://opensourcemalware.com/blog/react2steal-github-actions", publisher: "OpenSourceMalware", date: "2026-11-18", role: "primary" }
+      - { url: "https://blog.gitguardian.com/react2steal-hijacked-github-accounts-exploit-react2shell-and-publish-stolen-secrets/", publisher: "GitGuardian", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: gitguardian, feed URL https://blog.gitguardian.com/rss/ (item 'React2STEAL: Hijacked GitHub Accounts Exploit React2Shell and Publish Stolen Secrets', 2026-11-20 09:03 UTC) -> pivot: GitGuardian post, URL https://blog.gitguardian.com/react2steal-hijacked-github-accounts-exploit-react2shell-and-publish-stolen-secrets/ -> primary: OpenSourceMalware, URL https://opensourcemalware.com/blog/react2steal-github-actions (read with extract)"
+    summary: |
+      OpenSourceMalware, working from a lead by CTI analyst Karina Reaño, reports React2STEAL, an end-to-end automated framework in which 45 repositories (set up in three waves since 2026-10-22, with in-code dated comments suggesting the pipeline ran at volume from at least 2026-09-10) each carry a GitHub Actions workflow that uses GitHub-hosted runners to scan for Next.js servers and attempt React2Shell (CVE-2025-55182), the Next.js middleware header authorisation bypass (CVE-2025-29927) and an SSRF through the image-optimisation route aimed at cloud metadata credentials. On success a script collects environment variables, .env and config files, cloud and Kubernetes credentials and AI provider keys, and the workflow commits the loot into the same public repository, so the repositories are both attack infrastructure and drop site; OpenSourceMalware counts at least 1,281 victim hostnames across about 1,100 domains and says new results were still being committed about every 11 minutes at publication, with the most common secrets being database URLs, Stripe keys and AI provider keys. The repositories sit on victims' own hijacked GitHub accounts and most carry the probe file used by the separate wfx-loot campaign (stolen-token CI secret stealer running since 2026-11-10), and the same accounts appear in both; who runs React2STEAL and how the tokens were obtained are unknown. GitGuardian's write-up repeats the figures and adds the defender position: patch the long-fixed flaws, then treat every secret the server process could reach as exposed and rotate it, because deleting a repository does not undo the exposure and forks, clones and scrapers may retain copies (OpenSourceMalware advises searching public GitHub by file content rather than repository name); owners of hijacked accounts must revoke the credentials the attacker used.
+    region_nexus: "global; any internet-facing Next.js or React Server Components application, including public-sector web front ends"
+    primary_sector_nexus: "indirect (exposure depends on whether administrations run unpatched Next.js or React Server Components applications on the internet)"
+    sector: "cross-sector"
+    cves: [CVE-2025-55182, CVE-2025-29927]
+    techniques: [T1595.002, T1190, T1552.001, T1552.005, T1567.001, T1078]
+    affected_products: ["Next.js", "React Server Components", "GitHub Actions"]
+    entity_keys: ["product:github-actions", "malware:wfx-phantom"]
+    new_entities:
+      - { key: "campaign:react2steal", type: campaign, name: "React2STEAL", aliases: [], summary: "GitHub-Actions-driven mass exploitation campaign (45 repositories on hijacked accounts, September-November 2026) scanning for Next.js servers vulnerable to React2Shell (CVE-2025-55182) and CVE-2025-29927 and committing stolen environment files and keys to public repositories; accounts overlap with wfx-loot; actor unknown (OpenSourceMalware, 2026-11-18)." }
+    relation_suggestions:
+      - { subject: "campaign:react2steal", object: "malware:wfx-phantom", basis: "OpenSourceMalware: most React2STEAL repositories carry the probe file wfx-loot pushes and the same hijacked GitHub accounts appear in both (OpenSourceMalware, 2026-11-18); wfx-loot is a registered alias of malware:wfx-phantom" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "exploits long-patched flaws (React2Shell disclosed 2025) and the hard facts are OpenSourceMalware's single analysis (GitGuardian restates it); relevant only to Swiss bodies running unpatched Next.js, but the account-overlap with the covered wfx-phantom campaign and the secrets-in-public-repos effect make it worth a main-agent decision; may be folded into the wfx-phantom entry as an update"
+    evidence:
+      - quote: "In total we found 45 React2STEAL repos, set up in three waves since October 22."
+        attribution: "OpenSourceMalware"
+        source_url: "https://opensourcemalware.com/blog/react2steal-github-actions"
+      - quote: "Victims need to treat every secret their server process could access as exposed."
+        attribution: "GitGuardian"
+        source_url: "https://blog.gitguardian.com/react2steal-hijacked-github-accounts-exploit-react2shell-and-publish-stolen-secrets/"
+    extended_notes: |
+      Exposure: Next.js applications on versions affected by CVE-2025-55182 (React2Shell) or CVE-2025-29927, particularly with cloud instance-metadata access and secrets in environment variables or .env files. Detection (derived): web-server logs for the seven React2Shell request variants, the X-Middleware-Subrequest header and image-route SSRF requests to metadata addresses; searching public GitHub commits for your own hostnames and key formats; GitHub audit logs for unfamiliar workflows or pull requests on accounts and for token use from new addresses. Post-patch check: rotate every credential the application process could read, since the stolen files are publicly readable. This item overlaps the covered wfx-phantom entry (2026-11-13) only through the shared hijacked accounts; the exploit campaign itself is distinct.
+  - title: "Microsoft lab research: a phished OAuth device-code approval can steer a GitHub Copilot CLI session, plant agent memory, read synced sessions and reach private repositories (proof of concept, not observed in the wild)"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/11/17/the-risks-of-device-code-authentication-for-ai-coding-agents/", publisher: "Microsoft Security Research", date: "2026-11-17", role: "primary" }
+    discovery_trace: "first seen at: msft-ti, listing URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ (raw url fetch; card dated 2026-11-17) -> primary (no pivot needed): https://www.microsoft.com/en-us/security/blog/2026/11/17/the-risks-of-device-code-authentication-for-ai-coding-agents/ (read with extract)"
+    summary: |
+      Microsoft Security Research extends device-code phishing to AI coding agents in a controlled lab simulation using GitHub Copilot CLI as the example: the attacker starts a device-flow sign-in with a client it controls and persuades the victim, for instance under an IT-request or licence-check pretext, to approve the short code on GitHub's genuine verification page, after which the attacker's client signs in with the scopes the attacker chose. Microsoft analysed four outcomes: steering an active Copilot CLI session remotely (if the user enabled remote control and organisation policy allows it) so the agent runs commands on the user's machine subject to local permissions and approvals; adding misleading entries to the agent's memory; reading Copilot CLI sessions synchronised to the cloud; and accessing the account's private repositories. Microsoft says these are proof-of-concept results of existing features working as designed, not attacks observed in the wild, that the technique applies to any public client that supports the device flow, and that Defender helps by connecting phishing attempts with GitHub authentication activity. Earlier device-code campaigns it cites are Storm-2372, an AI-enabled 2026 campaign and EvilTokens (disrupted in September 2026).
+    region_nexus: "global; relevant to administrations whose developers use GitHub Copilot CLI or other device-flow clients"
+    primary_sector_nexus: "indirect (developer tooling; the device-code phishing class also applies to Microsoft Entra sign-in)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1566, T1528, T1078]
+    affected_products: ["GitHub Copilot CLI", "GitHub"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "lab proof of concept with no observed exploitation and a narrow product (Copilot CLI); the general device-code phishing class matters for Entra tenants but this post is about GitHub; main agent likely drops or holds to a sentence in an identity-phishing entry"
+    evidence:
+      - quote: "These are proof-of-concept results showing how existing features, working as designed, could be abused after a phished authorization; they are not attacks we have observed in the wild."
+        attribution: "Microsoft Security Research"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/17/the-risks-of-device-code-authentication-for-ai-coding-agents/"
+      - quote: "any public client that supports the device flow can be abused the same way, and the attacker chooses the requested scopes when starting the flow."
+        attribution: "Microsoft Security Research"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/11/17/the-risks-of-device-code-authentication-for-ai-coding-agents/"
+    extended_notes: |
+      Detection concept per Microsoft: correlate a phishing message or lure with a device-flow authorisation on the identity provider and look for sign-ins by device-flow clients the user did not start; the discriminator for a benign device-code sign-in is that the person approving is at the console that displayed the code. Single vendor source; lab research, no ITW telemetry.
+candidate_sources: []
+candidate_notes:
+  - "aws-security-blog (already a candidate in sources.json) supplied the first-party primary for the MONAI Label / Cairn item this run (2026-11-20); that is one contributing run toward its promotion rule."
+coverage_gaps:
+  - source_id: sygnia
+    reason: "extract returned nothing (jina reader keys balance-exhausted); WebFetch with the outbound-links template read the listing (newest post 2026-11-08, nothing in the 26 h horizon). Recipe unchanged: WebFetch works, `extract` and `url` do not."
+  - source_id: eset
+    reason: "feed carried posts through 2026-11-19 (no lag this time) but all were consumer or awareness posts; `extract https://www.welivesecurity.com/en/eset-research/` lists research with newest 2026-11-10 (Turla Cereal, already covered). Site banner still says 'Moving soon to the ESET Blog'; expect a host migration."
+  - source_id: citizen-lab
+    reason: "feed newest research-class item is 2026-11-12 (ad-based surveillance system) and `extract https://citizenlab.ca/research/` shows only the Serbia Pegasus note; nothing new in the 168 h lookback."
+  - source_id: csa-labs
+    reason: "listing is a fast-moving set of re-report notes (30+ in the lookback, many on already-covered stories); used as leads only, one lead led to a primary (AWS)."
+  - source_id: manageengine-metal
+    reason: "`url` of the lab page lists three reports dated June-July 2026 (AOMEI Backupper, QRSwapper, Fake Maccy); nothing in horizon. Reports' own `date` metadata is reliable here."
+  - source_id: lumen-black-lotus-labs
+    reason: "recipe holds: `url --direct https://www.lumen.com/blog/query-index.json`, filter `categories` for black-lotus-lab, parse `blogPublishedDate` (formats vary: 'Sept 22, 2026', 'Aug 24, 2026'); newest Black Lotus Labs post 2026-10-28 (Volt Typhoon Silent Train), nothing in horizon."
+standing_lab_check:
+  note: "Feeds fetched via the bridge (not slice rows, not in source_ledger): mandiant-gtig, talos, unit42, kaspersky-securelist, sentinellabs, proofpoint, trendmicro-research, huntress, sophos-xops, rapid7-research, crowdstrike, volexity, datadog-security-labs, arctic-wolf-labs, recordedfuture-insikt, zscaler-threatlabz, socket-dev-blog, wiz-blog, group-ib, microsoft security blog feed. Posts inside the 26 h window (since 2026-11-21 01:55Z): TrendAI 'Two Breaches, One Lesson' (2026-11-21 10:39Z, commentary on Binance and Vanderbilt, no new analysis, dropped); no other major-lab post. Posts in the preceding week that no fire had read (record last-fetch dates 2026-11-14 to 2026-11-18) were returned as lookback items."
+dropped:
+  - { what: "GTIG ARMORY CASTLE exploits vSphere (2026-11-19)", why: "already the basis of entries/2026-11-20/vmware-vcenter-cve-2026-123890-auth-bypass-exploited-gtig.md (actor:verdantbamboo)" }
+  - { what: "Unit 42 OPTIMJACK (2026-11-17) and QUIC RATs (2026-11-16)", why: "covered by the optimjack and tgr-sta-0049 entries of 2026-11-17" }
+  - { what: "GitGuardian/Cursor Fireworks AI breach chain (2026-11-19)", why: "already in entries/2026-10-31/cursor-marketplace-claude-code-extension-ssh-backdoor.md (Fireworks key, Cursor bucket); incident domain owns updates" }
+  - { what: "Rapid7 exposed self-hosted AI scan (page date 2026-11-13) and Metasploit/ONLYOFFICE posts", why: "outside lookback or product content; heavy existing ARTEX/agentic coverage" }
+  - { what: "Recorded Future 'AI Joins the Industrial Attack Workflow' (2026-11-20)", why: "Insikt commentary on GreenJuliett and ARTEX footprint (1,506 to 2,978 observed servers); the French refrigeration entry already carries the attribution and Swiss exposure; no new technical delta" }
+  - { what: "CrowdStrike backdoored LoRA models (2026-11-16), Check Point gatekeeper-asymmetry LLM post (2026-11-19), Datadog Entra access packages part 1 (2026-11-19, background only; watch for part 2)", why: "AI-model or background research with no Swiss public-sector actionability" }
+  - { what: "CyberScoop 'tech outages fueled by patching of AI-discovered vulnerabilities' (2026-11-18)", why: "US officials' assertion with no root-cause primary; no technical content" }
+  - { what: "Kaspersky Retadup/CoffeeLoader USB worm (2026-11-16), CloudSEK 'Party' Android banking panel (2026-11-20), ESET consumer posts, Elastic product posts (ATLAS, OpenShift)", why: "no Swiss public-sector nexus or product content" }
+cross_domain_leads:
+  - "ENISA State of Cybersecurity in the Union 2026 (published 2026-11-10 per CSA's 2026-11-19 note): S2 territory; not fetched by S3."
+  - "CSA notes of 2026-11-20/21 relay: NebuSec 'Muse Sentinel' agent-egress bypass (2026-11-20), CrowdStrike LoRA research, Project Zero 'Full X' disclosure-policy change (2026-11-13), LiteLLM CVE-2026-40217 KEV addition (2026-11-18, CVE already covered by the obsidian-security entry): leads only, not fetched to primaries."
+source_ledger:
+  - { id: sygnia, tier: standard, attempted: true, transport: "extract failed (empty; jina keys exhausted) -> WebFetch with outbound-links template ok", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "listing newest 2026-11-08 ('When AI Writes the Code'); rotation-priority fetch gap closed via WebFetch, which is the working recipe" }
+  - { id: blackfield-ch, tier: candidate, attempted: true, transport: "feed (direct)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "single dated item 2026-10-21 (already covered)" }
+  - { id: checkpoint-research, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 3, returned: 1, note: "returned the periodic State of Ransomware Q3 2026; the weekly threat-intelligence digest and an LLM-research post dropped" }
+  - { id: citizen-lab, tier: standard, attempted: true, transport: "feed + extract research listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "only an advocacy/testimony item in horizon; latest research note (Serbia Pegasus, 2026-10-27) already outside lookback" }
+  - { id: cloudsek-triad, tier: candidate, attempted: true, transport: "feed (direct)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-20 Android banking-trojan panel targeting Indian bank customers: no Swiss nexus; gated summary-level source" }
+  - { id: csa-labs, tier: standard, attempted: true, transport: "extract of research listing", horizon_hours: 168, in_horizon_items: 30, returned: 1, note: "re-report notes used as leads; one lead pivoted to the AWS and GitHub primaries" }
+  - { id: cyberscoop, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "policy and news items; the outage-patching article has no technical primary" }
+  - { id: elastic-seclabs, tier: standard, attempted: true, transport: "feed (direct)", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "ATLAS and OpenShift product posts; PyPI compromise post concerns an already-covered incident" }
+  - { id: eset, tier: standard, attempted: true, transport: "feed + extract of eset-research listing", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "feed items in horizon are consumer posts; research listing newest 2026-11-10 (Turla Cereal, covered)" }
+  - { id: gitguardian, tier: candidate, attempted: true, transport: "feed (direct) + extract", horizon_hours: 168, in_horizon_items: 8, returned: 1, note: "React2STEAL returned as a borderline item through its OpenSourceMalware primary; Fireworks and Java4Shell posts already covered; rest product content" }
+  - { id: lumen-black-lotus-labs, tier: standard, attempted: true, transport: "bridge: url --direct query-index.json", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest Black Lotus Labs post 2026-10-28" }
+  - { id: manageengine-metal, tier: candidate, attempted: true, transport: "bridge: url (raw) + extract per report", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "reports dated June-July 2026" }
+  - { id: msft-ti, tier: standard, attempted: true, transport: "bridge: url (raw listing) + extract per post; cross-checked with the blog feed", horizon_hours: 168, in_horizon_items: 3, returned: 2, note: "both returned items are borderline; SCKit post (2026-11-13) already covered" }
+  - { id: nethemba, tier: candidate, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "one new undated opinion post on market-based limits on mass data collection; UpdraftCentral post already covered" }
