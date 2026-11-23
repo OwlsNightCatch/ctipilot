@@ -1,0 +1,423 @@
+{
+ "run_id": "2026-11-23T0355Z-intel",
+ "domain": "S2",
+ "window_hours": 26,
+ "essential_ids": [
+  "bacs-press",
+  "cert-at",
+  "enisa",
+  "heise-sec",
+  "inside-it-ch",
+  "ncsc-ch-focus",
+  "ncsc-ch-incidents"
+ ],
+ "rotational_ids": [
+  "lab52",
+  "bsi-press",
+  "vd-grand-conseil",
+  "ag-ch-medienmitteilungen",
+  "bfv-verfassungsschutz-de",
+  "ccn-cert-es",
+  "cert-fr-cti",
+  "cisa-news",
+  "compass-security",
+  "enisa-cnw",
+  "swisscybersecurity-net",
+  "vd-ch-press-releases"
+ ],
+ "records": [
+  {
+   "id": "bacs-press",
+   "publisher": "Swiss Federal Office for Cybersecurity (BACS / NCSC.ch), press releases",
+   "url": "https://www.bacs.admin.ch/de/medienmitteilungen",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de",
+    "fr",
+    "it"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-11-15: recipe confirmed: `url --direct https://www.bacs.admin.ch/de/<medienmitteilungen|im-fokus|aktuelle-vorfaelle>`, split on `class=\"card card--default card--clickable`; the card__title regex returns titles again (earlier note said they had vanished).",
+   "earlier_recipe_note": "2026-11-12 (S2): card titles are no longer in class=\"card__title\" on the listing; take hrefs and dates from `url --direct`, then `extract` each href for title and body."
+  },
+  {
+   "id": "cert-at",
+   "publisher": "CERT.at (Austria)",
+   "url": "https://www.cert.at/de/meldungen",
+   "rss_url": "https://www.cert.at/cert-at.de.warnings.rss_2.0.xml",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "en",
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-09-29: RSS feeds exist (listed at https://www.cert.at/de/services/feeds, all fetch direct with no reader): warnings https://www.cert.at/cert-at.de.warnings.rss_2.0.xml (primary, advisories/active exploitation; article path /de/warnungen/<YYYY>/<M>/<slug>), current https://www.cert.at/cert-at.de.current.rss_2.0.xml (Aktuelles; /de/aktuelles/...), daily https://www.cert.at/cert-at.de.daily.rss_2.0.xml (Tagesberichte digest), blog https://www.cert.at/cert-at.de.blog.rss_2.0.xml. Sweep `warnings` AND `current` each run; drill with `extract <item link>`. Warnings cadence 2-6 weeks so quiet periods are partly real. (2026-09-29T2134Z-audit)",
+   "earlier_recipe_note": "2026-09-20 quality audit (G2 re-sweep): the recorded transport (webfetch against /en/ or /en/news/) returns navigation-only content, which is why this essential-tier source sat at 10 consecutive quiet periods with last_covered_in_brief never set. WORKING RECIPE: python3 tools/fetch_source.py url https://www.cert.at/de/meldungen (server-rendered HTML, no reader needed) returns dated advisory items;"
+  },
+  {
+   "id": "enisa",
+   "publisher": "ENISA",
+   "url": "https://www.enisa.europa.eu/news",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "webfetch",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-10-17 (2026-10-17T0256Z-intel): S2: extract returns the news listing, and extract of each item carries its date.",
+   "earlier_recipe_note": "2026-10-02 (2026-10-02T0404Z-intel): the /news listing is undated; per-item dates need `extract` on each article (frontmatter date), one fetch per item."
+  },
+  {
+   "id": "heise-sec",
+   "publisher": "heise Security",
+   "url": "https://www.heise.de/security/",
+   "rss_url": "https://www.heise.de/security/feed.xml",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "rss",
+   "reliability": "B",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "news"
+   ],
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-10-11 quality audit: the feed holds about 20 items (3 days); for longer lookbacks list https://www.heise.de/thema/Cyberangriff (and /thema/Ransomware, /thema/Datenleck) with url, then extract articles.",
+   "earlier_recipe_note": "2026-09-29: RECIPE: `feed https://www.heise.de/security/feed.xml N` then `extract <article link>` reads the full article body over the direct transport (verified on heise article 11469864, served via trafilatura-direct). The older 'only jina drill works' note is superseded; the reader is no longer needed for heise bodies. (2026-09-29 operator-directed setup review)"
+  },
+  {
+   "id": "inside-it-ch",
+   "publisher": "Inside IT Switzerland",
+   "url": "https://www.inside-it.ch/",
+   "rss_url": "https://www.inside-it.ch/rss.xml",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "rss",
+   "reliability": "C",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "news"
+   ],
+   "content_scope": "general-news",
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-11-07 run 2026-11-07T0256Z-intel: article bodies come from `url --direct <article>` (full text in the embedded __NEXT_DATA__ JSON); `extract` cuts the body off at the paywall.",
+   "earlier_recipe_note": "2026-11-06 (S2): `extract` of an article returns only the paywall teaser; the full body is in the page's __NEXT_DATA__ JSON."
+  },
+  {
+   "id": "ncsc-ch-focus",
+   "publisher": "NCSC Switzerland \u2014 Im Fokus",
+   "url": "https://www.bacs.admin.ch/de/im-fokus",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-11-15: recipe confirmed: `url --direct https://www.bacs.admin.ch/de/<medienmitteilungen|im-fokus|aktuelle-vorfaelle>`, split on `class=\"card card--default card--clickable`; the card__title regex returns titles again (earlier note said they had vanished).",
+   "earlier_recipe_note": "2026-11-12 (S2): card titles are no longer in class=\"card__title\" on the listing; take hrefs and dates from `url --direct`, then `extract` each href for title and body."
+  },
+  {
+   "id": "ncsc-ch-incidents",
+   "publisher": "NCSC Switzerland \u2014 Aktuelle Vorf\u00e4lle",
+   "url": "https://www.bacs.admin.ch/de/aktuelle-vorfaelle",
+   "tier": "essential",
+   "status": "active",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "lookback_hours": 26,
+   "newest_recipe_note": "2026-11-15: recipe confirmed: `url --direct https://www.bacs.admin.ch/de/<medienmitteilungen|im-fokus|aktuelle-vorfaelle>`, split on `class=\"card card--default card--clickable`; the card__title regex returns titles again (earlier note said they had vanished).",
+   "earlier_recipe_note": "2026-11-12 (S2): card titles are no longer in class=\"card__title\" on the listing; take hrefs and dates from `url --direct`, then `extract` each href for title and body."
+  },
+  {
+   "id": "lab52",
+   "publisher": "Lab52 (S2 Grupo)",
+   "url": "https://lab52.io/blog/",
+   "rss_url": "https://lab52.io/blog/feed/",
+   "tier": "standard",
+   "status": "active",
+   "fetch_method": "jina",
+   "reliability": "B",
+   "language": [
+    "en",
+    "es"
+   ],
+   "category": [
+    "ch-eu",
+    "research"
+   ],
+   "lookback_hours": 168,
+   "newest_recipe_note": "2026-11-22: feed GET resets (SSL) from the container; `extract https://lab52.io/blog/` read the listing through the reader (metered), newest post 2026-10-05. Prefer a direct recipe if one is found; do not count the reset as content death.",
+   "earlier_recipe_note": "2026-11-19 (S2, 2026-11-19T0355Z-intel): every transport again failed (direct SSL reset, WebFetch 503, reader pool dead, Wayback TLS/429); a WebSearch cache shows the newest post is 2026-10-05; no recipe found, rotation continues.",
+   "rotation_cursor": "2026-11-06"
+  },
+  {
+   "id": "bsi-press",
+   "publisher": "BSI (Bundesamt fuer Sicherheit in der Informationstechnik) Pressemitteilungen",
+   "url": "https://www.bsi.bund.de/DE/Service-Navi/Presse/Pressemitteilungen/pressemitteilungen_node.html",
+   "tier": "standard",
+   "status": "candidate",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "gov",
+    "ch-eu"
+   ],
+   "lookback_hours": 168,
+   "newest_recipe_note": "2026-11-22 added as a candidate (S2): first-party release channel of the German national cyber authority, including the annual Lagebericht of 2026-11-19; the existing bsi-de record is the CERT-Bund advisory feed only. Recipe gap: the press listing's HTML carries no item hrefs, so items surface through heise-sec or WebSearch; each /Presse2026/<yymmdd>_<slug>.html page reads cleanly with `extract`. German; translate.",
+   "earlier_recipe_note": "",
+   "rotation_cursor": null
+  },
+  {
+   "id": "vd-grand-conseil",
+   "publisher": "Etat de Vaud, Grand Conseil (session agendas)",
+   "url": "https://www.vd.ch/gc/seances-du-grand-conseil/detail-seance/seance-gc/1033714",
+   "tier": "standard",
+   "status": "candidate",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "fr"
+   ],
+   "category": [
+    "gov",
+    "ch-eu"
+   ],
+   "content_scope": "general-news",
+   "lookback_hours": 168,
+   "newest_recipe_note": "2026-11-16 (intel): `extract` of the sessions list drops hrefs; use `url --direct` and match the detail-seance links.",
+   "earlier_recipe_note": "Added 2026-11-09 (S2): the cantonal parliament's session agenda pages carry the full interpellation, motion and postulate texts, the only primary for cantonal oversight of the Vaud school IT-support platform breach (interpellation 26_INT_155). `python3 tools/fetch_source.py extract <URL>` reads a session page and each agenda-point page cleanly. Weekly (Tuesday) cadence; filter the agenda for cyber",
+   "rotation_cursor": "2026-11-16"
+  },
+  {
+   "id": "ag-ch-medienmitteilungen",
+   "publisher": "Kanton Aargau, Medienmitteilungen und Bulletin zur Regierungsratssitzung",
+   "url": "https://www.ag.ch/de/medien/medienmitteilungen",
+   "tier": "standard",
+   "status": "candidate",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "gov",
+    "ch-eu"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-11-07 run 2026-11-07T0256Z-intel: added as candidate. The canton's own communiqu\u00e9 was the primary for the Aargau information-security ordinance (InfoSiV) item 2026-11-06 and no other route reached it: the portal listing 404s and its search API returns HTTP 500. Recipe: enumerate https://www.ag.ch/sitemap.xml -> https://www.ag.ch/content/export/api/v1/xml/medienmitteilungen (release URLs, newest first), then `extract` the detail URL. Cantonal government as the disclosing party for its own legislation is reliability A.",
+   "earlier_recipe_note": "",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "bfv-verfassungsschutz-de",
+   "publisher": "Bundesamt f\u00fcr Verfassungsschutz (Germany)",
+   "url": "https://www.verfassungsschutz.de/DE/themen/cyberabwehr/cyberabwehr_node.html",
+   "rss_url": "https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/AlleMeldungen.xml",
+   "tier": "standard",
+   "status": "candidate",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "health_cmd": [
+    "url",
+    "--direct",
+    "https://www.verfassungsschutz.de/SiteGlobals/Functions/RSSNewsFeed/AlleMeldungen.xml"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-11-15 (2026-11-15T1407Z-audit): health_cmd extract -> `url --direct` on the RSS feed: extract timed out again and `feed` failed, while `url --direct` returned the full feed (305 KB, newest item 2026-10-19). Agents read the feed the same way.",
+   "earlier_recipe_note": "2026-11-02 intel run (health sweep): the probe, `extract` of the feed (timed out at 120 s) and WebFetch (HTTP 503) all failed; the host dropped the in-container TLS client the same way on 2026-10-31 and the feed read through the reader then. A 503 is transport blocking, so the record stays a candidate; mark fetch_method blocked only if every transport still fails on a later sweep.",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "ccn-cert-es",
+   "publisher": "CCN-CERT (Spain)",
+   "url": "https://www.ccn.cni.es/es/actualidad-ccn",
+   "rss_url": "https://www.ccn.cni.es/es/actualidad-ccn?format=feed&type=atom",
+   "tier": "standard",
+   "status": "candidate",
+   "fetch_method": "rss",
+   "reliability": "A",
+   "language": [
+    "es",
+    "en"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-09-29: ccn-cert.cni.es is behind a Transparent Edge 'Voight-Kampff Browser Test' JS proof-of-work challenge (403, 6,901 B on every path; jina-only, reader pool empty; not solved/attempted). Working free recipe = the parent CCN site www.ccn.cni.es, which republishes CCN-CERT alerts (AL nn/26) under /es/actualidad-ccn/<id>-<slug>: `feed 'https://www.ccn.cni.es/es/actualidad-ccn?format=feed&type=atom' 10` (type=atom only; 10-item cap; newest 2026-09-28) then `extract <item link>`. Alert cadence ~2 in Sept 2026 (AL 08/26 15 Sep, AL 09/26 28 Sep) with other CCN news in between; CERT-only content on the challenged host (technical reports, IA) stays reader-only. (2026-09-29T2134Z-audit)",
+   "earlier_recipe_note": "2026-08-19: recipe re-confirmed correct, no change needed. Four distinct paths probed with a browser user agent (Spanish and English advisory listings, the Joomla obRSS feed route and the index.php RSS route) all returned an identical 3,354-byte HTTP 403, i.e. a whole-host edge refusal rather than a per-path problem, so no direct recipe exists to author. The health probe's needs-demote flag on thi",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "cert-fr-cti",
+   "publisher": "CERT-FR threat and incident reports (CTI series)",
+   "url": "https://cert.cyber.gouv.fr/cti/",
+   "tier": "standard",
+   "status": "active",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "fr"
+   ],
+   "category": [
+    "gov",
+    "ch-eu"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-11-11 promoted to active: cited by published entries from 3 distinct runs (state digest sources.promotion_due).",
+   "earlier_recipe_note": "Added 2026-11-10 (S1): primary for French C4 attributions and threat reports (CERTFR-2026-CTI-009 of 2026-11-09 carried the IRGC attribution of the refrigeration attacks). The report page gives a summary; the full text is a PDF at cert.cyber.gouv.fr/uploads/<id>.pdf, read with `python3 tools/fetch_source.py pdf <URL>` (the extraction has broken spacing, so quotes from it are not literal). `anssi-f",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "cisa-news",
+   "publisher": "CISA News",
+   "url": "https://www.cisa.gov/news-events/news",
+   "rss_url": "https://www.cisa.gov/news.xml",
+   "tier": "standard",
+   "status": "active",
+   "fetch_method": "webfetch",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "gov",
+    "news"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-10-19 intel run S2: `feed https://www.cisa.gov/news.xml` silently falls back to the jina reader and returns undated items; the dated listing reads with WebFetch https://www.cisa.gov/news-events/news.",
+   "earlier_recipe_note": "2026-10-07 (S2): a WebFetch listing gives dated items.",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "compass-security",
+   "publisher": "Compass Security Blog",
+   "url": "https://blog.compass-security.com/",
+   "rss_url": "https://blog.compass-security.com/feed/",
+   "tier": "standard",
+   "status": "active",
+   "fetch_method": "webfetch",
+   "reliability": "B",
+   "language": [
+    "en",
+    "de"
+   ],
+   "category": [
+    "ch-eu",
+    "research"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-07-05 admiralty audit: B \u2014 Swiss independent research lab, original first-hand technical research; live and drillable, no change (active).",
+   "earlier_recipe_note": "2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://blog.compass-security.com/ (listing) then webfetch per-article URL; RSS fallback feed https://blog.compass-security.com/feed/ N. AVOID: No issues \u2014 server-rendered, WebFetch works. RSS exists as documented fallback if WebFetch ever degrades..",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "enisa-cnw",
+   "publisher": "ENISA CSIRTs Network advisory collection (github.com/enisaeu/CNW)",
+   "url": "https://github.com/enisaeu/CNW/blob/main/advisories/2026/CNW-2026-05_retail-incidents.md",
+   "tier": "standard",
+   "status": "active",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "en"
+   ],
+   "category": [
+    "gov"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-11-11 run note: enumerate with `url https://api.github.com/repos/enisaeu/CNW/contents/advisories/2026` and `url 'https://api.github.com/repos/enisaeu/CNW/commits?path=advisories/2026&per_page=8'`; read a file with `url https://raw.githubusercontent.com/enisaeu/CNW/main/advisories/2026/<file>`; `extract` of the GitHub blob page returns only about 1 kB.",
+   "earlier_recipe_note": "Added 2026-11-05 (S2): ENISA-kept per-incident index of the advisories every EU CSIRTs Network member issued (CERT-EU and national CSIRTs); CNW-2026-05 on the refrigeration campaign read with extract. No listing path for new CNW files has been tested, so promotion needs a recipe that enumerates them. Candidate: promote to active after 3 contributing runs.",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "swisscybersecurity-net",
+   "publisher": "SwissCybersecurity.net (Swiss cybersecurity trade press)",
+   "url": "https://www.swisscybersecurity.net/",
+   "tier": "standard",
+   "status": "active",
+   "fetch_method": "webfetch",
+   "reliability": "C",
+   "language": [
+    "de"
+   ],
+   "category": [
+    "ch-eu"
+   ],
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-10-27 (S2): `url --direct` of the site or tag page returns server-rendered HTML whose article hrefs follow /news/YYYY-MM-DD/<slug>; list the newest by regex, then `extract` per article.",
+   "earlier_recipe_note": "2026-10-26 (S2): `extract https://www.swisscybersecurity.net/` returns the home page with dated headlines and `url --direct` of it carries `/news/YYYY-MM-DD/<slug>` hrefs; `extract` of each article reads cleanly. This replaces the earlier no-feed note.",
+   "rotation_cursor": "2026-11-17"
+  },
+  {
+   "id": "vd-ch-press-releases",
+   "publisher": "Etat de Vaud (communiqu\u00e9s de presse)",
+   "url": "https://www.vd.ch/actualites/communiques-de-presse-de-letat-de-vaud",
+   "tier": "standard",
+   "status": "candidate",
+   "fetch_method": "bridge",
+   "reliability": "A",
+   "language": [
+    "fr"
+   ],
+   "category": [
+    "ch-eu",
+    "gov"
+   ],
+   "content_scope": "general-news",
+   "lookback_hours": 146,
+   "newest_recipe_note": "2026-11-01: a cantonal press-release listing is legitimately mostly non-security, so content_scope is general-news (the health check found no security vocabulary on the landing teasers).",
+   "earlier_recipe_note": "Added 2026-11-01 (2026-11-01T0256Z-intel, S2 and S4): primary channel for cantonal disclosures; the Vaud school-platform data theft reached the store only through press relays until the release was read here. Recipe: `extract <listing URL>` lists the newest releases as undated teasers, `url --direct` of the listing carries the /actualites/communiques-de-presse-de-letat-de-vaud/detail/communique/<s",
+   "rotation_cursor": "2026-11-17"
+  }
+ ]
+}

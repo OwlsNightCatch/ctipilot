@@ -1,0 +1,406 @@
+# work/2026-11-23T0355Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-11-23T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-23T03:57:48Z
+ended_at: 2026-11-23T04:17:47Z
+duration_seconds: 1199
+self_telemetry:
+  webfetch_calls: 3   # cyberdelegate (read) + two baselland.ch calls (HTTP 403)
+  websearch_calls: 23
+  bridge_fetches: 80  # approximate: fetch_source.py feed/url/extract/ico-uk/sec-edgar calls
+swiss_public_sector_summary: |
+  Honest result for the Swiss public-sector sweep: NO new Swiss federal, cantonal, communal, police, fire/rescue,
+  hospital, armed-forces or university incident surfaced in the window beyond what the store already carries
+  (Basel-Landschaft, USI Lugano, PK Softech/Publica). Swept: inside-it, netzwoche, ictjournal, tio.ch topic page,
+  laRegione topic page, cdt.ch, rts regions, srf, polizeiticker, ransomware.live CH victims + CH cyberattacks API
+  (newest Swiss public-sector row is baselland.ch, added 2026-11-18; no new Swiss public-sector leak-site claim since
+  Manno on 2026-09-28; FIFA 2026-11-20 and Clinica Suiza Lab 2026-11-15 are not Swiss public sector), plus WebSearch
+  in DE/FR/IT/EN. No material delta found for Basel-Landschaft (baselland.ch is walled on every transport this run, so the
+  canton's own pages could not be re-read; secondary coverage added nothing past 2026-11-20), USI Lugano, RIKEN, Hokkaido,
+  BundID or Danfoss/Copeland beyond the updates the store already holds. The PK Softech/Publica entry lacks one
+  19 November Publica announcement (external review, scoping by end of January, first report by end of March 2027;
+  Inside IT 2026-11-19) - older than the 73 h horizon and governance-only, so logged as a borderline drop, not an update.
+supplier_watchlist: "duty=suppliers: no supplier watchlist configured; sweep is a no-op (stated per tasking)."
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "GL.iNet: an attacker used a flaw in the GoodCloud remote-management service to push malware to routers and KVMs; the vendor's cloud fix does not clean devices already infected"
+    sources:
+      - { url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20", publisher: "GL.iNet (Security Notice 2026-11-20, updated through 2026-11-23)", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/", publisher: "BleepingComputer", date: "2026-11-22", role: "corroborating" }
+      - { url: "https://github.com/RemoteToHome-io/gl-security-incident-2026", publisher: "RemoteToHome Consulting (independent field survey and firmware analysis, last reviewed 2026-11-23 03:57 UTC)", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://www.heise.de/news/GL-iNet-Schwachstelle-entdeckt-Patch-verfuegbar-11533722.html", publisher: "heise online", date: "2026-11-22", role: "corroborating" }
+      - { url: "https://borncity.com/blog/2026/11/21/gl-inet-sicherheitsvorfall-bei-cloud-fernverwaltung-schadsoftware-auf-routern/", publisher: "Borns IT- und Windows-Blog (discovery lead, relays forum reports)", date: "2026-11-21", role: "discovery" }
+    discovery_trace: "first seen at: borncity, URL https://borncity.com/blog/2026/11/21/gl-inet-sicherheitsvorfall-bei-cloud-fernverwaltung-schadsoftware-auf-routern/ (feed https://borncity.com/blog/feed/) -> primary: GL.iNet security notice, URL https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20 -> corroborating: BleepingComputer URL https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/ (also seen in the bleepingcomputer feed) -> independent analysis: RemoteToHome Consulting URL https://github.com/RemoteToHome-io/gl-security-incident-2026 -> heise URL https://www.heise.de/news/GL-iNet-Schwachstelle-entdeckt-Patch-verfuegbar-11533722.html"
+    summary: |
+      GL.iNet says it identified on 2026-11-20 a vulnerability in its cloud remote-management service (GoodCloud) and that an
+      unauthorized party exploited it to access some GL.iNet routers and KVM devices and install malicious software on them.
+      The vendor closed the cloud path and says the cloud-side fix alone does not remove malware from devices already infected;
+      it points owners to per-model security firmware (for example 4.11.1 or later for GL-MT3000, GL-MT6000 and GL-MG1300,
+      4.10.3 for GL-E5800, KVM 1.10.3 or later for the RM1, RM1V2, RM10, RM10RC, RM1PE and RM4PE, 1.8.7 for the RMQ1), says the
+      update removes the malware identified in this incident without a factory reset, and says an unlisted model is not
+      necessarily unaffected. GL.iNet has not said which firmware versions or how many devices are affected, over what time
+      window, or how the flaw was used. BleepingComputer reports, from user and researcher samples, custom malware tailored to
+      GL.iNet models: root reverse shells to an attacker server, a process disguised as a cron daemon, persistence through
+      startup scripts and scheduled jobs, a replaced netstat utility that hides the malware's connections, planted SSH keys
+      and tampered file timestamps; some recovered files carry December 2025 timestamps, and it is unclear whether those belong
+      to the same actors. RemoteToHome Consulting, which manages many GL.iNet routers, reads the compiled GoodCloud client and
+      says one cloud-message handler (the AstroWarp/SD-WAN path) passes a cloud-supplied value to a root shell without
+      validation, in firmware since 4.7.0 of 2024-12-05 and whether or not AstroWarp is in use; GL.iNet has not confirmed this
+      as the vector. Its survey found the attack or an older, separate backdoor on 166 of 199 routers it reached (not a random
+      sample), found that GL.iNet's single published process indicator matched none of them, and says the vendor's clean-up
+      is partial: a firmware upgrade that keeps settings can leave startup entries and keep-list persistence in place, so a
+      reinstall without keeping settings is its advice. No actor is named; BleepingComputer notes Chinese-language developer
+      comments in one installer and treats authorship as only suggestive.
+    region_nexus: "global; no Swiss-specific statement found (none of the 25 most recent NCSC-CH security-hub posts, newest dated 2026-11-19, concerned GL.iNet at fetch time)"
+    primary_sector_nexus: "indirect: travel/branch routers and IP-KVMs are used for remote and field work; Swiss public-sector footprint unknown"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1059.004, T1037.004, T1053.003, T1036.005, T1070.006, T1098.004]
+    affected_products: ["GL.iNet GoodCloud", "GL.iNet routers (GL-MT3000, GL-MT6000, GL-MT2500, GL-AX1800, GL-AXT1800, GL-MT5000, GL-MT3600BE and others listed in the notice)", "GL.iNet KVM (Comet RM1, RM1PE, RM10, RMQ1 and related)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:glinet-goodcloud-router-kvm-malware-2026-11", type: incident, name: "GL.iNet GoodCloud router and KVM compromise (November 2026)", aliases: ["GL.iNet CSA-2026-01"], summary: "GL.iNet's 2026-11-20 security notice: an unauthorized party exploited a cloud remote-management flaw to install malware on some routers and KVM devices (GL.iNet, 2026-11-20)." }
+      - { key: "product:gl-inet-goodcloud", type: product, name: "GL.iNet GoodCloud", aliases: [], summary: "GL.iNet's cloud remote-management service for its routers and KVM devices (GL.iNet, 2026-11-20)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 2 }   # vendor notice is first-party; vector (code reading) is one researcher's claim
+    novelty: new
+    lookback: false
+    overlap_note: "S1 progress line mentions GL.iNet as a news lead; main agent should merge if S1 returns it."
+    evidence:
+      - quote: "An unauthorized party exploited the vulnerability to access and install malicious software on some GL.iNet routers and KVM devices."
+        attribution: "GL.iNet"
+        source_url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20"
+      - quote: "The cloud-side fix alone does not remove malware from devices that were already infected; install the security firmware below to remove it."
+        attribution: "GL.iNet"
+        source_url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20"
+      - quote: "GL.iNet has not disclosed how the attackers exploited its cloud platform, how many customers were impacted, or whether information was stolen from compromised devices."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/"
+      - quote: "Killing a process or reinstalling firmware does not undo a compromise."
+        attribution: "RemoteToHome Consulting"
+        source_url: "https://github.com/RemoteToHome-io/gl-security-incident-2026"
+    extended_notes: |
+      Exposure: any GL.iNet router or KVM that has GoodCloud switched on; read the model and firmware from the admin panel and
+      compare with the minimum versions in the vendor notice. Detection (telemetry classes): process listings on the device
+      (a cron-lookalike process started from a temporary directory; interactive shells or netcat-style outbound sessions),
+      outbound connections from the router to unfamiliar hosts, startup-script and sysupgrade keep-list modifications, added
+      SSH authorized keys, and a netstat that no longer shows everything. Do these checks before a reboot or upgrade - the
+      remote shell and its traces do not survive a restart and an upgrade of an infected KVM removes the implant without
+      keeping a copy (RemoteToHome). Post-patch compromise check: treat every credential stored on a hit device (VPN client
+      profiles, SSH keys, API keys) as read and revoke the access server-side; for KVMs also inspect the controlled computer.
+      Vendor and researcher disagree on clean-up (vendor: firmware update removes the malware, settings can be kept;
+      RemoteToHome: partial clean-up, reinstall with settings not kept). Triage: a vendor-published single indicator is
+      reported as absent on every router the researcher checked, so a clean result on that one check says little.
+      A second, older persistent backdoor on 49 routers (file dates from September 2025) is reported by RemoteToHome and
+      forum users and is not confirmed by GL.iNet as related. RemoteToHome withholds one further cloud-client weakness
+      reported to the vendor on 2026-11-22.
+  # ------------------------------------------------------------------ 2
+  - title: "Babidi Ghost: SOCRadar reconstructs a nine-day AI-agent operation by a low-skill operator that hit banks, an insurer and thirteen town halls through one shared IT provider, with Switzerland among the main target countries"
+    sources:
+      - { url: "https://socradar.io/blog/babidighost-ai-augmented-cybercrime/", publisher: "SOCRadar Research (Fatih Demir)", date: "2026-11-20", role: "primary" }
+      - { url: "https://borncity.com/blog/2026/11/21/bankweaver-angriff-auf-falsch-konfigurierte-banking-software/", publisher: "Borns IT- und Windows-Blog (discovery lead, relays SOCRadar)", date: "2026-11-21", role: "discovery" }
+    discovery_trace: "first seen at: borncity, URL https://borncity.com/blog/2026/11/21/bankweaver-angriff-auf-falsch-konfigurierte-banking-software/ (feed https://borncity.com/blog/feed/; the BabieGhost passage at the end of the post) -> primary: SOCRadar write-up, URL https://socradar.io/blog/babidighost-ai-augmented-cybercrime/ ; WebSearch ('BabidiGhost SOCRadar jailbroken AI agent municipalities Belgium Switzerland BlackHatSect0r') found no second outlet"
+    summary: |
+      SOCRadar's Threat Research Unit reports that a French-speaking operator it calls BabidiGhost spent about nine days
+      (6 to 14 November 2026) driving a jailbroken AI agent from the BlackHatSect0r toolchain (the Hermes agent framework
+      with anti-refusal prompts and an escalation proxy) against more than 50 organizations and datasets, mostly in Belgium,
+      France and Switzerland. SOCRadar says it reconstructed the operation from the operator's staging server, a hijacked
+      small-business server whose home directory was served as an open file listing, so every prompt, shell history and about
+      10 GB of stolen data were readable. SOCRadar states no zero-day was used: the successful intrusions were an
+      internet-facing, unpatched Metabase (CVE-2023-38646) from which the agent reached cloud database credentials in the
+      container environment and exported an insurer's customer database, a weak administrator password on a shared IT
+      provider's storage-management interface that exposed 23 archives (about 8.6 GB) of more than 13 municipalities and ten
+      other public bodies, and unauthenticated production API endpoints. A 120-thread crawler swept Swiss websites for IBANs,
+      e-mail addresses and phone numbers. Controls that stopped the same agent were MFA (TOTP brute force failed), IP
+      allowlisting (49 hostnames found, none reachable) and server-side business validation. The operation ended when the
+      model API key was revoked on 14 November; implants already placed beaconed until 15 November. SOCRadar assesses him as
+      low-capability operating a high-capability tool and ties the toolchain to BlackHatSect0r, a French-speaking collective
+      it tracks as an agentic actor; the Swiss targets are not named and SOCRadar says affected organizations were notified.
+    region_nexus: "switzerland (among the three main target countries; Swiss websites crawled for IBANs); the municipal archives are tied to Belgium (the one compromised storage server drove the Belgian share) and no Swiss victim is named"
+    primary_sector_nexus: "direct: local government is the dominant target class by volume; a shared IT provider's storage server exposed the archives of 13+ municipalities and 10 public bodies (Belgium); Swiss communes use shared IT providers the same way"
+    sector: "public-sector"
+    cves: [CVE-2023-38646]
+    techniques: [T1190, T1078, T1110.001, T1552.001, T1595.002, T1596.003, T1589.002, T1213, T1005, T1567, T1059.001, T1053.005, T1546, T1547.001, T1036.005, T1685, T1584.004, T1587.001, T1585.002, T1657]   # SOCRadar's own ATT&CK table
+    affected_products: ["Metabase", "Hermes Agent (agent framework abused by the operator)"]
+    entity_keys: ["tool:hermes-ai-agent", "product:metabase"]
+    new_entities:
+      - { key: "actor:babidighost", type: actor, name: "BabidiGhost", aliases: ["Babidi"], summary: "French-speaking low-skill operator SOCRadar assesses as running a jailbroken BlackHatSect0r-toolchain AI agent against European banks, an insurer, payment providers and municipalities from 2026-11-06 to 2026-11-14 (SOCRadar, 2026-11-20)." }
+      - { key: "actor:blackhatsect0r", type: actor, name: "BlackHatSect0r", aliases: ["BlackHatSect0r && DXQRTXX", "GHOSTHUNTERS"], summary: "French-speaking collective SOCRadar tracks as an agentic threat actor, active since February 2026, that strips an AI agent of its refusals and drives automated scanning and data theft for extortion (SOCRadar, 2026-11-20; first documented by SOCRadar on 2026-09-16)." }
+    relation_suggestions:
+      - { subject: "actor:babidighost", object: "actor:blackhatsect0r", basis: "SOCRadar: BabidiGhost runs the BlackHatSect0r agent toolchain (same agent, model and jailbreak) but has none of the group's other capabilities (SOCRadar, 2026-11-20)" }
+      - { subject: "actor:babidighost", object: "tool:hermes-ai-agent", basis: "SOCRadar: a hermes command launched the Hermes agent framework on the staging server (SOCRadar, 2026-11-20)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 3 }   # discoverer's own reconstruction from an exposed server; no independent second source found
+    novelty: new
+    lookback: true
+    domain_overlap_note: "Research-lab content (S3 territory) surfaced from an S4 feed lead; no S3 return mentions it at the time of writing."
+    evidence:
+      - quote: "The agent targeted more than 50 organizations and datasets, mostly in Belgium, France and Switzerland."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/babidighost-ai-augmented-cybercrime/"
+      - quote: "One credential opened every client’s data."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/babidighost-ai-augmented-cybercrime/"
+      - quote: "a 120-thread crawler swept Swiss websites for international bank account numbers (IBANs), emails and phone numbers"
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/babidighost-ai-augmented-cybercrime/"
+      - quote: "MFA, IP allowlisting and server-side validation stopped the same agent that exported an insurer’s customer database"
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/babidighost-ai-augmented-cybercrime/"
+    extended_notes: |
+      Exposure: internet-facing analytics/BI tools (Metabase before the CVE-2023-38646 fix), storage-management interfaces of
+      shared IT providers, API documentation and test portals reachable without authentication, bank-style sign-in flows that
+      leak whether an account exists, and SMS-sending functions without authentication or rate limits. Detection (telemetry
+      classes, SOCRadar's guidance): web/proxy/identity/application logs for the 5 to 17 November window; PowerShell beacon
+      files staged in the Windows temp directory, Run-key and scheduled-task entries masquerading as a Windows Update service,
+      unexpected Defender exclusions, outbound TCP to an odd high port; PostgreSQL trigger inventory for entries that relaunch
+      code on insert; servers making continuous calls to a model-provider API or to the Telegram bot API with no business
+      reason. Triage: a BI tool opening its own database connection is normal; the discriminator is OS command execution as a
+      child of the BI service process or secrets read from its environment. Hardening: remove analytics and storage consoles
+      from the internet or put them behind allowlists, strong admin passwords with MFA, no database superuser secrets in
+      process environments. Provider-chain lesson for communes: one weak credential on a shared provider's storage opened
+      every client's data (as in the Swiss pension-fund supplier cases already in the store).
+  # ------------------------------------------------------------------ 3
+  - title: "Microsoft Entra Connect Health API flaw (July to November 2026) let attackers read tenant contact and configuration metadata; Microsoft says no customer action is required but warns of targeted phishing of admin and technical contacts"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/", publisher: "BleepingComputer (carries Microsoft's tenant notification and an on-record Microsoft statement)", date: "2026-11-21", role: "primary" }
+      - { url: "https://borncity.com/blog/2026/11/21/sicherheitsvorfall-bei-microsoft-entra-connect-health-21-11-2026/", publisher: "Borns IT- und Windows-Blog (relays the same notification text)", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: borncity, URL https://borncity.com/blog/2026/11/21/sicherheitsvorfall-bei-microsoft-entra-connect-health-21-11-2026/ (feed https://borncity.com/blog/feed/) -> pivot: BleepingComputer feed https://www.bleepingcomputer.com/feed/ -> BleepingComputer article URL https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/ ; Microsoft's own notification is only on Reddit (r/sysadmin) and Azure Service Health, WebSearch could not find a Microsoft-hosted page"
+    summary: |
+      Microsoft told Entra tenant administrators (via Azure Service Health, text shared on Reddit and quoted by BleepingComputer
+      and Borncity) that a vulnerability introduced on 2026-07-23 in the Entra Connect Health API was found on 2026-11-09 and
+      fixed server-side on 2026-11-19, and that its investigation, concluded 2026-11-20, found unauthorized read-only access to
+      tenant-level metadata for notified tenants. Exposed fields: e-mail addresses of tenant technical contacts and
+      administrator accounts; tenant ID, display name, initial domain, country and region; Entra licence tier; directory
+      synchronization status and last-sync time; Connect Health onboarding status; and an expired agent-registration
+      certificate for a service retired in late 2024. Microsoft says no passwords, hashes, tokens, valid keys, on-premises
+      topology or Azure subscription data was exposed and it found no unauthorized configuration changes, though the flaw could
+      have allowed changes to Connect Health monitoring configuration. No software update or remediation is required; Microsoft
+      advises alerting security teams and the tenant technical contact to targeted phishing and social engineering, phishing-
+      resistant MFA and just-in-time activation for privileged accounts, and reviewing Entra audit and sign-in logs. It
+      published a read-only PowerShell script that shows the current values of the exposed fields (not what was accessed).
+      Microsoft has not said who exploited the flaw, how many tenants are affected or when access began; MSPs report one
+      notification per managed tenant.
+    region_nexus: "global; any hybrid Entra tenant with Connect Health onboarded, including Swiss federal, cantonal and communal tenants"
+    primary_sector_nexus: "indirect: the exposed contact addresses are the privileged-account and technical-contact set a phishing or help-desk pretext against a public-sector tenant would target"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1589.002]   # T1566 deliberately not mapped: phishing is Microsoft's predicted follow-on risk, not observed behavior
+    affected_products: ["Microsoft Entra Connect Health"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:entra-connect-health-tenant-metadata-exposure-2026-11", type: incident, name: "Entra Connect Health tenant metadata exposure (November 2026)", aliases: [], summary: "Microsoft's 2026-11-20 tenant notification: a flaw in the Entra Connect Health API since 2026-07-23 allowed unauthorized read-only access to tenant contact and configuration metadata; fixed server-side 2026-11-19 (Microsoft via BleepingComputer, 2026-11-21)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    lookback: false
+    borderline: true
+    borderline_reason: "Prior run (2026-11-22T0355Z) dropped this as second-hand and fixed server-side with no customer action; BleepingComputer now adds an on-record Microsoft spokesperson confirmation. Value for the constituency is the phishing-of-admin-contacts warning on Entra tenants, not a patch task; Microsoft's own page was not reachable."
+    evidence:
+      - quote: "unauthorized read-only access to tenant-level metadata associated with your organization had occurred"
+        attribution: "Microsoft (tenant notification, via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "We identified and addressed a security issue affecting Microsoft Entra Connect Health that could have resulted in unauthorized access to tenant-level contact and configuration metadata."
+        attribution: "Microsoft spokesperson (to BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "The notification says no software updates or other customer remediation are required to address the vulnerability."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+    extended_notes: |
+      Exposure: confirm in Azure Service Health whether the tenant received the notice; the tenant's technical contact and
+      notification recipients should be current. Detection: phishing, vishing or help-desk pretexts that cite Entra, Connect
+      Health or tenant details and are addressed to global administrators or the technical contact; Entra sign-in and audit logs
+      for privileged accounts. Triage: Connect Health alert e-mails are routine; the discriminator is an unsolicited message
+      that quotes tenant ID, initial domain or licence tier. No post-patch persistence check applies per Microsoft (no
+      credentials or tokens exposed, no configuration changes found). Background: Cymulate research of 2026-09-03 (search
+      snippet only, not fetched) separately describes Connect Health API credential exposure to read-only roles; not linked by
+      any source to this incident.
+  # ------------------------------------------------------------------ 4
+  - title: "N-able Mail Assure and SpamExperts Hosted Cloud: an unauthorized party reached one server and possibly credentials stored on the platform; N-able revoked all customer API tokens, invalidated OAuth tokens and reset local passwords"
+    sources:
+      - { url: "https://www.securityweek.com/n-able-blames-service-disruption-on-cyberattack/", publisher: "SecurityWeek (quotes N-able statements)", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/microsoft/n-able-says-recent-security-breach-led-to-major-service-outage/", publisher: "BleepingComputer (quotes N-able's status page)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed, URL https://www.bleepingcomputer.com/feed/ -> article URL https://www.bleepingcomputer.com/news/microsoft/n-able-says-recent-security-breach-led-to-major-service-outage/ -> corroborating: SecurityWeek (securityweek feed https://feeds.feedburner.com/securityweek) URL https://www.securityweek.com/n-able-blames-service-disruption-on-cyberattack/ ; N-able's own status page (https://uptime.n-able.com/event/202672/) is a JavaScript shell on every transport used, so its text is cited only as quoted by the two outlets"
+    summary: |
+      N-able says a days-long worldwide disruption of its Mail Assure and SpamExperts Hosted Cloud services, which began on
+      2026-11-16 and was first described as platform configuration and service dependencies, was a security incident: on
+      2026-11-18 it confirmed unauthorized access to one server in the Hosted Cloud environment. It told SecurityWeek that the
+      incident was isolated to a single web server where an unauthorized party may have been able to access certain
+      credentials stored on the platform. Mail flow and filtering were not affected, but the management portal, API,
+      quarantine, logging and mailbox-synchronization services were taken offline; N-able says it found no evidence customer
+      data or mailboxes were compromised. Containment included taking the server offline, rotating internal platform
+      credentials, revoking existing customer API tokens, invalidating OAuth tokens and resetting local-user passwords, so
+      customer integrations that held tokens need re-issuing. N-able states the incident is unrelated to the earlier N-central
+      incident (the 4EverAble2Shell/N-central flaws already in the store). No entry vector or actor is stated.
+    region_nexus: "global; SpamExperts is widely used by European MSPs and hosters; Swiss public-sector use not established"
+    primary_sector_nexus: "indirect: hosted e-mail security service run through MSPs; a supplier-chain exposure for administrations that buy mail filtering via a service provider"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1552]   # inferential: N-able states unauthorized access to one web server and possibly reachable stored credentials, but no vector; T1190 is the closest unambiguous mapping, drop if the composer prefers none
+    affected_products: ["N-able Mail Assure", "N-able SpamExperts Hosted Cloud"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:n-able-mail-assure-spamexperts-hosted-cloud-2026-11", type: incident, name: "N-able Mail Assure and SpamExperts Hosted Cloud security incident (November 2026)", aliases: [], summary: "N-able's 2026-11-18 confirmation of unauthorized access to one Hosted Cloud server, with customer API tokens revoked and OAuth tokens invalidated (N-able via SecurityWeek, 2026-11-20)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }   # both outlets trace to N-able's own statements; vendor page unreadable
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "No vector, no actor, impact limited to management-plane services per N-able; the prior run (2026-11-22T0355Z) dropped it as single-source. It now has two outlets, one quoting N-able directly, and the credential/token revocation is a concrete customer task, but Swiss public-sector use is not established."
+    evidence:
+      - quote: "Our investigation determined that the incident was isolated to a single web server, where an unauthorized party may have been able to access certain credentials stored on the platform"
+        attribution: "N-able (statement to SecurityWeek)"
+        source_url: "https://www.securityweek.com/n-able-blames-service-disruption-on-cyberattack/"
+      - quote: "taking the affected server offline, rotating internal platform credentials, revoking existing customer API tokens, invalidating OAuth tokens, and proactively resetting passwords for local users"
+        attribution: "N-able (statement to SecurityWeek)"
+        source_url: "https://www.securityweek.com/n-able-blames-service-disruption-on-cyberattack/"
+      - quote: "We are aware of unauthorized access to one of the servers in the Mail Assure and SpamExperts Hosted Cloud."
+        attribution: "N-able (status page, via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/n-able-says-recent-security-breach-led-to-major-service-outage/"
+    extended_notes: |
+      Exposure: organizations or MSPs using Mail Assure or SpamExperts Hosted Cloud for inbound/outbound filtering,
+      quarantine and logs; mail flow continued, so the visible symptom was loss of portal, API, quarantine and log access.
+      Post-incident check: N-able says it revoked API tokens and invalidated OAuth tokens and reset local-user passwords, so
+      expect integrations (reseller, MSP automation, SIEM log pulls) to need new tokens and users to need new passwords;
+      review any credentials or integration secrets that were configured in the platform and rotate them where reuse exists.
+      Detection: authentication and API-use logs on the customer side for N-able tokens used after 2026-11-16; unexpected
+      quarantine releases or domain changes in the platform audit trail.
+  # ------------------------------------------------------------------ 5
+  - title: "BankWeaver: Forescout finds attackers swapping an anonymous token for an administrator token on exposed Temenos Quantum Fabric deployments and uploading Java web shells, after a confirmed bank-side breach"
+    sources:
+      - { url: "https://www.forescout.com/blog/bankweaver-campaign-abuses-digital-banking-middleware-to-deploy-web-shells/", publisher: "Forescout Vedere Labs", date: "2026-11-19", role: "primary" }
+      - { url: "https://borncity.com/blog/2026/11/21/bankweaver-angriff-auf-falsch-konfigurierte-banking-software/", publisher: "Borns IT- und Windows-Blog (discovery lead, relays Forescout)", date: "2026-11-21", role: "discovery" }
+    discovery_trace: "first seen at: borncity, URL https://borncity.com/blog/2026/11/21/bankweaver-angriff-auf-falsch-konfigurierte-banking-software/ (feed https://borncity.com/blog/feed/) -> primary: Forescout Vedere Labs, URL https://www.forescout.com/blog/bankweaver-campaign-abuses-digital-banking-middleware-to-deploy-web-shells/"
+    summary: |
+      Forescout Vedere Labs, investigating a breach at a financial-services institution in early September 2026, found a
+      campaign it names BankWeaver against Temenos Quantum Fabric (formerly Kony Fabric) deployments where a Fabric
+      authentication service was configured for anonymous instead of private access and was reachable from the internet. The
+      attacker takes the anonymous token the public Spotlight administration application issues, presents it to that service
+      and receives a privileged Fabric token without credentials; with administrator rights the attacker imports a service
+      through Fabric's integration mechanism that permits OS command injection, spawns reverse shells and downloads scripts
+      from free file hosts, then registers two custom Java components: FabricShell (command execution and arbitrary database
+      queries through a service endpoint) and FabricShadow (host fingerprinting and exfiltration from a pre-request hook).
+      Forescout found six more banks in Asia, the Middle East, Europe and the Americas with the same exposure and
+      configuration, with compromise not confirmed, and says traffic was relayed through other victims' servers and
+      compromised home devices in the United Kingdom. Temenos, which Forescout notified, determined the behaviour was a
+      configuration of the service as anonymous rather than private, released updates and guidance to make it private and
+      advises restricting internet access to Spotlight and the Fabric administrative and authentication services. No actor is named.
+    region_nexus: "global; Temenos is headquartered in Geneva and its Fabric platform is used by banks in Europe; Swiss customers not named"
+    primary_sector_nexus: "indirect: Swiss technology supplier and bank (including cantonal-bank) middleware; no public-sector victim named"
+    sector: "finance"
+    cves: []
+    techniques: [T1190, T1078, T1505.003, T1059.004]
+    affected_products: ["Temenos Quantum Fabric", "Temenos Infinity Spotlight"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:bankweaver", type: campaign, name: "BankWeaver", aliases: [], summary: "Forescout's name for the campaign abusing an anonymously configured Temenos Quantum Fabric authentication service to obtain administrator tokens and deploy FabricShell and FabricShadow Java components (Forescout, 2026-11-19)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 3 }
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Research-lab item (S3/S1 territory) from an S4 lead. Swiss link is the vendor and bank middleware, no Swiss public-sector victim; single source (the discoverer). Included because a Geneva-based supplier's platform is exposed and the fix is a configuration change."
+    evidence:
+      - quote: "We identified a new campaign called BankWeaver that exploited an authentication service that was configured to accept anonymous access and was reachable from the internet."
+        attribution: "Forescout Vedere Labs"
+        source_url: "https://www.forescout.com/blog/bankweaver-campaign-abuses-digital-banking-middleware-to-deploy-web-shells/"
+      - quote: "Attackers could generate an anonymous token by accessing a public application and then exchange it for an administrator token on another exposed application."
+        attribution: "Forescout Vedere Labs"
+        source_url: "https://www.forescout.com/blog/bankweaver-campaign-abuses-digital-banking-middleware-to-deploy-web-shells/"
+    extended_notes: |
+      Exposure: Temenos Quantum Fabric / Infinity Spotlight deployments whose authentication service is set to anonymous
+      app-user access and whose Spotlight or administrative routes answer from the internet. Detection (Forescout):
+      anonymous application tokens presented to administrative or user-store authentication services; zip imports, JAR
+      registration and other integration-import operations; Java or Tomcat parent processes spawning shell, downloader,
+      archive or network-utility children; long-lived outbound sessions from application servers. Hardening: set the
+      service to private access per Temenos guidance, take Spotlight and Fabric admin/authentication services off the internet.
+  # ------------------------------------------------------------------ 6
+  - title: "Optimizely script poisoning reached Zattoo, a Swiss streaming provider: its pages ran the injected code for about five hours on 2026-11-16"
+    sources:
+      - { url: "https://www.ictjournal.ch/news/2026-11-20/en-bref-zattoo-subit-une-cyberattaque-les-agents-chatgpt-font-leurs-achats-hotels", publisher: "ICTjournal", date: "2026-11-20", role: "primary" }
+      - { url: "https://borncity.com/blog/2026/11/21/sicherheit-news-zum-21-nov-2026-zattoo-ki-agenten-etc/", publisher: "Borns IT- und Windows-Blog (relays Zattoo's customer e-mail)", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: ictjournal feed, URL https://www.ictjournal.ch/rss.xml -> article URL https://www.ictjournal.ch/news/2026-11-20/en-bref-zattoo-subit-une-cyberattaque-les-agents-chatgpt-font-leurs-achats-hotels -> corroborating: borncity URL https://borncity.com/blog/2026/11/21/sicherheit-news-zum-21-nov-2026-zattoo-ki-agenten-etc/ (Zattoo's own e-mail to customers, forwarded by a reader)"
+    summary: |
+      ICTjournal reports that Zattoo, the Swiss streaming service, is among the organizations named by Scott Helme (Report URI)
+      as having served the malicious Optimizely scripts on 2026-11-16, alongside Zoom and the BBC. Borncity relays a Zattoo
+      customer e-mail: Zattoo uses Optimizely to test pages on zattoo.com; an unauthorized person exploited an Optimizely
+      vulnerability on 2026-11-16 and injected malicious code into the scripts Optimizely delivers to many large websites; the
+      code could run in visitors' browsers between 12:05 and 17:06 CET; Zattoo paused all Optimizely experiments on 2026-11-17
+      and so far has no indication that accounts, passwords or payment data of the people it informed were affected; part of
+      the malicious code targeted iOS 18.6 and older, so it advises updating iPhones and iPads. This is the first named Swiss
+      victim in the OptimJack entry's coverage.
+    region_nexus: "switzerland (company); global campaign"
+    primary_sector_nexus: "none direct (media company); relevant only as Swiss exposure to the OptimJack campaign"
+    sector: "media"
+    cves: []
+    techniques: [T1195.002, T1189]
+    affected_products: ["Optimizely Web Experimentation"]
+    entity_keys: ["product:optimizely"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: "update-of:2026-11-17/optimjack-poisoned-vendor-scripts-skimmer-iphone-router"
+    lookback: true
+    borderline: true
+    borderline_reason: "Two-sentence delta on an existing entry: names the first Swiss victim and gives the execution window; no new technical content, victim is not public sector."
+    evidence:
+      - quote: "Le service suisse de streaming Zattoo figure parmi les entreprises concernées, aux côtés de Zoom et de la BBC."
+        attribution: "ICTjournal"
+        source_url: "https://www.ictjournal.ch/news/2026-11-20/en-bref-zattoo-subit-une-cyberattaque-les-agents-chatgpt-font-leurs-achats-hotels"
+      - quote: "Am 16. November 2026 konnte dieser Code zwischen 12:05 und 17:06 Uhr MEZ in den Browsern der Besucherinnen und Besucher der Zattoo-Website ausgeführt werden."
+        attribution: "Zattoo (customer e-mail, via Borns IT- und Windows-Blog)"
+        source_url: "https://borncity.com/blog/2026/11/21/sicherheit-news-zum-21-nov-2026-zattoo-ki-agenten-etc/"
+    extended_notes: |
+      The existing OptimJack entry carries regions [global, switzerland] but names no Swiss victim; this adds one.
+borderline_drops:
+  - { item: "FBI NCIC (National Crime Information Center) apparent hack", reason: "Repeat of the 2026-11-22 run's drop with no delta: CNN/AP anonymous-source reporting, FBI declined to comment, scope, vector and actor unknown, no Swiss police nexus (NCIC is a US system). SecurityWeek (AP) 2026-11-22, BleepingComputer 2026-11-21." }
+  - { item: "CHU de Guadeloupe cyberattack (2026-11-21, plan blanc, operations postponed to 27 Nov)", reason: "French overseas hospital; communique names no vector or actor; below the incident floor and outside the Swiss nexus. Source read: FrenchBreaches 2026-11-23 relaying the hospital's 2026-11-22 communique." }
+  - { item: "Wittenberg-Net (ISP) attack, Neuried, Buttenheim, Greiz-Ronneburg clinic, Halle university applications", reason: "German municipal/hospital/university incidents from 2026-11-14 to 2026-11-18 (Wittenberg-Net disabled phone and internet for the town and district administrations for about 8,000 customers), mostly outside the 73 h horizon, no vector or actor stated; routine. Read: kommunaler-notbetrieb.de, MDR and n-tv for Wittenberg-Net." }
+  - { item: "Hotel-booking platform series (orderando, netaffinity/SmartHotel, Reka WhatsApp phishing) and netbeat hosting breach", reason: "Hospitality/hosting SMEs in DE/IT/NL/CH, platform-credential theft leading to WhatsApp phishing of guests; no public-sector or Swiss-public nexus; netaffinity and netbeat have no vendor statement yet (Borncity single source)." }
+  - { item: "Rackspace Spot Kubernetes secrets breach (2026-11-17)", reason: "Single source (BleepingComputer), niche cloud service, no Swiss nexus; same drop as the prior run." }
+  - { item: "Cleverbridge payment-card breach, CSC Telecom Baltic SMS archive, Maileva/La Poste, Hugendubel/Tolino outage, Bell Canada agentic intruder, Decathlon and Fondation des femmes leak-forum claims, Chambourcy INC Ransom claim (Zataz)", reason: "Out of nexus, single-source or leak-site claims without victim confirmation (PD-6), or already dispositioned in earlier runs." }
+  - { item: "Publica announces external review of the PK Softech incident (Inside IT 2026-11-19)", reason: "Governance-only delta (scope in four areas, method fixed by end of January, first report by end of March 2027, criminal proceedings excluded); source is 3.7 days old, older than the 73 h horizon. Main agent may add it as an update to 2026-10-09/publica-pk-softech-supplier-malware-intrusion-data-outflow if it wants the entry to stay current." }
+  - { item: "CNIL: ten simplified sanctions against communes and one public body for cybersecurity failings (page dated 9 to 18 November)", reason: "French regulator action on collectivites territoriales (missing MFA for administrators, permanent supplier access, weak logging, obsolete servers); outside the horizon and not Swiss; flagged to S2 as a possible regulatory-context lead." }
+  - { item: "Bringhen Group (Visp, The Gentlemen), Churer Zentrum Gleis D / Medi Porta, Medienwerkstatt, SRG data theft", reason: "Swiss private-sector or already-stale incidents (2026-09 to 2026-11-16); no public-sector nexus in window." }
+candidate_sources:
+  - id: remotetohome-gl-security-incident-2026
+    publisher: "RemoteToHome Consulting (GitHub: gl-security-incident-2026)"
+    url: "https://github.com/RemoteToHome-io/gl-security-incident-2026"
+    category: research
+    why: "Independent incident tracker with firmware reading and a field survey for the GL.iNet compromise; one-off, not a standing source. Listed only so the entry can cite it; no standing-source action suggested."
+coverage_gaps:
+  - source_id: baselland.ch (not a slice record; used for the open Basel-Landschaft delta check)
+    reason: "Walled on every transport this run: extract returned no readable body, url --direct and WebFetch both HTTP 403, jina reader credit exhausted (HTTP 402 on both keys). Earlier runs read it. Working recipe: none found; secondary coverage (cyberdelegate, Netzwoche, Inside IT, ICTjournal) carries nothing past 2026-11-20."
+  - source_id: uptime.n-able.com (N-able status page, event 202672)
+    reason: "JavaScript shell on extract; the status text is cited only as quoted by BleepingComputer and SecurityWeek."
+  - source_id: databreaches-net
+    reason: "Article bodies 403 (feed titles only), as the record's note already says; one in-window item (CSC Telecom) needed a different route (Cybernews via WebSearch)."
+  - source_id: swissinfo (feed https://www.swissinfo.ch/ger/rss/alle-news)
+    reason: "feed subcommand returned non-JSON; not part of the slice, skipped after one try."
+# One row per slice record, slice order. horizon_hours = lookback_hours (73).
+source_ledger:
+  - { id: borncity, tier: standard, attempted: true, transport: "feed (https://borncity.com/blog/feed/ 25) + extract", horizon_hours: 73, in_horizon_items: 20, returned: 5, note: "feed reaches back to 2026-11-20 11:33Z (20 items); incident items drilled: Entra Connect Health, GL.iNet, netaffinity/orderando, netbeat, Hugendubel, BankWeaver/BabidiGhost, Zattoo news roundup; GL.iNet, BabidiGhost, Entra, BankWeaver, Zattoo entered the return, the hotel/hosting/retail items dropped as out of nexus" }
+  - { id: cnil-fr, tier: standard, attempted: true, transport: "url --direct (listing) + extract per page", horizon_hours: 73, in_horizon_items: 3, returned: 0, note: "listing read cleanly; newest items are 2026-11-20 consultations and GPA resolutions; the 5 M EUR password sanction (2026-11-18) and the ten commune sanctions (9-18 Nov) are outside the horizon and not Swiss; logged as drop/lead" }
+  - { id: frenchbreaches, tier: standard, attempted: true, transport: "feed (https://frenchbreaches.com/feed.xml 25) + extract per alert", horizon_hours: 73, in_horizon_items: 16, returned: 0, note: "all SME or retail notices; CHU de Guadeloupe (hospital, plan blanc) and two leak-forum claims (Decathlon, Fondation des femmes) read and dropped as out of nexus / below the incident floor / PD-6" }
+  - { id: ico-uk, tier: standard, attempted: true, transport: "bridge ico-uk enforcement 15 (sitemap)", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "main host answered; newest enforcement page lastmod 2026-11-12 (Somerset Council), nothing in the horizon" }
+  - { id: kommunaler-notbetrieb-de, tier: standard, attempted: true, transport: "extract", horizon_hours: 73, in_horizon_items: 2, returned: 0, note: "German municipal IT incidents (Wittenberg-Net ISP attack and Neuried with updates dated 20 Nov); routine, no vector or actor, German not Swiss; see borderline_drops" }
+  - { id: next-ink, tier: standard, attempted: true, transport: "feed (https://next.ink/feed 30)", horizon_hours: 73, in_horizon_items: 14, returned: 0, note: "general-news feed; security items (Commission ARTEX incident, PHP2Shell, nginx, Windows Narrator lock-screen bypass) are already in the store or S1 territory" }
+  - { id: tio-ch-attacco-informatico, tier: standard, attempted: true, transport: "url --direct (topic listing) + extract per article", horizon_hours: 73, in_horizon_items: 2, returned: 0, note: "topic page lists USI Lugano (already in the store, tio article read, no delta) and the FBI NCIC story (dropped); no new Swiss item" }
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured; the sweep is a no-op"
+process_notes:
+  - "Search snippets from WebSearch were unreliable for date-bound Swiss queries (mostly 2021-2025 hits); the productive routes were the curated feeds and listing pages, the ransomware.live CH APIs and drilling vendor/discoverer primaries."
+  - "The Concevis release the prior run dropped turned out to be a 2023 ransomware case; not new."
+  - "jina reader pool is exhausted (HTTP 402 on both keys); extract covered every needed page except baselland.ch (403 on all rungs) and the N-able status SPA."

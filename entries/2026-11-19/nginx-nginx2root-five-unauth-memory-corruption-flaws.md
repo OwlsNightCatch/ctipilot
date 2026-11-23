@@ -63,6 +63,51 @@ cves:
     status: [patch-available]
     affected: "NGINX Open Source 0.5.33 to 1.31.8 with the mail proxy; NGINX Plus 37.1.0 to 37.2.0, 37.0.0 to 37.0.7 and R33 to R36 per CERT.at"
     fixed: "nginx 1.31.9 and 1.30.7; NGINX Plus 37.3.0.1 and 37.0.8.1; none for NGINX Plus R33 to R36"
+  - id: CVE-2026-118899
+    cvss: "8.7 (CVSS 4.0)"
+    epss: null
+    type: null
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.13.0 to 1.31.8 (infinite loop while reading a client request body over TLS 1.3)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-120967
+    cvss: "6.3 (CVSS 4.0)"
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.25.5 to 1.31.8 using client certificate validation in the stream module (SNI bypass)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-125283
+    cvss: "6.9 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 0.9.6 to 1.31.8 using alias with try_files (buffer overflow)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-123640
+    cvss: "6.9 (CVSS 4.0)"
+    epss: null
+    type: null
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.15.2 to 1.31.8 using the stream ssl_preread module (insufficient validation)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-120993
+    cvss: "6.9 (CVSS 4.0)"
+    epss: null
+    type: null
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source mainline 1.31.4 to 1.31.8 using PROXY protocol version 2 (NULL pointer dereference)"
+    fixed: "nginx 1.31.9"
 sources:
   - url: "https://nginx.org/en/security_advisories.html"
     publisher: "nginx.org security advisories"
@@ -197,6 +242,16 @@ updates:
       Management products not affected; Rapid7 says only that its exploit runs with the nginx worker's
       permissions.
     fields: [body, sourcing_note]
+  - at: "2026-11-23T04:35:59Z"
+    run_id: 2026-11-23T0355Z-intel
+    type: improvement
+    summary: >
+      nginx.org and Fortinet list ten flaws fixed in nginx 1.31.9 and 1.30.7, five more than the entry's
+      five: a TLS 1.3 request-body infinite loop rated major, an SNI bypass of client certificate
+      validation in the stream module, a stream ssl_preread validation flaw, an alias and try_files buffer
+      overflow, and a PROXY protocol version 2 NULL dereference in the 1.31 mainline; the fixed releases
+      and the update action are unchanged.
+    fields: [cves, body]
 migrated_from: null
 ---
 
@@ -227,3 +282,7 @@ Cisco's advisory is at version 1.1 (2026-11-21): UCS Director moves from under i
 ## Correction — 2026-11-22T14:55:42Z
 
 Siemens' SSA-935812 does not list every Industrial Edge product: the affected ones are five device products, Industrial Edge Cloud Device, Device Kit for arm64 and x86-64, Own Device and Virtual Device, with no fix available, while Industrial Edge Hub and the Industrial Edge Management products are listed as not affected ([Siemens ProductCERT, 2026-11-20](https://cert-portal.siemens.com/productcert/html/ssa-935812.html)). Rapid7 states only that its exploit runs code with the nginx worker's permissions; it does not discuss root ([Rapid7, 2026-11-18](https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed)).
+
+## Improvement — 2026-11-23T04:35:59Z
+
+nginx.org lists ten flaws fixed in nginx 1.31.9 and 1.30.7, five more than the five above, and Fortinet's FG-IR-26-279 lists the same ten ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html); [Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). The additional five are CVE-2026-118899, an infinite loop while reading a client request body over TLS 1.3 (1.13.0 to 1.31.8, rated major); CVE-2026-120967, an SNI bypass when using client certificate validation in the stream module (1.25.5 to 1.31.8, medium); CVE-2026-125283, a buffer overflow when using alias with try_files (0.9.6 to 1.31.8, minor); CVE-2026-123640, insufficient validation in the stream ssl_preread module (1.15.2 to 1.31.8, minor); and CVE-2026-120993, a NULL pointer dereference when using PROXY protocol version 2 that affects only the mainline 1.31.4 to 1.31.8 and is fixed in 1.31.9 alone ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html)). NCSC-NL scores them CVSS 4.0 8.7 (CVE-2026-118899), 6.3 (CVE-2026-120967) and 6.9 (CVE-2026-120993, CVE-2026-123640 and CVE-2026-125283) ([NCSC-NL, 2026-11-18](https://advisories.ncsc.nl/2026/ncsc-2026-0506.html)), and Fortinet rates CVE-2026-118899 high and the other four medium ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). Updating to 1.31.9 or 1.30.7 covers all ten ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html)).

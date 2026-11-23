@@ -1,0 +1,454 @@
+# work/2026-11-23T0355Z-intel/findings.S1.yaml
+# S1 (active threats and trending vulnerabilities), run 2026-11-23T0355Z-intel.
+# Window: window_hours 26 (cutoff 2026-11-22T01:55Z); developing_window_hours 72; rotational records carry their own lookback_hours.
+# Character of the window: Sunday into Monday. Every essential source (KEV, EUVD exploited list, NCSC.ch, NCSC-NL, CERT-EU, CERT-FR, CERT-PL, BSI, NCSC-UK, Fortinet, Palo Alto, MSRC, watchTowr)
+# has nothing newer than 2026-11-20/21. The items below come from news leads drilled to primaries and from rotational-record lookbacks.
+domain: S1
+run_id: 2026-11-23T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-23T03:57:48Z
+ended_at: 2026-11-23T04:24:15Z
+duration_seconds: 1587
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 9
+  bridge_fetches: 170
+items:
+  # ------------------------------------------------------------------ 1. GL.iNet GoodCloud
+  - title: "GL.iNet confirms its GoodCloud cloud management service was exploited to install malware on routers and KVM devices: a cloud-delivered value is run as root by the router client (RemoteToHome's reading, not vendor-confirmed), fixed firmware from 2026-11-22, and the cloud-side fix does not clean already infected devices"
+    kind_suggestion: incident
+    sources:
+      - { url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20", publisher: "GL.iNet (Security Notice 2026-11-20, updated 2026-11-23)", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/", publisher: "BleepingComputer (own malware-script analysis)", date: "2026-11-22", role: "corroborating" }
+      - { url: "https://github.com/RemoteToHome-io/gl-security-incident-2026", publisher: "RemoteToHome Consulting (incident coordination page, last reviewed 2026-11-23 03:57 UTC)", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://github.com/RemoteToHome-io/gl-security-incident-2026/blob/main/docs/technical-breakdown.md", publisher: "RemoteToHome Consulting (technical breakdown)", date: "2026-11-22", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed, URL https://www.bleepingcomputer.com/feed/ (item 'Hackers exploit GL.iNet cloud flaw to infect routers, KVM devices', 2026-11-22) -> pivot: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/ (links the vendor notice and RemoteToHome) -> primary: GL.iNet Security Notice, URL https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20 -> corroborating: RemoteToHome README, URL https://github.com/RemoteToHome-io/gl-security-incident-2026, then its technical breakdown, URL https://github.com/RemoteToHome-io/gl-security-incident-2026/blob/main/docs/technical-breakdown.md"
+    summary: |
+      GL.iNet says it identified on 2026-11-20 a vulnerability in its cloud remote management service that an unauthorized party exploited to access and install malicious software on some GL.iNet routers and KVM devices; the cloud-side fix blocks new infections but, in the vendor's words, does not remove malware from devices already infected. Stable security firmware is listed per model (routers from 4.7.14 to 4.11.1 depending on model, KVMs 1.10.3 for the RM1, RM1V2, RM10, RM1PE and RM4PE (a 1.10.3 beta or later for the RM10RC per BleepingComputer) and 1.8.7 for the RMQ1) and the vendor says it removes the identified malware without a factory reset. The vendor has not published how many devices were hit, since when, or what the malware does, says its own quick check may miss affected devices, and is still determining whether computers behind infected KVMs were reached. BleepingComputer, which examined the installer script itself, describes model-aware malware that persists through startup scripts and scheduled tasks, masquerades as the cron daemon, hides its connections from netstat, installs SSH keys and alters file timestamps. It also notes that some recovered files carry December 2025 timestamps (unclear whether related) and that one KVM owner saw traffic to roughly 1,800 residential addresses a day, purpose unconfirmed. The independent consultancy RemoteToHome Consulting reports from reading the compiled GoodCloud client that its handler for the cloud command virtual_ip_info (AstroWarp module) puts two cloud-supplied fields into an iptables command run as root through the shell without validation, whether or not AstroWarp is enabled, that the code is present in released firmware from GL-MT3000 4.7.0 (2024-12-05) to 4.11.0, and that on the routers it manages the attacker used it on at least seven models from 2026-11-20, in some cases to open a root reverse shell. RemoteToHome says 166 of 199 routers it reached show this attack or an older, separate backdoor installed from September 2025 (a non-random sample), that the vendor's published indicator did not appear on any router it checked, that the fixed firmware's clean-up is partial and that one further cloud-client weakness is withheld until fixed; GL.iNet has not confirmed any of these points. No source states a Swiss or European public-sector footprint.
+    region_nexus: "global; no source states a Swiss or EU public-sector footprint. GL.iNet sells travel, branch and home routers and IP-KVMs that IT staff and small or remote sites use, so relevance rests on that exposure class and on the KVM's reach into attached hosts"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1059.004, T1037.004, T1053.003, T1098.004, T1036.004, T1070.006]
+    affected_products: ["GL.iNet routers with GoodCloud enabled (GL-MT3000, GL-MT6000, GL-MT2500, GL-AX1800, GL-AXT1800, GL-MT5000, GL-MT3600BE and others in the vendor's list)", "GL.iNet Comet KVM (GL-RM1, GL-RM1PE, GL-RM10, GL-RM10RC, GL-RM4PE, GL-RMQ1)", "GL.iNet GoodCloud"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:gl-inet-goodcloud", type: product, name: "GL.iNet GoodCloud", aliases: ["GoodCloud", "GL.iNet cloud remote management"], summary: "GL.iNet's cloud remote-management service for its routers and Comet KVMs; the vendor confirmed on 2026-11-20 that a vulnerability in it was exploited to install malware on devices (GL.iNet, 2026-11-20)." }
+      - { key: "product:gl-inet-comet-kvm", type: product, name: "GL.iNet Comet KVM", aliases: ["GL-RM1", "GL-RM1PE", "GL-RM10", "GL-RM10RC", "GL-RM4PE", "GL-RMQ1"], summary: "GL.iNet's IP-KVM line (RM1, RM1V2, RM10, RM10RC, RM1PE, RM4PE, RMQ1) named by the vendor as infected in the November 2026 GoodCloud incident (GL.iNet, 2026-11-20)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    sourcing_note: "The vendor notice is first-hand for the incident; BleepingComputer and RemoteToHome are independent analyses of recovered malware and of managed routers. The root-cause reading (virtual_ip_info handler) is RemoteToHome's from compiled code and is not confirmed by GL.iNet, which has not said how the cloud flaw worked."
+    confidence: HIGH
+    admiralty_suggestion: { reliability: A, credibility: 1 }
+    priority_suggestion: notable
+    novelty: new
+    evidence:
+      - quote: "An unauthorized party exploited the vulnerability to access and install malicious software on some GL.iNet routers and KVM devices."
+        attribution: "GL.iNet"
+        source_url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20"
+      - quote: "The cloud-side fix alone does not remove malware from devices that were already infected; install the security firmware below to remove it."
+        attribution: "GL.iNet"
+        source_url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20"
+      - quote: "The official quick checks described above may not detect every affected device."
+        attribution: "GL.iNet"
+        source_url: "https://www.gl-inet.com/en-us/blogs/blog/glinet-security-notice-2026-11-20"
+      - quote: "GL.iNet has not disclosed how the attackers exploited its cloud platform, how many customers were impacted, or whether information was stolen from compromised devices."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-glinet-cloud-flaw-to-infect-routers-kvm-devices/"
+      - quote: "The GoodCloud client on the router passes a value from a cloud message to the shell, as root, without checking it. That is how the attack got in"
+        attribution: "RemoteToHome Consulting"
+        source_url: "https://github.com/RemoteToHome-io/gl-security-incident-2026"
+      - quote: "Killing a process or reinstalling firmware does not undo a compromise."
+        attribution: "RemoteToHome Consulting"
+        source_url: "https://github.com/RemoteToHome-io/gl-security-incident-2026"
+    extended_notes: |
+      Exposure: a router or KVM is exposed when the GoodCloud cloud-management switch is on (RemoteToHome reads the client's init script as starting it only when that option is 1; switching GoodCloud off stopped the client on every router it tried). Models and minimum fixed firmware are in the vendor notice; the vendor says an unlisted model is not necessarily unaffected. Check by reading the device: the vendor's check is a running process whose command line masquerades as the cron daemon with an argument in /tmp (router: process list over SSH or LuCI; KVM: its own terminal, the connected computer is not the place to run it), but RemoteToHome found that exact process on none of the routers it checked while finding a remote shell, a leftover NAT-chain firewall rule, an empty state file in /etc and an older backdoor, so absence of the vendor indicator is weak evidence. The state file and the firewall rule are traces of the cloud command and the rule disappears when GoodCloud is switched off or the device restarts, so look before rebooting or upgrading.
+      Detection: telemetry classes are the device's own process list and startup files (modified init scripts, a line added to the sysupgrade keep-list, added SSH authorized keys), the router's NAT table, and egress flow and DNS logs for the site (a router holding a long-lived outbound TCP session to an unfamiliar host, or contact with many residential addresses and a blockchain API, as the KVM owner reported). The cloud account's device log is also a source: one owner reports command responses with an odd id for the AstroWarp command (not checked by RemoteToHome).
+      Post-patch compromise check: the vendor says the security firmware removes the identified malware and settings can be kept, but RemoteToHome's test on a GL-MT3000 found startup entries it does not name survived an upgrade with settings kept and ran on the fixed firmware, and that an infected KVM upgraded to 1.10.3 with configuration kept also keeps a boot script and an added SSH key; it advises reinstalling with Keep Settings off, treating every key, password and VPN profile stored on the device as read, and removing that access on the server side. Upgrading an infected KVM removes the implant without keeping a copy, so preserve evidence first. If a KVM was infected, check the computer behind it.
+      Behaviour: nothing in the sources identifies a benign process matching the vendor's indicator; no discriminator is stated.
+      Not carried here by design: IP addresses, hashes, file names and the vendor's literal indicator string.
+  # ------------------------------------------------------------------ 2. Ghostscript Upload2Shell
+  - title: "Ghostscript before 10.08.0, CVE-2026-125396 (Upload2Shell): a use-after-free in the Type 1 font loader that breaks the -dSAFER sandbox; pwn.ai chains it to command execution through an anonymous print job, a viewed email attachment in Roundcube and public WordPress upload forms; fixed since 2026-09-08, partial proof of concept public, no exploitation reported"
+    kind_suggestion: vulnerability
+    sources:
+      - { url: "https://pwn.ai/upload2shell/research.html", publisher: "pwn.ai (How We Hacked the Pipes, Upload2Shell)", date: "2026-11-21", role: "primary" }
+      - { url: "https://pwn.ai/upload2shell", publisher: "pwn.ai (Upload2Shell evidence index, updated 2026-11-18)", date: "2026-11-18", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/researchers-demonstrate-ghostscript.html", publisher: "The Hacker News", date: "2026-11-22", role: "corroborating" }
+      - { url: "https://www.vulncheck.com/advisories/ghostscript-before-10.08.0-dsafer-bypass-via-putgstringcopy-forceput-recovery", publisher: "VulnCheck advisory (CVE record text)", date: "2026-11-09", role: "corroborating" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-125396", publisher: "Debian Security Tracker", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://ubuntu.com/security/notices/USN-8949-1", publisher: "Ubuntu (USN-8949-1)", date: "2026-10-21", role: "corroborating" }
+      - { url: "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080", publisher: "Artifex (Ghostscript 10.08.0 release)", date: "2026-09-08", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed, URL https://feeds.feedburner.com/TheHackersNews (item 'Researchers Demonstrate Ghostscript Sandbox-Escape RCE via Crafted File Uploads in Popular Apps', 2026-11-22) -> pivot: THN article, URL https://thehackernews.com/2026/11/researchers-demonstrate-ghostscript.html -> primary: pwn.ai writeup, URL https://pwn.ai/upload2shell/research.html, and evidence index, URL https://pwn.ai/upload2shell -> corroborating: VulnCheck advisory, URL https://www.vulncheck.com/advisories/ghostscript-before-10.08.0-dsafer-bypass-via-putgstringcopy-forceput-recovery; Debian tracker, URL https://security-tracker.debian.org/tracker/CVE-2026-125396; Ubuntu USN-8949-1, URL https://ubuntu.com/security/notices/USN-8949-1; Artifex release, URL https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs10080"
+    summary: |
+      Artifex fixed CVE-2026-125396 in Ghostscript 10.08.0 on 2026-09-08: a Type 1 font-loader helper (.putgstringcopy in gs_fonts.ps) calls the privileged .forceput operator without checking operand types, which a crafted PostScript or PDF document turns into a use-after-free across save/restore and arbitrary code execution; VulnCheck scores it CVSS 4.0 8.5 with a local, user-interaction vector. pwn.ai's writeup of 2026-11-21, relayed by The Hacker News on 2026-11-22, shows that the sandbox escape is reachable from the network because many applications hand untrusted files to Ghostscript indirectly: pwn.ai reports command execution as the rendering account through an anonymous IPP print job to a shared Debian 13 CUPS queue, through an external sender's attachment thumbnailed when a Roundcube message is viewed (ImageMagick delegate required, no click), through public forms in the WordPress plugins Forminator and Essential Addons for Elementor, and through open-wiki upload paths, and says Google mitigated its production path on 2026-11-10. Libraries that reach Ghostscript from EPS or PostScript content, even when the file is named .png or .pdf, include Pillow (load, crop), Imagick, some libvips builds and the Qt KImageFormats plugin; PHP GD, OpenCV, prebuilt Sharp, Java ImageIO and Go decoders did not. WordPress closed its own Author-level upload path separately (CVE-2026-65640, 7.0.4 on 2026-08-12) and Roundcube restricted attachment image types (CVE-2026-114727). The published proof of concept is partial (a memory primitive that fails on 10.08.0), no exploitation is reported, and these chains are pwn.ai's claims from its own tests, each against a stated configuration. Debian's tracker now lists bookworm-security 10.0.0~dfsg-11+deb12u9 (DLA-4914-1) and trixie 10.05.1~dfsg-1+deb13u3 as fixed, while pwn.ai's 2026-11-12 survey had Debian 12 as vulnerable and Amazon Linux, SUSE Linux Enterprise 12 SP5 and 15 lines, SLES 16 and openSUSE Leap 16 pending; Red Hat family status was not established by pwn.ai and I did not read Red Hat's page.
+    region_nexus: "global; Roundcube webmail, CUPS print servers and WordPress upload pipelines are common in public-sector estates, but no source states a Swiss deployment"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-125396]
+    techniques: [T1190, T1566.001, T1059.004]
+    affected_products: ["Ghostscript (GhostPDL)", "Roundcube Webmail", "CUPS on Debian 13", "WordPress", "Forminator", "Essential Addons for Elementor", "ImageMagick", "Pillow"]
+    entity_keys: ["product:roundcube-webmail", "product:plesk"]
+    new_entities:
+      - { key: "product:ghostscript", type: product, name: "Ghostscript", aliases: ["GhostPDL", "gs"], summary: "Artifex's PostScript and PDF interpreter, called indirectly by print, mail-preview and upload pipelines; subject of CVE-2026-125396 (Upload2Shell), fixed in 10.08.0 on 2026-09-08 (Artifex; pwn.ai, 2026-11-21)." }
+      - { key: "tool:upload2shell", type: tool, name: "Upload2Shell", aliases: ["CVE-2026-125396 research chain"], summary: "pwn.ai's name for its Ghostscript -dSAFER escape (CVE-2026-125396) and the application chains built on it (CUPS, Roundcube, WordPress plugins), published 2026-11-21 (pwn.ai)." }
+    relation_suggestions:
+      - { subject: "tool:upload2shell", object: "product:ghostscript", basis: "pwn.ai: Upload2Shell is a use-after-free in Ghostscript's Type 1 font loader, now CVE-2026-125396 (pwn.ai, 2026-11-21)" }
+    verification: MULTI-SOURCE
+    sourcing_note: "The flaw, fix and distribution status are corroborated by the CVE record text (VulnCheck), Debian and Ubuntu; the application chains and the reachability matrix are pwn.ai's own test claims (single discoverer), which The Hacker News restates."
+    confidence: MEDIUM
+    admiralty_suggestion: { reliability: B, credibility: 2 }
+    priority_suggestion: notable
+    novelty: new
+    evidence:
+      - quote: "and there have been no reports of it being used in attacks."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/researchers-demonstrate-ghostscript.html"
+      - quote: "Attackers can supply crafted PostScript or PDF documents that trigger a type error, recover .forceput via a custom error handler, and cause a use-after-free across save/restore to execute arbitrary code."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/ghostscript-before-10.08.0-dsafer-bypass-via-putgstringcopy-forceput-recovery"
+      - quote: "Confirmed remote execution after an external sender's attachment was thumbnailed when its email was viewed."
+        attribution: "pwn.ai"
+        source_url: "https://pwn.ai/upload2shell"
+      - quote: "Confirmed unauthenticated remote command execution: an IPP job to a shared queue ran on the host as"
+        attribution: "pwn.ai"
+        source_url: "https://pwn.ai/upload2shell"
+      - quote: "Almost every application we tested with file uploads could be tricked into passing a file with a trusted extension to Ghostscript."
+        attribution: "pwn.ai"
+        source_url: "https://pwn.ai/upload2shell/research.html"
+      - quote: "Updating the host operating system does not update a separate copy of Ghostscript bundled inside a container image or an application"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/researchers-demonstrate-ghostscript.html"
+    extended_notes: |
+      Exposure: any host running Ghostscript before 10.08.0 or a distribution build without the backport, including copies bundled in container images and applications (a host package update does not reach them). It matters where untrusted files reach a renderer: shared or anonymous CUPS queues, webmail with ImageMagick-based attachment thumbnails (Roundcube; pwn.ai also tested the Roundcube path shipped with Plesk at component level), CMS and form plugins that accept uploads and call Imagick, Pillow or libvips, wiki upload and resize paths using an optional ImageMagick backend, and document-import workers. Check the version with the packaged tool, the container image's package list and the application's bundled libraries.
+      Detection: telemetry class is process-creation with parent lineage: Ghostscript (gs) or an ImageMagick delegate started by a web server, PHP-FPM worker, cupsd or a mail-preview worker and then spawning a shell or network utility; plus web, mail and print-job logs for files whose extension (.png, .jpg, .pdf) does not match PostScript or EPS content. pwn.ai notes the commands run as the low-privilege rendering account (lp, www-data) and, in one test, an enforced AppArmor profile stopped the interpreter from starting a shell. No post-patch compromise check is stated by any source.
+      Hardening named by the sources: update Ghostscript to 10.08.0 or the distribution fix and rebuild images; require authentication on print queues; limit which file types an image processor accepts; contain the rendering process with AppArmor or similar.
+  # ------------------------------------------------------------------ 3. KVM CVE-2026-99312
+  - title: "Linux KVM CVE-2026-99312: a stale nested-page-table pointer left by an INIT reset lets a root guest on an AMD host with nested virtualization reach and modify host memory; fixed in kernels 7.3.5, 6.18.64 and 6.12.118, most distribution kernels still unfixed on 2026-11-20, no exploitation or public exploit"
+    kind_suggestion: vulnerability
+    sources:
+      - { url: "https://www.terra.security/blog/kvm-guest-to-host-escape", publisher: "Terra Security (Oren Yomtov)", date: "2026-11-18", role: "primary" }
+      - { url: "https://www.digitalocean.com/blog/cve-2026-99312-kvm-patch", publisher: "DigitalOcean (disclosure and mitigation post)", date: "2026-11-19", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/new-linux-kvm-flaw-cve-2026-99312-lets.html", publisher: "The Hacker News", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://ubuntu.com/security/CVE-2026-99312", publisher: "Ubuntu CVE tracker (last updated 2026-11-20)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed, URL https://feeds.feedburner.com/TheHackersNews (item 'Linux KVM Flaw CVE-2026-99312 Lets Guest VMs Access Host Memory on AMD Hosts', 2026-11-20) -> pivot: THN article, URL https://thehackernews.com/2026/11/new-linux-kvm-flaw-cve-2026-99312-lets.html -> primary: Terra Security writeup, URL https://www.terra.security/blog/kvm-guest-to-host-escape; DigitalOcean post, URL https://www.digitalocean.com/blog/cve-2026-99312-kvm-patch -> corroborating: Ubuntu CVE tracker, URL https://ubuntu.com/security/CVE-2026-99312"
+    summary: |
+      Terra Security found that a Linux KVM host on AMD processors with nested virtualization enabled leaves a virtual CPU's nested-page-table pointer pointing at freed memory when a nested VM is stopped with an INIT reset; once the kernel reuses the page, the guest can fill it with its own entries and the processor follows them, so a guest with root inside its own VM can map host memory. DigitalOcean, which received the report through its bug bounty and treated it as critical, says the researchers read about 127 GB of host RAM read-only from a Droplet and, on a bare-metal AMD server with no other tenants, wrote 32 chosen bytes into a live host kernel page. The kernel CVE team scores it 8.8 (CVSS 3.1) while Red Hat's preliminary assessment is Moderate 5.6 and treats it as denial of service only. Fixes are in stable 7.3.5 and long-term 6.18.64 and 6.12.118 (shipped 2026-11-17; the kernel CVE announcement is dated 2026-11-18); Intel hosts are not affected and DigitalOcean live-patched its fleet. Ubuntu's tracker, updated 2026-11-20, lists the linux package as Vulnerable on 22.04 LTS, 24.04 LTS, 26.04 LTS and 26.10, so distribution kernels lag the upstream fix. The Hacker News reports no use outside research and no published exploit code, citing VirtFusion for the first point; the code dates from a 2022 fix for CVE-2022-3344.
+    region_nexus: "global; relevant to any public-sector private cloud or virtualization estate that runs KVM on AMD hardware with nested virtualization on; no source states a Swiss deployment"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-99312]
+    techniques: [T1611, T1068]
+    affected_products: ["Linux kernel KVM (x86, AMD SVM nested virtualization)"]
+    entity_keys: ["product:linux-kernel-kvm-x86"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    sourcing_note: "Terra Security is the discoverer and DigitalOcean the confirming operator; the Ubuntu tracker independently shows the distribution status. The 127 GB read and the 32-byte write are the researchers' and DigitalOcean's claims; no exploit code is public."
+    confidence: HIGH
+    admiralty_suggestion: { reliability: B, credibility: 2 }
+    priority_suggestion: notable
+    novelty: new
+    borderline: true
+    borderline_reason: "Primary published 2026-11-18 and 2026-11-19, about 3 days outside the window, and no earlier fire or the 2026-11-22 audit covered it; no exploitation, no public exploit, needs root in a guest on AMD with nested virtualization enabled. Relevance rests on private-cloud KVM estates; the main agent decides."
+    lookback: false
+    evidence:
+      - quote: "On AMD processors with nested virtualization enabled, a customer with root inside their own Droplet could reach and modify the memory of the physical host underneath it."
+        attribution: "DigitalOcean"
+        source_url: "https://www.digitalocean.com/blog/cve-2026-99312-kvm-patch"
+      - quote: "Intel-based KVM hosts are not affected, because the vulnerable code exists only in KVM's support for nested virtualization on AMD."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/new-linux-kvm-flaw-cve-2026-99312-lets.html"
+      - quote: "No exploit code has been published either, and no guidance exists for detecting a past attempt."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/new-linux-kvm-flaw-cve-2026-99312-lets.html"
+      - quote: "That turns nested virtualization off and closes this path completely."
+        attribution: "DigitalOcean"
+        source_url: "https://www.digitalocean.com/blog/cve-2026-99312-kvm-patch"
+    extended_notes: |
+      Exposure: hypervisor hosts on AMD processors with the kvm_amd nested parameter enabled that run a kernel without the 2026-11-17 stable fixes; guests that are only Intel-hosted are out of scope. The fix lives in the host kernel and a host keeps the old kernel until rebooted; updating guest operating systems changes nothing. Read the nested setting from the kvm_amd module parameter; DigitalOcean's stated workaround, when a fixed kernel cannot be installed, is setting that parameter to 0, which closes the path.
+      Detection: the sources state no detection guidance and say none exists for a past attempt. A guest that needs root plus nested virtualization means tenants who can run their own hypervisor in a guest are the population to review; host kernel crashes or oopses in KVM MMU code after guest INIT sequences are a plausible symptom but no source states it.
+      Not stated: any exploitation in the wild; the Red Hat versus kernel-CNA severity disagreement is reported by The Hacker News.
+  # ------------------------------------------------------------------ 4. GPGME CVE-2026-129975
+  - title: "GPGME before 2.3.1, CVE-2026-129975: a double free triggered by an OpenPGP key with a crafted very long user id, which the GnuPG project calls critical and says can exfiltrate application data, with remote code execution not ruled out; fixed in 2.3.1 and in Gpg4win 5.1.2, no exploitation reported"
+    kind_suggestion: vulnerability
+    sources:
+      - { url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html", publisher: "GnuPG project (security advisory for GPGME, T8557)", date: "2026-11-20", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-129975", publisher: "Debian Security Tracker (DSA-6646-1, DLA-4924-1)", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/gnupg-warns-critical-gpgme-flaw-could.html", publisher: "The Hacker News", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: thehackernews feed, URL https://feeds.feedburner.com/TheHackersNews (item 'GnuPG Warns Critical GPGME Flaw Could Expose App Data via Malicious OpenPGP Keys', 2026-11-21) -> pivot: THN article, URL https://thehackernews.com/2026/11/gnupg-warns-critical-gpgme-flaw-could.html -> primary: GnuPG advisory, URL https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html -> corroborating: Debian tracker, URL https://security-tracker.debian.org/tracker/CVE-2026-129975"
+    summary: |
+      The GnuPG project announced GPGME 2.3.1 as a fix for what it calls a critical security bug found in all prior versions: by using an OpenPGP key with a crafted very long user id, a double free can be triggered, which can be used to exfiltrate data from applications, for example by sending signed data, and remote code execution cannot be ruled out. The cause is two internal routines that read status lines and key listings from gpg: a buffer starts at 1024 bytes and is reallocated when input runs long, but the new pointer is stored back in the context only at the end, so an early return on a read error leaves a stale pointer that is freed a second time. The project lists Gpg4win, GnuPG Desktop, GnuPG VS-Desktop, most mail clients, many XMPP clients and Samba among the software using GPGME, whether the library is shared, a DLL or statically linked (statically linked and bundled copies need rebuilding), and offers a patch for versions that cannot move to 2.3.1; there is no interim workaround. The Hacker News adds that Gpg4win 5.1.2 bundles the fixed library, that the legacy branch has 1.24.4, and that the project reports no attacks. Debian's tracker lists fixed packages for bookworm and trixie (DLA-4924-1, DSA-6646-1). The flaw was found by Johan Carlsson and reported through GitLab on 2026-11-12; disclosure planned for 2026-11-25 was moved up to 2026-11-20.
+    region_nexus: "global; Gpg4win and GnuPG VS-Desktop are named by the project as affected, and mail-encryption tooling of that kind is used in government administrations; no source states a Swiss deployment"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-129975]
+    techniques: [T1203, T1566.001]
+    affected_products: ["GPGME", "Gpg4win", "GnuPG Desktop", "GnuPG VS-Desktop", "Samba"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:gnupg-gpgme", type: product, name: "GPGME (GnuPG Made Easy)", aliases: ["GPGME", "libgpgme"], summary: "GnuPG's library that applications use to call gpg; the subject of the critical double free CVE-2026-129975, fixed in 2.3.1 (GnuPG project, 2026-11-20)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "The GnuPG project is first-hand for its own library; Debian's tracker independently shows packaged fixes and the same CVE id, and The Hacker News restates the advisory. No second source describes the flaw independently of the project advisory."
+    confidence: MEDIUM
+    admiralty_suggestion: { reliability: A, credibility: 2 }
+    priority_suggestion: notable
+    novelty: new
+    borderline: true
+    borderline_reason: "Advisory dated 2026-11-20, about 30 h before the window cutoff, and not seen by any earlier fire; no exploitation, the project states no per-application trigger path. The project's own 'critical' and 'immediate update' wording and the mail-client and Gpg4win footprint are the reasons to consider it."
+    evidence:
+      - quote: "possible to trigger a double free."
+        attribution: "GnuPG project"
+        source_url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html"
+      - quote: "Please update your GPGME shared library to version 2.3.1."
+        attribution: "GnuPG project"
+        source_url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html"
+      - quote: "The project has not reported any attacks exploiting the flaw, and it notes that remote code execution cannot be ruled out."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/gnupg-warns-critical-gpgme-flaw-could.html"
+      - quote: "The advisory offers no interim workaround for software that cannot update yet."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/gnupg-warns-critical-gpgme-flaw-could.html"
+    extended_notes: |
+      Exposure: every application that links GPGME (shared, DLL or static) below 2.3.1; the GnuPG text says "prior to 2.3.0" but 2.3.0 was never public per The Hacker News, so 2.3.1 is the fixed floor. Check the system library version, the Windows Gpg4win version (5.1.2 or later) and bundled or statically linked copies inside mail clients and other applications, which a system library update does not reach. GPGMEPP and GPGMEQT need no update.
+      Detection: the sources give none. The trigger is key material, so the telemetry to read is mail-client or gateway logs for keys with an abnormally long user id imported or looked up, and crash reports from applications calling gpg; neither is stated by a source.
+      The project does not say which programs pass key material to the library without a manual import.
+  # ------------------------------------------------------------------ 5. IGEL UMS
+  - title: "IGEL Universal Management Suite: ISN 2026-44 (a certificate forwarded in the X-SSL-CERT header bypasses authentication and can take over the UMS host, CVSS 3.1 9.8, only behind a reverse proxy with client-certificate forwarding) and ISN 2026-50 (ZipSlip through the App Proxy upload path, 8.5); fixed in UMS 12.13.140, 12.14.120 and 12.15.100, no exploitation stated"
+    kind_suggestion: vulnerability
+    sources:
+      - { url: "https://kb.igel.com/en/security-safety/current/isn-2026-44-ums-certificate-replay-vulnerability", publisher: "IGEL (ISN 2026-44: UMS Certificate Replay Vulnerability)", date: "2026-11-16", role: "primary" }
+      - { url: "https://kb.igel.com/en/security-safety/current/isn-2026-50-zipslip-vulnerability-in-ums", publisher: "IGEL (ISN 2026-50: ZipSlip Vulnerability in UMS)", date: "2026-11-17", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4599", publisher: "BSI WID (WID-SEC-2026-4599, relays ISN 2026-44)", date: "2026-11-16", role: "corroborating" }
+    discovery_trace: "first seen at: igel-kb-security, URL https://kb.igel.com/en/security-safety/current (extract: 'New or Updated' lists ISN 2026-50, ISN 2026-42, ISN 2026-49) -> primary: ISN 2026-50, URL https://kb.igel.com/en/security-safety/current/isn-2026-50-zipslip-vulnerability-in-ums -> pivot: BSI WID-SEC-2026-4599 via bsi-csaf (initial release 2026-11-16T23:00Z, references IGEL's ISN 2026-44 page) -> primary: ISN 2026-44, URL https://kb.igel.com/en/security-safety/current/isn-2026-44-ums-certificate-replay-vulnerability"
+    summary: |
+      IGEL's security notices of 2026-11-16 and 2026-11-17 describe two flaws in the Universal Management Suite, the console and server that manages IGEL OS thin-client fleets. ISN 2026-44 (CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N) says a certificate forwarded in the X-SSL-CERT header could bypass authentication in the communication between UMS and IGEL OS and lead to full takeover of the UMS host server because a validation check was missing; it applies only when UMS runs behind a reverse proxy with client-certificate forwarding enabled and installations using ICG or no reverse proxy are not affected. ISN 2026-50 (CVSS 3.1 8.5, AV:N/AC:H/PR:L/S:C) says a missing validation on file uploads when UMS acts as an App Proxy lets a crafted file write outside intended locations and take over the host. Both are fixed only by updating to UMS 12.13.140, 12.14.120 or 12.15.100, and IGEL's version lists do not line up (ISN 2026-44 names all versions below 12.14.110, ISN 2026-50 names 12.13.130 and below and 12.14.110 and below). BSI rates ISN 2026-44 hoch and describes a remote, anonymous attacker gaining administrator rights; BSI's advisory is built from the IGEL page and is not independent. Neither notice nor BSI states exploitation or assigns a CVE id, and IGEL separately lists ISN 2026-49 (NoisyTCP kernel issue in IGEL OS, CVSS 5.9) and an update of ISN 2026-42 (eMudhra) on 2026-11-18.
+    region_nexus: "global; the store carries no footprint figure for IGEL in Swiss public-sector estates, so relevance rests on UMS being the management plane of thin-client fleets common in administrations and hospitals"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1078]
+    affected_products: ["IGEL Universal Management Suite (UMS)"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:igel-universal-management-suite", type: product, name: "IGEL Universal Management Suite (UMS)", aliases: ["IGEL UMS"], summary: "IGEL's console and server for managing IGEL OS endpoints; the subject of ISN 2026-44 and ISN 2026-50 (IGEL, 2026-11-16 and 2026-11-17)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "IGEL is the disclosing vendor; BSI's advisory is a relay of ISN 2026-44 from the same IGEL page, so it is not independent corroboration."
+    confidence: MEDIUM
+    admiralty_suggestion: { reliability: A, credibility: 2 }
+    priority_suggestion: notable
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "Lookback item from the new igel-kb-security candidate record (168 h). The 2026-11-22 audit's G1 re-sweep found the same pair and listed it as droppable (CVSS 9.8 but only behind a reverse proxy that forwards client certificates, no exploitation, no CVE id, no stated Swiss footprint). Returned again so the main agent can weigh the management-plane relevance with the standing dispositions in view."
+    evidence:
+      - quote: "could be used to bypass authentication controls and could lead to full takeover of the UMS host server."
+        attribution: "IGEL"
+        source_url: "https://kb.igel.com/en/security-safety/current/isn-2026-44-ums-certificate-replay-vulnerability"
+      - quote: "This affects the following UMS versions ONLY when used together with a reverse proxy, and UMS has client-cert-forwarding enabled."
+        attribution: "IGEL"
+        source_url: "https://kb.igel.com/en/security-safety/current/isn-2026-44-ums-certificate-replay-vulnerability"
+      - quote: "UMS Installations using ICG or no reverse proxy are NOT affected."
+        attribution: "IGEL"
+        source_url: "https://kb.igel.com/en/security-safety/current/isn-2026-44-ums-certificate-replay-vulnerability"
+      - quote: "A validation was missing on file uploads when using the UMS as an App Proxy."
+        attribution: "IGEL"
+        source_url: "https://kb.igel.com/en/security-safety/current/isn-2026-50-zipslip-vulnerability-in-ums"
+      - quote: "Ein entfernter, anonymer Angreifer kann eine Schwachstelle in IGEL UMS ausnutzen, um Sicherheitsvorkehrungen zu umgehen und Administratorrechte zu erlangen."
+        attribution: "BSI WID"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4599"
+    extended_notes: |
+      Exposure: ISN 2026-44 applies only where UMS sits behind a reverse proxy that forwards client certificates in X-SSL-CERT and UMS has client-certificate forwarding enabled; check the proxy configuration, the UMS setting and the UMS version against the fixed lines. ISN 2026-50 applies when UMS is used as an App Proxy. IGEL's general recommendation on both pages is not to run UMS (Tomcat) with root or system privileges, which limits what a host takeover yields.
+      Detection: no detection guidance or post-patch compromise check is stated by IGEL or BSI. From the stated mechanism, a request reaching UMS with an X-SSL-CERT header the proxy did not set itself, followed by administrative actions from an unexpected source, would match ISN 2026-44; this follows from the described header handling, not from a source's telemetry guidance.
+  # ------------------------------------------------------------------ 6. nginx: five further CVEs in the same release (update-of, improvement)
+  - title: "nginx 1.31.9 and 1.30.7 fix ten flaws, not five: CVE-2026-118899 (TLS 1.3 request-body infinite loop, nginx.org 'major'), CVE-2026-120967 (SNI bypass of client-certificate validation in the stream module), CVE-2026-125283, CVE-2026-120993 and CVE-2026-123640 are in the same release as nginx2root"
+    kind_suggestion: vulnerability
+    sources:
+      - { url: "https://nginx.org/en/security_advisories.html", publisher: "nginx.org security advisories", date: "2026-11-18", role: "primary" }
+      - { url: "https://radar.cloudflare.com/zero-wire/nginx2root", publisher: "Cloudflare Radar (zero-wire: nginx2root)", date: "2026-11-18", role: "corroborating" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279", publisher: "Fortinet PSIRT (FG-IR-26-279, ten CVEs, last updated 2026-11-21)", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: fortinet-psirt, URL https://filestore.fortinet.com/fortiguard/rss/ir.xml (item FG-IR-26-279 'NGINX vulnerabilities', 2026-11-20) -> pivot: FG-IR-26-279 page, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-279 (lists ten CVEs against the entry's five) -> primary: nginx.org advisories, URL https://nginx.org/en/security_advisories.html -> corroborating: Cloudflare Radar, URL https://radar.cloudflare.com/zero-wire/nginx2root"
+    summary: |
+      The covered nginx2root entry describes five memory-corruption flaws, but nginx.org's advisory page lists ten flaws fixed in nginx 1.31.9 and 1.30.7 on 2026-11-18, and Fortinet's FG-IR-26-279 (last updated 2026-11-21) lists the same ten. The five not in the entry: CVE-2026-118899, an infinite loop while reading a request body over TLS 1.3 that lets an unauthenticated attacker stall a worker (nginx 1.13.0 and later; nginx.org rates it major, F5 CVSS 3.1 7.5 per Cloudflare); CVE-2026-120967, an SNI bypass when using client-certificate validation in the stream module (1.25.5 and later, medium); CVE-2026-125283, a buffer overflow with alias and try_files (minor); CVE-2026-120993, a NULL dereference with PROXY protocol version 2 (1.31.4 to 1.31.8, fixed only in 1.31.9); and CVE-2026-123640, insufficient validation in ssl_preread (minor). Cloudflare Radar notes most of them affect the stream modules. Fortinet states none of its products use NGINX Plus. The fix versions are the ones the entry already carries, so the delta is scope: the SNI bypass matters where stream listeners enforce client certificates, and the TLS 1.3 loop is an unauthenticated worker stall on any TLS 1.3 server.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-118899, CVE-2026-120967, CVE-2026-125283, CVE-2026-120993, CVE-2026-123640]
+    techniques: [T1190, T1499.004, T1556]
+    affected_products: ["NGINX Open Source"]
+    entity_keys: ["product:f5-nginx-open-source"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    admiralty_suggestion: { reliability: A, credibility: 1 }
+    priority_suggestion: notable
+    novelty: "update-of:2026-11-19/nginx-nginx2root-five-unauth-memory-corruption-flaws"
+    update_record_suggestion: { type: improvement, fields: [summary, cves, techniques, body] }
+    borderline: true
+    borderline_reason: "Facts are dated 2026-11-18 and the fix versions are unchanged, so this is a completeness record (improvement, no re-float) rather than news; the SNI bypass for stream client-certificate validation is the one item with its own control-bypass consequence."
+    evidence:
+      - quote: "The same releases fix five further nginx vulnerabilities."
+        attribution: "Cloudflare Radar"
+        source_url: "https://radar.cloudflare.com/zero-wire/nginx2root"
+      - quote: "The most serious, CVE-2026-118899, is an infinite loop while reading a request body over TLS 1.3 that lets an unauthenticated attacker stall a worker process, in nginx 1.13.0 and later."
+        attribution: "Cloudflare Radar"
+        source_url: "https://radar.cloudflare.com/zero-wire/nginx2root"
+      - quote: "SNI bypass when using client certificate validation in stream"
+        attribution: "nginx.org security advisories"
+        source_url: "https://nginx.org/en/security_advisories.html"
+      - quote: "None of Fortinet products use NGINX Plus."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279"
+    extended_notes: |
+      Exposure and fix are the same as the main entry: nginx before 1.31.9 and 1.30.7. CVE-2026-120993 is fixed only in 1.31.9 (affected range 1.31.4 to 1.31.8), so 1.30.x users are unaffected by it. For the SNI bypass, the exposed configuration is a stream server that validates client certificates; check the stream block's ssl_verify_client and SNI handling rather than the http block.
+      Detection: for the TLS 1.3 loop, worker CPU saturation or stalled connections on TLS listeners and error-log entries around request-body reads; no source states a hunt for the others.
+  # ------------------------------------------------------------------ 7. Java4Shell: Arista statement (update-of, improvement, lookback)
+  - title: "Java4Shell vendor statuses: Arista Security Advisory 0228 (2026-11-19) lists its EOS and VeloCloud products as not affected and puts CloudVision Portal on-premises, CloudVision Appliance Software, Converged Cloud Fabric and the DANZ Monitoring Fabric nodes under triage, with no mitigation or fix yet"
+    kind_suggestion: vulnerability
+    sources:
+      - { url: "https://www.arista.com/en/support/advisories-notices/security-advisory/25219-security-advisory-0228", publisher: "Arista Networks (Security Advisory 0228)", date: "2026-11-19", role: "primary" }
+    discovery_trace: "first seen at: arista-security-advisories, URL https://www.arista.com/en/support/advisories-notices/security-advisory (extract of the advisory index: Security Advisory 0228, 2026-11-19, 'Java4Shell') -> primary (no pivot needed): Arista Security Advisory 0228, URL https://www.arista.com/en/support/advisories-notices/security-advisory/25219-security-advisory-0228"
+    summary: |
+      Arista's Security Advisory 0228, revision 1.0 of 2026-11-19, is its response to CVE-2026-114938 (Java4Shell). It says Arista is not aware of malicious exploitation in its products and lists as not affected the EOS-based switch and wireless series, CloudEOS, CloudVision as-a-Service, CloudVision eXchange, CloudVision AGNI, Multi Cloud Director, NetVisor, Edge Threat Management and the VeloCloud Orchestrator, Gateway and Edge. Still under triage are CloudVision CUE as a cloud service, CloudVision Portal on-premises (including the CV-CUE on-premises software), CloudVision Appliance Software, Converged Cloud Fabric and the DANZ Monitoring Fabric Controller, Analytics, Recorder and Service nodes. The advisory says the required configuration, indicators of compromise and mitigations are still being evaluated and that the resolution section will be updated once fixed releases are available. The covered Java4Shell entry carries Cisco, Siemens, Citrix, Elastic, Mitel, Atlassian, Keycloak and other vendor statuses but not Arista's.
+    region_nexus: "global; Arista CloudVision and DANZ Monitoring Fabric controllers sit in network-operations and monitoring estates, no source states a Swiss deployment"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-114938]
+    techniques: [T1190]
+    affected_products: ["Arista CloudVision Portal", "Arista CloudVision Appliance Software", "Arista Converged Cloud Fabric", "Arista DANZ Monitoring Fabric"]
+    entity_keys: ["product:openjdk"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "Arista is the vendor for its own product statuses (first-hand); no second source is needed for a vendor's own status table. The statuses are 'under triage', not 'affected'."
+    confidence: HIGH
+    admiralty_suggestion: { reliability: A, credibility: 2 }
+    priority_suggestion: notable
+    novelty: "update-of:2026-11-18/cve-2026-114938-java4shell-openjdk-avx512-base64-decoder-rce"
+    update_record_suggestion: { type: improvement, fields: [summary, affected_products, body] }
+    lookback: true
+    borderline: true
+    borderline_reason: "Vendor 'under triage' list only, dated 2026-11-19, no affected confirmation and no fix; one clause in the Java4Shell vendor-status paragraph if the main agent wants the Arista rows, otherwise a drop."
+    evidence:
+      - quote: "Arista is not currently aware of any malicious exploitation of this vulnerability in its products."
+        attribution: "Arista Networks"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/25219-security-advisory-0228"
+      - quote: "- CloudVision Portal on-premises, virtual appliance or physical appliance (including the CV-CUE on premises software)"
+        attribution: "Arista Networks"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/25219-security-advisory-0228"
+      - quote: "This section will be updated once fixed releases are available."
+        attribution: "Arista Networks"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/25219-security-advisory-0228"
+    extended_notes: |
+      Exposure: the on-premises CloudVision Portal and appliance software, Converged Cloud Fabric and DANZ Monitoring Fabric nodes run on JVM-based stacks per the vendor's triage list; whether the AVX-512 VBMI condition applies is for the operator to read from the host CPU. The vendor's mitigation is not yet stated, so the JVM-level interim options already in the entry are the only lever.
+# ---------------------------------------------------------------------------- CVE table (structured input only; never rendered as a table)
+cve_table:
+  - { cve: CVE-2026-125396, product: "Ghostscript (GhostPDL)", cvss: "8.5 (CVSS 4.0, AV:L/AC:L/AT:N/PR:N/UI:P, VulnCheck)", epss: 0.0016, kev: false, exploited: "none reported (The Hacker News 2026-11-22); partial proof of concept public", affected: "Ghostscript before 10.08.0", fixed: "10.08.0 (Artifex, 2026-09-08); Debian 13 10.05.1~dfsg-1+deb13u2 (DSA-6516-1, current +deb13u3); Debian 12 10.0.0~dfsg-11+deb12u9 (DLA-4914-1); Ubuntu USN-8949-1 (2026-10-21) per release; SUSE SLE 12 SP5 and 15 lines, SLES 16, openSUSE Leap 16 and Amazon Linux listed pending by pwn.ai on 2026-11-12 (not re-verified)", type: "use-after-free, -dSAFER sandbox bypass (CWE-648)", vector: "crafted PostScript, EPS or PDF rendered via upload, mail-attachment preview or print job", auth: "none on the tested application paths (CVSS vector is local with user interaction)", source: "https://pwn.ai/upload2shell/research.html" }
+  - { cve: CVE-2026-99312, product: "Linux kernel KVM (x86, AMD SVM nested virtualization)", cvss: "8.8 (CVSS 3.1, kernel CVE team); Red Hat preliminary 5.6 Moderate", epss: 0.0019, kev: false, exploited: "none reported; no public exploit (The Hacker News 2026-11-20)", affected: "kernels carrying the 2022 CVE-2022-3344 fix on AMD hosts with nested virtualization enabled (code entered the 6.1 line and was carried into 5.15.81 and 6.0.11 per The Hacker News)", fixed: "stable 7.3.5; long-term 6.18.64 and 6.12.118 (shipped 2026-11-17); Ubuntu 22.04 LTS, 24.04 LTS, 26.04 LTS and 26.10 listed Vulnerable on 2026-11-20", type: "use-after-free (stale nested page table pointer), guest-to-host escape", vector: "guest vCPU INIT reset after running a nested VM", auth: "root inside a guest VM on an AMD host with nested virtualization", source: "https://www.digitalocean.com/blog/cve-2026-99312-kvm-patch" }
+  - { cve: CVE-2026-129975, product: "GPGME", cvss: null, epss: null, kev: false, exploited: "none reported (GnuPG project via The Hacker News)", affected: "GPGME before 2.3.1 (shared library, DLL or statically linked); GnuPG text says prior to 2.3.0, but 2.3.0 was never public", fixed: "GPGME 2.3.1 (2026-11-19); legacy 1.24.4 and Gpg4win 5.1.2 per The Hacker News; Debian trixie 1.24.2-3+deb13u1 (DSA-6646-1), bookworm 1.18.0-3+deb12u1 (DLA-4924-1)", type: "double free (critical per GnuPG, no score published)", vector: "OpenPGP key with a crafted very long user id handled by an application", auth: "none", source: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html" }
+  - { cve: CVE-2026-118899, product: "NGINX Open Source", cvss: "7.5 (CVSS 3.1, F5 per Cloudflare Radar); 8.7 (CVSS 4.0, EUVD)", epss: 0.0379, kev: false, exploited: "none reported", affected: "nginx 1.13.0 to 1.31.8", fixed: "1.31.9 and 1.30.7", type: "infinite loop (denial of service) reading a request body over TLS 1.3", vector: "network", auth: "none", source: "https://nginx.org/en/security_advisories.html" }
+  - { cve: CVE-2026-120967, product: "NGINX Open Source", cvss: "6.3 (CVSS 4.0, EUVD)", epss: 0.0033, kev: false, exploited: "none reported", affected: "nginx 1.25.5 to 1.31.8 (stream module)", fixed: "1.31.9 and 1.30.7", type: "SNI bypass when using client certificate validation in stream", vector: "network", auth: "none", source: "https://nginx.org/en/security_advisories.html" }
+  - { cve: CVE-2026-125283, product: "NGINX Open Source", cvss: "6.9 (CVSS 4.0, EUVD)", epss: 0.0138, kev: false, exploited: "none reported", affected: "nginx 0.9.6 to 1.31.8", fixed: "1.31.9 and 1.30.7", type: "buffer overflow with alias and try_files (minor)", vector: "network", auth: "none", source: "https://nginx.org/en/security_advisories.html" }
+  - { cve: CVE-2026-120993, product: "NGINX Open Source", cvss: "6.9 (CVSS 4.0, EUVD)", epss: 0.0136, kev: false, exploited: "none reported", affected: "nginx 1.31.4 to 1.31.8", fixed: "1.31.9 only", type: "NULL pointer dereference with PROXY protocol version 2 (minor)", vector: "network", auth: "none", source: "https://nginx.org/en/security_advisories.html" }
+  - { cve: CVE-2026-123640, product: "NGINX Open Source", cvss: "6.9 (CVSS 4.0, EUVD)", epss: 0.0065, kev: false, exploited: "none reported", affected: "nginx 1.15.2 to 1.31.8 (ssl_preread)", fixed: "1.31.9 and 1.30.7", type: "insufficient validation in the stream ssl_preread module (minor)", vector: "network", auth: "none", source: "https://nginx.org/en/security_advisories.html" }
+# ---------------------------------------------------------------------------- watchlist
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist is configured for this deployment; the sweep is a no-op and general coverage rules applied unchanged"
+# ---------------------------------------------------------------------------- standing-duty results (S1 duties a, b, c)
+kev_sweep:
+  catalogue: "2026.11.20 (dateReleased 2026-11-20T17:48:39Z), 1790 entries, read live with `python3 tools/fetch_source.py cisa-kev`"
+  additions_in_window: 0
+  newest_dateAdded: "2026-11-20 (Apache Roller CVE-2026-129448, VMware vCenter CVE-2026-123890, SAP NetWeaver CVE-2025-42884, Cisco Expressway CVE-2026-76466; all four already entries)"
+  ransomware_flag_flips_on_covered_cves: 0
+  note: "every covered CVE in the KEV catalogue still reads knownRansomwareCampaignUse Unknown; the ENISA EUVD exploited list holds the same four records (exploitedSince 2026-11-20)."
+scheduled_release_dispositions:
+  - { release: "Microsoft Edge (Chromium) rows in the 2026-Nov release, 2026-11-20 and 2026-11-21", disposition: "113 Chromium CVEs ingested from Chrome 158 (highest CVSS 9.6, two OOB-write rows) and two Office RCE revisions (CVE-2026-120787 CVSS 7.5, CVE-2026-78505 CVSS 8.8, revised 2026-11-21); MSRC exploited and publiclyDisclosed flags are None or No on every row; no exploited row, nothing returned. Chrome 158.0.8127.36 (2026-11-17, 204 fixes, six Critical, no exploitation statement, read from the raw post) was dispositioned by the 2026-11-19 fire." }
+  - { release: "Oracle Critical Security Patch Update (2026-11-17)", disposition: "covered by the oracle-november-2026 entry and its audit update; no revision seen." }
+  - { release: "WordPress 7.1.5 (2026-11-18, 20 fixes including an unauthenticated Template Part privilege escalation the project says could lead to RCE)", disposition: "read again from wordpress.org and Patchstack; previously dropped by the 2026-11-20, 2026-11-21 and 2026-11-22 fires (headline flaw needs a privileged user to open crafted content, auto-updates deliver it, nothing exploited); no new fact, not returned." }
+  - { release: "nginx 1.31.9 and 1.30.7, F5 (2026-11-18)", disposition: "covered; five further CVEs of the same release returned as an improvement record (item 6)." }
+  - { release: "Debian 13.8 point release (2026-11-22, kernel and Chromium security fixes)", disposition: "bundles fixes already tracked; no new CVE; not returned." }
+  - { release: "CISA ICS advisories ICSA-26-323-01 to -03 (2026-11-19: OpenPLC Runtime, Elecbrakes EB2/VM1/ELBC2000, libumqtt)", disposition: "outside the window, niche products, no exploitation; not returned." }
+revision_checks:
+  - "Cisco cisco-sa-nginx-nov-2026-e8jska2s: version 1.1 of 2026-11-21 (the entry already carries it); Cisco cisco-sa-nov2026-java-rce-eCa6ss9z: version 1.3 of 2026-11-20 (carried); no later revision."
+  - "Siemens SSA-935812 (nginx), SSA-810379 and SSA-272816 (Java4Shell): all V1.0, no fix listed; unchanged."
+  - "Palo Alto Networks CVE-2026-123633: Initial Publication 2026-11-20T23:00Z only; fixes 12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 are still shown as suggested solutions in the CVE JSON, which carries no revision after publication; CVE-2026-114938: refreshed 2026-11-20T17:00Z, unchanged."
+  - "Fortinet FG-IR-26-279: timeline 2026-11-20 initial, 2026-11-21 not-impacted list updated (carried by the entry); 51 products still under investigation, 35 confirmed not impacted; no later change. FG-IR-26-278 (Java4Shell) unchanged."
+  - "Synology SA-26:20 and SA-26:21: revision 2 of 2026-11-20 is the newest; no later revision."
+  - "Mitel MISA-2026-0012 (1.0, 2026-11-16), MISA-2026-0013 (1.0, 2026-11-18), MISA-2026-0014 (1.0, 2026-11-19): unchanged."
+  - "Danfoss DSA-2026-12-01 and -02: update log shows only the 2026-11-20 publication; the AK-SM 8xxA fix is still 'upcoming software version 5.5.x'."
+  - "N-able N-central HF3 release notes (last updated 2026-11-16) and Broadcom VMSA-2026-0009 README: no later revision text; ConnectWise's only new advisory (CVE-2026-131610, Automate, authenticated information disclosure, CVSS 6.5, fixed in 2026.11) is out of scope."
+  - "NCSC.ch security hub: no post created after 2026-11-19T16:09Z; the only recent edits are post 13211 (vCenter, 2026-11-20) and post 13054 (refrigeration controllers, 2026-11-16), both already carried."
+exploitation_status_changes_on_covered_cves: "none found: no new exploitation report, KEV addition or ransomware flag for the vCenter, Cisco Expressway, SAP, Apache Roller, nginx2root, Java4Shell, Mitel, Synology or Danfoss entries since their last records."
+prior_drops_rechecked_and_not_returned:
+  - "NoisyTCP CVE-2026-99288: dropped twice (2026-11-17, 2026-11-19) as denial of service only. New in the lookback: Arista Security Advisory 0229 (2026-11-20, CVSS 3.1 7.5, EOS 4.37.0F and 4.36.3.2M and earlier, plus VCO and VCG), IGEL ISN 2026-49 (2026-11-18, CVSS 5.9, IGEL OS 11 and 12) and CCB's patch-immediately warning (2026-11-17); the researcher's own advisory still says the reliable effect is a kernel panic, about 14 hours on a quiet bare-metal host and 5 s to 2 min on KVM guests, with the use-after-free path hard to reach. Mitigations in the advisory: sysctl net.ipv4.tcp_syncookies=0 or a single RX queue. Not returned; flip to an item if the main agent wants the appliance footprint."
+  - "Apache Shiro CVE-2026-129349 (CVSS 4.0 9.1; DefaultLdapRealm accepts any password once a user is cached; needs authenticationCachingEnabled=true, non-default; fixed in 3.0.1; CCB says a public proof of concept exists since 2026-11-18): dropped on 2026-11-16 and 2026-11-19; no new fact, not returned."
+  - "F5 BIG-IP K000164058 (six unauthenticated TMM overflows needing specific iRule commands or APM policies; NCSC-NL NCSC-2026-0508 of 2026-11-19): dropped on 2026-11-19, 2026-11-20 and 2026-11-21; not returned."
+  - "SonicWall Gen 6 and Gen 6.5 retirement notice (2026-11-18/20): dropped on 2026-11-21 as a lifecycle notice; THN 2026-11-20 restates it; no Gen 6 flaw exploited; not returned."
+  - "Rapid7 Metasploit wrap-up of 2026-11-20 (BeyondTrust CVE-2026-102764 module, Cisco SEG CVE-2026-76461 and CVE-2026-76519 modules): all three CVEs already carry the Metasploit statement in their entries; the Zimbra modules (CVE-2026-73571 authenticated sender impersonation, CVE-2026-93637 rate-limit bypass) need authentication or only remove a lockout and are not returned."
+  - "EUVD 9.0+ rows published in the window (6 of 59 in the search since 2026-11-20): binary-parser, simple-git, Weblate account takeover via Unicode e-mail case folding (CVE-2026-134838, 9.1), N-able MailAssure LDAP-sync SSRF (CVE-2026-134624, 9.3, authenticated API user) and two WordPress plugin deserialization rows; earlier-window rows include Poste.io root RCE through DMARC mail (CVE-2026-127027, 9.2, fixed 2.5.22, CERT.pl 2026-11-20), Netatalk DHX2 pre-auth worker crash (CVE-2026-62318, 9.3, fixed 4.5.1), Tegsoft Contact Center upload (CVE-2026-14914, 10.0, Turkish vendor) and D-Link end-of-life models; none exploited, none with a stated public-sector footprint, none returned."
+# ---------------------------------------------------------------------------- candidate sources
+candidate_sources:
+  - id: pwn-ai
+    publisher: "pwn.ai (vulnerability research: Upload2Shell, ImageMagick policy bypass)"
+    url: "https://pwn.ai/upload2shell/research.html"
+    category: research
+    why: "Primary for the Ghostscript CVE-2026-125396 chains with per-application reachability tables, exact configurations and 5/5 trial counts; its ImageMagick research is linked as the earlier step. Pages read cleanly with `extract`; no feed seen."
+  - id: terra-security-research
+    publisher: "Terra Security research blog (Oren Yomtov; KVM guest-to-host escape, PatchSlop)"
+    url: "https://www.terra.security/blog/kvm-guest-to-host-escape"
+    category: research
+    why: "Primary and discoverer of CVE-2026-99312, with a full root-cause walk-through; the same team's PatchSlop study of CVEs introduced by earlier fixes is linked from it. Reads with `extract`."
+  - id: gnupg-announce
+    publisher: "GnuPG project announcements (gnupg-announce mailing-list archive)"
+    url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html"
+    category: vendor-psirt
+    why: "First-party advisories for GnuPG, GPGME, Gpg4win and the VS-Desktop packages used for government mail encryption; the 2026-11-20 GPGME advisory was found only through a news lead. The archive is per-quarter HTML (extract reads a message page); a listing recipe still needs to be verified."
+# ---------------------------------------------------------------------------- recipe notes and gaps (the main agent owns every sources.json edit)
+coverage_gaps:
+  - source_id: belden-psirt
+    reason: "RECIPE CHANGE, not a gap: `python3 tools/fetch_source.py extract https://www.belden.com/security` returned the full advisory table on 2026-11-23 (served through the jina reader after several exhausted keys rotated; at least one key still had credit). Page header 'Last Update: October 22nd, 2026'; newest advisory PSIRT-9 (2026-10-28), then PSIRT-10 (2026-10-22, v1.1); nothing inside the lookback. PDFs on assets.belden.com remain readable with `pdf <URL>`."
+  - source_id: chrome-releases
+    reason: "RECIPE FIX: `feed https://chromereleases.googleblog.com/feeds/posts/default` answers HTTP 302 and `extract` of a single post URL returns rc 1; `feed https://feeds.feedburner.com/GoogleChromeReleases 15` lists the posts and `python3 tools/fetch_source.py url <post URL>` returns the full post (204 fixes, six Critical for Chrome 158); WebFetch of the post returns only the blog template."
+  - source_id: cloudflare-radar-zero-wire
+    reason: "`extract https://radar.cloudflare.com/zero-wire/nginx2root` is served through the jina reader (metered); the page is a useful single-page cross-vendor summary of a named flaw (affected paths, severity disagreements, five further CVEs) and may be worth a record."
+  - source_id: msrc-update-guide
+    reason: "RECIPE CONFIRMED: `url --direct \"https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability?%24filter=isMariner%20eq%20false%20and%20latestRevisionDate%20ge%202026-11-20T00%3A00%3A00Z&%24orderby=latestRevisionDate%20desc&%24top=100\"` plus `%24skip=100` pages the revised-CVE sweep; 115 rows, 113 of them Chromium."
+  - source_id: igel-kb-security
+    reason: "RECIPE CONFIRMED: `extract` of the index lists ISN 2026-49, -42 and -50 under 'New or Updated'; ISN 2026-44 is not on that index slice and was reached from the BSI CSAF references (WID-SEC-2026-4599); every ISN page reads fully with `extract`."
+  - source_id: cisa-advisories
+    reason: "WebFetch of https://www.cisa.gov/news-events/cybersecurity-advisories returned ten items with hrefs (newest 2026-11-20 KEV alert); `cisa csaf-recent 15` newest ICSA-26-323-03 (2026-11-19). Quiet weekend; no gap."
+# ---------------------------------------------------------------------------- source ledger: one row per slice record, in slice order
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl.recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest NCSC-2026-0511 (IBM Aspera Faspex) and -0510 (VMware) of 2026-11-20; all covered" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr.avis-recent 25 + feed alerte", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest avis CERTFR-2026-AVI-1598 and ALE-017, 2026-11-20 and 2026-11-18; the 2026-11-20 batch (Moodle, Tenable SC, Metabase, KeyCloak, Tomcat, Mattermost, Moxa, GitLab) was dropped by the 2026-11-22 fire" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf (4599, 4688, 4696, 4704, 4720)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "the 250-item feed ends at 2026-11-20 13:02Z; no weekend items; WID-SEC-2026-4599 used as the IGEL corroboration" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu.recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-022 (nginx, 2026-11-18)" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest Poste.io CVE-2026-127027 (2026-11-20)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa.csaf-recent 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no alert, advisory or ICS release after 2026-11-20" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "catalogue 2026.11.20; zero additions in window; no ransomware-flag flip on covered CVEs" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd.recent exploited + url --direct exploitedvulnerabilities + search fromScore=9 since 2026-11-20", horizon_hours: 26, in_horizon_items: 6, returned: 0, note: "exploited list = the same four covered CVEs; six 9.0+ rows published in window, all open-source or authenticated or niche (see prior_drops_rechecked_and_not_returned); EPSS and scores taken from EUVD for items 6 and the CVE table" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed ir.xml + extract FG-IR-26-278/279", horizon_hours: 26, in_horizon_items: 0, returned: 1, note: "newest FG-IR-26-279 (2026-11-20, updated 2026-11-21); returned as the nginx improvement (item 6)" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc.recent + OData revised sweep", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "115 revised rows since 2026-11-20, latest 2026-11-21T08:00-08:00 (before the cutoff); none exploited or publicly disclosed" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh.recent 25", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 13212 created 2026-11-19T16:09Z; edits 13211 (2026-11-20) and 13054 (2026-11-16) carried" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed all-rss-feed.xml 15", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-17 blog post" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed rss.xml 20 + url --direct json/CVE-2026-123633 and CVE-2026-114938", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-20T23:00Z portfolio statements; no revision after publication" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract https://watchtowr.com/intelligence/", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-11-05; the intelligence page's FAQs (Ruby2Shell, PHP session flaws, nginx2root, Java4Shell) are all covered" }
+  - { id: belden-psirt, tier: standard, attempted: true, transport: "extract (served via jina)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest PSIRT-9 2026-10-28; see coverage_gaps for the recipe change" }
+  - { id: igel-kb-security, tier: standard, attempted: true, transport: "extract index + per-ISN extract + bsi-csaf", horizon_hours: 168, in_horizon_items: 4, returned: 1, note: "ISN 2026-44 and -50 returned as item 5; ISN 2026-49 (NoisyTCP, CVSS 5.9) and ISN 2026-42 (eMudhra update 2026-11-18) read, not returned" }
+  - { id: joomla-security-centre, tier: standard, attempted: true, transport: "feed security-centre.feed 8", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-09-25" }
+  - { id: openjdk-vulnerability-advisories, tier: standard, attempted: true, transport: "extract index", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "page last updated 2026-11-17 (the Java4Shell advisory, covered)" }
+  - { id: patchstack, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "WordPress 7.1.5 article (2026-11-18) and PHP November release article (2026-11-19); both covered or dropped earlier" }
+  - { id: resecurity, tier: standard, attempted: true, transport: "url listing + extract of the five newest articles", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest dated 2026-10-01" }
+  - { id: sap-security-notes, tier: standard, attempted: true, transport: "extract security-notes-news/november-2026.html", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "2026-11-10 Patch Day, 35 notes plus 4 GitHub advisories; covered by the sap-november-2026 entry; nothing newer" }
+  - { id: tp-link-omada-psirt, tier: standard, attempted: true, transport: "url listing + extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "bulletin 139157 of 2026-11-18, CVE-2026-125353, CVSS 4.0 5.1, local backup-file permissions, fixed in Omada SDN Controller 6.2.20; below the bar" }
+  - { id: zimbra-security-advisories, tier: standard, attempted: true, transport: "extract wiki + feed blog.zimbra.com/feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest release 10.1.21 (2026-09-24); the 2026-11-20 Rapid7 Metasploit Zimbra modules are authenticated or lockout-bypass only" }
+  - { id: arista-security-advisories, tier: standard, attempted: true, transport: "extract index + extract of SA 0228 and 0229", horizon_hours: 146, in_horizon_items: 2, returned: 1, note: "SA 0228 (Java4Shell) returned as item 7; SA 0229 (NoisyTCP, CVSS 7.5) dispositioned with the earlier NoisyTCP drops" }
+  - { id: bishopfox-blog, tier: standard, attempted: true, transport: "feed blog.rss 10", horizon_hours: 146, in_horizon_items: 1, returned: 0, note: "2026-11-17 methodology post 'Patch Me If You Can'; no exploit write-up in the lookback" }
+  - { id: ccb-belgium, tier: standard, attempted: true, transport: "url listing + extract of the Shiro and NoisyTCP warnings", horizon_hours: 146, in_horizon_items: 10, returned: 0, note: "ten warnings 2026-11-13 to 2026-11-19: PHP, Ruby, nginx, Puppet, OpenJDK, Xen Orchestra, Citrix, the exploited PHP and privilege-escalation warning are covered; Apache Shiro and NoisyTCP dropped earlier (see prior_drops_rechecked_and_not_returned)" }
