@@ -1,0 +1,344 @@
+# work/2026-11-24T0355Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-24T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-24T03:57:56Z
+ended_at: 2026-11-24T04:19:08Z
+duration_seconds: 1272
+window_hours: 26
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 14
+  bridge_fetches: 95
+
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "N-able Mail Assure and SpamExperts Hosted Cloud breach: CVE-2026-134624, an authenticated-API SSRF in the LDAP-sync connection check (CVSS 4.0 9.3), is listed by CISA as exploited"
+    sources:
+      - { url: "https://www.n-able.com/blog/mail-assure-incident-update", publisher: "N-able (Mail Assure Incident Update)", date: "2026-11-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/n-able-discloses-critical-mail-assure.html", publisher: "The Hacker News", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/n-able-confirms-hackers-accessed-cloud.html", publisher: "The Hacker News (incident timeline, updated through 2026-11-22)", date: "2026-11-19", role: "corroborating" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/23/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert)", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-g4r8-gwqr-j289", publisher: "GitHub Advisory Database (mirror of the N-able CNA record)", date: "2026-11-22", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-134624", publisher: "ENISA EUVD (EUVD-2026-132805, exploitedSince 2026-11-23)", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev, catalogue 2026.11.23, https://www.cisa.gov/known-exploited-vulnerabilities-catalog) and the kev-window.txt NOT COVERED row → CVE record via https://cveawg.mitre.org/api/cve/CVE-2026-134624 (N-able CNA, CISA ADP SSVC Exploitation: active) → EUVD https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-134624 → vendor advisory https://me.n-able.com/s/security-advisory/aArVy0000002mrlKAA returned only a Salesforce shell on extract, url, jina and WebFetch → WebSearch (\"N-able Mail Assure SpamExperts security incident November 2026\") → pivot: The Hacker News, URL https://thehackernews.com/2026/11/n-able-confirms-hackers-accessed-cloud.html → pivot: The Hacker News, URL https://thehackernews.com/2026/11/n-able-discloses-critical-mail-assure.html → primary: N-able blog, URL https://www.n-able.com/blog/mail-assure-incident-update. Earlier runs (11-18, 11-20, 11-21, 11-22) borderline-dropped the incident for 'no vector'; the CVE publication plus KEV listing is the new development."
+    summary: |
+      N-able disclosed on 2026-11-18 that an unauthorized party had reached one server of its Mail Assure and SpamExperts Hosted Cloud, the email-filtering service it runs for managed service providers in the Americas, APAC and Europe regions, after a service disruption that began on 2026-11-16. Mail filtering kept working, but the management portal, APIs, quarantine and logging were offline until 2026-11-21 23:45 UTC. On 2026-11-22 N-able said it had remediated "the identified vulnerability" and published CVE-2026-134624 to track it: a server-side request forgery in the LDAP synchronisation connection check that runs when a relay is configured. Builds before 20261121.1943 do not restrict the destination, so an authenticated API user can make the server connect to arbitrary internal hosts and ports, learn which are reachable and send crafted data to internal services (CWE-918, CVSS 4.0 9.3 with PR:H; the advisory does not claim code execution). CISA added it to KEV on 2026-11-23 on evidence of active exploitation (catalogue due date 2026-11-26).
+      N-able says exploitation was confined to a single N-able-hosted server and that monitoring since remediation found nothing further; The Hacker News reports that N-able has not said whether the flaw was the attackers' way in. N-able has engaged an independent DFIR team and promises a root cause analysis within about two weeks (roughly 2026-12-06). Its response included taking the server offline, rotating internal platform credentials, revoking customers' existing API tokens, invalidating OAuth tokens and resetting local users' passwords, so partner integrations need new credentials. N-able states the incident is unrelated to the N-central Able2Shell-family flaws. The Hosted Cloud is already patched; SpamExperts Local Cloud runs on customer hardware, the incident statements describe only the Hosted Cloud, and The Hacker News concludes that Local Cloud operators should confirm they run build 20261121.1943.
+    region_nexus: "global; the Europe region of the hosted service is among those named as affected; no Swiss victim or Swiss customer is named in any source"
+    primary_sector_nexus: "indirect: managed-service-provider and hoster-delivered email filtering that public bodies may consume; not confirmed for any Swiss entity"
+    sector: "public-sector"
+    cves: [CVE-2026-134624]
+    techniques: [T1190, T1046]
+    affected_products: ["N-able Mail Assure", "N-able SpamExperts"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:n-able-mail-assure", type: product, name: "N-able Mail Assure (SpamExperts)", aliases: ["Mail Assure", "SpamExperts", "SpamExperts Hosted Cloud", "SpamExperts Local Cloud", "Mail Assure and SpamExperts Hosted Cloud"],
+          summary: "N-able's email security and filtering service for managed service providers, sold as Mail Assure and, under its SpamExperts heritage, as a hosted cloud and a customer-hosted Local Cloud (N-able blog, 2026-11-22; The Hacker News, 2026-11-23)." }
+      - { key: "incident:n-able-mail-assure-spamexperts-hosted-cloud-breach-2026-11", type: incident, name: "N-able Mail Assure and SpamExperts Hosted Cloud breach (November 2026)",
+          aliases: ["Mail Assure incident", "Mail Assure and SpamExperts security incident"],
+          summary: "Unauthorized access to one N-able-hosted server of the Mail Assure and SpamExperts Hosted Cloud, disclosed 2026-11-18 after a disruption from 2026-11-16; N-able published CVE-2026-134624 on 2026-11-22 and a root cause analysis is promised within two weeks (N-able, 2026-11-22)." }
+    relation_suggestions:
+      - { subject: "incident:n-able-mail-assure-spamexperts-hosted-cloud-breach-2026-11", object: "product:n-able-mail-assure",
+          basis: "N-able: unauthorized access to one server in the Mail Assure and SpamExperts Hosted Cloud (N-able via The Hacker News, 2026-11-19; N-able blog 2026-11-22)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    classification_suggestion: "reliability A (first-party vendor for its own service, CISA KEV for exploitation), credibility 2: exploitation is confirmed by CISA's KEV listing, but no source states that CVE-2026-134624 was the initial-access path and the RCA is pending"
+    evidence:
+      - quote: "We remediated the identified vulnerability, restored access to the dashboard and APIs as of November 21 at 23:45 UTC"
+        attribution: "N-able"
+        source_url: "https://www.n-able.com/blog/mail-assure-incident-update"
+      - quote: "have found no evidence of exploitation beyond the single N-able-hosted server identified in our initial investigation"
+        attribution: "N-able"
+        source_url: "https://www.n-able.com/blog/mail-assure-incident-update"
+      - quote: "An authenticated API user can cause the server to connect to arbitrary internal hosts and ports, determine which are reachable, and send crafted data to internal services."
+        attribution: "GitHub Advisory Database (N-able CNA record text)"
+        source_url: "https://github.com/advisories/GHSA-g4r8-gwqr-j289"
+      - quote: "It has not said whether the flaw was the attackers' way in."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/n-able-discloses-critical-mail-assure.html"
+      - quote: "N-able Mail Assure (SpamExperts) Server-Side Request Forgery (SSRF) Vulnerability"
+        attribution: "CISA (KEV alert of 2026-11-23, which adds the CVE 'based on evidence of active exploitation')"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/23/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      - quote: "\"exploitedSince\":\"Nov 23, 2026, 12:00:00 AM\""
+        attribution: "ENISA EUVD"
+        source_url: "https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-134624"
+    extended_notes: |
+      Exposure: no customer-side patch exists for the Hosted Cloud; exposure is through the MSP or hoster that runs the tenant. Ask the provider whether it received N-able's partner notice, which integrations lost their API or OAuth tokens on revocation, and (for SpamExperts Local Cloud) which build the appliance reports (fixed: 20261121.1943, per the CVE record).
+      Detection concept (derived from the stated mechanism, not from a source's hunting guidance): management-plane/API audit logs for LDAP-synchronisation connection checks whose target is an internal address or a non-LDAP port, and API-token use from unexpected sources before the 2026-11-21 revocation; on the tenant side, unexplained authentication failures from integrations after the revocation. N-able says mail flow kept working, so mail-flow telemetry is not expected to show the intrusion.
+      Post-patch check: The Hacker News states it is unknown whether credentials the intruder may have reached were actually taken. Partners that configured an LDAP synchronisation relay can ask N-able whether the bind credentials stored for it were in scope of the credential rotation (this is the collector's question, not a source statement).
+      The vendor advisory https://me.n-able.com/s/security-advisory/aArVy0000002mrlKAA is a Salesforce Experience Cloud page that renders nothing on any transport tried (extract, url, jina, WebFetch); its text is read from the N-able CNA CVE record and the GitHub advisory mirror. CVSS 4.0: AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:N/SC:H/SI:H/SA:N. CISA ADP SSVC (2026-11-23): Exploitation active, Automatable no, Technical Impact total. EPSS 0.0035.
+
+  # ------------------------------------------------------------------ 2
+  - title: "F5 BIG-IP: six unauthenticated stack overflows rated CVSS 9.8 (CVE-2026-123637, -116953, -120285, -120292, -120722, -121805) crash TMM and may allow code execution; fixed only by engineering hotfixes"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4723", publisher: "BSI CERT-Bund WID (WID-SEC-2026-4723)", date: "2026-11-23", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0508", publisher: "NCSC-NL (NCSC-2026-0508)", date: "2026-11-19", role: "primary" }
+      - { url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html", publisher: "The Hacker News", date: "2026-11-18", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, `ncsc-nl recent 15` listing, NCSC-2026-0508 (https://advisories.ncsc.nl/advisory?id=NCSC-2026-0508, read through `ncsc-nl csaf NCSC-2026-0508`) → bsi-de `bsi-rss` [NEU] [hoch] F5 BIG-IP WID-SEC-2026-4723 (https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4723, read through `bsi-csaf`) → F5 CNA records via https://cveawg.mitre.org/api/cve/CVE-2026-123637 and the other eleven CVEs of the notice (affected modules, fixed engineering-hotfix builds, CISA ADP SSVC) → vendor K-articles https://my.f5.com/manage/s/article/K000163937 and K000164058 are Salesforce shells on extract and WebFetch → WebSearch (\"F5 BIG-IP CVE-2026-123637 OR CVE-2026-116953 TMM iRule remote code execution November 2026 advisory\") → pivot: The Hacker News, URL https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html. F5 published on 2026-11-18; no store entry covers this BIG-IP notice (the 2026-10-29 BIG-IP entry is a different release), the first in-window authority record is BSI's of 2026-11-23."
+    summary: |
+      F5's 2026-11-18 security notification (22 advisories, 10 of them for NGINX) includes six BIG-IP flaws that an unauthenticated remote attacker can use to terminate the Traffic Management Microkernel (TMM), disrupting traffic until it restarts, and which F5 says may allow remote code execution. They are stack-based overflows in the data plane (no control-plane exposure), each CVSS 3.1 9.8 and CVSS 4.0 9.3, and each needs a specific configuration on a virtual server: an iRule using GENERICMESSAGE::route on client traffic (CVE-2026-116953), an HTTP profile with an iRule using PSC::ip_address (CVE-2026-120285) or MR::message route (CVE-2026-120292), an iRule using DNS::scrape (CVE-2026-120722, BIG-IP DNS) or PEM::subscriber (CVE-2026-121805, BIG-IP PEM), or an APM per-request policy that includes both the Client Information and Endpoint Security agents (CVE-2026-123637, APM only). Four were reported by watchTowr's Sina Kheirkhah and two were found by F5.
+      Affected are the BIG-IP 21.1.0, 17.5.0 and 17.1.0 branches (releases past End of Technical Support were not evaluated), BIG-IP Next for Kubernetes 2.2 to 2.4 and, for two of the CVEs, BIG-IP CNF. No scheduled release carries the fix and F5 lists no workaround: the fixes are engineering hotfixes (BIG-IP 21.1.0.4.0.19.3-ENG, 17.5.1.11.0.61.12-ENG or 17.5.1.10.0.80.35-ENG, 17.1.3.7.0.21.4-ENG or 17.1.3.6.0.14.20-ENG; Next for Kubernetes BNK-2.4.2-EHF1, BNK-2.3.4-EHF1, BNK-2.2.5-EHF1), which F5 says do not receive the QA of scheduled releases. No exploitation is reported (CISA ADP SSVC for CVE-2026-123637, 2026-11-18: Exploitation none, Automatable yes, Technical Impact total). BSI dates the F5 advisory K000163937 and a support solution K000164239 to 2026-11-22, which suggests the notice was revised or supplemented after the 2026-11-18 publication. The same notice carries six lower-rated flaws, notably iControl SOAP command execution for any authenticated user with at least the Guest role (CVE-2026-125274, 8.8; fixed in BIG-IP 21.1.0.3, 17.5.1.10, 17.1.3.6 and BIG-IQ 8.4.2.3) and iControl REST tokens whose lifetime an attacker holding a token can extend (CVE-2026-120718, 8.1). They are distinct from the exploited September flaw CVE-2026-94127.
+    region_nexus: "global; no source names a region or sector"
+    primary_sector_nexus: "indirect: BIG-IP LTM, DNS, PEM and APM are edge components; no source names the public sector"
+    sector: "public-sector"
+    cves: [CVE-2026-123637, CVE-2026-116953, CVE-2026-120285, CVE-2026-120292, CVE-2026-120722, CVE-2026-121805, CVE-2026-125274, CVE-2026-120718]
+    techniques: [T1190, T1499.004]
+    affected_products: ["F5 BIG-IP", "F5 BIG-IP APM", "F5 BIG-IP Next for Kubernetes", "F5 BIG-IP CNF", "F5 BIG-IQ"]
+    entity_keys: ["product:f5-big-ip", "product:f5-big-ip-access-policy-manager-apm"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    classification_suggestion: "reliability A (F5 CNA records via BSI and NCSC-NL, both national CERTs), credibility 2: all outlets derive from F5's single notice, no exploitation or public exploit reported"
+    evidence:
+      - quote: "allow an attacker to crash the Traffic Management Microkernel (TMM) without logging in, disrupting traffic until the TMM restarts"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html"
+      - quote: "None of the company's advisories says the flaws have been exploited."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html"
+      - quote: "For the six critical flaws, the only fixes are engineering hotfixes, builds that the company issues between its normal software releases."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html"
+      - quote: "Ein entfernter, anonymer Angreifer kann eine Schwachstelle in F5 BIG-IP ausnutzen, um beliebigen Programmcode auszuführen."
+        attribution: "BSI"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4723"
+      - quote: "Sommige van deze kwetsbaarheden kunnen door een niet-geauthenticeerde aanvaller worden misbruikt om op afstand willekeurige code uit te voeren."
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0508"
+    extended_notes: |
+      Exposure: configuration-dependent. A defender reads the running version from the BIG-IP system and then looks for virtual servers whose iRules call GENERICMESSAGE::route, PSC::ip_address, MR::message route, DNS::scrape or PEM::subscriber (with the HTTP profile where F5 states it), or APM per-request policies containing both the Client Information and Endpoint Security agents. A system on a custom engineering hotfix needs a new one from F5 support (The Hacker News).
+      Detection concept (derived from the stated mechanism): TMM process termination and restart events and core files in the BIG-IP system logs, correlated with the virtual server that carries the affected iRule or APM policy. F5's wording is that TMM restarts and RCE "may" follow; no source describes a successful code-execution chain or a post-exploitation artefact.
+      F5 K-articles referenced by the CNA records (K000163929, K000163936 to K000163946, K000164058) and BSI's K000164239 were not readable (Salesforce Experience Cloud shell). CVE record data: https://cveawg.mitre.org/api/cve/CVE-2026-123637 (and siblings), F5 CNA.
+
+  # ------------------------------------------------------------------ 3
+  - title: "Splunk Enterprise and Splunk SOAR November 2026 releases: two unauthenticated REST authentication bypasses (CVE-2026-76535 9.1, CVE-2026-76536 9.4) and authenticated RCE in SOAR (CVE-2026-131253 9.9, CVE-2026-131287 9.6)"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1103", publisher: "Splunk (SVD-2026-1103, Splunk Enterprise)", date: "2026-11-18", role: "primary" }
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1108", publisher: "Splunk (SVD-2026-1108, Splunk SOAR)", date: "2026-11-18", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0512", publisher: "NCSC-NL (NCSC-2026-0512, Splunk Enterprise)", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0513", publisher: "NCSC-NL (NCSC-2026-0513, Splunk SOAR)", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, `ncsc-nl recent 15` listing, NCSC-2026-0512 and NCSC-2026-0513 (https://advisories.ncsc.nl/advisory?id=NCSC-2026-0512, https://advisories.ncsc.nl/advisory?id=NCSC-2026-0513, both published 2026-11-23, read through `ncsc-nl csaf`) → primary: Splunk SVD-2026-1103 (https://advisory.splunk.com/advisories/SVD-2026-1103) and SVD-2026-1108 (https://advisory.splunk.com/advisories/SVD-2026-1108), both read with `extract`. Splunk published on 2026-11-18; the in-window authority record is NCSC-NL's of 2026-11-23; no store entry mentions Splunk."
+    summary: |
+      Splunk published two advisories on 2026-11-18. SVD-2026-1103 covers 38 CVEs in Splunk Enterprise (highest 9.4). Two are unauthenticated authentication bypasses in REST APIs: the RapidDiag REST API (CVE-2026-76535, CVSS 3.1 9.1, AV:N/AC:L/PR:N/UI:N, C:H/I:H/A:N) and the Cluster Configuration REST API (CVE-2026-76536, 9.4, C:L/I:H/A:H). Two more unauthenticated rows are rated 7.5, a RapidDiag bypass through hard-coded credentials (CVE-2026-131190, CWE-798) and a REST API bypass through missing authentication (CVE-2026-131192, CWE-305). A cluster of SPL-injection and authorization flaws reachable by low-privileged users carry 8.8 and 8.1 (CVE-2026-76538 SPL injection through the REST API, CVE-2026-76540 improper authorization through the REST API, CVE-2026-76544 SPL injection through metric alert filters), alongside stored cross-site scripting, path traversal in the Deployment Server and denial-of-service rows. Affected versions are 10.6.0.5, 10.4.0 to 10.4.4, 10.2.0 to 10.2.8, 10.0.0 to 10.0.11 and 9.4.0 to 9.4.16; Splunk says to upgrade to 10.6.1, 10.4.5, 10.2.9, 10.0.12 or 9.4.17 or higher.
+      SVD-2026-1108 covers 59 CVEs in Splunk SOAR below 8.8.0 (fixed in 8.8.0, highest 9.9): remote code execution through the App Wizard (CVE-2026-131253, 9.9, PR:L, scope changed) and through the REST API (CVE-2026-131287, 9.6, PR:L, CWE-863), both for authenticated users, plus many authorization, cross-site scripting and information-disclosure rows. NCSC-NL rates both advisories medium likelihood and high damage and notes that even unauthenticated users can perform actions that normally need higher privileges. No exploitation or public exploit is stated in any source. This is the SIEM and SOAR platform many SOCs run, so a compromise exposes the stored searches, credentials and response playbooks it holds (collector's assessment, not a source statement).
+    region_nexus: "global; no region or sector named by Splunk or NCSC-NL"
+    primary_sector_nexus: "indirect: SIEM and SOAR platforms are common in security operations teams; no public-sector statement in the sources"
+    sector: "public-sector"
+    cves: [CVE-2026-76535, CVE-2026-76536, CVE-2026-131190, CVE-2026-131192, CVE-2026-76538, CVE-2026-76540, CVE-2026-131253, CVE-2026-131287]
+    techniques: [T1190]
+    affected_products: ["Splunk Enterprise", "Splunk SOAR"]
+    entity_keys: ["product:splunk-enterprise"]
+    new_entities:
+      - { key: "product:splunk-soar", type: product, name: "Splunk SOAR", aliases: ["Splunk SOAR (Security Orchestration, Automation and Response)"],
+          summary: "Splunk's security orchestration, automation and response platform; Splunk advisory SVD-2026-1108 of 2026-11-18 fixes 59 CVEs in versions below 8.8.0 (Splunk, 2026-11-18)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    classification_suggestion: "reliability A (vendor first-party plus national CERT), credibility 2: not exploited, not independently reproduced"
+    evidence:
+      - quote: "Upgrade Splunk Enterprise versions 10.6.1, 10.4.5, 10.2.9, 10.0.12, and 9.4.17 or higher."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "Authentication Bypass through the Cluster Configuration REST API in Splunk Enterprise"
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "Authentication Bypass through the RapidDiag REST API in Splunk Enterprise"
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "Upgrade Splunk SOAR to version 8.8.0 or higher."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1108"
+      - quote: "Remote Code Execution (RCE) through the App Wizard in Splunk SOAR"
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1108"
+    extended_notes: |
+      Exposure: a defender reads the Splunk Enterprise or SOAR version from the product and checks whether the splunkd management interface (and for clusters the cluster-manager and peer interfaces) is reachable from segments other than administration and cluster peers; the two critical rows need no credentials. The sources give no endpoint paths, ports or workaround.
+      Detection concept (derived from the stated mechanism): management-interface access logs showing successful responses on RapidDiag or cluster-configuration REST endpoints to addresses that are not cluster peers, deployment infrastructure or administrator workstations, without a preceding authenticated session. Splunk gives no hunting guidance and no indicators; SPL-injection rows would show as unexpected search commands in search audit records for low-privileged accounts.
+      Splunk's per-CVE sections (affected-module conditions for the 9.1 and 9.4 rows) were not in the extracted page text; the table rows above are verbatim. EPSS: CVE-2026-76535 0.0037, CVE-2026-76536 0.0031, CVE-2026-131253 0.0059, CVE-2026-131287 0.0034 (FIRST.org, 2026-11-23). NCSC-NL advisory pages are cited by portal URL; the read came from the bridge's CSAF JSON.
+
+  # ------------------------------------------------------------------ 4 (update-of)
+  - title: "Xen Orchestra empty-object login cookie flaw (Vates VSA-2026-062) now has CVE-2026-133469, CVSS 3.1 9.8: public advisory gives the root cause, the CVE record states exploitation, fixed versions confirmed as xen-orchestra 6.9.2 and 6.10.1"
+    sources:
+      - { url: "https://github.com/vatesfr/xen-orchestra/security/advisories/GHSA-2r3w-c2vx-fv5g", publisher: "Vates / Xen Orchestra GitHub security advisory GHSA-2r3w-c2vx-fv5g", date: "2026-11-20", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-22&toDate=2026-11-24&page=0&size=100", publisher: "ENISA EUVD (EUVD-2026-133254, CVE-2026-133469 published 2026-11-23)", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, `url --direct 'https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-22&toDate=2026-11-24&page=0&size=100'` (38 rows at 9.0+; EUVD-2026-133254, GHSA-2r3w-c2vx-fv5g, CVE-2026-133469, vatesfr xen-orchestra) → CVE record https://cveawg.mitre.org/api/cve/CVE-2026-133469 (GitHub CNA, published 2026-11-23T17:07Z, CISA ADP SSVC Exploitation: poc) → primary: GHSA https://github.com/vatesfr/xen-orchestra/security/advisories/GHSA-2r3w-c2vx-fv5g, read with `extract`. Matched to the covered entry by mechanism (empty-object login cookie) and by the fixed xo-server numbers 5.213.1 and 5.211.2."
+    summary: |
+      The Xen Orchestra authentication bypass covered on 2026-11-11 from Vates advisory VSA-2026-062, at that time without a CVE id, is now CVE-2026-133469 (GitHub CNA, published 2026-11-23, CVSS 3.1 9.8, AV:N/AC:L/PR:N). The public GitHub advisory gives the root cause: the REST cookie parser turns an authenticationToken cookie whose value is a JSON object prefix into an empty object, the REST authentication path hands it to the token provider without requiring a string, and the token collection treats an empty-object lookup as unfiltered and returns its first token, so the request authenticates as that token's owner. The sign-in function has no parameter schema, unlike the deprecated token sign-in that declares a string. The advisory's own prerequisite: authentication succeeds only if the first token returned is unexpired and belongs to an existing user; otherwise the request fails without trying another token, and the attacker does not choose which token comes back. Successful use returns reusable login token ids, gives Admin rights, and per the advisory can lead to code execution on managed pools and root on XCP-ng nodes.
+      The CVE record states "This vulnerability is actively exploited in the wild" and gives the fixed versions as xen-orchestra 6.9.2 and 6.10.1 (xo-server 5.211.2 and 5.213.1), which resolves the 6.9.1 and 6.10.0 numbers a news outlet had given. CISA's ADP record for the CVE (2026-11-23) lists Exploitation as poc rather than active and the CVE is not in KEV as of the 2026-11-23 catalogue, so the exploitation statement still rests on Vates.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect: Xen Orchestra manages XCP-ng and XenServer virtualisation estates; no source names the public sector"
+    sector: "public-sector"
+    cves: [CVE-2026-133469]
+    techniques: [T1190, T1550.001]
+    affected_products: ["Xen Orchestra", "Xen Orchestra Appliance", "XCP-ng"]
+    entity_keys: ["product:xen-orchestra-appliance", "product:xcp-ng"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-11/vates-xen-orchestra-vsa-2026-062-auth-bypass-exploited"
+    classification_suggestion: "reliability A (vendor repository advisory and the CNA record), credibility 2: exploitation is the vendor's statement, CISA ADP records only a PoC"
+    evidence:
+      - quote: "This vulnerability is actively exploited in the wild. This vulnerability is fixed in 6.9.2 and 6.10.1."
+        attribution: "ENISA EUVD (CVE record text, GitHub CNA)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-22&toDate=2026-11-24&page=0&size=100"
+      - quote: "An adversary can bypass authentication and perform actions with 'Admin' privilege."
+        attribution: "Xen Orchestra GitHub security advisory"
+        source_url: "https://github.com/vatesfr/xen-orchestra/security/advisories/GHSA-2r3w-c2vx-fv5g"
+      - quote: "Authentication succeeds only if the token returned first is unexpired and belongs to an existing user"
+        attribution: "Xen Orchestra GitHub security advisory"
+        source_url: "https://github.com/vatesfr/xen-orchestra/security/advisories/GHSA-2r3w-c2vx-fv5g"
+    extended_notes: |
+      Entry fields the delta touches: cves[] (CVE-2026-133469 added), the fixed-version statement (xen-orchestra 6.9.2 / 6.10.1 alongside xo-server 5.211.2 / 5.213.1; the earlier 'BleepingComputer names 6.9.1 and 6.10.0' discrepancy in the entry's sourcing note is settled in Vates' favour by the CVE record), sources and evidence, and a CVSS statement. Detection concept the root cause allows (derived): reverse-proxy or web-access logs that retain the Cookie header would show an authenticationToken or token cookie value beginning with a JSON-object prefix; Vates' original advisory says a successful exploit leaves no Xen Orchestra log. The REST route that returns login tokens is the post-bypass step; token revocation after patching is the evident remediation (derived).
+      EPSS not yet published for this CVE. The advisory carries a one-line proof-of-concept request; it is deliberately not reproduced here.
+
+  # ------------------------------------------------------------------ 5 (borderline)
+  - title: "Chrome 158.0.8127.88/.89: single security fix, Critical CVE-2026-134401 (Variations, improper input validation, code execution outside the sandbox), not reported exploited"
+    sources:
+      - { url: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html", publisher: "Google Chrome Releases", date: "2026-11-23", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-22&toDate=2026-11-24&page=0&size=100", publisher: "ENISA EUVD (EUVD-2026-133541, CVSS 9.6)", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, `url --direct 'https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-22&toDate=2026-11-24&page=0&size=100'`, EUVD-2026-133541 / CVE-2026-134401 (Google Chrome prior to 158.0.8127.88) → primary: Chrome Releases, URL https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html (read with `extract`; the CVE record at https://cveawg.mitre.org/api/cve/CVE-2026-134401 carries the 'Chromium security severity: Critical' text)."
+    summary: |
+      Google's 2026-11-23 desktop stable update, 158.0.8127.88 and .89 for Windows and macOS and 158.0.8127.88 for Linux, carries one security fix: Critical CVE-2026-134401, improper input validation in Variations, which the CVE record says lets a remote attacker potentially execute code outside the sandbox through a crafted HTML page (CVSS 3.1 9.6 in EUVD). Google reported it internally on 2026-08-28 and the post does not say it is exploited; it is not in KEV. The earlier Chrome zero-day CVE-2026-125350 (fixed in 157.0.8103.50, KEV 2026-11-10) is already covered. Chromium-based browsers pick the fix up on their own cadence; MSRC's Edge rows of 2026-11-21 are the previous Chromium cycle.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect: browser fleets"
+    sector: "public-sector"
+    cves: [CVE-2026-134401]
+    techniques: [T1189, T1203]
+    affected_products: ["Google Chrome"]
+    entity_keys: ["product:google-chrome"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "a vendor-rated Critical sandbox-escape-class flaw in the most widely deployed browser, but no exploitation, no public exploit and a single-fix release; a routine browser update below the strict bar unless the main agent wants a browser-fleet line"
+    evidence:
+      - quote: "Critical CVE-2026-134401: Improper input validation in Variations."
+        attribution: "Google Chrome Releases"
+        source_url: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html"
+      - quote: "This update includes 1 security fixes."
+        attribution: "Google Chrome Releases"
+        source_url: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html"
+
+  # ------------------------------------------------------------------ 6 (borderline)
+  - title: "Roundcube Webmail 1.6.22 and 1.7.7 security releases: twelve fixes including sieve-script injection and spellcheck request injection; 1.6 is now end of line"
+    sources:
+      - { url: "https://roundcube.net/news/2026/11/23/security-updates-1.6.22-and-1.7.7", publisher: "Roundcube Webmail Dev Team", date: "2026-11-23", role: "primary" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1602/", publisher: "ANSSI / CERT-FR (CERTFR-2026-AVI-1602)", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, `cert-fr avis-recent 25`, CERTFR-2026-AVI-1602 (https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1602/, read with `extract`) → primary: Roundcube release post, URL https://roundcube.net/news/2026/11/23/security-updates-1.6.22-and-1.7.7. EUVD text search for Roundcube (fromDate 2026-11-15) returned zero records, so no CVE ids exist yet."
+    summary: |
+      Roundcube released 1.6.22 (LTS) and 1.7.7 on 2026-11-23 with fixes for twelve reported flaws: HTTP request injection through the spellcheck ATD backend (fixed "again"), several CSS-scoping and remote-content-blocking bypasses in the HTML sanitiser (inline style comments, SVG FuncIRI attributes, the CSS proxy, a namespace-prefixed attribute bypass of the washtml allowlist on PHP before 8.4), insecure attachment content passed to ImageMagick (also fixed "again"), Sieve script injection through a comparator name and through body, address and envelope part fields, an XML injection in the XIMSS driver of the password plugin, a denial of service in the TNEF decoder, and a fallback to insecure IMAP, SMTP or Managesieve connections when TLS is configured but no capability is reported. The release post gives no CVE ids, severity or exploitation statement; CERT-FR's avis lists remote code execution, denial of service and loss of confidentiality as impacts and names 1.6.x before 1.6.22 and 1.7.x before 1.7.7 as affected. The post warns that this is the last 1.6 release and that 1.7 will be the only line to receive security fixes.
+    region_nexus: "global; webmail common among hosters and administrations (general knowledge, not source-stated)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Roundcube Webmail"]
+    entity_keys: ["product:roundcube-webmail"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "no CVE ids, no severity, no exploitation and no public exploit; kept for the 1.6 end-of-line notice and Roundcube's history of patch-diff exploitation (general knowledge, not in these sources), to be revisited when CVEs or a PoC appear"
+    evidence:
+      - quote: "WARNING: This is the last 1.6 release. Please, upgrade to 1.7 asap."
+        attribution: "Roundcube Webmail Dev Team"
+        source_url: "https://roundcube.net/news/2026/11/23/security-updates-1.6.22-and-1.7.7"
+      - quote: "We strongly recommend to update all productive installations of Roundcube 1.6.x and 1.7.x with this new versions."
+        attribution: "Roundcube Webmail Dev Team"
+        source_url: "https://roundcube.net/news/2026/11/23/security-updates-1.6.22-and-1.7.7"
+
+# Dispositions for every candidate that was examined and not returned as an item (the
+# main agent folds these into the run record's borderline-drop lines).
+dropped_candidates:
+  - "CVE-2026-133968 (MONAI Label): KEV 2026-11-23, already covered by 2026-11-22/monai-label-path-traversal-zero-day-found-by-cairn-ai-agents (kev_window_diff: COVERED); KEV listing is bookkeeping."
+  - "KEV additions of 2026-11-20 (Apache Roller CVE-2026-129448, VMware vCenter CVE-2026-123890, SAP NetWeaver CVE-2025-42884, Cisco Expressway CVE-2026-76466) and of 2026-11-17 and 2026-11-18: all already covered by entries (prior_coverage)."
+  - "Microsoft cloud-service CVEs published 2026-11-19 to 2026-11-23 (SharePoint CVE-2026-70193 9.9, Azure Event Grid CVE-2026-62841 10.0, Microsoft 365 Copilot CVE-2026-50691 9.9, Azure Machine Learning, Azure Portal, Entra, Azure Site Recovery, DevTest Labs, Clarity, PDRS): MSRC states for CVE-2026-70193 that the flaw 'has already been fully mitigated by Microsoft' with no customer action (customerActionRequired False, exploited No, publiclyDisclosed No); EUVD's listing of SharePoint Server Subscription Edition is not backed by an MSRC customer action."
+  - "Microsoft Office PowerPoint CVE-2026-120787 (MSRC 2026-11-21, CVSS 7.5, exploited No, publiclyDisclosed No): below the bar; MSRC sweep found no new exploited or publicly disclosed Microsoft row (only CVE-2026-124194, covered)."
+  - "WatchGuard Dimension 2.3.2 batch (psirt.watchguard.com, published 2026-11-19; unauthenticated log-collection RCE CVE-2026-86130 CVSS 9.3, session-hijack rows 9.3): no exploitation, no new facts since the 2026-11-22 borderline-drop; the page's Fireware OS 2026.4 and AuthPoint Gateway rows were covered or unchanged (entries/2026-10-29/watchguard-fireware-2026-4-three-preauth-rows-at-9-2.md)."
+  - "Wing FTP Server before 8.2.8, CVE-2026-135171 (VulnCheck CNA, CVSS 4.0 9.2 with AC:H and AT:P, unauthenticated admin session hijack through a predictable session identifier, Lua console): no exploitation or public exploit stated, high attack complexity; revisit if a PoC or KEV listing follows."
+  - "EUVD 9.0+ batch of 2026-11-22 to 2026-11-24 (38 rows), remainder: Softaculous Virtualizor CVE-2026-135174 (OAuth-email SQL injection, SSVC none), Weblate CVE-2026-134838, WHMCS CVE-2026-93700 (authenticated), Kerberos Agent CVE-2026-135208, BISHENG CVE-2026-135211, AutoGPT CVE-2026-130169, Cribl Stream CVE-2026-115899 (attacker must control upstream API data), Pomerium CVE-2026-135300, EUSurvey CVE-2026-101864, Dell Enterprise SONiC DSA-2026-451 (CVE-2026-103788 adjacent-network, CVE-2026-103782 authenticated), ifm O3D30x CVE-2026-121613 (CERT@VDE VDE-2026-148, industrial 3D sensor), Totolink A7100RU, Lantronix S2220, rConfig, Trilium, ASUS GPU Tweak III, Synology DSM CVE-2026-120382 (covered): all authenticated, precondition-bound, niche or already covered; none exploited."
+  - "IBM Langflow OSS bulletin (2026-11-20, CVE-2026-120038 and others, authenticated, highest seen 8.8), Apache Solr CVE-2026-53672 and CVE-2026-86312 (authenticated), Snipe-IT, PackageKit (local), OpenSSL CVE-2026-121481 (denial of service), GnuPG VS-Desktop CVE-2026-129975 (BSI 2026-11-23; GPGME already borderline-dropped on 2026-11-23, no change), SPIP 4.4.31, Laravel, Mattermost, MongoDB drivers (CERT-FR/BSI 2026-11-23): below the bar."
+  - "Sansec 'Rootways Authorize.net CIM: Apple Pay SSRF exploited on Magento stores' (2026-11-17): exploited Magento extension, date at the lookback edge, no public-sector nexus."
+  - "VulnCheck posts of 2026-11-16 (Control Web Panel recovery-code chain, FortiGate firmware fingerprinting), 2026-11-17 (Java4Shell, covered) and 2026-11-23 (credential-harvesting telemetry): research or covered; outside the 168 h horizon or no new vulnerability."
+  - "Censys 'nginx2root simple test' (2026-11-18) and 'MCH and Caishen' (2026-11-18; the OptimJack entry 2026-11-17/optimjack-poisoned-vendor-scripts-skimmer-iphone-router already covers the campaign): covered."
+  - "nginx2root, Java4Shell and VMware vCenter: web checks for new exploitation reports in the window found nothing beyond what the covered entries already carry (public PoC for CVE-2026-123007 reported 2026-11-19; no in-the-wild reports as of 2026-11-19; vCenter exploitation by a China-linked group already in the entry)."
+  - "Mitel OpenScape 4000 (MISA-2026-0013) and MiCollab (MISA-2026-0012): no CVE ids assigned for OpenScape (EUVD text search empty), MiCollab CVEs unchanged; no exploitation reports; covered entries stand."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist is configured for this profile; the sweep is a no-op"
+
+candidate_sources:
+  - id: advisory-splunk
+    publisher: "Splunk Vulnerability Disclosure (advisory.splunk.com)"
+    url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+    category: vendor-psirt
+    why: "Vendor PSIRT for Splunk Enterprise, SOAR and the rest of the portfolio; SVD pages read cleanly with `extract` and carry affected/fixed version tables and per-CVE CVSS vectors; November 2026 SVD-2026-1103 and SVD-2026-1108 were found only through NCSC-NL."
+  - id: vulncheck-advisories
+    publisher: "VulnCheck Advisories (CNA)"
+    url: "https://www.vulncheck.com/advisories/wing-ftp-server-before-8.2.8-predictable-administrator-session-identifier"
+    category: vulns
+    why: "VulnCheck publishes CNA advisories for niche products (Wing FTP, EUSurvey and others) that reach EUVD with no vendor advisory; reads with `extract`; useful for the 9.0+ sweep."
+
+coverage_gaps:
+  - source_id: "me.n-able.com / my.f5.com / portal.perforce.com (no source record; f5-k-articles and perforce-portal fetch gaps)"
+    reason: "all three are Salesforce Experience Cloud sites that return only the Lightning shell ('Sorry to interrupt / CSS Error') on extract, url and WebFetch, and the jina key pool is exhausted (HTTP 402 on every key). Working recipe: read the vendor CNA record from https://cveawg.mitre.org/api/cve/<CVE-ID> via `fetch_source.py url --direct`, which carries the vendor's description, affected modules, fixed builds, workaround, credits and the CISA ADP SSVC block; F5 K-article ids and the N-able advisory URL stay as reference URLs from that record."
+  - source_id: bsi-de
+    reason: "`bsi-rss` returned exactly 250 items that span only 2026-11-23 09:55 to 12:37 UTC (a large [UPDATE] relay batch), so [NEU] items published between 2026-11-23 02:00 and 09:55 UTC would be cut by the item cap. Recipe unchanged; the [NEU] [hoch/kritisch] filter plus `bsi-csaf` drill worked (21 [NEU] items; only F5 BIG-IP WID-SEC-2026-4723 returned)."
+  - source_id: cisa-advisories
+    reason: "WebFetch of the listing returned only the 10 newest items (page 1 of 512), enough for the window; `cisa csaf-recent 12` shows the newest ICS advisories (ICSA-26-323-01 to -03) released 2026-11-19, outside the window. Recipe unchanged."
+  - source_id: belden-psirt
+    reason: "`extract https://www.belden.com/security` served via the jina reader rung on this call (a key with balance still answered) and returned the advisory table; newest PSIRT-9 is dated 2026-10-28, nothing in the window. Recipe from the 2026-11-23 note still works."
+  - source_id: "isdown.app / uptime.n-able.com (N-able incident timeline mirrors)"
+    reason: "isdown.app returned HTTP 403 on every transport; uptime.n-able.com/event/202672 returned only a status-dashboard skeleton. The timeline is read from The Hacker News and the N-able blog instead."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent + ncsc-nl csaf", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "NCSC-2026-0512/0513 (Splunk) returned as one item; NCSC-2026-0508 (F5 BIG-IP, 2026-11-19) used as a source of the F5 item; PHP, Aspera, VMware, Drupal, NGINX, Oracle entries all covered" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "feed alerte + bridge:cert-fr avis-recent 25 + extract per avis", horizon_hours: 26, in_horizon_items: 9, returned: 1, note: "nine CERTFR-2026-AVI items of 2026-11-23 (SPIP, PAN-OS, Laravel, Roundcube, Edge, Office, Mattermost, MongoDB, Synology); Roundcube returned borderline, the rest dropped or covered; newest ALE is 2026-11-18" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 21, returned: 1, note: "21 [NEU] items in the visible slice; F5 BIG-IP returned; 250-item feed cap logged as a gap" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-022 (NGINX, 2026-11-18), covered" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-20 (Poste.io)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent + WebFetch of the 2026-11-23 KEV alert", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "only the KEV alert of 2026-11-23 is in the window; its two CVEs are dispositioned (MONAI covered, MailAssure returned as item 1)" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev", horizon_hours: 26, in_horizon_items: 2, returned: 1, note: "catalogue 2026.11.23, 1792 entries; MONAI Label covered, N-able Mail Assure returned" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:url --direct api/search?fromScore=9&toScore=10 (2026-11-22 to 2026-11-24)", horizon_hours: 26, in_horizon_items: 38, returned: 3, note: "38 rows at 9.0+; MailAssure (exploitedSince 2026-11-23), Xen Orchestra update-of and Chrome (borderline) returned; the rest dispositioned in dropped_candidates" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-17 blog post" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract of watchtower.com/intelligence", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs RSS newest 2026-11-05; the intelligence page lists Ruby2Shell and NGINX2root FAQs (covered) and no F5 BIG-IP FAQ yet, although watchTowr's researcher is credited on four of the six F5 CVEs" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-279 (2026-11-20, NGINX) and FG-IR-26-278 (2026-11-18, Java4Shell), both portfolio statements for covered flaws" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent + OData filters (latestRevisionDate, exploited eq Yes)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no Microsoft row newly exploited or publicly disclosed; 85 revised rows were Mariner/Linux kernel and .NET noise; cloud-service CVEs dropped" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-11-20 (NGINX and Java portfolio statements), covered" }
+  - { id: belden-psirt, tier: standard, attempted: true, transport: "extract (served via jina reader)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest PSIRT-9 2026-10-28" }
+  - { id: censys-blog, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "nginx2root test (covered), MCH/Caishen (OptimJack, covered), AI-SOC marketing post" }
+  - { id: flatt-security, tier: standard, attempted: true, transport: "extract (raw listing HTML, regex)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-21" }
+  - { id: horizon3-ai, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-22" }
+  - { id: sansec-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Rootways Authorize.net CIM SSRF (2026-11-17) dropped: Magento extension, lookback edge, no public-sector nexus" }
+  - { id: ssd-disclosure, tier: standard, attempted: true, transport: "bridge:url wp-json posts", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-29" }
+  - { id: tenable-research, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "FAQs and marketing posts on NGINX2Root, Java4Shell, Oracle CPU (all covered) and a public-sector exposure post; nothing new" }
+  - { id: trail-of-bits, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-06" }
+  - { id: vulncheck, tier: standard, attempted: true, transport: "WebFetch listing", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "2026-11-17 Java4Shell (covered), 2026-11-20 recognition post, 2026-11-23 credential-harvesting telemetry (research, no new CVE)" }
+  - { id: watchguard-psirt, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "Dimension 2.3.2 batch (2026-11-19) re-dropped as in the 2026-11-22 run; no exploitation" }
+
+cve_table:
+  - { cve: CVE-2026-134624, product: "N-able Mail Assure (SpamExperts)", cvss: "9.3 (CVSS 4.0, CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:N/SC:H/SI:H/SA:N)", epss: 0.0035, kev: true, exploited: "yes (CISA KEV 2026-11-23, EUVD exploitedSince 2026-11-23; N-able: confined to one N-able-hosted server)", affected: "builds before 20261121.1943", fixed: "build 20261121.1943 (Hosted Cloud already patched by N-able)", type: "SSRF (CWE-918), LDAP synchronisation connection check", vector: "network, authenticated API user", auth: "authenticated (PR:H)", source: "N-able CNA record via https://github.com/advisories/GHSA-g4r8-gwqr-j289; https://www.n-able.com/blog/mail-assure-incident-update" }
+  - { cve: CVE-2026-123637, product: "F5 BIG-IP APM", cvss: "9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H); 9.3 (CVSS 4.0)", epss: 0.0077, kev: false, exploited: "no exploitation reported (CISA ADP SSVC 2026-11-18: none)", affected: "BIG-IP 21.1.0, 17.5.0, 17.1.0 branches with APM and a per-request policy containing the Client Information and Endpoint Security agents; EoTS versions not evaluated", fixed: "engineering hotfixes 21.1.0.4.0.19.3-ENG; 17.5.1.11.0.61.12-ENG or 17.5.1.10.0.80.35-ENG; 17.1.3.7.0.21.4-ENG or 17.1.3.6.0.14.20-ENG", type: "stack-based buffer overflow, TMM termination, possible RCE (CWE-121)", vector: "network, data plane", auth: "none", source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4723; https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-116953, product: "F5 BIG-IP (all modules), BIG-IP Next for Kubernetes", cvss: "9.8 (CVSS 3.1); 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: "no exploitation reported", affected: "BIG-IP 21.1.0, 17.5.0, 17.1.0 with an iRule using GENERICMESSAGE::route on client traffic; Next for Kubernetes 2.2 to 2.4", fixed: "BIG-IP engineering hotfixes as above; BNK-2.4.2-EHF1, BNK-2.3.4-EHF1, BNK-2.2.5-EHF1", type: "TMM termination, possible RCE", vector: "network, data plane", auth: "none", source: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-120285, product: "F5 BIG-IP (all modules), BIG-IP Next for Kubernetes, BIG-IP CNF", cvss: "9.8 (CVSS 3.1); 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: "no exploitation reported", affected: "HTTP profile plus an iRule using PSC::ip_address (PEM)", fixed: "BIG-IP engineering hotfixes as above; BNK-*-EHF1; CNF-2.4.2-EHF1, CNF-2.3.4-EHF1, CNF-2.2.5-EHF1", type: "TMM termination, possible RCE", vector: "network, data plane", auth: "none", source: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-120292, product: "F5 BIG-IP (all modules), BIG-IP Next for Kubernetes", cvss: "9.8 (CVSS 3.1); 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: "no exploitation reported", affected: "HTTP profile plus an iRule using MR::message route", fixed: "BIG-IP engineering hotfixes as above; BNK-*-EHF1", type: "TMM termination, possible RCE", vector: "network, data plane", auth: "none", source: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-120722, product: "F5 BIG-IP DNS, BIG-IP Next for Kubernetes", cvss: "9.8 (CVSS 3.1); 9.3 (CVSS 4.0)", epss: 0.0077, kev: false, exploited: "no exploitation reported", affected: "an iRule using DNS::scrape on client traffic; CNF status contradictory between the advisory and the CVE record", fixed: "BIG-IP engineering hotfixes as above; BNK-*-EHF1", type: "TMM termination, possible RCE", vector: "network, data plane", auth: "none", source: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-121805, product: "F5 BIG-IP PEM, BIG-IP Next for Kubernetes, BIG-IP CNF", cvss: "9.8 (CVSS 3.1); 9.3 (CVSS 4.0)", epss: 0.0072, kev: false, exploited: "no exploitation reported", affected: "an iRule using PEM::subscriber on client traffic", fixed: "BIG-IP engineering hotfixes as above; BNK-*-EHF1; CNF-*-EHF1", type: "TMM termination, possible RCE", vector: "network, data plane", auth: "none", source: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-125274, product: "F5 BIG-IP, BIG-IQ (iControl SOAP)", cvss: "8.8 (CVSS 3.1 AV:N/AC:L/PR:L)", epss: 0.0052, kev: false, exploited: "no exploitation reported", affected: "BIG-IP 21.0.0 to 21.1.0.2, 17.5.0 to 17.5.1.9, 17.1.0 to 17.1.3.5; BIG-IQ 8.4.0 to 8.4.2.2", fixed: "BIG-IP 21.1.0.3, 17.5.1.10, 17.1.3.6; BIG-IQ 8.4.2.3", type: "command injection through an unauthorised management request (control plane)", vector: "network", auth: "authenticated, at least Guest role", source: "https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html; F5 CNA record" }
+  - { cve: CVE-2026-120718, product: "F5 BIG-IP, BIG-IQ (iControl REST)", cvss: "8.1 (CVSS 3.1 AV:N/AC:H)", epss: 0.0035, kev: false, exploited: "no exploitation reported", affected: "BIG-IP 21.1.0 before 21.1.0.2, 17.5.0 before 17.5.1.10, 17.1.0 before 17.1.3.6; BIG-IQ 8.4.0 before 8.4.2.3", fixed: "21.1.0.2, 17.5.1.10, 17.1.3.6; BIG-IQ 8.4.2.3; workaround: delete REST tokens at end of use", type: "iControl REST tokens may not expire (CWE-1463)", vector: "network, control plane", auth: "token holder", source: "F5 CNA record; https://thehackernews.com/2026/11/f5-warns-6-critical-big-ip-flaws-can.html" }
+  - { cve: CVE-2026-76535, product: "Splunk Enterprise (RapidDiag REST API)", cvss: "9.1 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)", epss: 0.0037, kev: false, exploited: "no exploitation stated", affected: "10.6.0.5, 10.4.0 to 10.4.4, 10.2.0 to 10.2.8, 10.0.0 to 10.0.11, 9.4.0 to 9.4.16", fixed: "10.6.1, 10.4.5, 10.2.9, 10.0.12, 9.4.17", type: "authentication bypass (CWE-287)", vector: "network, REST API", auth: "none", source: "https://advisory.splunk.com/advisories/SVD-2026-1103" }
+  - { cve: CVE-2026-76536, product: "Splunk Enterprise (Cluster Configuration REST API)", cvss: "9.4 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H)", epss: 0.0031, kev: false, exploited: "no exploitation stated", affected: "10.6.0.5, 10.4.0 to 10.4.4, 10.2.0 to 10.2.8, 10.0.0 to 10.0.11, 9.4.0 to 9.4.16", fixed: "10.6.1, 10.4.5, 10.2.9, 10.0.12, 9.4.17", type: "authentication bypass (CWE-287)", vector: "network, REST API", auth: "none", source: "https://advisory.splunk.com/advisories/SVD-2026-1103" }
+  - { cve: CVE-2026-131253, product: "Splunk SOAR (App Wizard)", cvss: "9.9 (CVSS 3.1 AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H)", epss: 0.0059, kev: false, exploited: "no exploitation stated", affected: "Splunk SOAR below 8.8.0", fixed: "8.8.0", type: "remote code execution, code injection (CWE-94)", vector: "network", auth: "authenticated (PR:L)", source: "https://advisory.splunk.com/advisories/SVD-2026-1108" }
+  - { cve: CVE-2026-131287, product: "Splunk SOAR (REST API)", cvss: "9.6 (CVSS 3.1 AV:N/AC:L/PR:L/UI:N/S:C/C:N/I:H/A:H)", epss: 0.0034, kev: false, exploited: "no exploitation stated", affected: "Splunk SOAR below 8.8.0", fixed: "8.8.0", type: "remote code execution, incorrect authorization (CWE-863)", vector: "network", auth: "authenticated (PR:L)", source: "https://advisory.splunk.com/advisories/SVD-2026-1108" }
+  - { cve: CVE-2026-133469, product: "Xen Orchestra (xen-orchestra, xo-server)", cvss: "9.8 (CVSS 3.1 AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)", epss: null, kev: false, exploited: "vendor/CVE record: actively exploited in the wild; CISA ADP SSVC 2026-11-23: poc", affected: "xen-orchestra before 6.9.2 and 6.10.0 up to before 6.10.1; xo-server before 5.211.2 and 5.213.0 up to before 5.213.1", fixed: "xen-orchestra 6.9.2 and 6.10.1; xo-server 5.211.2 and 5.213.1", type: "authentication bypass through an empty-object token cookie (REST cookie parsing)", vector: "network, REST API", auth: "none; the first stored token returned must be unexpired and belong to an existing user", source: "https://github.com/vatesfr/xen-orchestra/security/advisories/GHSA-2r3w-c2vx-fv5g" }
+  - { cve: CVE-2026-134401, product: "Google Chrome (Variations)", cvss: "9.6 (EUVD, CVSS 3.1)", epss: null, kev: false, exploited: "no exploitation stated", affected: "Chrome before 158.0.8127.88", fixed: "158.0.8127.88/.89 (Windows, macOS), 158.0.8127.88 (Linux)", type: "improper input validation, code execution outside the sandbox", vector: "network, crafted HTML page", auth: "none (user visit)", source: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html" }

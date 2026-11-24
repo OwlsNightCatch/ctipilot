@@ -544,6 +544,7 @@ _CHALLENGE_MARKERS = (
     "cf-chl", "enable javascript", "please enable js", "javascript is required",
     "you need to enable javascript", "access denied", "request blocked", "are you a robot",
     "captcha", "verify you are human", "ddos protection", "please wait while", "403 forbidden",
+    "one moment, please",
 )
 _DEAD_MARKERS = (
     "redirecting...", "404 not found", "page not found",
@@ -619,6 +620,8 @@ _SECURITY_TERMS = (
     # nl / pl / es / pt / ja
     "kwetsbaarheid", "beveiliging", "podatność", "atak", "bezpieczeństw", "vulnerabilidad",
     "ataque", "seguridad", "segurança", "脆弱性", "攻撃", "セキュリティ",
+    # no
+    "sårbarhet", "sikkerhet", "angrep", "trussel",
     # lv
     "kiberdrošīb", "ievainojamīb", "uzbrukum", "apdraudējum", "drošīb",
 )
@@ -872,7 +875,12 @@ def _content_assess(s: dict[str, Any], *, timeout: float, now: datetime) -> dict
         # A legitimately small static index (three dated posts on swarmcha.se is
         # 896 bytes) is readable: dated, current, on topic and not a challenge.
         verdict = "relevant"
-    elif n_alnum < CONTENT_MIN_ALNUM or (shell_hits and n_alnum < 4 * CONTENT_MIN_ALNUM):
+    elif (n_alnum < CONTENT_MIN_ALNUM
+          or (shell_hits and (n_alnum < 4 * CONTENT_MIN_ALNUM
+                              or (len(terms) < RELEVANCE_MIN and not has_cve)))):
+        # A challenge marker in the head of a body with no security vocabulary is
+        # a challenge page however large the raw HTML (developer.joomla.org's
+        # reload interstitial is 7.7 KB of inline CSS and script).
         verdict = "shell"
     elif len(terms) < min_terms and not has_cve:
         verdict = "irrelevant"

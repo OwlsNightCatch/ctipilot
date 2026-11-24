@@ -47,6 +47,14 @@ sources:
     publisher: "Ohey"
     date: "2026-11-19"
     role: corroborating
+  - url: "https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf"
+    publisher: "Optimizely (customer incident report)"
+    date: "2026-11-20"
+    role: primary
+  - url: "https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites/"
+    publisher: "Krebs on Security"
+    date: "2026-11-17"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The confirmed compromise is malicious code inside responses served from third-party providers’ own script and widget endpoints."
@@ -82,9 +90,15 @@ evidence:
   - quote: "ThreatLabz identified more than 450 unique domains and more than 3,000 URLs serving the malicious script."
     publisher: "Zscaler ThreatLabz"
     source_url: "https://www.zscaler.com/blogs/security-research/attackers-exploit-optimizely-flaw-inject-malicious-javascript"
+  - quote: "during the exposure window (07:51 to 22:24 UTC, 16 November 2026)."
+    publisher: "Optimizely (customer incident report)"
+    source_url: "https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf"
+  - quote: "Early guidance on 16 November advised turning it off. That guidance has been withdrawn."
+    publisher: "Optimizely (customer incident report)"
+    source_url: "https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf"
 verification: multi-source
 sourcing_note: >
-  Hudson Rock recovered the poisoned files itself and matched the archived responses Ohey supplied; Amirul Cyber and Report URI both reported the Optimizely injection on 2026-11-16, and Optimizely's own status entry confirms an exploited vulnerability on its side and, since 2026-11-18, names it as a weakness in the Web Experimentation account signup flow that let the attacker impersonate users on targeted accounts. Zscaler ThreatLabz states neither the vantage point nor the time window of its count of more than 450 domains, so it is not reconciled with Report URI's 178 organisations. The sources cite no statement from Kissmetrics, StorifyMe or minute-ly, and the iPhone-router reading of the stages is Ohey's, with Hudson Rock calling them delivery observations only. Ohey's page is a living reference with no dateline of its own, so its citations carry the nominal date 2026-11-17, while its text counts through 2026-11-18.
+  Hudson Rock recovered the poisoned files itself and matched the archived responses Ohey supplied; Amirul Cyber and Report URI both reported the Optimizely injection on 2026-11-16, and Optimizely's own status entry confirms an exploited vulnerability on its side and, since 2026-11-18, names it as a weakness in the Web Experimentation account signup flow that let the attacker impersonate users on targeted accounts. Zscaler ThreatLabz states neither the vantage point nor the time window of its count of more than 450 domains, so it is not reconciled with Report URI's 178 organisations. The sources cite no statement from Kissmetrics, StorifyMe or minute-ly, and the iPhone-router reading of the stages is Ohey's, with Hudson Rock calling them delivery observations only. Ohey's page is a living reference with no dateline of its own, so its citations carry the nominal date 2026-11-17, while its text counts through 2026-11-18. Optimizely's customer incident report puts the first malicious write at 07:51 UTC on 2026-11-16, while Report URI logged the first injection at 04:21 UTC that day; the two times are reported separately and not reconciled. The Optimizely report is cited as of its 2026-11-20 version (first issued 2026-11-17, corrected 2026-11-18, shortened 2026-11-20).
 confidence: medium
 references: ["2026-10-28/deadtag-expired-tag-domains-coruna-darksword-iphone-kits", "2026-11-05/apt29-watering-hole-ios-android-n-day-chains-kev"]
 deep_dive: false
@@ -97,6 +111,7 @@ watchlist_hit: false
 actions:
   - "List every page of your organisation's sites, and of the agencies that build them, that has loaded Optimizely project JavaScript since 2026-11-16, or Kissmetrics i.js, a StorifyMe widget or the minute-ly loader since 2026-11-13, capture the bytes the browser receives and compare them with the provider's own project content (a search for the loader's host name misses the variant that hides it in base64), and where a file carries the injected loader remove it, keep the response bytes as evidence and treat the payment, login and form pages that loaded an affected Optimizely file as exposed to card and session theft."
   - "If your organisation or an agency building its sites has an Optimizely Web Experimentation account, audit every Project JavaScript field for code nobody wrote and rotate the API tokens, session tokens and integration keys tied to it, because the attacker impersonated users on targeted accounts to edit that field."
+  - "For every page that loaded an Optimizely snippet on 2026-11-16, review the card and cryptocurrency transactions made on it during Optimizely's exposure window (07:51 to 22:24 UTC; Report URI saw the first injection at 04:21 UTC) and keep the web server, CDN, WAF and payment logs that cover the day, because Optimizely says the script was meant to take card details typed into a site's own forms and cryptocurrency transfers."
 updates:
   - at: "2026-11-18T04:57:41Z"
     run_id: 2026-11-18T0356Z-intel
@@ -127,6 +142,16 @@ updates:
       served from customers' own host names were affected too, and the cookie theft runs only after a
       wallet address is swapped.
     fields: [body, sources, sourcing_note, summary]
+  - at: "2026-11-24T04:29:57Z"
+    run_id: 2026-11-24T0355Z-intel
+    type: improvement
+    summary: >
+      Optimizely's own incident report gives its exposure window (07:51 to 22:24 UTC on 2026-11-16, later
+      than Report URI's first sighting at 04:21 UTC), says the script was meant to take card details typed
+      into sites' own forms and cryptocurrency transfers, withdraws its early advice to switch the snippet
+      off and lists customer actions; Report URI counts 68 affected sites with no Content-Security-Policy
+      and 50 with one that still allowed the theft.
+    fields: [sources, evidence, sourcing_note, actions, body]
 migrated_from: null
 ---
 
@@ -155,3 +180,9 @@ Optimizely's status entry now says that on 2026-11-16 an unauthorized third part
 ## Update — 2026-11-22T14:54:05Z
 
 Report URI's update of 2026-11-17 says all infected Optimizely files were clean from 23:11 UTC on 2026-11-16 and stayed clean, and that the main payload and data-collection server was put on a registrar hold (clientHold) at 00:37 UTC on 2026-11-17 and no longer resolves ([Report URI, 2026-11-16](https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/)), which bounds the browser exposure from Optimizely-served pages to 2026-11-16. Ohey reports that the iPhone exploit router is a rental service: its operator rents it by channel code, renters get a console that lists each phone's wallets, keystores, Keychain, messages and photos, Ohey holds 31 renter codes in use since 2026-08-31, and the vendor attack ran on the operator's own channel ([Ohey, 2026-11-19](https://ohey.ca/research/optimjack-iphone-exploit-router-for-rent/)). The vendor scripts loaded the router from an address of a seller of hidden backlinks on hacked sites; registrars took that loader down on 17 and 18 November, while nine router hosts still answered on the evening of 18 November ([Ohey, 2026-11-19](https://ohey.ca/research/optimjack-iphone-exploit-router-for-rent/)).
+
+## Improvement — 2026-11-24T04:29:57Z
+
+Optimizely's customer incident report, shortened on 2026-11-20 with a link to the full version in its customer portal, says the first malicious code was written at 07:51 UTC on 2026-11-16, detected at 13:34 UTC, the vulnerability closed at 16:10 UTC and the injected code removed from all affected projects by 22:24 UTC, and tells customers the exposure window is 07:51 to 22:24 UTC ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)); Report URI logged its first injection earlier, at 04:21 UTC ([Report URI, 2026-11-16](https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/)), and the two accounts are not reconciled. Optimizely says the attacker acted as administrator users without their credentials, so no customer password was stolen, that only Web Experimentation was involved, that the script was meant to take card details typed into the site's own forms and cryptocurrency transfers, and that cards entered in hosted payment iframes such as Stripe or Adyen were not reachable ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)).
+
+The vendor's early advice of 2026-11-16 to switch the snippet off has been withdrawn, and re-enabling it is stated to be safe ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)). Its customer actions are to confirm which pages ran the snippet in the window, review Content-Security-Policy violation reports and outbound requests to unfamiliar domains, review card and cryptocurrency transactions, keep web server, CDN, WAF, CSP-report and payment logs that cover 2026-11-16, assess legal notification duties, check that a strong Content-Security-Policy is in place, and remove the snippet from payment or crypto pages that run no experiments ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)). Report URI counted 68 of the affected sites with no policy, 50 with a policy that still allowed the payload and the data theft, and 24 (15 percent) with one that fully blocked the payload ([Krebs on Security, 2026-11-17](https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites/)).

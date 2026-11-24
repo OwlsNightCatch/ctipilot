@@ -191,6 +191,27 @@ def test_webfetch_record_with_refused_browser_ua_is_not_flagged_for_a_bridge():
     assert not sh._webfetch_reach_wall("webfetch", "client-error", "needs-demote")
 
 
+def test_javascript_reload_interstitial_counts_as_a_challenge_page():
+    """developer.joomla.org serves a 'One moment, please...' reload page to in-container transports."""
+    assert "one moment, please" in sh._CHALLENGE_MARKERS
+    assert sh._walled("ok", ["one moment, please"])
+
+
+def test_large_interstitial_with_no_security_vocabulary_is_a_shell():
+    """The reload page is thousands of bytes of inline CSS; size alone must not make it relevant."""
+    html = ("<html><title>One moment, please...</title><style>" + "a{color:red}" * 900 + "</style>"
+            "<script>window.location.reload()</script></html>")
+    s = {"id": "joomla-security-centre", "url": "https://developer.joomla.org/x", "fetch_method": "webfetch"}
+    orig = sh._content_fetch
+    sh._content_fetch = lambda s, timeout: ("extract+direct", html, html, [])
+    try:
+        res = sh._content_assess(s, timeout=1.0, now=sh.datetime.now(sh.timezone.utc))
+    finally:
+        sh._content_fetch = orig
+    assert res["content_verdict"] == "shell", res
+    assert sh._walled("ok", res["content_shell_markers"])
+
+
 def main() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

@@ -1,0 +1,285 @@
+# work/2026-11-24T0355Z-intel/findings.S2.yaml
+domain: S2
+run_id: 2026-11-24T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-24T03:57:55Z
+ended_at: 2026-11-24T04:21:08Z
+duration_seconds: 1393
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 29
+  bridge_fetches: 82   # approximate, counted from the tool-use trace
+window_note: >
+  Quiet window for the Swiss authorities. BACS (press 2026-11-05, Im Fokus / Aktuelle Vorfälle 2026-11-18),
+  NCSC Security Hub (newest new post 2026-11-19), CERT.at (2026-11-19), CERT-EU (2026-11-18), ENISA
+  (2026-11-10), CISA directives and FBI PSAs (nothing since 2026-10-23) published nothing new inside the
+  window. Policy watch (NCSC.ch / ISG / Cybersicherheitsgesetz / NIS2-CRA / e-ID / CoE-UN cybercrime /
+  sanctions and takedowns) produced NO in-window item that changes what defenders are obliged or advised to do.
+items:
+  - title: "Microsoft Entra Connect Health: an API flaw present from 2026-07-23 was exploited to read tenant contact and configuration metadata (administrator e-mail addresses among it); Microsoft fixed it server-side on 2026-11-19 and began notifying tenants on 2026-11-20"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/", publisher: "BleepingComputer", date: "2026-11-21", role: "primary" }
+      - { url: "https://www.netzwoche.ch/news/2026-11-23/angreifer-lesen-konfigurationsdaten-von-microsoft-kunden-aus", publisher: "Netzwoche", date: "2026-11-23", role: "corroborating" }
+      - { url: "https://www.it-connect.fr/entra-connect-health-faille-exploitee-metadonnees-tenants/", publisher: "IT-Connect", date: "2026-11-24", role: "corroborating" }
+    discovery_trace: "first seen at: netzwoche (RSS), URL https://www.netzwoche.ch/rss.xml → item https://www.netzwoche.ch/news/2026-11-23/angreifer-lesen-konfigurationsdaten-von-microsoft-kunden-aus (feed item 'Angreifer lesen Konfigurationsdaten von Microsoft-Kunden aus', 2026-11-23) → primary-as-relayed: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/ (quotes Microsoft's customer notification and a Microsoft spokesperson) → corroboration: it-connect (feed https://www.it-connect.fr/feed/), URL https://www.it-connect.fr/entra-connect-health-faille-exploitee-metadonnees-tenants/. Microsoft's own page not found (WebSearch 'Microsoft Entra Connect Health security notification tenant metadata aka.ms/ConnectHealth/scripts Azure Service Health' returned only generic docs); the Reddit post with the notification text is not fetchable (WebFetch refused www.reddit.com)."
+    summary: |
+      Microsoft told affected tenants through Azure Service Health, from 2026-11-20, that a vulnerability in
+      the Microsoft Entra Connect Health API, introduced on 2026-07-23 and found by Microsoft on 2026-11-09 (109 days later,
+      per IT-Connect's count), was exploited for unauthorised read-only access to tenant-level metadata. Microsoft deployed a
+      server-side fix on 2026-11-19 and concluded its investigation on 2026-11-20; it says it found no
+      unauthorised configuration change, although the flaw could in principle also have changed Connect Health monitoring
+      settings. Exposed data, per Microsoft's notification as quoted by BleepingComputer: e-mail addresses of tenant
+      technical contacts and administrator accounts; tenant ID, display name, initial domain, country and region; Entra licence
+      tier and directory-synchronisation status (enabled, last sync time); Connect Health onboarding status; and an expired
+      agent-registration certificate for a Microsoft internal service decommissioned in late 2024 that the API still returned.
+      Microsoft says passwords, password hashes, authentication tokens, valid cryptographic keys, on-premises server and AD
+      topology and Azure subscription data were not exposed, that no customer software update is needed, and it warns of targeted
+      phishing and social engineering aimed at the exposed administrator addresses. Recommended: phishing-resistant MFA on
+      privileged accounts, a review of Connect Health configuration, and a review of Entra audit and sign-in logs; a
+      PowerShell script (aka.ms/ConnectHealth/scripts) lists the metadata types that could have been exposed, but shows current
+      values, not what was accessed. Microsoft has not said who exploited it, when exploitation began or how many tenants are
+      affected; more than a dozen administrators and some MSPs (notifications for several customer tenants) reported
+      notices on Reddit per BleepingComputer. The service monitors on-premises identity infrastructure (Entra Connect Sync servers, AD FS
+      farms, domain controllers) through agents (IT-Connect), so the in-scope population is hybrid-identity tenants, which
+      includes public administrations that synchronise on-premises AD to Microsoft 365.
+    region_nexus: "global; relayed by Swiss trade press (Netzwoche) for Swiss IT leads; hybrid-identity public-sector tenants are in the service's scope, no Swiss tenant is named"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1589.002]
+    affected_products: ["Microsoft Entra Connect Health"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:microsoft-entra-connect-health", type: product, name: "Microsoft Entra Connect Health", aliases: ["Azure AD Connect Health"],
+          summary: "Microsoft cloud service that monitors on-premises identity infrastructure (Entra Connect Sync, AD FS, domain controllers) through installed agents and reports alerts in the Entra admin centre; its API held a flaw from 2026-07-23 to 2026-11-19 that was exploited for tenant-metadata read access (BleepingComputer, IT-Connect, 2026-11)." }
+      - { key: "incident:microsoft-entra-connect-health-api-tenant-metadata-2026-11", type: incident, name: "Entra Connect Health API tenant-metadata exposure (2026-07 to 2026-11)", aliases: [],
+          summary: "Microsoft confirmed to customers on 2026-11-20 that a Connect Health API flaw (introduced 2026-07-23, found 2026-11-09, fixed server-side 2026-11-19) was exploited to read tenant contact and configuration metadata, including administrator e-mail addresses; no actor named." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Microsoft discovered the vulnerability in the Entra Connect Health API on November 9, 2026, after it was first introduced on July 23."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "On 20 November 2026, we concluded our investigation and determined that unauthorized read-only access to tenant-level metadata associated with your organization had occurred."
+        attribution: "BleepingComputer (quoting Microsoft's customer notification)"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "Organizations are also advised to ensure privileged accounts use phishing-resistant multifactor authentication, review their Connect Health configurations, and examine Microsoft Entra audit and sign-in logs for suspicious activity."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/microsoft-entra-connect-health-flaw-exploited-to-steal-tenant-data/"
+      - quote: "Wer hinter den Angriffen steckt, wann sie begannen und wie viele Kunden betroffen sind, lässt Microsoft offen."
+        attribution: "Netzwoche"
+        source_url: "https://www.netzwoche.ch/news/2026-11-23/angreifer-lesen-konfigurationsdaten-von-microsoft-kunden-aus"
+    extended_notes: |
+      Exposure: a tenant that onboarded Connect Health (Entra Connect Sync, AD FS, domain controllers) and received an Azure
+      Service Health notice; check Azure Service Health for the notification rather than waiting for Microsoft's web page.
+      Detection (telemetry class first): mail-flow logs for messages to the administrator and technical-contact addresses that
+      impersonate Microsoft or Entra (Connect Health, tenant security notices); Entra sign-in and audit logs for privileged accounts
+      (new MFA registrations, device-code or consent grants, sign-ins from new locations) in the weeks after 2026-11-20.
+      Microsoft states there is no customer-side patch, so the post-fix check is exactly that review. The source chain is one
+      origin: Microsoft's customer notification (shared by admins on Reddit) and Microsoft's statement to BleepingComputer; Netzwoche
+      and IT-Connect re-read the same notification. A Microsoft web advisory was not found. The flaw's mechanism (what the API
+      call was) is not disclosed. Overlap with S1/S4: likely the same item; main agent dedups.
+    borderline: false
+
+  - title: "Bulgaria: the digital ministry says a five-year espionage operation (since 2021) downloaded more than 130 GB, about 62 million pages, from the state's inter-institution document infrastructure; found in August 2026 by a newly deployed national monitoring system"
+    sources:
+      - { url: "https://www.thestar.com.my/news/world/2026/11/19/bulgaria-uncovers-five-year-cyberespionage-operation", publisher: "Reuters (via The Star)", date: "2026-11-19", role: "primary" }
+      - { url: "https://www.zataz.com/cyberespionnage-en-bulgarie-62-millions-de-pages-volees/", publisher: "ZATAZ", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: zataz (RSS), URL https://www.zataz.com/feed/ → item https://www.zataz.com/cyberespionnage-en-bulgarie-62-millions-de-pages-volees/ (2026-11-23; cites Reuters 2026-11-18) → primary-as-relayed: Reuters via The Star, URL https://www.thestar.com.my/news/world/2026/11/19/bulgaria-uncovers-five-year-cyberespionage-operation (found via WebSearch 'Bulgaria government hackers 62 million documents Council of Ministers cyber espionage five years e-government ministry'). The ministry's own release was not located; a Bulgarian-language WebSearch returned only the same wire coverage."
+    summary: |
+      On 2026-11-18 Bulgaria's minister for innovation and digital transformation, Ivan Vassilev, said that since 2021 more than 130 GB (62
+      million pages) of government documents had been downloaded (Reuters, citing Nova TV). The material covers cabinet work, internal
+      reports and correspondence between ministries and state institutions; ZATAZ adds that the intruders entered the infrastructure
+      public bodies use to exchange documents, moved between several parts of the system and downloaded files. The operation was
+      found after Bulgaria deployed a new national cyber-security monitoring system that flagged suspicious activity in August 2026. The
+      ministry says several international groups are believed responsible, with no conclusive link to a foreign state or intelligence
+      service, no evidence so far that citizens' personal data was compromised and no sign of publication on the dark web (ZATAZ).
+      Response: a task force of the interior and defence ministries, security and intelligence services and the national incident-response team,
+      with private firms and ENISA; affected systems isolated, malware removed, attacker access cut, and 90 days of reinforced
+      monitoring planned (ZATAZ). Prosecutors were notified to examine institutions' actions and possible failures during the
+      undetected period. ZATAZ relays the ministry's own finding that the defences under successive governments "did not work as a whole"
+      on networks shared between institutions, where common monitoring can correlate events each service sees only in isolation. No
+      initial-access vector, malware family or actor is named in either source.
+    region_nexus: "EU (Bulgaria); transferable to Swiss federal and cantonal administrations that share document-exchange and e-government infrastructure"
+    primary_sector_nexus: "direct (government administration target; transferable lesson)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1213]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:bulgaria-government-document-exchange-espionage-2021-2026", type: incident, name: "Bulgarian government document-exchange espionage (2021 to 2026)", aliases: [],
+          summary: "Bulgaria's digital ministry disclosed on 2026-11-18 a five-year intrusion into the state's inter-institution document infrastructure that downloaded about 130 GB (62 million pages), found in August 2026 by a new national monitoring system; actor unnamed (Reuters, ZATAZ)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "The incident was uncovered after Bulgaria deployed a new national cyber security monitoring system, which detected suspicious activity in August."
+        attribution: "Reuters (via The Star)"
+        source_url: "https://www.thestar.com.my/news/world/2026/11/19/bulgaria-uncovers-five-year-cyberespionage-operation"
+      - quote: "The stolen information covered virtually all areas of government activity, including cabinet work, reports and correspondence between ministries and state institutions."
+        attribution: "Reuters (via The Star)"
+        source_url: "https://www.thestar.com.my/news/world/2026/11/19/bulgaria-uncovers-five-year-cyberespionage-operation"
+      - quote: "Selon le ministère, les dispositifs de défense en place sous les gouvernements successifs ne fonctionnaient pas comme un ensemble."
+        attribution: "ZATAZ"
+        source_url: "https://www.zataz.com/cyberespionnage-en-bulgarie-62-millions-de-pages-volees/"
+      - quote: "Une surveillance renforcée des réseaux concernés est prévue pendant 90 jours."
+        attribution: "ZATAZ"
+        source_url: "https://www.zataz.com/cyberespionnage-en-bulgarie-62-millions-de-pages-volees/"
+    extended_notes: |
+      All coverage traces to the ministry's 2026-11-18 briefing (Reuters via Nova TV; AFP also reported it, seen here only as a
+      WebSearch summary). A search-result summary of a Ukrainian outlet gave a different first-alert date (23 June); not fetched, so
+      not carried. Lesson stated by the ministry, not inferred here: separate per-service monitoring on shared networks missed what
+      common monitoring found; the detection concept that follows from the stated mechanism is cross-institution correlation of
+      bulk document-read and download telemetry on document-exchange platforms. Overlap with S4 likely; main agent dedups.
+    borderline: true
+    borderline_reason: "no Swiss nexus and no TTP detail; kept for the government-sector long-dwell lesson (five years, found by shared monitoring) and ENISA's involvement; first reported 2026-11-18, ZATAZ in window 2026-11-23"
+
+  - title: "OSCE Ministerial Council in Lugano (3 and 4 December 2026): the Swiss Army supports Ticino with up to 2,000 personnel including cyber capabilities from 30 November; BACS's own review of the 2024 Bürgenstock summit records NoName057(16) DDoS against Swiss authorities and intrusion and phishing attempts against two cantons and a medical call centre"
+    suggested_kind: "threat awareness / event-driven exposure (not a policy change)"
+    sources:
+      - { url: "https://www.news.admin.ch/de/newnsb/SLfi0iF0vhyH", publisher: "Swiss federal news portal (VBS / Federal Council release)", date: "2026-11-23", role: "primary" }
+      - { url: "https://www.bacs.admin.ch/en/24-kfu-2-en", publisher: "NCSC Switzerland (BACS), first report on the Cyber Situation Network, Summit on Peace in Ukraine", date: "2024-06-20", role: "corroborating" }
+    discovery_trace: "first seen at: news-admin-ch, URL https://www.news.admin.ch/de/newnsb (listing, 12 releases) → item https://www.news.admin.ch/de/newnsb/SLfi0iF0vhyH ('33. OSZE-Ministerkonferenz in Lugano: Armee zum Konferenzschutz im Einsatz', 2026-11-23, via extract) → WebSearch ('OSZE Ministerkonferenz Lugano Cyberangriffe DDoS Hacktivisten Schutz Bundesamt für Cybersicherheit Warnung') surfaced the BACS 2024 Bürgenstock reporting → pivot: https://www.bacs.admin.ch/en/24-kfu-2-en (fetched, historical background framed as such)."
+    summary: |
+      The Swiss Army supports the canton of Ticino with up to 2,000 service members for the 33rd OSCE Ministerial Council in Lugano on 3 and 4
+      December 2026; the assistance service runs from 30 November to 10 December and the Federal Council restricted airspace within
+      46 km of Lugano from 30 November to 4 December. The release says the Army contributes its cyber, counter-drone and CBRN
+      capabilities, with overall command with the Ticino cantonal police (federal release, 2026-11-23). It does not describe the cyber role further and
+      announces no warning to operators of public web services. Background, from BACS's own first review of the June 2024 Summit on
+      Peace in Ukraine at Bürgenstock (published 2024-06-20): BACS coordinated a Cyber Situation Network of almost 100 experts from
+      national and cantonal authorities and the private sector; it recorded several DDoS attacks on the websites of authorities and
+      organisations involved, clearly perpetrated by the pro-Russian hacktivist group NoName057(16), within expected levels with only minor
+      disruption, plus intrusion attempts against the IT systems of the cantons of Nidwalden and Obwalden and phishing against employees of
+      Lucerne's medical emergency call centre. Assessment (this brief's, not BACS's): the 2024 pattern is the precedent for the
+      exposed set around Lugano, namely public websites of federal, Ticino cantonal and communal bodies and the cantonal emergency
+      services; no BACS warning for Lugano had been published by 2026-11-24 (BACS Im Fokus and Aktuelle Vorfälle newest 2026-11-18).
+    region_nexus: "Switzerland: Ticino cantonal and communal administrations, cantonal police and emergency services, federal bodies involved in the conference"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1498, T1566]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:noname057-16", type: actor, name: "NoName057(16)", aliases: ["NoName057(16)"],
+          summary: "Pro-Russian hacktivist group; per NCSC Switzerland (BACS, 2024-06-20) it clearly carried out DDoS attacks on websites of Swiss authorities and organisations around the June 2024 Bürgenstock Summit on Peace in Ukraine." }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    suggested_classification: { reliability: A, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "Die Armee bringt zudem ihre Fähigkeiten im Bereich Cyber, Drohnenabwehr und ABC-Schutz ein."
+        attribution: "Swiss federal news portal (VBS)"
+        source_url: "https://www.news.admin.ch/de/newnsb/SLfi0iF0vhyH"
+      - quote: "Der Assistenzdienst der Armee dauert vom 30. November bis zum 10. Dezember 2026."
+        attribution: "Swiss federal news portal (VBS)"
+        source_url: "https://www.news.admin.ch/de/newnsb/SLfi0iF0vhyH"
+      - quote: "Large events and international conferences are often used as opportunities for cyberattacks."
+        attribution: "NCSC Switzerland (BACS)"
+        source_url: "https://www.bacs.admin.ch/en/24-kfu-2-en"
+      - quote: "which were clearly perpetrated by the pro-Russian hacktivist group 'NoName057(16)'"
+        attribution: "NCSC Switzerland (BACS)"
+        source_url: "https://www.bacs.admin.ch/en/24-kfu-2-en"
+    extended_notes: |
+      Defender angle: a dated, announced high-profile event in Ticino is a window in which public-facing websites of the host
+      canton, nearby communes and federal bodies sit in the same target set as in 2024; the telemetry that mattered then was
+      volumetric web traffic against authority websites (DDoS), intrusion attempts on cantonal IT, and phishing aimed at
+      emergency call-centre staff. The 2024 review also notes that BACS stood the situation network up as a public-private network;
+      whether a Lugano equivalent is planned is not stated anywhere read. EU Council cyber-sanctions listing of NoName057(16) on
+      2026-11-16 appeared only in secondary search results and was not fetched, so it is not carried.
+    borderline: true
+    borderline_reason: "awareness only: the federal release announces an army deployment, not a threat or a duty; the DDoS link rests on a 2024 precedent and BACS has issued no Lugano-specific warning; relevant to Ticino, federal and emergency-service defenders if the main agent wants an event-exposure entry"
+
+  - title: "Cisco Expressway CVE-2026-76466: NCSC Switzerland revised its advisory on 2026-11-23 to rate the flaw exploited after CISA's KEV listing"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13093", publisher: "NCSC Switzerland Cyber Security Hub (post 13093)", date: "2026-11-23", role: "primary" }
+      - { url: "https://www.inside-it.ch/kritische-luecke-in-cisco-expressway-wird-angegriffen-20261123", publisher: "Inside IT", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge `ncsc-csh recent 25` (post 13093 lastModified 2026-11-23T09:01:02Z, history entries 'KEV catalog update' 08:33Z and 'exploitation status' 09:01Z) → primary: the post's own content and citation URL https://security-hub.ncsc.admin.ch/#/posts/13093 → corroboration: inside-it-ch (RSS https://www.inside-it.ch/rss.xml), URL https://www.inside-it.ch/kritische-luecke-in-cisco-expressway-wird-angegriffen-20261123 (full text read via `url --direct`)."
+    summary: |
+      NCSC Switzerland's Security Hub post 13093 (first published 2026-10-22) was edited twice on 2026-11-23, with edit reasons
+      'KEV catalog update' (08:33Z) and 'exploitation status' (09:01Z). It now reads: current exploitation status Exploited, and that CVE-2026-76466 was marked
+      actively exploited by CISA and added to the KEV catalog (update timestamp 23.11.2026, 09:33). The post still describes the
+      precondition as an Expressway in a cluster whose attacker has network access to the database service and holds persistent cookies,
+      lists Expressway, Snort 3, Unified Communications, IOS XR and Secure Client in scope, and says vendor patches exist and no workaround
+      exists for the Expressway, Snort 3 and Unified Communications issues. Inside IT relays the KEV listing and notes Cisco's advisory
+      had not been updated. The existing entry already carries the CISA listing (2026-11-20) and the F6 incident; the delta is that the Swiss
+      national authority's advisory now states exploitation.
+    region_nexus: "Switzerland: national authority rating on a perimeter and collaboration product"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-76466]
+    techniques: [T1190]
+    affected_products: ["Cisco Expressway Series"]
+    entity_keys: ["product:cisco-expressway-series"]
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1 }
+    novelty: "update-of:2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce"
+    suggested_record_type: "improvement"
+    evidence:
+      - quote: "Timestamp of the Update: 23.11.2026, 09:33"
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13093"
+      - quote: "by CISA and was added to the KEV catalog"
+        attribution: "NCSC Switzerland"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/13093"
+      - quote: "Das Advisory wurde bislang nicht aktualisiert."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/kritische-luecke-in-cisco-expressway-wird-angegriffen-20261123"
+    extended_notes: |
+      Metadata-level delta only; the exploitation facts are already in the entry. Worth a non-floating improvement record
+      (cite NCSC.ch as the Swiss authority's rating) or a drop at the main agent's discretion.
+    borderline: true
+    borderline_reason: "the entry already says exploited (CISA KEV, F6); the delta is the Swiss authority's revised rating only"
+dropped_leads:
+  # Honest dead ends, so the next agent does not repeat them.
+  - { lead: "ANSSI 'Ciblage et compromission d'entités françaises par le FSB' (cyber.gouv.fr, sitemap lastmod 2026-11-23)", reason: "recycled: the C4 Turla/FSB attribution is dated 2026-07-13 (CERT-FR CTI-005, https://cert.ssi.gouv.fr/cti/CERTFR-2026-CTI-005/ states 'today (13 July 2026)'); store already has 2026-07-13/fsb-centre-16-static-tundra-router-hijacking-advisory; the sitemap lastmod is a modification date, not a publication date" }
+  - { lead: "ANSSI 'Campagnes de déstabilisation et sabotage ... République islamique d'Iran' (cyber.gouv.fr, lastmod 2026-11-23)", reason: "already covered: the foreign-ministry attribution of 2026-11-09 and CERTFR-2026-CTI-009 (Shahid Kaveh, Schneider hydro installations, ~700 sites) are in entry 2026-10-13/danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack; the cyber.gouv.fr page adds nothing new" }
+  - { lead: "ANSSI 'L'ANSSI accompagne les organisations dans leur sécurisation' (MesServicesCyber, ReCyF, lastmod 2026-11-23)", reason: "service promotion, no obligation or advisory change" }
+  - { lead: "Basel-Landschaft permit-G theft: new developments", reason: "none in window: Netzwoche 2026-11-19/20, Inside IT 2026-11-20 and ICTjournal 2026-11-19 all predate the covered entry's facts (97,000 records, 2026-11-20); baselland.ch press listing 403 and the FAQ page extract returned an empty body; WebSearch found no newer report" }
+  - { lead: "Publica / PK Softech: Inside IT 'Publica lässt Cybervorfall extern prüfen' (appears in 2026-11-23 related-article lists)", reason: "article slug and date not recoverable (guessed slug 404); WebSearch found no external-review report; no in-window delta established" }
+  - { lead: "EU Commission cyberattack with suspected ARTEX use (heise 2026-11-19, Inside IT 2026-11-19)", reason: "published 2026-11-19, outside window_hours and developing_window_hours (72 h); no newer coverage surfaced; belongs to S4 if a delta appears" }
+  - { lead: "Operation Endgame (Gootloader, CastleRAT, StealC; 235 servers, 257 domains, 6.4 million credentials; Netzwoche 2026-11-23)", reason: "Europol announcement and BleepingComputer coverage are dated 2026-11-12; Netzwoche relays it 11 days late" }
+  - { lead: "EU Council listing of NoName057(16) under the cyber-sanctions regime and 30 individuals under the hybrid regime (2026-11-16)", reason: "outside the window; only secondary search results, Council press release not fetched" }
+  - { lead: "Fedpol/Elca 'Face Deepfake Detector' for the e-ID (CHF 4.44 million direct award; ICTjournal 2026-11-20, Netzwoche 2026-11-23)", reason: "procurement, not an obligation or advice change; Netzwoche is a translation of the ICTjournal piece (one source); Simap primary unreadable (cookie wall, reader pool dead); e-ID start date still open since the June 2026 postponement" }
+  - { lead: "Winterthur Stadtparlament written inquiry on dependency on Microsoft after the 2026-11-12/13 global Microsoft outage (Inside IT 2026-11-23)", reason: "municipal parliamentary question, no obligation; the outage (Microsoft rules out a cyberattack) is an availability event outside this domain and window" }
+  - { lead: "EFK audit of DaziT (news.admin.ch 2026-11-23) and DigiSanté progress release (2026-11-23)", reason: "IT-project governance and health-data programme, no security obligation or advice" }
+  - { lead: "NDB buys Orbis and Videris for CHF 5.4 million (ICTjournal 2026-11-23, citing Blick)", reason: "procurement of OSINT/data-analysis tools by the federal intelligence service, no defender action" }
+  - { lead: "ZATAZ 2026-11-23: AAAEP (BlackHatSect0r claim), Chambourcy commune (INC Ransom claim), Cleverbridge", reason: "leak-site claims or non-Swiss private firms without victim confirmation read, no Swiss public-sector nexus" }
+  - { lead: "CISA directives page (ED 25-03 V1, ED 26-03 V1, BOD 26-04, BOD 26-02) and CISA 'retires ten Emergency Directives'", reason: "listing carries no dates; drilled ED 26-03 V1 is dated 2026-03-11 and the retirement news 2026-01-08; BOD 26-04 already covered (2026-06-12 entry); nothing new in the 168 h lookback" }
+candidate_sources: []
+coverage_gaps:
+  - { source_id: baselland-ch, reason: "no source record in sources.json; `url --direct https://www.baselland.ch/politik-und-behorden/regierungsrat/medienmitteilungen` answers HTTP 403 and `extract` of the FAQ page returns an empty body; the canton's attack is followed through Netzwoche, ICTjournal, Inside IT and the existing entry; no working recipe found" }
+  - { source_id: lab52, reason: "RECIPE CHANGE: direct feed and sitemap still fail with an SSL reset, but `python3 tools/fetch_source.py extract https://lab52.io/blog/` was served via jina this run (after rotating about ten exhausted reader keys) and `python3 tools/fetch_source.py jina https://lab52.io/blog/ html` returns the dated post list (newest 2026-10-05, then 2026-10-01, 2026-07-03); no in-window post; the record is readable again while a reader key has credit" }
+  - { source_id: anssi-cyber-gouv-actualites, reason: "the sitemap recipe works (https://cyber.gouv.fr/sitemap.xml, 425 urls, three /actualites/ pages with lastmod 2026-11-23) but lastmod is a modification date: all three pages carry older content (Turla attribution 2026-07-13, Iran attribution 2026-11-09, a service page); `extract` of the pages was served via jina and shows no date. Use CERT-FR (`cert-fr actu-recent`, CTI report ids) to date any ANSSI page before treating it as new" }
+  - { source_id: srf-news, reason: "feed holds 40 items, about 1.5 days (back to 2026-11-23 12:57 CET), shorter than the record's 145 h lookback; no cyber or public-sector security story in it" }
+  - { source_id: news-admin-ch, reason: "listing reaches 12 releases from about one day; the record's 145 h lookback cannot be covered by one fetch (confirms the 2026-11-12 note); released as candidate-tier source it did yield the OSCE Lugano release" }
+  - { source_id: reader-pool, reason: "state on 2026-11-24: jina keys rotate through about ten HTTP 402 responses before one with credit serves a request (lab52 listing and cyber.gouv.fr pages succeeded; a simap.ch fetch exhausted every key and returned a cookie wall); not a failure, but the pool is thinner than the 'dead on every key' note of 2026-11-23" }
+  - { source_id: policy-watch, reason: "no in-window item: BACS press newest 2026-11-05, Medienmitteilung/Im Fokus/Aktuelle Vorfälle newest 2026-11-18 (BACS weekly review 'Woche 47' not yet published at 2026-11-24 ~04:30Z; usually Tuesday), Cybersicherheitsgesetz and ISG revision consultation drafts due mid-2027 (news.admin.ch 2026-09-25 / 2026-05-06 via search), Telecom Act (FMG) consultation closed 2026-09-17, cantonal laws Bern (in force 2026-11-01) and Aargau (2027-01-01) already covered, Zug ISG consultation closed 2026-11-09, EFK audit of BACS reporting platform 2026-11-04 (CSH efficient, staffing adequate) is out of window and not an obligation change, e-ID start date open, no Swiss UN-cybercrime-convention move found" }
+source_ledger:
+  - { id: cert-at, tier: essential, attempted: true, transport: "feed (warnings + current)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "warnings newest 2026-11-19, current newest 2026-10-20" }
+  - { id: enisa, tier: essential, attempted: true, transport: "extract", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-10 (State of Cybersecurity in the Union); CRA Single Reporting Platform 2026-09-11" }
+  - { id: heise-sec, tier: essential, attempted: true, transport: "feed", horizon_hours: 26, in_horizon_items: 9, returned: 0, note: "in-window items are S1 ground (Cisco Expressway/SAP KEV, Ghostscript Upload2Shell, Spring, GL.iNet) already covered or S1's; Kommentar on outages read, no obligation" }
+  - { id: inside-it-ch, tier: essential, attempted: true, transport: "feed + url --direct (bodies)", horizon_hours: 26, in_horizon_items: 8, returned: 0, note: "Cisco Expressway KEV article cited as corroboration of item 4; Winterthur/Microsoft inquiry dropped" }
+  - { id: ncsc-ch-focus, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-18 (Java4Shell, covered)" }
+  - { id: ncsc-ch-incidents, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest 2026-11-18" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh.recent 25", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "no new post since 2026-11-19; post 13093 edited 2026-11-23 (item 4); 13054 refrigeration advisory last edited 2026-11-16" }
+  - { id: bacs-press, tier: essential, attempted: true, transport: "url --direct + card split", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest Medienmitteilung 2026-11-05" }
+  - { id: lab52, tier: standard, attempted: true, transport: "feed failed; extract via jina; jina html", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-05; recipe change in coverage_gaps" }
+  - { id: cisa-directives, tier: standard, attempted: true, transport: "WebFetch listing + drill", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "undated listing; drilled items are 2026-03-11 and 2026-01-08" }
+  - { id: fbi-cyber-alerts, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest PSA 2026-10-23" }
+  - { id: google-tag, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 2, returned: 0, note: "2026-11-19 posts (browser-agent evaluation, VRP disclosure policy) have no sector or defender-action relevance" }
+  - { id: govcert-at, tier: standard, attempted: true, transport: "WebFetch", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "static institutional site, no news stream (confirms the 2026-08-02 note); its advisories are CERT.at's" }
+  - { id: nl-times, tier: standard, attempted: true, transport: "feed + extract of tag pages", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "general-news feed; data-breach tag newest 2026-10-19, cybersecurity tag newest 2026-11-13" }
+  - { id: zataz, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 145, in_horizon_items: 10, returned: 1, note: "Bulgaria espionage returned (item 2); AAAEP, Chambourcy, Cleverbridge dropped" }
+  - { id: anssi-cyber-gouv-actualites, tier: standard, attempted: true, transport: "url --direct sitemap + extract", horizon_hours: 145, in_horizon_items: 3, returned: 0, note: "three pages with lastmod 2026-11-23, all older content (dropped_leads)" }
+  - { id: srf-news, tier: standard, attempted: true, transport: "feed", horizon_hours: 145, in_horizon_items: 40, returned: 0, note: "feed covers about 1.5 days; no cyber story relevant to the constituency" }
+  - { id: news-admin-ch, tier: standard, attempted: true, transport: "url --direct listing + extract", horizon_hours: 145, in_horizon_items: 12, returned: 1, note: "OSCE Lugano release returned (item 3); EFK DaziT, DigiSanté, army satellite-pass software, sanctions ordinance dropped" }
+  - { id: it-connect, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 145, in_horizon_items: 15, returned: 1, note: "Entra Connect Health returned (item 1) as corroboration; ARTEX framework test piece is a lead for S3" }
+  - { id: transluce, tier: standard, attempted: true, transport: "extract", horizon_hours: 145, in_horizon_items: 0, returned: 0, note: "single report dated 2026-09-23, not a feed (confirms 2026-10-26 note)" }
