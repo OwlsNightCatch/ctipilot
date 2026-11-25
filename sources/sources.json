@@ -21,7 +21,7 @@
   "rss": "PREFERRED where a feed exists. Use the documented RSS/Atom URL (`rss_url`, else the record's notes) via `python3 tools/fetch_source.py feed <URL> [N]` \u2014 many sites are JS-rendered SPAs whose listing page is empty to WebFetch but whose feed is plain XML. `feed` auto-falls-back to the reader if the direct feed GET is WAF-blocked. Then drill each item `link` for the body.",
   "webfetch": "Claude Code's WebFetch tool (routine User-Agent, small-model summarisation; always append the outbound-links template). It runs outside the container, so it is the working reader on hosts that refuse every in-container transport but answer it (cisa.gov pages without a structured recipe; v4.18, operator directive 2026-09-30), and it is the tool for link discovery. Where `fetch_source.py extract <URL>` reads a page, that is the body read. On a webfetch record, ask for verbatim load-bearing quotes and full version tables and treat anything the summary may have dropped as unconfirmed. source_health.py reports such a record `webfetch-only` when the container is walled out."
  },
- "last_updated": "2026-11-24",
+ "last_updated": "2026-11-25",
  "reliability_codes": {
   "A": "Completely reliable \u2014 authoritative primary / first-party source (a national CERT for its own jurisdiction, a vendor PSIRT for its own products); no history of error.",
   "B": "Usually reliable \u2014 original research or reporting with consistent editorial standards and only minor, infrequent issues (most reputable research labs; large corroborating outlets).",
@@ -106,7 +106,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 0,
+   "consecutive_quiet_periods": 1,
    "fetch_method": "rss",
    "id": "advisories-ncsc-nl",
    "language": [
@@ -192,7 +192,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "api",
    "id": "anssi-fr",
    "language": [
@@ -200,7 +200,7 @@
     "en"
    ],
    "last_covered_in_brief": "2026-06-24",
-   "last_successful_fetch": "2026-11-20",
+   "last_successful_fetch": "2026-11-25",
    "notes": "French national cybersecurity agency. WebFetch on the root works; for machine-readable lists prefer the RSS feeds at https://www.cert.ssi.gouv.fr/avis/feed/ (advisories) and https://www.cert.ssi.gouv.fr/alerte/feed/ (active-exploitation alerts). Drill into per-advisory pages /avis/{id}/ to extract CVE lists and affected versions (CVSS scores generally absent in CERT-FR text). 2026-05-08 audit: WebFetch returned CERTFR-2026-AVI-0552 Ivanti EPMM 2026-05-07. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-fr avis-recent 5 (advisories) and cert-fr actu-recent 5 (alerts); then bridge `url https://www.cert.ssi.gouv.fr/avis/{id}/` per-advisory for CVE list + affected versions. WebFetch on the root also works.. AVOID: Don't expect CVSS scores in CERT-FR text; they cite CVE IDs and affected versions only. No need to WebFetch the root when the avis/alerte feeds are cleaner.. | 2026-06-30: CERT-FR actu feed returned only entries up to 2026-06-19 (S2 reports feed appears stale since Nov 2025 via bridge actu-recent). No in-window items; quiet-period++. National CERT \u2014 not demoted (transport 200, content stale); flag feed-staleness for investigation. | 2026-07-05 admiralty audit: A (HIGH->A) \u2014 French national CERT, primary authority; keep active. NB: actualite (actu) feed still stale (last item Nov 2025) as flagged 2026-06-30 \u2014 avis feed is fresh; flag actu-feed staleness for investigation, not a demotion. [2026-07-09] S2 observed fetch_source.py feed on CERT-FR actualite/avis feeds returns items ascending (oldest-first); N=20 surfaced Nov-2025 entries not the latest bulletin. Recheck raw feed order / consider reverse when assessing CERT-FR freshness. | 2026-07-11: KNOWN LIMIT \u2014 CERT-FR RSS feed renders a flat 00:00:00 +0000 timestamp for every item regardless of true publish time; for a \"yesterday-dated\" CERT-FR item the 24h recency floor is ambiguous, so corroborate the true publish time from the avis/actu page before dropping or including. | 2026-10-13 (S4): `cert-fr avis-recent` does not cover CERT-FR ALERT bulletins (ALE series); sweep https://www.cert.ssi.gouv.fr/alerte/feed/ each run too. The ALE-012 alert on Danfoss AK-SM/AK-SC refrigeration controllers (2026-10-12) was found there. | 2026-10-14 intel run: a CERT-FR alert can be revised after publication (CERTFR-2026-ALE-012 gained Copeland xweb and Dixell xweb on 2026-10-13 and its guidance was rewritten): re-read the page, not only the feed item date, and re-check cited quotes against the live text. | 2026-10-18 (S2): the CERT-FR version table ('Gestion d\u00e9taill\u00e9e du document') shows revision dates and descriptions only in the raw page (`url --direct <alert URL>`); the feed and `extract` hide revisions, so re-read each covered ALE page that way. | 2026-10-21 (2026-10-21T0256Z-intel, S1): `feed https://www.cert.ssi.gouv.fr/alerte/feed/ 8` lists the ALE alerts and `url --direct` of an ALE page shows its revision table, useful for the revised-advisory sweep. | 2026-10-22 (S2): recipe: `fetch_source.py feed https://www.cert.ssi.gouv.fr/cti/feed/ 8` lists the CERT-FR CTI reports (surfaced CERTFR-2026-CTI-008). | 2026-10-27 (S2): item links from the CERT-FR recipes now resolve under www.cert.cyber.gouv.fr; `feed https://www.cert.ssi.gouv.fr/alerte/feed/ 8` lists the CERTFR-2026-ALE alerts, `feed https://www.cert.ssi.gouv.fr/cti/feed/ 8` the CTI items, and `extract` of an ACT bulletin page returns its CVE/CVSS/PoC table.",
    "publisher": "ANSSI / CERT-FR",
    "reliability": "A",
@@ -265,7 +265,7 @@
     "en"
    ],
    "last_covered_in_brief": "2026-07-03",
-   "last_successful_fetch": "2026-11-24",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Strong on breaking incidents; occasionally rushes early reports \u2014 corroborate. The /tag/data-breach/ archive page lags by several days \u2014 prefer the security index for fresh items. CRITICAL anti-pattern: do NOT guess article slugs from headlines \u2014 always start from the listing and follow real links. RSS at /feed/ has been observed 403'd; the HTML index is the reliable path. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.bleepingcomputer.com/news/security/ (listing, with outbound-links template) then webfetch per-article URL for body. AVOID: Do NOT guess article slugs from headlines \u2014 start from the listing and follow real links. RSS at /feed/ has been observed 403'd; the /tag/data-breach/ archive lags days \u2014 use the security index.. | 2026-07-05 admiralty audit: B (MEDIUM->B) \u2014 established security journalism with original scoops + editorial process; keep active. Start from the HTML listing (never guess slugs); RSS /feed/ has 403'd. | 2026-07-14 intel run: contributed corroboration for CrashStealer (macOS infostealer). | 2026-10-03 S4: `feed https://www.bleepingcomputer.com/feed/ 15` now returns 15 dated items on the direct transport (the earlier 403 note no longer holds); `extract <article>` reads cleanly. (2026-10-03T0404Z-intel) | 2026-11-18 run: the feed stops at 15 items; read the `/news/security/` listing for older posts.",
    "publisher": "BleepingComputer",
    "reliability": "B",
@@ -290,7 +290,7 @@
     "en"
    ],
    "last_covered_in_brief": "2026-07-29",
-   "last_successful_fetch": "2026-11-24",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Federal Office for Information Security (Germany), CERT-Bund's WID advisory portal. The /portal/wid/kurzinformationen page is a JS-rendered SPA (WebFetch returns only the header). PRIMARY URL is the RSS feed. For per-advisory detail, fetch `https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-YYYY-NNNN`. **Never cite the kurzinformationen index** \u2014 always cite the per-advisory detail URL. 2026-05-08 audit: RSS returned 5 advisories all 2026-05-07 incl. LiteLLM, Checkmk, Linux Kernel. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://wid.cert-bund.de/content/public/securityAdvisory/rss 5  (then per-advisory body via api: python3 tools/fetch_source.py bsi-csaf WID-SEC-YYYY-NNNN). AVOID: Do NOT WebFetch the /portal/wid/kurzinformationen index \u2014 it is a JS-rendered SPA returning only the header. Never cite the index; cite the per-advisory securityadvisory?name=WID-SEC URL.. | 2026-07-05 admiralty audit: A (HIGH->A) \u2014 German federal CERT, primary authority; keep active. Cite per-advisory securityadvisory?name=WID-SEC URL; body via bsi-csaf subcommand. | 2026-10-02 (2026-10-02T0404Z-intel): `fetch_source.py bsi-rss` prints RSS XML (not JSON), capped at 250 items with `[NEU] [kritisch]/[hoch]` markers in titles; a regex over <item> works, but the cap means the oldest hours of a 50 h window may be missing. | 2026-10-03 S2: the WID RSS (`bsi-rss`) carries only vulnerability advisories; BSI's other announcements are on https://www.bsi.bund.de/DE/Service-Navi/Presse/Alle-Meldungen-News/alle-meldungen-news_node.html: `url --direct <that URL>` returns a dated server-rendered listing, then `extract <item URL>`; `pdf <url>` reads the Hinweis PDFs. (2026-10-03T0404Z-intel) | 2026-10-09 (2026-10-09T0255Z-intel): S1: bsi-rss returned 250 items reaching back only to 2026-10-07 11:58 UTC because a bulk [UPDATE] refresh of about 150 older advisories filled the cap; the [NEU] filter still covered a 25 h window, a 48 h window would be truncated. | 2026-10-22 (S2): recipe: `fetch_source.py bsi-rss` prints raw RSS XML (250 items, newest first, [NEU]/[UPDATE] prefixes), not JSON; parse with a regex over <item> and filter on [NEU]; a 48 h window is truncated by the [UPDATE] refresh. | 2026-10-25 (2026-10-25T1308Z-audit): G1 re-sweep: the RSS reaches back only about two days; a lookback beyond that needs the WID listing. | 2026-10-26 (S2): `bsi-rss` returns raw RSS XML rather than JSON in this transport (250 items); parse `<item>` with a regular expression. | 2026-11-01 (2026-11-01T1312Z-audit): G1 recipe for a week's lookback: the bsi-rss feed reaches back about two days; `url --direct https://wid.cert-bund.de/.well-known/csaf/white/changes.csv` lists every CSAF id with its last-modified stamp, then `bsi-csaf WID-SEC-2026-<n>` per id. | 2026-11-06 (S1): bsi-rss returned about 250 items spanning two days (mostly [UPDATE] distribution relays); filter to [NEU] with hoch, kritisch or UNGEPATCHT and drill with bsi-csaf; cite the portal URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-NNNN while the read comes from the bridge's CSAF JSON. | 2026-11-24 intel fire (v4.25): the bsi-rss feed is capped at 250 items, which on 2026-11-23 covered only 09:55 to 12:37 UTC; use per-advisory csaf reads for the rest of a busy day.",
    "publisher": "BSI Germany \u2014 CERT-Bund WID",
    "reliability": "A",
@@ -398,7 +398,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "rss",
    "id": "cert-at",
    "language": [
@@ -423,7 +423,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "api",
    "id": "cert-eu",
    "language": [
@@ -446,7 +446,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 21,
+   "consecutive_quiet_periods": 22,
    "fetch_method": "rss",
    "id": "cert-pl",
    "language": [
@@ -540,7 +540,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "id": "cisa-advisories",
    "language": [
@@ -598,7 +598,7 @@
     "en"
    ],
    "last_covered_in_brief": "2026-07-02",
-   "last_successful_fetch": "2026-11-24",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Authoritative for actively-exploited vulns with federal remediation deadlines. WebFetch is reliably HTTP 403 on this host (transport-side block on the routine UA, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py cisa-kev` returns the full KEV JSON catalog. Do NOT call WebFetch on cisa.gov; treat the 403 as a transport block \u2014 it never demotes the source. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cisa-kev (full KEV JSON catalog, each entry is a drillable CVE record). AVOID: Do NOT WebFetch cisa.gov \u2014 reliably 403s the routine UA. The api subcommand is the only supported path.. | 2026-07-05 admiralty audit: A (primary-authority) \u2014 CISA KEV, authoritative exploited-vuln catalog; api fetch clean and current. Status stays active. | 2026-08-19: KEV JSON feed carried catalogue version 2026.08.18 and the four 2026-08-18 additions; the feed path works when every cisa.gov HTML path 403s. | 2026-09-30 (v4.18): KEV stays on `cisa-kev`, which reads in-container with no reader. CLAUDE.md now allows WebFetch on cisa.gov pages that have no structured recipe (news, alerts, directives), so the older 'Do NOT call WebFetch on cisa.gov' line applies to the KEV feed only. (2026-09-30T0634Z-audit)",
    "publisher": "CISA Known Exploited Vulnerabilities Catalog",
    "reliability": "A",
@@ -683,7 +683,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 8,
+   "consecutive_quiet_periods": 9,
    "fetch_method": "rss",
    "id": "cloudflare-cf1",
    "language": [
@@ -822,7 +822,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "bridge",
    "health_cmd": [
     "url",
@@ -834,7 +834,7 @@
     "fr"
    ],
    "last_successful_fetch": "2026-11-08",
-   "notes": "French-language real-time cyberattack / hacktivist-DDoS incident tracker. Surfaced by W2 (2026-W25) as the in-window primary for the NoName057(16) G7 Evian / Haute-Savoie DDoS coverage; useful France-nexus EU public-sector hacktivist-incident source. Candidate awaiting human review. | 2026-07-05 admiralty audit: C (MEDIUM->C) \u2014 community breach-claim tracker (re-reports leak-site claims, corroboration required). Keep candidate: live and useful France-nexus lead source but claim-based; awaiting human review. | 2026-08-02: promoted candidate -> active. The state digest listed it as promotion_due (3 contributing runs) and it contributed again this run as the primary for the CCI Nice Cote d'Azur eDRH breach entry. | 2026-09-07: second independent reviewer (alongside frenchbreaches) of the ChimeraZ/Aveyron leak, explicitly contradicting frenchbreaches' access-vector claim rather than repeating it; S4 independently suggested this as a new candidate, not realizing it was already tracked (active since 2026-08-02) \u2014 no duplicate added. | 2026-10-07 (S2): the feed falls back to the jina reader and its items are undated. | 2026-10-11: the direct transport fails and the feed is read only through the reader with undated items; `extract https://www.cyberattaque.org/` (served by the reader) returns the dated front-page listing, so the health check now reads that instead of the feed URL. | 2026-10-11: fetch_method pinned to jina because both the feed and the front page are readable only through the reader (direct transports fail); the health check therefore reads the front-page extract (health_cmd), since the reader-served feed items carry no dates or security vocabulary. | 2026-10-20 (2026-10-20T0256Z-intel) S2: `url --direct https://www.cyberattaque.org/feed/` now returns the dated RSS XML on the direct transport (10 items with pubDate); article pages read with `extract`. fetch_method moved from jina to bridge, so the reader is no longer needed; the health check reads the feed. | 2026-10-22 (main): the sweep flag of 2026-10-22 was transient: `url --direct https://www.cyberattaque.org/feed/` returned the feed minutes later. | 2026-10-24 (S2): the feed returns only the newest 10 items (about 2 days), so a 97-hour lookback cannot be covered from the feed alone; the Swiss-relevant items in it this window were the two Caisse des D\u00e9p\u00f4ts / Ircantec posts. | 2026-11-03 (S2): the feed returns 10 items spanning about 14 h, so a 122 h lookback cannot be covered from it; relevance to the Swiss constituency is low (French commune and retail relays).",
+   "notes": "French-language real-time cyberattack / hacktivist-DDoS incident tracker. Surfaced by W2 (2026-W25) as the in-window primary for the NoName057(16) G7 Evian / Haute-Savoie DDoS coverage; useful France-nexus EU public-sector hacktivist-incident source. Candidate awaiting human review. | 2026-07-05 admiralty audit: C (MEDIUM->C) \u2014 community breach-claim tracker (re-reports leak-site claims, corroboration required). Keep candidate: live and useful France-nexus lead source but claim-based; awaiting human review. | 2026-08-02: promoted candidate -> active. The state digest listed it as promotion_due (3 contributing runs) and it contributed again this run as the primary for the CCI Nice Cote d'Azur eDRH breach entry. | 2026-09-07: second independent reviewer (alongside frenchbreaches) of the ChimeraZ/Aveyron leak, explicitly contradicting frenchbreaches' access-vector claim rather than repeating it; S4 independently suggested this as a new candidate, not realizing it was already tracked (active since 2026-08-02) \u2014 no duplicate added. | 2026-10-07 (S2): the feed falls back to the jina reader and its items are undated. | 2026-10-11: the direct transport fails and the feed is read only through the reader with undated items; `extract https://www.cyberattaque.org/` (served by the reader) returns the dated front-page listing, so the health check now reads that instead of the feed URL. | 2026-10-11: fetch_method pinned to jina because both the feed and the front page are readable only through the reader (direct transports fail); the health check therefore reads the front-page extract (health_cmd), since the reader-served feed items carry no dates or security vocabulary. | 2026-10-20 (2026-10-20T0256Z-intel) S2: `url --direct https://www.cyberattaque.org/feed/` now returns the dated RSS XML on the direct transport (10 items with pubDate); article pages read with `extract`. fetch_method moved from jina to bridge, so the reader is no longer needed; the health check reads the feed. | 2026-10-22 (main): the sweep flag of 2026-10-22 was transient: `url --direct https://www.cyberattaque.org/feed/` returned the feed minutes later. | 2026-10-24 (S2): the feed returns only the newest 10 items (about 2 days), so a 97-hour lookback cannot be covered from the feed alone; the Swiss-relevant items in it this window were the two Caisse des D\u00e9p\u00f4ts / Ircantec posts. | 2026-11-03 (S2): the feed returns 10 items spanning about 14 h, so a 122 h lookback cannot be covered from it; relevance to the Swiss constituency is low (French commune and retail relays). | 2026-11-25 intel fire (v4.25): feed horizon is hours to about 1.5 days, so a long lookback cannot be swept.",
    "publisher": "Cyberattaque.org",
    "reliability": "C",
    "status": "active",
@@ -848,7 +848,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 9,
+   "consecutive_quiet_periods": 10,
    "fetch_method": "webfetch",
    "id": "cyberinsider",
    "language": [
@@ -913,14 +913,14 @@
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
    "consecutive_quiet_periods": 9,
-   "fetch_method": "rss",
+   "fetch_method": "webfetch",
    "id": "databreaches-net",
    "language": [
     "en"
    ],
    "last_covered_in_brief": "2026-07-29",
    "last_successful_fetch": "2026-11-08",
-   "notes": "Long-running independent breach tracker run by Dissent Doe; primary aggregator for breach disclosures (often the first to publish state AG breach-notification filings, hospital/clinic disclosures, education-sector incidents). WebFetch returns HTTP 403 (re-confirmed 2026-05-08; RSS at /feed/ also 403's). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://databreaches.net/` (host added to bridge allowlist 2026-05-08). NB: the bridge ALSO returns 403 from some egress IPs (the publisher's WAF appears to have IP-reputation rules in addition to UA filtering). If the bridge fails, surface as a coverage gap rather than retrying. Discovery layer: trace each breach back to the victim's own statement or regulator filing before citing. |. Sustained 403 = transport block, no demote; needs alternate-URL strategy or replacement. | 2026-06-20 full audit (v2.62): RECOVERED via the Chrome-138 UA + Sec-CH-UA client hints. FETCH \u2192 `feed https://databreaches.net/feed/` returns 200 with dated breach disclosures (the HTML homepage is still 403 \u2014 skip it). Discovery: trace each breach to the victim statement / regulator filing before citing. fetch_method bridge\u2192rss; +ransomware. | 2026-06-20 v2.64 fetch-waste review: KEPT \u2014 the /feed/ RSS carries ~1.4 KB article bodies per item (readable without drilling). Confirmed full-content feed. | 2026-07-05 admiralty audit: C (was HIGH) \u2014 discovery/aggregation layer with some original reporting; trace each breach to victim statement/regulator filing before citing. Live via /feed/, no change (active). | 2026-08-13: RECIPE: individual article URLs 403 on raw WebFetch; use `fetch_source.py feed` for the listing and `fetch_source.py url` for article bodies (auto-falls back to the reader, which succeeded on every article this run). | 2026-09-29: rss_url pinned to https://databreaches.net/feed/ (fetch_method is rss but the feed lived only in the notes, so it never reached the research slice). (2026-09-29 operator-directed setup review) | 2026-10-15 (S4): `feed` and `extract` work; `extract` is served through the reader fallback, and WebFetch on posts returns 403. | 2026-10-17 (2026-10-17T0256Z-intel): S4: extract of a post is served through the metered reader; the feed carries enough for triage. | 2026-10-18 (S4): `extract` of a post is served through the metered reader; the feed carries enough for triage. | 2026-10-19 intel run S4: `extract` of a databreaches.net post is served through the metered jina reader and `extract` of politico.com returns only a navigation shell; the feed summary carries enough for triage, avoid extract on both. | 2026-10-22 (S4): `feed https://databreaches.net/feed/ 25` timed out twice; WebFetch of the feed URL returned all 10 current items; then `extract` a post (served through the metered reader). | 2026-10-23 (S4): recipe changed: the feed 404s and the homepage answers 403 on direct and WebFetch; only the jina reader on the homepage worked (six posts with permalinks), which spends reader credit. | 2026-10-24 (S4): `extract https://databreaches.net/` falls back internally to the jina reader (reader credit spent) and returned a cached homepage whose newest posts are dated 2026-10-20 although the header says 2026-10-24; the feed 404s per the record's note. No cheap transport exists; treat the source as low-yield for the 26 h window. | 2026-10-25 (S4): `fetch_source.py feed https://databreaches.net/feed/ 15` now works on the direct transport (10 items, newest 2026-10-20); use the feed first; the source is low-yield. | 2026-10-28 (S4): the feed timed out twice on 2026-10-28; `extract https://databreaches.net/` reads the front page. | 2026-11-08 run 2026-11-08T0256Z-intel: article pages sit behind a Cloudflare interstitial; read the feed summary, then fetch the primary the post links. | 2026-11-15: article pages answer 403 on extract and the reader pool is dead; `feed https://databreaches.net/feed/ 15` works and gives dated titles. | 2026-11-18 run: `feed 'https://databreaches.net/feed/?paged=2'` returns page 2; article bodies return 403. | 2026-11-24 intel fire (v4.25): the feed works directly (`feed https://databreaches.net/feed/ 20` returns 10 items, `?paged=2` the next 10; two pages are needed for a 73 h lookback); article bodies still 403 on extract and the reader, so pivot to the primary the item names.",
+   "notes": "Long-running independent breach tracker run by Dissent Doe; primary aggregator for breach disclosures (often the first to publish state AG breach-notification filings, hospital/clinic disclosures, education-sector incidents). WebFetch returns HTTP 403 (re-confirmed 2026-05-08; RSS at /feed/ also 403's). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://databreaches.net/` (host added to bridge allowlist 2026-05-08). NB: the bridge ALSO returns 403 from some egress IPs (the publisher's WAF appears to have IP-reputation rules in addition to UA filtering). If the bridge fails, surface as a coverage gap rather than retrying. Discovery layer: trace each breach back to the victim's own statement or regulator filing before citing. |. Sustained 403 = transport block, no demote; needs alternate-URL strategy or replacement. | 2026-06-20 full audit (v2.62): RECOVERED via the Chrome-138 UA + Sec-CH-UA client hints. FETCH \u2192 `feed https://databreaches.net/feed/` returns 200 with dated breach disclosures (the HTML homepage is still 403 \u2014 skip it). Discovery: trace each breach to the victim statement / regulator filing before citing. fetch_method bridge\u2192rss; +ransomware. | 2026-06-20 v2.64 fetch-waste review: KEPT \u2014 the /feed/ RSS carries ~1.4 KB article bodies per item (readable without drilling). Confirmed full-content feed. | 2026-07-05 admiralty audit: C (was HIGH) \u2014 discovery/aggregation layer with some original reporting; trace each breach to victim statement/regulator filing before citing. Live via /feed/, no change (active). | 2026-08-13: RECIPE: individual article URLs 403 on raw WebFetch; use `fetch_source.py feed` for the listing and `fetch_source.py url` for article bodies (auto-falls back to the reader, which succeeded on every article this run). | 2026-09-29: rss_url pinned to https://databreaches.net/feed/ (fetch_method is rss but the feed lived only in the notes, so it never reached the research slice). (2026-09-29 operator-directed setup review) | 2026-10-15 (S4): `feed` and `extract` work; `extract` is served through the reader fallback, and WebFetch on posts returns 403. | 2026-10-17 (2026-10-17T0256Z-intel): S4: extract of a post is served through the metered reader; the feed carries enough for triage. | 2026-10-18 (S4): `extract` of a post is served through the metered reader; the feed carries enough for triage. | 2026-10-19 intel run S4: `extract` of a databreaches.net post is served through the metered jina reader and `extract` of politico.com returns only a navigation shell; the feed summary carries enough for triage, avoid extract on both. | 2026-10-22 (S4): `feed https://databreaches.net/feed/ 25` timed out twice; WebFetch of the feed URL returned all 10 current items; then `extract` a post (served through the metered reader). | 2026-10-23 (S4): recipe changed: the feed 404s and the homepage answers 403 on direct and WebFetch; only the jina reader on the homepage worked (six posts with permalinks), which spends reader credit. | 2026-10-24 (S4): `extract https://databreaches.net/` falls back internally to the jina reader (reader credit spent) and returned a cached homepage whose newest posts are dated 2026-10-20 although the header says 2026-10-24; the feed 404s per the record's note. No cheap transport exists; treat the source as low-yield for the 26 h window. | 2026-10-25 (S4): `fetch_source.py feed https://databreaches.net/feed/ 15` now works on the direct transport (10 items, newest 2026-10-20); use the feed first; the source is low-yield. | 2026-10-28 (S4): the feed timed out twice on 2026-10-28; `extract https://databreaches.net/` reads the front page. | 2026-11-08 run 2026-11-08T0256Z-intel: article pages sit behind a Cloudflare interstitial; read the feed summary, then fetch the primary the post links. | 2026-11-15: article pages answer 403 on extract and the reader pool is dead; `feed https://databreaches.net/feed/ 15` works and gives dated titles. | 2026-11-18 run: `feed 'https://databreaches.net/feed/?paged=2'` returns page 2; article bodies return 403. | 2026-11-24 intel fire (v4.25): the feed works directly (`feed https://databreaches.net/feed/ 20` returns 10 items, `?paged=2` the next 10; two pages are needed for a 73 h lookback); article bodies still 403 on extract and the reader, so pivot to the primary the item names. | 2026-11-25 intel fire (v4.25): `extract` returns 403 and the jina pool is exhausted, but `WebFetch https://databreaches.net/feed/` returned the 10 newest items (S4); per-article `extract` still 403. fetch_method switched to webfetch (feed listing only).",
    "publisher": "DataBreaches.net",
    "reliability": "C",
    "rss_url": "https://databreaches.net/feed/",
@@ -1001,7 +1001,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "rss",
    "id": "ec-digital-strategy-newsroom",
    "language": [
@@ -1068,7 +1068,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 30,
+   "consecutive_quiet_periods": 31,
    "fetch_method": "webfetch",
    "id": "enisa",
    "language": [
@@ -1090,7 +1090,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 0,
+   "consecutive_quiet_periods": 1,
    "fetch_method": "api",
    "health_cmd": [
     "enisa-euvd",
@@ -1159,7 +1159,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 7,
+   "consecutive_quiet_periods": 8,
    "fetch_method": "rss",
    "id": "exodus-intelligence",
    "language": [
@@ -1285,7 +1285,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "id": "github-advisory",
    "language": [
@@ -1293,7 +1293,7 @@
    ],
    "last_covered_in_brief": "2026-07-02",
    "last_successful_fetch": "2026-11-12",
-   "notes": "GitHub-maintained advisory database \u2014 high-volume, machine-readable open-source ecosystem advisories (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 advisories all 2026-05-07 (rust-openssl, utcp-http, netbox, etc.). For per-ecosystem filtering use /advisories?type=...&query=...; for GraphQL / API see https://docs.github.com/en/graphql/reference/objects#securityadvisory. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://github.com/advisories (listing, dated GHSA items) then webfetch https://github.com/advisories/<GHSA-ID> for affected packages/CVE/severity/CWE. AVOID: Nothing to avoid for browsing; for programmatic/per-ecosystem filtering use /advisories?type=...&query=... or the GraphQL securityAdvisory API.. | 2026-07-05 root-cause + recipe fix: the 403 is NOT a browser-UA / anti-bot refusal \u2014 github.com AND api.github.com are blocked by the agent egress proxy itself (each session is bound to its configured repository; every other github.com path returns HTTP 403 with body `sessions are bound to their configured repositories`). No UA / header / Sec-CH-UA set recovers it (re-confirmed across chrome/firefox/googlebot/curl/minimal), and it behaves identically in the routine container. FETCH \u2192 bridge (OSV.dev, the reachable full mirror of the GitHub Advisory Database \u2014 every GHSA id, aliased to its CVE): `python3 tools/fetch_source.py osv query <ecosystem> <package> [version]` for advisories affecting a watchlist package (ecosystem \u2208 npm|PyPI|Go|Maven|crates.io|NuGet|RubyGems|Packagist\u2026), and `python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>` to drill one advisory. fetch_method flipped webfetch\u2192bridge; github.com/advisories stays the human citation URL. | 2026-07-05 admiralty audit: B \u2014 curated/reviewed advisory DB, canonical for GHSA namespace + some original research (mixed with CVE mirror); live, keep active. | 2026-08-10: RECIPE FINDING (B1, Wazuh cluster): a GHSA page's markdown render DROPS the sidebar metadata panel that carries the CVE ID, severity, affected/patched versions and credits \u2014 `fetch_source.py jina <url> html` surfaces it, `fetch_source.py url <url>` does not. Use the html variant whenever a GHSA page is the per-CVE authority for an id. Also note github.com/advisories/<id> (the global database) and osv.dev may 404 for days after a repo-scoped advisory publishes, so absence there is propagation lag, not a wrong id. | 2026-08-18: RECIPE FINDING (main-agent deep read): `fetch_source.py url` on a GHSA page routes through the reader and therefore fails outright while the pool is exhausted, whereas WebFetch reads the same page directly and returns the severity band, CVSS vector, affected/patched ranges and credits. With the reader down, WebFetch is the working transport for this source, not the bridge \u2014 this is how the GeoServer advisory severity was resolved this run. | 2026-10-02 (2026-10-02T0404Z-intel): github.com and api.github.com read fine again (supersedes the 2026-07-05 blocked note): `python3 tools/fetch_source.py url \"https://api.github.com/repos/<org>/<repo>/security-advisories?per_page=100\"` and `.../releases?per_page=30` return JSON with affected and patched ranges, and `extract` reads github.com release, pull-request and GHSA pages. | 2026-10-06 (S1, not re-verified by the main agent): `url \"https://api.github.com/advisories?per_page=100&severity=critical&type=reviewed&sort=published&direction=desc\"` returns the newest critical reviewed advisories as JSON in one call. | 2026-10-30 (2026-10-30T0255Z-intel, S1): the /advisories API path returns an empty body on the bridge and `gh api` is refused (403); working recipe: `extract 'https://github.com/advisories?query=severity%3Acritical+type%3Areviewed'`. | 2026-11-16 (intel): `url --direct 'https://api.github.com/advisories?severity=critical&per_page=30&sort=published&direction=desc'` works unauthenticated and was the only weekend-capable sweep.",
+   "notes": "GitHub-maintained advisory database \u2014 high-volume, machine-readable open-source ecosystem advisories (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 advisories all 2026-05-07 (rust-openssl, utcp-http, netbox, etc.). For per-ecosystem filtering use /advisories?type=...&query=...; for GraphQL / API see https://docs.github.com/en/graphql/reference/objects#securityadvisory. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://github.com/advisories (listing, dated GHSA items) then webfetch https://github.com/advisories/<GHSA-ID> for affected packages/CVE/severity/CWE. AVOID: Nothing to avoid for browsing; for programmatic/per-ecosystem filtering use /advisories?type=...&query=... or the GraphQL securityAdvisory API.. | 2026-07-05 root-cause + recipe fix: the 403 is NOT a browser-UA / anti-bot refusal \u2014 github.com AND api.github.com are blocked by the agent egress proxy itself (each session is bound to its configured repository; every other github.com path returns HTTP 403 with body `sessions are bound to their configured repositories`). No UA / header / Sec-CH-UA set recovers it (re-confirmed across chrome/firefox/googlebot/curl/minimal), and it behaves identically in the routine container. FETCH \u2192 bridge (OSV.dev, the reachable full mirror of the GitHub Advisory Database \u2014 every GHSA id, aliased to its CVE): `python3 tools/fetch_source.py osv query <ecosystem> <package> [version]` for advisories affecting a watchlist package (ecosystem \u2208 npm|PyPI|Go|Maven|crates.io|NuGet|RubyGems|Packagist\u2026), and `python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>` to drill one advisory. fetch_method flipped webfetch\u2192bridge; github.com/advisories stays the human citation URL. | 2026-07-05 admiralty audit: B \u2014 curated/reviewed advisory DB, canonical for GHSA namespace + some original research (mixed with CVE mirror); live, keep active. | 2026-08-10: RECIPE FINDING (B1, Wazuh cluster): a GHSA page's markdown render DROPS the sidebar metadata panel that carries the CVE ID, severity, affected/patched versions and credits \u2014 `fetch_source.py jina <url> html` surfaces it, `fetch_source.py url <url>` does not. Use the html variant whenever a GHSA page is the per-CVE authority for an id. Also note github.com/advisories/<id> (the global database) and osv.dev may 404 for days after a repo-scoped advisory publishes, so absence there is propagation lag, not a wrong id. | 2026-08-18: RECIPE FINDING (main-agent deep read): `fetch_source.py url` on a GHSA page routes through the reader and therefore fails outright while the pool is exhausted, whereas WebFetch reads the same page directly and returns the severity band, CVSS vector, affected/patched ranges and credits. With the reader down, WebFetch is the working transport for this source, not the bridge \u2014 this is how the GeoServer advisory severity was resolved this run. | 2026-10-02 (2026-10-02T0404Z-intel): github.com and api.github.com read fine again (supersedes the 2026-07-05 blocked note): `python3 tools/fetch_source.py url \"https://api.github.com/repos/<org>/<repo>/security-advisories?per_page=100\"` and `.../releases?per_page=30` return JSON with affected and patched ranges, and `extract` reads github.com release, pull-request and GHSA pages. | 2026-10-06 (S1, not re-verified by the main agent): `url \"https://api.github.com/advisories?per_page=100&severity=critical&type=reviewed&sort=published&direction=desc\"` returns the newest critical reviewed advisories as JSON in one call. | 2026-10-30 (2026-10-30T0255Z-intel, S1): the /advisories API path returns an empty body on the bridge and `gh api` is refused (403); working recipe: `extract 'https://github.com/advisories?query=severity%3Acritical+type%3Areviewed'`. | 2026-11-16 (intel): `url --direct 'https://api.github.com/advisories?severity=critical&per_page=30&sort=published&direction=desc'` works unauthenticated and was the only weekend-capable sweep. | 2026-11-25 intel fire (v4.25): recipe: `python3 tools/fetch_source.py url --direct \"https://api.github.com/repos/<org>/<repo>/security-advisories?per_page=100&state=published\"` returns GHSA records with no key and no reader credit (per_page=30 truncates a batch of 18+).",
    "publisher": "GitHub Advisory Database",
    "reliability": "B",
    "status": "active",
@@ -1351,13 +1351,13 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "bridge",
    "id": "greynoise",
    "language": [
     "en"
    ],
-   "last_successful_fetch": "2026-09-30",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Mass-scanning and opportunistic-exploitation telemetry. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) then webfetch per-article URL for body. https://www.greynoise.io/blog lists dated posts; drill into /blog/{slug}.. AVOID: Listing dates can be slightly out of order (a research post dated April surfaced above June ops posts) \u2014 sort by date, don't trust top-of-page ordering.. | 2026-07-05 admiralty audit: B \u2014 independent scan-telemetry research lab, first-hand data; live, keep active. Sort by date (listing top-of-page ordering is unreliable). | 2026-09-13 quality audit (G3 broken-recipe duty, closing 2026-09-06 recommendation 3): RE-CONFIRMED WORKING (the 2026-09-09 fire recorded it as a 'stale blog'). `python3 tools/fetch_source.py extract https://www.greynoise.io/blog` returns current posts. Same caveat as socradar: page-level date metadata is unreliable, so drill per-article for the real publication date. fetch_method webfetch -> bridge. | 2026-10-18 (S1): `extract` of the listing returns the wrong content (one article body or navigation only); `url --direct` raw HTML is the working listing recipe. | 2026-10-22 (S1): confirmed: `url --direct <listing>` plus a regex on href=\"/blog/<slug>\" enumerates posts; `extract <post URL>` dates are reliable.",
    "publisher": "GreyNoise Labs",
    "reliability": "B",
@@ -1392,14 +1392,14 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "rss",
    "id": "hackernews",
    "language": [
     "en"
    ],
    "last_covered_in_brief": "2026-07-02",
-   "last_successful_fetch": "2026-11-12",
+   "last_successful_fetch": "2026-11-25",
    "notes": "High-volume aggregator; good early-warning for breaking incidents (added 2026-05-08). Discovery \u2014 always trace to primary source before citing. RSS at FeedBurner is the cleanest dated index. (v2.55: rss_url verified \u2014 use `python3 tools/fetch_source.py feed https://feeds.feedburner.com/TheHackersNews [N]`) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://feeds.feedburner.com/TheHackersNews 5 (then webfetch the per-article thehackernews.com URL or trace to primary). AVOID: It is an aggregator \u2014 never cite directly; always trace to the primary source. FeedBurner feed is the cleanest dated index; no need to scrape HTML.. | 2026-07-05 admiralty audit: C \u2014 aggregator/general security press, re-reports primary work; live, keep active as discovery. Always trace to primary before citing. | 2026-10-17 (2026-10-17T0256Z-intel): S3: both feeds are capped at 50 items (about 3.5 days), shorter than a 148 h lookback; supplement with `url https://thehackernews.com/2026/10/` (monthly archive, not strictly newest-first) and read each post with extract.",
    "publisher": "The Hacker News",
    "reliability": "C",
@@ -1437,7 +1437,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "rss",
    "id": "heise-sec",
    "language": [
@@ -1524,7 +1524,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 0,
+   "consecutive_quiet_periods": 1,
    "fetch_method": "rss",
    "id": "huntress",
    "language": [
@@ -1546,7 +1546,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 6,
+   "consecutive_quiet_periods": 7,
    "fetch_method": "bridge",
    "id": "ibm-xforce",
    "language": [
@@ -1621,7 +1621,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 10,
+   "consecutive_quiet_periods": 11,
    "fetch_method": "rss",
    "id": "infoguard-labs",
    "language": [
@@ -1665,7 +1665,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "rss",
    "id": "inside-it-ch",
    "language": [
@@ -1688,7 +1688,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 4,
    "fetch_method": "rss",
    "id": "intel471",
    "language": [
@@ -1732,7 +1732,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 4,
+   "consecutive_quiet_periods": 5,
    "fetch_method": "webfetch",
    "id": "jamf-threat-labs",
    "language": [
@@ -1754,7 +1754,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 11,
+   "consecutive_quiet_periods": 12,
    "fetch_method": "rss",
    "id": "jpcert",
    "language": [
@@ -1997,7 +1997,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 0,
+   "consecutive_quiet_periods": 1,
    "fetch_method": "rss",
    "id": "mandiant-gtig",
    "language": [
@@ -2041,7 +2041,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "webfetch",
    "id": "mozilla-mfsa",
    "language": [
@@ -2148,15 +2148,15 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 10,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "bridge",
    "id": "ncsc-ch-focus",
    "language": [
     "de"
    ],
    "last_covered_in_brief": "2026-06-18",
-   "last_successful_fetch": "2026-11-11",
-   "notes": "Swiss NCSC focus topics (German). Translate findings to English in the brief. | 2026-05-08 audit: WebFetch returned 5 dated posts with 2026-05-07 latest. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.ncsc.admin.ch/ncsc/de/home/aktuell/im-fokus.html then webfetch the per-post .html for body (both work). AVOID: German-language \u2014 translate to English in brief. No bridge needed (admin.ch resolves under the routine UA).. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active \u2014 Swiss national cyber authority first-party content (home authority); live via WebFetch, latest post 30.06.2026. Justified A: primary government authority for its own jurisdiction. | 2026-08-17: health sweep flagged needs-demote (unreachable). Contention artifact, not a recipe defect \u2014 a serial re-probe through the generic bridge returned the full 105 KB 'Im Fokus' listing with dated entries, and a research pass read the same page by plain WebFetch earlier in the run. NOT demoted; fetch_method stays webfetch. | 2026-08-23: NCSC.ch renamed to BACS (Bundesamt fuer Cybersicherheit) and relaunched on bacs.admin.ch around 2026-08-20. The legacy ncsc.admin.ch/ncsc/de/home/aktuell/im-fokus.html path 301-redirects and serves the identical page (verified byte-identical this run), so this is a canonical-URL correction, not a dead source. FETCH -> the page is a Nuxt SPA: WebFetch renders it; the bridge's direct GET returns the JS shell only. | 2026-09-13 quality audit (G2 spot-check, carry-forward watch item 2 from the 2026-09-06 report): RECIPE WAS BROKEN AND IS NOW FIXED. Both BACS pages are Nuxt SPAs that return an EMPTY shell to the recorded transport \u2014 the failure is silent, which is why the record stayed green at 7 consecutive quiet periods while contributing nothing since 2026-06-18. Reachability was never the problem; readability was. VERIFIED WORKING this run: `python3 tools/fetch_source.py jina https://www.bacs.admin.ch/de/im-fokus` hydrates the page and returns the dated post list. fetch_method webfetch -> jina on that basis. Cost tradeoff, stated so a later fire can re-judge it: jina spends metered reader credit and a dead pool is a normal condition, so when the pool is empty this page is unreadable and that is a disclosed gap, not a demotion \u2014 the Cyber Security Hub (ncsc-ch-security-hub, a free API) remains the operational/sector surface and is unaffected. In-window content check: one post (08.09.2026, 'Woche 36', analog-skimming social-engineering awareness) \u2014 reachable once hydrated, but it does not clear this deployment's technical-depth bar, so the quiet periods were only PARTLY a transport defect. | 2026-09-27 audit: fetch_method moved jina -> bridge. The jina pin dated from a fire that concluded only the reader hydrates this page; that is no longer true and the reader pool has been empty for two windows (0 live keys), so the page was unreadable by its pinned transport while a working direct one existed. Verified this fire: `python3 tools/fetch_source.py extract <url>` returns the full dated item list via trafilatura-direct, no metered credit. Only fetch_method and these notes changed: the audit probed the transport, it did not fetch-and-use the page for an entry, so last_successful_fetch and the quiet counter are left where the fires put them. | 2026-10-05 S2: `url https://www.bacs.admin.ch/de/im-fokus` returns raw HTML whose cards are `<span class=\"meta-info__item\">D. Monat YYYY</span> ... <h3 class=\"\">Title</h3>` (76 dated focus items); the `extract` view stays undated. | 2026-10-06 (S2): the BACS weekly review is published on Tuesdays (weeks 37 to 39 appeared on 15, 22 and 29 September); 26w40 was not yet out at 04:22Z on 2026-10-06. | 2026-10-13 (S2): the working card parse splits on class=\"card__content\" and reads meta-info__item per card. | 2026-10-22 (S2): recipe: the first `url https://www.bacs.admin.ch/de/im-fokus` call falls through to the metered jina reader (no hrefs); `url --direct` returns the raw HTML with the card hrefs and `extract <card href>` reads each body. | 2026-10-27 (S2): the card markup is now `class=\"card card--default card--clickable color--text-900\"`, so a split on the string with its closing quote returns zero cards; split on `class=\"card card--default card--clickable` without the closing quote, title in `class=\"card__title\"`, date in `meta-info__item\">`, href is the first `href=`. | 2026-11-12 (S2): card titles are no longer in class=\"card__title\" on the listing; take hrefs and dates from `url --direct`, then `extract` each href for title and body. | 2026-11-15: recipe confirmed: `url --direct https://www.bacs.admin.ch/de/<medienmitteilungen|im-fokus|aktuelle-vorfaelle>`, split on `class=\"card card--default card--clickable`; the card__title regex returns titles again (earlier note said they had vanished).",
+   "last_successful_fetch": "2026-11-25",
+   "notes": "Swiss NCSC focus topics (German). Translate findings to English in the brief. | 2026-05-08 audit: WebFetch returned 5 dated posts with 2026-05-07 latest. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.ncsc.admin.ch/ncsc/de/home/aktuell/im-fokus.html then webfetch the per-post .html for body (both work). AVOID: German-language \u2014 translate to English in brief. No bridge needed (admin.ch resolves under the routine UA).. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active \u2014 Swiss national cyber authority first-party content (home authority); live via WebFetch, latest post 30.06.2026. Justified A: primary government authority for its own jurisdiction. | 2026-08-17: health sweep flagged needs-demote (unreachable). Contention artifact, not a recipe defect \u2014 a serial re-probe through the generic bridge returned the full 105 KB 'Im Fokus' listing with dated entries, and a research pass read the same page by plain WebFetch earlier in the run. NOT demoted; fetch_method stays webfetch. | 2026-08-23: NCSC.ch renamed to BACS (Bundesamt fuer Cybersicherheit) and relaunched on bacs.admin.ch around 2026-08-20. The legacy ncsc.admin.ch/ncsc/de/home/aktuell/im-fokus.html path 301-redirects and serves the identical page (verified byte-identical this run), so this is a canonical-URL correction, not a dead source. FETCH -> the page is a Nuxt SPA: WebFetch renders it; the bridge's direct GET returns the JS shell only. | 2026-09-13 quality audit (G2 spot-check, carry-forward watch item 2 from the 2026-09-06 report): RECIPE WAS BROKEN AND IS NOW FIXED. Both BACS pages are Nuxt SPAs that return an EMPTY shell to the recorded transport \u2014 the failure is silent, which is why the record stayed green at 7 consecutive quiet periods while contributing nothing since 2026-06-18. Reachability was never the problem; readability was. VERIFIED WORKING this run: `python3 tools/fetch_source.py jina https://www.bacs.admin.ch/de/im-fokus` hydrates the page and returns the dated post list. fetch_method webfetch -> jina on that basis. Cost tradeoff, stated so a later fire can re-judge it: jina spends metered reader credit and a dead pool is a normal condition, so when the pool is empty this page is unreadable and that is a disclosed gap, not a demotion \u2014 the Cyber Security Hub (ncsc-ch-security-hub, a free API) remains the operational/sector surface and is unaffected. In-window content check: one post (08.09.2026, 'Woche 36', analog-skimming social-engineering awareness) \u2014 reachable once hydrated, but it does not clear this deployment's technical-depth bar, so the quiet periods were only PARTLY a transport defect. | 2026-09-27 audit: fetch_method moved jina -> bridge. The jina pin dated from a fire that concluded only the reader hydrates this page; that is no longer true and the reader pool has been empty for two windows (0 live keys), so the page was unreadable by its pinned transport while a working direct one existed. Verified this fire: `python3 tools/fetch_source.py extract <url>` returns the full dated item list via trafilatura-direct, no metered credit. Only fetch_method and these notes changed: the audit probed the transport, it did not fetch-and-use the page for an entry, so last_successful_fetch and the quiet counter are left where the fires put them. | 2026-10-05 S2: `url https://www.bacs.admin.ch/de/im-fokus` returns raw HTML whose cards are `<span class=\"meta-info__item\">D. Monat YYYY</span> ... <h3 class=\"\">Title</h3>` (76 dated focus items); the `extract` view stays undated. | 2026-10-06 (S2): the BACS weekly review is published on Tuesdays (weeks 37 to 39 appeared on 15, 22 and 29 September); 26w40 was not yet out at 04:22Z on 2026-10-06. | 2026-10-13 (S2): the working card parse splits on class=\"card__content\" and reads meta-info__item per card. | 2026-10-22 (S2): recipe: the first `url https://www.bacs.admin.ch/de/im-fokus` call falls through to the metered jina reader (no hrefs); `url --direct` returns the raw HTML with the card hrefs and `extract <card href>` reads each body. | 2026-10-27 (S2): the card markup is now `class=\"card card--default card--clickable color--text-900\"`, so a split on the string with its closing quote returns zero cards; split on `class=\"card card--default card--clickable` without the closing quote, title in `class=\"card__title\"`, date in `meta-info__item\">`, href is the first `href=`. | 2026-11-12 (S2): card titles are no longer in class=\"card__title\" on the listing; take hrefs and dates from `url --direct`, then `extract` each href for title and body. | 2026-11-15: recipe confirmed: `url --direct https://www.bacs.admin.ch/de/<medienmitteilungen|im-fokus|aktuelle-vorfaelle>`, split on `class=\"card card--default card--clickable`; the card__title regex returns titles again (earlier note said they had vanished). | 2026-11-25 intel fire (v4.25): bacs.admin.ch \"im-fokus\" and the card-split recipe (`url --direct` plus tag-stripping; slugs /de/26-<topic>-de and /de/26wNN-de) remain valid; the BACS AI-agent publication of 2026-11-24 came from it.",
    "publisher": "NCSC Switzerland \u2014 Im Fokus",
    "reliability": "A",
    "status": "active",
@@ -2170,7 +2170,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 10,
+   "consecutive_quiet_periods": 11,
    "fetch_method": "bridge",
    "id": "ncsc-ch-incidents",
    "language": [
@@ -2195,7 +2195,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "api",
    "id": "ncsc-ch-security-hub",
    "language": [
@@ -2205,7 +2205,7 @@
     "en"
    ],
    "last_covered_in_brief": "2026-06-27",
-   "last_successful_fetch": "2026-11-20",
+   "last_successful_fetch": "2026-11-25",
    "notes": "GovCERT.ch was MERGED INTO NCSC.ch in 2023; CSH replaces the legacy govcert.ch blog (frozen since 2023-09). The /govcert path on ncsc.admin.ch is a navigation page only. Substantive technical reports are now published on the CSH (TLP:CLEAR slice). The SPA at https://security-hub.ncsc.admin.ch/#/dashboard is JS-rendered (WebFetch returns only the 'CSH/Loading' shell). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py ncsc-csh recent 10` returns the listing + each post's full Markdown body in one call; `... ncsc-csh post <ID>` for one item. Cite the canonical SPA URL https://security-hub.ncsc.admin.ch/#/posts/{id}. Posts marked TLP:AMBER / TLP:RED MUST NEVER be fetched even if the API exposes them. (The legacy `govcert-ch` source ID was a duplicate of this entry and was removed 2026-05-08.) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py ncsc-csh recent 10  (returns listing + each TLP:CLEAR post's full Markdown body); python3 tools/fetch_source.py ncsc-csh post <ID> for one. Cite https://security-hub.ncsc.admin.ch/#/posts/{id}.. AVOID: WebFetch returns only the JS 'CSH/Loading' SPA shell \u2014 never WebFetch the dashboard. NEVER fetch TLP:AMBER/TLP:RED posts even if exposed.. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active \u2014 GovCERT.ch/Swiss national CERT, home authority, current (03.07.2026) TLP:CLEAR advisories via API. Justified A: primary national CERT and the deployment's ground truth. | 2026-08-06 (run 2026-08-06T0411Z-intel): RECIPE FIXED. The unversioned /api/posts/** tree stopped serving GET \u2014 every path under it, including paths that never existed, returns HTTP 405 with `Allow: DELETE, PUT`, while unknown roots still 404 (an edge rule on the whole subtree, so probing sibling paths finds nothing). The public read API moved under /api/v1/: GET /api/v1/posts/dashboard?pageSize=N&pageIndex=0 and GET /api/v1/posts/{id}/details, both confirmed 200 with TLP:Clear content. tools/fetch_source.py ncsc-csh list|post|recent updated accordingly and re-tested. Route table is recoverable from the SPA bundle (main-*.js) if it moves again. | 2026-10-02 (2026-10-02T0404Z-intel): `ncsc-csh recent N` posts that were never edited have no lastModified key (use .get('lastModified')); post URLs follow https://security-hub.ncsc.admin.ch/#/posts/<id>. | 2026-11-17 intel run: `ncsc-csh recent 25` exposes edits through each post's `history` and `lastModified` (posts edited without new ids); compare lastModified, not only created.",
    "publisher": "NCSC Switzerland \u2014 Cyber Security Hub (CSH) / GovCERT.ch",
    "reliability": "A",
@@ -2241,7 +2241,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 20,
+   "consecutive_quiet_periods": 21,
    "fetch_method": "bridge",
    "id": "ncsc-uk",
    "language": [
@@ -2354,7 +2354,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 4,
    "fetch_method": "webfetch",
    "id": "onapsis",
    "language": [
@@ -2575,7 +2575,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 5,
+   "consecutive_quiet_periods": 6,
    "fetch_method": "webfetch",
    "id": "push-security",
    "language": [
@@ -2617,7 +2617,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 4,
    "fetch_method": "bridge",
    "id": "ransom-isac",
    "language": [
@@ -2639,7 +2639,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 6,
+   "consecutive_quiet_periods": 7,
    "fetch_method": "api",
    "id": "ransomware-live",
    "language": [
@@ -2963,7 +2963,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 14,
+   "consecutive_quiet_periods": 15,
    "fetch_method": "api",
    "id": "sec-disclosures-edgar",
    "language": [
@@ -3678,7 +3678,7 @@
     "en"
    ],
    "last_covered_in_brief": "2026-07-01",
-   "last_successful_fetch": "2026-11-18",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Palo Alto threat research. RSS at https://unit42.paloaltonetworks.com/feed/ fully mirrors the listing (verified 2026-05-08). 2026-05-08 audit: WebFetch on HTML returned 5 dated articles latest 2026-05-06 on PAN-OS 0-day, Linux RCE, npm supply-chain. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://unit42.paloaltonetworks.com/feed/ 5 (mirrors listing) then webfetch per-article URL; webfetch HTML index also works. AVOID: Both webfetch HTML and the /feed/ RSS work; the feed fully mirrors the listing with clean dates \u2014 no need to scrape HTML.. | 2026-07-05 admiralty audit: B \u2014 flagship vendor threat-research lab, original first-hand research; both WebFetch HTML and /feed/ RSS work. No status change. | 2026-10-02 (2026-10-02T0404Z-intel): the listing page extracts to promotional text only; the working recipe is the feed https://unit42.paloaltonetworks.com/feed/ (15 dated items), then `extract <link>`. | 2026-10-16 S3: two posts inside the window (2026-10-14 and 2026-10-15) were found only by the gap sweep because unit42 was not in the slice; both were published (PEERSTITCH, CL-UNK-1211).",
    "publisher": "Palo Alto Networks Unit 42",
    "reliability": "B",
@@ -3782,7 +3782,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 13,
+   "consecutive_quiet_periods": 14,
    "fetch_method": "rss",
    "id": "watchtowr",
    "language": [
@@ -3940,7 +3940,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 10,
+   "consecutive_quiet_periods": 11,
    "fetch_method": "bridge",
    "id": "zaufana-trzecia-strona",
    "language": [
@@ -4326,13 +4326,13 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 6,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "bridge",
    "id": "fuitesinfos",
    "language": [
     "fr"
    ],
-   "last_successful_fetch": "2026-11-08",
+   "last_successful_fetch": "2026-11-25",
    "notes": "2026-09-30 intel run (S4): French breach tracker with per-incident dated write-ups that quote the victim's notice and separate claim from fact; already cited in standing backlog rows but absent from this list. `extract` reads articles cleanly (trafilatura direct). Candidate: promote to active after 3 contributing runs. | 2026-10-02 (2026-10-02T0404Z-intel): `extract` of the homepage returns undated teasers without hrefs; WebFetch on the homepage returns dated entries with /article/<date>-<slug> hrefs, which `extract` then reads cleanly. Recipe: WebFetch listing, then `extract` the article. | 2026-10-17 (2026-10-17T0256Z-intel): S4: WebFetch on the homepage returned only 4 entries because the list loads dynamically. | 2026-10-18 (S4): WebFetch of the homepage returns only 4 entries because the list loads dynamically; the full daily list is not reachable on any transport tried. | 2026-10-25 (S4): the homepage list is dynamic (4 items) but `url https://fuitesinfos.fr/articles` returns a dated listing with article hrefs /article/YYYY-MM-DD-slug; `extract <article URL>` reads cleanly and carries a 'Statut Fuites Infos' field (Confirm\u00e9e par l'entreprise / Revendiqu\u00e9e). | 2026-11-05 (S4): `url https://fuitesinfos.fr/articles` now prints markdown-link hrefs, so the older href regex finds nothing | 2026-11-08 run 2026-11-08T0256Z-intel: recipe update: `url https://fuitesinfos.fr/articles` returns markdown links [title ... date](https://fuitesinfos.fr/article/YYYY-MM-DD-slug), so parse markdown links, not href=; `extract` of each article reads cleanly (replaces the 2026-11-05 note that nothing is found). | 2026-11-10: parse `/article/YYYY-MM-DD-slug` markdown links from the `url` listing output for dated items. | 2026-11-15: `url https://fuitesinfos.fr/articles` now ends in HTTP 301; `url --direct https://fuitesinfos.fr/articles/` (trailing slash) returns the listing and `extract <article>` reads each article. | 2026-11-17 intel run: `url --direct https://fuitesinfos.fr/articles/` (trailing slash) lists /article/<date>-<slug> hrefs; `extract` reads each article.",
    "publisher": "Fuites Infos (fuitesinfos.fr)",
    "reliability": "C",
@@ -4347,7 +4347,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 20,
+   "consecutive_quiet_periods": 21,
    "fetch_method": "bridge",
    "id": "bacs-press",
    "language": [
@@ -4417,7 +4417,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 0,
+   "consecutive_quiet_periods": 1,
    "fetch_method": "rss",
    "id": "fortinet-psirt",
    "language": [
@@ -4528,13 +4528,13 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 7,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "api",
    "id": "msrc-update-guide",
    "language": [
     "en"
    ],
-   "last_successful_fetch": "2026-11-14",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Added 2026-09-29: Microsoft's own per-CVE release data with the exploited / publicly-disclosed flags, the first-party primary for every Patch Tuesday and out-of-band Microsoft fix (msrc-blog is the blog only and carries neither). RECIPE: `fetch_source.py msrc recent N` (newest CVEs with exploitation flags; returned 2026-09 CVEs dated 09-29 at probe), then `msrc cve <CVE>` or `msrc release <tag>` for the CVRF detail; cite the https://msrc.microsoft.com/update-guide/vulnerability/<CVE> page. (2026-09-29 operator-directed setup review) | 2026-09-30: health_cmd msrc recent 10: the update-guide URL is a JS app that the content check reads as a shell, while the `msrc recent` recipe the note names returns dated CVEs (newest release date 2026-09-30 at probe). (2026-09-30T0634Z-audit) | 2026-10-02 (2026-10-02T0404Z-intel): `msrc recent N` interleaves third-party Azure-Linux and Chromium-for-Edge CVEs with first-party ones; filter on the exploited/publiclyDisclosed flags and on non-third-party titles (200 rows reached back only to 2026-09-28). | 2026-10-06 (S1, not re-verified by the main agent): `python3 tools/fetch_source.py msrc cvrf <release-id>` (e.g. 2026-Oct) returns Remediations with KB numbers and FixedBuild values; `msrc recent N` and `msrc cve` give no KB list. | 2026-10-14 intel run: recipe: `msrc cvrf 2026-Oct` returns a 45 MB CVRF (save to disk, never print); per CVE the exploitation string is in Threats type 1, severity in type 3, impact in type 0, and Remediations with SubType 'Security Update' carry the KB (Description.Value) and FixedBuild; `msrc cve <CVE>` returns the per-CVE record with the FAQ text and the exploited/publiclyDisclosed flags. | 2026-10-21 (2026-10-21T0256Z-intel, S1): `msrc release <YYYY-Mon>` caps at 500 rows and `msrc recent` at 200, so neither reaches a Patch Tuesday's rows; read exploited and publicly disclosed flags from `msrc cvrf <YYYY-Mon>` or `msrc cve <id>`. | 2026-10-22 (S1): `msrc recent 60` returned only third-party and Azure Linux additions; the working read for exploited and publicly-disclosed flags is `msrc cvrf 2026-Oct` (48 MB, parse the Threats Type 1 text). | 2026-10-24 (S1): `msrc recent 60` returned only Edge/Chromium rows (2026-10-22 evening) and third-party/Azure Linux CVEs; no exploited flag in window; `msrc cve <id>` returns the exploited and publiclyDisclosed fields directly and is the cheap check for single CVEs. | 2026-10-26 (S1): `msrc recent N` sorts by releaseDate, so a revised or re-released CVE never appears (CVE-2026-70197 and CVE-2026-102870 were revised on 2026-10-25); filtering the Security Update Guide API on latestRevisionDate surfaces them, through `fs._msrc_fetch_strict_json` because the bridge `url` gets 403 on api.msrc.microsoft.com. `msrc cvrf` of a month is about 50 MB. | 2026-11-01 (2026-11-01T1312Z-audit): G1 recipe: revised CVEs never reach a feed. A revised-CVE sweep through the SUG API (`$filter=latestRevisionDate ge <ISO>`, `$orderby=latestRevisionDate desc`, `$top=300`, paging with `$skip`) and `affectedProduct?$filter=cveNumber eq '<CVE>'` for the per-product fixed builds surfaced Microsoft's 2026-10-26 addition of Edge to the exploited CVE-2026-96951, which no fire saw. | 2026-11-15: Revised-CVE sweep needs `isMariner eq false` in the $filter, otherwise it returns Azure Linux rows only; `msrc cvrf 2026-Nov` reads the full Patch Tuesday CVRF in about a minute (33 MB), with Threats type 1 carrying Exploited and Publicly Disclosed; `msrc recent` showed only re-imported Mozilla records. | 2026-11-16 (intel): the OData revised-CVE sweep with isMariner eq false and $orderby=latestRevisionDate desc works, and the revisions array carries each revision's text; `msrc release` rows carry no exploited or publiclyDisclosed values. | 2026-11-17 intel run: the revised-CVE sweep pages with `$skip` in steps of 100; `releaseNumber eq '2026-Nov' and exploited eq 'Yes'` returns a release's exploited rows.",
    "publisher": "Microsoft Security Response Center, Security Update Guide",
    "reliability": "A",
@@ -4561,13 +4561,14 @@
     "de"
    ],
    "last_successful_fetch": "2026-11-08",
-   "notes": "Added 2026-09-29: Swiss newspaper of record's technology section, investigative Swiss cyber reporting. RECIPE: `feed https://www.nzz.ch/technologie.rss 20` (direct; newest 2026-09-26 at probe) then `extract <link>`; some articles are paywalled, cite only what the fetched text carries. (2026-09-29 operator-directed setup review)",
+   "notes": "Added 2026-09-29: Swiss newspaper of record's technology section, investigative Swiss cyber reporting. RECIPE: `feed https://www.nzz.ch/technologie.rss 20` (direct; newest 2026-09-26 at probe) then `extract <link>`; some articles are paywalled, cite only what the fetched text carries. (2026-09-29 operator-directed setup review) | 2026-11-25 intel fire (v4.25): source_health read the feed as content-irrelevant (a general technology section whose newest items carry no security vocabulary); content_scope general-news keeps the readable, dated and current checks.",
    "publisher": "NZZ Technologie",
    "reliability": "B",
    "rss_url": "https://www.nzz.ch/technologie.rss",
    "status": "candidate",
    "tier": "standard",
-   "url": "https://www.nzz.ch/technologie"
+   "url": "https://www.nzz.ch/technologie",
+   "content_scope": "general-news"
   },
   {
    "category": [
@@ -4576,13 +4577,13 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "rss",
    "id": "paloalto-psirt",
    "language": [
     "en"
    ],
-   "last_successful_fetch": "2026-11-21",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Added 2026-09-29: first-party PSIRT for PAN-OS / GlobalProtect / Prisma, an edge-device line with repeated in-the-wild exploitation; until now only reached through CERT relays. RECIPE: `feed https://security.paloaltonetworks.com/rss.xml 10` (direct, newest CVE-2026-0307 GlobalProtect 2026-09-23 at probe), then `extract` the per-advisory page for the affected/fixed version table. (2026-09-29 operator-directed setup review) | 2026-10-26 (S1): `extract` of a PAN advisory drops the Timeline (revision log); `url --direct https://security.paloaltonetworks.com/CVE-2026-109618` keeps it, so use it for revision checks. | 2026-10-28 (S1): https://security.paloaltonetworks.com/json/CVE-<id> returns the advisory as CVE JSON with `exploits`, CVSS 4.0 metrics and a timestamped timeline; extract of the HTML page drops the Timeline.",
    "publisher": "Palo Alto Networks Security Advisories",
    "reliability": "A",
@@ -4714,14 +4715,14 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "bridge",
    "id": "apa-ots",
    "language": [
     "de"
    ],
    "last_successful_fetch": "2026-11-08",
-   "notes": "Added 2026-10-02: Austrian public bodies publish their own incident and regulatory statements here (the Stadt Wien data-theft release cited in this run's Wien entry; the BCS/NISG release cited by 2026-09-23/austria-nisg-2026-bcs-transposition). RECIPE: `extract <release URL>` reads a release cleanly; no listing or feed route verified, so discovery still comes from heise and CERT.at pointers. (2026-10-02T0404Z-intel) content_scope general-news: the service carries every press release, so the health check's relevance bar is the general-news one. Health recipe: the home page carries no security vocabulary, so the probe reads a known incident release (health_cmd); replace it when the listing route is found. | 2026-10-18 (S2): no listing or feed route found; reached by WebSearch only. | 2026-10-21 (2026-10-21T0256Z-intel, S2): https://www.ots.at/ is an Angular shell to `extract` with no listing and no feed route; the recipe is missing. | 2026-10-25 (S2): https://www.ots.at/ is still an Angular shell to extract (direct-raw returns the page head only); no listing or feed route found; recipe missing. | 2026-10-28 (S2): the feed https://www.ots.at/rss/index works but holds only the 15 newest releases (about 3 h), so a 168 h lookback sweep is impossible through it. | 2026-11-03 (S2): the feed holds only about 3 h of releases, so a 145 h lookback is impossible, and the sampled content is party-political press releases; consider retiring.",
+   "notes": "Added 2026-10-02: Austrian public bodies publish their own incident and regulatory statements here (the Stadt Wien data-theft release cited in this run's Wien entry; the BCS/NISG release cited by 2026-09-23/austria-nisg-2026-bcs-transposition). RECIPE: `extract <release URL>` reads a release cleanly; no listing or feed route verified, so discovery still comes from heise and CERT.at pointers. (2026-10-02T0404Z-intel) content_scope general-news: the service carries every press release, so the health check's relevance bar is the general-news one. Health recipe: the home page carries no security vocabulary, so the probe reads a known incident release (health_cmd); replace it when the listing route is found. | 2026-10-18 (S2): no listing or feed route found; reached by WebSearch only. | 2026-10-21 (2026-10-21T0256Z-intel, S2): https://www.ots.at/ is an Angular shell to `extract` with no listing and no feed route; the recipe is missing. | 2026-10-25 (S2): https://www.ots.at/ is still an Angular shell to extract (direct-raw returns the page head only); no listing or feed route found; recipe missing. | 2026-10-28 (S2): the feed https://www.ots.at/rss/index works but holds only the 15 newest releases (about 3 h), so a 168 h lookback sweep is impossible through it. | 2026-11-03 (S2): the feed holds only about 3 h of releases, so a 145 h lookback is impossible, and the sampled content is party-political press releases; consider retiring. | 2026-11-25 intel fire (v4.25): the feed holds only hours to about 1.5 days, so a 146 to 168 h lookback cannot be swept; retirement candidate.",
    "publisher": "APA-OTS (ots.at), Austrian press-release service for public bodies and companies",
    "reliability": "A",
    "status": "candidate",
@@ -4915,7 +4916,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 4,
    "content_scope": "general-news",
    "fetch_method": "bridge",
    "health_cmd": [
@@ -4928,7 +4929,7 @@
     "en"
    ],
    "last_successful_fetch": "2026-11-05",
-   "notes": "Added 2026-10-03: first-party, plain-text and dated; NEWESTa7.stable / .long-term / .testing return '<version> <epoch>' and https://upgrade.mikrotik.com/routeros/<version>/CHANGELOG returns the release notes (verified 7.23.4 to 7.24.5). MikroTik labels silent security releases ('an important security update ... not currently publishing detailed information') and names CVEs only later, so it is the vendor-side ground truth for the RouterOS CVEs the store tracks. RECIPE: `python3 tools/fetch_source.py url --direct <URL>`. (2026-10-03T0404Z-intel) | health probe: NEWESTa7.stable returns only '<version> <epoch>', so the health check reads the 7.24 CHANGELOG instead (verdict relevant: 13.7k characters, 'security'); release notes are legitimately mostly non-security (general-news scope). (2026-10-03T0404Z-intel) | 2026-10-06 (S1, not re-verified by the main agent): plain-text changelogs read with `url --direct https://upgrade.mikrotik.com/routeros/<version>/CHANGELOG`; `url --direct https://upgrade.mikrotik.com/routeros/NEWESTa7.<stable|long-term|testing|development>` gives the newest build per channel; mikrotik.com/download/changelogs is a JS shell. | 2026-10-10: MikroTik vendor notices live at https://mikrotik.com/supportsec/cve-<year>-<id> and read with `extract`; /supportsec itself is only the disclosure policy. The notice for CVE-2026-84411 was the primary of a published entry. | 2026-10-19 intel run S1: NEWESTa7.stable works; the NEWEST7.* channels return stale 2023 values; the 7.24 CHANGELOG at https://upgrade.mikrotik.com/routeros/7.24/CHANGELOG reads direct.",
+   "notes": "Added 2026-10-03: first-party, plain-text and dated; NEWESTa7.stable / .long-term / .testing return '<version> <epoch>' and https://upgrade.mikrotik.com/routeros/<version>/CHANGELOG returns the release notes (verified 7.23.4 to 7.24.5). MikroTik labels silent security releases ('an important security update ... not currently publishing detailed information') and names CVEs only later, so it is the vendor-side ground truth for the RouterOS CVEs the store tracks. RECIPE: `python3 tools/fetch_source.py url --direct <URL>`. (2026-10-03T0404Z-intel) | health probe: NEWESTa7.stable returns only '<version> <epoch>', so the health check reads the 7.24 CHANGELOG instead (verdict relevant: 13.7k characters, 'security'); release notes are legitimately mostly non-security (general-news scope). (2026-10-03T0404Z-intel) | 2026-10-06 (S1, not re-verified by the main agent): plain-text changelogs read with `url --direct https://upgrade.mikrotik.com/routeros/<version>/CHANGELOG`; `url --direct https://upgrade.mikrotik.com/routeros/NEWESTa7.<stable|long-term|testing|development>` gives the newest build per channel; mikrotik.com/download/changelogs is a JS shell. | 2026-10-10: MikroTik vendor notices live at https://mikrotik.com/supportsec/cve-<year>-<id> and read with `extract`; /supportsec itself is only the disclosure policy. The notice for CVE-2026-84411 was the primary of a published entry. | 2026-10-19 intel run S1: NEWESTa7.stable works; the NEWEST7.* channels return stale 2023 values; the 7.24 CHANGELOG at https://upgrade.mikrotik.com/routeros/7.24/CHANGELOG reads direct. | 2026-11-25 intel fire (v4.25): changelog read: `url --direct https://download.mikrotik.com/routeros/<ver>/CHANGELOG`.",
    "publisher": "MikroTik RouterOS release channels and changelogs (upgrade.mikrotik.com)",
    "reliability": "A",
    "status": "candidate",
@@ -4971,7 +4972,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "rss",
    "first_seen": "2026-10-04",
    "id": "citrix-netscaler-security-bulletins",
@@ -5107,7 +5108,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "bridge",
    "id": "swissinfo-ger",
    "language": [
@@ -5194,13 +5195,13 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "rss",
    "id": "nextgov-fcw",
    "language": [
     "en"
    ],
-   "last_successful_fetch": "2026-10-07",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Added 2026-10-07: S4 candidate; original US public-sector breach reporting that carries agency statements given to it directly (the FBI cyber chief's statement on the fbijobs.gov breach, 2026-10-06). `extract` reads articles cleanly; no feed probed. | 2026-11-21 (2026-11-21T0355Z-intel): S4: `feed https://www.nextgov.com/rss/cybersecurity/ 15` returns dated items and `extract` reads articles; rss_url set and fetch_method switched to rss.",
    "publisher": "Nextgov/FCW (US federal cybersecurity reporting)",
    "reliability": "B",
@@ -5221,7 +5222,7 @@
    "language": [
     "en"
    ],
-   "last_successful_fetch": "2026-11-17",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Added 2026-10-08: S1 candidate; the Atom feed reads directly (40 items) and carries one-vendor-per-item advisories with affected-version lists and an Update marker when a status changes. Its AV26-1002 Update 1 of 2026-10-07 is how the Atlassian exploitation claim surfaced, and AV26-1017 relayed the SonicWall advisory; both are cited in published entries. Per-item pages read with `extract`; some come back as raw HTML with the text inside. | 2026-10-09 (2026-10-09T0255Z-intel): promoted candidate to active: cited by published entries from the promotion-due count in the state digest (sources.promotion_due).",
    "publisher": "Canadian Centre for Cyber Security, alerts and advisories feed",
    "reliability": "A",
@@ -5408,7 +5409,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "id": "iverify-blog",
    "language": [
@@ -5429,7 +5430,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "health_cmd": [
     "url",
@@ -5483,7 +5484,7 @@
     "de"
    ],
    "last_successful_fetch": "2026-10-20",
-   "notes": "Added 2026-10-14 (S2): Blick, Swiss daily newspaper. The RSS reads on the direct transport (40 dated items) and surfaced the only Swiss-retailer response to the Danfoss refrigeration attack (Migros, Coop, Denner and Lidl not affected); it carries Swiss cyber-incident stories that reach the trade press later. Tabloid reliability: cite only attributed statements. | 2026-10-15 (S2): promoted to active (cited by published entries from 4 runs). The RSS holds only about 12 h (42 items); `url --direct https://www.blick.ch/news.xml` (the news sitemap) gives about 271 dated, titled URLs over about 48 h, so the 168 h lookback cannot be served. General news: carried Offerz (Blick first) and no public-sector item this run. Reliability C: cite attributed statements only. | 2026-10-31 (S3): RSS holds only about 12 h; `fetch_source.py url --direct https://www.blick.ch/news.xml` (news sitemap) gives about 48 h of dated URLs, so a 145 h lookback is only partly servable. | 2026-11-07 run 2026-11-07T0256Z-intel: https://www.blick.ch/news.xml read directly spans about 9 days (293 entries back to 2026-10-28), so a 168 h lookback is fully servable; rss_url moves from rss.xml.",
+   "notes": "Added 2026-10-14 (S2): Blick, Swiss daily newspaper. The RSS reads on the direct transport (40 dated items) and surfaced the only Swiss-retailer response to the Danfoss refrigeration attack (Migros, Coop, Denner and Lidl not affected); it carries Swiss cyber-incident stories that reach the trade press later. Tabloid reliability: cite only attributed statements. | 2026-10-15 (S2): promoted to active (cited by published entries from 4 runs). The RSS holds only about 12 h (42 items); `url --direct https://www.blick.ch/news.xml` (the news sitemap) gives about 271 dated, titled URLs over about 48 h, so the 168 h lookback cannot be served. General news: carried Offerz (Blick first) and no public-sector item this run. Reliability C: cite attributed statements only. | 2026-10-31 (S3): RSS holds only about 12 h; `fetch_source.py url --direct https://www.blick.ch/news.xml` (news sitemap) gives about 48 h of dated URLs, so a 145 h lookback is only partly servable. | 2026-11-07 run 2026-11-07T0256Z-intel: https://www.blick.ch/news.xml read directly spans about 9 days (293 entries back to 2026-10-28), so a 168 h lookback is fully servable; rss_url moves from rss.xml. | 2026-11-25 intel fire (v4.25): `https://www.blick.ch/news.xml` now returns a sitemap urlset, not RSS: the rss recipe is broken; needs a new feed URL or an extract-based listing recipe.",
    "publisher": "Blick",
    "reliability": "C",
    "rss_url": "https://www.blick.ch/news.xml",
@@ -5497,7 +5498,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 6,
+   "consecutive_quiet_periods": 7,
    "fetch_method": "bridge",
    "id": "cyberdaily-au",
    "language": [
@@ -5600,7 +5601,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 3,
+   "consecutive_quiet_periods": 4,
    "fetch_method": "bridge",
    "health_cmd": [
     "url",
@@ -5796,7 +5797,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "bridge",
    "id": "efk-ch",
    "language": [
@@ -5817,7 +5818,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "id": "nau-ch",
    "language": [
@@ -6156,7 +6157,7 @@
   {
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "status": "candidate",
    "tier": "standard",
    "language": [
@@ -6181,7 +6182,7 @@
   {
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "status": "active",
    "tier": "standard",
    "language": [
@@ -6342,7 +6343,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "rss",
    "first_seen": "2026-10-30",
    "id": "infostealers-hudson-rock",
@@ -6620,7 +6621,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 2,
+   "consecutive_quiet_periods": 3,
    "fetch_method": "bridge",
    "id": "cert-agid",
    "language": [
@@ -6820,14 +6821,14 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "id": "censys-advisories",
    "language": [
     "en"
    ],
    "last_successful_fetch": "2026-11-10",
-   "notes": "Added 2026-11-10 (S3): per-event advisories with internet-exposure counts, vendor-statement tracking and an explicit claim-versus-validated split; `extract` reads them cleanly. No listing page or feed has been checked yet (the URL is one advisory, the N-able N-central one of 2026-11-09). Candidate: promote to active after 3 contributing runs. | 2026-11-11 promoted to active: cited by published entries from 3 distinct runs (state digest sources.promotion_due).",
+   "notes": "Added 2026-11-10 (S3): per-event advisories with internet-exposure counts, vendor-statement tracking and an explicit claim-versus-validated split; `extract` reads them cleanly. No listing page or feed has been checked yet (the URL is one advisory, the N-able N-central one of 2026-11-09). Candidate: promote to active after 3 contributing runs. | 2026-11-11 promoted to active: cited by published entries from 3 distinct runs (state digest sources.promotion_due). | 2026-11-25 intel fire (v4.25): the record URL is a single N-central advisory page dated 2026-11-09, not a listing, so it cannot surface new items; needs a listing URL.",
    "publisher": "Censys (rapid-response advisories)",
    "reliability": "B",
    "status": "active",
@@ -6861,7 +6862,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "rss",
    "id": "vrt-nws",
    "language": [
@@ -6869,7 +6870,7 @@
     "en"
    ],
    "last_successful_fetch": "2026-11-11",
-   "notes": "Added 2026-11-11 (S4): Belgian public broadcaster with live blogs on hospital, refrigeration and critical-infrastructure incidents that English wires lag on (UZ Brussel outage 2026-11-10); both feeds return dated items on the direct transport and the short links https://vrtnws.be/p.<id> read with `extract`. Candidate: promote to active after 3 contributing runs. | 2026-11-11 health: general news outlet, content_scope general-news (most feed items are not security stories).",
+   "notes": "Added 2026-11-11 (S4): Belgian public broadcaster with live blogs on hospital, refrigeration and critical-infrastructure incidents that English wires lag on (UZ Brussel outage 2026-11-10); both feeds return dated items on the direct transport and the short links https://vrtnws.be/p.<id> read with `extract`. Candidate: promote to active after 3 contributing runs. | 2026-11-11 health: general news outlet, content_scope general-news (most feed items are not security stories). | 2026-11-25 intel fire (v4.25): feed horizon is hours to about 1.5 days, so a long lookback cannot be swept.",
    "publisher": "VRT NWS (Belgian public broadcaster)",
    "reliability": "B",
    "rss_url": "https://www.vrt.be/vrtnws/nl.rss.articles.xml",
@@ -6885,13 +6886,13 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 0,
    "fetch_method": "bridge",
    "id": "watson-ch-digital",
    "language": [
     "de"
    ],
-   "last_successful_fetch": "2026-11-11",
+   "last_successful_fetch": "2026-11-25",
    "notes": "Added 2026-11-11 (S2): carries the Keystone-SDA German wire text on federal and cantonal incidents the same day (the Publica ransom statements of 2026-11-10) and runs its own Swiss cyber analyses; article bodies read cleanly with `extract`, the listing with `url --direct`. Reliability C: wire re-publisher plus own reporting. Candidate: promote to active after 3 contributing runs. | 2026-11-12: promoted to active, cited by published entries from at least three distinct runs (state digest promotion_due).",
    "publisher": "watson.ch Digital / Datenschutz (Swiss news site)",
    "reliability": "C",
@@ -7187,7 +7188,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "rss",
    "first_seen": "2026-11-17",
    "id": "aws-security-blog",
@@ -7239,7 +7240,7 @@
    ],
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 2,
    "fetch_method": "bridge",
    "first_seen": "2026-11-18",
    "id": "mitel-security-advisories",
@@ -7578,16 +7579,57 @@
    "language": [
     "en"
    ],
-   "last_successful_fetch": null,
-   "notes": "2026-11-24 intel fire (v4.25): new candidate (S1): Splunk's own SVD advisories (SVD-2026-1103 Splunk Enterprise, SVD-2026-1108 Splunk SOAR) read cleanly per advisory with `extract <URL>`; the SIEM/SOAR platform SOC teams run.",
+   "last_successful_fetch": "2026-11-25",
+   "notes": "2026-11-24 intel fire (v4.25): new candidate (S1): Splunk's own SVD advisories (SVD-2026-1103 Splunk Enterprise, SVD-2026-1108 Splunk SOAR) read cleanly per advisory with `extract <URL>`; the SIEM/SOAR platform SOC teams run. | 2026-11-25 intel fire (v4.25): promoted candidate -> active (cited by entries from 4+ distinct runs; SVD-2026-1103 entry published this fire). Recipe: `url https://advisory.splunk.com/` returns the full advisory table; `extract https://advisory.splunk.com/advisories/SVD-2026-NNNN` returns per-CVE detail.",
    "publisher": "Splunk Security Advisories",
    "reliability": "A",
-   "status": "candidate",
+   "status": "active",
    "tier": "standard",
    "url": "https://advisory.splunk.com/",
    "consecutive_failures": 0,
    "consecutive_fetch_failures": 0,
    "consecutive_quiet_periods": 0
+  },
+  {
+   "category": [
+    "vulns",
+    "research"
+   ],
+   "consecutive_failures": 0,
+   "consecutive_fetch_failures": 0,
+   "consecutive_quiet_periods": 0,
+   "fetch_method": "bridge",
+   "id": "watchtowr-intelligence",
+   "language": [
+    "en"
+   ],
+   "last_successful_fetch": null,
+   "notes": "2026-11-25 intel fire (v4.25): added by S1. The existing watchtowr record points at the labs.watchtowr.com feed, whose newest item is 2026-11-05; the live exploitation-status FAQs (Idunno.AntiCsrf, Ruby2Shell, nginx2root, Java4Shell, PHP2Shell and others) are published under watchtowr.com/intelligence/, which reads cleanly with `extract` and states exploitation per CVE with dates.",
+   "publisher": "watchTowr Intel (Rapid Reaction bulletins and Vulnerability FAQ pages)",
+   "reliability": "B",
+   "status": "candidate",
+   "tier": "standard",
+   "url": "https://watchtowr.com/intelligence/"
+  },
+  {
+   "category": [
+    "research"
+   ],
+   "consecutive_failures": 0,
+   "consecutive_fetch_failures": 0,
+   "consecutive_quiet_periods": 0,
+   "fetch_method": "bridge",
+   "id": "okta-threat-intelligence",
+   "language": [
+    "en"
+   ],
+   "last_successful_fetch": null,
+   "notes": "2026-11-25 intel fire (v4.25): added by S3 and S4. First-party tracking of vishing and SSO-phishing clusters (O-UNC-053, O-UNC-066) and the original assessment of the INCEPTION leak-site rebrand (2026-11-23); article pages extract cleanly, listing recipe not yet probed.",
+   "publisher": "Okta Threat Intelligence (blog)",
+   "reliability": "B",
+   "status": "candidate",
+   "tier": "standard",
+   "url": "https://www.okta.com/blog/threat-intelligence/"
   }
  ],
  "statuses": {

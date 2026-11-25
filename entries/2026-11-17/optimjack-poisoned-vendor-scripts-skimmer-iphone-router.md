@@ -11,13 +11,22 @@ event_date: "2026-11-13"
 run_id: 2026-11-17T0355Z-intel
 priority: high
 immediate_action: null
-tags: [supply-chain, cryptocrime, mobile]
+tags: [supply-chain, cryptocrime, mobile, actively-exploited, cisa-kev]
 regions: [global, switzerland]
 sectors: [education, finance, media, technology]
 entities: ["campaign:optimjack-poisoned-vendor-scripts-2026-11", "tool:coruna", "tool:darksword"]
 techniques: [T1195.002, T1190, T1189, T1059.007, T1115, T1565.002, T1056, T1539, T1113, T1657]
 affected_products: ["Optimizely", "Kissmetrics", "StorifyMe", "minute-ly", "Apple iOS"]
-cves: []
+cves:
+  - id: CVE-2026-132224
+    cvss: null
+    epss: null
+    type: logic-flaw
+    vector: zero-click
+    auth: post-auth
+    status: [exploited, cisa-kev]
+    affected: "Optimizely Web Experimentation, hosted service"
+    fixed: "Closed by Optimizely in the hosted service on 2026-11-16"
 sources:
   - url: "https://www.infostealers.com/article/poisoned-scripts-on-bbc-zoom-and-other-major-websites-linked-to-iphone-exploit-loaders/"
     publisher: "Hudson Rock (InfoStealers)"
@@ -54,6 +63,14 @@ sources:
   - url: "https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites/"
     publisher: "Krebs on Security"
     date: "2026-11-17"
+    role: corroborating
+  - url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+    publisher: "CISA"
+    date: "2026-11-24"
+    role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA (Known Exploited Vulnerabilities catalogue)"
+    date: "2026-11-24"
     role: corroborating
 closed_sources: []
 evidence:
@@ -99,6 +116,7 @@ evidence:
 verification: multi-source
 sourcing_note: >
   Hudson Rock recovered the poisoned files itself and matched the archived responses Ohey supplied; Amirul Cyber and Report URI both reported the Optimizely injection on 2026-11-16, and Optimizely's own status entry confirms an exploited vulnerability on its side and, since 2026-11-18, names it as a weakness in the Web Experimentation account signup flow that let the attacker impersonate users on targeted accounts. Zscaler ThreatLabz states neither the vantage point nor the time window of its count of more than 450 domains, so it is not reconciled with Report URI's 178 organisations. The sources cite no statement from Kissmetrics, StorifyMe or minute-ly, and the iPhone-router reading of the stages is Ohey's, with Hudson Rock calling them delivery observations only. Ohey's page is a living reference with no dateline of its own, so its citations carry the nominal date 2026-11-17, while its text counts through 2026-11-18. Optimizely's customer incident report puts the first malicious write at 07:51 UTC on 2026-11-16, while Report URI logged the first injection at 04:21 UTC that day; the two times are reported separately and not reconciled. The Optimizely report is cited as of its 2026-11-20 version (first issued 2026-11-17, corrected 2026-11-18, shortened 2026-11-20).
+  CVE-2026-132224's authentication requirement (low privileges) follows the CNA record's vector; the cited pages say the attacker impersonated users on targeted customer accounts.
 confidence: medium
 references: ["2026-10-28/deadtag-expired-tag-domains-coruna-darksword-iphone-kits", "2026-11-05/apt29-watering-hole-ios-android-n-day-chains-kev"]
 deep_dive: false
@@ -152,6 +170,14 @@ updates:
       off and lists customer actions; Report URI counts 68 affected sites with no Content-Security-Policy
       and 50 with one that still allowed the theft.
     fields: [sources, evidence, sourcing_note, actions, body]
+  - at: "2026-11-25T04:47:09Z"
+    run_id: 2026-11-25T0356Z-intel
+    type: improvement
+    summary: >
+      CISA listed CVE-2026-132224, an external control of critical state data flaw in Optimizely Web
+      Experimentation, as exploited on 2026-11-24 and points to Optimizely's incident page in its
+      catalogue record; the exploitation account, timeline and customer actions are unchanged.
+    fields: [cves, sources, sourcing_note, tags]
 migrated_from: null
 ---
 
@@ -186,3 +212,7 @@ Report URI's update of 2026-11-17 says all infected Optimizely files were clean 
 Optimizely's customer incident report, shortened on 2026-11-20 with a link to the full version in its customer portal, says the first malicious code was written at 07:51 UTC on 2026-11-16, detected at 13:34 UTC, the vulnerability closed at 16:10 UTC and the injected code removed from all affected projects by 22:24 UTC, and tells customers the exposure window is 07:51 to 22:24 UTC ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)); Report URI logged its first injection earlier, at 04:21 UTC ([Report URI, 2026-11-16](https://blog.report-uri.com/worlds-largest-brands-infected-with-malware-via-optimizely/)), and the two accounts are not reconciled. Optimizely says the attacker acted as administrator users without their credentials, so no customer password was stolen, that only Web Experimentation was involved, that the script was meant to take card details typed into the site's own forms and cryptocurrency transfers, and that cards entered in hosted payment iframes such as Stripe or Adyen were not reachable ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)).
 
 The vendor's early advice of 2026-11-16 to switch the snippet off has been withdrawn, and re-enabling it is stated to be safe ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)). Its customer actions are to confirm which pages ran the snippet in the window, review Content-Security-Policy violation reports and outbound requests to unfamiliar domains, review card and cryptocurrency transactions, keep web server, CDN, WAF, CSP-report and payment logs that cover 2026-11-16, assess legal notification duties, check that a strong Content-Security-Policy is in place, and remove the snippet from payment or crypto pages that run no experiments ([Optimizely, 2026-11-20](https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf)). Report URI counted 68 of the affected sites with no policy, 50 with a policy that still allowed the payload and the data theft, and 24 (15 percent) with one that fully blocked the payload ([Krebs on Security, 2026-11-17](https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites/)).
+
+## Improvement — 2026-11-25T04:47:09Z
+
+CISA added CVE-2026-132224, an external control of critical state data vulnerability in Optimizely Web Experimentation, to the Known Exploited Vulnerabilities catalog on 2026-11-24, on evidence of active exploitation ([CISA, 2026-11-24](https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog)); the catalogue record points to Optimizely's incident page ([CISA, 2026-11-24](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). Optimizely says it closed the vulnerability exploited on 2026-11-16 in its hosted service ([Optimizely, 2026-11-18](https://status.optimizely.com/incidents/ftw0fh9wx43z)); the customer actions above are unchanged.

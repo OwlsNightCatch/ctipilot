@@ -1,0 +1,485 @@
+# work/2026-11-25T0356Z-intel/findings.S1.yaml  (S1 active threats and trending vulns)
+domain: S1
+run_id: 2026-11-25T0356Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-25T03:57:53Z
+ended_at: 2026-11-25T04:23:07Z
+duration_seconds: 1514
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 13
+  bridge_fetches: 125
+items:
+
+  # ------------------------------------------------------------------
+  # 1. update-of OptimJack entry: KEV listing and CVE id
+  # ------------------------------------------------------------------
+  - title: "Optimizely Web Experimentation: the exploited signup-flow flaw now has an id, CVE-2026-132224 (CVSS 4.0 7.1), and CISA lists it as exploited with a federal due date of 2026-11-27"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA (alert, KEV additions)", date: "2026-11-24", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-132224", publisher: "CVE Services (CVE record, assigner MITRE; CISA ADP container)", date: "2026-11-24", role: "primary" }
+      - { url: "https://status.optimizely.com/incidents/ftw0fh9wx43z", publisher: "Optimizely status page", date: "2026-11-18", role: "corroborating" }
+      - { url: "https://pages.optimizely.com/rs/947-RKE-048/images/Security%20Incident%20Report%20-%20Optimizely%20Web%20Experimentation%20-%20Nov%2017%202026.pdf", publisher: "Optimizely (customer incident report)", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev, catalogVersion 2026.11.24), CVE-2026-132224 dateAdded 2026-11-24 → pivot: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog (WebFetch) → primary: CVE record, URL https://cveawg.mitre.org/api/cve/CVE-2026-132224 (read via bridge) → vendor: status page https://status.optimizely.com/incidents/ftw0fh9wx43z and incident report PDF (read via pdf subcommand); ENISA EUVD-2026-129010 (enisa-euvd recent exploited) as independent catalogue corroboration"
+    summary: |
+      The exploited flaw behind the OptimJack Optimizely injection now has a CVE id and a CISA listing. The CVE record (assigner MITRE, published 2026-11-18, updated 2026-11-24) says "Optimizely Web Experimentation before 2026-11-17 mishandles the account signup flow, leading to presence of attacker-controlled code in the projectJS (aka Project JavaScript) field of certain cdn.optimizely.com assets"; it classes it CWE-642 (external control of critical state data), scores it CVSS 4.0 7.1 (AV:N/AC:H/AT:N/PR:L/UI:N/VC:N/VI:H/VA:N/SC:H/SI:H/SA:N), tags it as an exclusively hosted service and lists no customer-side fixed version, because Optimizely closed the hole on its side on 2026-11-16 (its report: vulnerability closed 16:10 UTC). CISA added CVE-2026-132224 to the KEV catalogue on 2026-11-24 with a due date of 2026-11-27 under BOD 26-04, ransomware-campaign use "Unknown", and the KEV notes point to Optimizely's own incident report and status page; CISA's SSVC data in the CVE record reads Exploitation active, Automatable no, Technical Impact total. ENISA's EUVD lists it as EUVD-2026-129010, exploited since 2026-11-24, and FIRST's EPSS is 0.0041. The delta for the existing entry is the identifier (its cves[] is empty), CISA's confirmation of exploitation and the KEV listing; customer actions are unchanged because the vendor-side fix is already in place and the exposure window (07:51 to 22:24 UTC on 2026-11-16 per Optimizely) is closed.
+    region_nexus: "global; Swiss public-sector sites that load Optimizely snippets were in scope of the 2026-11-16 exposure"
+    primary_sector_nexus: "direct (public-sector sites using third-party experimentation scripts; University of Basel named in the existing entry)"
+    sector: "public-sector"
+    cves: [CVE-2026-132224]
+    techniques: [T1195.002, T1078.004, T1059.007]
+    affected_products: ["Optimizely Web Experimentation"]
+    entity_keys: ["campaign:optimjack-poisoned-vendor-scripts-2026-11", "product:optimizely"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-17/optimjack-poisoned-vendor-scripts-skimmer-iphone-router"
+    evidence:
+      - quote: "CVE-2026-132224 Optimizely Web Experimentation External Control of Critical State Data Vulnerability"
+        attribution: "CISA (alert, KEV additions)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "Optimizely Web Experimentation before 2026-11-17 mishandles the account signup flow, leading to presence of attacker-controlled code in the projectJS (aka Project JavaScript) field of certain cdn.optimizely.com assets."
+        attribution: "CVE record (MITRE)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-132224"
+      - quote: "On 16 November 2026, an unauthorized third party exploited a flaw in the Optimizely Web Experimentation account signup flow."
+        attribution: "Optimizely status page"
+        source_url: "https://status.optimizely.com/incidents/ftw0fh9wx43z"
+    extended_notes: |
+      CNA channel: the CVE was reserved 2026-11-18 by MITRE as CNA of last resort, not by Optimizely; the record's references are Optimizely's report and status page plus Report URI, Scott Helme, Krebs, BleepingComputer, Ars Technica and The Record. KEV JSON fields read this run: dateAdded 2026-11-24, dueDate 2026-11-27, knownRansomwareCampaignUse Unknown, requiredAction (verbatim) "Apply mitigations in accordance with vendor instructions, ensuring compliance with CISA's BOD 26-04 ... Follow applicable BOD 26-04 guidance for cloud services or discontinue use of the product if mitigations are unavailable." The shortDescription says an attacker could "impersonate existing customer users and modify Project JavaScript". Suggested handling: add the CVE to the existing entry's cves[] with status exploited, cisa-kev and vendor-fixed (hosted), no new action. EPSS is the FIRST API value (fraction); EUVD shows it as 0.43 percent.
+    cve_row_ref: "CVE-2026-132224"
+
+  # ------------------------------------------------------------------
+  # 2. NEW: Broadcom VMSA-2026-0011
+  # ------------------------------------------------------------------
+  - title: "VMSA-2026-0011: Broadcom fixes 23 flaws in ESX, vCenter, Workstation, Fusion, Tools and Avi, among them a second, distinct vCenter Directory Service authentication bypass (CVE-2026-123903, CVSS 9.8, no workaround) and two network-reachable ESX code-execution flaws in the I/O filter service (CVE-2026-123910 and CVE-2026-123911, CVSS 9.8); no exploitation reported"
+    sources:
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39626", publisher: "Broadcom (VMSA-2026-0011)", date: "2026-11-24", role: "primary" }
+      - { url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md", publisher: "Broadcom (VMSA-2026-0011 Questions and Answers)", date: "2026-11-24", role: "primary" }
+      - { url: "https://knowledge.broadcom.com/external/article/463535/manual-interim-workaround-for-cve2026123.html", publisher: "Broadcom (KB463535, ESXi 8.x interim workaround)", date: "2026-11-24", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4769", publisher: "BSI CERT-Bund (WID-SEC-2026-4769)", date: "2026-11-24", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/13238", publisher: "NCSC.ch Cyber Security Hub", date: "2026-11-24", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/vmware-vcenter-hit-by-another-critical.html", publisher: "The Hacker News", date: "2026-11-24", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub (python3 tools/fetch_source.py ncsc-csh recent 15), URL https://security-hub.ncsc.admin.ch/#/posts/13238 → primary: Broadcom VMSA-2026-0011, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39626 → Broadcom Q&A, URL https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md → KB463535, URL https://knowledge.broadcom.com/external/article/463535/manual-interim-workaround-for-cve2026123.html; BSI WID-SEC-2026-4769 seen in the bsi-rss feed 2026-11-24 12:37 UTC and read through bsi-csaf; CCCS AV26-1203 listed in the cccs feed"
+    summary: |
+      Broadcom's VMSA-2026-0011 of 2026-11-24 (Critical, CVSS 3.1 3.4 to 9.8, 23 CVEs) fixes vCenter, ESX, Workstation, Fusion, VMware Tools and Avi Load Balancer. The headline vCenter flaw is CVE-2026-123903, an authentication bypass in the VMware Directory Service: per Broadcom, "a malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system"; CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N), no workaround, reported independently by Qianxin's sglab, depthfirst and ThreatBook. Broadcom's Q&A says it is "a new and distinct issue" from CVE-2026-123890 (VMSA-2026-0009, exploited per GTIG). On ESX, CVE-2026-123910 (heap out-of-bounds write) and CVE-2026-123911 (use-after-free) in the I/O filter service let an attacker with network access to the host execute code on it (CVSS 9.8 each, credited to CrowdStrike and to DEVCORE with ZDI); Broadcom's KB463535 gives an interim workaround for ESXi 8.x, where the IOFilterVP service listens on port 9080 and should be reachable only from the vCenter address. CVE-2026-123912 (XHCI USB out-of-bounds write, 9.3 on Workstation and Fusion) lets a guest administrator run code as the VMX process, contained to the VMX sandbox on ESX, where CVE-2026-123913 (VMkernel stack overflow, 8.2) lets that foothold escalate. Further vCenter items need prior access: CVE-2026-123904 file write as root through a malicious backup archive (7.5), CVE-2026-123905 to -123907 Directory Service denial of service (7.5), CVE-2026-123908 vpxd service-account escalation (6.7). Broadcom's advisory is silent on exploitation, NCSC.ch lists the exploitation status as unknown and the Hacker News notes that Broadcom makes no mention of any of them being exploited; the earlier vCenter bypass in the same component was exploited from September, which is the reason to patch ahead of public detail. Fixed builds are in the cve_table; vCenter or ESX 7.0 has no public fix, and ESX 9.0 still lacks a patch for CVE-2026-123914 and CVE-2026-123915 (Patch Pending).
+    region_nexus: "global; vSphere is common in Swiss federal, cantonal and communal data centres"
+    primary_sector_nexus: "direct (public-sector virtualisation estates)"
+    sector: "public-sector"
+    cves: [CVE-2026-123903, CVE-2026-123910, CVE-2026-123911, CVE-2026-123912, CVE-2026-123904, CVE-2026-123913, CVE-2026-123908]
+    techniques: [T1190, T1210, T1611, T1068]
+    affected_products: ["VMware vCenter Server", "VMware ESX", "VMware Cloud Foundation", "VMware vSphere Foundation", "VMware Workstation", "VMware Fusion", "VMware Tools", "VMware Avi Load Balancer"]
+    entity_keys: ["product:vmware-vcenter-server", "product:vmware-esxi", "product:vmware-workstation", "product:vmware-fusion", "product:vmware-cloud-foundation", "product:vmware-tools", "product:vmware-avi-load-balancer"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    references_suggested: ["2026-11-20/vmware-vcenter-cve-2026-123890-auth-bypass-exploited-gtig"]
+    evidence:
+      - quote: "A malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system."
+        attribution: "Broadcom (VMSA-2026-0011)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39626"
+      - quote: "A malicious actor with network access to ESX may execute code on the host."
+        attribution: "Broadcom (VMSA-2026-0011)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39626"
+      - quote: "CVE-2026-123903 is a new and distinct issue."
+        attribution: "Broadcom (VMSA-2026-0011 Questions and Answers)"
+        source_url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md"
+      - quote: "Only the vCenter Server IP address should be allowed to communicate to port 9080."
+        attribution: "Broadcom (KB463535)"
+        source_url: "https://knowledge.broadcom.com/external/article/463535/manual-interim-workaround-for-cve2026123.html"
+      - quote: "While Broadcom makes no mention of any of the newly disclosed flaws as being exploited in the wild, it's essential that customers apply the updates for optimal protection."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/11/vmware-vcenter-hit-by-another-critical.html"
+    extended_notes: |
+      EXPOSURE and version read: vCenter build is on the vSphere Client Summary tab or in PowerCLI after Connect-VIServer ($global:DefaultVIServer.Build and .Version); ESX hosts show it with Get-VMHost | Select-Object Name, Version, Build (Broadcom Q&A). The Directory Service flaws are in vCenter itself and are present whether or not Enhanced Linked Mode is used (Q&A). The vSAN Witness Appliance runs ESX and is affected. Telco Cloud Platform and Telco Cloud Infrastructure carry the fix through KB463501.
+      FIXED VERSIONS (Broadcom response matrix): vCenter 9.1.x fixed 9.1.2; 9.0.x fixed 9.0.2.0300 (the Q&A calls it the 9.0.2 express patch); 8.0 fixed 8.0 U3m (already enough if applied for VMSA-2026-0009); 7.0 no public fix (extended-support customers contact Broadcom Support); VMware Cloud Foundation 5.x fixed 5.2.5 through the asynchronous patch process KB88287. ESX 9.1.x fixed ESXi-9.1.2.0-25946735; 9.0.x fixed ESXi-9.0.2.0200-25953133 for CVE-2026-123910 to -123913 and -123916, with CVE-2026-123914 and -123915 marked Patch Pending; 8.0 fixed ESXi80U3m-25926933 (CVE-2026-123910 and -123911 workaround KB463535); 7.0 no public fix. Workstation and Fusion 25H2 fixed 26H1u1. VMware Tools 13.1.10 for 13.x and 12.5.6 for 12.x and 11.x (12.4.11 for 32-bit Windows); open-vm-tools through Linux vendors; updating vCenter or ESX does not update Tools inside guests. Avi Load Balancer 32.1.4 fixes all eight Avi issues (scores 3.4 to 6.7, administrative access needed). Fixes are cumulative and not eligible for vCenter Quick Patch or ESX Live Patch; ESX updates need a host reboot and the XHCI and guest-RPC fixes reach a VM only after its VMX restarts (power cycle or vMotion to an updated host). Broadcom rates CVE-2026-123912 9.3 for Workstation and Fusion and 8.4 for ESX in the matrix while its Q&A says 8.5 for ESX; both are quoted from the vendor.
+      WORKAROUND (ESXi 8.x only, CVE-2026-123910 and -123911, KB463535): esxcli network firewall ruleset set -r iofiltervp --allowed-all false, then esxcli network firewall ruleset allowedip add -r iofiltervp -i <vCenter address>, verified with esxcli network firewall ruleset allowedip list -r iofiltervp. Broadcom's Q&A says this limits only a small part of the advisory and may affect cluster operation, so patching is the stated path. Mitigation for CVE-2026-123904: restrict write access to the vCenter backup repository to the backup account and the repository administrators.
+      DETECTION: Broadcom publishes no indicators and its advisory does not mention exploitation, so the hooks are mechanical: telemetry on network flows to TCP 9080 of ESXi 8.x hosts from anything but the vCenter address; vCenter and Directory Service authentication and SSO audit records for administrator sessions or accounts that have no matching login event or change ticket; writes to the backup repository share by accounts other than the vCenter backup account. Post-patch: because the sibling vmdir bypass CVE-2026-123890 was exploited from September, treat a vCenter whose Directory Service was reachable beyond the management network as a candidate for the same compromise review as in the existing entry.
+      RELATED ADVISORIES: Broadcom's Q&A says VMSA-2026-0010 is a separate advisory with a workaround and a planned Express Patch; it could not be located on any transport this run (Broadcom's advisory index is a script-rendered listing, the GitHub supplement path for 0010 returns 404), so it is an open lead. VMSA-2026-0009 (SDDC Manager) fixes are not part of 0011: SDDC Manager needs its own update (9.1.1.0200, 9.0.2.0100, 5.2.5).
+      The CVE records for CVE-2026-123903 and the ESX CVEs were not yet published at read time (cveawg returned CVE_RECORD_DNE), so ids and scores come from Broadcom's advisory, which is the CNA source.
+
+  # ------------------------------------------------------------------
+  # 3. update-of: vCenter CVE-2026-123890 entry cross-reference
+  # ------------------------------------------------------------------
+  - title: "VMware vCenter CVE-2026-123890 entry: the fixed builds it names for vCenter 9.0 and 9.1 do not fix the new CVE-2026-123903; VMSA-2026-0011 needs 9.0.2.0300 and 9.1.2 (8.0 U3m covers both)"
+    sources:
+      - { url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md", publisher: "Broadcom (VMSA-2026-0011 Questions and Answers)", date: "2026-11-24", role: "primary" }
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39626", publisher: "Broadcom (VMSA-2026-0011)", date: "2026-11-24", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/13238 → primary: Broadcom VMSA-2026-0011 Q&A, URL https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md (question on whether VMSA-2026-0009 fixes suffice)"
+    summary: |
+      The existing entry for CVE-2026-123890 (VMSA-2026-0009) names 9.0.2.0200 and 9.1.1.0200 as the fixed vCenter builds for the exploited Directory Service bypass. Broadcom's VMSA-2026-0011 of 2026-11-24 fixes a different, newer Directory Service bypass (CVE-2026-123903, CVSS 9.8) and says that if vCenter 8.0 U3m was applied for VMSA-2026-0009 no further vCenter update is needed on the 8.0 line, whereas vCenter 9.1.x needs 9.1.2 and vCenter 9.0.x needs 9.0.2.0300 (a build newer than 9.0.2.0200), so an estate patched only to the VMSA-2026-0009 builds on 9.0 or 9.1 is still exposed to the new flaw. ESX was not part of VMSA-2026-0009 and needs the VMSA-2026-0011 update.
+    region_nexus: "global; vSphere is common in Swiss public-sector data centres"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-123903]
+    techniques: [T1190]
+    affected_products: ["VMware vCenter Server", "VMware Cloud Foundation"]
+    entity_keys: ["product:vmware-vcenter-server"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-11-20/vmware-vcenter-cve-2026-123890-auth-bypass-exploited-gtig"
+    borderline: true
+    borderline_reason: "pure cross-reference; the substance is item 2, so the main agent may fold it into the new VMSA-2026-0011 entry via references[] and an improvement record on the old entry"
+    evidence:
+      - quote: "CVE-2026-123903 is a new and distinct issue."
+        attribution: "Broadcom (VMSA-2026-0011 Questions and Answers)"
+        source_url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md"
+      - quote: "Always check the versions in the VMSA itself, but in this case, if you applied vCenter 8.0 U3m for VMSA-2026-0009, you do not need to patch vCenter again."
+        attribution: "Broadcom (VMSA-2026-0011 Questions and Answers)"
+        source_url: "https://github.com/vmware/vcf-security-and-compliance-guidelines/blob/main/security-advisories/vmsa-2026-0011/README.md"
+    extended_notes: |
+      Broadcom vendor-verbatim: "For vCenter 9.1.x, update to vCenter 9.1.2, which was released with this advisory. For vCenter 9.0.x, compare your version with the fixed version in the VMSA." The advisory matrix lists 9.0.2.0300 as the 9.0.x fixed build.
+
+  # ------------------------------------------------------------------
+  # 4. NEW: GeoServer unauthenticated RCE chain advisories
+  # ------------------------------------------------------------------
+  - title: "GeoServer: advisories published 2026-11-23 disclose an unauthenticated remote-code-execution chain in five separately fixed steps (data-directory path leak, service-security bypass with service=x/WFS, WFS GetFeatureById XML injection, predictable remember-me key, JDBC deserialization) plus further unauthenticated SSRF and XXE flaws; fixed in 2.27.7, 2.28.6 and 3.0.2, which have been out since 17 October to 2 November"
+    sources:
+      - { url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-hgm3-wq4h-8vvq", publisher: "GeoServer project (GHSA-hgm3-wq4h-8vvq, CVE-2026-129245)", date: "2026-11-23", role: "primary" }
+      - { url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-39mw-5chv-jh47", publisher: "GeoServer project (GHSA-39mw-5chv-jh47, CVE-2026-120705)", date: "2026-11-23", role: "primary" }
+      - { url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-rv5g-g2r9-58rj", publisher: "GeoServer project (GHSA-rv5g-g2r9-58rj, CVE-2026-129243)", date: "2026-11-23", role: "primary" }
+      - { url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-9wf2-fcgq-vxhq", publisher: "GeoServer project (GHSA-9wf2-fcgq-vxhq, CVE-2026-129242)", date: "2026-11-23", role: "primary" }
+      - { url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-4v26-c537-jvxc", publisher: "GeoServer project (GHSA-4v26-c537-jvxc, CVE-2026-129244)", date: "2026-11-23", role: "primary" }
+      - { url: "https://github.com/geoserver/geoserver/releases/tag/2.28.6", publisher: "GeoServer project (release 2.28.6)", date: "2026-11-02", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4767", publisher: "BSI CERT-Bund (WID-SEC-2026-4767)", date: "2026-11-24", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de bsi-rss feed 2026-11-24 12:37 UTC, [NEU] [hoch] 'GeoServer: Mehrere Schwachstellen' WID-SEC-2026-4767 (python3 tools/fetch_source.py bsi-rss, then bsi-csaf WID-SEC-2026-4767) → primary: GeoServer GitHub security advisories listing read through the GitHub REST API (https://api.github.com/repos/geoserver/geoserver/security-advisories) and each cited GHSA page via extract → release pages https://github.com/geoserver/geoserver/releases/tag/3.0.2, /2.28.6 and /2.27.7 for the fix dates"
+    summary: |
+      Between 22:08 and 22:14 UTC on 2026-11-23 the GeoServer project published 17 GitHub security advisories for the 2.27.7, 2.28.6 and 3.0.2 releases, which had shipped on 2026-10-18, 2026-11-02 and 2026-10-17 with the fixes listed as ordinary changes. The critical one, GHSA-hgm3-wq4h-8vvq (CVE-2026-129245), says it "was reported as step 4 of an unauthenticated remote command execution chain" and that, at the CVE Numbering Authority's request, each step is fixed and tracked separately: (1) CVE-2026-129244, a WFS stored-query exception that discloses the data-directory path to an unauthenticated user; (2) CVE-2026-129243, service-security rules bypassed by a prefixed service name such as x/WFS, so anonymous users can create and delete WFS stored queries; (3) CVE-2026-120705, an unauthenticated WFS GetFeatureById XML injection (CVSS 3.1 8.6) that reads a local file readable by the GeoServer process and fetches an attacker-chosen URL; (4) CVE-2026-129245, a remember-me cookie signed with a key that defaults to the string shipped in the release data directory, so anyone with the key and an administrator password digest can forge an administrator login; (5) CVE-2026-129242, JDBC user and role services that deserialize property values from an uploaded HSQLDB database, giving an administrator code execution as the GeoServer process. The advisories also cover unauthenticated SSRF in WPS (CVE-2026-120701 CVSS 7.5, CVE-2026-120706), unauthenticated SSRF and file read in printing (CVE-2026-120709), unauthenticated style management in OGC API Styles (CVE-2026-129294), unauthenticated XXE and SSRF through xsi:schemaLocation (CVE-2025-53607, CVSS 8.2, fixed earlier in 2.27.6, 2.28.4 and 3.0.0), and trust of forwarded headers in GeoFence and ACL source-IP rules (CVE-2026-120707, CVE-2026-120708). The advisories name no exploitation; with each step of the chain now public, a GeoServer left on a release older than the fixed ones is the exposed case.
+    region_nexus: "global; GeoServer is a common server for cantonal and communal geoportals and open geodata services"
+    primary_sector_nexus: "direct (geoportal and GIS services of public administrations)"
+    sector: "public-sector"
+    cves: [CVE-2026-129245, CVE-2026-120705, CVE-2026-129243, CVE-2026-129244, CVE-2026-129242, CVE-2026-120701, CVE-2026-120706, CVE-2026-129294, CVE-2025-53607]
+    techniques: [T1190, T1606.001, T1005]
+    affected_products: ["GeoServer"]
+    entity_keys: ["product:geoserver"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: false
+    evidence:
+      - quote: "This was reported as step 4 of an unauthenticated remote command execution chain."
+        attribution: "GeoServer project (GHSA-hgm3-wq4h-8vvq)"
+        source_url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-hgm3-wq4h-8vvq"
+      - quote: "A single unauthenticated WFS request can:"
+        attribution: "GeoServer project (GHSA-39mw-5chv-jh47)"
+        source_url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-39mw-5chv-jh47"
+      - quote: "An unauthenticated user learns the absolute data directory path."
+        attribution: "GeoServer project (GHSA-4v26-c537-jvxc)"
+        source_url: "https://github.com/geoserver/geoserver/security/advisories/GHSA-4v26-c537-jvxc"
+      - quote: "Apply the catalog's entity resolver consistently to stored query parsing"
+        attribution: "GeoServer project (release 2.28.6)"
+        source_url: "https://github.com/geoserver/geoserver/releases/tag/2.28.6"
+    extended_notes: |
+      TIMING: the GHSAs were published 2026-11-23 22:08 to 22:14 UTC, under four hours before this run's 26 h window opens (2026-11-24 01:56 UTC); no earlier fire covered them and the store has no GeoServer entry, and the BSI relay (2026-11-24 12:37 UTC) and the first visibility in this run's essential feeds fall inside the window.
+      AFFECTED and FIXED (GHSA vulnerable ranges): gs-main (CVE-2026-129245), gs-wfs-core (CVE-2026-120705) and gs-ows (CVE-2026-129243): 2.27.x up to 2.27.6, 2.28.0 to 2.28.5, 3.0.0 to 3.0.1; fixed 2.27.7, 2.28.6, 3.0.2 (GeoTools 33.7, 34.6, 35.2 for the XML entity-resolver fix). Release dates read from GitHub: 3.0.2 on 2026-10-17, 2.27.7 on 2026-10-18, 2.28.6 on 2026-11-02; the release notes list the fixes as plain items (for example GEOS-12199 entity resolver for stored query parsing, GEOS-12239 JDBC user and role values read as text) without a security label, so an estate that has tracked point releases may already be fixed while one that waited for advisories is not. Note the 2.28 line was fixed only on 2026-11-02.
+      EXPOSURE: any internet-reachable GeoServer 2.27.x to 3.0.1 below the fixed releases; the chain needs the WFS service reachable anonymously (the default GetFeature and the stored-query operations) and, for the last step, a REST API that accepts an administrator session. GHSA-39mw says contents are echoed when a layer is published to anonymous users and the file is still read otherwise. OGC API Styles (CVE-2026-129294) needs the community module installed. The remember-me weakness needs the filter chain `web` to include remember-me and the key still at its shipped value.
+      MITIGATIONS (project): GHSA-rv5g: block requests whose service parameter contains a slash at a proxy in front of GeoServer, and review the data directory wfs/query and workspaces/*/wfs/query folders for stored queries you did not create; GHSA-39mw: restrict or disable WFS for anonymous users through service security; GHSA-hgm3: remove rememberme from the web filter chain or set a long random key in security/config.xml and protect the data directory, and change administrator passwords if exposure is suspected (changing the key does not help when the same file disclosure reveals it); GHSA-9wf2: limit administrators and restrict /rest/resource and /rest/security to trusted networks; GHSA-65mr: add services.properties rules limiting style writes to ROLE_ADMINISTRATOR or remove the module.
+      DETECTION hooks from the advisories: reverse-proxy and web access logs for OWS requests with a service parameter containing a slash (x/WFS), for GetFeature stored-query GetFeatureById requests whose ID contains quotes, angle brackets or an xi:include, for anonymous CreateStoredQuery or DropStoredQuery calls, and for WFS exception reports triggered by overlong stored-query ids; the data-directory stored-query folders listed above; administrator logins that arrive by remember-me cookie; and REST calls that upload a database file and create a JDBC user group service. Post-patch compromise check: upgrade invalidates existing remember-me cookies and rotates the key per node (a cluster sets GEOSERVER_REMEMBERME_KEY); rotate administrator passwords and review the security configuration for JDBC user or role services you did not create.
+      CVE records for these ids had no published record at read time (cveawg returned no JSON), so ids, versions and CVSS (only some advisories carry a vector) come from the GHSA pages. EPSS not yet scored.
+
+  # ------------------------------------------------------------------
+  # 5. NEW (rotational lookback): Splunk Enterprise SVD-2026-1103
+  # ------------------------------------------------------------------
+  - title: "Splunk Enterprise SVD-2026-1103: two unauthenticated management-API authentication bypasses that accept an empty pass4SymmKey (CVE-2026-76536 CVSS 9.4, CVE-2026-76535 CVSS 9.1) among 38 CVEs, fixed in 10.6.1, 10.4.5, 10.2.9, 10.0.12 and 9.4.17; Splunk SOAR 8.8.0 and Enterprise Security 8.7.0 fix authenticated flaws up to CVSS 9.9 and 9.1"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-1103", publisher: "Splunk (SVD-2026-1103)", date: "2026-11-18", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-76536", publisher: "CVE Services (CVE record, assigner Cisco for Splunk; CISA ADP container)", date: "2026-11-19", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0512", publisher: "NCSC-NL (NCSC-2026-0512)", date: "2026-11-23", role: "corroborating" }
+    discovery_trace: "first seen at: advisory-splunk, URL https://advisory.splunk.com/ (python3 tools/fetch_source.py url, listing parsed for November 2026 rows with Critical severity, lookback_hours 168) → primary: Splunk advisory page, URL https://advisory.splunk.com/advisories/SVD-2026-1103 (extract) → CVE record through cveawg for CVE-2026-76535 and CVE-2026-76536; NCSC-NL NCSC-2026-0512 seen in the ncsc-nl feed 2026-11-23 and read through ncsc-nl csaf"
+    summary: |
+      Splunk's November 2026 advisory SVD-2026-1103 (published 2026-11-18, highest CVSS 3.1 9.4) fixes 38 CVEs in Splunk Enterprise; two are unauthenticated authentication bypasses rated Critical. CVE-2026-76536 (9.4, AV:N/AC:L/PR:N/UI:N): "an unauthenticated user could use an empty clustering shared secret to read and modify clustering configuration through the cluster configuration Representational State Transfer (REST) API endpoint on a standalone instance" with clustering turned off, which can expose clustering configuration, persist attacker-controlled clustering settings and disrupt clustering. CVE-2026-76535 (9.1): "an unauthenticated user could run arbitrary Search Processing Language (SPL) searches through RapidDiag task collection as an authenticated user", because Splunk Enterprise accepts an empty shared secret on RapidDiag task-collection requests; a third RapidDiag bypass, CVE-2026-131190 (CWE-798, 7.5), is also unauthenticated. The workaround for both is to set a strong, unique pass4SymmKey of at least 12 characters in the [clustering] stanza of server.conf, on standalone instances as well, and restart. Affected: 10.6.0.5 (CVE-2026-76535 only), 10.4.0 to 10.4.4, 10.2.0 to 10.2.8, 10.0.0 to 10.0.11 and 9.4.0 to 9.4.16; fixed 10.6.1, 10.4.5, 10.2.9, 10.0.12, 9.4.17. CISA's SSVC data on both CVEs reads Exploitation none, Automatable yes; EPSS 0.0037 and 0.0031. The same release batch fixes authenticated flaws in Splunk SOAR 8.8 (SVD-2026-1108, 59 CVEs, highest 9.9, fixed in 8.8.0) and Splunk Enterprise Security 8.7 (SVD-2026-1106, 42 CVEs, highest 9.1, among them CVE-2026-131202 code execution through REST API path traversal, fixed in 8.7.0). The primary is a week old; no public coverage in the store and no exploitation reported.
+    region_nexus: "global; Splunk Enterprise is widely used as SIEM in public-sector SOCs"
+    primary_sector_nexus: "indirect (the defenders' own logging and detection platform)"
+    sector: "public-sector"
+    cves: [CVE-2026-76536, CVE-2026-76535, CVE-2026-131190, CVE-2026-131202]
+    techniques: [T1190, T1210]
+    affected_products: ["Splunk Enterprise", "Splunk Enterprise Security", "Splunk SOAR"]
+    entity_keys: ["product:splunk-enterprise"]
+    new_entities:
+      - { key: "product:splunk-enterprise-security", type: product, name: "Splunk Enterprise Security", aliases: ["Splunk ES"], summary: "Splunk's SIEM application on Splunk Enterprise; SVD-2026-1106 fixes 42 CVEs in 8.7.0 (Splunk, 2026-11-18)." }
+      - { key: "product:splunk-soar", type: product, name: "Splunk SOAR", aliases: ["Splunk Phantom"], summary: "Splunk's security orchestration platform; SVD-2026-1108 fixes 59 CVEs in 8.8.0, highest CVSS 9.9 (Splunk, 2026-11-18)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "an unauthenticated user could use an empty clustering shared secret to read and modify clustering configuration through the cluster configuration Representational State Transfer (REST) API endpoint on a standalone instance."
+        attribution: "Splunk (SVD-2026-1103)"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "an unauthenticated user could run arbitrary Search Processing Language (SPL) searches through RapidDiag task collection as an authenticated user."
+        attribution: "Splunk (SVD-2026-1103)"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+      - quote: "Upgrade Splunk Enterprise versions 10.6.1, 10.4.5, 10.2.9, 10.0.12, and 9.4.17 or higher."
+        attribution: "Splunk (SVD-2026-1103)"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-1103"
+    extended_notes: |
+      EXPOSURE: the flaw exists because the instance accepts an empty shared secret, so the check is whether pass4SymmKey is empty in server.conf (the [clustering] stanza, and the general stanza used by RapidDiag), on every instance including standalone ones, and whether the management port is reachable by anything beyond the nodes that need it. The version is shown in Splunk Web's About dialog or `splunk version`; the matrix is in the advisory. Other critical rows are PR:L or PR:H (SOAR 9.9 and ES 9.1 need authentication).
+      DETECTION: management-API (splunkd) access logs for requests to the cluster-configuration and RapidDiag REST endpoints from hosts that are not cluster members, searches that run under a user without a matching interactive login (splunkd_access and audit index), and unexpected changes to [clustering] settings; post-patch, review for new or changed clustering configuration and scheduled searches or saved objects that nobody created.
+      Source note: SVD-2026-1103 is dated 2026-11-18, outside the 26 h window and inside the record's 168 h lookback; NCSC-NL relayed it on 2026-11-23. NCSC-NL rates probability medium and damage high. The CVE records are published by Cisco as Splunk's CNA on 2026-11-19; CVE-2026-76535 lists 10.6 below 10.6.1 as affected, CVE-2026-76536 does not.
+
+  # ------------------------------------------------------------------
+  # 6. update-of: Microsoft November Patch Tuesday entry, late-published CVE
+  # ------------------------------------------------------------------
+  - title: "Microsoft November 2026 updates: CVE-2026-112732, an Office Visio double free rated CVSS 9.8 and reachable over the network without authentication, was published on 2026-11-24 after being left out of the 10 November release notes; not exploited, no further action for patched systems"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-112732", publisher: "Microsoft MSRC (CVE-2026-112732, revision 1.1)", date: "2026-11-24", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-112732", publisher: "CVE Services (CVE record, assigner Microsoft; CISA ADP container)", date: "2026-11-24", role: "corroborating" }
+    discovery_trace: "first seen at: msrc-update-guide, python3 tools/fetch_source.py msrc recent 25 (releaseDate 2026-11-24T08:00:00-08:00, release 2026-Nov, base score 9.8) → primary: python3 tools/fetch_source.py msrc cve CVE-2026-112732 (human-facing page https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-112732) → CVE record https://cveawg.mitre.org/api/cve/CVE-2026-112732"
+    summary: |
+      Microsoft's update guide published CVE-2026-112732 on 2026-11-24 (release 2026-Nov, revision 1.1): "Double free in Microsoft Office Visio allows an unauthorized attacker to execute code over a network", CWE-415, CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, temporal 8.5), exploitability assessment Exploitation Less Likely, exploited No, publicly disclosed No. The revision note says the CVE "was addressed by updates that were released in November 2026, but the CVE was inadvertently omitted from the November 2026 Security Updates", that this is an informational change only and that customers who installed the November updates need no further action. The CVE record lists Microsoft 365 Apps for Enterprise (build per the Office release notes), Office LTSC 2021 below 16.0.14334.21048 and Office LTSC 2024 below 16.0.17932.21140 among the affected products. The FAQ text on the page is inconsistent with the title: it describes an unauthenticated attacker sending an email attachment to an Exchange server that processes it for indexing, with no recipient action, while another FAQ line says the Preview Pane is not an attack vector; that wording matches CVE-2026-116928 in the existing Patch Tuesday entry, so treat the attack path as unconfirmed and the 9.8 score as Microsoft's. CISA's SSVC data reads Exploitation none, Automatable yes, Technical Impact total. It is an eighth CVSS 9.8 unauthenticated network row for that release, which the existing entry does not list.
+    region_nexus: "global"
+    primary_sector_nexus: "direct (Microsoft Office estates)"
+    sector: "public-sector"
+    cves: [CVE-2026-112732]
+    techniques: [T1203, T1190]
+    affected_products: ["Microsoft 365 Apps for Enterprise", "Microsoft Office LTSC 2021", "Microsoft Office LTSC 2024", "Microsoft Office Visio"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:microsoft-visio", type: product, name: "Microsoft Office Visio", aliases: ["Visio"], summary: "Microsoft's diagramming application in the Office suite; CVE-2026-112732 is a CVSS 9.8 double free published 2026-11-24 (MSRC)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-11/microsoft-november-2026-patch-tuesday-preauth-9-8-rows"
+    borderline: true
+    borderline_reason: "not exploited, already fixed by the November updates and Microsoft calls the change informational; the value is completeness of the 9.8 row list and the contradictory FAQ text, so the main agent may record it as an internal or short update"
+    evidence:
+      - quote: "This CVE was addressed by updates that were released in November 2026, but the CVE was inadvertently omitted from the November 2026 Security Updates."
+        attribution: "Microsoft MSRC (CVE-2026-112732)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-112732"
+      - quote: "Double free in Microsoft Office Visio allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC (CVE-2026-112732)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-112732"
+    extended_notes: |
+      MSRC fields read: severity Critical, impact Remote Code Execution, customerActionRequired true, latestSoftwareRelease "Exploitation Less Likely", issuingCna Microsoft. Fixed builds are the November 2026 Office updates (the CVE record's lessThan values: LTSC 2021 16.0.14334.21048, LTSC 2024 16.0.17932.21140; Microsoft 365 Apps points to the Office release notes). No KB mapping was returned by the API.
+
+  # ------------------------------------------------------------------
+  # 7. NEW borderline: Erlang/OTP TLS 1.2 client certificate bypass
+  # ------------------------------------------------------------------
+  - title: "Erlang/OTP ssl: a TLS 1.2 or DTLS client configured for full server authentication completes the handshake when a man-in-the-middle sends no certificate and an unsigned key exchange (CVE-2026-124286, rated Critical by the project, CVSS 4.0 9.1); fixed in OTP 29.0.3, 28.5.0.9 and 27.3.4.14"
+    sources:
+      - { url: "https://github.com/erlang/otp/security/advisories/GHSA-7mff-v332-665j", publisher: "Erlang/OTP project (GHSA-7mff-v332-665j)", date: "2026-11-24", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-124286", publisher: "CVE Services (CVE record, assigner EEF)", date: "2026-11-24", role: "primary" }
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/erlang-security-advisory-av26-1204", publisher: "Canadian Centre for Cyber Security (AV26-1204)", date: "2026-11-24", role: "corroborating" }
+    discovery_trace: "first seen at: cccs-alerts feed (python3 tools/fetch_source.py feed https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en 10), 'Erlang security advisory (AV26-1204)' 2026-11-24T19:59Z, URL https://cyber.gc.ca/en/alerts-advisories/erlang-security-advisory-av26-1204 → primary: erlang/otp GitHub security advisories via the GitHub REST API and GHSA page URL https://github.com/erlang/otp/security/advisories/GHSA-7mff-v332-665j → CVE record https://cveawg.mitre.org/api/cve/CVE-2026-124286"
+    summary: |
+      The Erlang/OTP project and its CNA (EEF) published ten advisories on 2026-11-24, one rated Critical: CVE-2026-124286 (CVSS 4.0 9.1, AV:N/AC:L/AT:P/PR:N) in the ssl application. When a server sends no Certificate message and a ServerKeyExchange without a signature, ssl_handshake reports the signature algorithm as anonymous and verify_signature returns true for it, so a TLS 1.2 or DTLS client completes the handshake for the ecdhe_rsa, ecdhe_ecdsa, dhe_rsa and dhe_dss key exchanges; certificate path validation, verify_fun and the hostname check do not run, and ssl:connect returns {ok, Socket} even with verify_peer set. An on-path attacker can therefore impersonate any server to an affected client and read and modify all traffic; TLS 1.3 clients, servers and suites without a ServerKeyExchange are not affected. Default client configurations are exposed because they offer TLS 1.2. Affected: OTP from 17.0 before 27.3.4.14, 28.5.0.9 and 29.0.3 (ssl from 5.3.4 before 11.2.12.10, 11.6.0.8 and 11.7.3); the project notes the fix reached OTP 29 and 27 earlier as a hardening change and was missed on the 28 track. Workaround: restrict clients to TLS 1.3. The other nine advisories are Medium to High denial-of-service and parser flaws (SNMP BER decoding, binary_to_term, xmerl, inets). No exploitation is reported and the attacker needs a network position.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect (Erlang/OTP-based server software that makes outbound TLS connections)"
+    sector: "technology"
+    cves: [CVE-2026-124286]
+    techniques: [T1557]
+    affected_products: ["Erlang/OTP ssl"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:erlang-otp", type: product, name: "Erlang/OTP", aliases: ["OTP", "Erlang"], summary: "Erlang runtime and libraries (ssl, ssh, inets, SNMP); ten security advisories on 2026-11-24 include a Critical TLS 1.2 client authentication bypass, CVE-2026-124286 (Erlang/OTP project, EEF)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "critical-rated and patched, but it needs an on-path attacker and the sources name no downstream products or exploitation; relevance rests on which products in the estate embed Erlang/OTP clients"
+    evidence:
+      - quote: "Improper Verification of Cryptographic Signature vulnerability in Erlang OTP ssl (ssl_handshake module) allows an on-path attacker to impersonate any server to a TLS 1.2 or DTLS client."
+        attribution: "CVE record (EEF)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-124286"
+      - quote: "Use TLS-1.3  only"
+        attribution: "Erlang/OTP project (GHSA-7mff-v332-665j)"
+        source_url: "https://github.com/erlang/otp/security/advisories/GHSA-7mff-v332-665j"
+    extended_notes: |
+      The GHSA says the vulnerability was introduced in OTP 17.0, that older unsupported versions are probably affected too, and gives a last-resort workaround restricting TLS 1.2 clients to static RSA key transport suites, which it does not recommend. Detection is limited: a client that accepted an impersonated server shows a completed handshake without a Certificate message on the wire (TLS 1.2 ServerKeyExchange with no signature), visible only to TLS-aware network sensors.
+
+  # ------------------------------------------------------------------
+  # 8. update-of: nginx2root entry, PAN-OS fixed builds
+  # ------------------------------------------------------------------
+  - title: "nginx2root: Palo Alto Networks' portfolio page now lists all six PAN-OS fixed builds without an ETA marker (12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 added to 12.2.4-h3, 12.1.10-h6, 11.2.16-h3)"
+    sources:
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-123633", publisher: "Palo Alto Networks PSIRT (CVE-2026-123633 portfolio status)", date: "2026-11-24", role: "primary" }
+    discovery_trace: "first seen at: paloalto-psirt feed (python3 tools/fetch_source.py feed https://security.paloaltonetworks.com/rss.xml 25), item 'CVE-2026-123633 Portfolio Status: Impact of NGINX Vulnerabilities' pubDate 2026-11-24T23:10:00Z → primary: same page via extract, URL https://security.paloaltonetworks.com/CVE-2026-123633"
+    summary: |
+      Palo Alto Networks' page for the nginx flaws (CVE-2026-123633 and CVE-2026-123007, CVSS-B 4.0 9.2, suggested urgency Moderate, no known exploitation, affects PAN-OS and Panorama only with HTTP/2 enabled) was re-listed in the PSIRT feed on 2026-11-24 at 23:10 UTC. Its solution table now gives six fixed builds with no ETA wording: PAN-OS 12.2.4-h3, 12.1.10-h6, 12.1.7-h15, 11.2.16-h3, 11.2.13-h6 and 11.2.10-h19 or later in the respective trains, with PAN-OS 11.1 and 10.2 unaffected; the existing entry's action still describes 12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 as due on 2026-11-23. The page also says the flaws CVE-2026-121810, CVE-2026-123634 and CVE-2026-113425 affect the same products. The workaround is unchanged: disable the HTTP/2 option on PAN-OS and Panorama.
+    region_nexus: "global; PAN-OS firewalls are common perimeter devices"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-123633, CVE-2026-123007]
+    techniques: [T1190]
+    affected_products: ["Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama"]
+    entity_keys: ["product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-11-19/nginx-nginx2root-five-unauth-memory-corruption-flaws"
+    borderline: true
+    borderline_reason: "metadata refinement of an action line (fix availability), vendor page shows no explicit changelog so the ETA removal is inferred from the entry's earlier text; an internal improvement record at most"
+    evidence:
+      - quote: "This issue only impacts customers who enable"
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+      - quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+    extended_notes: |
+      The page text carries no ETA marker and no revision table, so whether the three builds became available on 2026-11-23 or later is not stated; verify the download portal before closing the action. PAN-SA-2026-0015 (OSS CVEs fixed in PAN-OS, informational) and PAN-SA-2026-0005 were also listed on 2026-11-24 and are not actionable.
+
+  # ------------------------------------------------------------------
+  # 9. update-of: Drupal entry, KEV listing (metadata)
+  # ------------------------------------------------------------------
+  - title: "Drupal core SA-CORE-2026-017: CISA added CVE-2026-132165 to the KEV catalogue on 2026-11-24 (federal due date 2026-11-27); the existing entry already reports Drupal's own exploitation notice"
+    sources:
+      - { url: "https://cyber.gc.ca/en/alerts-advisories/drupal-security-advisory-av26-1186", publisher: "Canadian Centre for Cyber Security (AV26-1186, Update 1)", date: "2026-11-24", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA (alert, KEV additions)", date: "2026-11-24", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev), CVE-2026-132165 dateAdded 2026-11-24; kev-window.txt row COVERED → CISA alert via WebFetch, URL https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog; CCCS AV26-1186 Update 1 via extract; Drupal SA-CORE-2026-017 re-read, URL https://www.drupal.org/sa-core-2026-017 (unchanged: exploitation reported from 2026-11-19 19:00 UTC)"
+    summary: |
+      CISA added CVE-2026-132165 (Drupal Core, remote code execution through the installer) to the KEV catalogue on 2026-11-24, with a federal due date of 2026-11-27; the Canadian Cyber Centre updated its advisory AV26-1186 the same day to say so. The existing entry already carries Drupal's own statement that the flaw was exploited on live sites as early as 2026-11-19 19:00 UTC, so the listing is a metadata delta only: cves[].status can add cisa-kev. SA-CORE-2026-017 itself is unchanged on re-read (fixed in 11.4.13, 11.3.22 and 10.6.22; Drupal Steward protects known vectors; securing the installer is the only workaround).
+    region_nexus: "global; Drupal is widely used by Swiss public-sector sites"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-132165]
+    techniques: [T1190]
+    affected_products: ["Drupal Core"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-11-18/drupal-core-critical-release-2026-11-18-psa-2026-11-16"
+    borderline: true
+    borderline_reason: "metadata-only (KEV status and due date); no reader-facing action changes, so an internal record is the appropriate shape"
+    evidence:
+      - quote: "On November 24, 2026, Cybersecurity and Infrastructure Security Agency (CISA) added CVE-2026-132165 to their Known Exploited Vulnerabilities (KEV) Catalog."
+        attribution: "Canadian Centre for Cyber Security (AV26-1186)"
+        source_url: "https://cyber.gc.ca/en/alerts-advisories/drupal-security-advisory-av26-1186"
+      - quote: "CVE-2026-132165 Drupal Core Remote Code Execution Vulnerability"
+        attribution: "CISA (alert, KEV additions)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      KEV JSON: dateAdded 2026-11-24, dueDate 2026-11-27, knownRansomwareCampaignUse Unknown, notes cite https://www.drupal.org/sa-core-2026-017.
+
+  # ------------------------------------------------------------------
+  # 10. borderline NEW: Chrome 158 Critical
+  # ------------------------------------------------------------------
+  - title: "Chrome 158.0.8127.88/.89 (2026-11-23): the single security fix is a Critical-rated Variations input-validation flaw, CVE-2026-134401, found internally by Google; no exploitation stated"
+    sources:
+      - { url: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html", publisher: "Google Chrome Releases", date: "2026-11-23", role: "primary" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1608/", publisher: "CERT-FR (CERTFR-2026-AVI-1608)", date: "2026-11-24", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, python3 tools/fetch_source.py cert-fr avis-recent 40, CERTFR-2026-AVI-1608 'Vulnérabilité dans Google Chrome (24 novembre 2026)' → primary: Chrome Releases post, URL https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html"
+    summary: |
+      Google's Stable channel update of 2026-11-23 moves Chrome to 158.0.8127.88 (Linux), 158.0.8127.88/.89 (Windows, Mac) and Extended Stable to 156.0.8078.114 (per CERT-FR) with one security fix: "[N/A][554051967] Critical CVE-2026-134401: Improper input validation in Variations. Reported by Google on 2026-08-28". The post says nothing about exploitation, a proof of concept or bug details, which Chrome withholds until most users are updated; CERT-FR lists remote code execution and security-policy bypass as the risks. This is not the exploited Chrome flaw CVE-2026-125350 already in the store.
+    region_nexus: "global"
+    primary_sector_nexus: "direct (browser estate)"
+    sector: "public-sector"
+    cves: [CVE-2026-134401]
+    techniques: [T1189]
+    affected_products: ["Google Chrome"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Critical severity is rare for Chrome, but there is no exploitation, no details and the fix rides the normal auto-update; mention-level at most"
+    evidence:
+      - quote: "This update includes 1 security fixes."
+        attribution: "Google Chrome Releases"
+        source_url: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html"
+      - quote: "Critical CVE-2026-134401: Improper input validation in Variations."
+        attribution: "Google Chrome Releases"
+        source_url: "https://chromereleases.googleblog.com/2026/11/stable-channel-update-for-desktop_01734282054.html"
+    extended_notes: |
+      CERT-FR affected list: Chrome Extended Stable below 156.0.8078.114 (Windows, Mac), Chrome below 158.0.8127.88 (Linux, Windows) and below 158.0.8127.89 (Mac).
+
+cve_table:
+  - { cve: CVE-2026-132224, product: "Optimizely Web Experimentation (hosted service)", cvss: "7.1 (CVSS 4.0, AV:N/AC:H/AT:N/PR:L/UI:N/VC:N/VI:H/VA:N/SC:H/SI:H/SA:N)", epss: 0.0041, kev: true, exploited: true, affected: "versions before 2026-11-17 (hosted service, no customer-side version)", fixed: "vendor-side fix by Optimizely on 2026-11-16 (vulnerability closed 16:10 UTC); no customer patch", type: "external control of critical state data (CWE-642), signup-flow user impersonation", vector: "network", auth: "low privilege (account signup flow)", source: "CVE record (MITRE CNA); CISA KEV dateAdded 2026-11-24, dueDate 2026-11-27; Optimizely status page and incident report" }
+  - { cve: CVE-2026-123903, product: "VMware vCenter (Directory Service)", cvss: "9.8 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)", epss: null, kev: false, exploited: false, affected: "vCenter 9.1.x, 9.0.x, 8.0, 7.0; VMware Cloud Foundation 5.x; Telco Cloud Platform 3.0, 4.x, 5.0.x, 5.1.x, 5.2; Telco Cloud Infrastructure 3.0, below the fixed builds", fixed: "9.1.2; 9.0.2.0300; 8.0 U3m; VCF 5.2.5 (KB88287 asynchronous patching); Telco KB463501; 7.0 no public fix (extended support only)", type: "authentication bypass", vector: "network", auth: "none", source: "Broadcom VMSA-2026-0011 (advisory silent on exploitation; NCSC.ch status unknown)" }
+  - { cve: CVE-2026-123910, product: "VMware ESX (I/O filter service, IOFilterVP port 9080 on 8.x)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "ESX 9.1.x, 9.0.x, 8.0, 7.0; VMware Cloud Foundation 5.x; Telco Cloud Platform 5.0.x and 5.1.x, below the fixed builds", fixed: "ESXi-9.1.2.0-25946735; ESXi-9.0.2.0200-25953133; ESXi80U3m-25926933 (interim workaround KB463535: restrict port 9080 to the vCenter address); VCF 5.2.5; Telco KB463501; 7.0 no public fix", type: "heap out-of-bounds write, code execution on host", vector: "network", auth: "none stated (network access to ESX)", source: "Broadcom VMSA-2026-0011; Broadcom KB463535" }
+  - { cve: CVE-2026-123911, product: "VMware ESX (I/O filter service)", cvss: "9.8 (CVSS 3.1)", epss: null, kev: false, exploited: false, affected: "same as CVE-2026-123910", fixed: "same as CVE-2026-123910", type: "use-after-free, code execution on host", vector: "network", auth: "none stated (network access to ESX)", source: "Broadcom VMSA-2026-0011; Broadcom KB463535" }
+  - { cve: CVE-2026-123912, product: "VMware ESX, Workstation and Fusion (XHCI USB controller)", cvss: "9.3 for Workstation and Fusion, 8.4 for ESX (matrix; Q&A says 8.5) (CVSS 3.1, AV:L/AC:L/PR:N/UI:N/S:C)", epss: null, kev: false, exploited: false, affected: "ESX 9.1.x, 9.0.x, 8.0, 7.0, VCF 5.x; Workstation and Fusion 25H2", fixed: "ESXi-9.1.2.0-25946735; ESXi-9.0.2.0200-25953133; ESXi80U3m-25926933; Workstation and Fusion 26H1u1; VCF 5.2.5", type: "out-of-bounds write, guest-to-VMX code execution (host escape on Workstation and Fusion)", vector: "local (guest administrator)", auth: "guest administrative privileges", source: "Broadcom VMSA-2026-0011 and Q&A" }
+  - { cve: CVE-2026-129245, product: "GeoServer (security core, remember-me key)", cvss: "n/a (project rates Critical; no vector in the GHSA)", epss: null, kev: false, exploited: false, affected: "2.27.x up to 2.27.6; 2.28.0 to 2.28.5; 3.0.0 to 3.0.1", fixed: "2.27.7; 2.28.6; 3.0.2", type: "hard-coded cryptographic key, administrator session forgery (step 4 of the chain)", vector: "network", auth: "needs the key and an administrator password digest (obtainable through the file-read step)", source: "GeoServer GHSA-hgm3-wq4h-8vvq" }
+  - { cve: CVE-2026-120705, product: "GeoServer (WFS GetFeatureById stored query)", cvss: "8.6 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N)", epss: null, kev: false, exploited: false, affected: "2.27.x up to 2.27.6; 2.28.0 to 2.28.5; 3.0.0 to 3.0.1 (GeoTools 33.6, 34.0 to 34.5, 35.0 to 35.1)", fixed: "2.27.7; 2.28.6; 3.0.2 (GeoTools 33.7, 34.6, 35.2)", type: "XML injection with XInclude, local file read and SSRF (step 3)", vector: "network", auth: "none", source: "GeoServer GHSA-39mw-5chv-jh47" }
+  - { cve: CVE-2026-129243, product: "GeoServer (service security dispatcher)", cvss: "n/a (project rates High)", epss: null, kev: false, exploited: false, affected: "2.27.x up to 2.27.6; 2.28.0 to 2.28.5; 3.0.0 to 3.0.1", fixed: "2.27.7; 2.28.6; 3.0.2", type: "authorization bypass with a prefixed service name such as x/WFS (step 2)", vector: "network", auth: "none", source: "GeoServer GHSA-rv5g-g2r9-58rj" }
+  - { cve: CVE-2026-129244, product: "GeoServer (WFS stored query exception)", cvss: "n/a (project rates Medium)", epss: null, kev: false, exploited: false, affected: "2.27.x up to 2.27.6; 2.28.0 to 2.28.5; 3.0.0 to 3.0.1", fixed: "2.27.7; 2.28.6; 3.0.2", type: "information disclosure of the absolute data directory path (step 1)", vector: "network", auth: "none", source: "GeoServer GHSA-4v26-c537-jvxc" }
+  - { cve: CVE-2026-129242, product: "GeoServer (JDBC user and role services)", cvss: "n/a (project rates High)", epss: null, kev: false, exploited: false, affected: "gs-sec-jdbc 2.28.0 to 2.28.5; 3.0.0 to 3.0.1 (2.27.x up to 2.27.6 per the sibling CVE-2026-120704)", fixed: "2.28.6; 3.0.2; 2.27.7", type: "deserialization of untrusted data, administrator code execution as the GeoServer process (step 5)", vector: "network", auth: "administrator (or hijacked administrator session)", source: "GeoServer GHSA-9wf2-fcgq-vxhq" }
+  - { cve: CVE-2026-120701, product: "GeoServer (WPS download extension, gs:DownloadMap)", cvss: "7.5 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)", epss: null, kev: false, exploited: false, affected: "wps-download extension up to 2.27.6; 2.28.0 to 2.28.5", fixed: "2.27.7; 2.28.6", type: "server-side request forgery", vector: "network", auth: "none", source: "GeoServer GHSA-3x82-qq72-g4p3 (read through the GitHub API)" }
+  - { cve: CVE-2026-76536, product: "Splunk Enterprise (cluster configuration REST API)", cvss: "9.4 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:H/A:H)", epss: 0.0031, kev: false, exploited: false, affected: "10.4.0 to 10.4.4; 10.2.0 to 10.2.8; 10.0.0 to 10.0.11; 9.4.0 to 9.4.16", fixed: "10.4.5; 10.2.9; 10.0.12; 9.4.17 (workaround: set pass4SymmKey of at least 12 characters in [clustering], also on standalone instances)", type: "authentication bypass through an accepted empty shared secret", vector: "network", auth: "none", source: "Splunk SVD-2026-1103; CVE record (CNA Cisco/Splunk); CISA SSVC Exploitation none, Automatable yes" }
+  - { cve: CVE-2026-76535, product: "Splunk Enterprise (RapidDiag REST API)", cvss: "9.1 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)", epss: 0.0037, kev: false, exploited: false, affected: "10.6.0.5; 10.4.0 to 10.4.4; 10.2.0 to 10.2.8; 10.0.0 to 10.0.11; 9.4.0 to 9.4.16", fixed: "10.6.1; 10.4.5; 10.2.9; 10.0.12; 9.4.17 (workaround: non-empty pass4SymmKey in server.conf)", type: "authentication bypass through an accepted empty shared secret, unauthenticated SPL searches", vector: "network", auth: "none", source: "Splunk SVD-2026-1103; CVE record (CNA Cisco/Splunk); CISA SSVC Exploitation none, Automatable yes" }
+  - { cve: CVE-2026-124286, product: "Erlang/OTP ssl (TLS 1.2 and DTLS client)", cvss: "9.1 (CVSS 4.0, AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:N/SC:N/SI:N/SA:N)", epss: null, kev: false, exploited: false, affected: "OTP from 17.0 before 27.3.4.14, 28.5.0.9 and 29.0.3 (ssl from 5.3.4 before 11.2.12.10, 11.6.0.8 and 11.7.3)", fixed: "OTP 29.0.3; 28.5.0.9; 27.3.4.14 (workaround: TLS 1.3 only)", type: "improper verification of cryptographic signature, server impersonation by an on-path attacker", vector: "network (on-path)", auth: "none", source: "Erlang/OTP GHSA-7mff-v332-665j; CVE record (EEF)" }
+  - { cve: CVE-2026-112732, product: "Microsoft Office Visio (Microsoft 365 Apps, Office LTSC 2021 and 2024)", cvss: "9.8 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, temporal 8.5)", epss: null, kev: false, exploited: false, affected: "Microsoft 365 Apps for Enterprise (per release notes); Office LTSC 2021 below 16.0.14334.21048; Office LTSC 2024 below 16.0.17932.21140", fixed: "November 2026 Office updates (already shipped; CVE published late)", type: "double free (CWE-415), code execution; MSRC FAQ text contradictory (Exchange attachment indexing)", vector: "network", auth: "none stated", source: "Microsoft MSRC CVE-2026-112732; CVE record (Microsoft)" }
+  - { cve: CVE-2026-134401, product: "Google Chrome (Variations)", cvss: "n/a (Chrome severity Critical)", epss: null, kev: false, exploited: false, affected: "Chrome below 158.0.8127.88 (Linux, Windows) and 158.0.8127.89 (Mac); Extended Stable below 156.0.8078.114", fixed: "158.0.8127.88/.89; Extended Stable 156.0.8078.114", type: "improper input validation", vector: "network (browser)", auth: "none", source: "Chrome Releases 2026-11-23; CERT-FR CERTFR-2026-AVI-1608" }
+
+dropped_candidates:
+  - { item: "Danfoss AK-SM 8xxA CISA ICSA-26-328-03 (CVE-2026-129713)", reason: "CISA republication of Danfoss DSA-2026-12-01 of 2026-11-20 that the Danfoss entry already carries (fix still the unreleased 5.5.x); no delta" }
+  - { item: "F5 K000163947 NGINX CVE-2026-132779 (CERT-FR AVI-1612)", reason: "denial of service only" }
+  - { item: "Postfix 3.11.8 and legacy releases (CERT-FR AVI-1610)", reason: "project calls the release medium-impact (local information leak, SMTP client DoS)" }
+  - { item: "OpenSSL 2026-11-24 advisory (CVE-2026-84785, -84786, -107494, -121482)", reason: "denial of service only (BSI, CERT-FR)" }
+  - { item: "Elastic ESAs of 2026-11-23 (CERT-FR AVI-1614, 18 posts)", reason: "read 18 ESA posts: all authenticated Medium or High except one unauthenticated LZ4 transport buffer over-read (CVSS 7.5, needs transport-port access); published 2026-11-23 20:00 UTC, before the window" }
+  - { item: "Mozilla MFSA 2026-131 to -135 (Firefox 161, ESR 153.8 and 115.46, Thunderbird)", reason: "impact high, no exploitation stated" }
+  - { item: "Traefik GHSAs of 2026-11-24, PostgreSQL pgjdbc bulk (WID-SEC-2026-4746), Devolutions Server, Checkmk, Tanium TAN-2026-126/127, CODESYS Visualization VDE-2026-154, n8n AV26-1200, ConnectWise Automate CVE-2026-131610, MikroTik 7.25.2", reason: "DoS, information disclosure, authenticated, MITM or engineering-workstation preconditions, or no public technical detail" }
+  - { item: "MediaWiki Echo CVE-2026-132726 (CVSS 4.0 9.2)", reason: "Wikimedia's own task says no path from a normal web user; needs forged job parameters on the unsigned job-runner endpoint" }
+  - { item: "Mitel MISA-2026-0011 MiVoice MX-ONE (critical, LAN access)", reason: "first issued 2026-11-11, outside the 168 h lookback; NCSC-NL 0514 Mitel MiCollab is MISA-2026-0012 already in the store" }
+  - { item: "Ruby2Shell (CVE-2026-132825) and nginx2root exploitation status", reason: "no in-window delta: Veria Labs' page still announces the Rails proof of concept for 25 November without a published exploit at read time; no in-the-wild report found for nginx2root; GitHub Enterprise Server 3.22.5 and earlier still shown without a fix by Veria (Mastodon, OpenProject and Discourse rows are new on that page but already fixed)" }
+  - { item: "N-able N-central, Cisco Expressway CVE-2026-76466, F5 BIG-IP (K000163937), Fortinet hardening release, Citrix NetScaler", reason: "checked for revisions or new exploitation reports in the window: none found beyond what the store already carries" }
+
+open_leads:
+  - "Broadcom VMSA-2026-0010: named in the VMSA-2026-0011 Q&A as a separate advisory with a workaround and a planned Express Patch; not locatable on any transport this run (index is script-rendered; GitHub supplement path returns 404). Chase next run."
+  - "Ruby2Shell proof of concept on stock Rails announced by Veria Labs for 2026-11-25: not public at read time (03:57 to about 05:00 UTC); re-check for an in-window exploit publication, and for a GitHub Enterprise Server fix."
+  - "VMSA-2026-0011: CVE records for CVE-2026-123903 and the ESX CVEs were not yet published at read time; ESX 9.0 patch for CVE-2026-123914 and CVE-2026-123915 pending; watch for public analysis from the three independent reporters of CVE-2026-123903."
+  - "GeoServer chain: watch for a public proof of concept and for exploitation reports; CVE records for the 2026-11-23 GHSAs were unpublished at read time."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty: no-op"
+
+candidate_sources:
+  - id: watchtowr-intelligence
+    publisher: "watchTowr Intel (Rapid Reaction bulletins and Vulnerability FAQ pages)"
+    url: "https://watchtowr.com/intelligence/"
+    category: vulns
+    why: "The existing watchtowr record points at the labs.watchtowr.com feed, whose newest item is 2026-11-05; the live exploitation-status FAQs (Idunno.AntiCsrf, Ruby2Shell, nginx2root, Java4Shell, PHP2Shell, Ivanti, BeyondTrust) are published under watchtowr.com/intelligence/, which reads cleanly with extract and states 'exploited in the wild' per CVE with dates; reliability B."
+
+coverage_gaps:
+  - source_id: bsi-de
+    reason: "bsi-rss returned the 250-item cap again, covering only 2026-11-24 12:13 to 12:47 UTC (mostly [UPDATE] distro relays); advisories published after 12:47 UTC on 2026-11-24 are not visible through the feed, and per-ID csaf reads cannot enumerate them. Covered anyway for this window through CERT-FR, CCCS, NCSC-NL and NCSC.ch lists. Recipe note: the [NEU] filter still works for the 34 minutes it covers."
+  - source_id: watchtowr
+    reason: "recipe change: labs.watchtowr.com/rss/ is stale (newest 2026-11-05); working recipe is `python3 tools/fetch_source.py extract https://watchtowr.com/intelligence/` (lists Vulnerability FAQ and Rapid Reaction items with dates), then extract of each FAQ page; see candidate_sources watchtowr-intelligence."
+  - source_id: advisory-splunk
+    reason: "recipe confirmed: `python3 tools/fetch_source.py url https://advisory.splunk.com/` returns the full 1.5 MB DataTable with every SVD row (id, dates, severity, CVE list, CVSS vectors, affected and fixed versions); `extract https://advisory.splunk.com/advisories/SVD-2026-NNNN` returns the per-CVE descriptions and mitigations. Parse rows of the current month for Critical or PR:N vectors."
+  - source_id: github-advisory
+    reason: "recipe addition: `python3 tools/fetch_source.py url --direct 'https://api.github.com/repos/<org>/<repo>/security-advisories?per_page=30&state=published'` returns published GHSA records (summary, description, severity, vulnerable and patched ranges) with no key and no reader credit (used for geoserver/geoserver, erlang/otp, n8n-io/n8n, traefik/traefik); `url --direct 'https://api.github.com/advisories?per_page=40&type=reviewed&severity=critical'` lists new critical GHSAs. Use --direct: without it a 404 or block falls through to the exhausted jina pool."
+  - source_id: mikrotik-routeros-changelog
+    reason: "record url NEWESTa7.stable returns only '7.25.2 <epoch>'; the working changelog read is `python3 tools/fetch_source.py url --direct https://download.mikrotik.com/routeros/<version>/CHANGELOG` (7.25.2 of 2026-11-20 lists no security fix beyond 'system - improve stability (includes CVE-2026-63887, CVE-2026-64320, CVE-2026-68431)')."
+  - source_id: censys-advisories
+    reason: "record url is a single advisory page (N-central, dated 2026-11-09), not a listing; it can never surface new items in a rotation sweep. Suggest repointing to the advisory index or retiring."
+  - source_id: mozilla-mfsa
+    reason: "extract of the advisories index returns date headings without the list items; WebFetch of https://www.mozilla.org/en-US/security/advisories/ returns the items with titles and MFSA urls (first page of 100000 characters), and `extract` of a single mfsaYYYY-NNN page works (impact level and CVE list)."
+  - source_id: jina-pool
+    reason: "all 10 jina keys answer HTTP 402 and the anonymous tier answers 401 this run; `feed` and `extract` on a host that is 404 or blocked burn ten failed reader calls before returning (seen on chromereleases.googleblog.com feed, geoserver.org/announcements, an unpublished GitHub path). Prefer `url --direct` for known-good hosts and APIs."
+
+source_ledger:
+  - { id: advisories-ncsc-nl, tier: essential, attempted: true, transport: "bridge:ncsc-nl recent 40 + ncsc-nl csaf", horizon_hours: 26, in_horizon_items: 1, returned: 0, note: "NCSC-2026-0514 (Mitel MiCollab, MISA-2026-0012) already covered; NCSC-2026-0512 (Splunk Enterprise, 2026-11-23) used as corroboration of the Splunk lookback item" }
+  - { id: anssi-fr, tier: essential, attempted: true, transport: "bridge:cert-fr avis-recent 40 + feed alerte + extract per advisory", horizon_hours: 26, in_horizon_items: 7, returned: 1, note: "24 Nov AVIs: Chrome (returned, borderline), Laravel, Postfix, Traefik, F5 NGINX DoS, OpenSSL DoS, Elastic: dropped with reasons; no new CERTFR-2026-ALE alert in window" }
+  - { id: bsi-de, tier: essential, attempted: true, transport: "bridge:bsi-rss + bsi-csaf", horizon_hours: 26, in_horizon_items: 12, returned: 2, note: "feed capped at 250 items spanning 2026-11-24 12:13 to 12:47 UTC only (coverage gap logged); 12 [NEU] hoch items drilled, VMware (WID-SEC-2026-4769) and GeoServer (WID-SEC-2026-4767) returned, rest dropped" }
+  - { id: cert-eu, tier: essential, attempted: true, transport: "bridge:cert-eu recent 10", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest advisory 2026-022 of 2026-11-18" }
+  - { id: cert-pl, tier: essential, attempted: true, transport: "feed https://cert.pl/en/rss.xml", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-20 (Analogic Poste.io)" }
+  - { id: cisa-advisories, tier: essential, attempted: true, transport: "WebFetch listing + bridge:cisa csaf-recent + csaf per ICS id", horizon_hours: 26, in_horizon_items: 3, returned: 0, note: "listing page 1 shows only KEV alerts (Nov 24: three, Nov 23: two); ICSA-26-328-01/02/03 read (AutomationDirect and Schneider need a user to open a file, Danfoss already covered)" }
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev (catalogVersion 2026.11.24) + WebFetch of the 2026-11-24 alert", horizon_hours: 26, in_horizon_items: 3, returned: 2, note: "Optimizely CVE-2026-132224 (update-of OptimJack), Drupal CVE-2026-132165 (metadata update-of); Idunno CVE-2026-131914 already covered; catalogue read confirms exactly three additions on 2026-11-24, two on 2026-11-23 (MONAI Label, N-able Mail Assure, both covered)" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "bridge:enisa-euvd recent exploited + recent criticals", horizon_hours: 26, in_horizon_items: 4, returned: 0, note: "exploited list = Optimizely EUVD-2026-129010 (item 1 corroboration), Idunno, MONAI Label, N-able Mail Assure (covered); criticals: Netis WF2409E (consumer router, public exploit, vendor silent), Flatpak, two MediaWiki extensions (dropped)" }
+  - { id: ncsc-ch-security-hub, tier: essential, attempted: true, transport: "bridge:ncsc-csh recent 15 + ncsc-csh post 13238", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "post 13238 (VMware vCenter CVE-2026-123903) led to VMSA-2026-0011" }
+  - { id: ncsc-uk, tier: essential, attempted: true, transport: "feed all-rss-feed.xml 15", horizon_hours: 26, in_horizon_items: 2, returned: 0, note: "2026-11-24 items are an agentic-attack defence blog and CORNERSTONE; no vulnerability advisory" }
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed labs.watchtowr.com + extract watchtowr.com/intelligence", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-11-05; intelligence page newest 2026-11-22; recipe change logged in coverage_gaps and candidate_sources" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed ir.xml 25 + extract FG-IR-26-279", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-279 (2026-11-20); no new advisory or exploitation in window" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "bridge:msrc recent 25 + msrc cve", horizon_hours: 26, in_horizon_items: 1, returned: 1, note: "CVE-2026-112732 Visio (late-published 9.8); the other 24 recent rows are Chromium and Linux kernel mirror entries" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed rss.xml 25 + extract CVE-2026-123633", horizon_hours: 26, in_horizon_items: 3, returned: 1, note: "CVE-2026-123633 portfolio page re-listed 2026-11-24 23:10 UTC (borderline update-of nginx2root); PAN-SA-2026-0015 and -0005 informational" }
+  - { id: advisory-splunk, tier: standard, attempted: true, transport: "bridge:url (full DataTable) + extract SVD-2026-1103", horizon_hours: 168, in_horizon_items: 11, returned: 1, note: "lookback item SVD-2026-1103 (Critical, 2026-11-18); SOAR and ES fold into it; PHP, NGINX and Java rows informational" }
+  - { id: cccs-alerts, tier: standard, attempted: true, transport: "feed atom alerts_advisories 10", horizon_hours: 168, in_horizon_items: 10, returned: 1, note: "10 newest rows (2026-11-23/24) triaged: Erlang returned; VMware, Drupal Update 1, Tanium, Codesys, n8n, MISP, Splunk checked and dropped or covered" }
+  - { id: censys-advisories, tier: standard, attempted: true, transport: "bridge:url --direct", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "record url is the N-central advisory dated 2026-11-09, not a listing (coverage gap logged)" }
+  - { id: citrix-netscaler-security-bulletins, tier: standard, attempted: true, transport: "feed community.citrix.com techzone 10", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "only WAF signature updates since the 2026-11-12 bulletin already in the store" }
+  - { id: connectwise-trust-center, tier: standard, attempted: true, transport: "feed github commits atom + GitHub API commit read", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "CVE-2026-131610 Automate (2026-11-19, CVSS 6.5, authenticated information disclosure): dropped" }
+  - { id: ellio-threat-research, tier: standard, attempted: true, transport: "bridge:url --direct (blog index)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest titles older than the lookback" }
+  - { id: mikrotik-routeros-changelog, tier: standard, attempted: true, transport: "bridge:url --direct (NEWESTa7.stable + CHANGELOG)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "7.25.2 of 2026-11-20 lists no security fix beyond a stability line citing three CVE ids" }
+  - { id: exodus-intelligence, tier: standard, attempted: true, transport: "feed blog.exodusintel.com 6", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post 2026-07-27" }
+  - { id: github-advisory, tier: standard, attempted: true, transport: "bridge:url --direct api.github.com (advisories critical + per-repo security-advisories)", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "critical GHSAs in horizon: ruflo MCP bridge (niche, default Docker Compose), Xen Orchestra (covered), Fabio, Etherpad (older); API also used to drill GeoServer, Erlang/OTP, n8n and Traefik advisories" }
+  - { id: jfrog-security-research, tier: standard, attempted: true, transport: "feed research.jfrog.com 8", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "2026-11-24 Hugging Face malware campaign write-up is S3 material; Nginx2Shell post of 2026-11-18 already covered" }
+  - { id: mitel-security-advisories, tier: standard, attempted: true, transport: "extract listing + extract MISA-2026-0011", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "MISA-2026-0011 MX-ONE first issued 2026-11-11 (outside lookback, LAN-only); MISA-2026-0012/0013/0014 already in the store" }
+  - { id: mozilla-mfsa, tier: standard, attempted: true, transport: "extract (headings only) + WebFetch listing + extract MFSA 2026-133", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "MFSA 2026-131 to -135 of 2026-11-24, impact high, no exploitation stated" }
