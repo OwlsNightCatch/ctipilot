@@ -4,14 +4,14 @@ kind: incident
 title: "Danfoss AK-SM and AK-SC, Copeland xweb and Dixell xweb refrigeration controllers compromised in France, at least six more European countries and Switzerland, with France blaming the IRGC unit Shahid Kaveh for the October campaign; Midnight Blue reports six unpatched pre-authentication flaws in AK-SM 800A firmware up to 5.3.2"
 headline: "Danfoss AK-SM 800A: six unpatched pre-auth RCE flaws, Strict mode does not remove them; France blames IRGC"
 summary: >
-  Coopérative U, Intermarché and E. Leclerc confirmed a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026, a remotely forced defrost at hundreds of French stores, and on 2026-11-09 France's foreign ministry attributed that campaign, and only that campaign, to the Iranian unit Shahid Kaveh. More followed: more than 115 stores in at least six more countries and the first German shops on 2026-11-02, altered cold-room settings at three sites of the French blood service through a supplier, and, per SRF on 2026-11-05, a Köniz butcher and three Volg stores in Switzerland. CERT-FR reports numerous compromises of Danfoss AK-SM and AK-SC controllers and of Copeland xweb and Dixell xweb, and NCSC Switzerland rates the activity actively exploited. On 2026-11-11 Midnight Blue reported six pre-authentication remote-code-execution flaws in all Danfoss AK-SM 800A firmware up to 5.3.2, and on 2026-11-20 Danfoss published CVE-2026-129713 (CVSS 9.3, an unauthenticated stack overflow in AK-SM 8xxA firmware 5.4.0 and earlier, fix only in an announced 5.5.x) and CVE-2026-127057 (CVSS 9.9, default credentials on every legacy AK-SC 355 and AK-SM 800, no fix); CCB says updating, new passwords and Strict mode are insufficient, so removing internet exposure comes first, and BACS's statement of 2026-11-10 that updates fix the known flaws predates the report and does not cover the six.
+  Coopérative U, Intermarché and E. Leclerc confirmed a cyberattack on their refrigeration systems overnight on 11 to 12 October 2026, a remotely forced defrost at hundreds of French stores, and on 2026-11-09 France's foreign ministry attributed that campaign, and only that campaign, to the Iranian unit Shahid Kaveh. More followed: more than 115 stores in at least six more countries and the first German shops on 2026-11-02, altered cold-room settings at three sites of the French blood service through a supplier, and, per SRF on 2026-11-05, a Köniz butcher and three Volg stores in Switzerland. CERT-FR reports numerous compromises of Danfoss AK-SM and AK-SC controllers and of Copeland xweb and Dixell xweb, and NCSC Switzerland rates the activity actively exploited. On 2026-11-11 Midnight Blue reported six pre-authentication remote-code-execution flaws in all Danfoss AK-SM 800A firmware up to 5.3.2, and on 2026-11-20 Danfoss published CVE-2026-129713 (CVSS 9.3, an unauthenticated stack overflow in AK-SM 8xxA firmware 5.4.0 and earlier, fix only in an announced 5.5.x) and CVE-2026-127057 (CVSS 9.9, default credentials on every legacy AK-SC 355 and AK-SM 800, no fix); CCB says updating, new passwords and Strict mode are insufficient, so removing internet exposure comes first, and BACS's statement of 2026-11-10 that updates fix the known flaws predates the report and does not cover the six. CISA added three older AK-SM 800A flaws (CVE-2023-25914, CVE-2023-25915 and CVE-2025-41450) to its exploited-vulnerabilities catalogue on 2026-11-25 without tying them to this campaign.
 discovered_at: "2026-10-13T03:41:00Z"
-updated_at: "2026-11-21T04:39:53Z"
+updated_at: "2026-11-26T05:06:30Z"
 event_date: "2026-10-12"
 run_id: 2026-10-13T0256Z-intel
 priority: high
 immediate_action: null
-tags: [ot-ics, actively-exploited, nation-state, vulnerabilities, zero-day, rce, pre-auth, no-patch]
+tags: [ot-ics, actively-exploited, nation-state, vulnerabilities, zero-day, rce, pre-auth, no-patch, cisa-kev]
 regions: [europe, switzerland]
 sectors: [retail, healthcare]
 entities: ["incident:danfoss-ak-sm-ak-sc-french-supermarket-refrigeration-attack-2026-10", "actor:shahid-kaveh", "actor:cyberav3ngers", "product:danfoss-ak-sm-800", "product:danfoss-ak-sc-355", "product:danfoss-ak-sm-800a", "product:copeland-xweb", "product:dixell-xweb"]
@@ -36,6 +36,33 @@ cves:
     status: [no-patch, mitigation-only]
     affected: "Danfoss legacy AK-SC 355 and AK-SM 800, all versions"
     fixed: "none; Danfoss tells owners to replace the units with the AK-SM 800A series"
+  - id: CVE-2025-41450
+    cvss: "8.2"
+    epss: null
+    type: auth-bypass
+    vector: user-interaction
+    auth: pre-auth
+    status: [cisa-kev, exploited, patch-available]
+    affected: "Danfoss AK-SM 8xxA series prior to 4.2"
+    fixed: "4.2"
+  - id: CVE-2023-25914
+    cvss: "7.5"
+    epss: null
+    type: path-traversal
+    vector: zero-click
+    auth: pre-auth
+    status: [cisa-kev, exploited, patch-available]
+    affected: "Danfoss AK-SM 800A, all series, software below 3.3"
+    fixed: "software 3.3"
+  - id: CVE-2023-25915
+    cvss: "9.8"
+    epss: null
+    type: rce
+    vector: zero-click
+    auth: post-auth
+    status: [cisa-kev, exploited, patch-available]
+    affected: "Danfoss AK-SM 800A, all series, software below 3.3"
+    fixed: "software 3.3"
 sources:
   - url: "https://www.cert.ssi.gouv.fr/alerte/CERTFR-2026-ALE-012/"
     publisher: "CERT-FR (alert CERTFR-2026-ALE-012)"
@@ -265,6 +292,26 @@ sources:
     publisher: "BSI (BITS-H 2026-306525-11e2, version 1.1)"
     date: "2026-11-17"
     role: corroborating
+  - url: "https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog"
+    publisher: "CISA"
+    date: "2026-11-25"
+    role: corroborating
+  - url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    publisher: "CISA KEV catalogue"
+    date: "2026-11-25"
+    role: corroborating
+  - url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2023-08-01/"
+    publisher: "Danfoss"
+    date: "2023-08-21"
+    role: corroborating
+  - url: "https://www.synacktiv.com/sites/default/files/2023-10/synacktiv-danfoss-sm800a-multiple-vulnerabilities.pdf"
+    publisher: "Synacktiv"
+    date: "2023-10-31"
+    role: corroborating
+  - url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-328-03.json"
+    publisher: "CISA"
+    date: "2026-11-24"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "CERT-FR is aware of numerous compromises of the remote refrigeration-installation controllers Danfoss AK-SM and AK-SC series as well as Copeland xweb and Dixell xweb. (translated from French)"
@@ -437,6 +484,12 @@ evidence:
   - quote: "These products were manufactured with default credentials documented in the product manual. All versions are affected."
     publisher: "Danfoss (DSA-2026-12-02)"
     source_url: "https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2026-12-02/"
+  - quote: "Danfoss AK-SM 800A Series contains an improper input validation vulnerability that could allow a remote attacker to run arbitrary commands on the affected system."
+    publisher: "CISA KEV catalogue"
+    source_url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+  - quote: "No known public exploitation specifically targeting these vulnerabilities has been reported to CISA at this time."
+    publisher: "CISA"
+    source_url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-328-03.json"
 verification: multi-source
 sourcing_note: >
   CERT-FR's alert is the national authority's own statement, in its revision of 2026-10-16 (its page does not show which sentences changed), while NCSC Switzerland adds the exploitation rating and relays an older CERT-FR remediation sequence, and the retailers' confirmations, Danfoss's statement and the Paris prosecutor's investigation come through AFP. The forced 50-degree defrost and the "older than version 4" scope are BFMTV's reporting alone, store counts differ between AFP, BFMTV and Infosecurity, and ANSSI's account of the cause is its director general's testimony as Public Sénat and Le Monde Informatique report it, with no transcript read, while Forescout says the access vector, exploited vulnerabilities and actors remain unconfirmed and Censys points to three patched 2025 AK-SM 800A flaws and says Danfoss has not confirmed the vector.
@@ -630,6 +683,16 @@ updates:
       The early report that ANSSI had found a flaw in the vendor's software comes from a person close to
       the French Prime Minister, quoted by AFP; the campaign reached at least six more European countries.
     fields: [body, title]
+  - at: "2026-11-26T05:06:30Z"
+    run_id: 2026-11-26T0356Z-intel
+    type: update
+    summary: >
+      CISA added two 2023 Danfoss AK-SM 800A flaws, CVE-2023-25914 (file read through the XML interface) and CVE-2023-25915
+      (command execution), and the 2025 authentication bypass CVE-2025-41450 to its Known Exploited Vulnerabilities
+      catalogue on 2026-11-25 without naming a campaign; no source ties the listing to the refrigeration attacks. The
+      2023 flaws are fixed in software 3.3, and CISA's advisory for CVE-2026-129713 says no known public exploitation
+      specifically targeting that vulnerability has been reported to it.
+    fields: [summary, tags, cves, sources, evidence, body, updated_at]
 migrated_from: null
 ---
 
@@ -736,3 +799,9 @@ Danfoss published two advisories on 2026-11-20. DSA-2026-12-01 assigns CVE-2026-
 ## Improvement — 2026-11-22T14:59:41Z
 
 The early report that ANSSI had found a flaw in the vendor's software comes from a person close to Prime Minister Sébastien Lecornu, who told AFP that the agency had identified "a vulnerability in software supplied by a Danish company and has contacted the vendor" ([AFP, 2026-10-12](https://www.khaleejtimes.com/world/europe/french-supermarkets-refrigerator-shutdown-cyberattack)).
+
+## Update — 2026-11-26T05:06:30Z
+
+CISA added three Danfoss AK-SM 800A flaws to its Known Exploited Vulnerabilities catalogue on 2026-11-25 ([CISA, 2026-11-25](https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog)): CVE-2023-25914, a path traversal that could let an attacker read system files of the underlying server through the XML interface, CVE-2023-25915, an improper input validation that could let a remote attacker run arbitrary commands, and CVE-2025-41450, an authentication bypass that generates a web report exposing internal IP addresses, usernames and store names ([CISA KEV catalogue, 2026-11-25](https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json)). CISA names no campaign, actor or victim and cites Danfoss's advisories as the vendor source for them, so no source ties the listing to the October and November attacks. The catalogue's description of CVE-2025-41450 as a web-report disclosure differs from Censys's account of a date-derived administrator login ([Censys, 2026-10-14](https://censys.com/blog/frostbitten-in-france-a-danfoss-storeview-internet-exposure-report/)).
+
+Danfoss's advisory for the two 2023 flaws lists AK-SM 800A software below 3.3 as affected, fixed by software 3.3, scores them 7.5 and 9.8 and does not state whether authentication is needed ([Danfoss, 2023-08-21](https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/dsa-2023-08-01/)); the discoverer Synacktiv calls CVE-2023-25914 unauthenticated and says CVE-2023-25915 needs authentication, and has described the pair as a chain since 2023-10-31 ([Synacktiv, 2023-10-31](https://www.synacktiv.com/sites/default/files/2023-10/synacktiv-danfoss-sm800a-multiple-vulnerabilities.pdf)). CISA's ICS advisory of 2026-11-24 covers CVE-2026-129713 only, scores it CVSS 3.1 9.8 and says no known public exploitation specifically targeting the vulnerabilities it covers has been reported to CISA ([CISA, 2026-11-24](https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-328-03.json)).
