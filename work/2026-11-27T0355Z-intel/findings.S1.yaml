@@ -1,0 +1,1191 @@
+domain: S1
+run_id: 2026-11-27T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-27T03:57:57Z'
+ended_at: '2026-11-27T04:28:37Z'
+duration_seconds: 1840
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 15
+  bridge_fetches: 190
+items:
+- title: 'NFS2ROOT, CVE-2026-99362, Linux kernel NFS server (nfsd) before 5.10.275, 5.15.226, 6.1.193, 6.6.163, 6.12.117, 6.18.61 and 7.3.2: an unauthenticated heap overflow over NFSv4.1 or 4.2 that OpenSec turned into a root
+    shell with one TCP connection to port 2049 (CVSS 3.1 9.8); fixed upstream, exploit withheld, no exploitation reported'
+  sources:
+  - url: https://opensec.in/blog/nfs2root-cve-2026-99362
+    publisher: OpenSec (NFS2ROOT research write-up)
+    date: '2026-11-25'
+    role: primary
+  - url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+    publisher: watchTowr (NFS2ROOT FAQ)
+    date: '2026-11-26'
+    role: corroborating
+  - url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+    publisher: ENISA EUVD (EUVD-2026-130020)
+    date: '2026-11-19'
+    role: corroborating
+  - url: https://access.redhat.com/security/cve/cve-2026-99362
+    publisher: Red Hat (CVE page)
+    date: '2026-11-26'
+    role: corroborating
+  - url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+    publisher: Debian security tracker
+    date: '2026-11-27'
+    role: corroborating
+  - url: https://ubuntu.com/security/CVE-2026-99362
+    publisher: Ubuntu (CVE page, last updated 2026-11-25)
+    date: '2026-11-25'
+    role: corroborating
+  discovery_trace: 'first seen at: watchtowr (record''s newest_note points to https://watchtowr.com/intelligence/ because the labs RSS under-collects), URL https://watchtowr.com/intelligence/ → FAQ https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+    → pivot: ENISA EUVD search https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362 (EUVD-2026-130020, EPSS 0.76) → pivot: Debian tracker https://security-tracker.debian.org/tracker/CVE-2026-99362 whose reference
+    list names the discoverer → primary: OpenSec write-up https://opensec.in/blog/nfs2root-cve-2026-99362; distro status from Red Hat https://access.redhat.com/security/cve/cve-2026-99362 and Ubuntu https://ubuntu.com/security/CVE-2026-99362'
+  summary: 'CVE-2026-99362 (NFS2ROOT) is a heap out-of-bounds write in the Linux kernel''s in-kernel NFS server, nfsd, reachable by an unauthenticated client over TCP 2049 when NFSv4.1 or 4.2 is served. The kernel CVE text
+    says nfsd4_sequence() narrows the reply buffer to the session''s cached-reply limit before it accepts the slot sequence id, a client can negotiate that limit down to the protocol minimum so every slot gets a zero-length
+    buffer, and a COMPOUND tag that fills the narrowed buffer right after the SEQUENCE opcode makes the encoder return without flagging an error; the server then caches the whole reply into a buffer with no room (the upstream
+    KASAN report shows 80 bytes written, 61 past the heap object, 40 of them chosen by the client). The flaw dates from March 2014 (Linux 3.16); Jérémy Jean of ANSSI sent the upstream fix on 2026-08-17, OpenSec reports it
+    flagged and exploited the bug with its Antara harness on 2026-09-21 and reported it to the NFSD maintainers on 2026-09-22, and the CVE was published with fixes on 2026-11-19 or 2026-11-20 (the sources differ by a day).
+    OpenSec says its exploit chain stays private and describes it as an ordinary sequence of NFS requests: the overflow corrupts the neighbouring slot''s bookkeeping, a replay request returns 3.8 KB of kernel heap and with
+    it the KASLR slide, a forged pointer frees an object of the attacker''s choice, the memory is refilled with a fake callback built from NFS client names, and hanging up makes nfsd run the callback as root; it adds that
+    kernel hardening does not remove the overflow. This is the researcher''s claim, shown in a recorded demonstration; no independent reproduction is cited. Fixed kernels per watchTowr''s table are 5.10.275, 5.15.226, 6.1.193,
+    6.6.163, 6.12.117, 6.18.61, 7.3.2 and mainline 7.4-rc1 (OpenSec lists 6.12.117, 6.18.61, 7.3.2 and 7.4-rc1); watchTowr says no exploitation in the wild is reported as of 2026-11-26 and no other fetched source reports any.
+    Scores: CVSS 3.1 9.8 (cve.org record, EUVD, OpenSec, watchTowr), Red Hat 9.4 with its own vector and Critical rating; EUVD''s EPSS field reads 0.76. Distribution status when read: Red Hat rates it Critical and notes that
+    default RHEL does not run or enable nfsd, which limits the exposure to systems configured to export NFSv4.1 or 4.2 shares; Debian lists trixie 6.12.117-1 and the bookworm linux-6.12 package (DLA-4927-1) as fixed while
+    bookworm''s 6.1 kernel 6.1.192-3 is still vulnerable; Ubuntu lists every supported release from 16.04 LTS to 24.04 LTS as vulnerable and 26.04 LTS and 26.10 as work in progress (page updated 2026-11-25), trusty is not
+    affected.'
+  region_nexus: global; any Linux host serving NFS (file servers, NAS appliances, build farms, Kubernetes storage nodes per OpenSec); ANSSI (France) researcher credited for the upstream fix
+  primary_sector_nexus: indirect
+  sector: cross-sector (Linux infrastructure; file and storage servers)
+  cves:
+  - CVE-2026-99362
+  techniques:
+  - T1190
+  - T1210
+  affected_products:
+  - Linux kernel (in-kernel NFS server, nfsd)
+  entity_keys:
+  - product:linux-kernel
+  new_entities:
+  - key: trend:nfs2root-linux-nfsd-cve-2026-99362
+    type: trend
+    name: NFS2ROOT
+    aliases:
+    - CVE-2026-99362
+    summary: OpenSec's name for the pre-authentication heap overflow in the Linux kernel NFS server (CVE-2026-99362), fixed upstream on 2026-11-19/20 (OpenSec, 2026-11-25).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  classification:
+    reliability: B
+    credibility: '1'
+  evidence:
+  - quote: one TCP connection writes 61 bytes past a kernel heap object; chained, that gives a root shell.
+    attribution: OpenSec (NFS2ROOT research write-up)
+    source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  - quote: The exploit stays private.
+    attribution: OpenSec (NFS2ROOT research write-up)
+    source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  - quote: from `nfsd4_check_resp_size`, on every attempt, successful or not.
+    attribution: OpenSec (NFS2ROOT research write-up)
+    source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  - quote: As of November 26, 2026, no exploitation in the wild has been reported.
+    attribution: watchTowr (NFS2ROOT FAQ)
+    source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  - quote: Default Red Hat Enterprise Linux configurations do not run or enable the in-kernel NFS server daemon (nfsd)
+    attribution: Red Hat (CVE page)
+    source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  extended_notes: 'Exposure test the discoverer publishes (all four must hold): kernel older than the fixed build for its branch with no distribution backport (uname -r); nfsd loaded (lsmod | grep -w nfsd); NFSv4.1 or 4.2
+    enabled (cat /proc/fs/nfsd/versions shows +4.1 or +4.2); a listener on a non-loopback address (ss -ltn ''sport = :2049''). Detection (OpenSec): the attack is valid NFS so there is no network signature; look for kernel
+    log warnings from nfsd4_check_resp_size on every attempt, successful or not; kernel oopses with nfsd4_*, svc_* or call_usermodehelper* frames; shells spawned by kernel workers on a file server; bursts of short NFSv4.1
+    sessions from one source. A host that was reachable and unpatched needs the kernel-worker-spawned-shell check as the post-patch compromise review, because the exploit ends in a root shell. Hardening: patch and reboot;
+    until then allow TCP 2049 only from the storage network, or switch off NFSv4.1 and 4.2 (vers4.1=n and vers4.2=n in /etc/nfs.conf, then restart nfs-server), which OpenSec says turns off pNFS and some 4.2 features. Timing:
+    the CVE record is dated 2026-11-19; OpenSec''s post is 2026-11-25 19:52 UTC and watchTowr''s FAQ is dated 2026-11-26, so the in-window source is the FAQ. Gaps: no independent exploit reproduction; the discoverer says its
+    exploit is private; internet exposure of port 2049 is not quantified in any source. No ATT&CK mapping is stated by the sources; T1190/T1210 are the mapping for a network-reachable service flaw.'
+- title: 'Cacti Core 1.2.31, ''4HTTP2ROOT'': a researcher''s public four-request chain turns the anonymous guest session into operating-system command execution (a value written into a per-user display setting is later injected
+    into a database query, which sets a poller command that a guest-reachable page runs); no fixed release and no CVE id in the cited source, no exploitation reported'
+  sources:
+  - url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+    publisher: watchTowr (4HTTP2ROOT FAQ)
+    date: '2026-11-26'
+    role: primary
+  discovery_trace: 'first seen at: watchtowr, URL https://watchtowr.com/intelligence/ (the labs RSS does not carry the FAQ pages; the record''s 2026-10-23 note names this index) → primary (no pivot needed): https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+    ; the researcher''s GitHub repository and any Cacti advisory were searched for (WebSearch ''4HTTP2ROOT Cacti'' and a Cacti 1.2.31 query) and not found, so the item rests on watchTowr''s reading alone'
+  summary: 'watchTowr''s FAQ of 2026-11-26 reports that a researcher using the handle ''ek0ms savi0r'' published on GitHub on 2026-11-26 a chain of four unauthenticated HTTP requests that reaches command execution on a lab
+    instance of Cacti Core 1.2.31, the open-source network-monitoring tool. As watchTowr describes it, an attacker with no account starts as the anonymous guest, writes an unvalidated value into a per-user display setting,
+    that value is later inserted into a database query that the server treats as more than one statement, one of the added statements changes a poller setting to a shell command, and a separate page that the guest session
+    can reach then runs it. Preconditions stated by watchTowr: the guest account must be enabled, because the whole chain runs through the unauthenticated guest session, and the Cacti web interface must be reachable; the command
+    runs as the account that runs the web server and poller, often a low-privileged web user rather than root. Cacti Core 1.2.31 is listed as affected with no fixed version yet available, no CVE id appears in the FAQ, watchTowr
+    says no exploitation in the wild is reported as of 2026-11-27 and no attribution exists. Cacti stores SNMP community strings and device logins for the routers, switches and servers it monitors, so a foothold on the monitoring
+    server reaches well beyond it (watchTowr''s assessment). watchTowr''s mitigations: disable the guest account in user administration, restrict the web interface to trusted internal networks, review poller configuration
+    entries for command values that do not match normal polling set-up, and watch application logs for warnings about non-numeric values in display settings, which the chain produces even though the request succeeds.'
+  region_nexus: global; Cacti is common network-monitoring software; no victim region
+  primary_sector_nexus: indirect
+  sector: cross-sector (network monitoring)
+  cves: []
+  techniques:
+  - T1190
+  - T1059
+  affected_products:
+  - Cacti Core
+  entity_keys: []
+  new_entities:
+  - key: product:cacti
+    type: product
+    name: Cacti
+    aliases:
+    - Cacti Core
+    summary: Open-source network monitoring and graphing tool whose stored SNMP strings and device logins make it a pivot point (watchTowr, 2026-11-26).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  classification:
+    reliability: B
+    credibility: '3'
+  evidence:
+  - quote: 4HTTP2ROOT is a Remote Code Execution vulnerability in Cacti, an open source network monitoring tool, that lets an attacker with no account and no valid session run operating system commands on the Cacti server.
+    attribution: watchTowr (4HTTP2ROOT FAQ)
+    source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  - quote: The guest account must be enabled, since the entire chain runs through the unauthenticated guest session.
+    attribution: watchTowr (4HTTP2ROOT FAQ)
+    source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  - quote: Cacti has not published a fixed version for this vulnerability, so security teams should disable the guest account to break the chain and restrict the Cacti web interface to trusted networks until an official patch
+      appears.
+    attribution: watchTowr (4HTTP2ROOT FAQ)
+    source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  - quote: As of November 27, 2026, no exploitation in the wild has been reported.
+    attribution: watchTowr (4HTTP2ROOT FAQ)
+    source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  extended_notes: 'Gaps: single source (a vendor-lab FAQ describing another party''s GitHub post); the researcher''s repository, a Cacti advisory and a CVE id were not located, so the version range beyond 1.2.31 (the only
+    tested release) and whether the guest account is enabled by default are not established by any fetched source. Detection concept from the source: Cacti application-log warnings about a non-numeric value in a graph display
+    setting, poller configuration entries whose command field holds an unexpected shell command, and new files created by the poller process. Hardening lever: disable the guest account and keep the web interface off untrusted
+    networks.'
+  borderline: true
+  borderline_reason: single secondary source (watchTowr FAQ); researcher repository, CVE id and Cacti advisory not located; chain needs the guest account enabled. Kept because it is unpatched with a public four-request chain
+    against software that holds network credentials, so the main agent should decide with the exposure question in mind
+- title: 'Mitel MiCollab MISA-2026-0012: Accenture APEX Labs reports the AWV flaws were exploited before Mitel''s advisory and patch (web shell before 23:00 UTC on 2026-11-15), with root on the MiCollab server in about 30
+    minutes, the directory credentials stored for its LDAP connector used against a domain controller at 32 minutes, and database dumps exfiltrated from a backup and a database server about 20 hours in'
+  sources:
+  - url: https://accenture.github.io/cyber-intelligence/micollab-exploitation/
+    publisher: Accenture APEX Labs (MiCollab exploitation report)
+    date: '2026-11-26'
+    role: primary
+  - url: https://www.securityweek.com/mitel-micollab-zero-days-exploited-in-suspected-ai-assisted-attacks/
+    publisher: SecurityWeek
+    date: '2026-11-26'
+    role: corroborating
+  - url: https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012
+    publisher: Mitel (MISA-2026-0012, revision 2.0)
+    date: '2026-11-24'
+    role: corroborating
+  discovery_trace: 'first seen at: SecurityWeek feed https://www.securityweek.com/feed/ (item ''Mitel MiCollab Zero-Days Exploited in Suspected AI-Assisted Attacks'', 2026-11-26) → pivot: https://www.securityweek.com/mitel-micollab-zero-days-exploited-in-suspected-ai-assisted-attacks/
+    → primary: Accenture APEX Labs report https://accenture.github.io/cyber-intelligence/micollab-exploitation/ ; Mitel''s own page re-read at https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0012
+    (still revision 2.0 of 2026-11-24, no exploitation statement)'
+  summary: 'Delta against the 2026-11-18 entry, which says no source names an exploiter, victim, scale or technique and reports CISA''s listing of all five CVEs on 2026-11-25. Accenture APEX Labs reports, from incident-response
+    evidence at one victim organisation and network telemetry on a second, that the MISA-2026-0012 flaws were exploited before Mitel published its advisory and patch on 2026-11-16: web-shell activity at the first victim is
+    placed before 23:00 UTC on 2026-11-15, which APEX judges with high confidence, so servers patched now cannot be assumed clean. Timeline at that victim, from APEX: the actor fingerprinted the MiCollab version, bypassed
+    AWV authentication with an unauthenticated request one minute in, had two file uploads accepted at nine minutes, ran its first command through a web shell at 12 minutes, reached root between 15 and 30 minutes (system logs
+    were reset as a side effect), and at 32 minutes used the directory credentials that MiCollab stores for its LDAP connector to bind to a domain controller over LDAPS; web-shell requests were then filtered out of the web-server,
+    error and admin logs. It went on to authenticate to several domain controllers across the forest in about two minutes, export directory user records, Kerberoast service accounts, take plaintext credentials from internal
+    file shares and test service-account credentials in bulk, and about 20 hours after the first request pivoted to an internal backup server and a line-of-business database server where custom Java tooling dumped database
+    contents, which left as hundreds of short HTTPS uploads over several hours, some routed through the internal backup server. At the victim the exploitation requests passed through an internet-facing reverse proxy, so a
+    proxy in front of MiCollab, including a MiVoice Border Gateway web proxy, did not protect the AWV component. A second organisation''s MiCollab server, a 10.0-series release exposed to both MISA-2026-0006 and MISA-2026-0012,
+    has held a persistent HTTPS channel to the same actor infrastructure since 2026-11-09; APEX could not determine how it was compromised, so the second case does not by itself prove exploitation more than a week before disclosure.
+    APEX assesses AI-assisted tooling drove parts of the intrusion because sampled traffic from the actor''s server to two commercial AI API services (7 to 17 November, 155 hours combined) restarted in the same second as the
+    authentication-bypass request and commands ran during a window with no sampled operator traffic; this is an inference from sampled telemetry (moderate confidence for the AI-service use, provider names withheld), not a
+    finding. APEX names no group, judges the pattern consistent with a data-theft extortion operation against MiCollab generally, and expects wider exploitation now the advisory is public. CISA''s KEV listing of 2026-11-25
+    independently confirms exploitation; the pre-disclosure timing and the intrusion detail rest on Accenture alone.'
+  region_nexus: global; MiCollab is a unified-communications platform commonly internet-facing and tied to Active Directory (Accenture); no victim region or sector disclosed
+  primary_sector_nexus: indirect
+  sector: cross-sector (unified communications)
+  cves:
+  - CVE-2026-133323
+  - CVE-2026-133303
+  - CVE-2026-133275
+  - CVE-2026-133311
+  - CVE-2026-133324
+  techniques:
+  - T1190
+  - T1505.003
+  - T1068
+  - T1685.006
+  - T1552.001
+  - T1078.002
+  - T1087.002
+  - T1558.003
+  - T1021.002
+  - T1560.001
+  - T1105
+  - T1572
+  - T1041
+  affected_products:
+  - Mitel MiCollab
+  - Mitel MiVoice Border Gateway
+  entity_keys:
+  - product:mitel-micollab
+  new_entities:
+  - key: campaign:micollab-awv-exploitation-data-theft-2026-11
+    type: campaign
+    name: MiCollab AWV exploitation and data-theft intrusions (November 2026)
+    aliases: []
+    summary: Accenture APEX Labs' name-less cluster exploiting the MISA-2026-0012 AWV flaws before disclosure and reaching the victim's directory, backup and database servers (Accenture APEX Labs, 2026-11-26).
+  relation_suggestions:
+  - subject: campaign:micollab-awv-exploitation-data-theft-2026-11
+    object: product:mitel-micollab
+    type: exploits
+    basis: 'Accenture APEX Labs: ''APEX Labs assesses the threat actor was exploiting MiCollab in the wild prior to Mitel''s public advisory on 16 November.'' (Accenture APEX Labs, 2026-11-26)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: HIGH
+  novelty: update-of:2026-11-18/mitel-micollab-misa-2026-0012-awv-unauth-command-injection
+  classification:
+    reliability: B
+    credibility: '2'
+  update_fields_hint:
+  - summary
+  - title
+  - headline
+  - evidence
+  - sources
+  - body
+  - actions
+  - entities
+  - techniques
+  - priority
+  - affected_products
+  evidence:
+  - quote: We have high confidence in this judgment based on evidence from one victim organization showing web shell activity before 23:00 UTC on 15 November 2026.
+    attribution: Accenture APEX Labs
+    source_url: https://accenture.github.io/cyber-intelligence/micollab-exploitation/
+  - quote: reached root on the MiCollab server within 30 minutes and used the directory credentials that MiCollab stores for its LDAP connector to authenticate to a domain controller within 32 minutes
+    attribution: Accenture APEX Labs
+    source_url: https://accenture.github.io/cyber-intelligence/micollab-exploitation/
+  - quote: A reverse proxy did not stop the exploitation.
+    attribution: Accenture APEX Labs
+    source_url: https://accenture.github.io/cyber-intelligence/micollab-exploitation/
+  - quote: a confirmed MiCollab compromise should trigger investigation and containment as a potential Active Directory compromise, not as an isolated application-server incident
+    attribution: Accenture APEX Labs
+    source_url: https://accenture.github.io/cyber-intelligence/micollab-exploitation/
+  - quote: The investigation uncovered evidence that some of the malicious activity may have been driven by AI tools
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/mitel-micollab-zero-days-exploited-in-suspected-ai-assisted-attacks/
+  extended_notes: 'Detection concepts from the report (no indicators carried): web or proxy access logs showing POSTs to the AWV CGI directory (/awcuser/cgi-bin/) from unfamiliar sources followed by requests for new script
+    files in a web-accessible pictures directory; round-the-clock HTTPS from a MiCollab or Border Gateway server to an unfamiliar internet host; bursts of hundreds of short HTTPS uploads from any egress address; requests from
+    a MiCollab server to IP-echo services and temporary-tunnel services; JDBC drivers downloaded from a public Maven repository onto a MiCollab server; scripts and .tgz archives in /tmp and tools such as smbclient, ldapsearch,
+    expect, sshpass or Impacket running on a MiCollab host; system logs that suddenly shrink. Identity: the MiCollab LDAP connector account authenticating to many domain controllers within minutes, and bursts of RC4 Kerberos
+    service-ticket requests (identity-protection alerts on the connector account fired within about three hours at the victim). Triage: the connector account binding to a domain controller is normal from the MiCollab host
+    itself; the discriminators are many domain controllers across the forest within about two minutes, ticket-request bursts, and use from any other source host. Post-patch compromise check (APEX): patching does not evict
+    an intrusion that started earlier; image MiCollab and Border Gateway servers before patching or rebuilding, compare MiCollab logs with gateway, proxy and WAF logs (the actor edited local logs), treat a suspected compromise
+    as a directory compromise (reset the LDAP connector account and Kerberoastable service accounts, review the connector''s authentications on every domain controller, rotate administrator, SIP trunk and file-share credentials
+    reachable from the server), restrict external access to AWV including any path a Border Gateway web proxy publishes, and patch older MiCollab flaws (MISA-2026-0006) on servers that fell behind. Dating note: the report''s
+    page metadata reads 2026-11-27 while SecurityWeek, dated 2026-11-26, already links it. The report names no ATT&CK id for the privilege-escalation method and withholds it; it lists T1070.002, which the pinned ATT&CK v20.1
+    dataset has revoked in favour of T1685.006. Suggested classification B2 for the pre-disclosure and intrusion detail (single first-hand observer), exploitation itself corroborated by CISA''s KEV listing.'
+- title: 'PAN-OS: Palo Alto Networks'' bulletin PAN-SA-2026-0015 says exploitation of CVE-2026-46300 (the Fragnesia kernel privilege escalation) has been observed against internet-exposed management interfaces, and lists its
+    own fixed builds, a later hotfix than the PHP2Shell fix in every train'
+  sources:
+  - url: https://security.paloaltonetworks.com/PAN-SA-2026-0015
+    publisher: Palo Alto Networks (PAN-SA-2026-0015)
+    date: '2026-11-24'
+    role: primary
+  - url: https://security.paloaltonetworks.com/json/PAN-SA-2026-0015
+    publisher: Palo Alto Networks (PAN-SA-2026-0015, CVE JSON with timeline)
+    date: '2026-11-24'
+    role: primary
+  - url: https://www.bleepingcomputer.com/news/security/palo-alto-networks-warns-of-fragnesia-flaw-exploited-in-pan-os-attacks/
+    publisher: BleepingComputer
+    date: '2026-11-25'
+    role: corroborating
+  discovery_trace: 'first seen at: paloalto-psirt feed https://security.paloaltonetworks.com/rss.xml (item PAN-SA-2026-0015 ''Security Bulletin: OSS CVEs Fixed in PAN-OS (Severity: INFORMATIONAL)'', 2026-11-24 23:10 UTC) →
+    news lead: BleepingComputer feed https://www.bleepingcomputer.com/feed/ item ''Palo Alto Networks warns of Fragnesia flaw exploited in PAN-OS attacks'' (2026-11-25) → primary: https://security.paloaltonetworks.com/PAN-SA-2026-0015
+    and its JSON https://security.paloaltonetworks.com/json/PAN-SA-2026-0015 (carries the ''exploits'' statement and the timeline; the earlier run''s work/2026-11-25T0356Z-intel/findings.S1.yaml dropped this bulletin as informational
+    and not actionable)'
+  summary: 'Delta against the 2026-10-22 entry, which cites Palo Alto''s PHP2Shell advisory and Dream Research for the chained kernel flaw but not this bulletin. PAN-SA-2026-0015, first published 2026-11-24 23:10 UTC and labelled
+    Informational under the title ''OSS CVEs Fixed in PAN-OS'', lists CVE-2026-46300, the Linux kernel local privilege escalation known as Fragnesia (XFRM ESP-in-TCP), and carries an Exploitation Status block that reads ''Exploitation
+    of CVE-2026-46300 has been observed targeting the Palo Alto Networks management interface exposed to the internet.'' CISA has listed the CVE as exploited since 2026-10-28. Palo Alto''s FAQ says all observed exploitation
+    targeted PAN-OS devices whose management interface is exposed to the internet, that the only known way to exploit the flaw is to first exploit PHP2Shell through such an interface, that a device on a fixed release from
+    the CVE-2026-109618 advisory is protected, and that it still recommends upgrading to a Fragnesia-fixed release at the next maintenance interval. The Fragnesia fixes are a later hotfix than the PHP2Shell fix in every train:
+    10.2.7-h41, 10.2.10-h45, 10.2.13-h29, 10.2.16-h14 and 10.2.18-h15; 11.1.4-h40, 11.1.6-h42, 11.1.7-h14, 11.1.10-h38, 11.1.13-h18 and 11.1.16-h6; 11.2.4-h25, 11.2.7-h25, 11.2.10-h19, 11.2.13-h6 and 11.2.16-h3; 12.1.4-h15,
+    12.1.7-h15 and 12.1.10-h6; 12.2.4-h3; all later versions are fixed. BleepingComputer reported the bulletin on 2026-11-25. This puts Palo Alto''s own confirmation behind the root-escalation step of the chain that Dream
+    Research described in October, in which the unprivileged web-server context of a PHP2Shell shell becomes root on the management plane.'
+  region_nexus: global; PAN-OS firewalls and Panorama with management reachable from the internet
+  primary_sector_nexus: indirect
+  sector: cross-sector (network security appliances)
+  cves:
+  - CVE-2026-46300
+  techniques:
+  - T1190
+  - T1068
+  affected_products:
+  - Palo Alto Networks PAN-OS
+  - Palo Alto Networks Panorama
+  entity_keys:
+  - product:palo-alto-networks-pan-os
+  - product:palo-alto-networks-panorama
+  - tool:php2shell
+  - trend:dirty-frag-linux-kernel-page-cache-lpe
+  - campaign:php2shell-pan-os-fragnesia-rooting-2026-10
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-10-22/pan-os-panorama-php2shell-mgmt-interface-no-fixed-release
+  classification:
+    reliability: A
+    credibility: '1'
+  update_fields_hint:
+  - summary
+  - headline
+  - cves
+  - evidence
+  - sources
+  - actions
+  - body
+  - fixed
+  evidence:
+  - quote: Exploitation of CVE-2026-46300 has been observed targeting the Palo Alto Networks management interface exposed to the internet.
+    attribution: Palo Alto Networks (PAN-SA-2026-0015)
+    source_url: https://security.paloaltonetworks.com/PAN-SA-2026-0015
+  - quote: The only known way to exploit this vulnerability requires an attacker to first exploit the PHP2Shell vulnerability through an internet-exposed management interface, and we are not aware of any other exploitation
+      method.
+    attribution: Palo Alto Networks (PAN-SA-2026-0015)
+    source_url: https://security.paloaltonetworks.com/PAN-SA-2026-0015
+  - quote: We still recommend upgrading to a fixed release at your next maintenance interval.
+    attribution: Palo Alto Networks (PAN-SA-2026-0015)
+    source_url: https://security.paloaltonetworks.com/PAN-SA-2026-0015
+  - quote: Palo Alto Networks has confirmed in an advisory today that such attacks also target firewalls running PAN-OS.
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/palo-alto-networks-warns-of-fragnesia-flaw-exploited-in-pan-os-attacks/
+  extended_notes: 'The bulletin''s page header says Published 2026-11-25 and Updated 2026-11-24 while its timeline and JSON datePublic put initial publication at 2026-11-24 23:10 UTC (JSON datePublic 2026-11-25T00:10Z); the
+    bulletin is outside window_hours by source date, but it adds a vendor exploitation statement and a fixed-build set the store does not carry, and the earlier run dropped it on its Informational label. Action delta: on a
+    PAN-OS whose management interface was ever internet-reachable, the PHP2Shell hotfix alone leaves the kernel flaw unfixed; Palo Alto calls that residual risk low once PHP2Shell is fixed and the interface is restricted to
+    trusted addresses, so the Fragnesia build can follow at the maintenance interval, while an exposed and unpatched device is a rooted-device compromise check, as the existing entry already says.'
+  borderline: true
+  borderline_reason: primary bulletin dated 2026-11-24 23:10 UTC is outside the 26 h window; the in-window source is only the 2026-11-25 news relay. Included because an earlier run dropped the bulletin as informational and
+    the store lacks Palo Alto's own exploitation statement and the Fragnesia fixed builds
+- title: 'nginx2root follow-ups: nginx 1.31.10 and 1.30.8 (2026-11-23) fix a further TLS 1.3 ssl_early_data CPU-exhaustion flaw (CVE-2026-132779, vulnerable 1.21.4 to 1.31.9), Veeam Software Appliance and Infrastructure Appliance
+    13.1 are affected by CVE-2026-123007 and CVE-2026-123633 with a fix since 2026-11-25, and GitLab''s Linux package updated nginx to 1.31.9'
+  sources:
+  - url: https://nginx.org/en/CHANGES
+    publisher: nginx.org (CHANGES)
+    date: '2026-11-23'
+    role: primary
+  - url: https://nginx.org/en/security_advisories.html
+    publisher: nginx.org (security advisories)
+    date: '2026-11-23'
+    role: primary
+  - url: https://www.veeam.com/kb4976
+    publisher: Veeam (KB4976 NGINX2ROOT Impact Statement, modified 2026-11-25)
+    date: '2026-11-25'
+    role: primary
+  - url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1629/
+    publisher: CERT-FR (CERTFR-2026-AVI-1629, Veeam)
+    date: '2026-11-26'
+    role: corroborating
+  - url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    publisher: GitLab (patch release 19.6.2)
+    date: '2026-11-25'
+    role: corroborating
+  discovery_trace: 'first seen at: nginx-security-advisories, URL https://nginx.org/en/security_advisories.html (extract; new top row CVE-2026-132779, not in the store) → primary: https://nginx.org/en/CHANGES (release 1.31.10,
+    23 Nov 2026); veeam-kb-security feed https://www.veeam.com/services/open/kb/rss-feed (item ''NGINX2ROOT Impact Statement'', kb4976) → primary: https://www.veeam.com/kb4976 → relay: CERT-FR https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1629/
+    (2026-11-26); GitLab release page https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/ read for the Omnibus nginx line'
+  summary: 'Delta against the 2026-11-19 entry, which names nginx 1.31.9 and 1.30.7 as the fixed releases. The nginx project released 1.31.10 (mainline) and 1.30.8 (stable) on 2026-11-23: the CHANGES file lists one security
+    fix, ''when using the ssl_early_data directive a client might cause excessive CPU usage'' (CVE-2026-132779), plus a bugfix for nginx hogging CPU when SSL connections to backends were used; the project''s advisory page
+    lists the CPU-exhaustion flaw as affecting 1.21.4 to 1.31.9 and not 1.31.10+ or 1.30.8+, so a host on 1.31.9 or 1.30.7 has the memory-corruption fixes but still carries this one. F5''s K000163947 sits on my.f5.com, which
+    no transport in this pipeline renders, so no severity score is cited. Veeam''s KB4976, published 2026-11-20 and last modified 2026-11-25, lists Veeam Software Appliance 13.1 and Veeam Infrastructure Appliance 13.1 as affected
+    by CVE-2026-123007 and CVE-2026-123633 (their nginx build has HTTP/2 enabled on a listener that proxies to a backend, and the other three flaws do not apply); since 2026-11-25 the fix has been in the Veeam repository as
+    an nginx package update installed through Veeam Updater, which checks every 12 hours and installs mandatory updates automatically on the nearest Sunday at 14:00 in the backup server''s time zone. The Veeam Plug-In for
+    AWS, for Google Cloud and for Microsoft Azure appliances are also affected and take their security updates through Veeam Updater; Veeam Backup for Salesforce 3.2.1 needs the operating-system vendor update or HTTP/2 switched
+    off; Windows-based Backup & Replication and Enterprise Manager do not use nginx, Enterprise Manager on Linux has HTTP/2 off, and Veeam manages its Data Cloud services itself. CERT-FR''s relay of 2026-11-26 rates the Veeam
+    impact as remote code execution. GitLab''s patch release 19.6.2, 19.5.9 and 19.4.11 of 2026-11-25 updates nginx to 1.31.9 in the Linux package (Omnibus) and in Docker images built from it; Helm chart and Operator installations
+    that still use the deprecated NGINX Ingress controller are also affected, the controller is disabled by default since GitLab 19.0, upstream gives it no security patches, and GitLab recommends moving to Envoy Gateway or
+    an external ingress controller.'
+  region_nexus: global; nginx is embedded in backup, DevOps and appliance products
+  primary_sector_nexus: indirect
+  sector: cross-sector (web infrastructure; backup; DevOps)
+  cves:
+  - CVE-2026-132779
+  - CVE-2026-123007
+  - CVE-2026-123633
+  techniques:
+  - T1190
+  - T1499.004
+  affected_products:
+  - F5 NGINX Open Source
+  - Veeam Software Appliance
+  - Veeam Infrastructure Appliance
+  - GitLab
+  entity_keys:
+  - product:nginx-open-source
+  - product:f5-nginx-open-source
+  - product:veeam-software-appliance
+  - product:gitlab
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-11-19/nginx-nginx2root-five-unauth-memory-corruption-flaws
+  lookback: true
+  classification:
+    reliability: A
+    credibility: '1'
+  update_fields_hint:
+  - summary
+  - cves
+  - evidence
+  - sources
+  - actions
+  - affected_products
+  - entities
+  - body
+  evidence:
+  - quote: cause excessive CPU usage (CVE-2026-132779).
+    attribution: nginx.org (CHANGES, 1.31.10)
+    source_url: https://nginx.org/en/CHANGES
+  - quote: Since November 25, 2026, an update that contains the fix has been available in the Veeam repository for Veeam Software Appliance and Veeam Infrastructure Appliance 13.1
+    attribution: Veeam (KB4976)
+    source_url: https://www.veeam.com/kb4976
+  - quote: mandatory updates are installed automatically on the nearest Sunday at 14:00, based on the time zone of the backup server
+    attribution: Veeam (KB4976)
+    source_url: https://www.veeam.com/kb4976
+  - quote: updated to 1.31.9 in the Linux package (Omnibus) and GitLab Docker images built from the package in versions 19.6.2, 19.5.9, and 19.4.11
+    attribution: GitLab (patch release 19.6.2)
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+  extended_notes: 'The 1.31.10 and 1.30.8 release is two days older than the 26 h window and reaches this run through the nginx-security-advisories record''s 168 h lookback. Action delta for the existing entry: the upgrade
+    target for nginx moves to 1.31.10 or 1.30.8 where ssl_early_data is enabled; Veeam appliance operators can check the History tab of the Veeam Host Management console to see whether the update already installed. Exposure
+    scale (Censys: more than 10 million exposed nginx services on an affected HTTP/2 version, per the dashboard it links) is a vendor statistic not cited here.'
+- title: 'Ruby2Shell (CVE-2026-132825): GitHub Enterprise Server 3.22.6 (2026-11-22) carries the Ruby fix, contradicting Veria Labs'' table that still shows 3.22.5 and earlier with no fix, and GitLab''s 2026-11-25 release
+    backports the Ruby fix to 19.3.10, 19.2.11, 19.1.11, 19.0.12 and 18.11.15; Veria''s Rails proof of concept was scheduled for 2026-11-25, with no publication confirmed'
+  sources:
+  - url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    publisher: GitHub (GHES 3.22.6 release notes, 2026-11-22)
+    date: '2026-11-22'
+    role: primary
+  - url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    publisher: GitLab (patch release 19.6.2)
+    date: '2026-11-25'
+    role: primary
+  - url: https://verialabs.com/ruby2shell/
+    publisher: Veria Labs (Ruby2Shell page, read 2026-11-27)
+    date: '2026-11-19'
+    role: corroborating
+  - url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-1-released/
+    publisher: GitLab (critical patch release 19.6.1)
+    date: '2026-11-20'
+    role: corroborating
+  discovery_trace: 'first seen at: GitLab security releases feed https://about.gitlab.com/security-releases.xml (item ''GitLab Patch Release: 19.6.2, 19.5.9, ...'', 2026-11-25) → primary: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    ; Veria Labs page https://verialabs.com/ruby2shell/ re-read (self-hosted table, proof-of-concept sentence) → pivot: GitHub Enterprise Server release notes https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    (3.22.6) to test Veria''s ''None / Vulnerable'' row'
+  summary: 'Delta against the 2026-11-20 entry, which says only GitHub Enterprise Server 3.22.5 and earlier is still shown without a fix. GitHub''s release notes for GitHub Enterprise Server 3.22.6, dated 2026-11-22, list
+    as CRITICAL that GitHub updated Ruby to fix the announced vulnerabilities and, where an update was not immediately possible, introduced application-level mitigations; so the Veria Labs table read on 2026-11-27, which still
+    shows GHES 3.22.5 and earlier with no fixed release, is stale for GHES 3.22. The same notes record two further items: CVE-2026-114938 (Java4Shell) is mitigated in the Java runtime bundled with Elasticsearch by starting
+    it with -XX:UseAVX=2 on x86-64 appliances, and HAProxy was updated to 2.8.32 for an unauthenticated crafted-HTTP/2 crash. GitLab''s scheduled patch release 19.6.2, 19.5.9 and 19.4.11 of 2026-11-25 backports the Ruby fix
+    (the one first shipped in the critical release 19.6.1, 19.5.8 and 19.4.10 of 2026-11-20) to 19.3.10, 19.2.11, 19.1.11, 19.0.12 and 18.11.15, so self-managed GitLab on those older minor lines now has a fixed build; the
+    same release fixes a GPGME double free (CVE-2026-129975), and backports the Git fix CVE-2026-105437 to the older lines. Veria Labs'' page still says it will publish a proof of concept for remote code execution on stock
+    Rails on 2026-11-25, or later if major vendors have not shipped a fix by then; no fetched source shows the proof of concept was published, and Veria''s own table (stale for GHES) was the only vendor-status input it cited.'
+  region_nexus: global; Ruby on Rails, GitLab and GitHub Enterprise Server are widely self-hosted
+  primary_sector_nexus: indirect
+  sector: cross-sector (software development platforms)
+  cves:
+  - CVE-2026-132825
+  - CVE-2026-129975
+  - CVE-2026-105437
+  - CVE-2026-114938
+  techniques:
+  - T1190
+  affected_products:
+  - Ruby
+  - GitLab
+  - GitHub Enterprise Server
+  entity_keys:
+  - product:ruby
+  - product:gitlab
+  - product:github-enterprise-server
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: update-of:2026-11-20/ruby-4-0-10-regexp-case-conversion-memory-flaws
+  classification:
+    reliability: A
+    credibility: '2'
+  update_fields_hint:
+  - summary
+  - affected_products
+  - sources
+  - evidence
+  - actions
+  - body
+  evidence:
+  - quote: GitHub has updated Ruby to fix
+    attribution: GitHub (GHES 3.22.6 release notes)
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+  - quote: Where an update was not immediately possible, mitigations were introduced at the application level.
+    attribution: GitHub (GHES 3.22.6 release notes)
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+  - quote: backported to GitLab versions 19.3.10, 19.2.11, 19.1.11, 19.0.12, and 18.11.15
+    attribution: GitLab (patch release 19.6.2)
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+  - quote: '| GitHub Enterprise Server | **3.22.5** and earlier | None | Vulnerable |'
+    attribution: Veria Labs (Ruby2Shell page)
+    source_url: https://verialabs.com/ruby2shell/
+  extended_notes: 'Gaps: the GHES 3.22.6 notes do not say whether other GHES lines (3.21 and older) carry the Ruby fix; the Veria PoC date was read from the raw page HTML (''25 November 2026''); a search for a published proof
+    of concept found only pre-2026-11-26 coverage. Action delta: GHES administrators move to 3.22.6 (or the matching fixed build of their line); self-managed GitLab on 19.0 to 19.3 or 18.11 can now take 19.3.10, 19.2.11, 19.1.11,
+    19.0.12 or 18.11.15; the self-compiled installation rule from the 2026-11-20 release (rebuild Ruby 3.3.14 or 3.4.13) is unchanged.'
+- title: 'Juniper Session Smart Conductor CVE-2026-103406: Juniper itself updated advisory JSA112183 on 2026-11-24 to say at least one instance of malicious exploitation was reported to its SIRT, and NCSC Switzerland advises
+    auditing the fleet list for router names the team did not create'
+  sources:
+  - url: https://www.securityweek.com/critical-juniper-session-smart-conductor-flaw-exploited-in-attacks/
+    publisher: SecurityWeek (quoting Juniper's updated advisory)
+    date: '2026-11-26'
+    role: primary
+  - url: https://security-hub.ncsc.admin.ch/#/posts/13244
+    publisher: NCSC Switzerland (security hub post 13244)
+    date: '2026-11-26'
+    role: corroborating
+  discovery_trace: 'first seen at: ncsc-ch-security-hub (python3 tools/fetch_source.py ncsc-csh recent 25), post 13244 https://security-hub.ncsc.admin.ch/#/posts/13244 (2026-11-26 07:25 UTC; reads ''Juniper has confirmed malicious
+    exploitation'') → pivot: SecurityWeek feed https://www.securityweek.com/feed/ item ''Critical Juniper Session Smart Conductor Flaw Exploited in Attacks'' → primary attempt: Juniper''s bulletin https://supportportal.juniper.net/s/article/2026-10-On-Demand-Security-Bulletin-Session-Smart-Router-and-Session-Smart-Conductor-Multiple-internally-discovered-vulnerabilities-resolved
+    returned only a JavaScript shell on extract and on WebFetch, so Juniper''s wording rests on SecurityWeek''s quotation'
+  summary: 'Delta against the 2026-11-26 entry, which says exploitation was reported by BSI and listed by CISA and that Juniper''s own bulletin could not be read. SecurityWeek reports that on Tuesday 2026-11-24 Juniper updated
+    its bulletin JSA112183 (first published 2026-10-28 with 18 Session Smart Router and Conductor flaws) to flag CVE-2026-103406 as exploited and quotes the update: ''At least one instance of malicious exploitation of CVE-2026-103406
+    has been reported to the Juniper SIRT. Customers are encouraged to upgrade to a fixed release as soon as possible and in the meantime take steps to mitigate this vulnerability.'' The fixed builds are Session Smart Router
+    and Conductor 7.2.3, 7.1.7 and 7.0.5. NCSC Switzerland''s post of 2026-11-26 states that Juniper confirmed malicious exploitation and lists no official workaround; as a temporary measure it advises keeping the Conductor''s
+    management and provisioning interfaces off untrusted network segments and auditing the fleet list for router names the team did not create, the last being a post-patch compromise check because the injection is carried
+    in the router identifier a joining device presents. Juniper''s own page was not readable in this run, so the vendor quotation is a secondary reading, though NCSC Switzerland''s independent statement agrees with it.'
+  region_nexus: global; Session Smart Conductor centrally manages Session Smart Router fleets; NCSC Switzerland issued its own advisory
+  primary_sector_nexus: indirect
+  sector: cross-sector (SD-WAN and network management)
+  cves:
+  - CVE-2026-103406
+  techniques:
+  - T1190
+  - T1059.004
+  affected_products:
+  - Juniper Session Smart Conductor
+  - Juniper Session Smart Router
+  entity_keys:
+  - product:juniper-session-smart-conductor
+  - product:juniper-session-smart-router
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: update-of:2026-11-26/juniper-session-smart-cve-2026-103406-unauth-root-rce
+  classification:
+    reliability: B
+    credibility: '2'
+  update_fields_hint:
+  - summary
+  - evidence
+  - sources
+  - actions
+  - body
+  evidence:
+  - quote: At least one instance of malicious exploitation of CVE-2026-103406 has been reported to the Juniper SIRT.
+    attribution: SecurityWeek (quoting Juniper's updated advisory)
+    source_url: https://www.securityweek.com/critical-juniper-session-smart-conductor-flaw-exploited-in-attacks/
+  - quote: to flag the security defect as exploited.
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/critical-juniper-session-smart-conductor-flaw-exploited-in-attacks/
+  - quote: on October 28 along with 17 other flaws in Session Smart Router and Session Smart Conductor.
+    attribution: SecurityWeek
+    source_url: https://www.securityweek.com/critical-juniper-session-smart-conductor-flaw-exploited-in-attacks/
+  - quote: Audit the fleet list for router names your team did not create.
+    attribution: NCSC Switzerland (security hub post 13244)
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13244
+  - quote: Juniper has confirmed malicious exploitation
+    attribution: NCSC Switzerland (security hub post 13244)
+    source_url: https://security-hub.ncsc.admin.ch/#/posts/13244
+  extended_notes: 'NCSC Switzerland''s post text (read through the security-hub API): ''Audit the fleet list for router names your team did not create.'' and ''Juniper lists no official workaround.'' Detection concept from
+    the post: new or unfamiliar router names in the Conductor''s fleet list. Gap: Juniper''s JSA112183 page text was not retrievable (JS shell on every transport, including WebFetch).'
+- title: 'NoisyTCP, CVE-2026-99288, Linux kernel TCP stack (introduced 2015, fixed upstream on 2026-11-03; Debian shows fixes in 6.12.117 and 7.3.4): a race in the lockless established-socket lookup that lets an unauthenticated
+    remote sender panic a host through a plain TCP listener on a multi-queue server; Debian has fixed kernels, Ubuntu''s releases were still in progress on 2026-11-23, XCP-ng 8.3 and Xen Orchestra Appliance have an update
+    from 2026-11-25'
+  sources:
+  - url: https://openwall.com/lists/oss-security/2026/11/15/2
+    publisher: oss-security (Hyunwoo Kim, NoisyTCP advisory)
+    date: '2026-11-15'
+    role: primary
+  - url: https://raw.githubusercontent.com/V4bel/NoisyTCP/main/README.md
+    publisher: V4bel/NoisyTCP (advisory README)
+    date: '2026-11-16'
+    role: corroborating
+  - url: https://access.redhat.com/security/cve/cve-2026-99288
+    publisher: Red Hat (CVE page)
+    date: '2026-11-10'
+    role: corroborating
+  - url: https://security-tracker.debian.org/tracker/CVE-2026-99288
+    publisher: Debian security tracker
+    date: '2026-11-27'
+    role: corroborating
+  - url: https://ubuntu.com/security/CVE-2026-99288
+    publisher: Ubuntu (CVE page, last updated 2026-11-23)
+    date: '2026-11-23'
+    role: corroborating
+  - url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-069
+    publisher: Vates (VSA-2026-069)
+    date: '2026-11-25'
+    role: corroborating
+  discovery_trace: 'first seen at: vates-security-advisories feed https://docs.vates.tech/vsa/rss.xml (item ''VSA-2026-069: NoisyTCP - Linux Kernel TCP Pre-auth Remote Corruption (CVE-2026-99288)'', 2026-11-25) → page https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-069
+    → WebSearch (''NoisyTCP CVE-2026-99288 Linux kernel TCP pre-auth remote corruption'') → primary: researcher advisory https://openwall.com/lists/oss-security/2026/11/15/2 and README https://raw.githubusercontent.com/V4bel/NoisyTCP/main/README.md
+    → distro status: Red Hat https://access.redhat.com/security/cve/cve-2026-99288, Debian https://security-tracker.debian.org/tracker/CVE-2026-99288, Ubuntu https://ubuntu.com/security/CVE-2026-99288'
+  summary: 'NoisyTCP (CVE-2026-99288) is a race in the Linux kernel''s lockless lookup of established TCP sockets, disclosed on oss-security by its reporter Hyunwoo Kim on 2026-11-15 (his message is stamped 2026-11-16 01:00
+    +0900) after the linux-distros embargo lapsed. A stale ehash lookup finds a request socket that another receive context frees and reallocates as a SYN-cookie request at the same slab address; the stale lookup takes a reference
+    and passes the tuple recheck, but the new request has no listener, and the receive path dereferences the null listener and panics the kernel. The reporter says the race can be triggered pre-authentication and remotely
+    against ''plain'' TCP listeners such as nginx, Apache and SSH in their default configurations, needs a server with two or more receive queues or RPS spreading packets across CPUs, and takes about 5 seconds to 2 minutes
+    on virtual machines where vCPU preemption occurs but about 14 hours against nginx on a quiet 8-queue bare-metal server, even with a proof of concept tuned to the target (the reporter used such a proof of concept; whether
+    its code is public is not stated). A container host goes down with its workload. A second trigger flow gives a remote use-after-free but is described as hard to trigger without special techniques; the reporter claims no
+    code execution. The code was introduced on 2015-10-03 and fixed upstream on 2026-11-03, so the reporter says almost all Linux distributions are affected; Red Hat rates it Important (CVSS 3.1 7.5 with its own vector, 5.9
+    in the cve.org record) because an unauthenticated remote sender can crash the operating system. Distribution status when read: Debian lists trixie (6.12.117-1 and 6.12.118-1), bookworm''s 6.1.192-3 security build and linux-6.12
+    on bookworm as fixed through DSA-6628-1, DLA-4906-1 and DLA-4927-1; Ubuntu''s page, last updated 2026-11-23, shows 26.10, 26.04, 24.04, 22.04, 20.04, 18.04 and 16.04 as vulnerable with fixes in progress; Vates published
+    VSA-2026-069 on 2026-11-25 rating it Moderate for XCP-ng 8.3 and the Xen Orchestra Appliance, saying a reboot is needed after the kernel update and that privilege escalation cannot be ruled out. '
+  region_nexus: global; any Linux server reachable on TCP, including container hosts and hypervisor management domains
+  primary_sector_nexus: indirect
+  sector: cross-sector (Linux infrastructure)
+  cves:
+  - CVE-2026-99288
+  techniques:
+  - T1499.004
+  affected_products:
+  - Linux kernel (TCP stack)
+  - XCP-ng
+  - Xen Orchestra Appliance
+  entity_keys:
+  - product:linux-kernel
+  - product:xcp-ng
+  - product:xen-orchestra-appliance
+  new_entities:
+  - key: trend:noisytcp-linux-tcp-ehash-race-cve-2026-99288
+    type: trend
+    name: NoisyTCP
+    aliases:
+    - CVE-2026-99288
+    summary: Hyunwoo Kim's name for the 2015-era race in Linux's lockless established-socket lookup that lets a remote sender panic a multi-queue host (oss-security, 2026-11-15).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: new
+  classification:
+    reliability: B
+    credibility: '1'
+  evidence:
+  - quote: it can be triggered pre-auth and remotely against
+    attribution: oss-security (Hyunwoo Kim)
+    source_url: https://openwall.com/lists/oss-security/2026/11/15/2
+  - quote: affects almost all Linux distributions
+    attribution: oss-security (Hyunwoo Kim)
+    source_url: https://openwall.com/lists/oss-security/2026/11/15/2
+  - quote: This vulnerability is rated as an Important impact because an unauthenticated remote attacker can trigger an immediate operating system crash across the network without requiring privileges.
+    attribution: Red Hat (CVE page)
+    source_url: https://access.redhat.com/security/cve/cve-2026-99288
+  - quote: A reboot is required for the updated kernel to take effect on XCP-ng and Xen Orchestra Appliance
+    attribution: Vates (VSA-2026-069)
+    source_url: https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-069
+  extended_notes: 'Mitigations the reporter gives: apply the upstream patch first; otherwise disable SYN cookies (sysctl net.ipv4.tcp_syncookies=0, per network namespace, so each container namespace needs it; it weakens SYN-flood
+    protection) or serialise the internet-facing interface to a single receive queue with RPS and RFS disabled. Telemetry hooks for a hunt or an outage review (inference from the mechanism, not a source statement): unexplained
+    kernel panics or host reboots with a NULL-dereference in the TCP receive path on multi-queue servers, visible in kdump or hypervisor consoles, and bursts of fragmented plus regular TCP traffic to one listener before the
+    crash. Gaps: the fixed stable releases are known only from the Debian tracker (6.12.117-1, 6.12.118-1, 7.3.4-1 and 7.3.5-1 shown as fixed), longterm 6.6, 6.1, 5.15 and 5.10 upstream status was not read, and no source reports
+    exploitation. Timing: the disclosure is eleven days old and Vates'' VSA of 2026-11-25 is the newest source, so the item is outside window_hours; it reached no store entry (the MPTCP entry covers a different CVE).'
+  borderline: true
+  borderline_reason: disclosed 2026-11-15/16, outside window_hours; the newest source is Vates' 2026-11-25 downstream advisory with Ubuntu and RHEL fixes still landing. Included because the store carries nothing on it, it
+    is a remote unauthenticated host crash on default TCP listeners across Linux fleets, and the reporter used a tuned proof of concept; impact shown is denial of service only
+- title: 'OTRS 2024.3.1 through 2026.8.1 (fixed in 2026.8.2): an unauthenticated SQL injection in the external Survey endpoint (CVE-2026-93584, CVSS 3.1 8.6, v4 8.7) reads ticket data without a survey key or any account; BSI
+    separately rates a 27-advisory Znuny 7.5.1 and 6.5.27 release high'
+  sources:
+  - url: https://otrs.com/release-notes/otrs-security-advisory-2026-19/
+    publisher: OTRS (security advisory OSA-2026-19, 2026-11-23)
+    date: '2026-11-23'
+    role: primary
+  - url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0515
+    publisher: NCSC-NL (NCSC-2026-0515)
+    date: '2026-11-25'
+    role: corroborating
+  - url: https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-4810
+    publisher: BSI WID (WID-SEC-2026-4810, Znuny)
+    date: '2026-11-26'
+    role: context
+  - url: https://www.znuny.org/en/advisories
+    publisher: Znuny (advisory index, newest row ZSA-2026-16)
+    date: '2026-11-27'
+    role: context
+  discovery_trace: 'first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories via `ncsc-nl recent 30` (NCSC-2026-0515 ''Kwetsbaarheid verholpen in OTRS'', 2026-11-25) → `ncsc-nl csaf NCSC-2026-0515`
+    (reference https://otrs.com/release-notes/otrs-security-advisory-2026-19/) → primary: https://otrs.com/release-notes/otrs-security-advisory-2026-19/ ; sibling lead: BSI feed (`bsi-rss`) item ''Znuny: Mehrere Schwachstellen''
+    → `bsi-csaf WID-SEC-2026-4810`, whose reference list names ZSA-2026-17 to ZSA-2026-43 (the Znuny advisory pages return HTTP 500 and the index https://www.znuny.org/en/advisories stops at ZSA-2026-16)'
+  summary: OTRS's advisory OSA-2026-19 of 2026-11-23, 'Unauthenticated SQL Injection in OTRS External Survey Endpoint', says OTRS versions 2024.3.1 through 2026.8.1 build an SQL query in Kernel::System::Survey::Request::RequestGet()
+    from an attacker-supplied survey key without parameterised statements, so an unauthenticated remote attacker can retrieve ticket information and run boolean-based or time-based blind injection to extract data readable
+    by the OTRS database account. The advisory scores it CVSS 3.1 8.6 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N) and CVSS 4.0 8.7, urgency High, fixed in OTRS 2026.8.2 (EasyVista-OTRS GmbH, formerly OTRS AG); exploitation needs
+    no authentication, valid survey key or existing survey request, only an accessible external frontend, and its product-status table scopes the flaw to the Survey component (default status unaffected) with 2024.3.1 and 2025.x
+    from 2026.x before 2026.8.2 listed as affected. NCSC-NL relayed it on 2026-11-25 with a High-damage, Medium-likelihood rating. No source reports exploitation or a public proof of concept. For the OTRS fork Znuny, BSI's
+    advisory of 2026-11-26 rates a bundle high and lists Znuny LTS before 7.5.1 and before 6.5.27 as affected, with attacks that bypass access controls, escalate privileges, disclose data, manipulate data, inject SQL and cross-site
+    scripts, run code or cause denial of service, and references 27 vendor advisories (ZSA-2026-17 to ZSA-2026-43); the Znuny advisory pages were unreachable, so the individual flaws, scores and which of them are unauthenticated
+    are unknown.
+  region_nexus: global; service-desk and ticketing systems
+  primary_sector_nexus: indirect
+  sector: cross-sector (IT service management)
+  cves:
+  - CVE-2026-93584
+  techniques:
+  - T1190
+  affected_products:
+  - OTRS
+  - Znuny
+  entity_keys: []
+  new_entities:
+  - key: product:otrs
+    type: product
+    name: OTRS
+    aliases:
+    - EasyVista-OTRS
+    summary: Open-source ticketing and service-desk platform maintained by EasyVista-OTRS GmbH, formerly OTRS AG (OTRS, 2026-11-23).
+  - key: product:znuny
+    type: product
+    name: Znuny
+    aliases:
+    - Znuny LTS
+    summary: Open-source ticketing system forked from OTRS (BSI, 2026-11-26).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-NATIONAL-CERT
+  confidence: MEDIUM
+  novelty: new
+  classification:
+    reliability: A
+    credibility: '2'
+  evidence:
+  - quote: Exploitation does not require authentication, a valid survey key, or an existing survey request. The external frontend must be accessible.
+    attribution: OTRS (OSA-2026-19)
+    source_url: https://otrs.com/release-notes/otrs-security-advisory-2026-19/
+  - quote: 'Fixed in: OTRS 2026.8.2'
+    attribution: OTRS (OSA-2026-19)
+    source_url: https://otrs.com/release-notes/otrs-security-advisory-2026-19/
+  - quote: 'Title: Unauthenticated SQL Injection in OTRS External Survey Endpoint'
+    attribution: OTRS (OSA-2026-19)
+    source_url: https://otrs.com/release-notes/otrs-security-advisory-2026-19/
+  extended_notes: 'Exposure: instances with the external (customer) frontend reachable and the Survey component present; the version string in the OTRS admin interface decides the rest. Detection concept (inference from the
+    mechanism): web-server access logs for the external Survey endpoint with an unusually long or SQL-metacharacter-bearing survey key, repeated requests with time-delayed responses, and database-account activity reading tables
+    a survey request never touches. Gaps: the OTRS and NCSC-NL pages are the only sources and NCSC-NL derives from the vendor advisory; the Znuny half rests on BSI alone. Dates: the vendor advisory is 2026-11-23 and NCSC-NL''s
+    relay 2026-11-25 07:50 UTC, so both are outside window_hours; the BSI Znuny advisory is in window.'
+  borderline: true
+  borderline_reason: vendor advisory (2026-11-23) and NCSC-NL relay (2026-11-25) predate the 26 h window; no exploitation or PoC reported; Swiss public-sector deployment of OTRS or Znuny is not stated by any source. Included
+    because it is an unauthenticated internet-facing SQL injection in a ticketing system that holds case data and the Znuny release (BSI 'hoch') is in window
+cve_table:
+- cve: CVE-2026-99362
+  product: Linux kernel in-kernel NFS server (nfsd), NFSv4.1/4.2
+  cvss: 9.8 (3.1, cve.org and EUVD); Red Hat 9.4 with its own vector
+  epss: 0.76
+  kev: false
+  exploited: false
+  affected: Linux kernels from 3.16 up to but not including 5.10.275, 5.15.226, 6.1.193, 6.6.163, 6.12.117, 6.18.61, 7.3.2 and mainline 7.4-rc1 (distribution backports vary; Ubuntu 16.04 to 24.04 vulnerable and Debian bookworm
+    6.1.192-3 vulnerable when read)
+  fixed: 5.10.275, 5.15.226, 6.1.193, 6.6.163, 6.12.117, 6.18.61, 7.3.2, 7.4-rc1; Debian trixie 6.12.117-1 and bookworm linux-6.12 (DLA-4927-1)
+  type: rce
+  vector: network, TCP 2049
+  auth: pre-auth
+  source: OpenSec write-up 2026-11-25; EUVD-2026-130020; watchTowr FAQ 2026-11-26; Red Hat, Debian, Ubuntu CVE pages
+- cve: CVE-2026-99288
+  product: Linux kernel TCP stack (NoisyTCP)
+  cvss: 7.5 (3.1, Red Hat); 5.9 (cve.org record)
+  epss: null
+  kev: false
+  exploited: false
+  affected: almost all Linux kernels since commit 079096f103fa (2015-10-03); triggerable on servers with two or more RX queues or RPS; XCP-ng 8.3 and Xen Orchestra Appliance
+  fixed: upstream commit 4e2b3ef19e0e (2026-11-03); Debian trixie 6.12.117-1 and 6.12.118-1, bookworm 6.1.192-3, unstable 7.3.4-1; Ubuntu fixes in progress on 2026-11-23; Vates update 2026-11-25
+  type: dos
+  vector: network
+  auth: pre-auth
+  source: oss-security 2026-11-15; Red Hat, Debian, Ubuntu CVE pages; Vates VSA-2026-069
+- cve: CVE-2026-46300
+  product: Linux kernel XFRM ESP-in-TCP (Fragnesia) as exploited on PAN-OS management plane
+  cvss: null
+  epss: null
+  kev: true
+  exploited: true
+  affected: PAN-OS 10.2, 11.1, 11.2, 12.1 and 12.2 below the Fragnesia-fixed builds; exploited only after PHP2Shell on an internet-exposed management interface per Palo Alto
+  fixed: 10.2.7-h41, 10.2.10-h45, 10.2.13-h29, 10.2.16-h14, 10.2.18-h15; 11.1.4-h40, 11.1.6-h42, 11.1.7-h14, 11.1.10-h38, 11.1.13-h18, 11.1.16-h6; 11.2.4-h25, 11.2.7-h25, 11.2.10-h19, 11.2.13-h6, 11.2.16-h3; 12.1.4-h15, 12.1.7-h15,
+    12.1.10-h6; 12.2.4-h3 and all later
+  type: lpe
+  vector: local (chained after remote code execution)
+  auth: post-auth (chained)
+  source: PAN-SA-2026-0015 (2026-11-24); CISA KEV 2026-10-28
+- cve: CVE-2026-132779
+  product: nginx (ssl_early_data, TLS 1.3)
+  cvss: null
+  epss: null
+  kev: false
+  exploited: false
+  affected: nginx 1.21.4 to 1.31.9 (project advisory page); F5 K000163947 unreadable so NGINX Plus ranges not read
+  fixed: nginx 1.31.10 mainline and 1.30.8 stable (2026-11-23)
+  type: dos
+  vector: network
+  auth: pre-auth
+  source: nginx.org CHANGES and security advisories page
+- cve: CVE-2026-123007
+  product: nginx HTTP/2 in Veeam Software Appliance and Veeam Infrastructure Appliance 13.1 (also Plug-In appliances, Backup for Salesforce 3.2.1)
+  cvss: null
+  epss: null
+  kev: false
+  exploited: false
+  affected: Veeam Software Appliance 13.1, Veeam Infrastructure Appliance 13.1, Veeam Plug-In for AWS / Google Cloud / Microsoft Azure appliances, Veeam Backup for Salesforce 3.2.1
+  fixed: 'appliance update via Veeam Updater since 2026-11-25 (nginx package build nginx-1.20.1-22.8.el9_6_ciq.3); Salesforce: OS vendor update or disable HTTP/2'
+  type: rce
+  vector: network
+  auth: pre-auth
+  source: Veeam KB4976 (modified 2026-11-25); CERT-FR CERTFR-2026-AVI-1629
+- cve: CVE-2026-123633
+  product: nginx HTTP/2 in Veeam appliances (as above)
+  cvss: null
+  epss: null
+  kev: false
+  exploited: false
+  affected: as CVE-2026-123007 for Veeam products
+  fixed: as CVE-2026-123007
+  type: rce
+  vector: network
+  auth: pre-auth
+  source: Veeam KB4976
+- cve: CVE-2026-93584
+  product: OTRS (external Survey endpoint)
+  cvss: 8.6 (3.1); 8.7 (4.0)
+  epss: null
+  kev: false
+  exploited: false
+  affected: OTRS 2024.3.1 through 2026.8.1 with the Survey component and an accessible external frontend
+  fixed: OTRS 2026.8.2
+  type: sqli
+  vector: network
+  auth: pre-auth
+  source: OTRS OSA-2026-19 (2026-11-23); NCSC-NL NCSC-2026-0515
+- cve: CVE-2026-133323
+  product: Mitel MiCollab AWV (MISA-2026-0012)
+  cvss: 10.0 (3.1, Mitel)
+  epss: null
+  kev: true
+  exploited: true
+  affected: MiCollab 10.3 (10.3.0.18) and earlier; exploited before the 2026-11-16 advisory per Accenture APEX Labs
+  fixed: patch KB000129195 on release 10.3 (10.3.0.18) or a later release
+  type: rce
+  vector: network
+  auth: pre-auth
+  source: Accenture APEX Labs 2026-11-26; CISA KEV 2026-11-25; Mitel MISA-2026-0012 rev 2.0
+- cve: CVE-2026-103406
+  product: Juniper Session Smart Conductor (AutomatedProvisioner)
+  cvss: 9.8 (3.1)
+  epss: null
+  kev: true
+  exploited: true
+  affected: Session Smart Router and Conductor before 7.0.5, 7.1.7 and 7.2.3
+  fixed: 7.0.5, 7.1.7, 7.2.3 or later
+  type: rce
+  vector: network
+  auth: pre-auth
+  source: SecurityWeek quoting Juniper's 2026-11-24 update; NCSC Switzerland post 13244; CISA KEV 2026-11-25
+- cve: CVE-2026-132825
+  product: Ruby string case conversion (Ruby2Shell) in GitLab and GitHub Enterprise Server
+  cvss: 7.4 (3.1, MITRE); Critical per the Ruby team
+  epss: null
+  kev: false
+  exploited: false
+  affected: Ruby 3.3.0 to 3.3.13, 3.4.0 to 3.4.12, 4.0.0 to 4.0.9; GitLab all lines before the fixed builds; GHES before 3.22.6 (3.21 and older not read)
+  fixed: GitLab 19.6.1, 19.5.8, 19.4.10 (2026-11-20) and 19.3.10, 19.2.11, 19.1.11, 19.0.12, 18.11.15 (2026-11-25); GHES 3.22.6 (2026-11-22)
+  type: rce
+  vector: network
+  auth: pre-auth
+  source: GitLab 19.6.2 and 19.6.1 release pages; GHES 3.22.6 release notes; Veria Labs
+- cve: none assigned in the cited source (Cacti '4HTTP2ROOT')
+  product: Cacti Core 1.2.31
+  cvss: null
+  epss: null
+  kev: false
+  exploited: false
+  affected: Cacti Core 1.2.31 with the guest account enabled (only tested release)
+  fixed: none
+  type: rce
+  vector: network
+  auth: pre-auth (anonymous guest session)
+  source: watchTowr 4HTTP2ROOT FAQ 2026-11-26
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: No product watchlist is configured for this profile, so the sweep is a no-op; the advisory surfaces read this run (CISA KEV, ENISA EUVD, MSRC, Palo Alto, Fortinet, HPE Networking, NCSC-NL, BSI, CERT-FR, CERT-EU, CERT-PL,
+    nginx, Veeam, Vates, GitLab, Juniper, Cisco) were swept for the general S1 questions instead.
+candidate_sources:
+- id: accenture-apex-labs
+  publisher: Accenture APEX Labs (cyber-intelligence reports)
+  url: https://accenture.github.io/cyber-intelligence/micollab-exploitation/
+  category: research
+  why: first-party incident-response and network telemetry with a full intrusion timeline and ATT&CK mapping; primary for the MiCollab pre-disclosure exploitation report of 2026-11-26
+- id: opensec-blog
+  publisher: OpenSec (opensec.in research blog)
+  url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  category: research
+  why: discoverer's write-up for NFS2ROOT (pre-authentication Linux NFS server root) with an exposure test, hunt signals and disclosure timeline; primary for a CVSS 9.8 kernel flaw the store lacked
+- id: otrs-security-advisories
+  publisher: OTRS (EasyVista-OTRS security advisories)
+  url: https://otrs.com/release-notes/otrs-security-advisory-2026-19/
+  category: vendor-psirt
+  why: first-party advisories (OSA-YYYY-NN) for the OTRS ticketing platform, readable with `extract`, with affected and fixed versions and the vulnerable method; primary for the unauthenticated Survey SQL injection
+dropped_candidates:
+- item: 'HPE Networking AirWave HPESBNW05186 (2026-11-25): CVE-2026-133971, -133972 and -133973, three unauthenticated CVSS 3.1 9.8 flaws (web-UI authentication bypass, API authentication bypass, command injection), fixed
+    in 8.3.0.8; EUVD-2026-135881 to -135883, CERT-FR AVI-1628'
+  reason: previous run (2026-11-26T0356Z) returned it and the main agent borderline-dropped it (internal management server, HPE knows of no exploit code, segmentation as workaround); re-read the HPE advisory, no new facts
+    and no exploitation; not returned again
+- item: 'Joomla CMS 5.4.11 and 6.2.1 (2026-11-24): 25 advisories including RCE CVE-2026-127297, unrestricted file upload CVE-2026-123210 and authentication bypass CVE-2026-123214 (Joomla rates the impact Critical but severity
+    Low and probability Low); NCSC-NL 0516 relay 2026-11-26, BSI 4782 ''hoch'''
+  reason: previously borderline-dropped by the main agent; Joomla's own pages carry no descriptions, no exploitation or public proof of concept; not returned again
+- item: Microsoft Office Visio CVE-2026-112732 (CVSS 9.8, MSRC revision 2026-11-24, 'inadvertently omitted from the November updates'; FAQ text describes Exchange attachment indexing)
+  reason: considered and dropped by earlier runs; MSRC exploited No, publicly disclosed No, Exploitation Less Likely; informational revision
+- item: Camunda 8 CVE-2026-77230 (insecure deserialization of web-session data, CVSS 4.0 9.2; fixed 8.8.47, 8.9.29, 8.10.10)
+  reason: 'needs write access to the web-session index in secondary storage (VulnCheck/GitHub advisory: an unauthenticated Elasticsearch deployed from Camunda''s docker-compose files is the example); no exploitation; Swiss
+    public-sector use not stated'
+- item: JetBrains TeamCity security fixes (NCSC-NL 0521, CVE-2026-132232 and -132233 at 9.9), SolarWinds Serv-U 2026.4 (NCSC-NL 0520), Jenkins advisory 2026-11-25, Adobe Experience Manager and Campaign Classic (NCSC-NL 0517/0518),
+    Tanium (0519), GitLab 19.6.2 own fixes (0522)
+  reason: every high row needs an authenticated or administrator role (TeamCity PR:L, Serv-U domain administrator, Jenkins script permission, Adobe low-privilege), none pre-authentication or exploited; GitLab 19.6.2 has no
+    critical row of its own
+- item: PowerDNS Authoritative Server 4.9.20, 5.0.10, 5.1.7 (advisory 2026-14, ten CVEs) and DNSdist
+  reason: the project calls them mostly low or medium severity, backend- and configuration-specific denial-of-service and zone-handling faults; none pre-authentication code execution
+- item: 'Chrome 158.0.8127.88/.89 (2026-11-23): CVE-2026-134401, Critical-rated Variations input validation found by Google'
+  reason: single internal finding, no exploitation, already dropped by an earlier run
+- item: 'EUVD 9.0+ rows of 2026-11-25/27: Sneeit Framework WordPress RCE CVE-2026-106125, ChronoForms CVE-2026-133336 and VirtueMart CVE-2026-133335 (Joomla extensions), Canonical LXD OIDC CVE-2026-135384, pulp_python SSRF
+    CVE-2026-126984, Budibase, ToolJet, Parse Server, Frappe, Twenty, Eclipse Ditto, llama.cpp RPC, ASSA ABLOY Seawing SC-1000 (CERT.PL), D-Link, Tenda and TOTOLINK devices'
+  reason: niche products or consumer devices, none carries an exploitation flag in EUVD or a vendor list; EUVD record text read for four of them only
+- item: Hex.pm package registry breach (CVE-2026-129514, unauthenticated deserialization RCE, six servers, THN 2026-11-25)
+  reason: earlier run borderline-dropped it (no package modification found, no constituency nexus); re-read The Hacker News, no change
+- item: Drupal SA-CORE-2026-019 relays (NCSC-NL 0524, CERT-FR AVI-1623, BSI WID-SEC-2026-4812)
+  reason: already in the 2026-11-18 Drupal entry, which was updated on 2026-11-26 with SA-CORE-2026-019; no new fact
+- item: 'Re-checked for revisions and found unchanged: Mitel MISA-2026-0012 (rev 2.0 of 2026-11-24), GeoServer security update page (2026-11-23), Splunk SVD-2026-1103 (2026-11-18), Citrix CTX697305 (2026-11-12), Fortinet FG-IR-26-279
+    (2026-11-20), Cisco Java advisory (1.4 of 2026-11-23); Cisco''s nginx advisory is at 1.5 of 2026-11-26, which the existing nginx2root entry already records'
+  reason: no delta
+- item: 'CISA KEV: no addition after 2026-11-25 (catalogue 2026.11.25, 1805 entries); ENISA exploited list holds only the four Mitel rows; no new ICS advisories after icsa-26-328 (2026-11-24); CERT-EU newest advisory 2026-022
+    (2026-11-18); NCSC-UK feed carries only blogs'
+  reason: confirmed zero in-window exploitation additions
+source_ledger:
+- id: advisories-ncsc-nl
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-nl recent 30 + csaf 0515/0516/0520/0521/0524
+  horizon_hours: 26
+  in_horizon_items: 9
+  returned: 1
+  note: NCSC-2026-0516 to -0524 of 2026-11-26 triaged (Joomla, Adobe x2, Tanium, Serv-U, TeamCity, GitLab, VMware, Drupal); NCSC-2026-0515 (OTRS, 2026-11-25) used as relay for the OTRS item
+- id: anssi-fr
+  tier: essential
+  attempted: true
+  transport: bridge:cert-fr avis-recent 25 + feed alerte + extract AVI-1623/1624/1625/1626/1627/1628/1629
+  horizon_hours: 26
+  in_horizon_items: 7
+  returned: 1
+  note: AVI-1629 (Veeam, nginx2root impact) used as relay; Drupal, GitLab, Tenable, NetApp, Mattermost, AirWave read and dropped or covered
+- id: bsi-de
+  tier: essential
+  attempted: true
+  transport: bridge:bsi-rss (250 items, 2026-11-25 11:51 to 2026-11-26 12:52) + changes.csv + bsi-csaf x10
+  horizon_hours: 26
+  in_horizon_items: 27
+  returned: 1
+  note: highest WID id 4826 at 2026-11-26 12:52; WID-SEC-2026-4810 (Znuny) used as context in the OTRS item; RustDesk, Camunda, Jenkins, Sitefinity, Visio, n8n, Joomla, Drupal read and dropped
+- id: cert-eu
+  tier: essential
+  attempted: true
+  transport: bridge:cert-eu recent 10
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest advisory 2026-022 (2026-11-18)
+- id: cert-pl
+  tier: essential
+  attempted: true
+  transport: feed https://cert.pl/en/rss.xml 8
+  horizon_hours: 26
+  in_horizon_items: 2
+  returned: 0
+  note: Chainlit and GNU Screen (2026-11-26) niche; ASSA ABLOY Seawing SC-1000 and PrestaShop modules of 2026-11-25 outside window
+- id: cisa-advisories
+  tier: essential
+  attempted: true
+  transport: WebFetch listing (page 1) + bridge:cisa csaf-recent
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest alert 2026-11-25 (ten KEV additions, already covered); newest ICS advisory icsa-26-328 of 2026-11-24
+- id: cisa-kev
+  tier: essential
+  attempted: true
+  transport: bridge:cisa-kev (3 reads)
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: catalogue 2026.11.25 released 2026-11-25T19:48Z; zero additions in window, confirmed at start and end of run
+- id: enisa-euvd
+  tier: essential
+  attempted: true
+  transport: bridge:enisa-euvd recent exploited + url --direct search score>=9 2026-11-25..27 (66 rows) + enisaid reads
+  horizon_hours: 26
+  in_horizon_items: 45
+  returned: 0
+  note: exploited list holds only the four Mitel rows (exploitedSince 2026-11-25); NFS2ROOT EUVD-2026-130020 used as corroboration in the NFS2ROOT item
+- id: ncsc-ch-security-hub
+  tier: essential
+  attempted: true
+  transport: bridge:ncsc-csh recent 25/40 + post 13244
+  horizon_hours: 26
+  in_horizon_items: 1
+  returned: 1
+  note: post 13244 (Juniper, 2026-11-26 07:25) is the only in-window post; no edits to older posts in window
+- id: ncsc-uk
+  tier: essential
+  attempted: true
+  transport: feed all-rss-feed.xml
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest items are blogs of 2026-11-24
+- id: watchtowr
+  tier: essential
+  attempted: true
+  transport: feed labs rss + extract https://watchtowr.com/intelligence/
+  horizon_hours: 26
+  in_horizon_items: 2
+  returned: 2
+  note: labs RSS newest 2026-11-05; the intelligence index carries the NFS2ROOT and 4HTTP2ROOT (Cacti) FAQs of 2026-11-26
+- id: fortinet-psirt
+  tier: essential
+  attempted: true
+  transport: feed ir.xml 12 + extract FG-IR-26-279
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest FG-IR-26-279 (2026-11-20), unchanged
+- id: msrc-update-guide
+  tier: essential
+  attempted: true
+  transport: bridge:msrc recent 25 + OData revised sweep (isMariner eq false, 60 rows) + msrc cve CVE-2026-112732
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 0
+  note: newest revision 2026-11-24 (Visio, previously dropped); other rows Chromium and Erlang mirror entries
+- id: paloalto-psirt
+  tier: essential
+  attempted: true
+  transport: feed rss.xml 12 + url --direct PAN-SA-2026-0015 (HTML and /json/)
+  horizon_hours: 26
+  in_horizon_items: 0
+  returned: 1
+  note: PAN-SA-2026-0015 (2026-11-24 23:10 UTC) carries an Exploitation Status block the earlier run missed; outside the 26 h window by source date
+- id: typo3-security-advisories
+  tier: standard
+  attempted: true
+  transport: feed rss-security 6
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest TYPO3-CORE-SA-2026-034 (2026-11-17), already covered by the 2026-11-18 entry
+- id: vates-security-advisories
+  tier: standard
+  attempted: true
+  transport: feed docs.vates.tech/vsa/rss.xml 8 + extract VSA-2026-069
+  horizon_hours: 168
+  in_horizon_items: 5
+  returned: 1
+  note: VSA-2026-065 to -069 of 2026-11-25; -069 (NoisyTCP) used; OpenSSH, libssh2, AMD IOMMU XSA-524 and TSA rows moderate or low
+- id: veeam-kb-security
+  tier: standard
+  attempted: true
+  transport: feed kb rss-feed 8 + extract kb4976
+  horizon_hours: 168
+  in_horizon_items: 1
+  returned: 1
+  note: kb4976 NGINX2ROOT Impact Statement (published 2026-11-20, modified 2026-11-25) folded into the nginx2root update item
+- id: xerox-security-bulletins
+  tier: standard
+  attempted: true
+  transport: extract bulletin listing
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest XRX26-020 and XRX26-016 v7 of 2026-11-13
+- id: apache-httpd-security
+  tier: standard
+  attempted: true
+  transport: extract
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest 2.4.71 of 2026-11-11, already covered
+- id: apple-security
+  tier: standard
+  attempted: true
+  transport: extract https://support.apple.com/en-us/100100 (reads fully; WebFetch not needed)
+  horizon_hours: 168
+  in_horizon_items: 1
+  returned: 0
+  note: newest row HomeView 27.2.1 of 2026-11-18 with no CVE entries; OS releases of 2026-11-09 to -13 older than the lookback
+- id: atlassian-security-advisories
+  tier: standard
+  attempted: true
+  transport: url index + href grep
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest monthly bulletin 2026-11-17 (beyond the 168 h lookback) and CVE-2026-90436 page already covered
+- id: chrome-releases
+  tier: standard
+  attempted: true
+  transport: feed feedburner 10 + extract two posts
+  horizon_hours: 168
+  in_horizon_items: 1
+  returned: 0
+  note: stable 158.0.8127.88 of 2026-11-23, one Critical internal finding (CVE-2026-134401), no exploitation; dropped
+- id: ibm-support-security-bulletins
+  tier: standard
+  attempted: true
+  transport: extract of the record's pinned bulletin + EUVD search text=IBM
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: pinned bulletin is IBM MQ CVE-2026-10747 of 2026-09-14; no listing transport, EUVD search returned no IBM rows for 2026-11-25 to -27
+- id: nextjs-blog
+  tier: standard
+  attempted: true
+  transport: feed feed.xml 4
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest security release 2026-11-03
+- id: nginx-security-advisories
+  tier: standard
+  attempted: true
+  transport: extract + extract CHANGES + feed index.rss
+  horizon_hours: 168
+  in_horizon_items: 1
+  returned: 1
+  note: new top row CVE-2026-132779 (nginx 1.31.10 and 1.30.8 of 2026-11-23) returned as a lookback update to the nginx2root entry
+- id: nodejs-security-releases
+  tier: standard
+  attempted: true
+  transport: feed vulnerability.xml 4
+  horizon_hours: 168
+  in_horizon_items: 0
+  returned: 0
+  note: newest release 2026-11-11
+coverage_gaps:
+- source_id: watchtowr
+  reason: 'RECIPE CHANGE: the labs RSS (newest 2026-11-05) under-collects; `python3 tools/fetch_source.py extract https://watchtowr.com/intelligence/` lists the Vulnerability FAQ and Rapid Reaction pages newest-first, and
+    `url --direct` of the same page yields the per-page hrefs; this run found the NFS2ROOT and 4HTTP2ROOT (Cacti) FAQs there that no other slice record surfaced. Suggest pinning the intelligence index as the watchtowr record''s
+    working listing.'
+- source_id: znuny-advisories
+  reason: https://www.znuny.org/en/advisories stops at ZSA-2026-16 and every per-advisory page ZSA-2026-17 to -43 (named by BSI WID-SEC-2026-4810) answers HTTP 500 on direct fetch and on the reader fallback (jina pool exhausted,
+    ten keys at HTTP 402 during this run); the 27 Znuny flaws cannot be described beyond BSI's summary
+- source_id: juniper-support-portal
+  reason: Juniper JSA112183 on supportportal.juniper.net returns a Salesforce JavaScript shell on extract and on WebFetch; the vendor wording comes only from SecurityWeek's quotation and NCSC Switzerland's post. ENISA EUVD's
+    record carries the same bulletin reference
+- source_id: my.f5.com
+  reason: F5 K-articles (K000163947 for CVE-2026-132779, K000163925 to -163935 for the nginx2root rows) are an SPA no transport renders; nginx.org's own advisory page and CHANGES file are the readable primaries
+- source_id: progress-community
+  reason: community.progress.com articles (Sitefinity November 2026 advisory) return the Salesforce shell on `url --direct`; avoid `url --direct` on that host (it dumped a 9 KB CSP header block into the run)
+- source_id: bsi-de
+  reason: the bsi-rss feed is capped at 250 items and this run's read spanned 2026-11-25 11:51 to 2026-11-26 12:52 UTC; changes.csv uses day-granular stamps (max 2026-11-25T23:00Z, highest id WID-SEC-2026-4826), so per-id
+    csaf reads are the way to see a busy day, as the record's 2026-11-24 note says
+- source_id: cisa-advisories
+  reason: WebFetch of the listing returns page 1 only (ten alerts, newest 2026-11-25); no Cybersecurity Advisory or ICS rows were visible there, ICS came from `cisa csaf-recent`
+- source_id: verialabs.com/ruby2shell
+  reason: the page's software-status table was stale against GitHub's own GHES 3.22.6 release notes; the PoC date is only in the raw HTML (extract strips the date element)

@@ -1,0 +1,609 @@
+domain: FU5
+run_id: 2026-11-27T0355Z-intel
+purpose: scoped follow-up deep read for composition (three changelog-record candidates), not a domain sweep
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-27T04:32:38Z'
+passage_check:
+  method: python3 -I script; each passage tested as a contiguous substring (no normalisation) of its saved file; round-trip re-check after YAML load
+  passages_total: 111
+  miss_count: 0
+  round_trip_miss_count: 0
+items:
+- id: A
+  entry: entries/2026-11-19/nginx-nginx2root-five-unauth-memory-corruption-flaws.md
+  finding_ref: work/2026-11-27T0355Z-intel/findings.S1.yaml item 5
+  verdict: 'Verified delta worth an update record on the nginx2root entry: new flaw CVE-2026-132779 (client-triggered CPU exhaustion with ssl_early_data, nginx 1.31.10 and 1.30.8 of 2026-11-23, NGINX Plus PLS.37.3.1.1 and PLS.37.0.9.1 of the same day), Veeam appliances affected by two of the five flaws with a fix since 2026-11-25, GitLab bundling nginx 1.31.9; severity score not obtainable (F5 K000163947 unreadable on every transport).'
+  delta_vs_entry:
+  - 'Entry (updated_at 2026-11-26T05:07:20Z) names nginx 1.31.9 and 1.30.7 as the fixed releases and carries ten CVEs; CVE-2026-132779 appears nowhere in the store (grep entries/ and state/: no hit). New: nginx 1.31.10 (mainline) and 1.30.8 (stable), both dated 23 Nov 2026 in CHANGES and CHANGES-1.30, fix one security flaw: "when using the ssl_early_data directive a client might cause excessive CPU usage (CVE-2026-132779)", plus a separate unrelated bugfix (nginx hogging CPU when SSL connections to backends were used). nginx.org advisory title: "Excessive CPU usage in TLS 1.3 with ssl_early_data"; Vulnerable 1.21.4-1.31.9; Not vulnerable 1.31.10+, 1.30.8+. So a host on 1.31.9 or 1.30.7 has the fixes for the entry''s flaws (where they apply to its branch) but is inside the vulnerable range of this one; the entry''s "update to 1.31.9 or 1.30.7" target is one patch behind wherever ssl_early_data is configured.'
+  - 'Class and precondition: availability (CPU pinning), not memory corruption; precondition is TLS 1.3 early data configured (nginx wording: the ssl_early_data directive; Plus notes: "ssl_early_data on"). Mechanism per the Plus release notes: a specially crafted TLS 1.3 connection drives a worker into a tight loop retrying the same send; the worker keeps accepting and serving other connections but one core stays at 100% for as long as the attacker holds the connection open. The sources do not state whether the directive is on by default; no source read gives a CVSS score.'
+  - 'NGINX Plus has a counterpart (docs.nginx.com release notes, fetched 2026-11-27): PLS.37.0.9.1 LTS (based on NGINX Open Source 1.29.8) and PLS.37.3.1.1 CR (based on 1.31.8), both dated 23 Nov 2026, each "a security release" whose only listed fix is CVE-2026-132779. The entry''s Plus fixed builds (37.3.0.1 and 37.0.8.1, 18 Nov) do not carry it. The page names R36 P8 (22 Jul 2026) as the latest R36, so no R-release build carries any of the November fixes on that page; whether R33 to R36 are affected by CVE-2026-132779 is not stated anywhere readable (K000163947 is a JavaScript shell for extract and for WebFetch). Note for the composer: Plus build numbers, not the Open Source version string a build is "based on", decide fix status (37.3.1.1 is based on 1.31.8 yet carries the fix).'
+  - 'Veeam KB4976 (published 2026-11-20, last modified 2026-11-25; not in the entry, which covers no Veeam product): Veeam Software Appliance 13.1 and Veeam Infrastructure Appliance 13.1 are affected by CVE-2026-123007 and CVE-2026-123633 only (their nginx build has HTTP/2 enabled on a listener that proxies to a backend; the other three of the five "do not apply to the appliance configuration"). Veeam Plug-In for AWS, for Google Cloud and for Microsoft Azure appliances (Ubuntu 22.04 LTS, Ubuntu nginx package) and Veeam Backup for Salesforce 3.2.1 are also affected; Windows-based Backup & Replication, Backup Enterprise Manager on Windows (no nginx) and on Linux (HTTP/2 not enabled) and workers deployed by the hypervisor plug-ins are not; Veeam Data Cloud services are managed by Veeam (no customer action). The KB does not mention CVE-2026-132779 or ssl_early_data and still says Veeam "is investigating ... and will update this article".'
+  - 'Veeam fix delivery: since 2026-11-25 an update with the fix is in the Veeam repository for the two appliances, delivered through Veeam Updater as an Enterprise-Linux-9 backport package build (the page names nginx-1.20.1-22.8.el9_6_ciq.3, so the version string cannot be read as an upstream version, which matches the entry''s existing point about distribution backports). Veeam Updater checks the repository every 12 hours; with the default update configuration "mandatory updates are installed automatically on the nearest Sunday at 14:00, based on the time zone of the backup server" (2026-11-25 was a Wednesday, so for an appliance that had not installed it earlier the nearest Sunday is 2026-11-29; that date is my computation, not on the page); if the update is not on the Updates tab it may already be installed, check the History tab in the Veeam Host Management console; appliances behind a local mirror get it after the mirror syncs; manual path is Updates, Check for updates, Install Updates Now, repeated per component that has a custom update configuration. Workaround stated: restrict TCP 443 on the appliances to trusted networks; "HTTP/2 cannot be disabled on these appliances because Veeam components depend on it". Plug-in appliances: install all security updates through Veeam Updater (patched Ubuntu package 1.18.0-6ubuntu14.23). Veeam Backup for Salesforce 3.2.1: Veeam does not manage the customer-deployed OS or nginx package, so install the OS vendor update, or until then remove the http2 parameter from the port-443 listen directive in the nginx site file for the frontend, check the configuration and restart nginx.'
+  - 'CERT-FR CERTFR-2026-AVI-1629 (first and only version 2026-11-26) relays KB4976 of 2026-11-20 and adds nothing technical: risk "Exécution de code arbitraire à distance", systems Veeam Backup for Salesforce 3.2.1, Infrastructure Appliance 13.1, Software Appliance 13.1 and the three public-cloud plug-in appliances without the latest security update, and "L''éditeur fournit également une mesure de contournement provisoire". It lists the five nginx2root CVEs only, not CVE-2026-132779. Its value is as an independent authority signal that Veeam impact is being rated code execution (inherited from the nginx2root rating, not Veeam-specific analysis).'
+  - 'GitLab patch release 19.6.2, 19.5.9, 19.4.11 (page intro) and eight versions in its title, released 2026-11-25: nginx updated to 1.31.9 in the Linux package (Omnibus) and Docker images built from it in 19.6.2, 19.5.9 and 19.4.11 only (the page has no nginx line for 19.3 and older); GitLab Helm Chart and Operator installations using the deprecated NGINX Ingress controller are also affected, the controller has been disabled by default since 19.0, upstream no longer patches it, GitLab recommends Envoy Gateway or an external ingress controller, and "an updated NGINX controller will ship in an upcoming chart release". GitLab bundles 1.31.9, which is inside the vulnerable range of CVE-2026-132779; the page does not say whether Omnibus ever sets ssl_early_data, so no exposure may be asserted.'
+  - 'Action delta only (do not restate entry actions): move nginx to 1.31.10 or 1.30.8 (Plus 37.3.1.1 or 37.0.9.1) where ssl_early_data is on; Veeam appliance operators confirm the Veeam Updater package landed (History tab) rather than waiting for the Sunday window and restrict 443; GitLab Omnibus on 19.6.2/19.5.9/19.4.11 is on 1.31.9, Helm users on the deprecated NGINX Ingress need the next chart release.'
+  gaps:
+  - 'F5 K000163947 (the advisory every nginx.org line points to) cannot be read: extract served a 737 KB JavaScript shell (transport direct-raw), WebFetch answered "no advisory content". No severity, no NGINX Plus R-release statement for this CVE.'
+  - Veeam KB4976 and nginx.org advisories are living pages; KB4976 says it will be updated. Veeam does not itemise CVE-2026-132779 at all.
+  - No readable nginx announcement mail or blog for 1.31.10 was found (a search for it returned an nginx.org news page whose newest mainline entry was 1.31.8 of 2026-10-21 and the search summary said 1.31.10 was not found, which the live CHANGES files dated 2026-11-23 contradict, so that index was stale); CHANGES and CHANGES-1.30 carry the release lines and dates.
+  evidence:
+  - claim: nginx 1.31.10 (mainline) released 23 Nov 2026
+    source_url: https://nginx.org/en/CHANGES
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginx_CHANGES.txt
+    passage: Changes with nginx 1.31.10                                       23 Nov 2026
+  - claim: 'nginx 1.31.10 CHANGES: one security fix, ssl_early_data excessive CPU usage, plus a separate CPU-hog bugfix'
+    source_url: https://nginx.org/en/CHANGES
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginx_CHANGES.txt
+    passage: |-
+      *) Security: when using the "ssl_early_data" directive a client might
+             cause excessive CPU usage (CVE-2026-132779).
+
+          *) Bugfix: nginx might hog CPU if SSL connections to backends were used.
+  - claim: nginx 1.30.8 (stable) released 23 Nov 2026 with the same security line
+    source_url: https://nginx.org/en/CHANGES-1.30
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginx_CHANGES-1.30.txt
+    passage: Changes with nginx 1.30.8                                        23 Nov 2026
+  - claim: 'nginx 1.30.8 CHANGES-1.30: same security fix and bugfix'
+    source_url: https://nginx.org/en/CHANGES-1.30
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginx_CHANGES-1.30.txt
+    passage: |-
+      *) Security: when using the "ssl_early_data" directive a client might
+             cause excessive CPU usage (CVE-2026-132779).
+
+          *) Bugfix: nginx might hog CPU if SSL connections to backends were used.
+  - claim: 'nginx.org advisory: vulnerable 1.21.4-1.31.9, not vulnerable 1.31.10+ and 1.30.8+ (advisory title: Excessive CPU usage in TLS 1.3 with ssl_early_data)'
+    source_url: https://nginx.org/en/security_advisories.html
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginx_advisories.txt
+    passage: |-
+      Excessive CPU usage in TLS 1.3 with ssl\_early\_data
+      [Advisory](https://my.f5.com/manage/s/article/K000163947)
+      [CVE-2026-132779](https://www.cve.org/CVERecord?id=CVE-2026-132779)
+      Not vulnerable: 1.31.10+, 1.30.8+
+      Vulnerable: 1.21.4-1.31.9
+  - claim: nginx.org lists the ten Nov-18 flaws as fixed in 1.31.9+/1.30.7+ (so 1.31.9/1.30.7 do NOT fix CVE-2026-132779)
+    source_url: https://nginx.org/en/security_advisories.html
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginx_advisories.txt
+    passage: |-
+      Memory corruption in HTTP/2 flow control
+      [Advisory](https://my.f5.com/manage/s/article/K000163926)
+      [CVE-2026-123007](https://www.cve.org/CVERecord?id=CVE-2026-123007)
+      Not vulnerable: 1.31.9+, 1.30.7+
+  - claim: 'nginx Plus counterpart: PLS.37.0.9.1 LTS security release dated 23 Nov 2026'
+    source_url: https://docs.nginx.com/nginx/releases/
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginxplus_releases.txt
+    passage: |-
+      *November 23, 2026*
+
+      *Based on NGINX Open Source 1.29.8*
+
+      NGINX Plus PLS.37.0.9.1 LTS is a security release.
+  - claim: 'nginx Plus counterpart: PLS.37.3.1.1 CR security release dated 23 Nov 2026 (based on OSS 1.31.8)'
+    source_url: https://docs.nginx.com/nginx/releases/
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginxplus_releases.txt
+    passage: |-
+      *November 23, 2026*
+
+      *Based on NGINX Open Source 1.31.8*
+
+      NGINX Plus PLS.37.3.1.1 CR is a security release.
+  - claim: 'nginx Plus release note: mechanism and effect of CVE-2026-132779 (CPU pinned, worker keeps accepting connections)'
+    source_url: https://docs.nginx.com/nginx/releases/
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginxplus_releases.txt
+    passage: an attacker can use a specially crafted TLS 1.3 connection to drive an nginx worker into a tight loop in which it repeatedly retries the same send without ever making progress. The worker keeps accepting new connections and handling the existing ones, but one CPU core is pinned at 100% for as long as the attacker holds the connection open
+  - claim: 'nginx Plus condition: only when TLS 1.3 early data is configured (ssl_early_data on)'
+    source_url: https://docs.nginx.com/nginx/releases/
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginxplus_releases.txt
+    passage: 'Security fix: when NGINX Plus is configured to use TLS 1.3 early data ([`ssl_early_data on`](https://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_early_data))'
+  - claim: 'nginx Plus: the 18 Nov builds (PLS.37.0.8.1) carry the Nov-18 fixes only, i.e. predate the ssl_early_data fix'
+    source_url: https://docs.nginx.com/nginx/releases/
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginxplus_releases.txt
+    passage: |-
+      *November 18, 2026*
+
+      *Based on NGINX Open Source 1.29.8*
+
+      NGINX Plus PLS.37.0.8.1 LTS is a security release.
+  - claim: 'nginx Plus: latest R36 is P8 of 22 Jul 2026, so no R36 build carries any Nov fix'
+    source_url: https://docs.nginx.com/nginx/releases/
+    file: work/2026-11-27T0355Z-intel/fu5/A_nginxplus_releases.txt
+    passage: Ensure you are upgrading from the latest version of NGINX Plus R36 - currently NGINX Plus R36 P8, released on July 22, 2026.
+  - claim: 'Veeam KB4976 dates: published 2026-11-20, last modified 2026-11-25'
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: "| Published: | 2026-11-20 | \n| Last Modified: | 2026-11-25 |"
+  - claim: 'Veeam KB4976 scope: five nginx2root CVEs; Windows B&R and Enterprise Manager do not use nginx'
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Windows-based installations of Veeam Backup & Replication and Veeam Backup Enterprise Manager do not use nginx and are not affected.
+  - claim: Veeam Software Appliance 13.1 affected by CVE-2026-123007 and CVE-2026-123633
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: '| Veeam Software Appliance 13.1 | Yes | Affected by CVE-2026-123007 and CVE-2026-123633.'
+  - claim: Veeam Infrastructure Appliance 13.1 affected by the same two CVEs
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: '| Veeam Infrastructure Appliance 13.1 | Yes | Affected by CVE-2026-123007 and CVE-2026-123633.'
+  - claim: 'Why only two: nginx build has HTTP/2 enabled on a listener that proxies to a backend; remaining three do not apply'
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Veeam Software Appliance and Veeam Infrastructure Appliance 13.1 include an nginx build with HTTP/2 enabled on a listener that proxies requests to a backend, so CVE-2026-123007 and CVE-2026-123633 apply. The remaining vulnerabilities do not apply to the appliance configuration.
+  - claim: Fix available in the Veeam repository since 2026-11-25 (appliances)
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Since November 25, 2026, an update that contains the fix has been available in the Veeam repository for Veeam Software Appliance and Veeam Infrastructure Appliance 13.1
+  - claim: Fix delivered as an EL9 backport package build (version string is not an upstream version)
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_raw.html
+    passage: Veeam Infrastructure Appliance 13.1 (<code><b>nginx-1.20.1-22.8.el9_6_ciq.3</b></code>)
+  - claim: Veeam Updater cadence and Sunday 14:00 auto-install of mandatory updates; History tab check
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Veeam Updater checks the repository every 12 hours. With the default update configuration, mandatory updates are installed automatically on the nearest Sunday at 14:00, based on the time zone of the backup server. If the update does not appear on the **Updates** tab, it may already be installed. To confirm, check the **History** tab in the Veeam Host Management console.
+  - claim: Local mirror delay
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Appliances that use a local mirror of the Veeam repository receive the update after the mirror is synchronized.
+  - claim: Manual install path (Updates, Check for updates, Install Updates Now; per component with custom update configuration)
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: On the **Updates** tab, select the available updates, then click **Install Updates Now** and confirm the operation.
+  - claim: 'Interim workaround: restrict TCP 443; HTTP/2 cannot be disabled on appliances'
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Until the update is installed, restrict access to TCP port 443 on the appliances to trusted networks. HTTP/2 cannot be disabled on these appliances because Veeam components depend on it.
+  - claim: Public cloud plug-in appliances run Ubuntu 22.04 LTS with the Ubuntu nginx package; patched via Veeam Updater; workers not affected
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: appliances run Ubuntu 22.04 LTS and use the nginx package provided by Ubuntu.
+  - claim: Plug-in appliance patched package build
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_raw.html
+    passage: The patched nginx package (<code><b>1.18.0-6ubuntu14.23</b></code>) is installed with the security updates offered through
+  - claim: Workers do not include nginx
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Worker instances do not include nginx and are not affected.
+  - claim: Veeam Backup for Salesforce 3.2.1 affected; customer-managed OS and nginx package
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Veeam does not manage the operating system or the nginx package on customer-deployed Veeam Backup *for Salesforce* servers.
+  - claim: 'Salesforce backup workaround: remove http2 parameter from the listen directive for port 443 in the nginx site file'
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: 'Until the nginx update is installed, HTTP/2 can be disabled to remediate the vulnerabilities:'
+  - claim: Enterprise Manager 13.1 on Linux not affected because HTTP/2 is not enabled
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: '| Veeam Backup Enterprise Manager 13.1 on Linux | No | HTTP/2 is not enabled.'
+  - claim: Veeam Data Cloud services managed by Veeam, no customer action
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: Veeam manages the infrastructure of Veeam Data Cloud *for Salesforce*, Veeam Data Cloud *for Microsoft Azure*, and Veeam Data Cloud *for AWS*, and is responsible for applying security updates to these services. No customer action is required.
+  - claim: 'Veeam KB4976 is silent on CVE-2026-132779 / ssl_early_data (negative: page states five CVEs only)'
+    source_url: https://www.veeam.com/kb4976
+    file: work/2026-11-27T0355Z-intel/fu5/A_veeam_kb4976.txt
+    passage: 'nginx2root is the common name for five memory corruption vulnerabilities in nginx: CVE-2026-123007, CVE-2026-123633, CVE-2026-121810, CVE-2026-123634, and CVE-2026-113425.'
+  - claim: CERT-FR relay first version 26 Nov 2026
+    source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1629/
+    file: work/2026-11-27T0355Z-intel/fu5/A_certfr_raw.html
+    passage: <th scope="row">Date de la première version</th><td>26 novembre 2026</td>
+  - claim: 'CERT-FR risk rating: remote arbitrary code execution'
+    source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1629/
+    file: work/2026-11-27T0355Z-intel/fu5/A_certfr.txt
+    passage: |-
+      ## Risque
+
+      - Exécution de code arbitraire à distance
+  - claim: CERT-FR affected systems list (Veeam appliances, plug-ins, Backup for Salesforce 3.2.1)
+    source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1629/
+    file: work/2026-11-27T0355Z-intel/fu5/A_certfr.txt
+    passage: |-
+      - Veeam Backup for Salesforce versions 3.2.1 sans le dernier correctif de sécurité
+      - Veeam Infrastructure Appliance versions 13.1 sans le dernier correctif de sécurité
+  - claim: 'CERT-FR: vendor provides an interim workaround; relays Veeam KB of 20 Nov'
+    source_url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1629/
+    file: work/2026-11-27T0355Z-intel/fu5/A_certfr.txt
+    passage: L'éditeur fournit également une mesure de contournement provisoire.
+  - claim: GitLab 19.6.2 release date 2026-11-25 (intro names 19.6.2, 19.5.9, 19.4.11; title lists eight versions)
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: On November 25, 2026, we released versions 19.6.2, 19.5.9, 19.4.11 for GitLab Community Edition (CE) and Enterprise Edition (EE).
+  - claim: 'GitLab nginx update: 1.31.9 in Omnibus + Docker images, only 19.6.2, 19.5.9, 19.4.11'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: updated to 1.31.9 in the Linux package (Omnibus) and GitLab Docker images built from the package in versions 19.6.2, 19.5.9, and 19.4.11.
+  - claim: GitLab Helm chart / Operator with the deprecated NGINX Ingress controller also affected; no upstream security patches; fixed controller in upcoming chart release
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: '**Please note**: GitLab Helm Chart and GitLab Operator installations using the deprecated NGINX Ingress controller are also affected. This controller is deprecated and has been disabled by default since 19.0. The upstream NGINX Ingress no longer receives security patches so we strongly recommend migrating to Envoy Gateway or an external Ingress controller. An updated NGINX controller will ship in an upcoming chart release.'
+  - claim: 'GitLab bug-fix list for 19.6.2: "Bump NGINX to 1.31.9" (not 1.31.10)'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: '- Bump NGINX to 1.31.9 in the Linux package and Docker images'
+- id: B
+  entry: entries/2026-11-20/ruby-4-0-10-regexp-case-conversion-memory-flaws.md
+  finding_ref: work/2026-11-27T0355Z-intel/findings.S1.yaml item 6
+  verdict: 'Verified: GitHub Enterprise Server is fixed since 2026-11-22 on all four current lines (3.22.6, 3.21.11, 3.20.13, 3.19.17), GitLab carries the Ruby fix on five more branches since 2026-11-25, and Veria Labs'' table is frozen at 2026-11-21 03:52 UTC (stale for both); Veria''s Rails exploit is NOT found published as of 2026-11-27 (page, feed, GitHub org and two searches), and a new co-discoverer primary (Durendal) adds the Rails reach path and a timeline that contests Veria''s "first RCE" claim.'
+  delta_vs_entry:
+  - 'GHES: the entry (Update 2026-11-22 and main text) says Veria lists GHES 3.22.5 and earlier as the one product without a fixed release. GitHub''s release notes for 3.22.6, 3.21.11, 3.20.13 and 3.19.17, each dated November 22, 2026, carry the line "**CRITICAL**: GitHub has updated Ruby to fix several announced vulnerabilities. Where an update was not immediately possible, mitigations were introduced at the application level." (link target: the Ruby 2026-11-18 advisory). So GHES has had a fixed build on every supported line since 2026-11-22. The notes name no CVE, no Ruby version and do not say which of the seven flaws are covered or what the "application level" mitigations are; GHES 3.18 and earlier were not read.'
+  - 'Veria Labs'' page, fetched 2026-11-27 (extract + raw HTML): dateModified 2026-11-21T03:52:00Z, "Updated 21 November 2026 at 03:52 UTC"; row still "GitHub Enterprise Server | 3.22.5 and earlier | None | Vulnerable"; GitLab row still lists only 19.6.1, 19.5.8, 19.4.10. The table therefore predates the GHES releases by about a day and the GitLab backports by four days; the entry should stop treating GHES as unfixed. Other rows unchanged from the entry (Chatwoot 4.20.1, Mastodon 4.7.6/4.6.12/4.5.22/4.4.29, OpenProject 17.9.8/17.8.3, Discourse base image 2.0.20261119-0203).'
+  - 'GitLab patch release of 2026-11-25 (page title lists 19.6.2, 19.5.9, 19.4.11, 19.3.10, 19.2.11, 19.1.11, 19.0.12, 18.11.15): "Ruby ... backported to GitLab versions 19.3.10, 19.2.11, 19.1.11, 19.0.12, and 18.11.15 (previously included in 19.6.1, 19.5.8, and 19.4.10)"; each of those five branch sections lists "Bump Ruby to 3.3.14 and 3.4.13" (Omnibus). The entry''s action names only 19.6.1, 19.5.8 and 19.4.10, so self-managed GitLab on 19.3 down to 18.11 now has fixed builds too; GitLab states "Extended backports are an exception and do not reflect our standard maintenance policy". The same page carries other fixes (GPGME double free CVE-2026-129975, Git backport, nginx 1.31.9) that belong to other findings.'
+  - 'Veria''s Rails proof of concept: NOT FOUND published. Page paragraph (raw HTML) still reads, in future tense on 2026-11-27, "We''ll be publishing a proof of concept demonstrating remote code execution on stock Rails on 25 November 2026, or later if major vendors have not shipped a fix by then", with no link to a repository or post (apart from site chrome and social links, the page''s only outbound links are cve.org, the GHSA, the Ruby advisory, the upstream fix commit and the Durendal post); verialabs.com/rss.xml has 11 items, newest 2026-10-15, none on Ruby; github.com/verialabs lists 4 repositories per the GitHub API (mcp-auth-exploit-pocs, ctf-agent, Jolt-PoC, and a docker-py fork pushed 2026-11-23), none Ruby-related. Searches used: (1) "Ruby2Shell exploit released", (2) "Ruby2Shell CVE-2026-132825 Rails proof of concept published Veria Labs exploit": neither returned any Ruby2Shell item dated after 2026-11-19 (hits were vendor explainers and one anonymous Pastebin "RUBY2SHELL.txt" of 2026-11-19, not fetched and not verifiable). The "or later if major vendors have not shipped" clause means the page gives no new date; absence of a post is not proof none exists.'
+  - 'New primary not in the entry: Durendal (Moritz Sanft, 2026-11-19, "Yet another ẞug"), a co-discoverer named on Veria''s own credits line. It documents the Rails reach path: Rack''s method override lets a client send a multipart "_method" field and Rack upcases it; Rack lets a multipart field declare a charset, so a field declared in a vulnerable single-byte encoding and carrying a long run of sharp-s characters reaches the overflow; "A plain `rails new` app is enough to be exploitable". Behaviour-level detection hook (no payload): multipart/form-data POST whose method-override field declares a legacy charset such as ISO-8859-1 and holds a long repeated non-ASCII character run; worker crash or restart in the Rails app. CrowdSec (2026-11-19, independence from Veria not established) corroborates the path from its own rule write-up: "Rails'' default middleware changes the case of one form field on every POST, and a multipart part declared as ISO-8859-1 carries the crafted value straight into the vulnerable code, before your application code even runs", and ships a free WAF rule (name given in its post; vendor claim, untested by us). Whether an app that disables Rack method override is safe is not stated by any source; do not claim it.'
+  - 'Durendal''s timeline, which dates working exploitation before disclosure: toy-Rails end-to-end exploit 2026-10-26 (hash posted on X, no code), RCE against a plain jemalloc rails new app 2026-11-05 and with the default glibc allocator 2026-11-06 by an OpenAI researcher, "working exploit proofs" sent to the Ruby maintainers 2026-11-07, disclosure 2026-11-19 CET (2026-11-18 PST). This is a plausible basis (my inference, not stated by either source) for the Ruby project''s "We are aware of PoCs" statement. It also competes with the entry''s sourcing_note that Veria Labs "says it ... was the first to demonstrate remote code execution" (Veria''s own claim, no date on its page): the entry already attributes it to Veria, but Durendal''s dated timeline puts RCE demonstrations by OpenAI/Sanft at 2026-11-05 and a toy-app exploit at 2026-10-26, so two parties claim priority and neither claim should be adopted. Private exploits therefore exist at OpenAI/Sanft and Ruby maintainers; none is published.'
+  - 'Second flaw named by Durendal and CrowdSec: GHSA-87fm-7w84-j2px, integer overflow in rb_str_casemap reachable the same multipart way; Durendal says its impact is limited to Rack <= 3.2.1 because Rack 3.2.2 added multipart field size limits; CrowdSec says its WAF rule does not cover it. OpenAI coordinated with WAF vendors before disclosure (Durendal), consistent with vendor virtual patches (CrowdSec) being public from 2026-11-19.'
+  - 'Same GHES releases also carry (separate findings, for the composer''s cross-reference): CVE-2026-114938, "a vulnerability in the Java runtime bundled with Elasticsearch", mitigated by starting Elasticsearch with -XX:UseAVX=2 on x86-64 appliances (rated HIGH; the notes never use the name Java4Shell, which other outlets use for CVE-2026-114938; the store already has entries/2026-11-18/cve-2026-114938-java4shell-openjdk-avx512-base64-decoder-rce.md) and HAProxy 2.8.32 for an unauthenticated crafted-HTTP/2 crash (HIGH); 3.22.6 and 3.21.11 add Grafana 12.4.15, 3.20.13 and 3.19.17 do not list it.'
+  - 'Action delta only: GHES administrators move to 3.22.6, 3.21.11, 3.20.13 or 3.19.17 (not just 3.22); self-managed GitLab on 19.3, 19.2, 19.1, 19.0 or 18.11 takes 19.3.10, 19.2.11, 19.1.11, 19.0.12 or 18.11.15; the entry''s other actions (interpreter update, self-compiled GitLab rebuild) are unchanged.'
+  gaps:
+  - OX Security's and Cloudflare Radar zero-wire's Ruby2Shell pages returned HTTP 403 on every transport (direct, trafilatura, jina); the search-snippet claim that OX Security found "no working exploit against real-world applications" is unverified and must not be used.
+  - GHES 3.18 and earlier not checked; GHES notes do not say which Ruby version or CVEs.
+  - No source states the Veria PoC was published; no source states it was not (absence from page, feed, GitHub org and two searches only).
+  evidence:
+  - claim: GHES 3.22.6 dated November 22, 2026
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_release_notes.txt
+    passage: |-
+      ## Enterprise Server 3.22.6
+
+      [Download GitHub Enterprise Server 3.22.6](https://enterprise.github.com/releases/3.22.6/download)
+
+      November 22, 2026
+  - claim: 'GHES 3.22.6: CRITICAL Ruby update (exact line)'
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_release_notes.txt
+    passage: '- **CRITICAL**: GitHub has updated Ruby to fix [several announced vulnerabilities](https://www.ruby-lang.org/en/news/2026/11/18/multiple-vulnerabilities-in-regexp-and-string/). Where an update was not immediately possible, mitigations were introduced at the application level.'
+  - claim: 'GHES 3.22.6: CVE-2026-114938 (Java runtime bundled with Elasticsearch) mitigated with -XX:UseAVX=2 on x86-64 appliances (the notes do not use the name Java4Shell)'
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_release_notes.txt
+    passage: '- **HIGH**: GitHub mitigated CVE-2026-114938, a vulnerability in the Java runtime bundled with Elasticsearch, by configuring Elasticsearch to start with `-XX:UseAVX=2` on x86-64 appliances.'
+  - claim: 'GHES 3.22.6: HAProxy 2.8.32 for unauthenticated crafted HTTP/2 DoS'
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_release_notes.txt
+    passage: '- **HIGH**: An unauthenticated attacker could cause a denial of service by sending crafted HTTP/2 traffic that crashed HAProxy. HAProxy has been updated to version 2.8.32.'
+  - claim: 'GHES 3.22.6: Grafana 12.4.15'
+    source_url: https://docs.github.com/en/enterprise-server@3.22/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_release_notes.txt
+    passage: '- Grafana was updated to 12.4.15 to address security vulnerabilities.'
+  - claim: GHES 3.21.11 dated November 22, 2026
+    source_url: https://docs.github.com/en/enterprise-server@3.21/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_3.21.txt
+    passage: |-
+      ## Enterprise Server 3.21.11
+
+      [Download GitHub Enterprise Server 3.21.11](https://enterprise.github.com/releases/3.21.11/download)
+
+      November 22, 2026
+  - claim: 'GHES 3.21.11: same CRITICAL Ruby line'
+    source_url: https://docs.github.com/en/enterprise-server@3.21/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_3.21.txt
+    passage: '- **CRITICAL**: GitHub has updated Ruby to fix [several announced vulnerabilities](https://www.ruby-lang.org/en/news/2026/11/18/multiple-vulnerabilities-in-regexp-and-string/). Where an update was not immediately possible, mitigations were introduced at the application level.'
+  - claim: GHES 3.20.13 dated November 22, 2026
+    source_url: https://docs.github.com/en/enterprise-server@3.20/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_3.20.txt
+    passage: |-
+      ## Enterprise Server 3.20.13
+
+      [Download GitHub Enterprise Server 3.20.13](https://enterprise.github.com/releases/3.20.13/download)
+
+      November 22, 2026
+  - claim: 'GHES 3.20.13: same CRITICAL Ruby line'
+    source_url: https://docs.github.com/en/enterprise-server@3.20/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_3.20.txt
+    passage: '- **CRITICAL**: GitHub has updated Ruby to fix [several announced vulnerabilities](https://www.ruby-lang.org/en/news/2026/11/18/multiple-vulnerabilities-in-regexp-and-string/). Where an update was not immediately possible, mitigations were introduced at the application level.'
+  - claim: GHES 3.19.17 dated November 22, 2026
+    source_url: https://docs.github.com/en/enterprise-server@3.19/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_3.19.txt
+    passage: |-
+      ## Enterprise Server 3.19.17
+
+      [Download GitHub Enterprise Server 3.19.17](https://enterprise.github.com/releases/3.19.17/download)
+
+      November 22, 2026
+  - claim: 'GHES 3.19.17: same CRITICAL Ruby line'
+    source_url: https://docs.github.com/en/enterprise-server@3.19/admin/release-notes
+    file: work/2026-11-27T0355Z-intel/fu5/B_ghes_3.19.txt
+    passage: '- **CRITICAL**: GitHub has updated Ruby to fix [several announced vulnerabilities](https://www.ruby-lang.org/en/news/2026/11/18/multiple-vulnerabilities-in-regexp-and-string/). Where an update was not immediately possible, mitigations were introduced at the application level.'
+  - claim: 'GitLab 19.6.2 page: Ruby backported to five older branches (exact line)'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: backported to GitLab versions 19.3.10, 19.2.11, 19.1.11, 19.0.12, and 18.11.15 (previously included in [19.6.1, 19.5.8, and 19.4.10](https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-1-released/)).
+  - claim: 'GitLab 19.3 branch release: Bump Ruby to 3.3.14 and 3.4.13'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: \[19.3\] Bump Ruby to 3.3.14 and 3.4.13
+  - claim: 'GitLab 19.2 branch release: Bump Ruby to 3.3.14 and 3.4.13'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: \[19.2\] Bump Ruby to 3.3.14 and 3.4.13
+  - claim: 'GitLab 19.1 branch release: Bump Ruby to 3.3.14 and 3.4.13'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: \[19.1\] Bump Ruby to 3.3.14 and 3.4.13
+  - claim: 'GitLab 19.0 branch release: Bump Ruby to 3.3.14 and 3.4.13'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: \[19.0\] Bump Ruby to 3.3.14 and 3.4.13
+  - claim: 'GitLab 18.11 branch release: Bump Ruby to 3.3.14 and 3.4.13'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: \[18.11\] Bump Ruby to 3.3.14 and 3.4.13
+  - claim: 'GitLab: extended backports are an exception to the maintenance policy'
+    source_url: https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/
+    file: work/2026-11-27T0355Z-intel/fu5/AB_gitlab_19_6_2.txt
+    passage: Extended backports are an exception and do not reflect our standard [maintenance policy](https://docs.gitlab.com/policy/maintenance/).
+  - claim: Veria page last modified 2026-11-21T03:52Z (structured data)
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_raw.html
+    passage: '"dateModified":"2026-11-21T03:52:00.000Z"'
+  - claim: Veria page visible "Updated" stamp
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_raw.html
+    passage: |-
+      Updated
+      <time datetime="2026-11-21T03:52:00.000Z" data-astro-cid-st7rnsyi>21 November 2026 at 03:52 UTC</time>.
+  - claim: 'Veria table row for GHES today: 3.22.5 and earlier, no fix, Vulnerable'
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_ruby2shell.txt
+    passage: '| GitHub Enterprise Server | **3.22.5** and earlier | None | Vulnerable |'
+  - claim: Veria table row for GitLab today (does not list the older-branch backports)
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_ruby2shell.txt
+    passage: '| GitLab | **19.6.0** and earlier | **19.6.1**, **19.5.8**, **19.4.10** | Patched |'
+  - claim: 'Veria table: Chatwoot, Mastodon, OpenProject, Discourse rows'
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_ruby2shell.txt
+    passage: "| Chatwoot | **4.20.0** and earlier | **4.20.1** | Patched | \n| GitLab | **19.6.0** and earlier | **19.6.1**, **19.5.8**, **19.4.10** | Patched | \n| Mastodon | **4.7.5** and earlier | **4.7.6**, **4.6.12**, **4.5.22**, **4.4.29** | Patched | \n| OpenProject | **17.9.7** and earlier | **17.9.8**, **17.8.3** | Patched | \n| Discourse base image | Before **2.0.20261119-0203** | **2.0.20261119-0203** | Patched |"
+  - claim: 'Veria: products marked Vulnerable have no fixed release yet'
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_ruby2shell.txt
+    passage: 'Products marked Vulnerable have no fixed release yet: every current version is vulnerable.'
+  - claim: 'Veria PoC announcement still in future tense on the page fetched 2026-11-27: 25 November 2026, or later if major vendors have not shipped a fix'
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_raw.html
+    passage: |-
+      execution on stock Rails on
+      <strong data-astro-cid-st7rnsyi><time datetime="2026-11-25" data-astro-cid-st7rnsyi>25 November 2026</time></strong>, or later if major vendors have not shipped a fix by then.
+  - claim: Veria claims first RCE demonstration (contrast with Durendal timeline)
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_ruby2shell.txt
+    passage: Veria Labs found this vulnerability independently and was the first to demonstrate remote code execution.
+  - claim: 'Veria credits: Ruby advisory credits Ada Logics and Anthropic; additional discoverers Moritz Sanft with OpenAI'
+    source_url: https://verialabs.com/ruby2shell/
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_ruby2shell.txt
+    passage: |-
+      also credits Stephan Lipp (Ada Logics) and Anthropic with reporting
+                    the underlying primitive. Additional discoverers include
+      [Moritz Sanft](https://durendal.sh/blog/ruby-case-mapping-bugs) in collaboration with OpenAI.
+  - claim: 'Veria blog feed: newest post 15 Oct 2026, nothing on Ruby2Shell (negative: feed carries 11 items, none on Ruby)'
+    source_url: https://verialabs.com/rss.xml
+    file: work/2026-11-27T0355Z-intel/fu5/B_veria_rss.json
+    passage: Thu, 15 Oct 2026 00:00:00 GMT
+  - claim: 'Veria GitHub org page: Showing 4 of 4 repositories (negative: none about Ruby)'
+    source_url: https://github.com/verialabs
+    file: work/2026-11-27T0355Z-intel/fu5/B_github_verialabs.txt
+    passage: Showing 4 of 4 repositories
+  - claim: 'GitHub API org listing for verialabs: repository mcp-auth-exploit-pocs (the four repositories are mcp-auth-exploit-pocs, ctf-agent, Jolt-PoC, docker-py; none is Ruby-related)'
+    source_url: https://api.github.com/orgs/verialabs/repos
+    file: work/2026-11-27T0355Z-intel/fu5/B_github_verialabs_repos.json
+    passage: '"name":"mcp-auth-exploit-pocs"'
+  - claim: 'GitHub API org listing for verialabs: repository ctf-agent (the four repositories are mcp-auth-exploit-pocs, ctf-agent, Jolt-PoC, docker-py; none is Ruby-related)'
+    source_url: https://api.github.com/orgs/verialabs/repos
+    file: work/2026-11-27T0355Z-intel/fu5/B_github_verialabs_repos.json
+    passage: '"name":"ctf-agent"'
+  - claim: 'GitHub API org listing for verialabs: repository Jolt-PoC (the four repositories are mcp-auth-exploit-pocs, ctf-agent, Jolt-PoC, docker-py; none is Ruby-related)'
+    source_url: https://api.github.com/orgs/verialabs/repos
+    file: work/2026-11-27T0355Z-intel/fu5/B_github_verialabs_repos.json
+    passage: '"name":"Jolt-PoC"'
+  - claim: 'GitHub API org listing for verialabs: repository docker-py (the four repositories are mcp-auth-exploit-pocs, ctf-agent, Jolt-PoC, docker-py; none is Ruby-related)'
+    source_url: https://api.github.com/orgs/verialabs/repos
+    file: work/2026-11-27T0355Z-intel/fu5/B_github_verialabs_repos.json
+    passage: '"name":"docker-py"'
+  - claim: 'Durendal (Sanft): plain rails new app exploitable'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      A plain `rails new` app is enough to
+      be exploitable.
+  - claim: 'Durendal: Rack multipart _method override reaches upcase'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      When handling multipart form submissions, Rack, the HTTP server used by
+      Rails, allows the client to
+      [override the request method](https://github.com/rack/rack/blob/v3.2.7/lib/rack/method_override.rb#L31-L38)
+      through a special `_method` multipart field. This also calls `.upcase`
+      on the method:
+  - claim: 'Durendal: multipart field charset selects the vulnerable encoding'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      Luckily, Rack
+      also allows us to
+      [specify the encoding](https://github.com/rack/rack/blob/v3.2.7/lib/rack/multipart/parser.rb#L556-L583)
+      of a multipart field via the `charset` key:
+  - claim: 'Durendal: RCE demonstrated against plain rails new on 2026-11-05 (jemalloc), default glibc allocator on 2026-11-06'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      - `2026-11-05 CET (2026-11-04 PST)`: Sylvie demonstrated
+      pre-authentication RCE against a plain jemalloc `rails new` app using
+      the sharp-s bug.
+  - claim: 'Durendal: default glibc allocator reproduced; integer-overflow RCE against Rack 3.2.0 app'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      - `2026-11-06 CET`: Sylvie reproduced the sharp-s exploit with the
+      default glibc allocator. She also demonstrated RCE from the integer
+      overflow against a Rails app pinned to Rack `3.2.0`.
+  - claim: 'Durendal: working exploit proofs sent to Ruby maintainers 2026-11-07'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      - `2026-11-07 CET (2026-11-06 PST)`: OpenAI sent the Ruby maintainers
+      working exploit proofs for both bugs
+  - claim: 'Durendal: first end-to-end toy Rails exploit 2026-10-26 (hash posted on X, no payload published)'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      - `2026-10-26 CET`: I completed an end-to-end exploit against a toy Rails
+      app and posted its SHA-256 hash on X.
+  - claim: 'Durendal: second flaw (integer overflow) limited to Rack <=3.2.1, Rack 3.2.2 added multipart field size limits'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: |-
+      The impact of this bug is limited to Rack versions `<=3.2.1`, however.
+      Rack `3.2.2`
+  - claim: 'Durendal: OpenAI coordinated with WAF providers'
+    source_url: https://durendal.sh/blog/ruby-case-mapping-bugs
+    file: work/2026-11-27T0355Z-intel/fu5/B_durendal.txt
+    passage: OpenAI coordinated with WAF vendors to help protect against real-world exploitation of these vulnerabilities.
+  - claim: 'CrowdSec (2026-11-19): free WAF rule for the pre-login Rails multipart request; Rails default middleware changes the case of one form field on every POST'
+    source_url: https://www.crowdsec.net/blog/ruby2shell-virtual-patching
+    file: work/2026-11-27T0355Z-intel/fu5/B_crowdsec.txt
+    passage: Rails’ default middleware changes the case of one form field on every POST, and a multipart part declared as ISO-8859-1 carries the crafted value straight into the vulnerable code, before your application code even runs.
+  - claim: 'CrowdSec: no exploitation reported as of 19 Nov, not in KEV (dated, stale for today)'
+    source_url: https://www.crowdsec.net/blog/ruby2shell-virtual-patching
+    file: work/2026-11-27T0355Z-intel/fu5/B_crowdsec.txt
+    passage: as of 19 November 2026, no exploitation has been reported, and the CVE is not in the CISA KEV catalog.
+- id: C
+  entry: entries/2026-11-18/cve-2026-115731-puppet-enterprise-report-deserialization-rce.md
+  finding_ref: work/2026-11-27T0355Z-intel/findings.S3.yaml item 3
+  verdict: 'Genuine, single-source delta: Huntback''s decoy is the first behaviour-level telemetry for the KEV flaw (an autosign-dependent three-request chain in 1.47 s on 2026-11-19, a probe-style payload that proves execution without writing or downloading anything), so the entry''s "CISA is the only source for exploitation" no longer holds, but the capture is a vulnerability check by a scanning pool, not an intrusion, and is uncorroborated: ship as an update record with Huntback attributed and the caveats stated.'
+  delta_vs_entry:
+  - 'Exploitation evidence: entry sourcing_note says "CISA is the only source for exploitation and gives no actor, victim or telemetry" and the body has no in-the-wild behaviour. Huntback (2026-11-20, honeypot telemetry, single source) reports one of its Puppet Server decoys received the whole chain on the morning of 2026-11-19 UTC, two days after the 2026-11-17 KEV listing and 16 days after the 2026-11-03 CVE record, in 1.47 seconds from one address. Huntback calls it "a check for vulnerable servers"; it does not tie the capture to the exploitation CISA holds evidence for, and it did not see a real command, a victim or post-exploitation. The decoy "signed the certificate, accepted the report with a 200, and returned no marker", so it was not a vulnerable server and shows nothing of server-side effects.'
+  - 'Observed request sequence (behaviour level, three requests): (1) PUT of a certificate request to the CA v1 certificate-request path for a freshly generated node name, a new 2048-bit key and no attributes or extensions, which only a CA that asks for no shared secret or other proof will accept; (2) 1.4 seconds later, GET of the signed certificate for the same name, with no polling or retry, which is the autosign test ("a 200 means the door is open, a 404 means an administrator still has to approve the name"); (3) PUT to the v3 report path of an agent report whose wrapper is ordinary (a run that changed one Notify resource, fixed fields) and whose single event carries the payload; the whole chain took 1.47 s and used a plain Python HTTP client user agent.'
+  - 'Autosign dependence, made concrete: the attacker mints its own node identity, so no stolen certificate or compromised host is needed, and step 2 is a built-in autosign probe; on a server that does not autosign the chain stops at a 404 (reading of the page''s own explanation). The entry says only "where the CA autosigns"; the new fact is that scanners test this as a first step and that a CA demanding any proof in the request refuses step 1. Huntback''s definition: autosigning in its simplest forms approves every name or every name matching a pattern.'
+  - 'Payload class: an inline type definition (an object type with one function) whose function carries a Ruby-method annotation; the annotation supplies Ruby source that Puppet places inside a generated method, and the captured body closes that method early so the next statement runs when the generated code is evaluated, with nobody calling the function, then opens a second method so the syntax still balances. This specimen only raised an error whose message carried a marker and the target''s address, which the tool reads from the HTTP reply (it proves execution and labels the host); "Nothing is written to disk and nothing is downloaded", and "a real command needs one line changed". The entry says only "a crafted rich-data type" in a PUT. No payload body, address or marker string is carried here, per the no-IOC rule.'
+  - 'What an operator sees (Huntback''s guidance; the page shows no captured server-log lines because the decoy was not vulnerable): reverse-proxy or access log: PUT to the CA certificate-request path from an address that is not one of the fleet''s agents, a GET for the same name within a second or two, then a PUT to the report path; server log: errors raised while processing a report (and, for this probe class, an error message carrying the scanner''s marker); CA inventory: a signed certificate for a node name nobody enrolled, random-looking with a fixed tool prefix per Huntback; report body: any report carrying a type definition ("No agent sends a type definition in a report"). Discriminator for a benign lookalike: legitimate enrolment signs a request and uploads a report too, but from a known address, after a first catalog run, with a plausible host name; here the report followed the certificate fetch by about a second with no catalog fetch, and the report claims a run time of exactly 12:00:00 more than three hours after it was sent (fixed synthetic fields).'
+  - 'Correction of the entry''s Detection emphasis: the entry''s hook is "child processes of the server''s service account" and PUTs from recently enrolled hosts; the observed probe variant spawns no process (error raised, nothing written or downloaded), so a child-process-only hunt would miss it; a real-command variant would add one. The signed-name audit Huntback gives (list every signed certificate and account for every name) differs from the entry''s audit for names colliding with an existing node.'
+  - 'Precursor from a different address in the same hosting pool, 2 h 35 min before the chain (its first requests) and 2 h 15 min before it (its last request at 06:24 UTC): three requests within half a second with a self-labelled scanner user agent: status service with level=debug (403 on the decoy), the Puppet 3 style CA path (404) and the v1 CA path (200), repeated twice more over the next 20 minutes, never requesting a certificate. Huntback''s inference (its own multi-decoy logs): the pool splits labour, volume addresses fingerprint and spray, one "test bench" address takes each new flaw for a first pass (it had tried other products'' flaws on the decoys over the prior ten days); Puppet reached that address two days after the KEV listing.'
+  - 'Hardening levers beyond the entry''s (upgrade, stop autosigning, audit colliding names): policy-based autosigning that verifies something the requester cannot guess or manual signing; a reverse-proxy rule refusing any report whose body carries a type definition (Huntback claims it stops this payload and variants; untested by us); closing the agent port 8140 to everything but known agent networks; reconcile the signed-certificate list with inventory and revoke what cannot be explained. Fixed releases restated by Huntback match the entry.'
+  - 'Suggested metadata (composer''s call): the scout supports T1595.002 (active scanning, vulnerability scanning; check against the ATT&CK pin), alongside the entry''s T1190 and T1552.004. Notability: first reported in-the-wild behaviour (single source) for a KEV flaw on a privileged management server whose CA key is reachable by code execution.'
+  - 'What the page does not say: no actor attribution beyond "a cluster across three hosting prefixes", no victim, no capture from a vulnerable server, no real command, no second honeypot or vendor corroboration (one search for corroborating telemetry returned only KEV/aggregator coverage and no independent capture). All addresses, prefixes, user agents, the certificate-name pattern, the marker string and the report fixed-field values on the page are indicators and are withheld from this file.'
+  gaps:
+  - Single source; the Huntback blog is the only place the capture is described; the page lists its own indicators table (withheld).
+  - Huntback does not show what a vulnerable server logs; operator-visible effects on a real server are Huntback's guidance, not an observation.
+  evidence:
+  - claim: 'Capture: whole chain on a decoy, 19 Nov, three requests in 1.47 s'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'On the morning of 19 November one of our Puppet Server decoys received the whole chain from start to finish: an address asked the server to sign a certificate, collected it, and submitted a report with a Ruby method hidden inside a type definition. The three requests took 1.47 seconds.'
+  - claim: 'Autosign dependence: the certificate is the first request of the chain'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: The flaw needs a certificate. Where the certificate authority **signs requests automatically**, the attacker gets one by asking. That was the first request of the chain.
+  - claim: Request 1 is a bare certificate request, no attributes; a server demanding a shared secret would refuse it
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'The request is as plain as one can be: a fresh 2048-bit RSA key, the subject'
+  - claim: Request 1 refusal condition
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: A server that asked for a shared secret or any other proof in the request would refuse it.
+  - claim: 'Request 2: fetch of the signed certificate 1.4 s later, no polling; this is the autosign test'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'Sent 1.4 seconds after the first, with no polling and no retry. The client assumes the signature is already there, which is only true on a server that signs automatically. This one request is the test for autosigning: a 200 means the door is open, a 404 means an administrator still has to approve the name.'
+  - claim: 'Request 3: ordinary-looking report wrapper; event carries the payload'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: Everything around the event is an ordinary report for a run that changed one `Notify` resource. The event is where the payload sits.
+  - claim: 'Payload class: inline type definition whose function carries a RubyMethod annotation'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: The function carries a `RubyMethod` annotation. That annotation exists so that a type can supply the Ruby source of a method when Puppet generates a class for it, and its `body` is placed inside a generated `def ... end`.
+  - claim: 'Payload class: closes the generated method early so the statement runs on evaluation, no call needed'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: The third line now sits outside any method, so it runs the moment the generated code is evaluated, without anyone calling `test`.
+  - claim: 'Payload class: verification probe, no write to disk, no download'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'A check built this way only has to look for its marker in the reply: one request both proves code execution and labels the result. Nothing is written to disk and nothing is downloaded.'
+  - claim: Probe built so a real command needs one line changed
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: This was a check for vulnerable servers, built so that a real command needs one line changed.
+  - claim: 'Benign-lookalike discriminator: synthetic report fields (run time 12:00:00 hours after sending)'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'One detail gives it away in a log: the report states a run time of exactly `12:00:00`, more than three hours after it was sent.'
+  - claim: 'Decoy outcome: signed, accepted with 200, returned no marker, address did not return'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: Our decoy signed the certificate, accepted the report with a 200, and returned no marker. The address did not come back to that decoy.
+  - claim: 'Precursor 1: status-service probe of the Puppet Server (403 on the decoy)'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '| `GET /status/v1/services?level=debug` | 403 | The status service of a Puppet Server exists here. An open one returns the service versions. |'
+  - claim: 'Precursor 2: Puppet 3 and v1 CA path probes (200 on v1)'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '| `GET /puppet-ca/v1/certificate/ca` | 200 | The CA certificate. This server runs its own certificate authority and talks to strangers. |'
+  - claim: Precursor never asked for a certificate
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: It repeated the status request at 06:23:52 and 06:24:46 and did nothing else. It never asked for a certificate.
+  - claim: Gap between scout and chain
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: Two hours and fifteen minutes later
+  - claim: 'Pool context: exploiting address is the cluster test bench, tried four other products in the prior ten days'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'The exploiting address is the cluster''s test bench: in the ten days before, it tried exploits for four other products on our decoys.'
+  - claim: Division of labour; Puppet reached the first-pass address two days after KEV listing
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'The division of labour is consistent. The other addresses in the pool do volume: password guessing and fingerprinting. One address takes each new flaw for a first pass, mostly with plain Python clients. Puppet reached that address two days after the flaw was listed as exploited.'
+  - claim: 'Operator log guidance: access-log sequence'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '**Read the access log.** The sequence is distinctive: a `PUT` to `/puppet-ca/v1/certificate_request/` from an address that is not one of your agents, a `GET` for the same name within a second or two, then a `PUT` to `/puppet/v3/report/`.'
+  - claim: 'Operator log guidance: server log errors while processing a report'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: and for errors raised while processing a report.
+  - claim: 'Operator hunt: list signed certificates and account for every name'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '**List the certificates you have signed.** Run `puppetserver ca list --all` and account for every name.'
+  - claim: 'Operator remediation: revoke and clean unexplained names'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: Revoke and clean anything you cannot explain with `puppetserver ca clean --certname <name>`.
+  - claim: Autosign configuration guidance (autosign = true; autosign.conf with * or broad pattern; policy-based autosign)
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '**Look at autosigning.** In `puppet.conf`, `autosign = true` signs everything. An `autosign.conf` containing `*` or a broad pattern does nearly the same. Switch to policy-based autosigning that verifies something the requester cannot guess, or sign by hand'
+  - claim: 'Autosign definition: simplest forms approve every name or every name matching a pattern'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: Autosigning is a convenience setting. It lets new machines join without an administrator approving each certificate request, and in its simplest forms it approves every name or every name that matches a pattern
+  - claim: 'Filtering lever: reverse-proxy rule refusing any report containing a type definition'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '**Filter the report body.** No agent sends a type definition in a report. A reverse proxy rule that refuses any report containing `RubyMethod` stops this payload and its variants.'
+  - claim: 'Network lever: close port 8140 to the internet'
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: '**Close port 8140 to the internet.** Agents reach the server from networks you know.'
+  - claim: Record dates and fixed releases restated
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: The record was published on 3 November with a score of 9.4. Fixed releases are Puppet Enterprise 2023.8.13, 2025.12.1 and 2026.0.1.
+  - claim: Page publication date 2026-11-20 (extract metadata)
+    source_url: https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured
+    file: work/2026-11-27T0355Z-intel/fu5/C_huntback.txt
+    passage: 'date: "2026-11-20"'
+transport_notes:
+- All bodies fetched with tools/fetch_source.py extract (trafilatura-direct), raw HTML via url --direct where the extract dropped JS-hydrated or inline-markup text (Veria dates, Veeam package names, CERT-FR dates).
+- extract could not read my.f5.com K000163947 (JS shell), radar.cloudflare.com zero-wire/ruby2shell and ox.security (403 on all transports); WebFetch also returned only a shell for K000163947.
+- Search results were used only as leads; nothing from a snippet is cited as fact except where marked unverified.
+self_telemetry:
+  extract_fetches: 20
+  raw_url_fetches: 4
+  feed_fetches: 1
+  webfetch_calls: 1
+  websearch_calls: 6

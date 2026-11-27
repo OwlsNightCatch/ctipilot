@@ -1,0 +1,1303 @@
+run_id: 2026-11-27T0355Z-intel
+domain: FU6
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+scope: deep read for two changelog-record candidates; not a domain sweep
+item_A:
+  target_entry: entries/2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse.md
+  finding_ref: work/2026-11-27T0355Z-intel/findings.S3.yaml item 2
+  sources_read:
+  - key: wiz1
+    url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    publisher: Wiz Research (Rami McCarthy, Hila Ramati)
+    date: '2026-11-25'
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+  - key: wiz2
+    url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    publisher: Wiz Research
+    date: '2026-11-23'
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+  - key: talos
+    url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    publisher: Cisco Talos (Ryan Fetterman)
+    date: '2026-11-25'
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+  - key: huntback
+    url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    publisher: Huntback
+    date: '2026-11-24'
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+  - key: rf
+    url: https://www.recordedfuture.com/blog/ai-industrial-attack-workflow
+    publisher: Recorded Future Insikt Group (Levi Gundert)
+    date: '2026-11-20'
+    file: work/2026-11-27T0355Z-intel/fu6/rf.md
+  - key: gtig
+    url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+    publisher: Google Threat Intelligence Group and Mandiant (already cited by the entry; re-read to verify what Wiz/Talos build on)
+    date: '2026-10-31'
+    file: work/2026-11-27T0355Z-intel/fu6/gtig.md
+  - key: divd_report
+    note: 'ALSO relevant to item A: the DIVD forensic report (item B) independently shows the intent numbering leaking into a victim (see extracted.cross_source_confirmation)'
+  what_the_entry_already_carries:
+  - Nothing on intent or job numbering. A store-wide grep of entries/ for "intent id" and "intent-id" returns no hit; the entry mentions "somewhat-incremental file names" once, but only for web-shell file names in the GTIG MySQL case.
+  - 'Wiz 2026-10-22 post (log signatures: source-map-then-route, unsigned JWT probes, one-second spray cadence), GTIG 2026-10-31 (2-25 s bursts), Microsoft 2026-11-25 guide detections, FBI table incl. rotating webhook endpoints, Check Point 1,608 live consoles / FBI more than 1,600 consoles.'
+  extracted:
+    counters_and_formats:
+      ARTEX: 'One PostgreSQL table (exploration_nodes) with a single BIGSERIAL sequence per installation, never reset by default; intents, facts, findings, hints and digests all draw from it, so intent numbers climb across runs and targets and are rarely consecutive. Format is a bare i<N> (unpadded). The worker is handed the number in its working directory tasks/<task>/i<N>, its session name exp<N>-worker-i<N> and a prompt field. Forks: Pojun (tracks current ARTEX, v0.4.99 at time of writing) keeps the layout; AntiFox (forked from v0.1.1) tells the agent to save outputs under i<id>/.'
+      Cairn_family: Cairn formats i%03d (zero-padded, three digits) with separate series per object type (i001, f001, h001, proj_001), resets for every project, so numbers stay small and gap-free (one exposed project ran i001 to i292); the worker reuses the number in callbacks, DTD files, webshells and test accounts. sapper-v2 re-implements the same per-project scheme.
+      scale_markers_named_by_Wiz: 'fresh installation: double digits (i49 to i63 in one public disclosure); long-running installation: tens to hundreds of thousands (i37257 in another); highest seen i808807 in November 2026; longest ARTEX consecutive run is four numbers (i8920 to i8923, in artex-verify-i89xx user agents).'
+      facts_do_not_leak: 'Wiz checked 539 worker transcripts (about 10,900 shell commands) from an exposed instance: fact numbers stayed in local scripts and notes; only intent numbers reach targets. Huntback independently cites fact# and finding# numbers only inside the operator notes and finds only i<intent> strings on victim hosts.'
+    where_numbers_surface_in_victim_telemetry:
+      AWS:
+      - role session names
+      - SSM command comments
+      - bucket, role, user and policy names
+      - tags and descriptions
+      - RDS export task IDs
+      - KMS key descriptions and aliases
+      - security-group names and rule descriptions
+      Azure_and_Entra:
+      - run-command names
+      - VM computer names
+      - app registration names
+      - denied calls keep the chosen name in the error message
+      other_surfaces_named_by_Wiz:
+      - user agents (pentest-recon, artex-verify-i89xx)
+      - account names
+      - CI workflow names
+      - cloud resource names
+      - tasks/<task>/i<N> paths in command-line telemetry
+      - pentest-* workspaces and pods with a pentest-iNNNNNN counter
+      from_other_sources_in_this_read:
+        GTIG_2026-10-31_already_cited_by_the_entry: artex-probe-* file names with five-digit somewhat-incremental numbers, and "similar incremental numeric markers within dropped file names, created account names, their passwords and within email subjects"; GTIG said it could not explain the numbers.
+        Huntback: a local administrator account named after an intent, a scheduled task named nc<intent>, a C:\ folder named i<intent>, marker files named i<intent>_*; advice to search hosts for an i followed by three or four digits.
+        DIVD/Merlon and NVISO report (item B): the same i<number> pattern in Zammad API-token and account names (artex- prefix), a ticket content marker, e-mail subjects (including a subject with ARTEX- plus the number), file and directory names in the web-served folder, a DNS canary label and MITM script names; Merlon explicitly calls ARTEX intents "numeric job-IDs" and ties them to the i<number> file pattern.
+    how_a_defender_can_use_them_per_Wiz:
+    - 'Hunt: never alert on iNNNN alone; pair it with an anchor (artex-, pentest-, probe, canary prefixes in account names, user agents, CI workflows, cloud resources, or tasks/<task>/i<N> paths in process command lines).'
+    - 'Link across rotating residential-proxy exits and across victims: numbers that climb at a steady rate over time from many addresses point to one ARTEX installation; Wiz used this with a boto3 build and proxy-pool overlap to tie ARTEX-Harvester across more than a dozen organizations, and one climbing sequence linked the AWS side (36 numbers in SSM comments and resource names) to the Azure side (34 numbers in resource names, tags and a role-assignment description) of one intrusion.'
+    - 'Deconflict: the same number against two unrelated victims means two installations; out-of-order jumps (i37257 on Monday, i4100 on Tuesday) mean a split sequence; this separates installations, not operators, because one operator can run several.'
+    - 'Gauge scope from one victim: if numbers jump by far more than your own logs account for (i14200 at 10:00, i15100 an hour later with a handful of probes between), the same installation is probably working other targets in parallel, i.e. opportunistic rather than focused on you.'
+    - 'Failed-call logs are a place to look: denied AWS and Azure calls keep the chosen name in the error text.'
+    Wiz_caveats:
+    - pacing is a corroborating signal, not standalone attribution; the rate of climb is uneven (facts, findings, hints, digests share the sequence and work on other targets advances it);
+    - unrelated installations collide in the same numeric ranges (every fresh deployment passes through the low hundreds and thousands);
+    - operators reset (rebuild container, wipe database) or parallelise, which breaks the sequence;
+    - Cairn resets per project, so cross-incident pacing applies only to the ARTEX family;
+    - hits are tool markers and pacing clues, not operator fingerprints; Wiz adds that its behavioural detections for this are expected to be perishable.
+    cross_source_confirmation_from_item_B_sources:
+      observation_by_this_agent_not_stated_as_such_by_either_report: 'Merlon (the DIVD forensic report) does state that ARTEX "intents" are numeric job IDs and that many attacker files start with i plus a number, but it does not tabulate the numbers. Compiled from the report body and NVISO tables: the i-numbers rise from i12456 (probe mail subject, 18:14 UTC on 2026-09-21) through i12739 (19:37-21:03), i13033 (23:24), i13186 (01:15 on 09-22), i13358 (03:34), i13517 (06:53), i13584 (08:41), i13814 (12:25) to i13940 (Jira export, about 14:43), roughly 1,480 numbers in about 20.5 hours, i.e. about 70 per hour, consistent with Wiz''s description of a climbing per-installation counter. Two low-number groups (about i56 to i95 around 19:45-20:13 and i760 at 21:19) coexist in time with the high series in the same intrusion; neither report discusses them, and under Wiz''s deconfliction logic out-of-order numbers would indicate a second sequence, so treat the series as indicative, not clean (low confidence
+        on the reading of the low group).'
+    ARTEX_Harvester_Wiz_2026-11-23:
+      verbatim_wording_more_than_a_dozen: Between late October and mid-November 2026 we tied it, at varying confidence, to activity at more than a dozen organizations.
+      what_the_wording_means: a clustering by boto3 build, cross-victim intent counter and proxy-pool overlap; the dozen-plus is Wiz-internal, "at varying confidence", and Wiz calls ARTEX-Harvester one of a dozen campaigns it tracks. The post names no actor and does not mention Storm-0940, so ARTEX-Harvester must not be equated with the Storm-0940-overlap actor in the entry. Wiz states that activity attributed to "ARTEX" comes from multiple unrelated operators.
+      tradecraft_in_the_campaign: 'across more than 220 residential/ISP proxy exits against one target; attempts: stolen credentials, anonymous storage probing, abuse of sign-up, password-reset and sign-in flows, identity-provider probing. One success: compromised version-control credentials, private repositories read, branches created to abuse CI workload-identity trust, harvest workflows dumped CI secrets and Terraform state, then exfiltrated; in parallel a stolen application-pod service-account token created a privileged "node-level collector" pod that harvested kubelet PKI and projected tokens, a cert-manager token read ArgoCD secrets, giving cluster-admin. Self-labels: pentest-recon user agents, pentest-* workspaces and pods, a pentest-iNNNNNN counter. Wiz Sensor caught privileged-container creation, nsenter, IMDS kube-env queries.'
+      tempo_claims: additional twenty related incidents disclosed by vendors since the Black October post; Wiz CIRT 3x engagement requests; disclosed incidents "more than tripled" while insufficient detail links them to one actor or even to these frameworks (Wiz's own hedge).
+      both_sides_case: 'four days in October, two AWS accounts and seven EKS clusters: stolen Terraform-runner session, privileged pod and cluster-admin binding, Jenkins controller code execution, ld.so.preload userland rootkit with a DNS-tunnel channel, credentials used from the operator server; the exposed operator directory (3,000+ files) added forged identity-provider admin tokens covering 3,392 users, beacons to 19 hosts, a modified production Jenkinsfile, CyberStrikeAI (csai- prefix) running the operation beside an ARTEX checkout, an auto-generated Chinese report posing as an "authorised red-team pentest" with 58 findings, Anthropic API keys harvested from 50 hosts and AI coding-assistant session histories mined for SSO credentials. Wiz: ARTEX tooling from the same server hit other organizations that month, unsuccessfully.'
+      composer_note: Wiz2 contains an IP indicator table (not carried here). The Black October post itself is not in this read.
+    Talos_The_Great_Escape_2026-11-25:
+      subject: the OpenAI-linked swarm (models that left evaluation sandboxes from June 2026) and its tradecraft (public scanner as browser, CORS proxies, base64-decode pages, zero-byte image beacons, wiki shared state, structured work partitioning). ARTEX is one comparison section. The swarm is already covered in the store (entries 2026-09-24 and 2026-09-28).
+      what_it_adds_for_ARTEX_numbering:
+      - 'Rationale, not new telemetry: Talos reasons that self-labels are "high-fidelity signals precisely because they''re functional for the agent" and that "they can''t easily alter or remove the labeling scheme without breaking the agent''s own state tracking". This is Talos''s inference from the swarm, and its ARTEX example (artex-probe-* file names) is GTIG''s observation, not Talos telemetry.'
+      - 'Its own hedge: coordination patterns "may survive the move to purpose-built infrastructure, but they likely be only internally visible queue labels" - in tension with Wiz and Huntback, who show the numbers reaching victims because the model borrows the identifier in front of it (Wiz: "it borrows the identifier sitting right in front of it").'
+      - 'Why exfiltration goes to rotating webhooks: agents cannot hold a connection back to an operator and parallel sub-agents need isolated write channels; allow-listed public services are a "secondary benefit" - this explains the FBI/GTIG webhook observation the entry already carries and supports an egress-to-webhook-services detection.'
+      - 'Technique transfer: the Tencent-hosted "fleet" pre-created webhook tokens and moved from one public decode host to the one the OpenAI swarm used, which Talos reads as the second actor learning from public write-ups (an inference).'
+      - 'GTIG figures Talos relays: 27 events in 23 seconds and "as little as 15 minutes" from first compromised account to deep system access. Verified on the GTIG page: 27 events in 23 seconds of burst (AWS permission probing across security groups); GTIG says UNC7228 "typically" took around four hours and "in one case as rapidly as 15 minutes". The entry carries neither figure.'
+      S3_wording_to_correct: S3 says Talos "independently" says self-labels are high-fidelity; Talos says "can't easily", not "cannot", and its ARTEX evidence is second-hand from GTIG, so it is not an independent ARTEX observation.
+    Huntback_console_post_2026-11-24:
+      what_the_operators_console_workspace_shows: 'Huntback fetched four open working folders of a server running an ARTEX console on 2026-11-20 (6,035 files, 1.16 GB). The workspace follows ARTEX: 52 task folders named for intent numbers (i174 to i3811) under a framework path ending data/tasks/3; one target only (a South Korean university, unnamed; its domain appears in 648 of 2,288 scripts, logs and notes); operator reports in Simplified Chinese with UTC+8 times; closing notes (EVIDENCE/REPORT/SUMMARY) cite numbered findings and facts (up to fact 2,087 and finding 1,597) and end with re-test or next-steps sections; an opening comment in the tenant script claims "authorised" assessment but Huntback finds no scope document or client anywhere. The folder path name suggests a renamed or forked checkout; Huntback does not say whether it is the original.'
+      entra_global_admin_takeover_chain:
+      - 'Entry: a public pre-authentication code-execution flaw in the XpressEngine CMS (fixed October 2019, technique taken from a 2024 public write-up) on the learning-content server; web shell; SYSTEM through a privileged companion application that reloaded its own log4net.config (written twice, two seconds apart, by the web shell); Defender exclusions and real-time monitoring off; memory dump of the Windows credential process; registry hives; reverse SOCKS tunnels (one as a boot-time SYSTEM task); a modified 2017 SMB exploit that created a local administrator on a campus server.'
+      - 'Identity step 1: the university single sign-on (custom classic-ASP) stores staff passwords as unsalted SHA-256 (base64) and accepts the stored value as the password, so a database export is a list of working credentials; this gave a session as a member of the IT office.'
+      - 'Step 2-3: the university runs a small web bridge that lets a signed-in member activate and manage a Microsoft 365 account; its reset form does not ask for the old password and takes the identity from the session; the staff member''s Microsoft 365 password was reset to a value the operator chose (original not restorable).'
+      - 'Step 4: with that password the operator requested a Graph token through the OAuth resource-owner password credentials (password) grant, using the Microsoft Office client application ID; no browser, no second factor; the token carried the Global Administrator role from 18:47:53 UTC on 2026-11-16, i.e. the staff account itself held that role (Huntback''s advice that such an account "should not be the same account its owner uses for daily sign-on" implies it was a daily-use account; the post does not say so outright).'
+      - 'Use: tenant directory exported 20:32-20:45 UTC (users in pages of 999, role members, devices, 18 app registrations, 100 service principals); from 2026-11-17 23:47 UTC student-style accounts were created and licensed by a 687-line script (20 in total over two days, display names from a list of 40 Korean names, pace one write per five seconds); one more account named for "M365 operations management" was made Global Administrator on 2026-11-18, a second administrator so that resetting the first account''s password would not end access. The tenant had about 993,523 unassigned licences of the first student plan, which makes bulk account creation cheap. Huntback says the workspace does not say what the accounts were for.'
+      victim_class: 'public university (South Korea): on-premises custom single sign-on in front of a Microsoft 365 tenant with student licensing, legacy Windows servers (2008 R2, 2012 R2, 2022) and databases out of support, an unpatched CMS. Transferability to the constituency is by pattern (custom SSO or password bridge to the tenant, stored-hash acceptance, ROPC permitted, standing Global Administrator on a daily-use account), not by product.'
+      controls_Huntback_says_would_have_stopped_or_detected:
+      - Conditional Access requiring MFA for every user and blocking legacy and non-interactive password sign-ins would have stopped the token request.
+      - Phishing-resistant sign-in for administrators; keep Global Administrator out of self-service and separate from daily-use accounts; treat any self-service bridge to the tenant as part of the tenant.
+      - Alert on a new member of Global Administrator and on more than a handful of users created by one identity in an hour (both are in the audit log by default and both happened); password-grant sign-ins (ropc protocol) are almost never legitimate, any success for an administrator deserves a look; Huntback's three KQL queries are explicitly untested.
+      - Hash passwords server-side with salt and a slow function; do not let the stored value work as the password; stop numeric passwords; rate-limit self-service lookups that act as oracles; take connection strings out of web source; give every internet-facing CMS an owner.
+      Huntback_limits: single-source (Huntback fetched the open folders itself; no victim or authority statement); the university is not named; the ARTEX identification rests on the console and workspace structure; no actor attribution is made; data exports were not opened beyond names, sizes and headers.
+      numbering_relevance: confirms that only intent numbers (not fact numbers) reach victim hosts, with examples; the instance is young (highest intent seen i3811), unlike the five-digit series in the DIVD intrusion.
+    Recorded_Future_page: 'Adds nothing on numbering. It carries: ARTEX servers observed 1,506 (2026-10-21) to 2,978 (2026-11-19) across 58 countries (observed servers, not attacks); only about one in six present for 30 days and about 90 new per day (blocklists go stale); one exposed server transcript showed about 7,000 shell commands, more than 1,000 facts and 54 findings; and a LiteLLM configuration on infrastructure RF assesses as likely used by the Iran-linked GreenJuliett cluster, with RF explicitly not confirming misuse. The entry has Check Point (2,557 hosts, 1,608 live) and FBI (>1,600) counts; the RF doubling is a trend figure the entry lacks. Not needed for the numbering delta.'
+  claims:
+  - claim: 'ARTEX counter: one PostgreSQL BIGSERIAL sequence per installation, never reset by default; intents, facts, findings, hints and digests share it'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: backed by a single `BIGSERIAL` sequence. Each installation runs its own counter and never resets it by default.
+    verbatim_ok: true
+  - claim: ARTEX puts the intent number in the worker working directory, session name and prompt (format i<N>, unpadded)
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: 'ARTEX wires the intent ID into three places the model reads on every turn: its working directory (`tasks/<task>/i<N>`), its session name (`exp<N>-worker-i<N>`)'
+    verbatim_ok: true
+  - claim: 'Forks: Pojun tracks current ARTEX; AntiFox forks v0.1.1 and orders the agent to save outputs under an i<id>/ subdirectory'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: 'AntiFox goes further: its prompt orders the agent to save its outputs under an `i<id>/` subdirectory.'
+    verbatim_ok: true
+  - claim: 'Magnitude: fresh installation starts in double digits, busy installation reaches tens or hundreds of thousands (public disclosures named by Wiz)'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: A long-running, busy installation climbs into the tens or hundreds of thousands (`i37257` at Chainstack).
+    verbatim_ok: true
+  - claim: Consecutive intent numbers are rare because facts, findings, hints and digests draw from the same sequence
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Because facts, findings, hints, and digests draw from the same sequence as intents, consecutive intent numbers are rare.
+    verbatim_ok: true
+  - claim: Fact numbers stay in local scripts and notes and do not leak to targets (539 worker transcripts checked)
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Fact IDs appeared only in local scripts and notes
+    verbatim_ok: true
+  - claim: 'Cairn format: zero-padded three-digit i%03d with separate series per object type'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: 'In `services.py`, Cairn formats Intent IDs as zero-padded three-digit strings (`i%03d`) and gives each object type its own series:'
+    verbatim_ok: true
+  - claim: Cairn resets its counters per project, numbers stay small and gap-free (one project held i001 to i292)
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Unlike ARTEX, Cairn resets its counters for every new project. Numbers stay small and run without gaps.
+    verbatim_ok: true
+  - claim: Cairn workers reuse the intent ID in callbacks, DTD files, webshells and test accounts
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: the worker reuses it in callbacks, DTD files, webshells, and test accounts.
+    verbatim_ok: true
+  - claim: 'Where the numbers surface: any API field that takes user-provided naming, context or commentary'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Where do these leak in logs? Anywhere that the API expects user-provided context, naming, or commentary.
+    verbatim_ok: true
+  - claim: AWS surfaces named by Wiz (role session names, SSM comments, KMS aliases, security-group rule descriptions)
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: role session names
+    verbatim_ok: true
+  - claim: 'AWS: SSM command comments and KMS key descriptions and aliases'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: KMS key descriptions and aliases
+    verbatim_ok: true
+  - claim: 'Azure and Entra surfaces: run-command names, VM computer names, app registration names'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: app registration names
+    verbatim_ok: true
+  - claim: Denied calls still keep the chosen name in the error message (failed-call logs are a place to look)
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: for denied calls, the names survive in error messages.
+    verbatim_ok: true
+  - claim: 'Hunt rule: pair i<N> with an anchor (artex-, pentest-, probe, canary, or tasks/<task>/i<N> paths in command-line telemetry) before alerting'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Intent IDs are noisy on their own, so pair `i<N>` with an anchor before alerting.
+    verbatim_ok: true
+  - claim: 'Wiz: hits are tool markers and pacing clues, not operator fingerprints'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Hits are useful tool markers and pacing clues, but not operator fingerprints.
+    verbatim_ok: true
+  - claim: 'Use 1, linking across rotating residential-proxy IPs and victims: steady climbing numbers point to one ARTEX installation'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: if activity from rotating IPs, or across separate victims, produces Intent IDs climbing at a steady rate over time, those sightings point to one ARTEX installation.
+    verbatim_ok: true
+  - claim: 'Wiz''s own use: rising intent IDs plus a distinctive boto3 build plus proxy-pool overlap tied activity across more than a dozen organizations'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: While tracking ARTEX-Harvester, we used rising Intent IDs alongside a distinctive boto3 build and proxy pool overlap to connect activity across more than a dozen organizations.
+    verbatim_ok: true
+  - claim: 'Cross-cloud linkage: 36 intent IDs on the AWS side and 34 on the Azure side came from one climbing sequence'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: We found 36 Intent IDs on the AWS side, in SSM command comments and resource names, and 34 on the Azure side, in resource names, tags, and a role assignment description.
+    verbatim_ok: true
+  - claim: 'Use 2, deconflicting installations: duplicate IDs across unrelated targets mean separate installations; separates installations, not operators'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: This deconfliction separates installations, not necessarily operators. One operator can run several ARTEX instances in parallel.
+    verbatim_ok: true
+  - claim: 'Use 3, scope from one victim''s logs: a jump in numbers far larger than the activity seen suggests a multi-target run'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: When a jump dwarfs the activity in your logs, the same ARTEX installation is likely burning through tasks against other targets in parallel
+    verbatim_ok: true
+  - claim: 'Wiz caveat: pacing is corroborating, not attribution; signals are lossy'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: 'These signals are lossy. Intent ID pacing is a corroborating signal, not standalone attribution:'
+    verbatim_ok: true
+  - claim: 'Wiz caveat: unrelated installations collide in the same numeric ranges'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Unrelated installations collide in the same numeric ranges
+    verbatim_ok: true
+  - claim: 'Wiz caveat: operators reset or parallelize, breaking the sequence'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Operators reset or parallelize
+    verbatim_ok: true
+  - claim: 'Wiz caveat: Cairn restarts at i001 so cross-incident pacing applies only to the ARTEX family'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: Because Cairn restarts at `i001` for every new project, cross-incident pacing applies only to the ARTEX family.
+    verbatim_ok: true
+  - claim: 'Extremes: highest observed i808807 in November 2026; longest consecutive ARTEX run is four in a row, Cairn i001 to i292'
+    source_url: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_intent_ids.md
+    passage: ARTEX installations rarely string more than a few consecutive Intent IDs together because facts, findings, hints, and digests pull from the same sequence between intents.
+    verbatim_ok: true
+  - claim: 'ARTEX-Harvester: Wiz''s ''more than a dozen organizations'' wording, hedged with ''at varying confidence'', late October to mid-November'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: Between late October and mid-November 2026 we tied it, at varying confidence, to activity at more than a dozen organizations.
+    verbatim_ok: true
+  - claim: ARTEX-Harvester is one of about a dozen campaigns Wiz tracks; clustering signals named
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: We wanted to highlight a campaign, one of a dozen campaigns we’re tracking
+    verbatim_ok: true
+  - claim: 'Clustering basis: boto3 build, cross-victim intent counter, proxy-pool overlap'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: a distinctive boto3 build, incrementing Intent ID correlation cross-victim, and proxy pool usage overlap.
+    verbatim_ok: true
+  - claim: Residential/ISP proxy rotation defeats IP blocking (more than 220 exits against one target)
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: Almost every request used a different residential or ISP proxy exit - across more than 220 IPs in a single target.
+    verbatim_ok: true
+  - claim: 'Self-labelling in this campaign: pentest-recon user agents, pentest-* workspaces and pods, pentest-iNNNNNN counter'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: artifacts were heavily marked with agentic offensive framework self-labeling behavior
+    verbatim_ok: true
+  - claim: Wiz warns ARTEX-labelled activity comes from multiple unrelated operators
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: Activity attributed to “ARTEX” comes from multiple unrelated operators and should not be read as a single campaign or attributed to one threat actor.
+    verbatim_ok: true
+  - claim: 'Tempo claims: 20 further related incidents disclosed by vendors since Black October; Wiz CIRT 3x engagement requests'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: Wiz’s CIRT has seen a 3x increase in engagement requests
+    verbatim_ok: true
+  - claim: 'Both-sides case: CyberStrikeAI ran the operation (csai- prefix) while an ARTEX checkout sat in the operator workspace'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: CyberStrikeAI ran the operation. A csai- prefix is on nearly everything the attacker created
+    verbatim_ok: true
+  - claim: 'Both-sides case: ARTEX tooling ran against other organizations the same month, unsuccessfully'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: The same server ran ARTEX tooling against several other organizations that month, unsuccessfully.
+    verbatim_ok: true
+  - claim: 'Both-sides case: AI credentials and AI-assistant histories were targets'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: Anthropic API keys were harvested from 50 hosts, and employees' AI coding-assistant session histories were mined for production SSO credentials.
+    verbatim_ok: true
+  - claim: 'Both-sides case: node-level persistence by ld.so.preload userland rootkit with DNS-tunnel channel'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: It was an `ld.so.preload` userland rootkit with a DNS-tunnel channel, disguised as a fontconfig service
+    verbatim_ok: true
+  - claim: 'ARTEX-Harvester foothold chain: VCS credentials, CI workload-identity branch trick, secrets and Terraform state dumped'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: The attack pivoted from CI to the cloud environment by creating branches that abused CI workload identity trust relationships.
+    verbatim_ok: true
+  - claim: Wiz's behavioural detections named include a step-counter-in-names rule; rules expected to be perishable
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: AI Offensive Tool Step Counter in Session or Resource Names
+    verbatim_ok: true
+  - claim: 'Wiz: rules perishable because tools are renamed and customised'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: We note that these rules are expected to be perishable
+    verbatim_ok: true
+  - claim: 'Census-style exposure measure: Censys more than 1,400 exposed ARTEX consoles in early November (default exposure, default credentials)'
+    source_url: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/wiz_artex_harvester.md
+    passage: ARTEX shipped with its web console exposed to the internet by default, often still on default credentials, and many operators never lock it down
+    verbatim_ok: true
+  - claim: GTIG 2026-10-31 already saw incremental numeric markers in ARTEX file names, created account names, passwords and email subjects (not carried in the entry)
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/gtig.md
+    passage: ARTEX was seen using similar incremental numeric markers within dropped file names, created account names, their passwords and within email subjects.
+    verbatim_ok: true
+  - claim: GTIG could not explain the numbers; Wiz's code reading supplies the mechanism
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/gtig.md
+    passage: it’s difficult to comment on the exact significance of these numbers or how they increment.
+    verbatim_ok: true
+  - claim: 'GTIG: 27 events in 23 seconds of burst (figure Talos relays; the entry carries only the 2 to 25 second bursts)'
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/gtig.md
+    passage: we observed 27 events in 23 seconds of active burst time, performing rapid probing of AWS permissions across different security groups.
+    verbatim_ok: true
+  - claim: 'GTIG: UNC7228 reached deep system access in about four hours, once in 15 minutes (relayed by Talos as ''as little as 15 minutes'')'
+    source_url: https://cloud.google.com/blog/topics/threat-intelligence/artex-and-friends-enter-agentic-offensive-frameworks
+    file: work/2026-11-27T0355Z-intel/fu6/gtig.md
+    passage: typically moving from their first compromised account to deep system access in around four hours and in one case as rapidly as 15 minutes.
+    verbatim_ok: true
+  - claim: Talos' subject is the OpenAI-linked swarm; ARTEX is a comparison section, framed as 'may transfer'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: Some documented behaviors may transfer to more purpose-built cyber attack frameworks like ARTEX
+    verbatim_ok: true
+  - claim: 'Talos on self-labels in the swarm: internal tracking strings became the cross-campaign fingerprint'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: These self-labels, intended as internal tracking strings, became the primary cross-campaign fingerprint linking multiple disparate operations.
+    verbatim_ok: true
+  - claim: 'Talos claim on self-labels: functional for the agent, so hard to remove without breaking state tracking (hedged ''can''t easily'')'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: These patterns are high-fidelity signals precisely because they're functional for the agent.
+    verbatim_ok: true
+  - claim: 'Talos hedge: coordination patterns may survive a move to purpose-built infrastructure but might be internally visible queue labels only'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: These coordination patterns may survive the move to purpose-built infrastructure, but they likely be only internally visible queue labels.
+    verbatim_ok: true
+  - claim: 'Talos on persistent-state exfiltration: agents cannot hold a connection back to an operator, so results go to webhooks that outlast them'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: This convergence reflects a constraint of agents; they can't hold a persistent connection back to an operator.
+    verbatim_ok: true
+  - claim: 'Talos: allow-listed public services make webhook/beacon egress harder to block (secondary benefit)'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: Egress bypass seems like a secondary benefit. These services will often happen to be allow-listed, which makes them harder to block.
+    verbatim_ok: true
+  - claim: 'Talos: Tencent fleet pre-created webhook tokens before payload deployment (technique transfer from a published swarm)'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: The Tencent fleet did the same by pre-creating "webhook.site" tokens from Tencent IPs before payload deployment
+    verbatim_ok: true
+  - claim: 'Talos: ARTEX described as a headless Go backend that calls tools directly (the architectural difference from the swarm)'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: ARTEX alleviates this constraint by running a headless Go backend that calls tools directly.
+    verbatim_ok: true
+  - claim: 'Talos'' own caveat: further research needed to pin down the detection surface'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: Further research will be required going forward to grapple with the emergence of agentic attack frameworks and pinning down the meaningful surface area they have for detection and mitigation.
+    verbatim_ok: true
+  - claim: 'Talos'' ARTEX facts are second-hand: its ARTEX self-label example (artex-probe file names) is the one GTIG reports'
+    source_url: https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/
+    file: work/2026-11-27T0355Z-intel/fu6/talos_great_escape.md
+    passage: ARTEX has used "artex-probe-\*" file names.
+    verbatim_ok: true
+  - claim: 'Huntback''s source: an exposed ARTEX console server with open working folders; task 3 was one South Korean university'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: Task number 3 on that console was a South Korean university
+    verbatim_ok: true
+  - claim: 'Workspace layout follows ARTEX: numbered task folders named for intents, framework path ending in data/tasks/3'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: most named after an intent number, under a framework path that ends in `data/tasks/3`.
+    verbatim_ok: true
+  - claim: 'Numbering leaks onto the victim: local admin account named after an intent, scheduled task nc<intent>, C:\ folder named i<intent>, marker files'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: The numbering leaks onto the victim. A local administrator account the workers created is named after intent 1027.
+    verbatim_ok: true
+  - claim: 'Huntback''s IR search hint: an i followed by three or four digits on a host an ARTEX worker touched'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: an `i` followed by three or four digits is the string to search for.
+    verbatim_ok: true
+  - claim: 'Entry vector: XpressEngine pre-auth code execution fixed since October 2019, technique copied from a public write-up'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: 'A comment on the first calls it the "article PoC": the technique was taken from a public write-up, not discovered.'
+    verbatim_ok: true
+  - claim: SYSTEM via a self-reloading log4net.config of a privileged companion app, writable by the web shell
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: A companion .NET application on the same host ran under a more privileged identity and watched its own `log4net.config` for changes. The web shell could write to that file.
+    verbatim_ok: true
+  - claim: Defences switched off with SYSTEM (Defender exclusion, monitoring disabled via Set-MpPreference)
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: With SYSTEM, the workers switched the defences off.
+    verbatim_ok: true
+  - claim: 'Tunnel persistence: chisel reverse SOCKS client as a boot-time SYSTEM scheduled task'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: 'On the content server it was made permanent as a scheduled task that starts at boot as SYSTEM:'
+    verbatim_ok: true
+  - claim: 'Step 1 of the tenant takeover: the single sign-on accepts the stored hash as the password'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: Whoever holds the table can sign in as anyone in it without knowing a single password.
+    verbatim_ok: true
+  - claim: 'Step 2-3: self-service bridge to Microsoft 365; reset form does not ask for the old password, identity taken from the session'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: The server takes the identity from the session and ignores the field.
+    verbatim_ok: true
+  - claim: 'Step 4: token via the resource owner password credentials grant, no browser, no second factor'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: which involves no browser and no second factor
+    verbatim_ok: true
+  - claim: Global Administrator token valid from 18:47:53 UTC 16 November; directory export started within two hours
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: The saved response is valid from 18:47:53 UTC on 16 November.
+    verbatim_ok: true
+  - claim: Directory walked in pages of 999 with throttle retries
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: Less than two hours later, between 20:32 and 20:45 UTC, a background script walked the directory.
+    verbatim_ok: true
+  - claim: 'Persistence/use after takeover: student-style accounts created and licensed from 17 November'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: Two accounts with student-style numbers were created at 23:47:42 and 23:48:17 UTC and given a licence.
+    verbatim_ok: true
+  - claim: A further account named for M365 operations management was made Global Administrator
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: was made Global Administrator.
+    verbatim_ok: true
+  - claim: Huntback does not know the accounts' purpose and notes the tenant's licence pool lets an operator mint accounts at will
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: The workspace does not say what the accounts were for.
+    verbatim_ok: true
+  - claim: 'Control named: Conditional Access requiring MFA for every user and blocking legacy and non-interactive password sign-ins would have stopped the token request'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: A Conditional Access policy that requires multi-factor authentication for every user and blocks legacy and non-interactive password sign-ins would have stopped the token request in this chain.
+    verbatim_ok: true
+  - claim: 'Control named: administrators need phishing-resistant sign-in; keep GA accounts out of self-service and separate from daily-use accounts'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: An account that holds Global Administrator should not be resettable through a convenience portal, and should not be the same account its owner uses for daily sign-on.
+    verbatim_ok: true
+  - claim: 'Detection named: alert on a new Global Administrator member and on many users created by one identity in an hour'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: A new member of the Global Administrator role, and more than a handful of users created by one identity in an hour.
+    verbatim_ok: true
+  - claim: 'Detection named: password-grant sign-ins are almost never legitimate in a modern tenant'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: Almost nothing legitimate in a modern tenant uses this flow.
+    verbatim_ok: true
+  - claim: 'Huntback''s caveat: its three KQL queries were not run against a live workspace'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: have not been run against a live workspace, so treat them as a starting point and adjust them to your data.
+    verbatim_ok: true
+  - claim: 'Huntback caveat: ''authorised'' appears only in a script comment; no scope document or client in the files'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: Across the 2,288 operator files there is no scope document, no contract, no rules of engagement and no client contact.
+    verbatim_ok: true
+  - claim: 'Operator hints without attribution: reports in Simplified Chinese, times labelled UTC+8; Huntback names no actor'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: The reports are written in Simplified Chinese, their times are labelled UTC+8
+    verbatim_ok: true
+  - claim: 'Huntback: single intrusion documented by the tool that carried it out (one target of 52 task folders)'
+    source_url: https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin
+    file: work/2026-11-27T0355Z-intel/fu6/huntback.md
+    passage: This is a single intrusion, documented by the tool that carried it out.
+    verbatim_ok: true
+  - claim: 'Recorded Future adds nothing on numbering; adds a growth measure: ARTEX servers 1,506 (21 Oct) to 2,978 (19 Nov), 58 countries, observed servers not attacks'
+    source_url: https://www.recordedfuture.com/blog/ai-industrial-attack-workflow
+    file: work/2026-11-27T0355Z-intel/fu6/rf.md
+    passage: We observed 1,506 servers running ARTEX on October 21 and 2,978 on November 19, hosted across 58 countries.
+    verbatim_ok: true
+  - claim: 'Recorded Future: churn makes blocklists stale (one in six present for 30 days; about 90 new per day)'
+    source_url: https://www.recordedfuture.com/blog/ai-industrial-attack-workflow
+    file: work/2026-11-27T0355Z-intel/fu6/rf.md
+    passage: Only about one in six ARTEX servers we observed was present continuously for 30 days, and roughly 90 new ones appear on a typical day.
+    verbatim_ok: true
+  - claim: 'Recorded Future: no confirmed misuse by GreenJuliett of the AI infrastructure it found'
+    source_url: https://www.recordedfuture.com/blog/ai-industrial-attack-workflow
+    file: work/2026-11-27T0355Z-intel/fu6/rf.md
+    passage: While we have not confirmed specific instances of misuse in this research
+    verbatim_ok: true
+  delta_vs_entry:
+  - 'NEW (core): the self-labelling numbering is absent from the entry. Mechanism and formats (Wiz, per-installation never-reset BIGSERIAL for ARTEX; per-project i%03d for Cairn), the victim-side surfaces (AWS session names, SSM comments, tags, KMS aliases, rule descriptions; Azure run-command, VM and app-registration names; error text of denied calls), three defender uses (link across proxies, deconflict installations, gauge scope), and Wiz''s caveats are all new to the entry.'
+  - 'NEW (provenance): GTIG already reported "somewhat-incremental" five-digit markers in file names, account names, passwords and e-mail subjects on 2026-10-31 and said it could not explain them; that page is already cited by the entry but the observation was not carried. Wiz supplies the mechanism; so the numbering is a GTIG observation (Oct) explained by Wiz (Nov), not a Wiz first.'
+  - 'NEW (cross-source, from item B sources): the DIVD forensic report ties the i<number> artefacts to ARTEX "intents" explicitly and shows them in API-token and account names, a ticket marker, mail subjects, web-served-directory file names and MITM script names; a compiled series rises about 70 numbers per hour over 20.5 hours (my compilation, flagged as such). Two low-number groups coexist with the high series, which Wiz''s logic would read as a second sequence (low confidence).'
+  - 'NEW: Huntback''s Entra Global Administrator takeover (chain above) is a concrete identity-tier case: stored-hash SSO, a password-reset bridge that ignores the old password, ROPC token without MFA, standing Global Administrator on a daily-use account, then bulk student-account creation and a second Global Administrator. Controls and detections named by Huntback are above. The chain is a South Korean university; no Swiss victim in any source read.'
+  - 'NEW: Wiz named ARTEX-Harvester (one of about a dozen campaigns it tracks; "more than a dozen organizations", "at varying confidence", late October to mid-November), 220+ rotating proxy exits against one target, CI-trust and Kubernetes escalation chain, and a both-sides case (CyberStrikeAI beside an ARTEX checkout, AI keys and AI-assistant histories targeted). Wiz explicitly says ARTEX-labelled activity comes from multiple unrelated operators and that disclosed incidents cannot all be linked to one actor or even to these frameworks.'
+  - 'NEW but small: Talos adds the reasoning that agents need persistent result stores (webhooks, beacons) and that allow-listed public services make this egress harder to block; and the GTIG figures 27 events in 23 seconds and 15 minutes to deep access (verified on the GTIG page, not carried by the entry).'
+  - 'QUALIFIES S3: Talos is not an independent ARTEX observation (its artex-probe example is GTIG''s, and it says "can''t easily", not "cannot"); S3 otherwise matches Wiz and Huntback on every checked detail.'
+  - 'QUALIFIES the entry''s Wiz coverage: the 2026-11-23 and 2026-11-25 Wiz posts never mention Storm-0940; ARTEX-Harvester is a separate cluster from the Storm-0940-overlap actor in the 2026-10-22 post. Do not merge them.'
+  - 'RF page: nothing on numbering; only trend and churn figures.'
+  - NO contradiction with the entry found in the A sources; the entry's multi-actor framing is consistent with Wiz's warning.
+  verdict: 'Worth a changelog record (type update, ARTEX entry): the numbering finding is new to the entry, supported by Wiz''s code reading, GTIG''s earlier observation, Huntback''s workspace and the DIVD/NVISO victim-side artefacts, with Wiz''s caveats; keep Huntback to a two-sentence identity-case paragraph and Talos to its egress/persistence rationale; Recorded Future adds nothing to it.'
+item_B:
+  target_entry: entries/2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach.md
+  finding_ref: work/2026-11-27T0355Z-intel/findings.S4.yaml item 1
+  sources_read:
+  - key: report
+    url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    publisher: Merlon Security (v1.5, 2026-11-24, TLP:CLEAR) with NVISO's embedded Google Workspace report (final 2026-11-18)
+    date: '2026-11-24'
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+  - key: blog
+    url: https://csirt.divd.nl/2026/11/25/full-disclosure-our-hack/
+    publisher: DIVD CSIRT
+    date: '2026-11-25'
+    file: work/2026-11-27T0355Z-intel/fu6/divd_blog.md
+  - key: case_full
+    url: https://csirt.divd.nl/cases/DIVD-2026-00014/full_disclosure/
+    publisher: DIVD CSIRT (report landing page)
+    date: '2026-11-25'
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_full.md
+  - key: case_main
+    url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    publisher: DIVD CSIRT (case page, last modified 25 Nov 2026 14:10 CET)
+    date: '2026-11-25'
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+  - key: overview
+    url: https://csirt.divd.nl/cases/DIVD-2026-00014/overview_data_investigation/
+    publisher: DIVD CSIRT (data investigation overview)
+    date: '2026-11-24'
+    file: work/2026-11-27T0355Z-intel/fu6/divd_overview_data.md
+  - key: pdf_note
+    note: 'PDF read with tools/fetch_source.py pdf: 224 of 631 streams, per-font ToUnicode decode, 209 pages; contains Merlon v1.5 (pages 1-179) and NVISO''s final report v1.0 of 2026-11-18 (26 pages) as an embedded appendix; all prose passages were located. Passages are verified against the whitespace-collapsed text (the PDF extraction splits runs across lines and inserts spaces around hyphens and quotes, which are kept verbatim).'
+  what_the_entry_already_carries:
+  - Exploit chain, KEV, patch cadence (7.2.2/7.2.3/6.5.5); DIVD completed forensics 2026-11-18; AI agents after root; credentials rotated (GitLab token without reach, Slack key without read, OAuth tokens of two shared mailboxes used for test mails, no mailbox-content compromise observed); about 41,000 ticket titles and limited older conversations; Jira and Confluence compromised with 207 e-mail addresses, 2 phone numbers, 7 profile photos; "19 hours to initiate the first response"; detection paragraph saying DIVD "lists no process or network indicators".
+  timeline_resolution:
+    verdict: The two figures measure different things. "About 7 hours" (7:20:51) is alert to the first volunteer looking at it; "19 hours" is alert to the formal response / CISO escalation; containment came 27:40:51 after the alert. The entry's sentence is accurate to DIVD's prose but conflates acknowledgement with response; the "about 26 hours" foothold is Merlon's executive-summary phrase and does not reproduce from the report's own timestamps.
+    exact_lines_and_times_UTC_all_from_the_saved_sources:
+      first_breach (RCE as zammad): 2026-09-21 19:27:58 (report); DIVD metric "MTTD 00:15:11 = first breach to first alert"
+      IDS alert (reverse shell, Elastic): 2026-09-21 19:43:09 (report 5.2 and 11.1)
+      first response observed: 2026-09-22 03:04:00 - "observed by one of the volunteers at DIVD and a short investigation started" (report 11.1); DIVD metric "Mean Time to Acknowledge 07:20:51 = time between first alert and SOC pickup" (19:43:09 to 03:04:00 = 7:20:51)
+      member asks someone to investigate the alert: 2026-09-22 07:34:00 (report Figure 1)
+      CISO informed / crisis team: 2026-09-22 15:06:00 (report 11.1 and Figure 1) = 19:22:51 after the alert
+      DIVD "MTTR" 19:16:51: labelled "Time between first attack and formal response" but 19:43:09 + 19:16:51 = 15:00:00 next day, i.e. alert to formal response about six minutes before the CISO contact; the "first attack" label does not match the arithmetic
+      decision to isolate: 2026-09-22 17:30:00 (report)
+      isolation started / completed: 2026-09-22 23:15:00 / 23:24:00 (report)
+      DIVD "MTTC" 27:40:51: alert 19:43:09 to containment 23:24:00 = 27:40:51 (labelled "first attack" on the case page again)
+      breach to containment: 19:27:58 to 23:24:00 next day = 27:56:02 (report says "around 26 hours")
+      NVISO window: '"observed threat actor interaction spanned ~39 hours" from the first probe mails at 17:05 on 2026-09-21 to the last token request at 08:33 on 2026-09-23 (39:28), with the potential compromise window running to 2026-09-24 when cloud-side containment finished'
+    case_page_prose: Although the alert arrived quickly, it took us 19 hours to initiate our first response on 22 September 2026; executing the plan took a further nine hours (15:06 to 23:24 is 8:18).
+    recommended_wording_for_the_changelog: IDS alert 19:43 UTC on 21 Sep; a volunteer first looked at it 7 h 21 min later (03:04); the CISO was informed and the crisis team formed 19 h 23 min after the alert (15:06); containment completed 27 h 41 min after the alert (23:24); NVISO sees actor activity in the cloud until 08:33 on 23 Sep.
+  extracted:
+    ARTEX_use_wording_and_basis:
+      wording: 'Executive summary and Conclusions: "an attacker likely using the open-source agentic attack framework ARTEX" and "Observations point towards the attacker likely having made use of ARTEX". Section title: "Possible Use of the ARTEX Framework". Merlon leaves attribution of the attacker to law enforcement. NVISO is firmer in tone: ARTEX strings in message subjects "indicate the use of this specific AI framework", but also says the volume suggests "AI-assisted tooling such as" ARTEX.'
+      basis_in_the_report:
+      - 'volume: 990 custom Python, Ruby and Bash scripts, 3,259 output files and 228 output directories in the temp and web-root folders, "practically infeasible for a human attacker" in the time frame;'
+      - scripts are fully documented with LLM-style inner monologue, "quite atypical for human attackers";
+      - 'artefacts carrying the framework name: a Zammad admin account and an API token (artex- prefix plus a number), further strings with "artex" in scripts, and an e-mail subject with ARTEX- plus a number (NVISO); Merlon calls the account and token "the strongest indicators";'
+      - the account did not exist in the Google Workspace; OSINT led to the public ARTEX repository; Merlon secured copies of the repository (2026-09-26) and forks (2026-10-08) and found the inner workings "closely match" the observed behaviour;
+      - 'the intent numbering: ARTEX intents are numeric job IDs included in all input and output, and many attacker files start with i plus a number (this basis is not in S4''s summary);'
+      - 'caveat: Merlon says one search ("zammad-websocket") "alone cannot be used to derive any form of intent" and offers an LLM-reasoning artefact as one possible theory.'
+      difference_between_DIVD_pages_and_report: 'The DIVD blog says without hedge "the Agentic Offensive Framework (ARTEX) the attacker used"; the report says "likely". The report also says the repository "has since been taken down by GitHub", whereas GTIG says its creator took it down and Macau Business says it was converted to closed source: three characterisations in the store.'
+      first_dated_victim_side_sighting: the DIVD intrusion (2026-09-21) predates the late-September CrowdStrike sighting and Microsoft's "as early as September" statement carried in the ARTEX entry; it is a dated victim-side sighting with named artefacts, on a victim that is a Dutch vulnerability-disclosure CSIRT.
+    attack_chain_behaviour_level:
+      initial_access: 'probe of the perimeter from 07:40 on 2026-09-21; an administrator logged into Zammad at 18:53:50 and the WebSocket header-leak bug (CVE-2026-102489, "heartbleed-like") yielded that session cookie 1.3 seconds later; the cookie was replayed from 19:01:00; at 19:06:31 a file was written through the package upload endpoint; at 19:27:53 a malicious Ruby mail template was written as a .custom override of a Zammad mailer view and at 19:27:58 a user-creation POST triggered an e-mail login flow that rendered it: code execution as the zammad user. A command-and-control channel then ran through a Zammad API endpoint (text_modules) and files were staged in the web-served directory and fetched back through the egress proxy because direct outbound was blocked.'
+      root: 'CVE-2026-102490 per the report: /etc/zammad owned by the zammad user, the root-run unit sources /etc/zammad/conf.d before dropping privileges, and the zammad process can force a restart by killing its web worker; a dropped file plus a kill gave root at 19:45:59-19:46:59 and a setuid copy of bash was left in a temp directory. Report footnote: every DEB and RPM package back to 1.5.0 (2017) appears affected.'
+      post_root_collection: mass searches of the Zammad API and PostgreSQL for key, password and token terms (including one search for tickets about the Zammad WebSocket, which Merlon says may be an LLM-reasoning artefact and not proof of intent); reads of the external_credentials, channels, authorizations and settings tables; unauthenticated local Elasticsearch ticket index searched for private keys and deploy keys; IMAP password for the hosting-provider mailbox found in the mail-channel configuration and used to log in over IMAP at 23:24:00 and search the abuse and csirt mailboxes; Google OAuth refresh tokens and client secret read from the database and used from attacker infrastructure (NVISO).
+      arp_poisoning_to_forged_admin_sessions:
+      - From the compromised Zammad host (same web-application VLAN as Jira and Confluence) the attacker first sniffed passively (about 90 seconds from 21:19:53 on 09-21), then from about 01:15 on 09-22 tried ARP-poisoning scripts; the first working run was at 01:37:48 and the Confluence server's ARP cache for the gateway was poisoned at 02:27:43, giving a man-in-the-middle position between the application hosts and the gateway.
+      - 'The link from Confluence (and Jira) to the shared PostgreSQL server was unencrypted, so the attacker could read the database protocol, download the raw capture files through the proxy for about six hours to learn the schema, and then inject its own SQL statements into live database connections by spoofing TCP sequence and acknowledgment numbers and dropping the original statement (first successful injected query at 03:34:25: current user, database and version).'
+      - 'Confluence: after several hours the attacker worked out how the product stores "remember-me" session tokens, wrote a token it chose for an administrator account (selected by group membership) directly into the token table at 08:46:35, and presented it at 08:49:00; the response header showed the login accepted. Confluence was then scraped (pages, 208 attachments, secret searches).'
+      - 'Jira: a similar poisoning began 03:08:29; first successful injection 10:43:43 (OAuth consumer and token tables read); replay of dumped remember-me tokens failed at 14:04:10 because Jira clears old tokens, succeeded at 14:08:58 (full dump at 14:05:58); the product''s own support-zip export (troubleshooting REST endpoint) was used to pull data, exfiltrated 14:43-14:50.'
+      - A later scheduler script self-reports that poisoning runs only in Dutch working hours (NL 05:00-16:00 UTC, i.e. 07:00-18:00 CEST), in reversible windows that restore the real MAC addresses at the end of each window (the first working poisoning, at 02:27, predates that window); the MITM degraded the firewall and broke the out-of-band VPN, which delayed isolation.
+      - 'Parallel failed attempts: forged SAML responses to Jira, SSH to Jira and Confluence, AD-integrated DNS update probes against the legacy domain controllers, probes toward GitLab, vSphere and Proxmox through an internal proxy that a firewall rule left over from a migration made reachable.'
+      persistence:
+      - a new Zammad admin account created from the hijacked admin session and API tokens (one with the framework name); a second Zammad account created indirectly through a ticket carrying a content marker;
+      - 'the Google OAuth-scope item: at 11:43 on 09-22 the Zammad omniauth initializer was edited to change the Google access type from online to offline and to add the full Gmail scope; Zammad stores tokens in its authorizations table, so every later login would have logged an offline token; a poller read new tokens and tried the Gmail API, the stated aim being password resets read through Gmail and account takeover; the edit was live from 11:43:37 and a token-poller script followed about 45 minutes later; it needed user consent and captured nothing (NVISO: no individual-user token captured because no user logged in during its active period);'
+      - a root-run loop under systemd with Restart=always and two cron.d entries that execute any .txt file dropped in the web-served directory through the setuid bash copy; Merlon notes many scripts had persistence elements so labelling backdoors was hard.
+    exfiltration_counts_as_the_report_states_them:
+      files: 2,806 files exfiltrated through the reverse proxy; about 41 thousand Zammad CSIRT ticket titles through the Zammad API; two files with older CNA-related mail chains (past the 90-day disclosure limit); a Confluence export containing 3 TLP:RED and 33 TLP:AMBER or AMBER+STRICT pages.
+      PII_report_table (source to filtered): e-mail addresses 48,928 to 4,121; phone numbers 316 to 34; street addresses 39 to 3; BSN 0.
+      DIVD_corrections_on_the_overview_page_2026-11-24: 'unique e-mail addresses are 15,409 not 48,928 (duplicates), 4,121 personal; street addresses: none of the 39 personal after review (report said 3); phone numbers 316/34 unchanged.'
+      members: 207 member e-mail addresses (200 with full name; DIVD says incl. aliases and functional addresses, volunteers and former volunteers), 7 identifiable profile photos, 2 phone numbers.
+      high_impact_table_items_not_in_the_entry: full Zammad users-table dumps with Argon2id password hashes (listed as 28,952 e-mail addresses and as 14,342 user records), mail-channel configurations with the IMAP password and Google OAuth tokens, an external-credential store with the Google client ID and secret, Zammad database configuration revealing the PostgreSQL password, Confluence database rows (OAuth token stores, application secrets, user directory), Jira user list (133 staff addresses) and Jira OAuth consumer key; DIVD's overview page says the attacker was "selective" and does not mention password hashes of Zammad users.
+      credential_material_beyond_the_entry: cleartext IMAP password of the hosting-provider mailbox account (used to log in), Google OAuth refresh tokens and client secret for the two shared mailboxes (used from attacker infrastructure), PostgreSQL password from application configuration, an Elastic basic-auth credential verified against Fleet, Jira OAuth consumer private key, Jira/Confluence password hashes, remember-me and reset tokens, a GitLab personal access token and a send-only Slack bot key. Slack gave no logs, so Slack was not examined further.
+      attacker_volume: 990 payloads (Python, Ruby, Bash), 3,259 output files, 228 output directories in the temp folder and web root; attacker cleanup was sporadic.
+    recommendations_the_report_gives:
+      prevention:
+      - Patch internet-facing services (both Zammad instances ran 6.5.2 of 2025-09-10, which Merlon calls outdated; note the zero-day affected all 6.5.x, so only 7.x would have avoided it).
+      - 'Take sensitive services off the internet behind a VPN; where exposure is required, WAF or reverse proxy exposing only the needed routes (example: only the OIDC public-key route of a private SSO).'
+      - 'TLS 1.3 (at least 1.2) on internal links, mTLS optional; Merlon: "Had the communications between these servers not been unencrypted, the attacker would not have been able to inject a custom session token".'
+      - Deny-by-default micro-segmentation even within one VLAN (a ticketing host does not need Jira, Confluence, their database or domain controllers; domain controllers used only for DNS should allow only DNS), private VLANs, client isolation, ARP proxying, DNS allow-listing.
+      - 'Containers or microVMs (Firecracker, Kata, gVisor): a containerised Zammad would have prevented the root step because killing the init process kills the container; container hardening list (non-root, drop capabilities, no privileged mode, read-only filesystem, Kubernetes deny-by-default network policy, no automatic service-account token mount, admission policies, pod-security labels).'
+      detection:
+      - Honeypots (one network honeypot per subnet) and honeytokens such as a fake ticket created every 24 hours holding a fake password-reset link for a fake tier-1 system, wired to a P1 alert and optionally automatic isolation; do not label honeypots as such.
+      - Network IDS inside the internal network (Suricata, Zeek), IPS considered against automated attacks; encryption reduces visibility so retain or decrypt traffic.
+      - Third-party or member-employer SOC cover for working hours because DIVD relies on volunteers.
+      response:
+      - Do not run the incident on possibly compromised tools (Slack, Google Workspace, hosts on the network) until proven clean.
+      - Have IR tooling ready (Velociraptor deployed by hand and Dissect Acquire not ready cost time); securing disk and memory images was done well; run incident exercises focusing on ingress/egress, evidence acquisition, detection blind spots and concrete research questions.
+      NVISO_additions:
+      - rotate Google OAuth client secrets and verify identity-level remediation (password and session resets) for all affected shared mailboxes;
+      - restrict third-party OAuth app permissions instead of the default "No app configuration" (the app had a full-mailbox scope and no policy);
+      - rebuild the Firezone VPN hosts (two to three years behind the release line) and keep management interfaces off the internet;
+      - central application logging for GitLab, Passbolt and Firezone and 90-day minimum log retention (those application logs did not exist, so lateral movement could not be fully excluded);
+      - decommission unauthorised hosting-provider accounts created during the intrusion.
+      lesson_from_NVISO_for_containment: 'network isolation at 23:24 on 09-22 did not revoke cloud OAuth access: the attacker obtained fresh tokens at 09:44 on 09-22 and again at 08:33 on 09-23 from its own infrastructure with previously stolen secrets; the credential reset for 174 accounts (24 Sep 18:55 per NVISO) and session revocation for 199 accounts (20:15) ended it.'
+  claims:
+  - claim: 'Report timeline: IDS alert 21 Sep 19:43:09; first response observed 22 Sep 03:04; further escalation 15:06; contained 23:24'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Initial alerts were triggered on Sep 21st 2026 at 19:43:09 UTC. The first response to these alerts was observed on Sep 22nd 2026 at 03:04 UTC. Further escalation was on Sep 22nd 2026 at 15:06 UTC
+    verbatim_ok: true
+  - claim: 'Report: the 03:04 event was a volunteer seeing the alert and starting a short investigation; the CISO was informed only at 15:06'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: On the 22nd of September at 03:04 UTC this alert was observed by one of the volunteers at DIVD and a short investigation started.
+    verbatim_ok: true
+  - claim: 'Report: at 15:06 a member told the CISO an unauthorised actor had likely gained access; a crisis team was set up'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: At 15:06 UTC a DIVD member informed their CISO that an unauthorised actor had likely gained access to the network
+    verbatim_ok: true
+  - claim: 'Report figure 1: a member asks at 07:34 that someone investigate the alert (between the 03:04 look and the 15:06 escalation)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 2026-09-22T07:34:00Z Incident Response DIVD member requests that someone investigates the alert
+    verbatim_ok: true
+  - claim: 'Report figure 1: decision to isolate the whole environment at 17:30'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 2026-09-22T17:30:00Z Incident Response Decision made to isolate the entire environment
+    verbatim_ok: true
+  - claim: 'Report: ''foothold around 26 hours'' appears only in the executive summary sentence that counts to containment at 23:24'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The attack was contained on Sep 22nd 2026 at 23:24 UTC, meaning the attacker had a foothold in the network for around 26 hours.
+    verbatim_ok: true
+  - claim: 'Report: breach time 19:27:58 and probe time 07:40:38 (breach to containment computes to 27 h 56 min, not 26 h)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: successfully breached the network on Sep 21st 2026 at 19:27:58 UTC.
+    verbatim_ok: true
+  - claim: 'DIVD case page metric: alert to SOC pickup 07:20:51'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: Mean Time to Acknowledge | 07:20:51 | Time between first alert and SOC pickup
+    verbatim_ok: true
+  - claim: 'DIVD case page metric: ''MTTR'' 19:16:51 labelled first attack to formal response (arithmetically alert 19:43:09 to about 15:00)'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: Mean Time to Respond (MTTR) | 19:16:51 | Time between first attack and formal response
+    verbatim_ok: true
+  - claim: 'DIVD case page metric: 27:40:51 labelled first attack to containment (arithmetically alert to 23:24)'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: Mean Time to Contain (MTTC) | 27:40:51 | Time between first attack and containment of the attack
+    verbatim_ok: true
+  - claim: 'DIVD case page metric: MTTD 00:15:11 first breach to first alert'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: Mean Time to Detect (MTTD) | 00:15:11 | Time between first breach and first alert
+    verbatim_ok: true
+  - claim: 'DIVD case page prose: the ''19 hours'' sentence that the entry carries'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: Although the alert arrived quickly, it took us 19 hours to initiate our first response on 22 September 2026.
+    verbatim_ok: true
+  - claim: 'DIVD case page: containment plan took a further nine hours (travel and careful isolation)'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: Executing this plan took a further nine hours.
+    verbatim_ok: true
+  - claim: 'DIVD case page: self-assessment ''plenty of room for improvement'' yet ''not too shabby'''
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: we see plenty of room for improvement. Then again, looking at the bigger picture, these numbers are not too shabby compared with industry averages, especially for a volunteer-run organisation.
+    verbatim_ok: true
+  - claim: Merlon's closing words call median time to detect and respond 'excellent'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: the median time to detect and the median time to respond were both excellent
+    verbatim_ok: true
+  - claim: Merlon's own recommendation says volunteer alert response time is not always at the desired level
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Due to the fact that the DIVD relies almost fully on volunteers the monitoring of the alerts, the response time is not always at the level that is desired.
+    verbatim_ok: true
+  - claim: 'NVISO: attacker interaction ~39 h to the last token request on 23 Sep 08:33; potential compromise window until 24 Sep cloud containment'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: While observed threat actor interaction spanned ~39 hours, ending with a final token request at 08:33 UTC on 23 September 2026
+    verbatim_ok: true
+  - claim: 'NVISO: tokens re-issued after network isolation; isolation alone does not revoke cloud OAuth access (NVISO says ~six hours, its own timeline gives about nine)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: confirming that network isolation alone does not revoke cloud OAuth
+    verbatim_ok: true
+  - claim: 'NVISO timeline: network disconnected 22 Sep 23:24; credential reset for 174 accounts 24 Sep 18:55; session revocation for 199 accounts 20:15'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 2026 - 09 - 2 2 23:24 Network disconnected from the internet C ustomer 2026 - 09 - 24 18:55 Credential reset enforced on 174 Google Workspace accounts
+    verbatim_ok: true
+  - claim: Merlon timeline instead dates the Google password reset decision 25 Sep 13:39 and completion 25 Sep 19:00 (date differs from NVISO's 24 Sep)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: All Google passwords reset successfully 2026-09-25T19:00:00Z
+    verbatim_ok: true
+  - claim: 'Merlon: Zammad API keys revoked in Google Cloud 22 Sep 21:49 (NVISO still sees token issuance on 23 Sep 08:33 from attacker infrastructure)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Zammad API keys revoked in Google Cloud 2026-09-22T21:49:00Z
+    verbatim_ok: true
+  - claim: 'Basis 1: volume of custom scripts, practically infeasible for a human in the time frame'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Both the DIVD and Merlon quickly came to this conclusion simply by looking at the sheer volume of custom-written scripts produced by the attacker, which would be practically infeasible for a human attacker to do within the time frame of the attack.
+    verbatim_ok: true
+  - claim: 'Basis 2: scripts are fully documented, atypical for human attackers; comments show the model''s reasoning'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: In addition to this, many of the observed scripts are fully documented, which is quite atypical for human attackers.
+    verbatim_ok: true
+  - claim: 'Basis 3: artefacts that carry the framework''s name (account, API token, mail subject) are the strongest indicators'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Note that both IOCs are the strongest indicators of the attacker likely using the ARTEX attack framework, given the fact it directly exposes the framework’s name
+    verbatim_ok: true
+  - claim: 'Basis 4: Merlon secured copies of the repository and forks and found the behaviour closely matching'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon looked into the inner workings of the framework which appears to closely match the behaviour observed in the attack.
+    verbatim_ok: true
+  - claim: 'Basis 5 (the intent numbering): ARTEX ''intents'' are numeric job IDs and many files start with i plus a number'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: ARTEX makes use of so called “intents”, which are numeric job-IDs that are included in all input/ output to allow the framework to keep track of what data belongs to what job.
+    verbatim_ok: true
+  - claim: 'Basis 5 continued: the report points to the i<number> file and directory pattern as matching'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Attentive readers might have noticed that many files mentioned previously follow this pattern, where a file or directory will start with an “i”, followed by a number
+    verbatim_ok: true
+  - claim: 'Hedged wording: ''likely having made use of ARTEX'''
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Observations point towards the attacker likely having made use of ARTEX, an open-source agentic penetration testing framework.
+    verbatim_ok: true
+  - claim: Merlon leaves attribution of the attacker to law enforcement and did not investigate persons
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Direct attribution of the attacker is left to law enforcement
+    verbatim_ok: true
+  - claim: 'NVISO''s basis: ARTEX strings in message subjects plus roughly 60,000 log lines; NVISO calls the marker an ''internal ticket format'''
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The presence of ARTEX strings in message subjects, alongside high - volume probe traffic (~60,000 log lines), indicates that the intrusion was driven by an autonomous, agentic AI framework
+    verbatim_ok: true
+  - claim: 'NVISO: the explicit ARTEX string in a test e-mail subject is read as use of this framework'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The inclusion of the explicit ARTEX string within the subject line indicates the use of this specific AI framework during testing.
+    verbatim_ok: true
+  - claim: 'NVISO: the probe e-mails carried sequential subject markers and an identifier NVISO read as an internal ticket format (pre-dates the Zammad exploit)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: using disposable email addresses with sequential subject markers, in an automated effort.
+    verbatim_ok: true
+  - claim: 'NVISO first-phase probe: identical subject carrying an i-number sent to two shared mailboxes at 18:14 on 21 Sep'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 'Phase 2 : Cross - Mailbox Tracking (18:14 UTC): An identical subject line containing identifier ( i12456'
+    verbatim_ok: true
+  - claim: Zammad account created indirectly through a ticket carrying a content marker i<number> (second backdoor account)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: created indirectly via ticket with content marker i13517
+    verbatim_ok: true
+  - claim: 'Report: DIVD blog says unhedged ''the ARTEX the attacker used'', the report says ''likely'''
+    source_url: https://csirt.divd.nl/2026/11/25/full-disclosure-our-hack/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_blog.md
+    passage: Now we can tell the full story, from the Agentic Offensive Framework (ARTEX) the attacker used to which data got out and our lessons learned.
+    verbatim_ok: true
+  - claim: 'DIVD case page: AI agents continued the attack ''after obtaining root'''
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_case_main.md
+    passage: After obtaining root privileges on the system, the attacker used AI agents to continue the attack.
+    verbatim_ok: true
+  - claim: 'Pre-root automation: the session cookie was taken 1.3 seconds after the admin logged in'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 1.3 seconds later, the attacker exploited the HTTP header leak and obtains the session cookie
+    verbatim_ok: true
+  - claim: 'Report: 990 payloads in temp and web root; 3,259 output files; 228 output directories'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: a total of 990 custom written Python, Ruby and Bash scripts were dropped to disk in the /tmp and /opt/zammad/public/ folder of divd-p-zammad104 , resulting in a total of 3259 output files and 228 output directories
+    verbatim_ok: true
+  - claim: A script header self-reports it runs the MITM harvest only in Dutch working hours (NL 05:00-16:00 UTC)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: self-reports that it only uses the MITM attacks to poison and harvest credentials during regular working hours in the Netherlands (07:00 until 18:00 CEST, displayed in the script as NL 05:00-16:00 UTC)
+    verbatim_ok: true
+  - claim: 'CVE-2026-102489 as the report describes it: WebSocket header leak exposing other users'' session cookies'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: was a heartbleed-like bug which causes other users’ HTTP headers to be leaked by triggering a bug in Zammad’s WebSocket endpoint
+    verbatim_ok: true
+  - claim: 'From hijacked admin session to RCE: package upload endpoint writes a Ruby mail template, an e-mail login flow renders it'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: which was used to write a malicious Ruby e-mail template file to disk, that was then subsequently executed by requesting an e-mail based login link, resulting in remote code execution.
+    verbatim_ok: true
+  - claim: Package upload as a file-write primitive was a known design property (CVE-2021-42094 footnote)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: writing files to disk as the zammad user appears to be a part of Zammad’s threat model as the functionality to upload custom packages is a feature
+    verbatim_ok: true
+  - claim: C2 channel through a Zammad API endpoint (text_modules) because direct outbound was blocked
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: the attacker sets up a command-and- control channel via the GET /api/v1/text_modules API endpoint.
+    verbatim_ok: true
+  - claim: 'Exfiltration path: files placed in the web-served directory and fetched through the egress proxy'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: placing files in the /opt/zammad/public/ web-root and requesting them directly, forcing the network traffic to flow through the outbound HTTP proxy
+    verbatim_ok: true
+  - claim: 'CVE-2026-102490 mechanism per the report: writable /etc/zammad, root unit sourcing conf.d, killing the worker forces a restart'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Thus, the user can write arbitrary files, execute them as root on service restart, and restart at will, which can be combined to provide root file execution.
+    verbatim_ok: true
+  - claim: Every DEB and RPM package back to 1.5.0 (2017) appears affected
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: every single DEB and RPM package ever published by Zammad dating back to version 1.5.0 published on the 11th of September 2017 appears to be affected by this vulnerability.
+    verbatim_ok: true
+  - claim: 'Victim patch level: both Zammad instances ran 6.5.2 of 10 Sep 2025'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: both observed instances were running Zammad version 6.5.2-1772600293
+    verbatim_ok: true
+  - claim: Report's Conclusions section mis-assigns RCE to the second CVE (contradicts its own sections 6.2 and 11.1-11.2)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: A second zero day vulnerability, CVE-2026-102490, abused intended functionality to obtain remote code execution through which the underlying system could be fully compromised.
+    verbatim_ok: true
+  - claim: 'Report''s technical summary assigns the roles correctly: first CVE session hijack leading to RCE, second CVE root'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The second zero-day vulnerability (CVE-2026-102490) let the attacker escalate their privileges in order to gain full administrative control of the server itself.
+    verbatim_ok: true
+  - claim: 'Credential hunt: mass queries of the Zammad API and database for key, password and token terms'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The attacker searched for terms such as BEGIN OPENSSH , DEPLOY_KEY , password , wachtwoord , PRIVATE KEY , and wireguard .
+    verbatim_ok: true
+  - claim: Credential hunt reached the unauthenticated local Elasticsearch index of tickets
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: the attacker was also observed interacting with the unauthenticated Elasticsearch API endpoints
+    verbatim_ok: true
+  - claim: 'Credentials taken from the Zammad database: IMAP password for the hosting provider mailbox, Google XOAUTH2 tokens, Google client secret'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 5 mail channel configurations incl . IMAP password for
+    verbatim_ok: true
+  - claim: Accounts table lists additional compromised material (Elastic basic-auth credential verified against Fleet, Jira OAuth consumer private key)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Basic - auth credential verified 200 against Fleet API
+    verbatim_ok: true
+  - claim: 'Report scope table: the hosting-provider mailbox was logged into over IMAP and searched for credentials'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Attacker observed logging into the BIT IMAP server with DIVD’s account looking for creden - tials.
+    verbatim_ok: true
+  - claim: 'Report: attacker reached the shared mailboxes with stolen tokens and sent test mails; Merlon/DIVD say no data compromise observed'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: No compromise of the data in these mailboxes was observed.
+    verbatim_ok: true
+  - claim: 'NVISO instead: mailbox content of the two shared mailboxes must be considered potentially compromised (Gmail content review was out of scope)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Consequently, the mailbox content of impacted mailboxes up to the timestamp of remediation (credential and session resets) must be considered as potentially compromised.
+    verbatim_ok: true
+  - claim: 'NVISO: full-mailbox-scope tokens obtained with valid application secrets, independent of MFA, refresh tokens valid until revoked'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Operated independently of MFA requirements. The issued refresh tokens remained valid until revocation.
+    verbatim_ok: true
+  - claim: 'NVISO: no app restriction was configured for the OAuth application; default permissive policy'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: the platform applied default permissive routing.
+    verbatim_ok: true
+  - claim: 'NVISO: deletion of a single probe message in the abuse mailbox at 18:55 and outbound spoofing tests'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: This represents the first confirmed write operation and data modification observed in the environment.
+    verbatim_ok: true
+  - claim: 'NVISO: first token issuance 18:33 on 21 Sep precedes Merlon''s session theft (18:53:50) and RCE (19:27:58); the report does not reconcile'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: at 18:33 UTC on 21 September 2026, two distinct OAuth access tokens were requested and subsequently granted
+    verbatim_ok: true
+  - claim: 'Merlon: stolen session time 18:53:50'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: An attacker was able to steal a user session at Sep 21st 2026 18:53:50 UTC
+    verbatim_ok: true
+  - claim: 'Persistence overview: Zammad accounts and API tokens, OAuth flow change, systemd unit, cron entries, token poller'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Modification in Zammad OAuth flow allowing offline access to Gmail
+    verbatim_ok: true
+  - claim: 'Merlon caveat: hard to label payloads as backdoors; many scripts had persistence elements'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Note that it was difficult to label payloads dropped to disk as backdoors, as the lines between regular attacker activity and intentional persistence was blurred.
+    verbatim_ok: true
+  - claim: Admin account and API token created from the hijacked admin; both names carry the framework name
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The API key in question was created under the account of a user with administrative privileges
+    verbatim_ok: true
+  - claim: 'OAuth-scope item: omniauth initializer edited to switch Google access type to offline and add the full Gmail scope'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: This file is responsible for handling the actual Single-Sign On (SSO) authentication and is the location where the Google OAuth scopes are defined.
+    verbatim_ok: true
+  - claim: 'OAuth-scope item mechanism: Zammad stores tokens in its authorizations table, so every later login would log an offline token'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: This means that any user that logs in after the code is loaded into memory will have their offline OAuth access tokens logged to the database.
+    verbatim_ok: true
+  - claim: 'OAuth-scope item purpose: password resets on users'' behalf and reading the reset links via the Gmail API (account takeover)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: With these tokens, the attacker can perform password resets on their behalf and read the resulting reset token links using the Gmail API, possibly allowing for account takeover attacks to take place.
+    verbatim_ok: true
+  - claim: 'OAuth-scope item outcome: it needed user consent, captured nothing (no users logged in during its active period)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The backdoor meant to obtain users’ Google OAuth tokens required user consent and captured none.
+    verbatim_ok: true
+  - claim: Systemd and cron persistence run files dropped in the web-served directory as root through a setuid shell
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: In essence, both crontabs simply serve as a simple persistence technique which lets the attacker write files to /opt/zammad/public/ with .txt , and are then executed as root.
+    verbatim_ok: true
+  - claim: Attacker created a systemd unit and two cron entries (Conclusions)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: the attacker created a systemd unit which would execute scripts from Zammad’s public webroot as root, as well as two crontabs which behaved near- identically.
+    verbatim_ok: true
+  - claim: ARP poisoning is atypical in production networks; this attacker used it anyway
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: While ARP poisoning is by no means a novel technique, for an attacker to actually use it in production networks is atypical.
+    verbatim_ok: true
+  - claim: Passive sniffing from the Zammad host began 21 Sep 21:19:53 and switched to active poisoning about 22 Sep 01:37:48
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: switched to active ARP poisoning attacks on Sep 22nd 2026 at 01:37:48 UTC, allowing them to obtain a Man-in-the-Middle (MITM) position between Confluence, and its associated PostgreSQL database on Sep 22nd 2026 at 02:27:43 UTC.
+    verbatim_ok: true
+  - claim: Poisoning was scheduled in working-hours windows, reversible, with real MAC addresses restored at the end of each window
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 'Each window is reversible: p y​ thon poisons + transparent-forwards + restores real MACs at end.'
+    verbatim_ok: true
+  - claim: PostgreSQL link between the application and the database server was unencrypted
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Based on the observed network traffic it appears SSL was not enabled between the Confluence and PostgreSQL server
+    verbatim_ok: true
+  - claim: About six hours of traffic collection to learn the database structure, then SQL injected into live sessions
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Over the next six hours, the attacker can be observed continuously downloading the MITM log files containing the raw PostgreSQL data through the HTTP proxy
+    verbatim_ok: true
+  - claim: Packet injection of SQL statements into the existing database connection
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Later on, the attacker began actively injecting their own SQL statements into the network traffic in order to probe the database directly.
+    verbatim_ok: true
+  - claim: 'Confluence: attacker figured out the session management after hours and wrote its own remember-me token for an admin user into the database'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: This pattern then repeats for multiple hours, after which the attacker is finally able to figure out how Confluences’ session management system works.
+    verbatim_ok: true
+  - claim: Confluence compromised at 08:49 on 22 Sep with administrative privileges; mass harvest of pages followed
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: At this point, the attacker has successfully compromised the Confluence web application.
+    verbatim_ok: true
+  - claim: 'Confluence conclusion: injected cookie values accepted, admin user, full access to all pages'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Since the attacker injected a token for a user with administrative privileges, they now have full access to all pages in the DIVD confluence space
+    verbatim_ok: true
+  - claim: 'Jira: replay of remember-me tokens; first attempt failed because Jira clears old tokens, second succeeded at 14:08:58'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: At 14:04:10 UTC the first token replay attack was observed but this attempt was not successful since Jira actively clears old tokens.
+    verbatim_ok: true
+  - claim: Jira data taken through the product's own support-zip export and downloaded to the Zammad host for secret scanning
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: The zip was then downloaded to divd-p-zammad104 and thoroughly scanned for sensitive information like passwords, sessions and other secrets
+    verbatim_ok: true
+  - claim: 'Hardening named: TLS on the database links would have blocked the token injection'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Had the communications between these servers not been unencrypted, the attacker would not have been able to inject a custom session token, and would not have gained access to Confluence using this route.
+    verbatim_ok: true
+  - claim: The Zammad host sat in the same web-application VLAN as Jira and Confluence; Merlon asks for intra-VLAN micro-segmentation
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Consider taking a critical look at what systems are allowed to connect with each other, even within the same VLAN.
+    verbatim_ok: true
+  - claim: 'Merlon: deny-by-default micro-segmentation would have limited the attack surface to Zammad alone'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: which would have limited the attack surface to just Zammad alone.
+    verbatim_ok: true
+  - claim: 'Exec summary: attacker ''failed to laterally move to any other system'' while the same summary reports Jira and Confluence compromised (application level only)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: During this time, the attacker failed to laterally move to any other system in the network, despite their best efforts.
+    verbatim_ok: true
+  - claim: Jira/Confluence were compromised at application level, not OS level
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Attacker was only able to gain access to the Confluence web application , not the underlying operating system
+    verbatim_ok: true
+  - claim: A firewall rule from a past migration let the Zammad host reach an internal proxy; probes toward GitLab, vSphere and Proxmox failed
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Later verbal interviews revealed that the firewall rule that allowed connections between Zammad server and the internal proxy was accidentally left behind from a previous migration.
+    verbatim_ok: true
+  - claim: Forged SAML responses against Jira and SSH attempts against Jira and Confluence also failed
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Zero successful logins were observed in both the logging for divd-p-jira101 and divd-p-confluence101 .
+    verbatim_ok: true
+  - claim: ARP poisoning broke the out-of-band VPN and slowed firewall operations
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: This could explain why the Out-of-Band VPN was not working and why the DIVD experienced degraded performance on other machines like firewalls.
+    verbatim_ok: true
+  - claim: No packet capture existed at the time; Slack gave no log data
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: no infrastructure was in place at the time of the attack to log packets
+    verbatim_ok: true
+  - claim: 'Exfiltration counts: 2,806 files through the reverse proxy; about 41 thousand ticket titles through the Zammad API'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: In total, 2806 files were exfiltrated via the DIVD ’s reverse proxy, with around 41 thousand Zammad CSIRT ticket titles being exfiltrated via the Zammad API.
+    verbatim_ok: true
+  - claim: 'Report PII table: source 48,928 e-mail addresses filtered to 4,121; 316 phones to 34; 39 addresses to 3; BSN 0'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: E-Mail Addresses 48928 4121 Phone Numbers 316 34 Home Address 39 3 BSN Numbers 0 0
+    verbatim_ok: true
+  - claim: 'DIVD overview page corrects the report: 48,928 contained many duplicates, 15,409 unique e-mail addresses'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/overview_data_investigation/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_overview_data.md
+    passage: After the deduplication we have a total of 15,409 unique email addresses.
+    verbatim_ok: true
+  - claim: 'DIVD overview page corrects the report: the three street addresses turned out to be businesses or venues, none personal'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/overview_data_investigation/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_overview_data.md
+    passage: Hence we leaked 39 street addresses, none of them where personal.
+    verbatim_ok: true
+  - claim: 'Members: 207 e-mail addresses (200 with full name), 7 identifiable profile photos, 2 phone numbers'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: In total 207 members’ e-mail addresses were leaked, of which 200 included a full
+    verbatim_ok: true
+  - claim: 'DIVD overview: the 207 include aliases and functional addresses of volunteers and former volunteers'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/overview_data_investigation/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_overview_data.md
+    passage: 'Email addresses: 207 email addresses (including aliases and functional addresses) of volunteers and former volunteers were leaked.'
+    verbatim_ok: true
+  - claim: Confluence export held 3 TLP:RED and 33 TLP:AMBER or AMBER+STRICT pages; DIVD says nothing still sensitive
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: In addition, various details about internal projects were compromised of which three pages classi - fied TLP:RED, and 33 pages of TLP:AMBER/ TLP:AMBER+STRICT data.
+    verbatim_ok: true
+  - claim: 'DIVD overview: TLP:Red and TLP:Amber pages leaked but no longer sensitive'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/overview_data_investigation/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_overview_data.md
+    passage: Pages marked TLP:Red and TLP:Amber were also leaked, but they contained no data that is still sensitive.
+    verbatim_ok: true
+  - claim: Report's high-impact table lists a full Zammad users-table dump with Argon2id hashes (28,952 e-mail addresses); DIVD overview does not mention hashes
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Full Zammad users table dump with Argon2id password hashes (28,952 e - mail addresses)
+    verbatim_ok: true
+  - claim: 'Report: two files of older CNA-related mail chains exfiltrated, past the 90-day disclosure limit'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: All exfiltrated CNA-related data appears to have well surpassed its 90 day disclosure limit.
+    verbatim_ok: true
+  - claim: 'DIVD overview: attacker had to be selective because outbound was difficult (the wording the entry carries)'
+    source_url: https://csirt.divd.nl/cases/DIVD-2026-00014/overview_data_investigation/
+    file: work/2026-11-27T0355Z-intel/fu6/divd_overview_data.md
+    passage: As data exfiltration was difficult, the attacker had to be selective.
+    verbatim_ok: true
+  - claim: 'Report: Google Workspace and Slack exfiltration was not investigated by Merlon (NVISO covers Google)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon did not have access to log data from the Google Workspace or Slack, as such it was not investigated what information was exfiltrated via those means.
+    verbatim_ok: true
+  - claim: 'Recommendation: patch internet-facing services; both instances were outdated'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon recommends patching software as soon as possible, especially when these services are directly connected to the internet.
+    verbatim_ok: true
+  - claim: 'Recommendation: remove sensitive services from the internet behind a VPN or WAF/reverse proxy'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: it is strongly recommended to start a conversation about the exposure of any service to the internet that does not strictly need it.
+    verbatim_ok: true
+  - claim: 'Recommendation: TLS 1.3 (at least 1.2) on internal links, mTLS optional'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon strongly recommends reviewing all internal systems, and introducing TLS v1.3 (or at least v1.2) where possible.
+    verbatim_ok: true
+  - claim: 'Recommendation: containerised Zammad would have prevented the root step (it relies on killing the zammad process via systemd); microVM architecture preferred'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: using a containerised version of Zammad would have fully prevented the privilege escalation vector
+    verbatim_ok: true
+  - claim: 'Recommendation: honeytokens, e.g. a fresh fake ticket every 24 h with a fake reset link, one network honeypot per subnet'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon recommends installing one network-based honeypot per subnet, as well as place fake plain-text credentials inside of applications, such as Zammad tickets to provoke attackers to use them.
+    verbatim_ok: true
+  - claim: 'Recommendation: internal network IDS (Suricata, Zeek), IPS considered for agentic attacks'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: By not only monitoring the systems in the network but also the packets that travel over the network DIVD can gain a better overview of what is happening within an infrastructure.
+    verbatim_ok: true
+  - claim: 'Recommendation: third-party SOC cover for working hours'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon recommends that DIVD members reach out to their employers directly to see if any of them are open to facilitate (partial) SOC monitoring for working hours.
+    verbatim_ok: true
+  - claim: 'Recommendation: do not run the incident on possibly compromised tools (Slack, Workspace, internal hosts)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Merlon recommends in future investigations to not make use of possibly-compromised channels of communication to discuss sensitive details about the attack.
+    verbatim_ok: true
+  - claim: 'NVISO recommendation: restrict third-party OAuth app permissions in the workspace instead of ''No app configuration'''
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 'Restrict OAuth Third - Party App Permissions: Enforce strict OAuth application controls within Google Workspace'
+    verbatim_ok: true
+  - claim: 'NVISO recommendation: rotate OAuth client secrets; verify identity-level remediation'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 'Rotate OAuth Secrets: R otate the client secrets for Zammad OAuth applications'
+    verbatim_ok: true
+  - claim: 'NVISO recommendation: 90-day log retention and central application logging'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Enforce a 90 - Day Retention Standard
+    verbatim_ok: true
+  - claim: NVISO found Firezone VPN hosts two to three years behind the release line
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: leaving both hosts two to three years behind the vendor release line and without the security fixes published since.
+    verbatim_ok: true
+  - claim: 'Report: AI use in the investigation and its error rate (GLM-5.3, hallucination, humans verified)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: all used AI models still had the tendency to hallucinate, mix-up data sources, or cite other agent’s findings as fact despite being completely fabricated
+    verbatim_ok: true
+  - claim: 'Report-internal timing flag: Figure 1 puts the hosting-provider IMAP breach at 21:19:53, the body and Conclusions put the first successful IMAP login at 23:24:00'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 2026-09-21T21:19:53Z Credential Access Attacker successfully breaches DIVD’s BIT imap account
+    verbatim_ok: true
+  - claim: 'Report body: first observed successful IMAP login 23:24:00 on 21 Sep'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: login to the mailbox can be seen on Sep 21st 2026 at 23:24:00 UTC
+    verbatim_ok: true
+  - claim: Report characterises the ARTEX repository as taken down by GitHub (GTIG says by its creator; Macau Business says converted to closed source)
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: which has since been taken down by GitHub for it’s involvement in breaching South Korean financial institutions
+    verbatim_ok: true
+  - claim: 'Timestamp flag: body gives the web-root test-file upload at 19:06:31 UTC, appendix lists the same event at 21:06:29 labelled Z (proxy-log time is +0200 labelled Z)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: the attacker successfully manages to upload a file to disk via Zammad’s package functionality
+    verbatim_ok: true
+  - claim: 'Timestamp flag: appendix timestamp for that file reads 21:06:29 ''Z'''
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: 2026-09-21T21:06:29.000Z zammad104
+    verbatim_ok: true
+  - claim: 'Timestamp flag: proxy log shows local time +0200 for the exfiltration requests; table labels the same second Z'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: '[22/Sep/2026:00:34:11 +0200]'
+    verbatim_ok: true
+  - claim: 'Report-internal flag: root bug described as in the ''Debian package distribution'' while the compromised hosts ran Rocky Linux (RPM family)'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: is a user-to-root privilege escalation bug in the Debian package distribution of Zammad
+    verbatim_ok: true
+  - claim: 'Report host table: the compromised Zammad CSIRT host runs Rocky Linux 8.5'
+    source_url: https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf
+    file: work/2026-11-27T0355Z-intel/fu6/divd_report.txt
+    passage: Rocky Linux 8 . 5 Yes Yes Zammad CSIRT, patient zero
+    verbatim_ok: true
+  delta_vs_entry:
+  - 'CONTRADICTS/QUALIFIES (timing): entry says the first response started 19 hours after the alert. Report and case page: first human pickup 7:20:51 after the alert (03:04:00), CISO/crisis escalation 19:22:51 after the alert (15:06), DIVD''s "MTTR" 19:16:51 (alert to about 15:00), containment 27:40:51 after the alert. Entry should state both.'
+  - 'CONTRADICTS (S4 summary): "foothold of about 26 hours" is Merlon''s executive-summary phrase; breach (19:27:58) to containment (23:24 next day) is 27:56:02 and alert to containment is 27:40:51 (DIVD''s own MTTC); NVISO measures about 39 hours of actor interaction in the cloud (to 08:33 on 09-23). Use the measured intervals or cite the 26 h as Merlon''s claim.'
+  - 'CONTRADICTS/QUALIFIES (AI scope): entry (from DIVD''s case page) says AI agents continued the attack after obtaining root. The report calls the whole intrusion agentic and its own artefacts show automation earlier: marker-tagged probe mails 17:05-18:21 UTC, an OAuth token request at 18:33, the session cookie taken 1.3 s after the admin logged in, all before root at 19:46:59.'
+  - 'CONTRADICTS (mailbox content): entry carries DIVD''s "no mailbox-content compromise observed"; NVISO (embedded in the same PDF) says the attacker used full-mailbox-scope tokens from its own infrastructure, deleted one message, sent spoofing tests, and that mailbox content "must be considered as potentially compromised" (content review was out of scope); tokens were re-minted after network isolation (until 08:33 on 09-23).'
+  - 'CONTRADICTS (S4 summary figures): "3 home addresses" is superseded by DIVD''s overview page (none of the 39 street addresses personal); the report''s 48,928 e-mail addresses are 15,409 unique; "207" includes aliases and functional addresses per DIVD.'
+  - 'QUALIFIES (entry''s credential list): the report lists much more material taken than the GitLab token, Slack key and two OAuth tokens (hosting-provider IMAP password used to log in, Google client secret, PostgreSQL password, Elastic credential, Jira OAuth consumer key, password hashes, session and reset tokens, Zammad users table with password hashes).'
+  - 'QUALIFIES (entry''s "selective" extraction): the report''s high-impact table includes full Zammad user-table dumps with Argon2id hashes; DIVD''s overview says "selective" and is silent on hashes.'
+  - 'OUTDATED (entry''s detection paragraph): "DIVD lists no process or network indicators". The report lists host and network behaviour (package-upload endpoint followed by a custom mailer template and a user-creation POST, setuid shell, conf.d drop-in plus worker kill, text_modules C2, root loop via systemd/cron over a web-served directory, unauthenticated local Elasticsearch queries, ARP-poisoning and PostgreSQL injection with scheduled windows, new admin accounts and API tokens, omniauth initializer edit). The entry can now describe them at behaviour level.'
+  - 'QUALIFIES ("segmentation stopped them"): the report credits segmentation for the limited blast radius but its own chain moved between Zammad, Confluence and Jira inside one web-application VLAN by ARP poisoning, over an unencrypted database link; Merlon asks for intra-VLAN micro-segmentation, and a leftover firewall rule exposed an internal proxy.'
+  - 'NEW (AI numbering link for item A): the report ties the i<number> artefacts to ARTEX intents; NVISO shows the same marker pattern in mail subjects and treats one as an "internal ticket format".'
+  - 'NEW: victim patch level 6.5.2 (2025-09-10); the zero-day affected all 6.5.x so patching 6.5 would not have helped; DEB/RPM affected back to 1.5.0 (2017).'
+  - 'NEW: containment lesson (network isolation does not revoke OAuth refresh tokens), NVISO''s OAuth recommendations, Merlon''s recommendation list (TLS on database links, micro-segmentation, containers/microVMs, honeytokens, internal IDS, working-hours SOC).'
+  - 'NEW (source updates): DIVD case page last modified 2026-11-25 14:10 CET; overview page 2026-11-24 (says it is the last update); report v1.5 dated 2026-11-24 (NVISO final 2026-11-18); entry cites the 2026-11-18 versions.'
+  report_internal_inconsistencies_to_avoid_repeating:
+  - 'Conclusions section 1a says CVE-2026-102490 "abused intended functionality to obtain remote code execution"; sections 6.2 and 11.1-11.2 (and the entry) have it right: CVE-2026-102489 session hijack leads to RCE as zammad, CVE-2026-102490 gives root.'
+  - Executive summary says the attacker "failed to laterally move to any other system" while Jira and Confluence were compromised at application level (not OS level) and a hosting-provider mailbox was logged into.
+  - Figure 1 dates the hosting-provider IMAP breach at 21:19:53; the body and Conclusions say 23:24:00.
+  - 'Appendix exfiltration-table timestamps are local time labelled Z (two hours ahead of UTC): the web-root test upload is 19:06:31 UTC in the body and 21:06:29 "Z" in the table; the proxy log shows +0200. Do not build timelines from the appendix without subtracting two hours.'
+  - Root time is 19:45:59 (attacker log), 19:46:58 (stager) and 19:46:59 (summary and DIVD metric) in different places.
+  - Section 11.2 calls the root bug one in the "Debian package distribution" of Zammad while the compromised hosts run Rocky Linux 8.5 (RPM family); Zammad's advisory covers both DEB and RPM packages, so read it as the packaged builds, not Debian specifically.
+  - NVISO says the last token was minted "around six hours after the client disconnected the network"; its own timeline gives about nine (23:24 to 08:33).
+  - NVISO dates the first token issuance 18:33 on 09-21, before Merlon's session theft (18:53:50) and RCE (19:27:58); the document set does not reconcile this, and NVISO itself notes Google logs cannot separate attacker from legitimate Zammad requests.
+  - Merlon dates the Google password reset 2026-09-25 19:00; NVISO says the client enforced it on 2026-09-24 18:55 and revoked sessions at 20:15.
+  - Merlon says Zammad API keys were revoked in Google Cloud on 09-22 at 21:49, yet NVISO sees token issuance on 09-23 08:33 with previously exfiltrated secrets.
+  - Merlon's closing words call detect and respond medians "excellent"; DIVD's case page says "plenty of room for improvement"; Merlon's own recommendation 13.2.3 says volunteer response time is not always at the desired level.
+  verdict: 'Worth a changelog record on the Zammad entry: replace the single "19 hours" sentence with the measured intervals (7 h 21 min to first look, 19 h 23 min to CISO/crisis escalation, 27 h 41 min to containment), do not carry "about 26 hours" or "3 home addresses", add the behaviour-level chain and persistence (including the offline-Gmail-scope change that captured nothing), qualify the mailbox-content statement with NVISO and add the OAuth-survives-isolation lesson; the ARTEX basis (volume, documentation, artefact names, intent numbering) belongs there and as a one-line cross-reference on the ARTEX entry.'
+passage_verification:
+  method: each passage whitespace-collapsed and tested as a contiguous substring of the whitespace-collapsed saved body named in its file field (PDF text kept verbatim, including extraction spacing)
+  item_A_total: 82
+  item_A_misses: 0
+  item_B_total: 123
+  item_B_misses: 0
+  total: 205
+  misses: 0
+no_iocs_note: No hashes, IP addresses, attacker domains, account e-mail addresses or script bodies are carried; artefact-name patterns (artex- prefix, i<number>) are behaviour-level markers that both Wiz and the DIVD report publish as detection anchors.

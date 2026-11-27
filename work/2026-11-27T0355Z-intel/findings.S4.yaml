@@ -1,0 +1,291 @@
+# work/2026-11-27T0355Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-11-27T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-27T03:57:57Z
+ended_at: 2026-11-27T04:20:27Z
+duration_seconds: 1350
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 31
+  bridge_fetches: 62
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "DIVD publishes the forensic report on its own September breach: two Zammad zero-days, ARP-poisoning lateral movement to Jira and Confluence, 990 attacker scripts, about 26 hours of foothold"
+    sources:
+      - { url: "https://csirt.divd.nl/2026/11/25/full-disclosure-our-hack/", publisher: "DIVD CSIRT", date: "2026-11-25", role: "primary" }
+      - { url: "https://csirt.divd.nl/cases/DIVD-2026-00014/full_disclosure/", publisher: "DIVD CSIRT", date: "2026-11-25", role: "primary" }
+      - { url: "https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf", publisher: "Merlon Security (forensic report for DIVD, v1.5)", date: "2026-11-24", role: "primary" }
+    discovery_trace: "first seen at: divd-csirt, URL https://csirt.divd.nl/feed.xml (2026-11-25 post 'Full disclosure, especially when it is us') → primary: DIVD case page, URL https://csirt.divd.nl/cases/DIVD-2026-00014/full_disclosure/ → primary: Merlon Security forensic report PDF, URL https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf (read in full with tools/fetch_source.py pdf, 209 pages)"
+    summary: |
+      On 2026-11-25 DIVD published the full forensic report (Merlon Security, v1.5 dated 2026-11-24, with NVISO covering Google Workspace) on the breach it first announced on 2026-09-24. The report says the attacker, likely using the open-source agentic framework ARTEX (an assessment resting on tool-name artefacts and the volume of documented scripts, not on attribution to a named actor), first probed the perimeter on 2026-09-21 at 07:40 UTC, stole an administrator's Zammad session at 18:53 UTC through CVE-2026-102489, reached remote code execution by uploading a crafted Zammad package that wrote a malicious Ruby e-mail template which an e-mail login-link request then executed, and became root through CVE-2026-102490 (Merlon says the root step relies on killing the zammad process through systemd, so a containerised Zammad would not have been exposed). Both Zammad servers ran 6.5.2 of 2025-09-10, which Merlon calls outdated for an internet-facing service. From the helpdesk host the attacker sniffed traffic, then ran scheduled ARP poisoning (inside Dutch working hours, with real MACs restored at the end of each window) to sit between Confluence and its unencrypted PostgreSQL link, learned the schema for about six hours, and injected a forged remember-me style session token for the Confluence administrator straight into the database; the same technique then opened Jira. Probes from the helpdesk host through an internal HTTP proxy toward GitLab, vSphere and Proxmox failed; a firewall rule left from an earlier migration had allowed that proxy path. Persistence was an extra admin account and API tokens inside Zammad, a systemd unit and a cron.d entry, and a change to Zammad's Google OAuth settings to request offline Gmail scope, which depended on user consent and captured no token; Zammad-held OAuth tokens for two shared mailboxes were used to send test mails, and cleartext IMAP credentials at the hosting provider, one GitLab personal access token and one send-only Slack bot key were also taken. The attacker dropped 990 custom Python, Ruby and Bash scripts (3,259 output files) into the temp directory and the Zammad public web root, scripts that carry LLM-style commentary. DIVD's IDS flagged the reverse shell at 19:43 UTC on 2026-09-21, a volunteer first responded at 03:04 UTC the next day, the CISO was informed at 15:06 UTC, and the network was isolated at 23:24 UTC, a foothold the report puts at about 26 hours; ARP spoofing also broke the out-of-band VPN the team tried to use. Exfiltration was 2,806 files through the reverse proxy and about 41,000 ticket titles through the Zammad API: 4,121 e-mail addresses, 34 phone numbers and 3 home addresses, 207 of the addresses belonging to DIVD members, no Dutch citizen service numbers, and only old CNA-related mail threads, none inside the 90-day disclosure window. Merlon's recommendations are patching internet-facing services, VPN or WAF in front of them, TLS on internal database links, micro-segmentation, containers or microVMs, honeytokens such as fake tickets with password-reset links, internal network IDS, third-party SOC coverage for working hours, and not running the incident on possibly compromised tools such as Slack.
+    region_nexus: "netherlands (DIVD); transferable to DACH: Zammad is widely deployed as a public-sector helpdesk, and the lateral-movement and detection-latency lessons are platform-neutral"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-102489, CVE-2026-102490]
+    techniques: [T1190, T1068, T1539, T1550.004, T1557.002, T1040, T1543.002, T1053.003, T1528, T1098, T1136, T1078, T1213, T1059.004, T1059.006, T1070.004]
+    affected_products: ["Zammad", "Atlassian Confluence", "Atlassian Jira"]
+    entity_keys: ["tool:artex", "product:zammad"]
+    new_entities:
+      - { key: "incident:divd-csirt-network-breach-2026-09", type: incident, name: "DIVD CSIRT network breach (September 2026)", aliases: ["DIVD-2026-00014", "Project Fazant"], summary: "Breach of the Dutch vulnerability-disclosure CSIRT DIVD from 2026-09-21: two Zammad zero-days (CVE-2026-102489, CVE-2026-102490), ARP-poisoning lateral movement to Jira and Confluence, probably driven by ARTEX; contained after about 26 hours; full forensic report published 2026-11-25 (DIVD; Merlon Security)." }
+    relation_suggestions:
+      - { subject: "incident:divd-csirt-network-breach-2026-09", object: "tool:artex", basis: "Merlon Security forensic report for DIVD: the attacker was 'likely using the open-source agentic attack framework ARTEX' (DIVD / Merlon, 2026-11-24)" }
+      - { subject: "incident:divd-csirt-network-breach-2026-09", object: "product:zammad", basis: "DIVD / Merlon: initial access and root through two Zammad zero-days on version 6.5.2 (DIVD / Merlon, 2026-11-24)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-10-02/zammad-cve-2026-102489-102490-exploited-divd-breach"
+    evidence:
+      - quote: "The attack was contained on Sep 22nd 2026 at 23:24 UTC, meaning the attacker had a foothold in the network for around 26 hours."
+        attribution: "Merlon Security (forensic report for DIVD, v1.5)"
+        source_url: "https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf"
+      - quote: "The breach involved the use of two separate zero-day exploits, exploited by an attacker likely using the open-source agentic attack framework ARTEX"
+        attribution: "Merlon Security (forensic report for DIVD, v1.5)"
+        source_url: "https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf"
+      - quote: "the attacker was observed using ARP spoofing attacks, resulting in a successful MITM attack on the PostgreSQL servers of Jira and Confluence"
+        attribution: "Merlon Security (forensic report for DIVD, v1.5)"
+        source_url: "https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf"
+      - quote: "Had the communications between these servers not been unencrypted, the attacker would not have been able to inject a custom session token"
+        attribution: "Merlon Security (forensic report for DIVD, v1.5)"
+        source_url: "https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf"
+      - quote: "a total of 990 custom written Python, Ruby and Bash scripts were dropped to disk"
+        attribution: "Merlon Security (forensic report for DIVD, v1.5)"
+        source_url: "https://csirt.divd.nl/downloads/DIVD-2026-00014/DIVD-2026-00014-forensics-report.pdf"
+    extended_notes: |
+      Delta against the covered entry (which carries the exploit chain, KEV listing and patch cadence): the forensic report is new, in-window (published 2026-11-25) and first-party. What it adds that a defender can use: (1) the post-exploitation chain after the Zammad root shell is entirely intra-subnet L2 abuse, so a patched Zammad does not protect a flat or lightly segmented network; (2) detection latency, not detection, was the failure (IDS alert at 19:43 UTC, first human response 03:04 UTC next day, CISO about 19 hours after the alert; DIVD relies on volunteers without out-of-hours cover); (3) hunt hooks by telemetry class: Zammad access/audit logs (admin session used from a second source right after an admin sign-in, package upload, e-mail-based login-link request, new API tokens, new admin accounts, edits to the OAuth/SSO initializer), host process lineage and file integrity (zammad-owned shell/Ruby/Python spawned from the temp directory or the web root, new systemd units and /etc/cron.d files), L2 telemetry (gratuitous or duplicate ARP replies for gateway and database addresses, ARP bursts in fixed daily windows, DAI / port-security / IDS such as Suricata or Zeek on east-west traffic), unencrypted database sessions from unexpected clients, helpdesk-host connections to the internal proxy and to vSphere, Proxmox, GitLab; (4) identity: OAuth/XOAUTH2 token use for service mailboxes from unexpected source IPs, IMAP logins to the hosting provider from unexpected IPs; (5) hardening levers: TLS (or mTLS) on Confluence/Jira-to-PostgreSQL links, deny-by-default micro-segmentation even inside one VLAN, containerised or microVM deployment, honey tickets with fake reset links. The report itself discusses AI use: Merlon used a privately hosted GLM-5.3 for parsing attacker output inside sandboxes and says the models hallucinated and mixed up sources, so every claim was human-verified. No IOCs carried here by design (the report publishes account names, paths and addresses; they stay in the primary).
+      Entry-routing note for the composer: this finding is an incident, but the covered entry is typed vulnerability and already describes the DIVD breach; a changelog record there (title/headline unchanged, summary + body + sources + evidence + sourcing_note) is the routing the dedup rule implies. If the composer prefers a standalone incident entry it would need a `references[]` link to the Zammad entry because of the shared CVEs. The ARTEX entry (2026-10-22) could also take a one-line cross-reference. Suggested Admiralty: A1 for the breach facts (victim plus independent forensic firm plus NCSC-NL's earlier advisory), with the ARTEX attribution carried as the report's assessment.
+
+  # ------------------------------------------------------------------ 2
+  - title: "Planet IC, a municipal IT service provider in Mecklenburg-Vorpommern, confirms unauthorised access to data-centre servers on 21 November: city and municipal websites offline since 25 November, WEMAG customer-portal data possibly reached"
+    sources:
+      - { url: "https://www.wemag.com/aktuelles-presse/wemag-unternehmensgruppe-informiert-ueber-cyberangriff-auf-hosting-dienstleister", publisher: "WEMAG-Unternehmensgruppe (customer statement)", date: "2026-11-25", role: "primary" }
+      - { url: "https://www.nordkurier.de/regional/mecklenburg-vorpommern/hacker-legen-stadt-webseiten-lahm-was-steckt-hinter-dem-cyberangriff-5039267", publisher: "Nordkurier (dpa), quoting Planet IC's e-mail", date: "2026-11-26", role: "primary" }
+      - { url: "https://www.nordkurier.de/regional/mecklenburg-vorpommern/hackerangriff-seite-von-nrwbank-vorsorglich-abgeschaltet-5040197", publisher: "Nordkurier (dpa)", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://www.nordkurier.de/regional/neustrelitz/neustrelitz-und-umland/homepage-des-amtes-neustrelitz-land-nach-hackerangriff-offline-5040349", publisher: "Nordkurier", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://www.nordkurier.de/regional/schwerin/schwerin/cybervorfall-in-mv-internetseiten-nicht-erreichbar-kundendaten-in-gefahr-5038094", publisher: "Nordkurier (dpa)", date: "2026-11-25", role: "corroborating" }
+      - { url: "https://www.ad-hoc-news.de/wissenschaft/hackerangriff-in-schwerin-auch-drei-stadtverwaltungen-offline/70558574", publisher: "ad-hoc-news.de (boerse-global.de)", date: "2026-11-26", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Cyberangriff Stadtverwaltung Landkreis Verwaltung IT lahmgelegt 26. November 2026\") → pivot: Nordkurier dpa article, URL https://www.nordkurier.de/regional/neustrelitz/neustrelitz-und-umland/homepage-des-amtes-neustrelitz-land-nach-hackerangriff-offline-5040349 → pivot: WebSearch (\"Planet IC Hackerangriff kommunaler IT-Dienstleister Mecklenburg-Vorpommern Webseiten offline Schwerin Greifswald\") → Nordkurier dpa pieces (URLs in sources) → primary: WEMAG customer statement, URL https://www.wemag.com/aktuelles-presse/wemag-unternehmensgruppe-informiert-ueber-cyberangriff-auf-hosting-dienstleister; Planet IC's own notice sits on its homepage news box (read via extract, not cited as a homepage)"
+    summary: |
+      Planet IC GmbH, a Schwerin IT systems house and data-centre operator that hosts websites for municipalities in Mecklenburg-Vorpommern, says (per dpa and its own notice) that on the evening of Saturday 2026-11-21 an unauthorised party accessed servers of its data centre; it took several web servers and services off the network and the hosted sites offline as a precaution, engaged external forensic specialists and the state criminal police (LKA MV), and informed the state data-protection officer and the BSI. The visible effect started on Wednesday 2026-11-25: the websites of the state capital Schwerin, Greifswald, Waren an der Müritz, the Amt Rostocker Heide, the municipality of Züssow and the Amt Neustrelitz-Land were unreachable and still were on Thursday morning (Schwerin kept its service portal and appointment booking; Neustrelitz says its own operational applications run undisturbed). The utility WEMAG, a customer of the hosting provider, calls it a cyberattack on a hosting service provider, took its customer portals for residential and small-business customers offline and says the attackers potentially had access to customer data in those portals; the NRW.Bank, the North Rhine-Westphalian development bank, took its website offline as a precaution and says it has no indication of its own involvement or a data outflow. Planet IC gives no access vector, no actor, no duration and no statement on data outflow; no ransomware group has claimed it in the sources read. The transferable point for communal and cantonal administrations is concentration risk: one hosting/CMS provider compromise took down the public web presence of several unrelated administrations and a utility at once, while the administrations' own networks reportedly were not touched.
+    region_nexus: "germany (Mecklenburg-Vorpommern municipalities and a NRW state development bank); DACH public-sector supplier-chain pattern directly transferable to Swiss communes that outsource web hosting"
+    primary_sector_nexus: "direct (municipal administrations via a shared IT provider)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:planet-ic-hosting-provider-cyberattack-2026-11", type: incident, name: "Planet IC hosting-provider cyberattack (November 2026)", aliases: ["PLANET IC GmbH Cybervorfall"], summary: "Unauthorised access on 2026-11-21 to data-centre servers of the Schwerin IT provider Planet IC; hosted websites of several Mecklenburg-Vorpommern city administrations, the NRW.Bank and utility WEMAG went offline from 2026-11-25, WEMAG customer-portal data possibly reached; LKA MV, BSI and the state data-protection officer informed (Planet IC via dpa; WEMAG, 2026-11-25/26)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Nach Bekanntwerden der unbefugten Zugriffe haben wir mehrere Webserver bzw. Dienste sicherheitshalber vom Netz genommen und die darauf gehosteten Webseiten vorsorglich offline gestellt, um Risiken zu minimieren"
+        attribution: "Nordkurier (dpa), quoting Planet IC"
+        source_url: "https://www.nordkurier.de/regional/mecklenburg-vorpommern/hacker-legen-stadt-webseiten-lahm-was-steckt-hinter-dem-cyberangriff-5039267"
+      - quote: "Nach aktuellem Kenntnisstand hatten die Angreifer potenziell Zugriff auf Kundendaten in den Kundenportalen."
+        attribution: "WEMAG-Unternehmensgruppe (customer statement)"
+        source_url: "https://www.wemag.com/aktuelles-presse/wemag-unternehmensgruppe-informiert-ueber-cyberangriff-auf-hosting-dienstleister"
+      - quote: "Für eine Betroffenheit der NRW.Bank gibt es keinerlei Hinweise, insofern auch nicht für einen Datenabfluss"
+        attribution: "Nordkurier (dpa)"
+        source_url: "https://www.nordkurier.de/regional/mecklenburg-vorpommern/hackerangriff-seite-von-nrwbank-vorsorglich-abgeschaltet-5040197"
+    extended_notes: |
+      Gaps stated plainly: the provider names no vector, actor or duration; the number of affected sites varies by outlet (Nordkurier/dpa: Schwerin, Greifswald, Waren; ad-hoc-news adds Amt Rostocker Heide and Züssow; Neustrelitz-Land confirmed separately) and the ad-hoc-news piece is a secondary rewrite of dpa and the Finanz-Szene newsletter; Greifswald and Waren confirmed Planet IC as their provider, Schwerin first described a disruption at an external provider. Defender takeaways: ask hosting/CMS providers (a) whether the customer-facing site shares an environment with anything that authenticates users or holds data, (b) their notification path and clock, and (c) hold a static fallback page procedure (Greifswald prepared an interim page; NRW.Bank stood up a substitute page that kept customer portals reachable). Detection class for customers: DNS/CDN and uptime monitoring on the public site cannot see a provider-side compromise; the signal is the provider's own notification, so contract for it. Post-incident check for any customer with accounts in a provider-hosted portal: forced password reset where reuse is possible (WEMAG advises it). No IOCs.
+
+  # ------------------------------------------------------------------ 3
+  - title: "FIFA (Zurich) confirms a criminal cyberattack with unauthorised access to personal and business information; the new 'Handsome Boy Hacking Club' claims 12.2 GB from FIFA's Microsoft environment, and sources say the intruders impersonated staff"
+    sources:
+      - { url: "https://therecord.media/fifa-data-breach-limited", publisher: "The Record (Recorded Future News)", date: "2026-11-25", role: "primary" }
+      - { url: "https://www.inside-it.ch/fifa-bestaetigt-ransomware-angriff-20261126", publisher: "Inside IT (FIFA spokesperson to inside-it.ch)", date: "2026-11-26", role: "primary" }
+      - { url: "https://www.insideworldfootball.com/2026/11/27/fifa-hit-by-cyber-attack-personal-and-business-data-stolen/", publisher: "Inside World Football", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://cybersecuritynews.com/fifa-alleged-breach/", publisher: "Cyber Security News", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://www.secure.com/news/fifa-data-breach", publisher: "Secure.com (vendor blog)", date: "2026-11-26", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/feed/ (item 'FIFA says it has been victim of a cyberattack accessing personal and business information', 2026-11-26; per-article fetch 403) → pivot: WebSearch (\"channelnewsasia FIFA says it was victim of cyberattack personal and business information authorities\") → Inside World Football, URL https://www.insideworldfootball.com/2026/11/27/fifa-hit-by-cyber-attack-personal-and-business-data-stolen/ → pivot: The Record, URL https://therecord.media/fifa-data-breach-limited (found via https://therecord.media/feed) → primary statement as quoted by The Record and inside-it.ch, URL https://www.inside-it.ch/fifa-bestaetigt-ransomware-angriff-20261126"
+    summary: |
+      FIFA, headquartered in Zurich and therefore under Swiss data-protection law, told The Record on 2026-11-25 and inside-it.ch on 2026-11-26 that it was the victim of a criminal cyberattack that resulted in unauthorised access to a limited set of personal and business information, and that it is working with the authorities including law enforcement; it declined to say what data left or whether any systems were encrypted. A group calling itself the Handsome Boy Hacking Club (HBHC), which The Record says emerged the week before and about which little is known, claimed more than 12 GB of FIFA data, says it tried to extort FIFA first, and published the files on a cybercrime forum, saying they came from FIFA's Microsoft environment; Cyber Security News dates the X post that relays the claim to 2026-11-21, puts the archive at 12.2 GB, lists claimed contents of identity and immigration documents, executive information, financial and legal records and governance files, and says FIFA has not verified the claim, while a vendor blog (Secure.com) says HBHC added FIFA to its leak site on 2026-11-20 and that a reviewer counted 2,460 files. Inside World Football reports that sources say the intruders got in by impersonating FIFA staff rather than through a failure of systems, and that the material amounts to under 0.1% of FIFA's data; a researcher it quotes says HBHC is not a well-known group and may be a rebrand, and that countdown timers on its other leaks suggest an unpaid ransom. Inside IT's headline calls the group a ransomware gang and the event a ransomware attack, but its own text records that the spokesperson would not comment on encryption, and no source read reports encrypted systems, so this is data theft and extortion unless FIFA says otherwise.
+    region_nexus: "switzerland (Zurich headquarters; subject to the Swiss FADP breach-notification duty to the FDPIC)"
+    primary_sector_nexus: "indirect (private international sports association, not public sector; same impersonation-to-tenant-access pattern applies to cantonal and communal helpdesks)"
+    sector: "sports governing body"
+    cves: []
+    techniques: [T1684.001, T1657]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:handsome-boy-hacking-club", type: actor, name: "Handsome Boy Hacking Club", aliases: ["HBHC"], summary: "Data-extortion group that emerged in the week of 2026-11-16 to 2026-11-22 (The Record); claims FIFA (12.2 GB from a Microsoft environment), Frontier Communications, UCHealth and Smith & Wesson; all claims unverified except FIFA's own confirmation of unauthorised access (The Record; Inside World Football; Cyber Security News, 2026-11-25/26)." }
+      - { key: "incident:fifa-hbhc-data-theft-2026-11", type: incident, name: "FIFA data theft claimed by HBHC (November 2026)", aliases: [], summary: "FIFA confirmed unauthorised access to a limited set of personal and business information (2026-11-25); HBHC claims 12.2 GB from FIFA's Microsoft environment; sources say the intrusion used staff impersonation (The Record; Inside World Football)." }
+    relation_suggestions:
+      - { subject: "incident:fifa-hbhc-data-theft-2026-11", object: "actor:handsome-boy-hacking-club", basis: "The Record and Inside IT: HBHC claimed the FIFA attack and published the data; FIFA confirmed unauthorised access but did not name the actor (The Record, 2026-11-25)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "unauthorised access to a limited set of personal and business information"
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/fifa-data-breach-limited"
+      - quote: "Sources say the intruders broke in by impersonating FIFA staff rather than through any failure of its systems or technology."
+        attribution: "Inside World Football"
+        source_url: "https://www.insideworldfootball.com/2026/11/27/fifa-hit-by-cyber-attack-personal-and-business-data-stolen/"
+      - quote: "Angaben zu der Art der abgeflossenen Daten oder einer allfälligen Verschlüsselung von Computersystemen macht der Sprecher nicht."
+        attribution: "Inside IT (FIFA spokesperson to inside-it.ch)"
+        source_url: "https://www.inside-it.ch/fifa-bestaetigt-ransomware-angriff-20261126"
+    extended_notes: |
+      Why borderline: the victim is Swiss-headquartered and confirmed the incident itself (earlier fires dropped only the unconfirmed leak-site claim, 2026-11-22), but it is a private association with no public-sector link and the mechanism rests on anonymous sources relayed by one outlet (The Athletic via Inside World Football and a vendor blog). Transferable behaviour for Swiss public-sector helpdesks: staff impersonation leading to a working Microsoft 365 identity, then bulk reads/downloads of shared folders holding passport and visa scans (Secure.com relays that DarknetSearch counted 2,460 files including 169 labelled passports; low-reliability, not carried as fact). Detection class: Microsoft 365 sign-in and audit logs (new device or session for a user with a recent password-reset or MFA-reset helpdesk ticket, bulk SharePoint/OneDrive downloads, mailbox rules); control: out-of-band callback verification on reset and access requests. Contradiction to surface: Inside IT says 'Ransomware-Angriff'; The Record, Cyber Security News and Inside World Football describe data theft and extortion without encryption. LaLiga's separate 2026-11-23 fan-platform theft is not linked to FIFA by any source.
+
+  # ------------------------------------------------------------------ 4
+  - title: "US intelligence-agency intrusion: CNN reports four sources saying a CIA/ODNI open-source analysis system was hacked with NGA also affected and early indications pointing to China; Nextgov says ARTEX is believed used, with the Cyber Defense Command also hit"
+    sources:
+      - { url: "https://www.nextgov.com/cybersecurity/2026/11/cia-odni-unclassified-intelligence-system-hacked/417438/", publisher: "Nextgov/FCW", date: "2026-11-24", role: "primary" }
+      - { url: "https://www.cnn.com/2026/11/24/politics/cia-odni-hack-unclassified-information", publisher: "CNN", date: "2026-11-24", role: "corroborating" }
+      - { url: "https://cyberscoop.com/cia-odni-osint-data-breach/", publisher: "CyberScoop", date: "2026-11-24", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hackers-reportedly-breached-cia-intelligence-analysis-system/", publisher: "BleepingComputer", date: "2026-11-25", role: "corroborating" }
+      - { url: "https://piyolog.hatenadiary.jp/entry/2026/11/25/120114", publisher: "Piyolog (source index of ten outlets, in Japanese)", date: "2026-11-25", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches-net, URL https://databreaches.net/feed/ (item 'CIA system breached in latest cyberattack targeting US intelligence agencies', 2026-11-25) → pivot: piyolog, URL https://piyolog.hatenadiary.jp/entry/2026/11/25/120114 (lists NYT, Reuters, CNN, WSJ, AP, Bloomberg, Nextgov, CyberScoop, Fox) → primary reporting fetched: Nextgov URL https://www.nextgov.com/cybersecurity/2026/11/cia-odni-unclassified-intelligence-system-hacked/417438/, CNN URL https://www.cnn.com/2026/11/24/politics/cia-odni-hack-unclassified-information, CyberScoop URL https://cyberscoop.com/cia-odni-osint-data-breach/ (NYT and Reuters pages returned only a CAPTCHA shell)"
+    summary: |
+      Every account traces to anonymous officials; no agency has issued a statement beyond an ODNI official's remark that critical capabilities and classified systems were not disrupted, and the CIA declined to comment. The New York Times first reported on 2026-11-24 that the CIA and ODNI discovered a breach of an unclassified system used to analyse open-source and commercially available information; CNN, citing four sources, says two of them said a Defense Department agency was also affected, one naming the National Geospatial-Intelligence Agency, and that early indications suggest the hack may have originated in China without it being clear whether the Chinese government was involved. Nextgov, citing two people familiar, says ARTEX is believed to have been used in the breach, that hackers also recently used ARTEX in a low-impact intrusion into the Defense Department's Cyber Defense Command (DCDC), that it is unclear who carried out the CIA/ODNI breach or whether information was taken, and that the DCDC intrusion may or may not coincide with it. Neither outlet states an access vector, a vulnerability, a dwell time or what was read. This is the second government intrusion in a month attributed to the same agentic framework in anonymous reporting; the ARTEX entry already carries the CIA/ODNI/DCDC reporting from Nextgov and The Record, so the delta here is CNN's four-source count, the NGA, the China indicator and the officials' non-statement.
+    region_nexus: "united states; relevant to Swiss federal defenders only as a data point on ARTEX being used against government networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["tool:artex"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    borderline: true
+    borderline_reason: "US government target with anonymous sourcing, no vector, no actor beyond 'early indications' of China; the ARTEX entry already carries the ARTEX link. Worth at most a changelog record with CNN's China indicator, the NGA and the officials' non-statement."
+    evidence:
+      - quote: "suffered an apparent hack affecting unclassified information, four sources familiar with the matter told CNN"
+        attribution: "CNN"
+        source_url: "https://www.cnn.com/2026/11/24/politics/cia-odni-hack-unclassified-information"
+      - quote: "Early indications suggest the hack may have originated in China"
+        attribution: "CNN"
+        source_url: "https://www.cnn.com/2026/11/24/politics/cia-odni-hack-unclassified-information"
+      - quote: "unclear who carried it out or if any information was pilfered"
+        attribution: "Nextgov/FCW"
+        source_url: "https://www.nextgov.com/cybersecurity/2026/11/cia-odni-unclassified-intelligence-system-hacked/417438/"
+    extended_notes: |
+      Same-window US federal reporting that is NOT linked to this incident by any source and fails the incident floor on its own: FinCEN (Treasury) disclosed on 2026-11-24/25 'unauthorized access to a limited subset of its systems', took some systems offline, and issued filing-deadline relief (order FIN-2026-R002) for institutions using its automated batch channel; no vector, actor, claim or dwell time stated (Nextgov, The Hacker News 2026-11-25). FBI NCIC intrusion acknowledged by the US president on 2026-11-22; scope unclear; state and local police users had received no formal communication (Nextgov 2026-11-23). USDA took applications offline after a security incident (Nextgov, referenced, not fetched). Nextgov, CyberScoop and BleepingComputer all state officials have not linked these. Microsoft's 2026-11-25 ARTEX defender guide (already cited in the ARTEX entry) says the most durable ARTEX signal is behavioural: bursts of varied requests and retries at machine speed from a single source. Detection class remains web/app and identity logs at burst rate; no new mechanism here.
+
+  # ------------------------------------------------------------------ 5
+  - title: "Planzer (Swiss logistics) reports a data theft: shipment data submitted by customers through interfaces and the customer portal, encrypted portal credentials, BACS and FDPIC informed; Digitec Galaxus confirms its order shipment data is among it"
+    sources:
+      - { url: "https://www.inside-it.ch/planzer-meldet-datendiebstahl-20261126", publisher: "Inside IT", date: "2026-11-26", role: "primary" }
+      - { url: "https://www.swisscybersecurity.net/news/2026-11-26/cyberkriminelle-greifen-daten-von-planzer-ab", publisher: "SwissCybersecurity.net", date: "2026-11-26", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Schweiz Cyberangriff Datenabfluss Ransomware Gemeinde Spital Verwaltung diese Woche\") → pivot: Inside IT, URL https://www.inside-it.ch/planzer-meldet-datendiebstahl-20261126 → pivot: SwissCybersecurity.net, URL https://www.swisscybersecurity.net/news/2026-11-26/cyberkriminelle-greifen-daten-von-planzer-ab; Planzer's own notice and Digitec Galaxus's own notice were not reachable by search or listed with a URL in either article, so both outlets relay the same two company statements"
+    summary: |
+      Planzer, a Swiss family-owned transport company, says cybercriminals took data on its customers' transport orders: shipment data that customers transmitted through interfaces or the Planzer customer portal, plus access credentials to the customer portal in encrypted form; the parcel-recipient portal's credentials and finance and payment data were not affected. The company says unusual activity in its IT systems led to the discovery, internal and external forensic specialists are examining it, it informed the BACS and the FDPIC and will file a criminal complaint. Digitec Galaxus (Migros) confirms in its own notice that shipment data for its orders was taken, naming parcel numbers, names, delivery addresses, e-mail addresses and in part phone numbers, the newest dating from early 2023, and says its own systems were not affected. No vector, actor or extortion claim is stated in either article. Both outlets rewrite the same two company statements, so this is effectively one source with a second outlet's confirmation of the Digitec Galaxus notice; both warn of phishing built from the data.
+    region_nexus: "switzerland"
+    primary_sector_nexus: "indirect (private logistics supplier; its customers may include public bodies, not stated)"
+    sector: "transport-logistics"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss victim-confirmed incident with BACS/FDPIC notified, but a private supplier with no vector, no actor and no stated public-sector customer; earlier fires dropped comparable Swiss private incidents (Erowa, Gleis D) on the same grounds. Return only if the main agent weights Swiss supplier-data thefts above the no-vector floor."
+    evidence:
+      - quote: "Auch Zugangsdaten zum Kundenportal selbst seien entwendet worden, allerdings in verschlüsselter Form."
+        attribution: "Inside IT"
+        source_url: "https://www.inside-it.ch/planzer-meldet-datendiebstahl-20261126"
+      - quote: "Das Unternehmen informierte das Bundesamt für Cybersicherheit (BACS) sowie den Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) und erstattete Strafanzeige."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-11-26/cyberkriminelle-greifen-daten-von-planzer-ab"
+    extended_notes: |
+      Transferable behaviour: a logistics provider holds delivery records its customers push via API or portal, so a theft at the provider exposes the customer's recipients without touching the customer; the customer notice says so explicitly. A public body that ships through a logistics provider (evidence, medical goods, ballot material) should ask the provider the same scoping question. Not covered elsewhere in the store (grep of entries and runs for Planzer is empty).
+
+  # ------------------------------------------------------------------ 6
+  - title: "Tokyo Metropolitan Government's 'Akachan First' voucher site and Nakano ward's first-birthday programme: contractor Linbell's online store breached on 11 November, digital QUO Card Pay codes unusable or drained for about 12,000 people, a sub-contractor's exchange codes leaked in Nakano"
+    sources:
+      - { url: "https://www.metro.tokyo.lg.jp/information/press/2026/11/2026112507", publisher: "Tokyo Metropolitan Government (Bureau of Social Welfare press release)", date: "2026-11-25", role: "primary" }
+      - { url: "https://www.city.tokyo-nakano.lg.jp/kusei/public/houdou/2026/press261126.html", publisher: "Nakano City", date: "2026-11-26", role: "primary" }
+      - { url: "https://piyolog.hatenadiary.jp/entry/2026/11/27/004031", publisher: "Piyolog (timeline compiled from the Tokyo, Nakano and Linbell notices and press, in Japanese)", date: "2026-11-27", role: "corroborating" }
+    discovery_trace: "first seen at: piyolog, URL https://piyolog.hatenadiary.jp/ (entry 2026-11-27 'Tokyo QUO Card Pay unusable after Akachan First') → pivot: entry URL https://piyolog.hatenadiary.jp/entry/2026/11/27/004031 → primary: Tokyo press release, URL https://www.metro.tokyo.lg.jp/information/press/2026/11/2026112507 → primary: Nakano City notice, URL https://www.city.tokyo-nakano.lg.jp/kusei/public/houdou/2026/press261126.html (Linbell's own release PDFs returned HTTP 403 on every transport tried)"
+    summary: |
+      Tokyo's welfare bureau says it stopped the exchange site of its 'Akachan First' childbirth and childcare support programme at 21:00 on 2026-11-17 after learning of external unauthorised access to the server of its contractor Linbell, and announced the closure on 2026-11-19. On 2026-11-25 it reported that digital QUO Card Pay gift codes obtained through the programme since 2025-12-01 could not be used or had lost balance, found after call-centre complaints and confirmed by the contractor; it says personal-data viewing or leakage and other digital gifts are not confirmed, that the cause is not in the card issuer's system, and that the effect of the 2026-11-19 server intrusion is still under investigation. Piyolog's compilation of press reports adds about 12,000 people and about 90 million yen of codes reduced or unusable, 994 phone complaints by 2026-11-24 starting 2026-11-13, and Linbell's own 2026-11-20 release that its online store was accessed without authorisation on 2026-11-11 with up to about 720,000 member and 1.77 million non-member records possibly leaked; those figures could not be read from Linbell's PDF and rest on that compilation. Separately Nakano ward said on 2026-11-26 that exchange codes for its 'Nakapay' points in its first-birthday support programme leaked (found 2026-11-16) from Linbell, which the programme contractor had sub-contracted, that 5,134 applications since 2024-04 could have exposed applicant and child names, birth dates, addresses, phone numbers, e-mail addresses, survey answers and exchange history, and that Linbell is checking whether this is linked to the 2026-11-11 intrusion. Tokyo and Nakano both say a link between the intrusion and the drained codes is not established.
+    region_nexus: "japan (no Swiss nexus); transferable to Swiss cantonal and communal benefit or voucher programmes run by contractors"
+    primary_sector_nexus: "indirect (municipal programmes outsourced to a contractor and sub-contractor)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1199]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:linbell-tokyo-nakano-voucher-platform-2026-11", type: incident, name: "Linbell voucher-platform breach affecting Tokyo and Nakano programmes (November 2026)", aliases: ["リンベル不正アクセス", "Akachan First QUO Card Pay incident"], summary: "Contractor Linbell's online store was accessed without authorisation on 2026-11-11; Tokyo's Akachan First exchange site was closed from 2026-11-17 and QUO Card Pay gift codes became unusable or lost balance for about 12,000 people; Nakano ward reported leaked exchange codes and a possible leak of 5,134 applications on 2026-11-26 (Tokyo Metropolitan Government, 2026-11-25; Nakano City, 2026-11-26)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Two municipal-government primaries on a contractor and sub-contractor chain, but Japan, no Swiss nexus, and the cause of the drained gift codes is explicitly not yet tied to the intrusion; the Hokkaido municipal-subcontractor entry was published as routine on the same transferable lesson."
+    evidence:
+      - quote: "QUOカードPayが使用ができない事象や残高が減った事象が発生していることを確認しました。"
+        attribution: "Tokyo Metropolitan Government (Bureau of Social Welfare press release)"
+        source_url: "https://www.metro.tokyo.lg.jp/information/press/2026/11/2026112507"
+      - quote: "2026年11月16日（月曜）、本事業における電子ギフトの一つであるナカペイポイントの交換用コードの流出が判明しました。"
+        attribution: "Nakano City"
+        source_url: "https://www.city.tokyo-nakano.lg.jp/kusei/public/houdou/2026/press261126.html"
+    extended_notes: |
+      Gloss: Tokyo says QUO Card Pay could not be used or balances fell (confirmed by the contractor after call-centre complaints); Nakano says exchange codes for its Nakapay points were found leaked on 2026-11-16. Transferable behaviour: digital gift or voucher codes issued by a contractor on behalf of a public body are bearer instruments, so a contractor-side compromise converts directly into money loss without personal-data theft; detection sits with the contractor (code-issuance and redemption logs, redemption before first delivery) and with call-centre complaint trends, which was how Tokyo found it (complaints began 2026-11-13, five days before the site was stopped). Not asserting causality: both governments say it is not established.
+
+borderline_drops:
+  - "FinCEN (Treasury) intrusion, FBI NCIC intrusion, USDA outage-and-incident (S4): US federal, no vector, no actor, no claim, officials have not linked them; carried as context in the CIA/ODNI item's extended_notes only"
+  - "Flight Centre Travel Group third-party lodging-platform incident (S4): Australian travel retailer, private, no vector, no Swiss or public-sector nexus"
+  - "Preinstalled Keenadu Android malware, 220,000+ devices (S4): Kaspersky research item, not an incident; S3 territory"
+  - "Inception / Okta O-UNC-053 and ShinyHunters-account posts (S4): US victims, no public-sector or Swiss victim; dropped twice already on 2026-11-24 and 2026-11-25"
+  - "Gingko Bioworks FulcrumSec leak-site claim (S4): US biotech, no nexus"
+  - "LaLiga fan-platform data theft (2026-11-14 to 16, statement 2026-11-23) (S4): Spanish sport league, no nexus"
+  - "Deichmann / Dosenbach / Ochsner Sport customer-data incident (S4): Swiss and German private retail, no vector, no public-sector link (hacksnack.ch and inside-it.ch teasers only)"
+  - "ICO reprimand of the Home Office over inaccurate border-platform data (Helios), 2026-11-25 (S4): data-accuracy enforcement, not an incident"
+  - "CNIL ten sanctions on local authorities (announced 2026-11-09) (S4): already dropped on 2026-11-11, no new batch in window"
+  - "HFR (Fribourg cantonal hospital) cancer-diagnostics supplier exposure (S4): the HFR notice is dated 2026-09-10 (CHUV and HUG notices 2026-09-08), outside the window and part of the Abbott/Exact Sciences vishing case already covered (2026-07-18 entry)"
+  - "Niederösterreich municipal phishing (Höflein, Prellenkirchen, Hainburg), Heute 2026-11-21 (S4): outside the 26 h window; no in-window development found"
+  - "Neuried (Baden-Württemberg) municipal ransomware: dropped on 2026-11-19 and 2026-11-20; no new development found in window"
+  - "Tokyo-adjacent Cairn zero-day (Piyolog 2026-11-24): already covered by the MONAI Label entry of 2026-11-22"
+  - "1Password GitHub-account compromise (Piyolog 2026-11-26, databreaches 2026-11-25): already covered by the 2026-11-26 entry; no in-window delta"
+  - "Basel-Landschaft, USI Lugano, BundID, Danfoss/Copeland, Azure APIM Classic: re-checked by search, no in-window development beyond what the stored entries already carry"
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "profile configures no supplier watchlist; the sweep is a no-op. Supplier-chain items found on the general rules: Planet IC (item 2), Planzer (item 5), Linbell (item 6)."
+
+candidate_sources:
+  - id: nordkurier-mv
+    publisher: "Nordkurier (regional daily, Mecklenburg-Vorpommern; dpa feed)"
+    url: "https://www.nordkurier.de/regional/mecklenburg-vorpommern"
+    category: news
+    why: "Reported the Planet IC municipal IT-provider compromise (2026-11-25/26) with the provider's own e-mail quoted and named municipalities; every article read cleanly with extract. Regional German press is where municipal IT incidents first surface in the DACH area."
+  - id: hacksnack-ch
+    publisher: "hacksnack.ch (Swiss SME-oriented security digest)"
+    url: "https://hacksnack.ch/"
+    rss_url: "https://hacksnack.ch/feed/"
+    category: news
+    why: "Working RSS feed with dated daily Swiss incident roundups (Planzer, Deichmann/Ochsner Sport, 1Password within hours); derivative of inside-it.ch and similar, so useful as a Swiss discovery index only (reliability C)."
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "Recipe confirmed: `WebFetch https://databreaches.net/feed/` returns the 10 newest items; per-article `WebFetch` returns HTTP 403 as well (as `extract` did on 2026-11-25), so drilling items has to go through the underlying primary, never the databreaches article. No change to the 2026-11-25 recipe note."
+  - source_id: troyhunt
+    reason: "RSS fine; newest item 2026-11-23 (opinion post on breach disclosure), nothing in the 73 h lookback relevant."
+  - source_id: venarix
+    reason: "Bridge `url https://venarix.com/blog` returns the listing; newest dated post 2026-08-24 (the note says 2026-08-10), no in-lookback items; staleness allowance still running."
+  - source_id: reuters-nyt
+    reason: "NYT and Reuters article pages return only a CAPTCHA shell on extract (jina pool exhausted, all keys HTTP 402); the CIA/ODNI story was read from CNN, Nextgov and CyberScoop instead."
+  - source_id: linbell-catalog-gift
+    reason: "https://www.catalog-gift.net/ringbell/*.pdf returns HTTP 403 on the PDF transport (Linbell's own releases for the Tokyo/Nakano incident); figures taken from Tokyo and Nakano notices and the Piyolog compilation."
+  - source_id: websearch-recency
+    reason: "Standard-mode WebSearch returned only 2018 FIFA coverage for a 2026-11-26 incident; extended mode surfaced the in-window articles. Worth noting for later fires: use extended mode for same-day incident discovery."
+
+source_ledger:
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "webfetch:feed (articles 403)", horizon_hours: 29, in_horizon_items: 4, returned: 2, note: "FIFA (item 3) and the CIA/ODNI lead (item 4); Flight Centre, Keenadu and the Thanksgiving post dropped; 1Password and Gingko outside horizon or covered" }
+  - { id: divd-csirt, tier: standard, attempted: true, transport: "feed + extract + pdf", horizon_hours: 73, in_horizon_items: 2, returned: 1, note: "2026-11-25 full-disclosure post and case page; forensic report PDF read in full (item 1, update-of the Zammad entry)" }
+  - { id: piyolog, tier: standard, attempted: true, transport: "url listing + extract", horizon_hours: 73, in_horizon_items: 4, returned: 2, note: "CIA/ODNI (item 4), Tokyo/Nakano Linbell (item 6); 1Password and the Cairn zero-day already covered" }
+  - { id: troyhunt, tier: standard, attempted: true, transport: "feed", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest item 2026-11-23 is outside the horizon and not an incident" }
+  - { id: venarix, tier: standard, attempted: true, transport: "bridge:url", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest dated post 2026-08-24" }

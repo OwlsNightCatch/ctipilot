@@ -1,0 +1,359 @@
+# work/2026-11-27T0355Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-27T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-27T03:57:57Z
+ended_at: 2026-11-27T04:19:08Z
+duration_seconds: 1271
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 9
+  bridge_fetches: 95
+annual_report_check: "No periodic or annual report landed in the window. Seen and out of window: Trellix CyberThreat Report November 2026 (2026-11-04), Google Cloud Security 2027 forecast (2026-11-11), Dragos canary-token AI study (2026-11-19, not periodic)."
+items:
+  # ------------------------------------------------------------------
+  - title: "Numa: an operator's open directory shows an autonomous AI agent breaking into a Ukrainian municipal website platform through a 2021 October CMS flaw, then probing the National Police perimeter for two days while the controls held (Huntback)"
+    sources:
+      - { url: "https://huntback.io/blog/ai-agent-ukraine-police-network-municipal-platform-breach", publisher: "Huntback", date: "2026-11-23", role: "primary" }
+    discovery_trace: "first seen at: huntback, URL https://huntback.io/blog (listing via bridge url; feed https://huntback.io/blog/feed.xml gives the dated list) → primary (no pivot needed): https://huntback.io/blog/ai-agent-ukraine-police-network-municipal-platform-breach (read in full with extract). CVE-2021-32648 KEV status confirmed via bridge cisa-kev in this run (dateAdded 2022-01-18). Two independent searches for a second source (WebSearch 'Huntback AI agent Numa Ukraine National Police October CMS municipal platform gsocket') found none."
+    summary: |
+      Huntback reports that on 2026-11-22 it found a server in Russia with its working directory open to the internet (31,367 files, 9.9 GB) that belongs to an operator running an autonomous agent called Numa against one target after another; the newest job states one goal, a route into the internal network of Ukraine's National Police. By Huntback's reading of the agent's own reports it never got in: source-address allowlists on the police application servers and multi-factor authentication on remote access held through two days of probing (98 labelled probe folders, at least six published vulnerabilities and five VPN protocols tested, a router factory account tried, every door reported closed).
+      On the way the agent compromised a hosting platform for Ukrainian municipal websites. It read a 64.9 GB application log that the web server served outside its deny rules, using HTTP Range requests and keeping only lines that match key and connection-string patterns; it then reset the password of a council administrator on a retired council site left online under an "old" name on October CMS build 471 or earlier, through CVE-2021-32648 (the reset code compared loosely, so a JSON boolean true passes; fixed in build 472 and 1.1.5 in August 2021, on CISA's KEV since 2022-01-18). It created its own backend administrator, ran commands as the web user through the administrator-editable mail template (a Twig list filter given a PHP function name, executed with the editor's Test button), and, as Huntback infers from the agent's own health-check script (the install step is not among the files), kept access through the gsocket client gs-netcat saved as php-fpm7.2 in a hidden folder in the cache directory with a cron autostart, so the server shows no listening port. It took 3.7 GB (documents of up to eleven councils, a 20 MB database export) and built scripts that index the personal data in it. Huntback dates the platform breach to 2026-11-18 from the platform's own database timestamps (administrator record 19:20:17, the agent's own administrator account seven minutes later).
+      The agent signs its work (accounts, files and probe host names carry its name), works around defences with a stealth-driven real browser against the CDN challenge in front of the police sites, a pool of 1,000 SOCKS proxies and rotated Tor circuits, and resolves names itself to slip past a proxy provider's refusal of .gov.ua names. Single source, Huntback, from the operator's own files; no victim or authority statement was found, the notes are in Russian and the server is hosted in Russia.
+    region_nexus: "Target is Ukraine; Switzerland not named. Transferable to Swiss communal and cantonal websites hosted by one supplier on a shared CMS platform, and to police web applications and VPN perimeters."
+    primary_sector_nexus: "direct (transferable): communal website platforms and police perimeters are the constituency's own pattern"
+    sector: "public-sector"
+    cves: [CVE-2021-32648]
+    techniques: [T1595.002, T1190, T1098, T1136, T1505.003, T1219, T1036.005, T1053.003, T1552.001, T1560.001, T1090.002, T1070.004]
+    affected_products: ["October CMS"]
+    entity_keys: ["tool:gsocket"]
+    new_entities:
+      - { key: "tool:numa-agent", type: tool, name: "Numa", aliases: [], summary: "Autonomous offensive agent whose operator left a working directory open; Huntback documents its November 2026 intrusion into a Ukrainian municipal website platform and its probing of Ukraine's National Police perimeter (Huntback, 2026-11-23)." }
+      - { key: "product:october-cms", type: product, name: "October CMS", aliases: [], summary: "PHP content management system (Laravel based); versions before build 472 / 1.1.5 carry the password-reset flaw CVE-2021-32648, on the CISA KEV since 2022-01-18." }
+      - { key: "incident:numa-agent-ukrainian-municipal-platform-2026-11", type: incident, name: "Numa agent breach of a Ukrainian municipal website platform (November 2026)", aliases: [], summary: "Between 2026-11-17 and 2026-11-19 an autonomous agent took 3.7 GB of council documents from a shared hosting platform for Ukrainian municipal websites through CVE-2021-32648 (Huntback, 2026-11-23)." }
+    relation_suggestions:
+      - { subject: "tool:numa-agent", object: "tool:gsocket", basis: "Huntback: the hidden remote-access tool on the breached server is gs-netcat, the gsocket client, saved as php-fpm7.2 (Huntback, 2026-11-23)" }
+      - { subject: "tool:numa-agent", object: "product:october-cms", basis: "Huntback: the agent used CVE-2021-32648 against an October CMS site to reach the municipal platform (Huntback, 2026-11-23)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: "B2 (Huntback reads the operator's own files; no independent corroboration)"
+    suggested_priority: notable
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "The newest job in the directory has one stated goal: a way into the internal network of Ukraine's National Police."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/ai-agent-ukraine-police-network-municipal-platform-breach"
+      - quote: "That is a result worth stating plainly for the defenders involved: the controls held."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/ai-agent-ukraine-police-network-municipal-platform-breach"
+      - quote: "The reset step sends one to the real administrator before anything else happens. In this case it was the only warning a person could have seen."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/ai-agent-ukraine-police-network-municipal-platform-breach"
+    extended_notes: |
+      Exposure (source-stated): October CMS installations older than build 472 / 1.1.5, including retired sites kept online; web servers that hand out application logs or framework folders from the storage path; shared platforms where one deployment user reads every tenant's files and one database account reads every tenant's rows; mail and template editors reachable by backend administrators.
+      Detection concepts the post derives from the operator's scripts (telemetry classes): web access log (a password-restore request followed by resets across several user ids; sequential Range reads with status 206 of one large log file under storage; bursts of saves to one mail template followed by fetches of short text files from public storage); mail flow (an unrequested password-reset email delivered to a real administrator is the only human-visible warning); stored templates whose HTML calls a list filter (reduce, map, filter, sort) with a PHP function name; process and persistence telemetry on the web host (a long-lived process whose executable sits in a cache or storage folder and is named like php-fpm, a user crontab line starting it, a long-lived outbound connection from a web server to a public relay network). Egress rules on web servers cost little and cut the gsocket channel.
+      Benign lookalikes the mechanism implies: administrators legitimately edit mail templates and download managers legitimately issue Range requests; the discriminators are the burst plus Test-button rendering plus a function name in a filter, and one client reading a log file in fixed slices.
+      Defender takeaway: the controls that held were source-address allowlists on application servers and MFA on remote access; what leaked was the shared supplier platform and old sites left online. Inventory retired websites on shared platforms, treat administrator-editable templates as code, and ask which other customers of the same web supplier run the same code.
+      Related: the store's gsocket entry (2026-11-12) documents the same relay client persisting after web patching.
+    borderline: false
+  # ------------------------------------------------------------------
+  - title: "ARTEX and Cairn leak their per-run numbering into victim logs (Wiz, Talos), an open ARTEX console shows an Entra Global Administrator takeover (Huntback), and Wiz clusters ARTEX-Harvester at more than a dozen organizations"
+    sources:
+      - { url: "https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn", publisher: "Wiz Research", date: "2026-11-25", role: "primary" }
+      - { url: "https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin", publisher: "Huntback", date: "2026-11-24", role: "primary" }
+      - { url: "https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks", publisher: "Wiz Research", date: "2026-11-23", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/", publisher: "Cisco Talos", date: "2026-11-25", role: "corroborating" }
+      - { url: "https://www.recordedfuture.com/blog/ai-industrial-attack-workflow", publisher: "Recorded Future Insikt Group", date: "2026-11-20", role: "corroborating" }
+    discovery_trace: "first seen at: wiz-blog, URL https://www.wiz.io/feed/rss.xml (feed, 2026-11-25 'Inside Agentic Offensive Frameworks: Intent IDs') → primary: https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn (extract) → pivot: https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks (extract) → huntback, URL https://huntback.io/blog (listing) → https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin (extract) → corroboration: malware.news topic https://malware.news/t/the-great-escape-tradecraft-insights-from-an-agentic-swarm/127635 → Talos https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/ ; malware.news topic https://malware.news/t/ai-joins-the-industrial-attack-workflow/127527 → Recorded Future https://www.recordedfuture.com/blog/ai-industrial-attack-workflow"
+    summary: |
+      Delta on the ARTEX entry. Wiz (2026-11-25) shows that ARTEX and Cairn hand the model a numeric intent ID that lands in victim-side artifacts. ARTEX draws intents, facts, findings, hints and digests from one never-resetting counter per installation, so intent numbers climb across runs and targets and consecutive intents are rare; its worker puts the number in its working directory (tasks/<task>/i<N>), its session name and its prompt. Cairn formats zero-padded per-object-type counters (i001, f001, h001) and resets them for every project. Wiz found the numbers in AWS role session names, SSM command comments, resource names, tags and descriptions, KMS aliases and security-group rule text, and in Azure run-command, VM and app-registration names (denied calls keep the name in the error message); it used rising numbers with a distinctive boto3 build and proxy-pool overlap to tie one campaign, which it names ARTEX-Harvester, to more than a dozen organizations, and linked an AWS and an Azure side of one intrusion by one climbing sequence. Wiz's caveats: the numbers are a corroborating pacing signal, not attribution, a lone iNNNN is noisy and must be paired with an anchor such as artex-, pentest-, probe or canary in user agents, account, CI-workflow or cloud-resource names, and Cairn's per-project reset limits pacing to the ARTEX family. Talos (2026-11-25), analysing the OpenAI-linked swarm, independently says agent self-labels are high-fidelity signals because the agent cannot drop them without breaking its own state tracking, citing artex-probe file names.
+      Huntback (2026-11-24) read an exposed ARTEX console workspace (52 task folders) and documents one intrusion into a South Korean university: entry through a public pre-authentication code-execution flaw in the XpressEngine CMS fixed since October 2019, SYSTEM through a log4net.config hot-reload channel on a companion service, in-memory token impersonation, Defender exclusions and real-time monitoring switched off with Set-MpPreference, a memory dump of the Windows credential process, chisel reverse SOCKS tunnels (one as a SYSTEM scheduled task), a modified 2017 SMB exploit that added a local administrator on a campus server, and then a single sign-on that accepted a stored password hash in place of the password, which gave a staff session and a token with the Global Administrator role from 2026-11-16 18:47 UTC; the user directory was exported within two hours and over two days 20 licensed accounts and a new Global Administrator were created. The numbering leaked onto victim hosts (a local administrator account and a scheduled task named after intent numbers, marker files in a folder named for an intent). Wiz (2026-11-23) adds a case seen from both sides through an exposed operator directory (four days in October, two AWS accounts and seven EKS clusters, CyberStrikeAI running the operation with a csai- prefix beside an ARTEX checkout, a privileged-pod escape and an ld.so.preload userland rootkit with a DNS-tunnel channel, Jenkins code execution, Anthropic API keys harvested from 50 hosts) and says disclosed related incidents more than tripled since its Black October post while stating that activity labelled ARTEX comes from multiple unrelated operators. Recorded Future (2026-11-20) counts observed ARTEX servers rising from 1,506 on 2026-10-21 to 2,978 on 2026-11-19 across 58 countries (servers, not attacks), and reports a LiteLLM gateway configuration on infrastructure it assesses as likely used by the Iran-linked GreenJuliett cluster without confirming misuse.
+    region_nexus: "global; the Huntback case is South Korea; Wiz and Recorded Future describe cloud intrusions across many countries; no Swiss victim named"
+    primary_sector_nexus: "indirect: identity-provider and cloud logging is common to the constituency; the numbering anchors apply to any tenant"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1068, T1685, T1003.001, T1572, T1078.004, T1098, T1087.004, T1021.002, T1610]
+    affected_products: ["Microsoft Entra ID", "Amazon Web Services", "XpressEngine"]
+    entity_keys: ["tool:artex", "tool:cairn-exploitation-engine", "tool:cyberstrikeai", "product:microsoft-entra-id"]
+    new_entities:
+      - { key: "campaign:artex-harvester", type: campaign, name: "ARTEX-Harvester", aliases: [], summary: "Wiz's name for an ARTEX-based campaign of late October to mid-November 2026 tied to more than a dozen organizations by a distinctive boto3 build, rising intent IDs and proxy-pool overlap (Wiz, 2026-11-23 and 2026-11-25)." }
+      - { key: "product:xpressengine", type: product, name: "XpressEngine", aliases: ["XE"], summary: "Open-source CMS common in South Korea; versions before 1.11.6 carry a pre-authentication code-execution flaw (XEVE-19-008) that Huntback saw an ARTEX workspace use against a university (Huntback, 2026-11-24)." }
+    relation_suggestions:
+      - { subject: "campaign:artex-harvester", object: "tool:artex", basis: "Wiz: the campaign uses ARTEX, public forks and rebrands, clustered by boto3 build, intent-ID correlation and proxy pool (Wiz, 2026-11-23)" }
+      - { subject: "tool:cyberstrikeai", object: "tool:artex", basis: "Wiz: in one both-sides case CyberStrikeAI ran the operation while an ARTEX checkout sat in the operator workspace (Wiz, 2026-11-23); co-use only, not a variant claim" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: "B1 for the numbering mechanics (Wiz code reading plus Talos plus Huntback workspace all agree); B2 for the case studies"
+    suggested_priority: notable
+    novelty: "update-of:2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse"
+    lookback: true
+    evidence:
+      - quote: "Intent IDs are incrementing counters in common agentic offensive frameworks."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn"
+      - quote: "Hits are useful tool markers and pacing clues, but not operator fingerprints."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn"
+      - quote: "They may be useful for fingerprinting agent swarms, because they can't easily alter or remove the labeling scheme without breaking the agent's own state tracking."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-great-escape-tradecraft-insights-from-an-agentic-swarm/"
+      - quote: "The numbering leaks onto the victim."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/ai-pentest-console-south-korean-university-global-admin"
+      - quote: "Activity attributed to “ARTEX” comes from multiple unrelated operators and should not be read as a single campaign or attributed to one threat actor."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks"
+    extended_notes: |
+      Detection concept (telemetry class first): cloud control-plane audit records and identity-provider logs, hunting free-text fields that an operator or agent names (role session names, SSM comments, resource and tag names, app-registration names, run-command names, CI workflow and branch names, user agents) for an iNNNN-style token adjacent to an agent label (artex-, pentest-, probe, canary, csai-); on endpoints, process-creation and command-line telemetry for working-directory paths of the form tasks/<task>/i<N> and for locally created accounts, scheduled tasks and marker files named after an intent number. Wiz and Talos both warn the anchors are perishable and not operator fingerprints; Wiz notes denied API calls keep the chosen name in the error text, so failed-call logs are a place to look.
+      Triage: a bare i123 in a log is common benign text; the discriminators are an agent-label prefix, a climbing sequence across many small objects in minutes, rotating residential-proxy source addresses and self-naming accounts. Do not read the number as identifying an operator: one operator can run several ARTEX installations and unrelated installations pass through the same low ranges.
+      The Huntback intrusion chain is a Windows-and-identity path the composer can use selectively: the single sign-on accepting a stored hash gave the Global Administrator token, and Microsoft 365 role-assignment and user-creation audit events in a burst (accounts with student-style numbers) are the tenant-side signal. Hardening levers named by the sources: patching the 2019 CMS flaw, removing the web service account from local Administrators, unsalted SHA-256 password storage in the single sign-on, backup tables with plaintext passwords.
+      Composer note: the ARTEX entry already carries Microsoft's 2026-11-25 defender guide and Wiz's 2026-10 ARTEX report; keep this update to the self-labelling anchors and at most two sentences on the case studies.
+    borderline: false
+  # ------------------------------------------------------------------
+  - title: "Puppet Server CVE-2026-115731: Huntback's decoy captured the whole exploit chain from an address that first had its own certificate request auto-signed (2026-11-19)"
+    sources:
+      - { url: "https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured", publisher: "Huntback", date: "2026-11-20", role: "primary" }
+    discovery_trace: "first seen at: huntback, URL https://huntback.io/blog/feed.xml (feed, 2026-11-20 'Attackers are checking Puppet Servers for CVE-2026-115731') → primary (no pivot needed): https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured (extract). KEV status re-verified with bridge cisa-kev (CVE-2026-115731 dateAdded 2026-11-17, due 2026-12-01, knownRansomwareCampaignUse Unknown)."
+    summary: |
+      Huntback reports that on the morning of 2026-11-19 one of its Puppet Server decoys received the complete exploit chain for CVE-2026-115731 in 1.47 seconds from one address: a certificate request for a generated node name (fresh 2048-bit key, no attributes), a request for the signed certificate 1.4 seconds later without polling, which only succeeds where the CA autosigns, and a report upload to the report endpoint whose rich-data type definition carries a Ruby method body. The captured body closed the generated method early, raised an error carrying a marker and the server's address, and opened a second method so the syntax balanced, so it was a vulnerability check built so that a real command needs one line changed. Two and a half hours earlier a different address in the same hosting cluster fingerprinted the server with a client that calls itself puppet-scan/1.0 (status service and both CA path variants) and never asked for a certificate; Huntback says the exploiting address is that cluster's test bench and had tried exploits for four other products against its decoys in the ten days before. Huntback restates the record: the flaw needs any CA-signed agent certificate, which an unauthenticated attacker obtains where the CA signs requests without strong verification; the CVE record was published on 2026-11-03 and CISA listed it on 2026-11-17. Single source (Huntback honeypot telemetry); the store's entry already carries the KEV listing and fixed releases.
+    region_nexus: "global; Puppet Server exposure is internet-facing infrastructure management; no Swiss victim"
+    primary_sector_nexus: "indirect: configuration-management servers in administrations"
+    sector: "technology"
+    cves: [CVE-2026-115731]
+    techniques: [T1190, T1595.002]
+    affected_products: ["Perforce Puppet Enterprise", "Puppet Core", "OpenVox Server"]
+    entity_keys: ["product:perforce-puppet-enterprise", "product:puppet-core"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: "B2"
+    suggested_priority: notable
+    novelty: "update-of:2026-11-18/cve-2026-115731-puppet-enterprise-report-deserialization-rce"
+    lookback: true
+    evidence:
+      - quote: "On the morning of 19 November one of our Puppet Server decoys received the whole chain from start to finish"
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured"
+      - quote: "The three requests took 1.47 seconds."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured"
+      - quote: "This was a check for vulnerable servers, built so that a real command needs one line changed."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/puppet-server-cve-2026-115731-exploit-chain-captured"
+    extended_notes: |
+      Delta for the existing entry: first reported in-the-wild exploitation shape, and the autosign dependency made concrete. Detection concept (telemetry classes): Puppet Server and CA logs: a certificate request for an unknown, random-looking node name that is signed automatically, followed within seconds by a certificate fetch and a report upload from the same source address; report payloads whose events carry a __ptype type definition with a RubyMethod annotation; web or reverse-proxy logs for status-service probes (level=debug) and requests to both /puppet-ca/v1 and the legacy /production/certificate/ca path from one client with a scanner user agent. Exposure check: whether the CA autosigns (policy-based or glob autosign) and whether the server's CA and report ports are reachable from untrusted networks. Hardening levers: fixed releases already in the entry (Puppet Enterprise 2023.8.13, 2025.12.1, 2026.0.1), disable open autosigning, restrict the CA and report endpoints to agent networks.
+      Benign lookalikes: legitimate new-node enrolment also signs a request and uploads a report, but from a known address range, after the node's first catalog run and with a plausible host name; here the report upload came 1.4 seconds after the request with no catalog fetch.
+    borderline: false
+  # ------------------------------------------------------------------
+  - title: "SpecterOps: branch protection does not bound repository-scoped trust; a GitHub organization with write as its default repository permission and a wildcard Entra federated identity credential puts every member on an attack path to Entra Tier Zero"
+    sources:
+      - { url: "https://specterops.io/blog/2026/11/25/beyond-branch-protection-understanding-github-attack-paths/", publisher: "SpecterOps", date: "2026-11-25", role: "primary" }
+    discovery_trace: "first seen at: specterops, URL https://specterops.io/feed/ (feed, 2026-11-25 23:26 UTC 'Beyond Branch Protection: Understanding GitHub Attack Paths') → primary (no pivot needed): https://specterops.io/blog/2026/11/25/beyond-branch-protection-understanding-github-attack-paths/ (extract, read in full). The post links the 1Password incident (https://1password.com/blog/update-on-nov-2026-security-incident) but states it does not speculate about its specifics."
+    summary: |
+      SpecterOps (Jared Atkinson, 2026-11-25) answers the question raised after the 1Password incident (a single employee's GitHub account with large consequences) without speculating about that case: in a lab enterprise modelled on production configurations (Active Directory synchronised to Okta, Okta to GitHub through Enterprise Managed Users, GitHub to Entra by workload identity federation) it shows that branch protection and mandatory review can stay intact while every member of the GitHub organization has an attack path to Tier Zero in Entra. Three conditions combine: the organization's default repository permission is write, so effective write access is far wider than the explicit role assignments an administrator reviews; an Entra federated identity credential trusts a repository-wide subject with a wildcard (repo:<org>/<repo>:*), so any branch or environment satisfies the trust, and repository-level Actions secrets are likewise not tied to protected branches; and the federated service principal can grant Microsoft Graph application roles. A second pattern is one federated credential per branch (development, staging, production) that all authenticate to the same Entra application, so the separation lives in deployment code, not in the authorization model, and the unprotected development branch holds the same privileges as production.
+      The source's stated lever is distinct workload identities per environment with privileges limited to what each manages, which turns a convention into an enforced boundary, plus reading the Active Directory, Okta, GitHub and Entra relationships as one path (the post draws it in BloodHound) because each platform's administrators see only their part. The scenario is a lab, not a reported intrusion. Single source.
+    region_nexus: "global; applies to any organization, including public-sector development teams, that federates GitHub Actions to Entra"
+    primary_sector_nexus: "indirect: applies to administrations running GitHub organizations with Entra workload identities"
+    sector: "technology"
+    cves: []
+    techniques: [T1078.004, T1528, T1098.003, T1199]
+    affected_products: ["GitHub", "GitHub Actions", "Microsoft Entra ID"]
+    entity_keys: ["product:github", "product:github-actions", "product:microsoft-entra-id"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: "B2 (original lab analysis from a reputable research lab, uncorroborated; not an incident report)"
+    suggested_priority: routine-notable
+    novelty: new
+    lookback: true
+    references_hint: ["2026-11-26/1password-employee-github-account-backend-compromise"]
+    evidence:
+      - quote: "The problem is that the scope of the protection does not match the scope of the trust."
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/25/beyond-branch-protection-understanding-github-attack-paths/"
+      - quote: "Repository-level secrets, for example, are not inherently restricted to protected branches."
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/25/beyond-branch-protection-understanding-github-attack-paths/"
+      - quote: "every member of the GitHub organization has an attack path to Tier Zero in Entra."
+        attribution: "SpecterOps"
+        source_url: "https://specterops.io/blog/2026/11/25/beyond-branch-protection-understanding-github-attack-paths/"
+    extended_notes: |
+      Exposure (how a defender checks, from the mechanism the post describes): in GitHub, the organization's default repository permission and whether members may create arbitrary branches; in Entra, the federated credentials on each application or managed identity and whether their subject uses a wildcard or names only a repository, and which Graph application roles the service principal can grant. Which interface: GitHub organization settings and Entra app registration federated credentials, both administrator-only.
+      Detection: the post gives no detection events. Telemetry classes that follow from the stated mechanism, for the composer to label as concepts: Entra audit logs for creation or change of federated identity credentials and for app-role grants to workload identities; Entra service-principal sign-in logs showing federated authentication from GitHub-issued tokens at unusual times or for unexpected branch or environment contexts; GitHub audit log entries for branch creation and workflow-file changes on unprotected branches by members who do not normally touch infrastructure repositories.
+      Hardening levers named by the post: separate workload identities and privileges per environment; do not rely on branch protection to scope repository-level secrets or repository-wide federated trust.
+      Composer note: do not link this to the 1Password cause; SpecterOps explicitly declines to. Reference the 1Password entry only as the occasion.
+    borderline: false
+  # ------------------------------------------------------------------
+  - title: "SoftwareOK: tampered Q-Dir and DesktopOK installers on the vendor's official download path, also reached through the in-app update, install a Python remote-access tool that inventories 1,206 security-product processes (ASEC)"
+    sources:
+      - { url: "https://asec.ahnlab.com/en/96827/", publisher: "AhnLab ASEC", date: "2026-11-25", role: "primary" }
+      - { url: "https://malware.news/t/software-supply-chain-attack-via-the-official-softwareok-website-tampering-with-q-dir-and-desktopok-installation-files/127689", publisher: "malware.news (discovery relay of the ASEC post)", date: "2026-11-26", role: "corroborating" }
+    discovery_trace: "first seen at: malware-news, URL https://malware.news/latest.rss (feed page 0, 2026-11-26 23:51 UTC 'Software Supply Chain Attack via the Official SoftwareOK Website') → pivot: https://malware.news/t/software-supply-chain-attack-via-the-official-softwareok-website-tampering-with-q-dir-and-desktopok-installation-files/127689 → primary: https://asec.ahnlab.com/en/96827/ (extract; ASEC published 2026-11-25T15:00Z). Corroboration attempted twice (WebSearch 'SoftwareOK Q-Dir DesktopOK installer tampered supply chain Python RAT' and 'Q-Dir DesktopOK trojanized installer ASEC AhnLab SoftwareOK supply chain 2026'): nothing independent. WebFetch of https://www.softwareok.com/ on 2026-11-27 returned no security notice and listed DesktopOK 12.88 (2026-11-26) and Q-Dir 12.85 (2026-11-21) as newest."
+    summary: |
+      AhnLab's ASEC reports that Q-Dir 12.83.0.0, 12.84.0.0 and 12.85.0.0 and DesktopOK 12.82.0.0 and 12.85.0.0 installers distributed from the official SoftwareOK website carried tampered files whose SHA-256 values differ from those posted on the vendor's download page, and that tampered files were also produced during the update process of already installed legitimate copies. The tampered installer embeds the genuine, correctly signed Q-Dir or DesktopOK executable and runs it from the public user folder so the program appears to work, while it downloads the standalone 7-Zip console tool and an archive holding a Python runtime and a remote-access tool from an external server, unpacks it under a Microsoft-looking folder in ProgramData (with a fallback path), and persists through a scheduled task with a Microsoft Edge-style name in a UPnP task folder that runs pythonw.exe on the agent script. The tool executes shell commands and Python code, transfers files, takes screenshots and collects system information, and compares running processes with a list of 1,206 process names of Korean and international antivirus and EDR products and reports the matches to its server; ASEC notes Chinese-language comments in the code and says this may indicate a Chinese-speaking developer environment. ASEC states the cause and path by which the legitimate files were replaced have not been identified and gives no dates for the distribution window.
+      ASEC's advice: uninstall and reinstall a verified current version after checking the SHA-256 against the vendor page, but also look for the Python environment, the scheduled task, related files and network traces because reinstalling does not remove an installed tool; isolate and scope any infected host. Single source; no vendor statement was found.
+    region_nexus: "global; ASEC is Korean and lists Korean and international security products; Q-Dir and DesktopOK are free Windows administration utilities of the kind IT staff install; Swiss use not stated"
+    primary_sector_nexus: "indirect: administrator workstations in any organization that installed or updated either tool"
+    sector: "technology"
+    cves: []
+    techniques: [T1195.002, T1204.002, T1105, T1059.006, T1053.005, T1036.004, T1518.001, T1113]
+    affected_products: ["Q-Dir", "DesktopOK"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:softwareok-q-dir-desktopok-installer-tampering-2026-11", type: incident, name: "SoftwareOK Q-Dir and DesktopOK installer tampering (November 2026)", aliases: ["SoftwareOK supply chain attack"], summary: "ASEC reports Q-Dir and DesktopOK installers served from the official SoftwareOK site, and from the in-app update, installing a Python remote-access tool (ASEC, 2026-11-25)." }
+      - { key: "product:q-dir", type: product, name: "Q-Dir", aliases: ["Q-Dir (Quad Explorer)"], summary: "Free multi-pane Windows file manager from SoftwareOK (developer Nenad Hrg per the signature ASEC verified)." }
+      - { key: "product:desktopok", type: product, name: "DesktopOK", aliases: [], summary: "Free Windows utility from SoftwareOK that saves and restores desktop icon positions." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: "B2"
+    suggested_priority: notable
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Evidence indicates that malicious files were generated not only when users downloaded the programs directly from the official download page but also during the update process of previously installed legitimate programs."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/96827/"
+      - quote: "The specific cause and path of the legitimate installation files being replaced with Malicious Files have not been identified."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/96827/"
+      - quote: "This list contains a total of 1,206 process names and includes various Korean & Global antivirus and EDR products."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/96827/"
+    extended_notes: |
+      Exposure: any host that installed or updated Q-Dir (12.83 to 12.85) or DesktopOK (12.82, 12.85) from the SoftwareOK site, or ran their update function, while tampered files were served; ASEC cautions other versions installed in that period may also be affected. The check ASEC gives: compare the installer's SHA-256 with the value on the download page.
+      Detection (telemetry classes): process-creation events with parent lineage: an installer that launches the genuine application from the public user folder and, in the same tree, a download of the 7-Zip console tool followed by extraction of an archive into ProgramData\Microsoft; scheduled-task creation events (task name resembling Microsoft Edge in a UPnP task folder) running pythonw.exe from ProgramData, with outbound connections from that interpreter; file-integrity comparison of installers against vendor-published hashes; EDR process enumeration is visible as a one-shot burst of process-list reads by an interpreter. Post-removal: reinstalling does not clear the tool, so look for the interpreter folder, the task and network traces.
+      Triage: a legitimate Python install does not live under ProgramData\Microsoft\DeviceSync and a legitimate Q-Dir or DesktopOK installer does not download archives or create tasks; the discriminators are the unsigned or different-hash wrapper, the Python runtime next to a freeware utility, and a pythonw.exe task.
+      No indicators carried in the entry (hashes, server address and domain are in the ASEC post).
+    borderline: false
+  # ------------------------------------------------------------------
+  - title: "GPGME before 2.3.1 (CVE-2026-129975): a crafted OpenPGP key with a very long user ID triggers a double free in the library behind Gpg4win, GnuPG Desktop and VS-Desktop, most mail clients, XMPP clients, Samba and Flatpak; remote code execution cannot be ruled out"
+    sources:
+      - { url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html", publisher: "GnuPG project (gnupg-announce)", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/20/13", publisher: "oss-security (forward of the advisory)", date: "2026-11-20", role: "corroborating" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/21/1", publisher: "oss-security (Red Hat downstream-patch note)", date: "2026-11-21", role: "corroborating" }
+    discovery_trace: "first seen at: oss-security, URL https://www.openwall.com/lists/oss-security/ (listing, 2026/11/20 #13 'Fwd: GnuPG Security Advisory for GPGME (T8557,CVE-2026-129975)') → https://www.openwall.com/lists/oss-security/2026/11/20/13 (extract) → primary: https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/date.html → https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html (WebFetch). EPSS from https://api.first.org/data/v1/epss (bridge, score date 2026-11-26). NVD page is a JavaScript shell and OSV returned 404 for the id (too fresh); the identifier is vendor-stated."
+    summary: |
+      The GnuPG project published a security advisory on 2026-11-20 for GPGME, the library most OpenPGP-using applications call: an OpenPGP key with a crafted very long user ID triggers a double free in the two internal functions that read status lines and key listings from gpg (a reallocated buffer's pointer is stored back into the context only at the end, so an early return on a read error leaves a stale pointer that is freed again when the context is released). The project calls it a critical bug that can be used to exfiltrate data from applications, for example by sending signed data, and says remote code execution cannot be ruled out; it does not report exploitation. All software using a GPGME version prior to 2.3.0 is affected, as a shared library, DLL or statically linked (2.3.0 was never public); fixed in GPGME 2.3.1 (2026-11-19), Gpg4win 5.1.2 and new GnuPG Desktop and GnuPG VS-Desktop releases (version numbers not given on the page), with a patch attached for older versions, a rebuild required for statically linked binaries, and no update needed for GPGMEPP and GPGMEQT. The project lists Gpg4win, GnuPG Desktop, GnuPG VS-Desktop, most mail clients, many XMPP clients, Samba and Flatpak as examples of affected software.
+      Johan Carlsson found it and GitLab informed GnuPG on 2026-11-12; the planned 2026-11-25 disclosure was moved to 2026-11-20 because GitLab had to update earlier for a separate Ruby bug (the advisory calls it Ruby2Shell). An oss-security follow-up relays a claim that Red Hat carried a downstream patch for years (GnuPG says it does not remember receiving it), so Red Hat family distributions may already be fixed; check the distribution advisory. FIRST gives EPSS 0.0476 (92.7th percentile) as of 2026-11-26.
+    region_nexus: "global; mail-encryption clients and Gpg4win are used in administrations; no source states Swiss deployment"
+    primary_sector_nexus: "indirect: OpenPGP mail and file encryption on administration endpoints"
+    sector: "public-sector"
+    cves: [CVE-2026-129975]
+    techniques: [T1203, T1566]
+    affected_products: ["GPGME", "Gpg4win", "GnuPG Desktop", "GnuPG VS-Desktop"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:gpgme", type: product, name: "GPGME", aliases: ["GnuPG Made Easy"], summary: "GnuPG's C library through which mail clients, Gpg4win/Kleopatra, XMPP clients, Samba and others call gpg; CVE-2026-129975 (double free, fixed in 2.3.1) affects all earlier versions (GnuPG, 2026-11-20)." }
+      - { key: "product:gpg4win", type: product, name: "Gpg4win", aliases: [], summary: "GnuPG's Windows installer bundle including GPGME and the Kleopatra GUI; 5.1.2 carries the GPGME fix for CVE-2026-129975." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    suggested_classification: "A2 (vendor advisory for its own product; the same text relayed on oss-security is not independent; no exploitation report)"
+    suggested_priority: notable
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "Please update your GPGME shared library to version 2.3.1."
+        attribution: "GnuPG project"
+        source_url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html"
+      - quote: "Exploiting this bug to mount an Remote Code Execution attack (RCE) can't be ruled out."
+        attribution: "GnuPG project"
+        source_url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html"
+      - quote: "All software using a GPGME version prior to 2.3.0 either as shared libary, DLL, or statically linked is affected."
+        attribution: "GnuPG project"
+        source_url: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html"
+    extended_notes: |
+      Exposure: how a defender tells: which GPGME build an application loads (system shared library, a DLL shipped inside Gpg4win, or a statically linked copy, which the vendor says must be rebuilt) and whether the host's Gpg4win is below 5.1.2. Reachability: the trigger is a key (or signed data carrying one) processed by an application that calls GPGME, so mail clients verifying signed messages and key-import or key-search paths are the exposed interface; the advisory does not give attacker prerequisites beyond supplying the crafted key.
+      Detection: no exploit indicators exist in the advisory; the only telemetry concept is application crash or abnormal termination of a GPGME-using client or Kleopatra while handling a signed message or key listing (crash-dump and application-event telemetry), plus inventory of GPGME versions. Post-patch check: none stated; a double free that exfiltrates data would leave no persistence artifact the advisory names.
+      Composer note: this advisory is S1-class content found through oss-security; dedupe against the S1 return. The CVE id could not be confirmed on NVD (SPA) or OSV (404); only the vendor states it.
+    borderline: false
+  # ------------------------------------------------------------------
+  - title: "Exim 4.100.2: a remote out-of-bounds write in SMTP-reception header decoding followed by an expansion operation done with root privilege (EXIM-Security-2026-11-82.1, vendor-rated Medium, no CVE id in the announcement)"
+    sources:
+      - { url: "https://www.openwall.com/lists/oss-security/2026/11/26/5", publisher: "oss-security (forward of the exim-announce release notice)", date: "2026-11-26", role: "primary" }
+    discovery_trace: "first seen at: oss-security, URL https://www.openwall.com/lists/oss-security/ (listing, 2026/11/26 #5 'Fwd: [exim-announce] Exim Security Release - 4.100.2') → primary: https://www.openwall.com/lists/oss-security/2026/11/26/5 (extract; the Exim announcement is dated 2026-11-25 13:04 UTC). One WebSearch ('Exim 4.100.2 security release header decode out-of-bounds write root expansion') found no further coverage; it surfaced the earlier 4.100.1 and 4.99.2 releases only."
+    summary: |
+      The Exim maintainers announced on 2026-11-25 (forwarded to oss-security on 2026-11-26) a security release, Exim 4.100.2, for one issue: identifier EXIM-Security-2026-11-82.1 (GCVE-25-2026-11-82-1), area SMTP reception, severity Medium, "Fix an OOB write resulting from header decode". The notice says a remote attacker can cause a write outside an allocated area, followed by an expansion operation done with root privilege; the credit line reads "The unnamed and uncredited authors whose works were ingested as the training corpus", which suggests the flaw was found with an AI model but the notice does not say so. The announcement gives no CVE id, no affected version range, no proof of concept and no exploitation statement; those absences are unresolved.
+    region_nexus: "global; Exim is a widely deployed MTA on Linux mail relays; no Swiss victim"
+    primary_sector_nexus: "indirect: self-hosted mail relays in administrations"
+    sector: "technology"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Exim"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    suggested_classification: "A3 (project announcement for its own product; severity, affected range and exploitability unresolved)"
+    suggested_priority: routine
+    novelty: new
+    evidence:
+      - quote: "Fix an OOB write resulting from header decode"
+        attribution: "Exim maintainers (via oss-security)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/26/5"
+      - quote: "Area: SMTP reception"
+        attribution: "Exim maintainers (via oss-security)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/26/5"
+      - quote: "Severity: Medium"
+        attribution: "Exim maintainers (via oss-security)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/11/26/5"
+    extended_notes: |
+      S1-class content found through oss-security. Exposure: Exim servers that accept SMTP from untrusted senders; read the version with exim -bV. Detection: MTA main and reject logs and crash or core-dump telemetry for unusual termination of the receiving process on malformed headers; the notice states none. Left to the main agent: vendor rating Medium against a described root-privileged expansion after a remote out-of-bounds write.
+    borderline: true
+    borderline_reason: "Vendor rates it Medium, but a remote write followed by a root-privileged expansion in SMTP reception on a widely deployed MTA is plausibly higher impact; no CVE, affected range or exploitation statement exists yet, and S1 may carry it with fuller data."
+cve_table:
+  - { cve: "CVE-2026-129975", product: "GPGME (GnuPG Made Easy library; bundled in Gpg4win, GnuPG Desktop and VS-Desktop)", cvss: null, epss: 0.04764, kev: false, exploited: "not reported (advisory states RCE cannot be ruled out)", affected: "all GPGME versions prior to 2.3.0 as shared library, DLL or statically linked (2.3.0 was never public)", fixed: "GPGME 2.3.1 (2026-11-19); Gpg4win 5.1.2; GnuPG Desktop and GnuPG VS-Desktop updated (versions not stated); patch attached for older versions; GPGMEPP and GPGMEQT need no update", type: "double free (CWE-415 by description; not stated by vendor)", vector: "network-delivered crafted OpenPGP key or signed data processed locally by a GPGME-using application", auth: "none", source: "https://lists.gnupg.org/pipermail/gnupg-announce/2026q4/000517.html" }
+  - { cve: "CVE-2021-32648", product: "October CMS (october/system)", cvss: null, epss: 0.91219, kev: true, exploited: "yes: on CISA KEV since 2022-01-18 (bridge cisa-kev, this run); Huntback documents use against a Ukrainian municipal website platform on 2026-11-18", affected: "builds before 472 / versions before 1.1.5 per Huntback (NVD not fetched; a retired council site ran build 471 or earlier)", fixed: "build 472 and version 1.1.5, August 2021 (per Huntback)", type: "improper authentication, password-reset code compared loosely (CWE-287 per KEV)", vector: "network", auth: "none (password-restore request, then a reset with a JSON boolean true)", source: "https://huntback.io/blog/ai-agent-ukraine-police-network-municipal-platform-breach" }
+candidate_sources:
+  - id: dragos-blog
+    publisher: "Dragos blog (HD Moore research series)"
+    url: "https://www.dragos.com/blog"
+    category: research
+    why: "Primary for the 2026-11-19 study that seeded about two million AI prompts with canary tokens and found three AI-provider breaches, prompt resale through inference marketplaces and ignored Zero Data Retention flags (article read cleanly with extract); also an ICS/OT lab. Not used as an item this run because the post is 8 days old (outside every lookback) and was only relayed on 2026-11-24."
+coverage_gaps:
+  - source_id: lab52
+    reason: "Recipe note for sources.json: on 2026-11-27 `extract https://lab52.io/blog/` was served by the jina reader (ten pool keys answered HTTP 402 first, then one served) but returns an undated listing; `jina https://lab52.io/blog/ html` returns the dated list (parse <time class=\"entry-time\" datetime=...>). Newest post 2026-10-05 (Cyber Morocco AI experiment), nothing in window. Direct feed not retried."
+  - source_id: mozilla-ca-compliance-bugzilla
+    reason: "Recipe note: the REST listing works through `url`; `url .../rest/bug/<id>/comment` returns the comments JSON, while `url .../rest/bug/<id>?include_fields=...` returned an empty body. Newest relevant row, DigiCert 'Unauthorized access to business system' (bug 2084460), had its last comment 2026-11-26 01:09 UTC ('updated Full Incident Report on or before 2026-12-02'); the substantive posts are 2026-11-15 and 2026-11-20 (outside window) and no entry in the store covers the incident."
+  - source_id: forescout-research
+    reason: "Recipe note: `url https://www.forescout.com/blog/` yields hrefs only; the listing carries no dates; per-post `extract` carries date in its metadata (verified: BankWeaver 2026-11-19, ROMULUS 2026-10-15, NCSC OT 2026-11-04). Nothing in lookback."
+  - source_id: imperva-threat-research
+    reason: "Recipe note: `url https://www.imperva.com/blog/` lists slugs with dates in the markup near each href (Nov 20 posts on Ruby and PHP, Nov 18 on NGINX and Java4Shell); all in-lookback posts are 'how Imperva protects customers' re-reports of covered CVEs, none returned."
+  - source_id: unit42-timely-threat-intel
+    reason: "Recipe note: `url https://github.com/PaloAltoNetworks/Unit42-timely-threat-intel` lists dated file names (regex 2026-1[01]-DD-*.txt); the raw text reads with `url https://raw.githubusercontent.com/PaloAltoNetworks/Unit42-timely-threat-intel/main/<file>`. In-lookback files (2026-11-20 to 2026-11-25) are short IOC notes on commodity ClickFix, vishing and crypto-lure campaigns; none returned."
+  - source_id: oss-security
+    reason: "Recipe note: `url https://www.openwall.com/lists/oss-security/` gives the recent list as `<li>YYYY/MM/DD #N: <a href=\"YYYY/MM/DD/N\">subject</a>`; per message `extract https://www.openwall.com/lists/oss-security/YYYY/MM/DD/N` reads cleanly. The list is the only way the GPGME critical advisory (2026-11-20) and the Exim 4.100.2 notice surfaced in this run."
+  - source_id: huntback
+    reason: "Recipe note: feed https://huntback.io/blog/feed.xml works (direct, dated, timestamps are a fixed 09:00:00Z); per-post `extract` reads in full. Three posts used this run (candidate source: contributes to the promotion count)."
+  - source_id: wiz-blog
+    reason: "Recipe note: `feed https://www.wiz.io/feed/rss.xml 20` works (direct, dated); the record's rss_url (cloud-threat-landscape feed) was not tried this run."
+  - source_id: malware-news
+    reason: "Recipe note: `feed https://malware.news/latest.rss?page=N 30` for N=0..6 reaches back to 2026-11-19 19:35 UTC (about 75 posts a day); topic pages via `extract` carry the primary link at the foot ('Article Link:')."
+source_ledger:
+  - { id: lab52, tier: standard, attempted: true, transport: "extract (served via jina) + jina html for dates", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest post 2026-10-05" }
+  - { id: trustwave-spiderlabs, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-24 n0n breach analysis (JPMorgan, Visa, Mastercard data) has no constituency nexus; 2026-11-19 cyberwarfare essay; Java4Shell already covered" }
+  - { id: depthfirst, tier: standard, attempted: true, transport: "url --direct listing + extract for dates", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest post phpAfterShell 2026-11-19, outside lookback" }
+  - { id: esentire, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-20 vCenter advisory already covered (vmware-vcenter-cve-2026-123890 entry)" }
+  - { id: forescout-research, tier: standard, attempted: true, transport: "url listing + extract for dates", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "BankWeaver 2026-11-19 outside lookback" }
+  - { id: huntback, tier: standard, attempted: true, transport: "url listing + feed + extract", horizon_hours: 168, in_horizon_items: 8, returned: 3, note: "Numa/Ukraine (new item), ARTEX Korea (folded into the ARTEX update), Puppet decoy capture (update); killed or not used: fake-CTF coding agent, exploitation factory with 443,706 queued targets, PHP2Shell one month on, AI bug-bounty pipeline, Artifactory (CVE-2026-82329 already in store since 2026-09-01)" }
+  - { id: imperva-threat-research, tier: standard, attempted: true, transport: "url listing", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "vendor protection re-reports of covered CVEs" }
+  - { id: kela-cyber, tier: standard, attempted: true, transport: "webfetch listing", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-25 818 fake US banking sites: US consumer phishing, no constituency nexus" }
+  - { id: malware-news, tier: standard, attempted: true, transport: "rss pages 0-6 + extract of topic pages", horizon_hours: 168, in_horizon_items: 12, returned: 1, note: "SoftwareOK/ASEC returned; Drupal exploited lead already covered; Dragos canary study primary dated 2026-11-19; Recorded Future piece folded into the ARTEX update; WP connect plugin backdoors, Remus extension, WeaveLotus, Azalea Agent on Ukrainian bodies, Hudson Rock print shop not returned (see dropped_leads)" }
+  - { id: mozilla-ca-compliance-bugzilla, tier: standard, attempted: true, transport: "bridge url (REST)", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "DigiCert unauthorized-access bug has only a scheduling comment in window; other rows are routine CA misissuance (SHECA, Certum, Disig, OATI, Izenpe)" }
+  - { id: oss-security, tier: standard, attempted: true, transport: "bridge url listing + extract per message", horizon_hours: 168, in_horizon_items: 100, returned: 2, note: "GPGME critical advisory (lookback) and Exim 4.100.2 (borderline); dropped: PowerDNS 2026-14/15 (low to high DoS, DNSdist API empty-key bypass read-only), Apache Shiro CVE-2026-137686 (medium, anonymous-bind precondition), libexpat 2.11.0, UnrealIRCd 6.2.7.1, Dokploy member-to-host-root (authenticated), Apache Solr/Jena/Texera/mod_perl batches" }
+  - { id: specterops, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "GitHub attack paths (2026-11-25 23:26 UTC); the 2026-11-19 FBI ARTEX attack-path post is outside lookback" }
+  - { id: unit42-timely-threat-intel, tier: standard, attempted: true, transport: "bridge url listing + raw file reads", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "commodity campaign notes; BitB fake PDF reader delivering ScreenConnect and FleetDeck (2026-11-20) judged below the bar" }
+  - { id: wiz-blog, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 6, returned: 2, note: "both ARTEX posts (2026-11-23 and 2026-11-25) folded into one update on the ARTEX entry; four other in-lookback posts are product or event posts" }
+dropped_leads:
+  - { lead: "Dragos 'Three breaches, endless leaks: Your AI supply chain needs canaries' (HD Moore)", reason: "primary dated 2026-11-19, outside every lookback; only the 2026-11-24 Malwarebytes relay is inside; it adds two ARTEX user-agent strings (artex-agent, artex-judge-r121) and AI-provider breaches. Main agent may take it as a late candidate: https://www.dragos.com/blog/ai-supply-chain-security-canary-tokens (fetched, extract OK)" }
+  - { lead: "Drupal CVE-2026-132165 'exploited in the wild' (malware.news 2026-11-26)", reason: "already fully covered by entry 2026-11-18/drupal-core-critical-release-2026-11-18-psa-2026-11-16 (KEV 2026-11-24, exploitation from 2026-11-19, SA-CORE-2026-019)" }
+  - { lead: "DigiCert business-system unauthorized access (Mozilla bug 2084460)", reason: "substantive posts 2026-11-15 and 2026-11-20 are outside the window and lookback of the incident posts; in-window comment only schedules an updated report by 2026-12-02. No store entry covers the incident; revisit when the updated Full Incident Report lands." }
+  - { lead: "Hudson Rock 'One Infostealer Infection at an Iraqi Print Shop Exposed Classified Police and Military Files From Five Institutions' (malware.news 2026-11-24)", reason: "malware.news topic URL 404; primary not located by one search; no second source" }
+  - { lead: "Check Point 'Volant Manticore: Flying Under the Radar' (2026-11-24), Huntress 'Three Attacks, Zero Exploits in Microsoft 365' (2026-11-25 08:00), Talos 'The Great Escape' (2026-11-25 11:00), Unit 42 'The AI Threat Horizon' (2026-11-25 15:00)", reason: "published before the window start (2026-11-26 01:55 UTC) and inside the previous fire's window; Talos used only as corroboration in the ARTEX update" }
+  - { lead: "Group-IB 'Odd Jobs: Inside Telegram Recruitment Campaigns' (2026-11-26)", reason: "in window but concerns Telegram recruitment of civilians for Iran-linked tasks in Israel, the Gulf, the UK and the US; no constituency nexus" }
+  - { lead: "WP connect plugin backdoors (2026-11-22/23, Wordfence), SOCRadar RedOps/WeaveLotus (2026-11-26), Remus Chrome extension (2026-11-24), Stony Brook AWS-key honeypot study, Anthropic Siren sandbox honeypot (2026-11-26)", reason: "no constituency nexus or transferable new technique above the bar; not fetched to primary beyond topic pages" }
+  - { lead: "KELA 818 fake US banking sites (2026-11-25), LevelBlue n0n data breach analysis (2026-11-24)", reason: "US financial phishing and a financial-data breach analysis; no constituency nexus" }

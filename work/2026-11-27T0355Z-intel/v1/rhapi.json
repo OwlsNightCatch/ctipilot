@@ -1,0 +1,94 @@
+{
+  "threat_severity" : "Critical",
+  "public_date" : "2026-11-19T14:22:44Z",
+  "bugzilla" : {
+    "description" : "kernel: kernel: Out-of-bounds write in nfsd via crafted SEQUENCE compound requests",
+    "id" : "2576719",
+    "url" : "https://bugzilla.redhat.com/show_bug.cgi?id=2576719"
+  },
+  "cvss3" : {
+    "cvss3_base_score" : "9.4",
+    "cvss3_scoring_vector" : "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:H",
+    "status" : "verified"
+  },
+  "cwe" : "CWE-787",
+  "details" : [ "In the Linux kernel, the following vulnerability has been resolved:\nnfsd: preflight SEQUENCE replies before accepting a slot\nnfsd4_sequence() narrows the reply buffer to the session's cached\nreply limit before it accepts the slot seqid. A client may negotiate\nca_maxresponsesize_cached down to NFSD_MIN_HDR_SEQ_SZ, and\nnfsd4_alloc_slot() then gives every slot a zero-length sl_data[]. A\nCOMPOUND tag can fill that narrowed buffer until it holds the\nSEQUENCE opcode but not the status word that follows.\nnfsd4_encode_operation() returns without running\nnfsd4_encode_sequence(), so cstate.data_offset stays zero. It leaves\nop->status at nfs_ok as well, so the COMPOUND is treated as having\nsucceeded.\nnfsd4_store_cache_entry() declines to cache a lone SEQUENCE that\nreturned an error. That test reads the status the operation\nreported, so it passes here. The copy starts at offset zero and\ntakes the whole reply, RPC and COMPOUND headers included, into the\nzero-length sl_data[]. The COMPOUND tag is copied along with it, so\nthe client picks most of the bytes written past the end of the slot:\nBUG: KASAN: slab-out-of-bounds in read_bytes_from_xdr_buf+0x1bc/0x390\nWrite of size 80 at addr ffff888003a549cd by task kunit_try_catch/24\n__asan_memcpy+0x38/0x60\nread_bytes_from_xdr_buf+0x1bc/0x390\nnfsd4_sequence_done+0x5b0/0x810\nnfs4svc_encode_compoundres+0x1bf/0x240\nCheck that the fixed-size SEQUENCE result, plus room for a following\noperation's error status, fits the negotiated limit before narrowing\nthe buffer and consuming the slot seqid. The slot and its reply\ncache are left unchanged, as RFC 8881 Section 2.10.6.1.2 requires of\nan error returned from SEQUENCE.", "A flaw was found in the Linux kernel's Network File System daemon (nfsd). A remote client can trigger an out-of-bounds memory write by negotiating a minimal cached reply size and sending crafted compound requests containing SEQUENCE operations. This issue occurs because the server fails to verify that the response fits within negotiated buffer limits before caching it, causing response data to be written past the end of the allocated buffer. An attacker could exploit this vulnerability to cause memory corruption and a system crash, resulting in a denial of service (DoS), or potentially execute arbitrary code." ],
+  "statement" : "Critical severity is assigned because an unauthenticated network-adjacent or remote attacker can trigger kernel heap corruption, potentially achieving remote code execution or causing a kernel panic that leads to complete denial of service. Default Red Hat Enterprise Linux configurations do not run or enable the in-kernel NFS server daemon (nfsd), limiting the attack surface to systems specifically configured to export NFSv4.1 or NFSv4.2 shares. Deployments that do not operate as an NFS server are not exposed to this flaw.",
+  "affected_release" : [ {
+    "product_name" : "Red Hat Enterprise Linux 8",
+    "release_date" : "2026-11-26T00:00:00Z",
+    "advisory" : "RHSA-2026:103838",
+    "cpe" : "cpe:/a:redhat:enterprise_linux:8::nfv",
+    "package" : "kernel-rt-0:4.18.0-553.190.1.rt7.531.el8_10"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 8",
+    "release_date" : "2026-11-26T00:00:00Z",
+    "advisory" : "RHSA-2026:103838",
+    "cpe" : "cpe:/a:redhat:enterprise_linux:8::realtime",
+    "package" : "kernel-rt-0:4.18.0-553.190.1.rt7.531.el8_10"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 8",
+    "release_date" : "2026-11-26T00:00:00Z",
+    "advisory" : "RHSA-2026:103817",
+    "cpe" : "cpe:/o:redhat:enterprise_linux:8",
+    "package" : "kernel-0:4.18.0-553.190.1.el8_10"
+  } ],
+  "package_state" : [ {
+    "product_name" : "Red Hat Enterprise Linux 10",
+    "fix_state" : "Affected",
+    "package_name" : "kernel",
+    "cpe" : "cpe:/o:redhat:enterprise_linux:10"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 6",
+    "fix_state" : "Affected",
+    "package_name" : "kernel",
+    "cpe" : "cpe:/o:redhat:rhel_els:6"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 7",
+    "fix_state" : "Affected",
+    "package_name" : "kernel",
+    "cpe" : "cpe:/o:redhat:rhel_els:7"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 7",
+    "fix_state" : "Affected",
+    "package_name" : "kernel-rt",
+    "cpe" : "cpe:/o:redhat:rhel_els:7"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 9",
+    "fix_state" : "Affected",
+    "package_name" : "kernel",
+    "cpe" : "cpe:/o:redhat:enterprise_linux:9"
+  }, {
+    "product_name" : "Red Hat Enterprise Linux 9",
+    "fix_state" : "Affected",
+    "package_name" : "kernel-rt",
+    "cpe" : "cpe:/o:redhat:enterprise_linux:9"
+  }, {
+    "product_name" : "Red Hat OpenShift Container Platform 4",
+    "fix_state" : "Affected",
+    "package_name" : "openshift/ose-rhel-coreos-8",
+    "cpe" : "cpe:/a:redhat:openshift:4"
+  }, {
+    "product_name" : "Red Hat OpenShift Container Platform 4",
+    "fix_state" : "Affected",
+    "package_name" : "openshift/ose-rhel-coreos-9",
+    "cpe" : "cpe:/a:redhat:openshift:4"
+  }, {
+    "product_name" : "Red Hat OpenShift Container Platform 5",
+    "fix_state" : "Affected",
+    "package_name" : "openshift/ose-rhel-coreos-10",
+    "cpe" : "cpe:/a:redhat:openshift:5"
+  }, {
+    "product_name" : "Red Hat OpenShift Container Platform 5",
+    "fix_state" : "Affected",
+    "package_name" : "openshift/ose-rhel-coreos-9",
+    "cpe" : "cpe:/a:redhat:openshift:5"
+  } ],
+  "references" : [ "https://www.cve.org/CVERecord?id=CVE-2026-99362\nhttps://nvd.nist.gov/vuln/detail/CVE-2026-99362\nhttps://git.kernel.org/stable/c/1a5a227bca6a8a9f9d31230697aeb84c62a21da6\nhttps://git.kernel.org/stable/c/35ff1a7a7e3835c3e974bc5c45d335897564ceae\nhttps://git.kernel.org/stable/c/37fc2ec211630360e9aefcaaec8730db964645f2\nhttps://git.kernel.org/stable/c/ed98b0c57e5e84290c5b35428144ab26778905f3" ],
+  "name" : "CVE-2026-99362",
+  "mitigation" : {
+    "value" : "Disable the NFS server service if NFS sharing is not required on the system, or restrict network access to port 2049 to trusted networks.\nIf the NFS server is not required, stop and disable the service:\n```bash\nsystemctl stop nfs-server\nsystemctl disable nfs-server\n```\nIf the NFS server must remain operational, restrict access to trusted hosts using firewalld:\n```bash\nfirewall-cmd --permanent --remove-service=nfs\nfirewall-cmd --permanent --add-rich-rule='rule family=\"ipv4\" source address=\"<trusted_ip_or_subnet>\" service name=\"nfs\" accept'\nfirewall-cmd --reload\n```\nCaveats:\nDisabling `nfs-server` prevents the host from sharing files over the network. Restricting access via firewalld blocks any client outside the designated IP address or subnet from mounting or interacting with NFS exports.\nWarning:\nStopping `nfs-server` terminates active NFS sessions and interrupts active client operations. Executing `firewall-cmd --reload` activates firewall changes immediately, which will sever connections from clients not explicitly permitted.",
+    "lang" : "en:us"
+  },
+  "csaw" : false
+}

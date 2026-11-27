@@ -1,0 +1,1054 @@
+domain: FU1
+run_id: 2026-11-27T0355Z-intel
+item: S1 item 1 - NFS2ROOT, CVE-2026-99362, Linux kernel nfsd (NEW entry candidate)
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+read_at_utc: 2026-11-27, all pages fetched between 04:32Z and 04:37Z (per-claim read_at below)
+how_to_verify: 'Each claims[].passage is a contiguous substring of claims[].file (some passages span a hard-wrapped line break and carry the literal newline / trailing-space of the saved body). Check: for c in claims: c[''passage''] in open(c[''file'']).read().'
+verification:
+  claims: 130
+  passage_miss_count: 0
+  method: 'script: slice by start/end anchor from the saved body, then re-read the written YAML and re-test containment'
+one_line_verdict: 'Out-of-band action is warranted only for hosts that actually serve NFS (nfsd running with NFSv4.1/4.2 and TCP 2049 reachable beyond a storage segment): there the vendors'' own mitigation (restrict 2049 / stop nfs-server, or OpenSec/watchTowr''s switch-off of NFSv4.1+4.2) is the only protection today for Ubuntu (all releases still ''Vulnerable''), RHEL 9/10 and Debian bookworm''s 6.1 kernel (no fix listed); hosts that do not run nfsd need nothing beyond the normal kernel cycle (Red Hat: not exposed). Facts do not support a stop-everything call: no exploitation in the wild reported (watchTowr, 2026-11-26), not in CISA KEV (catalogue 2026.11.25), the exploit chain is described but private (OpenSec); what raises urgency is that the fix with the full root-cause text has been on the public linux-nfs list since 2026-08-17 and OpenSec claims a working unauthenticated root chain.'
+default_state_answer:
+  question: Is the NFS server only reachable when an operator exports shares?
+  stated_by_sources: 'Red Hat (vendor statement for RHEL only): default RHEL does not run or enable nfsd, so the attack surface is ''systems specifically configured to export NFSv4.1 or NFSv4.2 shares'' and non-NFS-server hosts are ''not exposed''. OpenSec: ''any Linux host serving NFSv4.1 or 4.2 (the default) on a reachable tcp/2049'' - here ''the default'' qualifies the NFS versions served by nfsd, not nfsd being on. watchTowr: must run the in-kernel NFS server with 4.1+ sessions.'
+  not_stated_anywhere: No fetched source says whether an nfsd with ZERO exports (or one that restricts exports by client address in /etc/exports) still answers EXCHANGE_ID / CREATE_SESSION / SEQUENCE from an arbitrary client, i.e. whether export ACLs reduce reach. OpenSec only says one unauthenticated TCP connection to 2049 suffices. Do not state that an export is required.
+  trap: watchTowr's sentence 'The CVE record marks the Linux kernel as affected by default ... with no additional configuration needed' is a statement about the record's version-range status, not about nfsd running by default; it must not be quoted as 'enabled by default'.
+cvss_and_who_scored:
+  cna_linux_kernel: CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H. EUVD names assigner 'Linux'; SUSE's table labels the 9.8 column 'Linux Kernel CNA'; Red Hat's table labels the same vector column 'cve.org'. NVD column reads N/A on Red Hat's page (NVD had no score at read time per that table).
+  red_hat: '9.4, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:H (integrity Low), rating Critical (Red Hat Security Data API: cvss3 status ''verified'').'
+  ubuntu: CVSS 4.0 9.3 (AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N) and CVSS 3.1 9.8 shown; page does not name the scorer; Ubuntu priority heading says critical.
+  suse: CVSS 3.1 9.8 (own column), CVSS 4.0 own score 9 with AT:P/PR:L; rated critical.
+  opensec: 9.8 stated twice; OpenSec says its Antara harness 'scored it 9.8' - its own score, same number as the CNA's.
+  epss: 0.76 from the EUVD field 'epss' (the only source stating EPSS; the field carries no as-of date).
+  kev: Not in the CISA KEV catalogue version 2026.11.25 (released 2026-11-25T19:48Z), checked with the bridge on 2026-11-27.
+fixed_per_branch:
+  original_kernel_cna_announcement_2026_11_19: 6.12.117 (1a5a227bca6a8a9f9d31230697aeb84c62a21da6), 6.18.61 (37fc2ec211630360e9aefcaaec8730db964645f2), 7.3.2 (ed98b0c57e5e84290c5b35428144ab26778905f3), 7.4-rc1 (35ff1a7a7e3835c3e974bc5c45d335897564ceae) - the announcement writes 'fixed in 6.12.117', 'fixed in 6.18.61', 'fixed in 7.3.2', 'fixed in 7.4-rc1', each 'Issue introduced in 3.16 with commit 47ee52986472dba068e8223cbaf1b65d74238781'.
+  later_record_versions: EUVD (dateUpdated 2026-11-23) and watchTowr (2026-11-26) additionally carry 5.10.275, 5.15.226, 6.1.193, 6.6.163. EUVD lists eight stable commits but does not map commit to branch, so no commit-to-branch mapping is claimed here for the four older branches.
+  why_they_differ: The announcement says the CVE record 'will be updated if fixes are backported'; the later branches came in via record updates (EUVD updated 2026-11-23). OpenSec's post lists only the four announced branches. Source of the extra four = the kernel CNA's updated record (EUVD and watchTowr read the same record), so they are one lineage, not two independent confirmations.
+  guard_commit: 241848cc774e (Chuck Lever) is described by its own text as 'a guard rather than a fix' ('Whether a COMPOUND reaches that boundary is unproven') and is not in the CNA fixed-version list.
+distro_status_read_2026_11_27:
+  debian: 'read 04:32:58Z: trixie 6.12.117-1 fixed (security 6.12.118-1 fixed); forky 7.3.5-1 fixed; sid 7.3.6-1 fixed (fixed-version table: unstable 7.3.3-1); bookworm ''linux'' 6.1.176-1 and security 6.1.192-3 VULNERABLE; bookworm linux-6.12 6.12.117-1~deb12u1 fixed via DLA-4927-1. No bullseye row on the page.'
+  ubuntu: 'read 04:32:59Z, page ''Last updated 25 November 2026'', priority critical: ''linux'' vulnerable on 24.04, 22.04, 20.04, 18.04, 16.04; 26.04 LTS and 26.10 ''Vulnerable work in progress'' (7.0.0-45.45 and 7.3.0-12.13); 14.04 ''Not affected'' for linux (linux-lts-xenial on 14.04 vulnerable). No release shows a fix; cloud/flavour kernels (aws, azure, gcp, oracle, ibm, raspi, kvm, lowlatency, realtime, fips, ...) also vulnerable.'
+  red_hat: 'read 04:33:24Z via Security Data API (the CVE HTML page extract omits the package table): RHEL 8 FIXED, RHSA-2026:103817 kernel-4.18.0-553.190.1.el8_10 and RHSA-2026:103838 kernel-rt, both released 2026-11-26; RHEL 9, RHEL 10, RHEL 7/6 (ELS) kernel and kernel-rt ''Affected'' (no fix listed); OpenShift 4 (RHCOS 8/9) and 5 (RHCOS 9/10) ''Affected''. Red Hat bugzilla 2576719 exists. Red Hat''s rating Critical, CVSS 9.4. Delta vs the S1 item: S1 did not mention the RHEL 8 errata.'
+  suse: 'read 04:33:24Z: overall state ''Pending'', rated critical, ''No SUSE Security Announcements cross referenced''; SLES 15 SP7 kernel-default Affected (kernel-source In progress), SLES 16.0 and 16.1 Affected, LTSS 12 SP5 and 15 SP4-SP6 Affected; SLE 11 SP4 variants ''Not affected''.'
+exploitation_status:
+  exactly_what_sources_say: 'watchTowr: ''As of November 26, 2026, no exploitation in the wild has been reported.'' table cell ''Not reported''; ''No attribution has been made public.'' OpenSec: ''The exploit stays private.''; exploit is a five-step sequence of ordinary NFS requests (overflow, KASLR leak via replay, forged-pointer free, refill with a fake callback built from NFS client names, hang up so nfsd runs the callback as root); shown in a recording (victim console plus OpenSec''s client on another machine, talking over tcp/2049). Red Hat only says RCE is ''potentially'' achievable, DoS/kernel panic is the sure outcome. EUVD and the kernel announcement carry no exploitation flag.'
+  discoverer_claims: root-shell chain, 'no human in the loop' autonomous build by Antara, 'kernel hardening does not remove the overflow', kernel warning in nfsd4_check_resp_size 'on every attempt' (the last two are OpenSec observations no other source corroborates).
+  vendor_facts: 'Red Hat: RCE or DoS, nfsd not on by default in RHEL; CNA text: heap OOB write, KASAN report from a KUnit task (kunit_try_catch) in the fix text; commit text describes the full mechanism.'
+  not_independently_reproduced: true
+discoverers_and_fix_timeline:
+  fix: 'Mainline commit 35ff1a7a7e3835c3e974bc5c45d335897564ceae (7.4-rc1), author Jérémy Jean <Jeremy.Jean@oss.cyber.gouv.fr>, author date Mon, 17 Aug 2026 20:57:14 -0400 (.patch header), trailers ''Assisted-by: Codex:gpt-5'', ''Tested-by: Mayank Jangid (OpenSec Intelligence)'', Signed-off-by Chuck Lever. Merge date into mainline is not stated by any source read.'
+  public_patch: Posted by the NFSD maintainer to the public linux-nfs list as [PATCH 1/2], Date 2026-08-17 20:57:14 -0400 (= 2026-08-18 00:57Z) with the complete root-cause + KASAN text; 2/2 is the 'guard'. So the mechanism was public ~13 weeks before the CVE (2026-11-19).
+  opensec: 'Antara flagged/exploited 2026-09-21 (OpenSec timeline); reported to NFSD maintainers and security@kernel.org 2026-09-22 with full exploit and a patch (OpenSec); own patch posted to linux-nfs 2026-09-22 11:26:08 +0000 (''Assisted-by: LLM''); OpenSec credits Jean as having found it independently.'
+  cve: Kernel CNA announcement Thu, 19 Nov 2026 15:24:20 +0100 (Greg Kroah-Hartman, linux-cve-announce); Red Hat public_date 2026-11-19T14:22:44Z; Ubuntu 'Publication date 19 November 2026'; EUVD datePublished Nov 19, 2026 2:22:44 PM.
+  attribution_of_credit_note: The CNA announcement carries no credit line; credit comes from the commit trailers and OpenSec's post. ANSSI affiliation of Jean is OpenSec's statement; the commit shows only an oss.cyber.gouv.fr address.
+exposure_test_and_detection:
+  discoverer_exposure_test: 'OpenSec ''Am I exposed?'' (all four must hold): kernel older than 6.12.117 / 6.18.61 / 7.3.2 / 7.4-rc1 with no distribution backport (uname -r); nfsd loaded (lsmod | grep -w nfsd); NFSv4.1/4.2 on (cat /proc/fs/nfsd/versions shows +4.1 or +4.2); listener on a non-loopback address (ss -ltn ''sport = :2049''). Caveats: the version line names only four branches (5.10/5.15/6.1/6.6 later fixes exist); ''nfsd loaded'' alone does not mean it is serving (the listener check is what matters).'
+  discoverer_hunt_signals: No network signature (valid NFS). Kernel warnings from nfsd4_check_resp_size on every attempt; oopses with nfsd4_*, svc_* or call_usermodehelper* frames; shells spawned by kernel workers on a file server; bursts of short NFSv4.1 sessions from one source. All from OpenSec only, no vendor corroboration.
+  post_patch_check: OpenSec's chain ends in a root shell spawned by nfsd's callback, so on a host that was reachable while unpatched the kernel-worker-spawned-shell check is the compromise review; OpenSec says nothing about persistence beyond that.
+mitigation_short_of_patching:
+  firewall: 'OpenSec, watchTowr, Red Hat all name restricting TCP 2049 to trusted/storage networks (Red Hat: firewalld rich rule; OpenSec: nft drop for sources outside the storage prefix).'
+  disable_nfs_server: 'Red Hat: systemctl stop/disable nfs-server where NFS is not needed (terminates active NFS sessions).'
+  disable_nfsv41_42: 'OpenSec: [nfsd] vers4.1=n and vers4.2=n in /etc/nfs.conf, restart nfs-server, turns off pNFS and some 4.2 features; watchTowr repeats ''turn off NFSv4.1 and 4.2''. This is the researchers'' stated mitigation; the kernel CNA text names no mitigation and says to update (cherry-picking not recommended). No vendor tracker read endorses it.'
+discrepancies:
+- topic: CVE publication date
+  detail: 'OpenSec says 20 Nov 2026 (timeline and disclosure paragraph); kernel announcement mail (Thu, 19 Nov 2026 15:24:20 +0100), Red Hat public_date 2026-11-19T14:22:44Z, EUVD, Ubuntu and watchTowr say 19 Nov. Verdict: 19 Nov 2026; OpenSec is the outlier.'
+- topic: Fixed-version list
+  detail: 'Original CNA announcement and OpenSec: 4 branches; EUVD (updated 2026-11-23) and watchTowr: 8. Not a conflict, a record update (see fixed_per_branch).'
+- topic: Report date to kernel
+  detail: 'OpenSec: reported 22 Sep 2026 (flagged 21 Sep). watchTowr: ''reported as a security issue by OpenSec on September 21, 2026''. OpenSec''s own patch mail is dated 22 Sep 2026 11:26:08 +0000. Verdict: 22 Sep for the report; 21 Sep is OpenSec''s internal discovery date.'
+- topic: Fix commit ids
+  detail: 'OpenSec cites 5d5a72e965c8 and 241848cc774e (GitHub shows both under torvalds/linux with the same subject/author date, 5d5a72e''s parent 5cd1a33); the kernel CNA lists mainline 35ff1a7a7e3835c3e974bc5c45d335897564ceae. The 35ff1a7a copy carries a ''Tested-by: Mayank Jangid (OpenSec Intelligence)'' trailer that the 5d5a72e copy lacks, i.e. 5d5a72e looks like a pre-merge hash. Cite 35ff1a7a (CNA/Debian) as the mainline fix; the relationship between the two hashes is my inference from the trailers, not a source statement.'
+- topic: CVSS
+  detail: 9.8 (CNA, SUSE, EUVD, OpenSec own score) vs Red Hat 9.4 (I:L) vs Ubuntu CVSS4 9.3 vs SUSE CVSS4 9.0. Different scorers, not a factual conflict.
+- topic: Who is exposed
+  detail: 'OpenSec: any host serving NFSv4.1/4.2 on reachable 2049; watchTowr: hosts accepting connections ''from outside networks''/''internet exposed''; Red Hat: only systems configured to export NFSv4.1/4.2. All share the same precondition; differ in how narrowly they word reach.'
+- topic: Debian internal
+  detail: 'Fixed-version table says unstable 7.3.3-1; status table shows sid 7.3.6-1 fixed (consistent: fixed at 7.3.3-1).'
+- topic: Credit
+  detail: OpenSec credits Jean for both commits; the .patch header of 241848c shows Chuck Lever as author (message Link still jean-v1-2).
+gaps:
+- git.kernel.org and the lore HTML pages sit behind Anubis; the kernel announcement was read through the jina reader on lore's /raw variant (cite the message URL; the /raw URL is the one fetched). WebFetch on the HTML message returned HTTP 403.
+- The Red Hat CVE HTML page extracted without its package table; the Security Data API JSON (access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json) supplied it.
+- cve.org / NVD were not fetched or cited; scorer attribution rests on SUSE's and Red Hat's labelled columns plus EUVD's assigner field.
+- 'No source states: nfsd behaviour with zero exports, mainline merge date of the fix, internet-wide exposure of 2049, or any third-party reproduction.'
+- A search snippet (not fetched, not a source) mentions a separate nfsd session-slot bug CVE-2026-99366 (use-after-free since v6.14); NOT verified, NOT part of this item - lead only if the composer wants an adjacent-flaw sentence.
+fetch_log:
+- 'extract: opensec (served via jina, 10110 B), watchtowr, debian, ubuntu, redhat, suse, github commits 5d5a72e / 241848c / 35ff1a7 (trafilatura-direct)'
+- 'url: euvd JSON, redhat API JSON, github .patch x3'
+- 'jina (lore /raw): kernel announcement, lore search listing, Jean''s and OpenSec''s patch mails; extract/url/WebFetch on lore and git.kernel.org returned the Anubis challenge / 403'
+- 'bridge cisa-kev: absence check'
+- no source needed more than one retry
+claims:
+- topic: component
+  claim: 'Kernel CNA CVE description: flaw is in nfsd4_sequence() narrowing the reply buffer before accepting the slot seqid (this is the CVE description wording)'
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: 'nfsd4_sequence() narrows the reply buffer to the session''s cached
+
+    reply limit before it accepts the slot seqid. A client may negotiate
+
+    ca_maxresponsesize_cached down to NFSD_MIN_HDR_SEQ_SZ, and
+
+    nfsd4_alloc_slot() then gives every slot a zero-length sl_data[]. A
+
+    COMPOUND tag can fill that narrowed buffer until it holds the
+
+    SEQUENCE opcode but not the status word that follows.
+
+    nfsd4_encode_operation() returns without running
+
+    nfsd4_encode_sequence(), so cstate.data_offset stays zero. It leaves
+
+    op->status at nfs_ok as well, so the COMPOUND is treated as having
+
+    succeeded.'
+- topic: component
+  claim: 'CNA text: copy of whole reply (headers + client-chosen COMPOUND tag) into a zero-length slot buffer'
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: 'nfsd4_store_cache_entry() declines to cache a lone SEQUENCE that
+
+    returned an error. That test reads the status the operation
+
+    reported, so it passes here. The copy starts at offset zero and
+
+    takes the whole reply, RPC and COMPOUND headers included, into the
+
+    zero-length sl_data[]. The COMPOUND tag is copied along with it, so
+
+    the client picks most of the bytes written past the end of the slot:'
+- topic: component
+  claim: 'CNA text: fix is a pre-check that the SEQUENCE result fits before narrowing the buffer and consuming the slot seqid'
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: 'Check that the fixed-size SEQUENCE result, plus room for a following
+
+    operation''s error status, fits the negotiated limit before narrowing
+
+    the buffer and consuming the slot seqid. The slot and its reply
+
+    cache are left unchanged, as RFC 8881 Section 2.10.6.1.2 requires of
+
+    an error returned from SEQUENCE.'
+- topic: component
+  claim: Same description wording on Debian tracker (distro reproduces the CNA text verbatim, one line)
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: 'In the Linux kernel, the following vulnerability has been resolved: nfsd: preflight SEQUENCE replies before accepting a slot'
+- topic: component
+  claim: Affected file per CNA
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: "The file(s) affected by this issue are:\n\tfs/nfsd/nfs4state.c"
+- topic: component
+  claim: Client negotiates ca_maxresponsesize_cached down to NFSD_MIN_HDR_SEQ_SZ; every slot then has a zero-length sl_data[]
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: 'A client may negotiate
+
+    ca_maxresponsesize_cached down to NFSD_MIN_HDR_SEQ_SZ, and
+
+    nfsd4_alloc_slot() then gives every slot a zero-length sl_data[].'
+- topic: component
+  claim: 'Introduced in Linux 3.16 by commit 47ee52986472 (the Fixes: trailer names it ''nfsd4: adjust buflen to session channel limit'')'
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/35ff1a7a7e3835c3e974bc5c45d335897564ceae.patch
+  file: work/2026-11-27T0355Z-intel/fu1/patch_35ff1a7.txt
+  read_at: '2026-11-27T04:34:57Z'
+  passage: 'Fixes: 47ee52986472 ("nfsd4: adjust buflen to session channel limit")'
+- topic: precondition
+  claim: 'OpenSec headline: pre-auth heap overflow in nfsd'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Pre-auth heap overflow in the Linux NFS server (nfsd)
+- topic: precondition
+  claim: 'OpenSec: who is affected (NFSv4.1/4.2 ''the default'' on a reachable tcp/2049) - discoverer''s wording; ''the default'' refers to the NFS versions served, not to nfsd running'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: any Linux host serving NFSv4.1 or 4.2 (the default) on a reachable tcp/2049.
+- topic: precondition
+  claim: 'OpenSec: why unauthenticated - parsing happens in-kernel before identity is known'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The NFS server runs inside the kernel and parses network input before it knows who you are.
+- topic: precondition
+  claim: 'OpenSec: client controls the reply cache size (root cause)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Each NFSv4.1 session slot caches its last reply, so a retried request is answered exactly once. The client decides how big that cache is.
+- topic: precondition
+  claim: 'watchTowr: precondition = built-in NFS server with NFSv4.1-or-later sessions'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The affected system must run the Linux kernel's built-in NFS server with NFS version 4.1 or later sessions
+- topic: precondition
+  claim: 'watchTowr: prioritise hosts running nfsd with 4.1 sessions that accept connections from outside networks'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Security teams should prioritize Linux systems that run the in-kernel NFS server with NFS version 4.1 sessions enabled and that accept connections from outside networks
+- topic: precondition
+  claim: watchTowr reads the CVE record as 'affected by default' from 3.16 (this is a version-range statement of the record, NOT a statement that nfsd runs by default; Red Hat says the opposite for default RHEL)
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The CVE record marks the Linux kernel as affected by default from version 3.16 onward, with no additional configuration needed to be exposed.
+- topic: precondition
+  claim: 'Red Hat: default RHEL does not run/enable nfsd; exposure limited to systems configured to export NFSv4.1/4.2 shares (vendor fact about RHEL defaults)'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: Default Red Hat Enterprise Linux configurations do not run or enable the in-kernel NFS server daemon (nfsd), limiting the attack surface to systems specifically configured to export NFSv4.1 or NFSv4.2 shares.
+- topic: precondition
+  claim: 'Red Hat: hosts that are not NFS servers are not exposed'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: Deployments that do not operate as an NFS server are not exposed to this flaw.
+- topic: precondition
+  claim: 'Red Hat severity rationale: unauthenticated network-adjacent or remote attacker; RCE only ''potentially'''
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: Critical severity is assigned because an unauthenticated network-adjacent or remote attacker can trigger kernel heap corruption, potentially achieving remote code execution or causing a kernel panic that leads to complete denial of service.
+- topic: precondition
+  claim: 'Red Hat CVE description: out-of-bounds write, crash/DoS or potentially arbitrary code'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: A remote client can trigger an out-of-bounds memory write by negotiating a minimal cached reply size and sending crafted compound requests containing SEQUENCE operations.
+- topic: cvss
+  claim: 'EUVD: assigner is ''Linux'' (the kernel CNA)'
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"assigner":"Linux"'
+- topic: cvss
+  claim: 'EUVD: CVSS 3.1 base 9.8 with vector (EUVD does not itself label who scored; assigner Linux, SUSE''s table attributes the 9.8 to the Linux Kernel CNA)'
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"baseScore":9.8,"baseScoreVersion":"3.1","baseScoreVector":"CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"'
+- topic: cvss
+  claim: EUVD EPSS field (the only source that states EPSS; value as returned at read time, field carries no date)
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"epss":0.76'
+- topic: cvss
+  claim: 'SUSE table: columns CNA(NVD) / Linux Kernel CNA / SUSE all list CVSS 3.1 9.8 (attributes a 9.8 vector C:H/I:H/A:H to the Linux Kernel CNA)'
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "| CVSS detail | CNA (NVD) | Linux Kernel CNA | SUSE | \n|---|---|---|---|\n| Base Score | 9.8 | 9.8 | 9.8 |"
+- topic: cvss
+  claim: 'Red Hat''s own CVSS 3.1 vector (9.4: integrity impact Low) - Red Hat scores differently from the CNA'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: 'Red Hat: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:H'
+- topic: cvss
+  claim: 'Red Hat page: cve.org column 9.8 with I:H; NVD column N/A (NVD had not scored at read time per Red Hat''s table)'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '| Base Score | 9.4 | N/A | 9.8 |'
+- topic: cvss
+  claim: 'Red Hat Security Data API: cvss3_base_score 9.4, threat_severity Critical'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: '"cvss3_base_score" : "9.4"'
+- topic: cvss
+  claim: 'Red Hat API: threat_severity Critical'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: '"threat_severity" : "Critical"'
+- topic: cvss
+  claim: Ubuntu page shows a CVSS 4.0 vector with base 9.3 Critical (page does not name the scorer)
+  maker: distro tracker fact (Ubuntu)
+  source_url: https://ubuntu.com/security/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/ubuntu.md
+  read_at: '2026-11-27T04:32:59Z'
+  passage: '**Vector:** CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N'
+- topic: cvss
+  claim: Ubuntu priority rationale heading (critical)
+  maker: distro tracker fact (Ubuntu)
+  source_url: https://ubuntu.com/security/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/ubuntu.md
+  read_at: '2026-11-27T04:32:59Z'
+  passage: '### Why is this CVE critical priority?'
+- topic: cvss
+  claim: 'SUSE: rated critical; overall state Pending'
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: 'Overall state of this security issue: Pending
+
+
+    This issue is currently rated as having [critical](https://www.suse.com/support/security/rating/) severity.'
+- topic: cvss
+  claim: SUSE's own CVSS v4 base 9 with vector AT:P/PR:L
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "| Base Score | 9 | \n| Vector | CVSS:4.0/AV:N/AC:L/AT:P/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H |"
+- topic: cvss
+  claim: 'OpenSec: its own harness (Antara) scored the bug 9.8 (the same 9.8 the CNA carries; independent scoring, not a reference to the CNA)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Antara, OpenSec's white-box harness, flagged the `nfsd` reply-cache path, scored it 9.8
+- topic: cvss
+  claim: OpenSec 'Key facts' severity line
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Severity** 9.8 Critical (AV:N/AC:L/PR:N/UI:N)'
+- topic: component
+  claim: 'CNA text: the quoted KASAN report is from a KUnit test task (kunit_try_catch), Write of size 80 - i.e. a test-harness reproduction in the upstream fix text, not a field observation'
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: Write of size 80 at addr ffff888003a549cd by task kunit_try_catch/24
+- topic: component
+  claim: 'OpenSec arithmetic on the KASAN report: 80 bytes copied, 61 past the heap object, 40 client-chosen (OpenSec''s reading of the upstream report)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: That is 80 bytes copied, 61 of them past the end of the heap object, 40 of them chosen by the client.
+- topic: fixed
+  claim: Kernel CNA announcement of 2026-11-19 lists FOUR fixed branches only (6.12.117, 6.18.61, 7.3.2, 7.4-rc1), each with its commit
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: "Issue introduced in 3.16 with commit 47ee52986472dba068e8223cbaf1b65d74238781 and fixed in 6.12.117 with commit 1a5a227bca6a8a9f9d31230697aeb84c62a21da6\n\tIssue introduced in 3.16 with commit 47ee52986472dba068e8223cbaf1b65d74238781 and fixed in 6.18.61 with commit 37fc2ec211630360e9aefcaaec8730db964645f2\n\tIssue introduced in 3.16 with commit 47ee52986472dba068e8223cbaf1b65d74238781 and fixed in 7.3.2 with commit ed98b0c57e5e84290c5b35428144ab26778905f3\n\tIssue introduced in 3.16 with commit 47ee52986472dba068e8223cbaf1b65d74238781 and fixed in 7.4-rc1 with commit 35ff1a7a7e3835c3e974bc5c45d335897564ceae"
+- topic: fixed
+  claim: 'CNA: record will be updated if fixes are backported (explains why EUVD/watchTowr later carry more branches)'
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: will be updated if fixes are backported, please check that for the most
+- topic: fixed
+  claim: 'CNA mitigation line: update to latest stable; cherry-picking not recommended'
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: 'The Linux kernel CVE team recommends that you update to the latest
+
+    stable kernel version for this, and many other bugfixes.'
+- topic: fixed
+  claim: EUVD record (dateUpdated 2026-11-23) carries a patch entry for 5.10.275 - a branch NOT in the original CNA announcement
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 5.10.275"'
+- topic: fixed
+  claim: EUVD record (dateUpdated 2026-11-23) carries a patch entry for 5.15.226 - a branch NOT in the original CNA announcement
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 5.15.226"'
+- topic: fixed
+  claim: EUVD record (dateUpdated 2026-11-23) carries a patch entry for 6.1.193 - a branch NOT in the original CNA announcement
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 6.1.193"'
+- topic: fixed
+  claim: EUVD record (dateUpdated 2026-11-23) carries a patch entry for 6.6.163 - a branch NOT in the original CNA announcement
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 6.6.163"'
+- topic: fixed
+  claim: EUVD record carries patch entry 6.12.117
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 6.12.117"'
+- topic: fixed
+  claim: EUVD record carries patch entry 6.18.61
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 6.18.61"'
+- topic: fixed
+  claim: EUVD record carries patch entry 7.3.2
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 7.3.2"'
+- topic: fixed
+  claim: EUVD record carries patch entry 7.4-rc1
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"product_version":"patch: 7.4-rc1"'
+- topic: fixed
+  claim: EUVD record dates (datePublished/dateUpdated); the kernel record was therefore updated after publication (backport branches added)
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"datePublished":"Nov 19, 2026, 2:22:44 PM","dateUpdated":"Nov 23, 2026, 8:01:56 AM"'
+- topic: fixed
+  claim: 'EUVD references: eight stable commits (four older-branch commits aff12e32.., 6a26c547.., fa85acf0.., cd303eb2.. plus the four in the announcement); EUVD does not map commit to branch'
+  maker: registry record (ENISA EUVD)
+  source_url: https://euvdservices.enisa.europa.eu/api/search?text=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/euvd.json
+  read_at: '2026-11-27T04:33:00Z'
+  passage: '"references":"https://git.kernel.org/stable/c/aff12e327620258123f847d7d06565f4555c5cb4\nhttps://git.kernel.org/stable/c/6a26c5473bb112d8420ffd48d5331bc5fb5a2065\nhttps://git.kernel.org/stable/c/fa85acf074f000ad3d1a5ffb703128ff97de983d\nhttps://git.kernel.org/stable/c/cd303eb29cf34a6780f4c42aca5b8ca4a05a5d59'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 5.10 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 5.10 series | 3.16 up to but not including 5.10.275 | 5.10.275 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 5.15 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 5.15 series | 3.16 up to but not including 5.15.226 | 5.15.226 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 6.1 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 6.1 series | 3.16 up to but not including 6.1.193 | 6.1.193 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 6.6 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 6.6 series | 3.16 up to but not including 6.6.163 | 6.6.163 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 6.12 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 6.12 series | 3.16 up to but not including 6.12.117 | 6.12.117 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 6.18 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 6.18 series | 3.16 up to but not including 6.18.61 | 6.18.61 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel 7.3 series'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel 7.3 series | 3.16 up to but not including 7.3.2 | 7.3.2 |'
+- topic: fixed
+  claim: 'watchTowr per-branch affected/fixed row: Linux kernel mainline'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '| Linux kernel mainline | 3.16 up to but not including 7.4-rc1 | 7.4-rc1 |'
+- topic: fixed
+  claim: OpenSec lists only four fixed branches (matches the original CNA announcement; omits 5.10/5.15/6.1/6.6)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Fixed in Linux 6.12.117, 6.18.61, 7.3.2 and 7.4-rc1. Update the kernel and reboot.
+- topic: fixed
+  claim: 'OpenSec: on a distribution kernel install the update listing the CVE (distro backports decide, not the version number)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: On a distribution kernel, install the update that lists CVE-2026-99362.
+- topic: fixed
+  claim: watchTowr remediation sentence (names the four branches OpenSec names, 'such as')
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Update the Linux kernel to the fixed version for the running branch, such as 6.12.117, 6.18.61, 7.3.2, or 7.4-rc1, then reboot.
+- topic: fixed
+  claim: Upstream follow-up commit 241848c is described by its author as a guard, not the fix; reachability of that boundary 'unproven' (commit text); this commit is not in the CNA fixed-version list
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/241848cc774e
+  file: work/2026-11-27T0355Z-intel/fu1/commit_2418.md
+  read_at: '2026-11-27T04:33:26Z'
+  passage: COMPOUND reaches that boundary is unproven, so this is a guard
+- topic: distro-debian
+  claim: 'Debian: bookworm 6.1.176-1 vulnerable (read 2026-11-27T04:32:58Z)'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: bookworm | 6.1.176-1 | vulnerable
+- topic: distro-debian
+  claim: 'Debian: bookworm (security) 6.1.192-3 vulnerable'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: bookworm (security) | 6.1.192-3 | vulnerable
+- topic: distro-debian
+  claim: 'Debian: trixie 6.12.117-1 fixed'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: trixie | 6.12.117-1 | fixed
+- topic: distro-debian
+  claim: 'Debian: trixie (security) 6.12.118-1 fixed'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: trixie (security) | 6.12.118-1 | fixed
+- topic: distro-debian
+  claim: 'Debian: forky 7.3.5-1 fixed; sid 7.3.6-1 fixed'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: "forky | 7.3.5-1 | fixed | \n|  | sid | 7.3.6-1 | fixed"
+- topic: distro-debian
+  claim: 'Debian: bookworm (security) linux-6.12 6.12.117-1~deb12u1 fixed via DLA-4927-1 (the 6.12 backport kernel package, not bookworm''s default 6.1 kernel)'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: bookworm (security) | 6.12.117-1\~deb12u1 | fixed
+- topic: distro-debian
+  claim: 'Debian fixed-version table: trixie 6.12.117-1; (unstable) 7.3.3-1; bookworm linux-6.12 6.12.117-1~deb12u1 [DLA-4927-1] (no fixed version listed for bookworm''s linux 6.1 source package)'
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: "| [linux](https://security-tracker.debian.org/tracker/source-package/linux) | source | trixie | 6.12.117-1 |  |  |  | \n| [linux](https://security-tracker.debian.org/tracker/source-package/linux) | source | (unstable) | 7.3.3-1 |  |  |  |"
+- topic: distro-debian
+  claim: Debian DLA-4927-1 tracker page lists CVE-2026-99362 among its CVEs
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/DLA-4927-1
+  file: work/2026-11-27T0355Z-intel/fu1/debian_dla4927.md
+  read_at: '2026-11-27T04:35:24Z'
+  passage: '[CVE-2026-99362](https://security-tracker.debian.org/tracker/CVE-2026-99362)'
+- topic: distro-debian
+  claim: Debian tracker's reference list includes OpenSec's post and the mainline commit 35ff1a7a (7.4-rc1)
+  maker: distro tracker fact (Debian)
+  source_url: https://security-tracker.debian.org/tracker/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/debian.md
+  read_at: '2026-11-27T04:32:58Z'
+  passage: '[https://git.kernel.org/linus/35ff1a7a7e3835c3e974bc5c45d335897564ceae](https://git.kernel.org/linus/35ff1a7a7e3835c3e974bc5c45d335897564ceae) (7.4-rc1)'
+- topic: distro-ubuntu
+  claim: 'Ubuntu: publication date 19 Nov 2026, last updated 25 Nov 2026 (page read 2026-11-27T04:32:59Z; no release shows a fixed/released state)'
+  maker: distro tracker fact (Ubuntu)
+  source_url: https://ubuntu.com/security/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/ubuntu.md
+  read_at: '2026-11-27T04:32:59Z'
+  passage: 'Publication date 19 November 2026
+
+
+    Last updated 25 November 2026'
+- topic: distro-ubuntu
+  claim: 'Ubuntu: ''linux'' kernel package per release - 26.10 and 26.04 vulnerable/work in progress, 24.04 to 16.04 vulnerable, 14.04 not affected'
+  maker: distro tracker fact (Ubuntu)
+  source_url: https://ubuntu.com/security/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/ubuntu.md
+  read_at: '2026-11-27T04:32:59Z'
+  passage: "| linux | 26.10 stonking | Vulnerable work in progress in 7.3.0-12.13 | \n|  | 26.04 LTS resolute | Vulnerable work in progress in 7.0.0-45.45 | \n|  | 24.04 LTS noble | Vulnerable | \n|  | 22.04 LTS jammy | Vulnerable | \n|  | 20.04 LTS focal | Vulnerable | \n|  | 18.04 LTS bionic | Vulnerable | \n|  | 16.04 LTS xenial | Vulnerable | \n|  | 14.04 LTS trusty | Not affected |"
+- topic: distro-ubuntu
+  claim: 'Ubuntu: cloud/flavour kernels also vulnerable, e.g. linux-aws on every release 14.04-26.10 (my own count over the saved body: 75 kernel source packages with at least one ''Vulnerable'' row, none shows a fixed/released state; the count is not a quoted passage)'
+  maker: distro tracker fact (Ubuntu)
+  source_url: https://ubuntu.com/security/CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/ubuntu.md
+  read_at: '2026-11-27T04:32:59Z'
+  passage: "| linux-aws | 26.10 stonking | Vulnerable | \n|  | 26.04 LTS resolute | Vulnerable | \n|  | 24.04 LTS noble | Vulnerable | \n|  | 22.04 LTS jammy | Vulnerable | \n|  | 20.04 LTS focal | Vulnerable | \n|  | 18.04 LTS bionic | Vulnerable | \n|  | 16.04 LTS xenial | Vulnerable | \n|  | 14.04 LTS trusty | Vulnerable |"
+- topic: distro-redhat
+  claim: 'Red Hat API: RHEL 8 fixed by RHSA-2026:103817 (kernel-0:4.18.0-553.190.1.el8_10), release_date 2026-11-26 (API read 2026-11-27T04:33:24Z)'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "\"product_name\" : \"Red Hat Enterprise Linux 8\",\n    \"release_date\" : \"2026-11-26T00:00:00Z\",\n    \"advisory\" : \"RHSA-2026:103817\",\n    \"cpe\" : \"cpe:/o:redhat:enterprise_linux:8\",\n    \"package\" : \"kernel-0:4.18.0-553.190.1.el8_10\""
+- topic: distro-redhat
+  claim: 'Red Hat API: RHEL 8 realtime/NFV kernel-rt fix RHSA-2026:103838 (4.18.0-553.190.1.rt7.531.el8_10), 2026-11-26'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "\"product_name\" : \"Red Hat Enterprise Linux 8\",\n    \"release_date\" : \"2026-11-26T00:00:00Z\",\n    \"advisory\" : \"RHSA-2026:103838\",\n    \"cpe\" : \"cpe:/a:redhat:enterprise_linux:8::nfv\",\n    \"package\" : \"kernel-rt-0:4.18.0-553.190.1.rt7.531.el8_10\""
+- topic: distro-redhat
+  claim: 'Red Hat API: RHEL 9 kernel ''Affected'' (no fix listed at read time)'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "\"product_name\" : \"Red Hat Enterprise Linux 9\",\n    \"fix_state\" : \"Affected\",\n    \"package_name\" : \"kernel\","
+- topic: distro-redhat
+  claim: 'Red Hat API: RHEL 10 kernel ''Affected'''
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "\"product_name\" : \"Red Hat Enterprise Linux 10\",\n    \"fix_state\" : \"Affected\",\n    \"package_name\" : \"kernel\","
+- topic: distro-redhat
+  claim: 'Red Hat API: RHEL 7 (ELS) kernel ''Affected'''
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "\"product_name\" : \"Red Hat Enterprise Linux 7\",\n    \"fix_state\" : \"Affected\",\n    \"package_name\" : \"kernel\","
+- topic: distro-redhat
+  claim: 'Red Hat API: OpenShift Container Platform 4 (RHCOS 8/9) and 5 (RHCOS 9/10) ''Affected'''
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "\"product_name\" : \"Red Hat OpenShift Container Platform 4\",\n    \"fix_state\" : \"Affected\",\n    \"package_name\" : \"openshift/ose-rhel-coreos-8\","
+- topic: distro-redhat
+  claim: 'Red Hat API: public_date 2026-11-19T14:22:44Z'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/hydra/rest/securitydata/cve/CVE-2026-99362.json
+  file: work/2026-11-27T0355Z-intel/fu1/redhat_api.json
+  read_at: '2026-11-27T04:33:24Z'
+  passage: '"public_date" : "2026-11-19T14:22:44Z"'
+- topic: distro-redhat
+  claim: 'Red Hat mitigation: stop/disable nfs-server if not needed, or restrict TCP 2049 to trusted sources via firewalld'
+  maker: vendor statement (Red Hat)
+  source_url: https://access.redhat.com/security/cve/cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/redhat.md
+  read_at: '2026-11-27T04:33:00Z'
+  passage: Disable the NFS server service if NFS sharing is not required on the system, or restrict network access to port 2049 to trusted networks.
+- topic: distro-suse
+  claim: 'SUSE: SLES 15 SP7 kernel-default Affected, kernel-source In progress (page read 2026-11-27T04:33:24Z)'
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "| SUSE Linux Enterprise Server 15 SP7 | kernel-default | Affected | \n| SUSE Linux Enterprise Server 15 SP7 | kernel-source | In progress |"
+- topic: distro-suse
+  claim: 'SUSE: SLES 16.0 and 16.1 kernel-default Affected'
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "| SUSE Linux Enterprise Server 16.0 | kernel-default | Affected | \n| SUSE Linux Enterprise Server 16.0 | kernel-source | Affected | \n| SUSE Linux Enterprise Server 16.1 | kernel-default | Affected |"
+- topic: distro-suse
+  claim: 'SUSE: LTSS products - SLES 12 SP5-LTSS and 15 SP4/SP5/SP6-LTSS kernel-default and kernel-source all Affected'
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: "| SUSE Linux Enterprise Server 12 SP5-LTSS | kernel-default | Affected | \n| SUSE Linux Enterprise Server 12 SP5-LTSS | kernel-source | Affected | \n| SUSE Linux Enterprise Server 15 SP4-LTSS | kernel-default | Affected | \n| SUSE Linux Enterprise Server 15 SP4-LTSS | kernel-source | Affected | \n| SUSE Linux Enterprise Server 15 SP5-LTSS | kernel-default | Affected | \n| SUSE Linux Enterprise Server 15 SP5-LTSS | kernel-source | Affected | \n| SUSE Linux Enterprise Server 15 SP6-LTSS | kernel-default | Affected | \n| SUSE Linux Enterprise Server 15 SP6-LTSS | kernel-source | Affected |"
+- topic: distro-suse
+  claim: 'SUSE: no SUSE Security Announcements cross-referenced'
+  maker: distro tracker fact (SUSE)
+  source_url: https://www.suse.com/security/cve/CVE-2026-99362/
+  file: work/2026-11-27T0355Z-intel/fu1/suse.md
+  read_at: '2026-11-27T04:33:24Z'
+  passage: No SUSE Security Announcements cross referenced.
+- topic: exploitation
+  claim: 'watchTowr: no exploitation in the wild reported as of 2026-11-26 (watchTowr statement; its method is not described)'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: As of November 26, 2026, no exploitation in the wild has been reported.
+- topic: exploitation
+  claim: watchTowr table cell 'Not reported' and no attribution
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: No attribution has been made public.
+- topic: exploitation
+  claim: 'OpenSec: exploit stays private'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: 'The exploit stays private. Each step is an ordinary NFS request:'
+- topic: exploitation
+  claim: OpenSec exploit behaviour step 1 (overflow corrupts neighbouring slot bookkeeping)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The write corrupts the neighbouring slot's bookkeeping.
+- topic: exploitation
+  claim: OpenSec step 2 (replay request leaks 3.8 KB kernel heap and the KASLR slide)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: A replay request returns 3.8 KB of kernel heap, and with it the KASLR slide.
+- topic: exploitation
+  claim: OpenSec step 3 (forged pointer frees an object of the attacker's choice)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: A forged pointer makes the kernel free an object we choose.
+- topic: exploitation
+  claim: OpenSec step 4 (refill with a fake callback built from NFS client names)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: We refill that memory with a fake callback built from NFS client names.
+- topic: exploitation
+  claim: OpenSec step 5 (hang up; nfsd calls the callback; command runs as root)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: We hang up. `nfsd` calls the fake callback, and the kernel runs `/bin/sh` as root.
+- topic: exploitation
+  claim: 'OpenSec: demonstration is a recording (victim console on one side, OpenSec''s client on another machine); no third-party reproduction is cited by any source read'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: 'A real run, end to end. Left: the victim''s console. Right: our client on another machine, talking to the victim only over tcp/2049.'
+- topic: exploitation
+  claim: 'OpenSec: autonomous discovery and exploit build by its Antara harness (marketing-adjacent claim by a vendor of that harness)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: end to end, with no human in the loop.
+- topic: exploitation
+  claim: 'OpenSec: kernel hardening does not remove the overflow'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Kernel hardening does not remove the overflow. Patch every host.
+- topic: exploitation
+  claim: 'Root-cause: the kernel itself warns in nfsd4_check_resp_size only after the out-of-bounds copy has already happened (OpenSec observation)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The overflow. The kernel warns in `nfsd4_check_resp_size`, but the out-of-bounds copy has already happened.
+- topic: exploitation
+  claim: 'CISA KEV catalogue read at 2026-11-27 (catalogVersion 2026.11.25, released 2026-11-25T19:48Z): CVE-2026-99362 is NOT listed (absence; passage is the catalogue header)'
+  maker: CISA KEV (absence check)
+  source_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge cisa-kev JSON; catalogue not citable as a page, absence check only)
+  file: work/2026-11-27T0355Z-intel/fu1/cisa_kev.json
+  read_at: 2026-11-27T04:3xZ (bridge, after 04:36Z)
+  passage: "\"catalogVersion\": \"2026.11.25\",\n  \"dateReleased\": \"2026-11-25T19:48:12.4344Z\","
+- topic: exposure-test
+  claim: OpenSec exposure test 1 (kernel version) - NOTE wording names only the four branches OpenSec lists
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Older than 6.12.117, 6.18.61, 7.3.2 or 7.4-rc1, with no distribution backport
+- topic: exposure-test
+  claim: OpenSec exposure test 2 (nfsd loaded)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The in-kernel NFS server is loaded`lsmod | grep -w nfsd`
+- topic: exposure-test
+  claim: OpenSec exposure test 3 (NFSv4.1/4.2 enabled)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The list shows `+4.1` or `+4.2``cat /proc/fs/nfsd/versions`
+- topic: exposure-test
+  claim: OpenSec exposure test 4 (listener on a non-loopback address)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Listening on an address other than loopback`ss -ltn 'sport = :2049'`
+- topic: exposure-test
+  claim: 'OpenSec: all four true = exposed'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Tick what's true for your host. All four means exposed, today.
+- topic: detection
+  claim: 'OpenSec hunt: valid NFS, no network signature'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The attack is valid NFS, so there is no network signature.
+- topic: detection
+  claim: 'OpenSec hunt: kernel warnings from nfsd4_check_resp_size on every attempt (OpenSec''s observation; no other source corroborates)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Kernel warnings** from `nfsd4_check_resp_size`, on every attempt, successful or not.'
+- topic: detection
+  claim: 'OpenSec hunt: oopses with nfsd4_*, svc_* or call_usermodehelper* frames'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Oopses** with `nfsd4_*`, `svc_*` or `call_usermodehelper*` frames.'
+- topic: detection
+  claim: 'OpenSec hunt: shells spawned by kernel workers on a file server (post-exploitation check)'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Shells spawned by kernel workers** on a file server.'
+- topic: detection
+  claim: 'OpenSec hunt: bursts of short NFSv4.1 sessions from one source'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Bursts of short NFSv4.1 sessions** from one source.'
+- topic: mitigation
+  claim: 'OpenSec: stop-gap = firewall tcp/2049 until patched'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Now:** patch and reboot. Until then, firewall tcp/2049.'
+- topic: mitigation
+  claim: 'OpenSec: only the storage network should reach nfsd'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Only the storage network may reach nfsd
+- topic: mitigation
+  claim: 'OpenSec: disable NFSv4.1 and 4.2 in /etc/nfs.conf [nfsd] then restart nfs-server'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: 'vers4.1=n
+
+    vers4.2=n'
+- topic: mitigation
+  claim: 'OpenSec: cost of disabling 4.1/4.2'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Then restart `nfs-server`. This turns off pNFS and some 4.2 features.
+- topic: mitigation
+  claim: 'watchTowr: restrict 2049 for internet-exposed systems or turn off NFSv4.1 and 4.2 in the NFS service configuration file; reboot after patching'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: If patching is not immediately possible, restrict access to port 2049 for internet exposed systems or turn off NFSv4.1 and 4.2 in the NFS service configuration file.
+- topic: mitigation
+  claim: 'watchTowr: confirm running kernel after reboot'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: Confirm the running kernel version matches or exceeds the fixed version after reboot.
+- topic: dates
+  claim: Kernel CVE announcement mail Date header (2026-11-19 15:24:20 +0100 = 14:24 UTC)
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/2026111950-CVE-2026-99362-c6f2@gregkh/ (body read via the /raw variant of the same message; the HTML page sits behind an Anubis challenge)
+  file: work/2026-11-27T0355Z-intel/fu1/kernel_announce_raw.md
+  read_at: '2026-11-27T04:34:44Z'
+  passage: 'Date: Thu, 19 Nov 2026 15:24:20 +0100'
+- topic: dates
+  claim: lore search shows the single announcement by Greg Kroah-Hartman at 2026-11-19 14:24 UTC
+  maker: kernel CNA (Linux kernel CVE team)
+  source_url: https://lore.kernel.org/linux-cve-announce/?q=CVE-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/lore_search_jina.md
+  read_at: '2026-11-27T04:33:52Z'
+  passage: by Greg Kroah-Hartman @ 2026-11-19 14:24 UTC
+- topic: dates
+  claim: 'watchTowr: published 2026-11-19 with patches'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: On November 19, 2026 the vulnerability was published along with patches.
+- topic: dates
+  claim: OpenSec timeline says CVE published 20 Nov 2026 (one day off every other source)
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '20 Nov 2026
+
+    CVE-2026-99362 is published with fixes.'
+- topic: dates
+  claim: 'OpenSec disclosure paragraph: reported 22 Sep 2026 to NFSD maintainers and security@kernel.org with the full exploit and a patch; CVE published 20 Nov'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: on 22 September 2026 with the full remote-root exploit, and sent a patch the same day.
+- topic: dates
+  claim: 'OpenSec timeline: Jean sent a fix upstream 17 Aug 2026 with a KASAN report'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '17 Aug 2026
+
+    Jérémy Jean of ANSSI sends a fix upstream with a KASAN report.'
+- topic: dates
+  claim: 'OpenSec timeline: Antara flagged/exploited on 21 Sep 2026'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '21 Sep 2026
+
+    OpenSec''s Antara flags the bug, scores it 9.8 and turns it into a root shell on its own.'
+- topic: dates
+  claim: 'watchTowr: surfaced upstream 17 Aug; reported as security issue by OpenSec 21 Sep (OpenSec itself says 22 Sep report; 21 Sep is its internal discovery date)'
+  maker: secondary reading (watchTowr)
+  source_url: https://watchtowr.com/intelligence/nfs2root-linux-nfs-cve-2026-99362-faq/
+  file: work/2026-11-27T0355Z-intel/fu1/watchtowr.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: The bug was surfaced upstream by the community on August 17, 2026 and reported as a security issue by OpenSec on September 21, 2026.
+- topic: dates
+  claim: Mainline fix commit 35ff1a7a author date Mon, 17 Aug 2026 20:57:14 -0400 (.patch header; merge date into mainline not stated in any source read)
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/35ff1a7a7e3835c3e974bc5c45d335897564ceae.patch
+  file: work/2026-11-27T0355Z-intel/fu1/patch_35ff1a7.txt
+  read_at: '2026-11-27T04:34:57Z'
+  passage: 'Date: Mon, 17 Aug 2026 20:57:14 -0400'
+- topic: dates
+  claim: Fix posted publicly to linux-nfs by the NFSD maintainer as [PATCH 1/2], Date 2026-08-17 20:57:14 -0400, with the full KASAN description in the commit text (public list per X-Mailing-List)
+  maker: upstream commit / mailing-list record
+  source_url: https://lore.kernel.org/linux-nfs/20260817-jean-v1-1-9e356596ab85@kernel.org/ (read via /raw)
+  file: work/2026-11-27T0355Z-intel/fu1/lore_jean_patch_raw.md
+  read_at: '2026-11-27T04:36:27Z'
+  passage: "Subject: [PATCH 1/2] nfsd: preflight SEQUENCE replies before accepting a\n slot"
+- topic: dates
+  claim: 'Same lore message: list is linux-nfs (public)'
+  maker: upstream commit / mailing-list record
+  source_url: https://lore.kernel.org/linux-nfs/20260817-jean-v1-1-9e356596ab85@kernel.org/ (read via /raw)
+  file: work/2026-11-27T0355Z-intel/fu1/lore_jean_patch_raw.md
+  read_at: '2026-11-27T04:36:27Z'
+  passage: 'X-Mailing-List: linux-nfs@vger.kernel.org'
+- topic: dates
+  claim: OpenSec's own patch posted to linux-nfs Tue, 22 Sep 2026 11:26:08 +0000
+  maker: upstream commit / mailing-list record
+  source_url: https://lore.kernel.org/linux-nfs/20260922112608.1256363-1-mayank.jangid.moon@gmail.com/ (read via /raw)
+  file: work/2026-11-27T0355Z-intel/fu1/lore_opensec_patch_raw.md
+  read_at: '2026-11-27T04:36:23Z'
+  passage: 'Date: Tue, 22 Sep 2026 11:26:08 +0000'
+- topic: credit
+  claim: Mainline commit author = Jérémy Jean (oss.cyber.gouv.fr address); OpenSec/ANSSI affiliation of Jean is OpenSec's statement, the commit shows only the gouv.fr domain
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/35ff1a7a7e3835c3e974bc5c45d335897564ceae.patch
+  file: work/2026-11-27T0355Z-intel/fu1/patch_35ff1a7.txt
+  read_at: '2026-11-27T04:34:57Z'
+  passage: 'From: =?UTF-8?q?J=C3=A9r=C3=A9my=20Jean?= <Jeremy.Jean@oss.cyber.gouv.fr>'
+- topic: credit
+  claim: 'Mainline commit trailers: Assisted-by Codex:gpt-5; Tested-by Mayank Jangid (OpenSec Intelligence); Signed-off-by Chuck Lever'
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/35ff1a7a7e3835c3e974bc5c45d335897564ceae.patch
+  file: work/2026-11-27T0355Z-intel/fu1/patch_35ff1a7.txt
+  read_at: '2026-11-27T04:34:57Z'
+  passage: 'Assisted-by: Codex:gpt-5
+
+    Signed-off-by: Jérémy Jean <Jeremy.Jean@oss.cyber.gouv.fr>
+
+    Tested-by: Mayank Jangid (OpenSec Intelligence) <mayank.jangid.moon@gmail.com>'
+- topic: credit
+  claim: Pre-merge copy 5d5a72e965c8 (the hash OpenSec cites) has no Tested-by trailer and a different hash from the CNA's mainline commit 35ff1a7a
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/5d5a72e965c8
+  file: work/2026-11-27T0355Z-intel/fu1/commit_5d5a.md
+  read_at: '2026-11-27T04:33:25Z'
+  passage: 'Assisted-by: Codex:gpt-5 Signed-off-by: Jérémy Jean \<Jeremy.Jean@oss.cyber.gouv.fr> Link:'
+- topic: credit
+  claim: 'OpenSec credits: OpenSec found the bug with Antara and reported it with exploit + patch; Jean ''found it independently'' and wrote the upstream fix'
+  maker: discoverer claim (OpenSec)
+  source_url: https://opensec.in/blog/nfs2root-cve-2026-99362
+  file: work/2026-11-27T0355Z-intel/fu1/opensec.md
+  read_at: '2026-11-27T04:32:47Z'
+  passage: '**Jérémy Jean (ANSSI):** found it independently and wrote the upstream fix, `5d5a72e965c8` and `241848cc774e`.'
+- topic: credit
+  claim: 'OpenSec''s own submitted patch: Assisted-by LLM; co-developers OpenSec staff'
+  maker: upstream commit / mailing-list record
+  source_url: https://lore.kernel.org/linux-nfs/20260922112608.1256363-1-mayank.jangid.moon@gmail.com/ (read via /raw)
+  file: work/2026-11-27T0355Z-intel/fu1/lore_opensec_patch_raw.md
+  read_at: '2026-11-27T04:36:23Z'
+  passage: 'Assisted-by: LLM'
+- topic: credit
+  claim: Follow-up commit 241848c author per .patch header is Chuck Lever (OpenSec credits both commits to Jean)
+  maker: upstream commit / mailing-list record
+  source_url: https://github.com/torvalds/linux/commit/241848cc774e.patch
+  file: work/2026-11-27T0355Z-intel/fu1/patch_241848c.txt
+  read_at: '2026-11-27T04:34:59Z'
+  passage: 'From: Chuck Lever <cel@kernel.org>'
