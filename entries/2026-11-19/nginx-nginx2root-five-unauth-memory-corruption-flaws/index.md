@@ -1,0 +1,377 @@
+---
+schema: 1
+kind: vulnerability
+title: "NGINX nginx2root: five unauthenticated memory-corruption flaws (CVE-2026-123007 and CVE-2026-123633 in HTTP/2, CVE-2026-121810 in HTTP/3, CVE-2026-123634 in the resolver, CVE-2026-113425 in the mail proxy) can lead to code execution as the worker process; fixed in nginx 1.31.9 and 1.30.7 and NGINX Plus 37.3.0.1 and 37.0.8.1, Rapid7 proof of concept public, no exploitation reported (CVSS 4.0 9.2)"
+headline: "nginx2root: five unauthenticated flaws reach worker RCE, Rapid7 PoC public; update to 1.31.10, 1.30.8, Plus 37.3.1.1"
+summary: >
+  F5 and the nginx project fixed five memory-corruption flaws in the nginx data plane on 2026-11-18, two in HTTP/2 and one each in HTTP/3, the resolver and the mail proxy, which CERT-EU says can lead to unauthenticated code execution with the privileges of the worker process; NCSC-NL scores all five CVSS 4.0 9.2, NCSC.ch and Wiz the two HTTP/2 flaws and Rapid7 CVE-2026-123007. The memory-corruption fixes are in nginx 1.31.9 and 1.30.7 and NGINX Plus 37.3.0.1 and 37.0.8.1, nginx 1.31.10, 1.30.8 and NGINX Plus 37.3.1.1 and 37.0.9.1 add a fix for one CPU-exhaustion flaw, and NGINX Plus R33 to R36 have no update. Rapid7 published a proof of concept for CVE-2026-123007, CERT-EU reports no exploitation, and NCSC.ch, CERT-EU, CERT.at and NCSC-NL issued warnings; Unit 42 reached pre-authentication code execution through CVE-2026-123633 as the worker user in a lab, on a non-default configuration and with a separate memory leak that F5 has not given a CVE. Palo Alto Networks lists PAN-OS and Panorama with HTTP/2 enabled as affected, Veeam lists its 13.1 Software and Infrastructure Appliances (fixed through Veeam Updater), Cisco lists Catalyst Center, Identity Services Engine 3.5, Nexus 3000 and 9000 in standalone NX-OS mode, UCS Director and about 20 other products with fixes dated November 2026 to March 2027 or still to be determined, Siemens and Synology list products with fixes pending or none, and Fortinet confirms FortiOS, FortiProxy, FortiMail, FortiManager, FortiAnalyzer, FortiADC, FortiWeb and FortiSIEM not impacted while 29 product names, FortiAuthenticator among them, remain under investigation.
+discovered_at: "2026-11-19T05:12:00Z"
+updated_at: "2026-11-28T04:51:23Z"
+event_date: "2026-11-18"
+run_id: 2026-11-19T0355Z-intel
+priority: high
+immediate_action: null
+tags: [vulnerabilities, rce, pre-auth, poc-public, patch-available]
+regions: [global]
+sectors: [technology]
+entities: ["product:f5-nginx-open-source", "product:f5-nginx-plus", "product:veeam-software-appliance", "product:palo-alto-networks-pan-os", "product:palo-alto-networks-panorama", "product:cisco-identity-services-engine", "product:cisco-nx-os-software", "product:siemens-industrial-edge", "product:cisco-ucs-director", "product:cisco-unified-contact-center-express", "product:cisco-finesse", "product:synology-diskstation-manager-dsm"]
+techniques: [T1190, T1059.004, T1499.004, T1068, T1611]
+affected_products: ["NGINX Open Source", "NGINX Plus", "Palo Alto Networks PAN-OS", "Palo Alto Networks Panorama", "Cisco Identity Services Engine", "Cisco NX-OS Software", "Siemens Industrial Edge", "Cisco UCS Director", "Cisco Unified Contact Center Express", "Cisco Finesse", "Synology DiskStation Manager (DSM)", "Veeam Software Appliance", "Veeam Infrastructure Appliance"]
+cves:
+  - id: CVE-2026-123007
+    cvss: "9.2 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [poc-public, patch-available]
+    affected: "NGINX Open Source 1.9.5 to 1.31.8 with HTTP/2 enabled; NGINX Plus 37.1.0 to before 37.3.0.1 and 37.0.0 to before 37.0.8.1; NGINX Plus R34 to R36; Veeam Software Appliance and Infrastructure Appliance 13.1"
+    fixed: "nginx 1.31.9 and 1.30.7; NGINX Plus 37.3.0.1 and 37.0.8.1; none for NGINX Plus R34 to R36; Veeam Updater package for the 13.1 appliances since 2026-11-25"
+  - id: CVE-2026-123633
+    cvss: "9.2 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.19.7 to 1.31.8 with HTTP/2 enabled; NGINX Plus before 37.2.0.1 and 37.0.7.1 and R34 to R36; Veeam Software Appliance and Infrastructure Appliance 13.1"
+    fixed: "nginx 1.31.9 and 1.30.7; NGINX Plus 37.2.0.1 and 37.0.7.1 or later (per CERT.at, 37.3.0.1 and 37.0.8.1 carry the fixes for four of the five); none for NGINX Plus R34 to R36; Veeam Updater package for the 13.1 appliances since 2026-11-25"
+  - id: CVE-2026-123634
+    cvss: "9.2 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 0.6.18 to 1.31.8 using the resolver; NGINX Plus before the builds that carry the fix (the F5 release notes give no ranges)"
+    fixed: "nginx 1.31.9 and 1.30.7; NGINX Plus 37.3.0.1 and 37.0.8.1 (F5 NGINX Plus release notes)"
+  - id: CVE-2026-121810
+    cvss: "9.2 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.25.0 to 1.31.8 with HTTP/3; NGINX Plus before 37.3.0.1 and 37.0.8.1 and R34 to R36"
+    fixed: "nginx 1.31.9 and 1.30.7; NGINX Plus 37.3.0.1 and 37.0.8.1; none for NGINX Plus R34 to R36"
+  - id: CVE-2026-113425
+    cvss: "9.2 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 0.5.33 to 1.31.8 with the mail proxy; NGINX Plus 37.1.0 to 37.2.0, 37.0.0 to 37.0.7 and R33 to R36 per CERT.at"
+    fixed: "nginx 1.31.9 and 1.30.7; NGINX Plus 37.3.0.1 and 37.0.8.1; none for NGINX Plus R33 to R36"
+  - id: CVE-2026-118899
+    cvss: "8.7 (CVSS 4.0)"
+    epss: null
+    type: null
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.13.0 to 1.31.8 (infinite loop while reading a client request body over TLS 1.3)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-120967
+    cvss: "6.3 (CVSS 4.0)"
+    epss: null
+    type: auth-bypass
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.25.5 to 1.31.8 using client certificate validation in the stream module (SNI bypass)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-125283
+    cvss: "6.9 (CVSS 4.0)"
+    epss: null
+    type: memory-corruption
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 0.9.6 to 1.31.8 using alias with try_files (buffer overflow)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-123640
+    cvss: "6.9 (CVSS 4.0)"
+    epss: null
+    type: null
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.15.2 to 1.31.8 using the stream ssl_preread module (insufficient validation)"
+    fixed: "nginx 1.31.9 and 1.30.7"
+  - id: CVE-2026-132779
+    cvss: null
+    epss: null
+    type: dos
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source 1.21.4 to 1.31.9 with ssl_early_data configured; NGINX Plus builds before 37.3.1.1 and 37.0.9.1 (R33 to R36 not stated)"
+    fixed: "nginx 1.31.10 and 1.30.8; NGINX Plus 37.3.1.1 and 37.0.9.1"
+  - id: CVE-2026-120993
+    cvss: "6.9 (CVSS 4.0)"
+    epss: null
+    type: null
+    vector: zero-click
+    auth: pre-auth
+    status: [patch-available]
+    affected: "NGINX Open Source mainline 1.31.4 to 1.31.8 using PROXY protocol version 2 (NULL pointer dereference)"
+    fixed: "nginx 1.31.9"
+sources:
+  - url: "https://nginx.org/en/security_advisories.html"
+    publisher: "nginx.org security advisories"
+    date: "2026-11-18"
+    role: primary
+  - url: "https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed"
+    publisher: "Rapid7"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities"
+    publisher: "Wiz Research"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://xint.io/blog/nginx2root-remote-code-execution"
+    publisher: "Xint"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://github.com/sfewer-r7/CVE-2026-123007"
+    publisher: "Rapid7 proof-of-concept repository"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://cert.europa.eu/publications/security-advisories/2026-022/"
+    publisher: "CERT-EU"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://security-hub.ncsc.admin.ch/#/posts/13203"
+    publisher: "NCSC.ch Cyber Security Hub"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://advisories.ncsc.nl/2026/ncsc-2026-0506.html"
+    publisher: "NCSC-NL"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://www.cert.at/de/warnungen/2026/11/kritische-sicherheitslucken-in-nginx-plus-und-nginx-open-source-updates-verfugbar"
+    publisher: "CERT.at"
+    date: "2026-11-18"
+    role: corroborating
+  - url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+    publisher: "Palo Alto Networks PSIRT"
+    date: "2026-11-20"
+    role: corroborating
+  - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s"
+    publisher: "Cisco PSIRT (cisco-sa-nginx-nov-2026-e8jska2s)"
+    date: "2026-11-20"
+    role: corroborating
+  - url: "https://cert-portal.siemens.com/productcert/html/ssa-935812.html"
+    publisher: "Siemens ProductCERT (SSA-935812)"
+    date: "2026-11-20"
+    role: corroborating
+  - url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279"
+    publisher: "Fortinet PSIRT (FG-IR-26-279)"
+    date: "2026-11-20"
+    role: corroborating
+  - url: "https://usn.ubuntu.com/USN-9159-1"
+    publisher: "Ubuntu security notices (USN-9159-1)"
+    date: "2026-11-19"
+    role: corroborating
+  - url: "https://www.synology.com/en-global/support/security/Synology_SA_26_20"
+    publisher: "Synology (security advisory SA-26:20)"
+    date: "2026-11-19"
+    role: corroborating
+  - url: "https://unit42.paloaltonetworks.com/cve-2026-123633-nginx-http2-vulnerability/"
+    publisher: "Unit 42"
+    date: "2026-11-24"
+    role: corroborating
+  - url: "https://nginx.org/en/CHANGES"
+    publisher: "nginx.org changes"
+    date: "2026-11-23"
+    role: corroborating
+  - url: "https://nginx.org/en/CHANGES-1.30"
+    publisher: "nginx.org changes (1.30 branch)"
+    date: "2026-11-23"
+    role: corroborating
+  - url: "https://nginx.org/en/security_advisories.html"
+    publisher: "nginx.org security advisories (as read 2026-11-27)"
+    date: "2026-11-27"
+    role: corroborating
+  - url: "https://docs.nginx.com/nginx/releases/"
+    publisher: "F5 NGINX Plus release notes"
+    date: "2026-11-23"
+    role: corroborating
+  - url: "https://www.veeam.com/kb4976"
+    publisher: "Veeam (KB4976, last modified 2026-11-25)"
+    date: "2026-11-25"
+    role: corroborating
+  - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/"
+    publisher: "GitLab"
+    date: "2026-11-25"
+    role: corroborating
+closed_sources: []
+evidence:
+  - quote: "All five vulnerabilities can lead to unauthenticated code execution with the privileges of the NGINX worker process"
+    publisher: "CERT-EU"
+    source_url: "https://cert.europa.eu/publications/security-advisories/2026-022/"
+  - quote: "no exploitation in the wild has been reported yet"
+    publisher: "CERT-EU"
+    source_url: "https://cert.europa.eu/publications/security-advisories/2026-022/"
+  - quote: "Leveraging CVE-2026-123007 for RCE requires a significant amount of network traffic to be transmitted, approximately 128 GB of HTTP/2 data."
+    publisher: "Rapid7"
+    source_url: "https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed"
+  - quote: "Our testing of CVE-2026-123007 demonstrated code execution on NGINX serving ordinary static files, without a backend application or third-party modules."
+    publisher: "Wiz Research"
+    source_url: "https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities"
+  - quote: "Until then, disabling HTTP/2 on affected listening ports blocks CVE-2026-123007 and CVE-2026-123633. It does not block the other three nginx vulnerabilities."
+    publisher: "Xint"
+    source_url: "https://xint.io/blog/nginx2root-remote-code-execution"
+  - quote: "After installing the update, restart nginx or complete a supported live binary upgrade. A configuration reload alone does not replace the running executable."
+    publisher: "Xint"
+    source_url: "https://xint.io/blog/nginx2root-remote-code-execution"
+  - quote: "Customers can disable the HTTP/2 option on PAN-OS and Panorama."
+    publisher: "Palo Alto Networks PSIRT"
+    source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+  - quote: "Palo Alto Networks is not aware of any malicious exploitation of this issue."
+    publisher: "Palo Alto Networks PSIRT"
+    source_url: "https://security.paloaltonetworks.com/CVE-2026-123633"
+  - quote: "Currently no fix is available"
+    publisher: "Siemens ProductCERT (SSA-935812)"
+    source_url: "https://cert-portal.siemens.com/productcert/html/ssa-935812.html"
+  - quote: "Until the update is installed, restrict access to TCP port 443 on the appliances to trusted networks. HTTP/2 cannot be disabled on these appliances because Veeam components depend on it."
+    publisher: "Veeam (KB4976, last modified 2026-11-25)"
+    source_url: "https://www.veeam.com/kb4976"
+  - quote: "Fortinet has remediated this issue in FortiVoice Cloud and FortiEdge Cloud and hence the customers need not perform any action."
+    publisher: "Fortinet PSIRT (FG-IR-26-279)"
+    source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279"
+verification: multi-source
+sourcing_note: >
+  nginx.org carries the per-flaw vulnerable ranges and the fixed releases, but its advisories page is a living listing with no dateline, so the 2026-11-18 date comes from the other sources; F5's K-articles are not publicly readable, so the NGINX Plus fixed builds and the unfixed R-releases come from Rapid7, Wiz and CERT.at, which differ on the R-release range: Wiz gives R33 for CVE-2026-123633 and CVE-2026-123007, CERT-EU and CERT.at give R34 to R36 for them (Rapid7 does so for CVE-2026-123007), and CERT.at gives R33 only for CVE-2026-113425; for CVE-2026-123634 the F5 NGINX Plus release notes list the fix in 37.3.0.1 and 37.0.8.1 but give no affected ranges. CERT-EU quotes a score of 8.1 for the flaws and NCSC.ch, NCSC-NL and Rapid7 CVSS 4.0 9.2. Xint's first-affected releases for the resolver and mail-proxy flaws differ from nginx.org's. Rapid7's exploit is for CVE-2026-123007 only; Wiz did not publish its exploits, and Xint reports code execution for the flaws it found.
+confidence: high
+references: ["2026-10-20/nginx-three-unauth-heap-corruption-flaws-fixed-1-30-6", "2026-06-19/cve-2026-42530-cve-2026-42055-nginx-http-3-quic-use-after-fr"]
+deep_dive: false
+deep_dive_category: null
+org_triage: null
+classification:
+  reliability: A
+  credibility: 1
+watchlist_hit: false
+actions:
+  - "Update every internet-facing nginx to 1.31.10 or 1.30.8 (NGINX Plus to 37.3.1.1 or 37.0.9.1) and restart the process, because a reload does not replace the running executable, 1.31.9 and 1.30.7 leave the ssl_early_data CPU-exhaustion flaw open and five unauthenticated flaws reach code execution as the worker with Rapid7's proof of concept for one of them public."
+  - "On every Veeam Software Appliance and Infrastructure Appliance 13.1 install the Veeam Updater package now instead of waiting for the automatic Sunday 14:00 install, and limit TCP 443 to trusted networks until then, because Veeam lists both as affected by the two HTTP/2 flaws and HTTP/2 cannot be disabled on them."
+  - "Update Synology DSM 7.4 to 7.4.1-90080-2 or above, DSM 7.3 to 7.3.2-86009-6, DSM 7.2.2 to 7.2.2-72806-11, DSM 7.2.1 to 7.2.1-69057-14, DSM 7.1 to 7.1.1-42962-10, BeeStation OS 1.5 to 1.5.6-68000 and APM 2.0, 1.2, 1.1 and 1.0 to 2.0.2-88107 (Synology recommends 7.3.2-86009-6 or above on DSM 7.2.x), and on DSM Enterprise 1.0, where the fix is still listed as ongoing, turn HTTP/2 off under Control Panel, Network, Connectivity, because CVE-2026-123007 affects DSM with HTTP/2 enabled."
+updates:
+  - at: "2026-11-21T04:37:47Z"
+    run_id: 2026-11-21T0355Z-intel
+    type: update
+    summary: >
+      Four vendors published product impact for the nginx flaws: Palo Alto Networks lists PAN-OS and
+      Panorama with HTTP/2 enabled (three fixed builds out, three due 2026-11-23, HTTP/2 off as
+      workaround), Cisco lists NX-OS and ISE 3.5 among affected products, Siemens Industrial Edge has no
+      fix, and Fortinet is still investigating. None reports exploitation.
+    fields: [summary, affected_products, entities, sources, evidence, actions, body]
+  - at: "2026-11-22T04:34:41Z"
+    run_id: 2026-11-22T0355Z-intel
+    type: update
+    summary: >
+      Cisco's advisory, now at version 1.1, moves UCS Director to affected and adds Unified Contact Center
+      Express, Finesse and other products with fixes dated November 2026 to February 2027 or still to be
+      determined; Synology lists DSM as affected with fixed builds for 7.4 and 7.3; Fortinet confirms
+      FortiOS, FortiProxy and FortiMail not impacted while 51 product names stay under investigation; and
+      Ubuntu publishes USN-9159-1.
+    fields: [summary, affected_products, sources, actions, body, entities]
+  - at: "2026-11-22T14:55:42Z"
+    run_id: 2026-11-22T1407Z-audit
+    type: correction
+    summary: >
+      Siemens lists five Industrial Edge device products as affected, with Industrial Edge Hub and the
+      Management products not affected; Rapid7 says only that its exploit runs with the nginx worker's
+      permissions.
+    fields: [body, sourcing_note]
+  - at: "2026-11-23T04:35:59Z"
+    run_id: 2026-11-23T0355Z-intel
+    type: improvement
+    summary: >
+      nginx.org and Fortinet list ten flaws fixed in nginx 1.31.9 and 1.30.7, five more than the entry's
+      five: a TLS 1.3 request-body infinite loop rated major, an SNI bypass of client certificate
+      validation in the stream module, a stream ssl_preread validation flaw, an alias and try_files buffer
+      overflow, and a PROXY protocol version 2 NULL dereference in the 1.31 mainline; the fixed releases
+      and the update action are unchanged.
+    fields: [cves, body]
+  - at: "2026-11-26T05:07:20Z"
+    run_id: 2026-11-26T0356Z-intel
+    type: update
+    summary: >
+      Unit 42 reached pre-authentication code execution through CVE-2026-123633 as the worker user in a two-VM lab, on a
+      non-default configuration and chained with a memory leak F5 has not given a CVE, and publishes the exposure test and
+      a log signal. Palo Alto Networks released its last three PAN-OS fixed builds and cleared 11.1 and 10.2, and Cisco's
+      advisory, now at version 1.5, rates the flaws High and changes several product statuses and fixed releases.
+    fields: [summary, actions, sources, body, updated_at]
+  - at: "2026-11-27T04:55:00Z"
+    run_id: 2026-11-27T0355Z-intel
+    type: update
+    summary: >
+      nginx 1.31.10 and 1.30.8 (2026-11-23) and NGINX Plus 37.3.1.1 and 37.0.9.1 fix a further flaw, CPU exhaustion when
+      ssl_early_data is on (CVE-2026-132779), so the update target moves; Veeam lists its 13.1 Software and Infrastructure
+      Appliances as affected by the two HTTP/2 flaws with a fix through Veeam Updater since 2026-11-25, and GitLab's Linux
+      package carries nginx 1.31.9.
+    fields: [headline, summary, affected_products, entities, cves, sources, evidence, sourcing_note, actions, body, updated_at]
+  - at: "2026-11-28T04:51:23Z"
+    run_id: 2026-11-28T0355Z-intel
+    type: update
+    summary: >
+      Cisco's advisory, now at version 1.6 of 2026-11-27, also lists Crosswork Hierarchical Controller,
+      Secure Endpoint Private Cloud Appliance, Intersight, UCS Fabric Interconnect and Optical Network
+      Controller and no longer names NextFusion Platform; Fortinet now clears FortiADC, FortiWeb and
+      FortiSIEM as well, keeps 29 product names under investigation and says it remediated FortiVoice
+      Cloud and FortiEdge Cloud; Synology's revisions updated APM's fix status to 2.0.2-88107.
+    fields: [actions, body, evidence, summary]
+migrated_from: null
+---
+
+F5 and the nginx project published the nginx2root fixes ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html)); CERT-EU counts five vulnerabilities, all able to lead to unauthenticated code execution with the privileges of the NGINX worker process ([CERT-EU, 2026-11-18](https://cert.europa.eu/publications/security-advisories/2026-022/)). CVE-2026-123007 is an HTTP/2 flow-control overflow: cancelling queued response data makes nginx use an invalid length when copying a later response ([Rapid7, 2026-11-18](https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed)), and Wiz demonstrated code execution on nginx serving ordinary static files ([Wiz Research, 2026-11-18](https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities)).
+
+Rapid7 published a working proof of concept for CVE-2026-123007 against nginx 1.31.8; the exploit needs about 128 GB of HTTP/2 traffic and likely fails with concurrent clients ([Rapid7, 2026-11-18](https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed); [Rapid7 repository, 2026-11-18](https://github.com/sfewer-r7/CVE-2026-123007)). CERT-EU reports no exploitation in the wild and NCSC.ch rates exploitation unknown with a proof of concept available ([CERT-EU, 2026-11-18](https://cert.europa.eu/publications/security-advisories/2026-022/); [NCSC.ch, 2026-11-18](https://security-hub.ncsc.admin.ch/#/posts/13203)).
+
+The memory-corruption fixes are in nginx 1.31.9 and 1.30.7 ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html)); nginx 1.31.10 and 1.30.8 of 2026-11-23 add a fix for CPU exhaustion when ssl_early_data is on (CVE-2026-132779, affecting 1.21.4 to 1.31.9 per [nginx.org, 2026-11-27](https://nginx.org/en/security_advisories.html)), as do NGINX Plus 37.3.1.1 and 37.0.9.1 ([nginx.org, 2026-11-23](https://nginx.org/en/CHANGES); [nginx.org, 2026-11-23](https://nginx.org/en/CHANGES-1.30); [F5 NGINX Plus release notes, 2026-11-23](https://docs.nginx.com/nginx/releases/)). CERT.at lists NGINX Plus 37.3.0.1 and 37.0.8.1 as fixing four of the five (CVE-2026-123007, CVE-2026-121810, CVE-2026-123633 and CVE-2026-113425); it also says 37.2.0.1 and 37.0.7.1 already carry the fix for CVE-2026-123633 but stay affected by CVE-2026-123007 and CVE-2026-121810, and NGINX Plus R33 to R36 have no update (translated from German) ([CERT.at, 2026-11-18](https://www.cert.at/de/warnungen/2026/11/kritische-sicherheitslucken-in-nginx-plus-und-nginx-open-source-updates-verfugbar)).
+
+**Exposure:** an nginx build from the first affected release of each flaw (1.9.5, 1.19.7, 0.6.18, 1.25.0 and 0.5.33) up to 1.31.8 whose configuration uses the feature: an HTTP/2 or HTTP/3 listener, the resolver with variable proxy_pass destinations plus mirror or SSI, or the mail proxy with auth_http ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html); [Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution)). A distribution backport can fix a flaw without changing the version nginx -v reports ([Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution)). Veeam Software Appliance and Infrastructure Appliance 13.1 are affected by the two HTTP/2 flaws and cannot disable HTTP/2; Veeam ships the fix through Veeam Updater ([Veeam, 2026-11-25](https://www.veeam.com/kb4976)). GitLab's Linux package and Docker images carry nginx 1.31.9 from 19.6.2, 19.5.9 and 19.4.11 ([GitLab, 2026-11-25](https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/)).
+
+**Detection:** process-creation or audit telemetry for any program started by the worker's user, since a normal nginx worker runs no external programs and that is the clearest sign of success; worker exits and core dumps in the error log mark attempts, not successes ([Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution); [CERT-EU, 2026-11-18](https://cert.europa.eu/publications/security-advisories/2026-022/)).
+
+**Triage:** a large upload is a legitimate cause of an inbound-heavy connection and workers crash for unrelated reasons, so a program started by the worker is the discriminator, not the traffic shape alone ([Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution)).
+
+**Defender takeaway:** update and restart nginx, because a configuration reload does not replace the running executable; disabling HTTP/2 on exposed listeners blocks only the two HTTP/2 flaws ([Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution)) and, if it stays on elsewhere, leaves connection pressure ([Unit 42, 2026-11-24](https://unit42.paloaltonetworks.com/cve-2026-123633-nginx-http2-vulnerability/)), and Xint gives interim measures for the others: a fixed upstream group in place of request-time DNS lookups for CVE-2026-123634, no QUIC listeners for CVE-2026-121810 and bound or firewalled mail listeners for CVE-2026-113425 ([Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution)). An empty execution-audit result after the update cannot rule out an earlier compromise, and Xint chained CVE-2026-123007 with a separate Linux kernel SCTP flaw, unpatched when it published, to reach root on the host and escape a Docker container; hosts that do not use SCTP can block the module from loading ([Xint, 2026-11-18](https://xint.io/blog/nginx2root-remote-code-execution)).
+
+## Update — 2026-11-21T04:37:47Z
+
+Palo Alto Networks lists PAN-OS and Panorama (virtual and M-Series) as affected by CVE-2026-123633 and CVE-2026-123007 only where the HTTP/2 option is enabled, and says it knows of no malicious exploitation; disabling HTTP/2 is its workaround ([Palo Alto Networks PSIRT, 2026-11-20](https://security.paloaltonetworks.com/CVE-2026-123633)). The fixed builds are PAN-OS 12.2.4-h3, 12.1.10-h6 and 11.2.16-h3; 12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 carry an ETA of 2026-11-23, and 12.1.2 to 12.1.4 and 11.2.0 to 11.2.7 need no action ([Palo Alto Networks PSIRT, 2026-11-20](https://security.paloaltonetworks.com/CVE-2026-123633)).
+
+Cisco's interim advisory (version 1.0, 2026-11-20) lists NX-OS Software, Smart PHY (fix 27.1.0, March 2027), the Intersight Virtual Appliance (1.1.9-0, December 2026), Cloud Hosted Services Vulnerability Management (1.30.7, November 2026) and Identity Services Engine 3.5 (3.5 Patch 5, December 2026) as affected, lists Catalyst Center, the SD-WAN Controller and Manager, ASA, FMC, FTD and UCS Central as not affected, and has IOS XE, IOS XR and UCS Director under investigation; its PSIRT knows of proof-of-concept code and of no malicious use ([Cisco PSIRT, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)). Siemens (SSA-935812, 2026-11-20) lists five Industrial Edge device products (Cloud Device, Device Kit for arm64 and x86-64, Own Device and Virtual Device) as affected in all versions with no fix available, lists Industrial Edge Hub and the Industrial Edge Management products as not affected, and names disabling HTTP/2 or HTTP/3 on the affected listeners as the mitigation ([Siemens ProductCERT, 2026-11-20](https://cert-portal.siemens.com/productcert/html/ssa-935812.html)). Fortinet says none of its products uses NGINX Plus and is still investigating FortiManager, FortiAnalyzer, FortiAuthenticator and dozens of others ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)).
+
+## Update — 2026-11-22T04:34:41Z
+
+Cisco's advisory is at version 1.1 (2026-11-21): UCS Director moves from under investigation to affected with the release still to be determined, Identity Services Engine is affected only on release 3.5 (3.5 Patch 5, December 2026), NX-OS Software is fixed in 10.7.2F (December 2026), and IOS XE and IOS XR remain under investigation; the affected-products table now also names Unified Contact Center Express and NextFusion Platform (release to be determined), Finesse (15.0 US3, date to be determined), License (Smart Software Manager) On-Prem (10-202701, February 2027), AI PODs for Collaboration (1.0.3, December 2026) and Webex Assistant for Meetings (1.15.16, November 2026), among others ([Cisco PSIRT, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)). Fortinet's timeline records an update of its not-impacted list on 2026-11-21: FortiOS, FortiProxy, FortiMail, FortiNAC and FortiPAM are not impacted, while 51 product names, among them FortiManager, FortiAnalyzer, FortiAuthenticator, FortiADC, FortiWeb and FortiSIEM, remain under investigation; Fortinet lists ten nginx CVEs, five more than the five above ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). Ubuntu lists the fixes in USN-9159-1 for releases 16.04 LTS to 26.10, those for 16.04, 18.04 and 20.04 being available with Ubuntu Pro ([Ubuntu, 2026-11-19](https://usn.ubuntu.com/USN-9159-1)). Synology's SA-26:20 lists DSM 7.4, 7.3, 7.2.2, 7.2.1 and 7.1, DSM Enterprise, BeeStation OS and APM as affected by CVE-2026-123007, scores it CVSS 3.1 8.1, names DSM 7.4.1-90080-2 and 7.3.2-86009-6 as the fixed releases with the other branches ongoing, and gives turning HTTP/2 off under Control Panel, Network, Connectivity as the mitigation ([Synology, 2026-11-19](https://www.synology.com/en-global/support/security/Synology_SA_26_20)).
+
+## Correction — 2026-11-22T14:55:42Z
+
+Siemens' SSA-935812 does not list every Industrial Edge product: the affected ones are five device products, Industrial Edge Cloud Device, Device Kit for arm64 and x86-64, Own Device and Virtual Device, with no fix available, while Industrial Edge Hub and the Industrial Edge Management products are listed as not affected ([Siemens ProductCERT, 2026-11-20](https://cert-portal.siemens.com/productcert/html/ssa-935812.html)). Rapid7 states only that its exploit runs code with the nginx worker's permissions; it does not discuss root ([Rapid7, 2026-11-18](https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed)).
+
+## Improvement — 2026-11-23T04:35:59Z
+
+nginx.org lists ten flaws fixed in nginx 1.31.9 and 1.30.7, five more than the five above, and Fortinet's FG-IR-26-279 lists the same ten ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html); [Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). The additional five are CVE-2026-118899, an infinite loop while reading a client request body over TLS 1.3 (1.13.0 to 1.31.8, rated major); CVE-2026-120967, an SNI bypass when using client certificate validation in the stream module (1.25.5 to 1.31.8, medium); CVE-2026-125283, a buffer overflow when using alias with try_files (0.9.6 to 1.31.8, minor); CVE-2026-123640, insufficient validation in the stream ssl_preread module (1.15.2 to 1.31.8, minor); and CVE-2026-120993, a NULL pointer dereference when using PROXY protocol version 2 that affects only the mainline 1.31.4 to 1.31.8 and is fixed in 1.31.9 alone ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html)). NCSC-NL scores them CVSS 4.0 8.7 (CVE-2026-118899), 6.3 (CVE-2026-120967) and 6.9 (CVE-2026-120993, CVE-2026-123640 and CVE-2026-125283) ([NCSC-NL, 2026-11-18](https://advisories.ncsc.nl/2026/ncsc-2026-0506.html)), and Fortinet rates CVE-2026-118899 high and the other four medium ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). Updating to 1.31.9 or 1.30.7 covers all ten ([nginx.org, 2026-11-18](https://nginx.org/en/security_advisories.html)).
+
+## Update — 2026-11-26T05:07:20Z
+
+Unit 42 published a first-person account of reaching pre-authentication code execution through CVE-2026-123633 as the non-root NGINX worker on a two-VM lab target running 1.31.8: the first attempt recovered a libc address without a shell and the second opened an interactive shell. The chain needed a non-default configuration and a separate memory disclosure that F5 assessed as limited to a non-typical configuration and has not given a CVE, whose details Unit 42 withholds ([Unit 42, 2026-11-24](https://unit42.paloaltonetworks.com/cve-2026-123633-nginx-http2-vulnerability/)). The tested path needs HTTP/2 on the listener and a reverse-proxy route whose upstream is a variable resolved at request time, with free worker connections at or below one sixteenth of worker_connections; static upstream routes still need review, and Unit 42 publishes no confirmed indicators of compromise. A log signal Unit 42 gives is the error-log warning that worker connections are not enough and are being reused, which needs the warn log level ([Unit 42, 2026-11-24](https://unit42.paloaltonetworks.com/cve-2026-123633-nginx-http2-vulnerability/)). Raising worker_connections adds only headroom and disabling HTTP/2 on some listeners leaves extra HTTP/1.1 connections, so neither replaces the upgrade; no source reports exploitation.
+
+Palo Alto Networks removed the ETA for 12.1.7-h15, 11.2.10-h19 and 11.2.13-h6 on 2026-11-24 because those builds are released, so every fixed build named above is available, marked PAN-OS 11.1 and 10.2 as not impacted, and says the impacted products for CVE-2026-121810, CVE-2026-123634 and CVE-2026-113425 are the same as for the two HTTP/2 flaws; it knows of no malicious exploitation ([Palo Alto Networks, 2026-11-20](https://security.paloaltonetworks.com/CVE-2026-123633)). Cisco's advisory, at version 1.5 of 2026-11-26 then, had rated the flaws High rather than Critical since version 1.2 of 2026-11-23, lists IOS XE as not affected, gives NX-OS 10.3.11, 10.4.9, 10.5.7, 10.6.5 and 10.7.1 in place of 10.7.2F, lists Catalyst Center with bug IDs and fixes 3.3.3 and 3.4.1 (dates to be determined) where it was listed as not affected, and writes the Finesse fix as 15.0(1)SU3 with Unified Intelligence Center on the same release ([Cisco, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)). Fortinet's advisory then listed FortiManager and FortiAnalyzer as not impacted and still had FortiAuthenticator and dozens of other products under investigation ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). Synology's SA-26:20, revised on 2026-11-24 and 2026-11-26, now lists fixed builds beyond DSM 7.4 and 7.3: 7.2.2-72806-11 for DSM 7.2.2, 7.2.1-69057-14 for DSM 7.2.1, 7.1.1-42962-10 for DSM 7.1 and 1.5.6-68000 for BeeStation OS 1.5, with only DSM Enterprise 1.0 still listed as ongoing ([Synology, 2026-11-19](https://www.synology.com/en-global/support/security/Synology_SA_26_20)).
+
+## Update — 2026-11-27T04:55:00Z
+
+nginx 1.31.10 and 1.30.8, both dated 2026-11-23, carry one security fix: when ssl_early_data is configured a client might cause excessive CPU usage (CVE-2026-132779) ([nginx.org, 2026-11-23](https://nginx.org/en/CHANGES); [nginx.org, 2026-11-23](https://nginx.org/en/CHANGES-1.30)). nginx.org lists it as affecting 1.21.4 to 1.31.9 ([nginx.org, 2026-11-27](https://nginx.org/en/security_advisories.html)), so 1.31.9 and 1.30.7 fix the memory-corruption flaws but not this one; NGINX Plus 37.3.1.1 and 37.0.9.1 of the same day are security releases whose only fix is this flaw, and the 18 November Plus builds do not carry it ([F5 NGINX Plus release notes, 2026-11-23](https://docs.nginx.com/nginx/releases/)). F5's own advisory and a score were not readable, and no source states whether R33 to R36 are affected.
+
+Veeam's KB4976 lists Veeam Software Appliance 13.1 and Veeam Infrastructure Appliance 13.1 as affected by CVE-2026-123007 and CVE-2026-123633, because their nginx has HTTP/2 enabled on a listener that proxies requests to a backend; the other three flaws do not apply ([Veeam, 2026-11-25](https://www.veeam.com/kb4976)). A fix has been in the Veeam repository since 2026-11-25, Veeam Updater checks every 12 hours and installs mandatory updates automatically on the nearest Sunday at 14:00, and until it is installed Veeam says to restrict TCP 443 on the appliances to trusted networks, because HTTP/2 cannot be disabled on them ([Veeam, 2026-11-25](https://www.veeam.com/kb4976)). GitLab's Linux package and Docker images carry nginx 1.31.9 from 19.6.2, 19.5.9 and 19.4.11, and its page does not say whether they set ssl_early_data ([GitLab, 2026-11-25](https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-6-2-released/)). KB4976 also lists the Veeam Plug-In for AWS, Google Cloud and Microsoft Azure appliances as affected (install all available security updates through Veeam Updater) and Veeam Backup for Salesforce 3.2.1, which is affected by the same two HTTP/2 flaws (install the operating system vendor's update or disable HTTP/2); Veeam manages its Data Cloud services and asks for no customer action ([Veeam, 2026-11-25](https://www.veeam.com/kb4976)).
+
+## Update — 2026-11-28T04:51:23Z
+
+Cisco's advisory is at version 1.6 of 2026-11-27 (updated affected products), still rates the flaws High and knows of no malicious use; besides the products named above, its table lists Crosswork Hierarchical Controller (11.0.4 and 12.0.1, November 2026), Secure Endpoint Private Cloud Appliance (PC 4.2.10, December 2026) and Intersight (1.30.7 and 1.31.f, December 2026), with UCS Fabric Interconnect and Optical Network Controller still to be determined, among about two dozen products ([Cisco PSIRT, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)). NextFusion Platform, named in the 2026-11-22 section, does not appear in it ([Cisco PSIRT, 2026-11-20](https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s)).
+
+Fortinet's FG-IR-26-279 now lists FortiADC, FortiWeb and FortiSIEM as not impacted, as it does FortiManager and FortiAnalyzer, keeps 29 product names under investigation, FortiAuthenticator among them, and says it has remediated the issue in FortiVoice Cloud and FortiEdge Cloud, so customers need not act ([Fortinet PSIRT, 2026-11-20](https://fortiguard.fortinet.com/psirt/FG-IR-26-279)). Synology's SA-26:20 revisions of 2026-11-24 and 2026-11-25 updated the fix status for APM, for which versions 2.0, 1.2, 1.1 and 1.0 should upgrade to 2.0.2-88107 or above ([Synology, 2026-11-19](https://www.synology.com/en-global/support/security/Synology_SA_26_20)).
