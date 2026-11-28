@@ -1,0 +1,292 @@
+# work/2026-11-28T0355Z-intel/findings.S4.yaml
+domain: S4
+run_id: 2026-11-28T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-28T03:57:34Z
+ended_at: 2026-11-28T04:14:13Z
+duration_seconds: 999
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 17
+  bridge_fetches: 80
+items:
+  - title: "SAP: attackers reportedly stole employee GitHub tokens, SAP restricted GitHub, paused CI automation and replaced signing keys (Project Granite)"
+    sources:
+      - { url: "https://www.handelsblatt.com/technik/ki/sap-it-sicherheitsvorfall-kunden-fordern-lueckenlose-aufklaerung/100273138.html", publisher: "Handelsblatt", date: "2026-11-27", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/sap-confirms-security-incident-after-suspicious-github-activity/", publisher: "BleepingComputer", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.heise.de/news/IT-Vorfall-bei-SAP-Entwicklungssysteme-betroffen-11539973.html", publisher: "heise online", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://cyberinsider.com/sap-github-security-incident/", publisher: "CyberInsider", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.spiegel.de/netzwelt/sap-wird-opfer-von-hackerangriff-a-6648b5ce-5d74-48dc-86ea-9469705bb91d", publisher: "DER SPIEGEL", date: "2026-11-26", role: "primary" }
+      - { url: "https://www.efk.admin.ch/en/audit/dispatch-on-the-superb-and-erp-systems-v-ar-programmes-for-the-attention-of-both-finance-committees/", publisher: "Swiss Federal Audit Office (EFK)", date: "undated audit page (fetched 2026-11-28)", role: "context" }
+    discovery_trace: "first seen at: cyberinsider (feed https://cyberinsider.com/feed/, item https://cyberinsider.com/sap-github-security-incident/) and bleepingcomputer listing https://www.bleepingcomputer.com/news/security/ → pivot: BleepingComputer article https://www.bleepingcomputer.com/news/security/sap-confirms-security-incident-after-suspicious-github-activity/ → pivot: DER SPIEGEL https://www.spiegel.de/netzwelt/sap-wird-opfer-von-hackerangriff-a-6648b5ce-5d74-48dc-86ea-9469705bb91d (first report, paywalled, only the standfirst reads) → pivot: Handelsblatt https://www.handelsblatt.com/technik/ki/sap-it-sicherheitsvorfall-kunden-fordern-lueckenlose-aufklaerung/100273138.html and heise https://www.heise.de/news/IT-Vorfall-bei-SAP-Entwicklungssysteme-betroffen-11539973.html (secondary reporting that carries the response measures) → context: EFK https://www.efk.admin.ch/en/audit/dispatch-on-the-superb-and-erp-systems-v-ar-programmes-for-the-attention-of-both-finance-committees/ (Swiss federal SAP use). SAP's own wording reaches us only as a statement quoted by BleepingComputer, CyberInsider, heise (dpa) and Handelsblatt; no SAP-hosted page was found."
+    summary: |
+      Facts (SAP statement, quoted by several outlets): SAP says it "identified suspicious activity" and "promptly implemented the necessary measures to protect its customers", and that based on its investigation to date it has "found no evidence of unauthorized access to customer business data". SAP gave no vector, no actor, no detection date and no list of affected environments, and has not said whether source code was copied or altered or whether any release delivered to customers is affected.
+      Reported by media from internal sources (claims, not SAP statements): DER SPIEGEL, citing an internal memo it saw (code name "Project Granite") and an insider, reports that the attackers breached SAP's GitHub environment, stole authentication tokens of SAP employees and used them to copy and modify source code; dpa separately reviewed part of the memo, which asked employees to check whether they must change credentials. Handelsblatt, citing company circles, says SAP detected the incident the week before, that the attack targeted software development, and that numerous teams are affected by the immediate measures. Handelsblatt (as relayed by heise and CyberInsider) reports SAP restricted access to GitHub, stopped automated development workflows and replaced signing keys. SPIEGEL's insiders say the attackers may have used AI tools; SAP's statement does not address this, so it is an unconfirmed assessment of the sources, not a finding.
+      Why it matters here: the confirmed behaviour class is theft of employee GitHub tokens followed by access to, and possibly modification of, vendor source, with signing-key rotation as the vendor's containment step. The same pattern (employee GitHub account to backend or source) is already in the store for 1Password. SAP landscapes run in the Swiss federal administration (EFK: "The SAP landscape currently used in the Federal Administration will no longer be supported by the manufacturer from the end of 2025", the SUPERB / ERPSYS V/ar migration programmes), so a signing-key replacement or an advisory on SAP-delivered components is the thing SAP customers should expect to have to act on; none has been published as of this fetch.
+      Unknown (absences): affected repositories, whether any customer-delivered artifact was touched, whether a customer action is required, and the actor.
+    region_nexus: "Germany (SAP SE, Walldorf); Swiss federal administration is an SAP customer per EFK; global vendor"
+    primary_sector_nexus: "indirect (technology supplier to Swiss public administration)"
+    sector: "technology / software supply chain"
+    cves: []
+    techniques: [T1528, T1213.003, T1195.002]
+    technique_notes: "T1528 Steal Application Access Token: SPIEGEL's insider says employee authentication tokens were stolen; T1213.003 Code Repositories: source code copied from GitHub (SPIEGEL insider); T1195.002 Compromise Software Supply Chain: only the possibility that source code was modified is reported, SAP has not said any customer-delivered release was affected, so map at low confidence or leave to the composer."
+    affected_products: ["SAP GitHub development environment"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:sap-github-project-granite-2026-11", type: incident, name: "SAP GitHub environment intrusion (Project Granite)", aliases: ["Project Granite"], summary: "November 2026 intrusion into SAP's GitHub development environment; DER SPIEGEL reports stolen employee tokens and copied or modified source, Handelsblatt reports GitHub access restricted, CI automation paused and signing keys replaced; SAP says it found no evidence of unauthorized access to customer business data (SPIEGEL, Handelsblatt, SAP statement, 2026-11-26/27)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    evidence:
+      - quote: "SAP has identified suspicious activity and promptly implemented the necessary measures to protect its customers and preserve the security of its services"
+        attribution: "BleepingComputer (SAP statement)"
+        source_url: "https://www.bleepingcomputer.com/news/security/sap-confirms-security-incident-after-suspicious-github-activity/"
+      - quote: "Based on our investigation to date, we have found no evidence of unauthorized access to customer business data."
+        attribution: "BleepingComputer (SAP statement)"
+        source_url: "https://www.bleepingcomputer.com/news/security/sap-confirms-security-incident-after-suspicious-github-activity/"
+      - quote: "the attacker managed to steal authentication tokens from SAP employees and leveraged them to copy and also modify SAP source code on GitHub"
+        attribution: "BleepingComputer (relaying SPIEGEL insider sources)"
+        source_url: "https://www.bleepingcomputer.com/news/security/sap-confirms-security-incident-after-suspicious-github-activity/"
+      - quote: "the company restricted access to GitHub, paused automated development workflows, and replaced signing keys"
+        attribution: "CyberInsider (relaying Handelsblatt)"
+        source_url: "https://cyberinsider.com/sap-github-security-incident/"
+      - quote: "The company has yet to say whether source code was copied or altered, or whether any software releases delivered to customers were affected."
+        attribution: "CyberInsider"
+        source_url: "https://cyberinsider.com/sap-github-security-incident/"
+      - quote: "Attackiert wurde die Softwareentwicklung."
+        attribution: "Handelsblatt"
+        source_url: "https://www.handelsblatt.com/technik/ki/sap-it-sicherheitsvorfall-kunden-fordern-lueckenlose-aufklaerung/100273138.html"
+      - quote: "The SAP landscape currently used in the Federal Administration will no longer be supported by the manufacturer from the end of 2025."
+        attribution: "Swiss Federal Audit Office (EFK)"
+        source_url: "https://www.efk.admin.ch/en/audit/dispatch-on-the-superb-and-erp-systems-v-ar-programmes-for-the-attention-of-both-finance-committees/"
+    extended_notes: |
+      Detection and hunt concepts the sources support (telemetry class first): GitHub organisation audit log and token-use records for SAP-owned or SAP-delivered repositories a customer consumes (new personal access tokens, token use from new ASNs, force pushes, workflow edits); SAP-delivered open-source packages and build tooling pulled by customer CI (verify provenance against SAP communications once SAP states which artifacts are in scope). Post-incident check: SAP has rotated signing keys, so a customer that verifies SAP signatures should expect a key-change notice and treat an unannounced key change as a signal to verify through SAP's own channel.
+      Prior context in the store: 1Password (employee GitHub account, 2026-11-26) and the PyPI agent-framework and Cursor marketplace entries share the developer-account-to-supply-chain class. A separate SAP npm "Mini Shai-Hulud" supply-chain compromise (April 2026) is unrelated and must not be merged (WebSearch surfaced it; not fetched, so not cited).
+      Previous fires have no SAP-incident entry. Interaction with the store: the SAP NetWeaver KEV entry (2026-11-21) is a different issue.
+
+  - title: "US Air Force Cloud One reportedly breached through a software flaw reaching its control plane; update freeze blocks patching (Reuters, anonymous sources)"
+    sources:
+      - { url: "https://cyberinsider.com/us-air-force-cloud-one-cyberattack/", publisher: "CyberInsider (relaying Reuters)", date: "2026-11-27", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/us-air-force-cloud-platform-reportedly-hacked-in-latest-federal-breach/", publisher: "BleepingComputer", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Hacker-brechen-angeblich-in-Cloud-Plattform-der-US-Air-Force-ein-11541212.html", publisher: "heise online (relaying Reuters)", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.securityweek.com/us-treasurys-fincen-disconnects-systems-following-cyber-incident/", publisher: "SecurityWeek", date: "2026-11-25", role: "context" }
+      - { url: "https://www.nextgov.com/cybersecurity/2026/11/cia-odni-unclassified-intelligence-system-hacked/417438/", publisher: "Nextgov", date: "2026-11-24", role: "context" }
+      - { url: "https://www.securityweek.com/an-unclassified-cia-system-was-breached-in-a-cyberattack-ap-source-says/", publisher: "SecurityWeek (AP)", date: "2026-11-24", role: "context" }
+    discovery_trace: "first seen at: databreaches-net feed https://databreaches.net/feed/ (Reuters repost) and bleepingcomputer listing https://www.bleepingcomputer.com/news/security/ → pivot: BleepingComputer https://www.bleepingcomputer.com/news/security/us-air-force-cloud-platform-reportedly-hacked-in-latest-federal-breach/ → pivot: Reuters original https://www.reuters.com/world/hackers-breach-us-air-force-flagship-cloud-one-computing-platform-2026-11-27/ (CAPTCHA wall on every transport, not read; its content reaches us only through CyberInsider and heise) → pivot: CyberInsider https://cyberinsider.com/us-air-force-cloud-one-cyberattack/ and heise https://www.heise.de/news/Hacker-brechen-angeblich-in-Cloud-Plattform-der-US-Air-Force-ein-11541212.html → context for the wider US federal run: SecurityWeek FinCEN https://www.securityweek.com/us-treasurys-fincen-disconnects-systems-following-cyber-incident/, Nextgov https://www.nextgov.com/cybersecurity/2026/11/cia-odni-unclassified-intelligence-system-hacked/417438/, SecurityWeek (AP) https://www.securityweek.com/an-unclassified-cia-system-was-breached-in-a-cyberattack-ap-source-says/"
+    summary: |
+      Claims (Reuters, three anonymous sources, relayed by CyberInsider, heise and BleepingComputer; the Air Force confirmed nothing): attackers breached Cloud One, the Air Force's multi-cloud enterprise platform (AWS, Azure, Google Cloud, Oracle Cloud) that hosts Department of Defense applications for personnel and pay, logistics, maintenance, the radar-fed air-defence application CBC2 and the munitions-tracking system TICMS. The intrusion was found during an upgrade within roughly the past month. One source says the attackers exploited a software flaw to reach the control plane, the layer administrators use to manage cloud resources; Reuters could not identify the flaw or what the attackers did there. Another source says some users lost administrator privileges (the sources do not say whether the attacker or the response removed them). Back-office application migrations were put on hold and the update freeze stopped staff applying software fixes, at a time when a new batch of severe flaws had been disclosed. US Cyber Command was reportedly called in. Actor, scope and data theft are unknown; the Air Force declined to discuss the status of individual systems.
+      Context, sourced separately: the same fortnight saw reported intrusions at the FBI's NCIC database (BleepingComputer, unattributed), an unclassified CIA open-source-intelligence system also affecting ODNI and NGA (NYT, relayed by Nextgov, AP, BleepingComputer; Nextgov says ARTEX "is believed to have been used" and, per two sources, ARTEX also assisted a low-impact intrusion into the Defense Department's Cyber Defense Command), and a FinCEN intrusion that FinCEN itself confirmed ("unauthorized access to a limited subset of its systems", some systems taken offline, filing relief granted on 2026-11-24). The US administration says the outages are not a coordinated attack (AP); BleepingComputer states it is unclear whether the incidents are connected, and that it is unknown whether ARTEX or other AI tooling was used against the Air Force, FBI or FinCEN. No link between Cloud One and ARTEX is reported anywhere.
+      Transferable lesson (what the sources themselves support): compromise of a cloud control plane at a shared government platform freezes the patch path for every tenant, so remediation of the tenants' own exposures stalls while the incident is open. Defenders of government cloud tenancies and shared platforms can weigh this against their own change-freeze procedures.
+    region_nexus: "United States federal (DoD); no Swiss victim; cited for global significance and the shared-platform lesson"
+    primary_sector_nexus: "indirect (government and defence cloud platform; analogue for Swiss Armed Forces and federal shared services)"
+    sector: "government / defence"
+    cves: []
+    techniques: [T1190]
+    technique_notes: "T1190 is inferred from 'exploited a software flaw' in a single anonymous source; the sources do not say the flaw sat in an internet-facing service, so the composer may prefer to map only T1068 or leave the mapping at the control-plane-access behaviour."
+    affected_products: ["US Air Force Cloud One"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:us-air-force-cloud-one-control-plane-breach-2026-11", type: incident, name: "US Air Force Cloud One breach", aliases: [], summary: "Reuters (2026-11-27, anonymous sources) reports a breach of the US Air Force's Cloud One platform through a software flaw reaching the control plane; migrations and updates frozen; the Air Force did not confirm." }
+    verification: MULTI-SOURCE
+    confidence: LOW
+    classification_hint: { reliability: B, credibility: 3 }
+    novelty: new
+    borderline: true
+    borderline_reason: "No Swiss nexus; anonymous Reuters sourcing, no actor, flaw unnamed; qualifies only on global significance (a flagship US military cloud platform) and the patch-freeze lesson. The previous fire dropped the CIA/ODNI/NGA piece of the same federal run for anonymous sourcing; if the main agent ships anything it should be this item framed as a short shared-platform lesson, with the CIA/DCDC ARTEX detail (Nextgov, two sources) possibly an update on the existing ARTEX entry 2026-10-22/artex-storm-0940-agentic-llm-pentest-spraying-oauth-abuse (Nextgov is already among its sources)."
+    evidence:
+      - quote: "One person told Reuters that the attackers exploited a software flaw to reach Cloud One’s control plane, the layer administrators use to manage cloud resources."
+        attribution: "CyberInsider (relaying Reuters)"
+        source_url: "https://cyberinsider.com/us-air-force-cloud-one-cyberattack/"
+      - quote: "Reuters reported that back-office application migrations were put on hold and that the update freeze kept Air Force staff from applying software fixes."
+        attribution: "CyberInsider (relaying Reuters)"
+        source_url: "https://cyberinsider.com/us-air-force-cloud-one-cyberattack/"
+      - quote: "A separate source said some users lost their administrator privileges."
+        attribution: "CyberInsider (relaying Reuters)"
+        source_url: "https://cyberinsider.com/us-air-force-cloud-one-cyberattack/"
+      - quote: "It remains unknown whether ARTEX or other AI-powered hacking tools were used in the attacks against the Air Force, FBI, or FinCEN."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/us-air-force-cloud-platform-reportedly-hacked-in-latest-federal-breach/"
+      - quote: "FinCEN is investigating a cybersecurity incident that resulted in unauthorized access to a limited subset of its systems. As a proactive measure, FinCEN has taken some systems offline,"
+        attribution: "SecurityWeek (quoting FinCEN notice)"
+        source_url: "https://www.securityweek.com/us-treasurys-fincen-disconnects-systems-following-cyber-incident/"
+    extended_notes: |
+      The EC AI-assisted intrusion (ARTEX, EU Academy data, EDPS notified) is already carried by the ARTEX entry and was borderline-dropped on 2026-11-25; nothing new in this window.
+
+  - title: "FIFA (Zurich): confirmed criminal cyberattack with unauthorised access to personal and business data; new extortion group Handsome Boy Hacking Club claims it, entry reportedly by impersonating staff"
+    sources:
+      - { url: "https://www.securityweek.com/fifa-says-it-has-been-victim-of-a-cyberattack-accessing-personal-and-business-information/", publisher: "SecurityWeek (Associated Press)", date: "2026-11-26", role: "primary" }
+      - { url: "https://www.aljazeera.com/sports/2026/11/26/fifa-says-personal-and-business-information-stolen-in-cyberattack", publisher: "Al Jazeera (AP, Reuters)", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://www.swissinfo.ch/ger/hacker-verschaffen-sich-zugang-zu-daten-der-fifa/92440654", publisher: "swissinfo.ch (Keystone-SDA)", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://www.infosecurity-magazine.com/news/fifa-confirms-cyberattack/", publisher: "Infosecurity Magazine", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.itpro.com/cyber-resilience/data-breaches/fifa-hit-by-data-breach-after-suspected-account-compromise", publisher: "ITPro", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.insideworldfootball.com/2026/11/27/fifa-hit-by-cyber-attack-personal-and-business-data-stolen/", publisher: "Inside World Football", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://therecord.media/fifa-data-breach-limited", publisher: "The Record", date: "2026-11-25", role: "corroborating" }
+      - { url: "https://www.heise.de/news/Warnung-vor-erheblichen-Folgen-Erfolgreicher-Cyberangriff-auf-die-FIFA-11539255.html", publisher: "heise online", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://securityaffairs.com/204100/data-breach/fifa-confirms-a-cyberattack-hackers-claim-12-gb-of-internal-files.html", publisher: "Security Affairs", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.ransomware.live/id/RklGQSAoRsOpZMOpcmF0aW9uIEludGVybmF0aW9uYWxlIGRlIEZvb3RiYWxsIEFzc29jaWF0aW9uKUBIYW5kc29tZSBCb3kgSGFja2luZyBDbHVi", publisher: "Ransomware.live (leak-site claim record)", date: "2026-11-20", role: "claim-record" }
+    discovery_trace: "first seen at: databreaches-net feed https://databreaches.net/feed/ (item 'FIFA says it has been victim of a cyberattack accessing personal and business information', 2026-11-26; per-article page 403 on every transport) and cyberinsider/heise feeds → pivot: SecurityWeek (AP) https://www.securityweek.com/fifa-says-it-has-been-victim-of-a-cyberattack-accessing-personal-and-business-information/ → pivot: Al Jazeera https://www.aljazeera.com/sports/2026/11/26/fifa-says-personal-and-business-information-stolen-in-cyberattack → pivot: Infosecurity Magazine https://www.infosecurity-magazine.com/news/fifa-confirms-cyberattack/ → pivot: ITPro https://www.itpro.com/cyber-resilience/data-breaches/fifa-hit-by-data-breach-after-suspected-account-compromise (BBC relay of the staff-impersonation vector; BBC page itself not fetched) → pivot: Ransomware.live claim record https://www.ransomware.live/id/RklGQSAoRsOpZMOpcmF0aW9uIEludGVybmF0aW9uYWxlIGRlIEZvb3RiYWxsIEFzc29jaWF0aW9uKUBIYW5kc29tZSBCb3kgSGFja2luZyBDbHVi"
+    summary: |
+      Facts (FIFA statement to AP, dpa and others): FIFA "can confirm that it has been the victim of a criminal cyberattack resulting in unauthorised access to a limited set of personal and business information" and is working with law enforcement. FIFA has not said when the attack happened, whose data or how many people are affected, or what the business information is. FIFA is headquartered in Zurich and about 700 employees work there (The Record); Inside World Football notes that as a Zurich-based organisation it falls under the Swiss data-protection act's breach-reporting duty to the federal commissioner.
+      Claims and reports from anonymous sources: a group calling itself the Handsome Boy Hacking Club (HBHC) claimed on 2026-11-20 to have taken more than 12 GB, said the files came from FIFA's Microsoft environment and internal governance systems (identity and immigration documents, executive information, financial, legal and governance records), says it tried to extort FIFA, and is reported to have published the material on a cybercrime forum; FIFA has not confirmed any HBHC claim (Infosecurity Magazine, The Record). HBHC is a new group: its first leak-site victim was listed on 2026-11-19, with US victims alongside FIFA and no verified technical profile (Infosecurity Magazine, Security Affairs; Ransomware.live flags it as an emerging group whose claims need independent verification). Sources told Reuters, The Athletic and the BBC (relayed by Al Jazeera, Inside World Football and ITPro) that the intruders gained access "by impersonating staff rather than a systems or technical failure"; ITPro calls it a suspected social-engineering attack and Reuters' source puts the affected material below 0.1 percent of FIFA's data. FIFA itself has not described the vector; the sources are anonymous.
+      Assessments: Mishcon de Reya's Joe Hancock reads it as financially motivated or notoriety-driven crime and notes a countdown timer on HBHC's leak site that may indicate an unpaid ransom demand; NCC Group's Tim Rawlins says high-profile attacks increasingly come down to cyber basics and long-standing social-engineering techniques. These are commentators' assessments, not findings.
+      The earlier fire (2026-11-27T0355Z) borderline-dropped FIFA as a private Swiss organisation with no access vector and anonymous sourcing for the impersonation claim; the new material in this window is HBHC background (first activity mid-November, four leak-site victims across US and Swiss organisations, claimed Microsoft-environment origin) and the BBC relay, not a new technical fact.
+    region_nexus: "Switzerland (Zurich-headquartered association; Swiss data-protection regime)"
+    primary_sector_nexus: "indirect (Swiss sports governing body; not public sector)"
+    sector: "sports governance / non-profit association"
+    cves: []
+    techniques: [T1684.001, T1657]
+    technique_notes: "T1684.001 Impersonation: sources (anonymous, relayed by Al Jazeera, Inside World Football, ITPro) say entry was by impersonating staff; T1657 Financial Theft: HBHC says it tried to extort FIFA (claim, not FIFA-confirmed)."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:handsome-boy-hacking-club", type: actor, name: "Handsome Boy Hacking Club", aliases: ["HBHC"], summary: "Newly emerged data-extortion group (activity from about 2026-11-14, leak site from 2026-11-19) that claims the FIFA theft and lists US victims including Smith & Wesson, UCHealth and Frontier Communications; Ransomware.live treats its claims as unverified (Infosecurity Magazine, ITPro, Security Affairs, 2026-11-27)." }
+      - { key: "incident:fifa-hbhc-staff-impersonation-2026-11", type: incident, name: "FIFA data theft (HBHC claim)", aliases: [], summary: "FIFA confirmed on 2026-11-26 a criminal cyberattack with unauthorised access to a limited set of personal and business information; HBHC claims 12 GB and sources say entry was by impersonating staff (AP, Al Jazeera, Infosecurity Magazine, ITPro)." }
+    relation_suggestions:
+      - { subject: "actor:handsome-boy-hacking-club", object: "incident:fifa-hbhc-staff-impersonation-2026-11", basis: "HBHC claims the FIFA theft on its leak site and social media; FIFA has not confirmed the group (Infosecurity Magazine, The Record, 2026-11-27); a claim, not an attribution" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss-domiciled and victim-confirmed, but a private association with no public-sector link; the previous fire dropped it as 'the same call as Erowa and Gleis D' (private Swiss organisation, no confirmed vector); only HBHC background and the BBC relay of the impersonation vector are new. Ship only if the main agent wants Swiss-domiciled confirmed incidents with a social-engineering entry; otherwise a repeat drop."
+    evidence:
+      - quote: "FIFA can confirm that it has been the victim of a criminal cyberattack resulting in unauthorised access to a limited set of personal and business information"
+        attribution: "Al Jazeera (FIFA spokesperson)"
+        source_url: "https://www.aljazeera.com/sports/2026/11/26/fifa-says-personal-and-business-information-stolen-in-cyberattack"
+      - quote: "gained access by impersonating staff rather than a systems or technical failure"
+        attribution: "Al Jazeera (a FIFA source to The Athletic)"
+        source_url: "https://www.aljazeera.com/sports/2026/11/26/fifa-says-personal-and-business-information-stolen-in-cyberattack"
+      - quote: "The group claimed the files were extracted from FIFA's Microsoft environment and internal governance systems."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/fifa-confirms-cyberattack/"
+      - quote: "FIFA has not confirmed any of the HBHC claims."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/fifa-confirms-cyberattack/"
+      - quote: "HBHC is an emerging cybercriminal group, with its first victim published on November 19 on its data leak site."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/fifa-confirms-cyberattack/"
+      - quote: "As a Zurich-based organisation, FIFA comes under Swiss data protection law."
+        attribution: "Inside World Football"
+        source_url: "https://www.insideworldfootball.com/2026/11/27/fifa-hit-by-cyber-attack-personal-and-business-data-stolen/"
+    extended_notes: |
+      Detection concept the mechanism supports (not rule code): staff-impersonation entry into a cloud tenant shows up as helpdesk or password-reset and MFA-enrolment events, followed by first-seen sign-ins to Microsoft 365 and bulk file or mailbox reads; the sources do not say which channel (voice, chat, e-mail) was used. Nothing here is Swiss-public-sector specific.
+
+  - title: "pCloud (Swiss vendor): pCloud Pass password manager hit by a cyberattack, user e-mail addresses exposed and login attempts made; vault access not ruled out"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/pcloud-confirms-password-manager-hack-after-suspicious-login-alerts/", publisher: "BleepingComputer", date: "2026-11-27", role: "primary" }
+      - { url: "https://www.pcloud.com/company.html", publisher: "pCloud International AG (company page)", date: "2026-11-28", role: "context" }
+    discovery_trace: "first seen at: bleepingcomputer listing https://www.bleepingcomputer.com/news/security/ → primary reachable: BleepingComputer https://www.bleepingcomputer.com/news/security/pcloud-confirms-password-manager-hack-after-suspicious-login-alerts/ (quotes pCloud's statement posted on Reddit; the Reddit thread is walled on extract and WebFetch, so the statement is read only through BleepingComputer) → WebSearch ('pCloud Pass hacked users notified new device password manager breach', extended) returned only rewrites of the BleepingComputer article, no independent report → Swiss domicile from https://www.pcloud.com/company.html"
+    summary: |
+      Facts (pCloud statement as quoted by BleepingComputer): "A cyberattack targeting pCloud Pass occurred, which was promptly contained by the pCloud team"; "a small number of pCloud Pass user email addresses were exposed and login attempts were made", with an automatic notification sent to each such address. pCloud says the attack was limited to the password manager, cloud storage was not affected, and stored passwords and notes stay encrypted client-side under the master password. pCloud did not say whether any encrypted vaults were accessed or stolen, did not give a root cause, and did not say it was AI-driven although its statement discusses AI speeding up vulnerability discovery.
+      Reports (user observations relayed by BleepingComputer, Reddit threads not fetched): customers worldwide received "new device connected" notifications naming an unfamiliar device, including customers with two-factor authentication enabled, customers who never used the password manager and an address tied to a storage account requested deleted almost a year earlier; users trace the originating address to pCloud's own hosting range, and some who checked their account found no unfamiliar device listed. BleepingComputer reports the "Open settings" link in the notification pointed at a hostname that looks like a quality-assurance environment rather than the production site, which it confirmed from a copy of the e-mail.
+      BleepingComputer's inference (its own assessment): if encrypted vaults were taken they could be attacked offline without rate limits or second factors, as in the 2022 LastPass case; BleepingComputer calls it the latest in a series of password-manager attacks this month (mSecure earlier in November, 1Password on 2026-11-25; 1Password is already in the store).
+      Nexus: pCloud International AG describes itself as "a Swiss-based cloud solution". Whether Swiss public-sector staff use pCloud Pass is not stated by any source.
+    region_nexus: "Switzerland (Swiss-domiciled cloud and password-manager vendor)"
+    primary_sector_nexus: "indirect (technology supplier; public-sector use unknown)"
+    sector: "technology / cloud and credential management"
+    cves: []
+    techniques: [T1110]
+    technique_notes: "T1110 Brute Force: pCloud says 'login attempts were made' against Pass accounts; the credential source and whether the attempts were credential stuffing are not stated, so treat the mapping as low confidence."
+    affected_products: ["pCloud Pass"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:pcloud-pass-cyberattack-2026-11", type: incident, name: "pCloud Pass cyberattack", aliases: [], summary: "pCloud confirmed (2026-11-27, per BleepingComputer) a contained cyberattack on its pCloud Pass password manager: a small number of user e-mail addresses exposed and login attempts made; vault access not ruled out." }
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "single-source: BleepingComputer is the only outlet that read the primary (pCloud's statement on Reddit); every other hit is a rewrite of it"
+    confidence: LOW
+    classification_hint: { reliability: B, credibility: 2 }
+    novelty: new
+    borderline: true
+    borderline_reason: "Swiss-domiciled vendor and a credential-management product, fresh (in window) and with a user-visible discriminator (unexpected new-device notices despite 2FA, link to a non-production hostname), but single-source, the vendor statement is not fetchable, no root cause and vault exposure unknown. Worth a short watch item, or hold for the vendor's follow-up statement."
+    evidence:
+      - quote: "A cyberattack targeting pCloud Pass occurred, which was promptly contained by the pCloud team,"
+        attribution: "BleepingComputer (pCloud statement)"
+        source_url: "https://www.bleepingcomputer.com/news/security/pcloud-confirms-password-manager-hack-after-suspicious-login-alerts/"
+      - quote: "Unfortunately, a small number of pCloud Pass user email addresses were exposed and login attempts were made."
+        attribution: "BleepingComputer (pCloud statement)"
+        source_url: "https://www.bleepingcomputer.com/news/security/pcloud-confirms-password-manager-hack-after-suspicious-login-alerts/"
+      - quote: "However, pCloud did not disclose whether any encrypted password vaults were accessed or stolen during the attack."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/pcloud-confirms-password-manager-hack-after-suspicious-login-alerts/"
+      - quote: "As a Swiss-based cloud solution"
+        attribution: "pCloud International AG"
+        source_url: "https://www.pcloud.com/company.html"
+    extended_notes: |
+      Triage discriminator the source supports: a genuine notification from this incident arrives from the vendor's own mail flow, names a device the user does not recognise, may reach addresses that never used the product, and links to a QA-environment hostname; a phishing lookalike would typically point somewhere else, but the sources do not say how to tell the two apart beyond that link. Hardening lever: master-password strength and uniqueness (offline attack on any exfiltrated vault); not independently confirmed that vaults left pCloud.
+
+  - title: "AIM Consulting SA (Ticino managed-service provider) listed by the Aurora extortion group; claim only, no victim statement"
+    sources:
+      - { url: "https://www.ransomware.live/id/QUlNIENvbnN1bHRpbmcgU0FAYXVyb3Jh", publisher: "Ransomware.live (leak-site claim record)", date: "2026-11-26", role: "claim-record" }
+    discovery_trace: "first seen at: ransomware-live feed https://www.ransomware.live/rss.xml (item 'Aurora has just published a new victim : AIM Consulting SA', 2026-11-26T15:54Z) → claim record https://www.ransomware.live/id/QUlNIENvbnN1bHRpbmcgU0FAYXVyb3Jh (the leak-site text as indexed). WebSearch ('AIM Consulting SA Canobbio attacco informatico ransomware Aurora Ticino') found no press report, victim statement or authority notice."
+    summary: |
+      Claim (Aurora, as indexed by Ransomware.live; Ransomware.live states that listings "reflect claims made by criminal groups and have not been verified"): Aurora listed AIM Consulting SA, a Swiss managed IT-services provider in Canobbio (Ticino), on 2026-11-26. The listing text says AIM serves about 60 client organisations across Ticino and northern Italy, naming banks (among them Banca dello Stato), a casino, energy-sector and "public" bodies, and dozens of SMEs, and describes a 2.9 GB corporate share (client framework contracts, invoices, staff photos, CVs) and an 84 GB Veeam backup repository of the AIM estate including full backups of a web server and an application server. No victim statement, no authority notice and no journalism corroborates the listing, so this is an unverified extortion claim attributed to the criminals making it.
+      Why it is returned at all: an MSP with a cantonal-bank client and public-body clients is a supplier-side exposure on the Swiss side, and the same group (Aurora) listed other DACH and Ticino-area organisations in the past weeks (Ransomware.live API: ARX Group SA on 2026-10-23; Elpro GmbH and Arlberger Bergbahnen AG on 2026-11-25/26). The listing's client list is the claimant's own text and is not established.
+    region_nexus: "Switzerland (Ticino); claimant text names a cantonal bank and public-sector clients"
+    primary_sector_nexus: "indirect (managed-service provider; public-sector clients claimed, not confirmed)"
+    sector: "managed IT services"
+    cves: []
+    techniques: [T1657]
+    technique_notes: "T1657 Financial Theft (extortion) is all the claim supports; the intrusion vector is unknown."
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:aurora-extortion-group", type: actor, name: "Aurora", aliases: [], summary: "Data-extortion leak-site group (Ransomware.live tracks it as 'Aurora') that in October and November 2026 listed Swiss, German, Austrian and Ticino-area organisations including ARX Group SA and AIM Consulting SA; all listings are unverified claims (Ransomware.live, 2026-11-26)." }
+    verification: SINGLE-SOURCE-OTHER
+    sourcing_note: "leak-site claim only, indexed by a tracker; no victim confirmation and no Admiralty A/B journalism (PD-6)"
+    confidence: LOW
+    classification_hint: { reliability: C, credibility: 4 }
+    novelty: new
+    lookback: true
+    borderline: true
+    borderline_reason: "PD-6: a leak-site claim without victim disclosure or A/B journalism does not ship; returned only because it names a Swiss MSP with a cantonal-bank and public-body client list. Recommend drop unless AIM or a Ticino outlet confirms; the claim is 36 h old, in window only by the Ransomware.live record's 73 h lookback."
+    evidence:
+      - quote: "Listings reflect claims made by criminal groups and have not been verified by Ransomware.live."
+        attribution: "Ransomware.live"
+        source_url: "https://www.ransomware.live/id/QUlNIENvbnN1bHRpbmcgU0FAYXVyb3Jh"
+      - quote: "Swiss managed IT-services provider (MSP) based in Ticino"
+        attribution: "Ransomware.live (indexing the Aurora listing)"
+        source_url: "https://www.ransomware.live/id/QUlNIENvbnN1bHRpbmcgU0FAYXVyb3Jh"
+dropped_candidates:
+  - { item: "Inception / ShinyHunters-linked vishing (ReversingLabs, 2026-11-24)", reason: "outside the 73 h lookback (CyberInsider 2026-11-24 13:18Z); borderline-dropped twice already (2026-11-24, 2026-11-25) for no public-sector or Swiss victim" }
+  - { item: "Turnitin cyberattack (letter of 2026-11-23, SecurityWeek 2026-11-25)", reason: "already borderline-dropped 2026-11-25: scope, data and timing undisclosed, no vector or actor (incident floor)" }
+  - { item: "European Commission EU Academy data exposure (SecurityWeek 2026-11-24)", reason: "same intrusion the ARTEX entry already carries; borderline-dropped 2026-11-25; no new fact in this window" }
+  - { item: "Rackspace Spot shutdown after 2026-11-17 credential-based breach of customer Kubernetes clusters (BleepingComputer 2026-11-24)", reason: "published 2026-11-24, outside every in-window horizon of this slice; not in the store, so a later audit may want it if a defender-relevant Kubernetes-secrets lesson is wanted" }
+  - { item: "Barclays Bank Delaware / Best Egg, Boston Scientific, Pacific Blue Cross (CA), HCAI (CA), Korea Scientists and Engineers Mutual-aid Association, AFP content-platform outage, Samlut, Brit Insurance", reason: "no Swiss or public-sector nexus, no new TTP; AFP has only a DataBreaches feed teaser (no primary found)" }
+  - { item: "French consumer and retail leaks (ParuVendu, Pages, Buffalo Grill, Offi, StoragePal, Intelcia, Todoist, Snipes, Septeo and a dozen claimed leaks) from fuitesinfos", reason: "private consumer-sector, out of nexus; DSAC (Aviation civile) and INCa (public-sector France) were published 2026-11-23/24, outside the 73 h lookback" }
+  - { item: "Swiss leak-site listings in the window: Elektro-Ruppen (bravox, 2026-11-27)", reason: "small private electrical contractor, claim only; no Swiss public-sector listing found in the ransomware.live country feeds for CH, DE, AT, IT, FR in the window (DE: SternKlinik Bremen, Elpro; AT: Arlberger Bergbahnen; IT: Cinelandia, Tessilopera)" }
+  - { item: "SEC EDGAR 8-K cyber filings 2026-11-24 to 2026-11-28", reason: "no Item 1.05 filing (one hit, Kavilco, items 5.03/5.07, is full-text noise); phrase searches for 'cybersecurity incident', 'unauthorized access', 'ransomware' return only exhibit boilerplate" }
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist is configured; the sweep is a no-op. SAP, pCloud and AIM Consulting were returned on the general constituency gate (technology suppliers to Swiss public administration), not as watchlist matches."
+candidate_sources: []
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "RECIPE CONFIRMED, drill impossible: `python3 tools/fetch_source.py feed https://databreaches.net/feed/ 20` returns 10 dated items with teasers (method direct, 2026-11-28); every per-article read fails on every transport (`extract` and jina 'upstream block/challenge', `WebFetch` HTTP 403). The record's `webfetch` method is stale: the bridge `feed` subcommand is the working listing transport; corroborate each lead through the outlet it relays (Reuters, CNA, AP), not DataBreaches itself."
+  - source_id: ransomware-live
+    reason: "NEW WORKING RECIPE: `python3 tools/fetch_source.py url https://api.ransomware.live/v2/countryvictims/<CC>` (CC = CH, DE, AT, IT, FR) returns dated JSON per country (fields: discovered, group_name, post_title, activity, description) back to September; far better than the 3-day `rss.xml` for a country sweep. `extract https://www.ransomware.live/id/<base64>` reads each claim record cleanly. `url .../countryvictims/LI` returned non-JSON (no data). The rss.xml feed (150 items, 2026-11-24 to 2026-11-28) still works for the rolling window."
+  - source_id: zaufana-trzecia-strona
+    reason: "RECIPE FIX: the homepage `url` read returned a stale partial listing (newest regular post 15 November); `python3 tools/fetch_source.py feed https://zaufanatrzeciastrona.pl/feed/ 15` returns the 10 newest dated items (direct) and `extract` reads each. The site now publishes mainly the weekly 'Weekendowa Lektura' roundup, so in-window yield is one roundup (episode 704, 2026-11-27) with no incident of constituency interest."
+  - source_id: cyberdaily-au
+    reason: "`feed https://www.cyberdaily.au/feed` fails (exit 1); listing `url https://www.cyberdaily.au/security` plus `extract` per article works (verified 2026-11-28). Items are numbered `/security/<id>-<slug>` (ids 14486 to 14507 on this listing); the listing carries no dates, only the article page does."
+  - source_id: sec-disclosures-edgar
+    reason: "RECIPE CONFIRMED (no failure): `sec-edgar 8k 2026-11-24 2026-11-28 1.05` returned one non-cyber hit; the efts full-text phrase searches return exhibit boilerplate (merger agreements, pooling agreements), so only the Item 1.05 query is a usable signal."
+  - source_id: fuitesinfos
+    reason: "RECIPE CONFIRMED: `url --direct https://fuitesinfos.fr/articles/` lists 24 server-rendered cards (title, excerpt, ISO datetime) with `/article/<date>-<slug>` hrefs; no `extract` was needed because titles and excerpts carry the dated headline. Almost all in-window items are French private consumer-sector leaks."
+  - source_id: spiegel-and-reuters
+    reason: "Walled primaries this run (not slice records): DER SPIEGEL's SAP article reads only its standfirst (paywall counter), Reuters' Air Force Cloud One article is a CAPTCHA wall on every transport, Reddit (pCloud's statement) is walled on `extract` and `WebFetch`. Each was cited through outlets that relay it and flagged accordingly."
+source_ledger:
+  - { id: databreaches-net, tier: standard, attempted: true, transport: "bridge:feed", horizon_hours: 29, in_horizon_items: 7, returned: 2, note: "Air Force Cloud One and FIFA were first seen here; per-article drill is 403 on every transport, so both were corroborated through relaying outlets" }
+  - { id: bleepingcomputer, tier: standard, attempted: true, transport: "bridge:url listing + extract", horizon_hours: 73, in_horizon_items: 15, returned: 3, note: "SAP, pCloud, US Air Force Cloud One (with CIA/FinCEN context); 1Password, Italy/Switzerland AI warning and Drupal/PAN-OS items already covered or S1 ground" }
+  - { id: cyberdaily-au, tier: standard, attempted: true, transport: "bridge:url listing + extract", horizon_hours: 73, in_horizon_items: 8, returned: 0, note: "Flight Centre, GoFundMe, AISA, NSW cyber command centre, Bendigo Bank penalty: Australia, no constituency nexus" }
+  - { id: cyberinsider, tier: standard, attempted: true, transport: "bridge:feed + extract", horizon_hours: 73, in_horizon_items: 9, returned: 0, note: "SAP and Air Force articles used as corroboration for items 1 and 2; Inception item is outside the horizon" }
+  - { id: fuitesinfos, tier: standard, attempted: true, transport: "bridge:url --direct listing", horizon_hours: 73, in_horizon_items: 17, returned: 0, note: "French private consumer-sector leaks; no Swiss or public-sector item inside the horizon" }
+  - { id: infostealers-hudson-rock, tier: standard, attempted: true, transport: "bridge:feed", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest item 2026-11-24 19:19Z, outside the horizon" }
+  - { id: ransom-isac, tier: standard, attempted: true, transport: "bridge:feed", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "newest post 2026-11-17" }
+  - { id: ransomware-live, tier: standard, attempted: true, transport: "bridge:feed rss.xml + bridge:url api.ransomware.live/v2/countryvictims/{CH,DE,AT,IT,FR}", horizon_hours: 73, in_horizon_items: 117, returned: 2, note: "AIM Consulting SA (Aurora claim, borderline) and the HBHC FIFA claim record (corroborating item 3); no Swiss public-sector claim in the window" }
+  - { id: sec-disclosures-edgar, tier: standard, attempted: true, transport: "bridge:sec-edgar 8k + bridge:url --direct efts", horizon_hours: 73, in_horizon_items: 0, returned: 0, note: "no Item 1.05 cyber filing 2026-11-24 to 2026-11-28" }
+  - { id: zaufana-trzecia-strona, tier: standard, attempted: true, transport: "bridge:url + bridge:feed + extract", horizon_hours: 73, in_horizon_items: 1, returned: 0, note: "only the weekly roundup (episode 704, 2026-11-27); its lead items (1Password, a Chinese ID-verification leak) are covered or out of nexus" }

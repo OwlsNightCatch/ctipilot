@@ -11,6 +11,7 @@
 
 | Surfaced | By run | Item | Why it clears the gate | Primary source | Event date |
 |---|---|---|---|---|---|
+| 2026-11-28 | 2026-11-28T0355Z-intel | **AIM Consulting SA (Ticino managed-service provider, Canobbio) listed by the Aurora extortion group on 2026-11-26, with a client list the claimant says names a cantonal bank and public bodies and a claimed 84 GB backup repository.** HELD, not verified: a leak-site claim only (PD-6); hold condition: AIM, a client or Ticino press confirms an intrusion, expiry 2026-12-12 (14 days), then struck. | A confirmed supplier intrusion with a cantonal-bank and public-body client list would clear PD-11(c) as a supply-chain incident; no victim statement, authority notice or press report exists yet (S4, 2026-11-28). | https://www.ransomware.live/id/QUlNIENvbnN1bHRpbmcgU0FAYXVyb3Jh | 2026-11-26 |
 
 ## Struck
 

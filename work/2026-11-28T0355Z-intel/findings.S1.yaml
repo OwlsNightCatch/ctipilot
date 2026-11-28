@@ -1,0 +1,627 @@
+# work/2026-11-28T0355Z-intel/findings.S1.yaml
+domain: S1
+run_id: 2026-11-28T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-28T03:57:34Z
+ended_at: 2026-11-28T04:25:27Z
+duration_seconds: 1673
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 8
+  bridge_fetches: 125
+window: "window_hours=26 (2026-11-27T01:55Z to 2026-11-28T03:55Z); developing 72 h; slice lookbacks per record"
+items:
+  # ---------------------------------------------------------------------------
+  # 1. NEW: Cacti 4HTTP2ROOT
+  # ---------------------------------------------------------------------------
+  - title: "Cacti Core 1.2.31 unauthenticated RCE zero-day '4HTTP2ROOT' (also 4HTTP2SHELL): a guest session writes SQL into a profile setting that reaches the realtime poller, public PoC, no CVE and no fixed release"
+    sources:
+      - { url: "https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell", publisher: "ek0ms savi0r / Church of Malware (GitHub write-up and PoC)", date: "2026-11-26", role: "primary" }
+      - { url: "https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/", publisher: "watchTowr", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://ravenai.sh/blog/four-requests-to-shell-cacti", publisher: "RavenAI", date: "2026-11-26", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/", publisher: "BleepingComputer", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html", publisher: "The Hacker News", date: "2026-11-27", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed (bridge feed https://www.bleepingcomputer.com/feed/) → drill https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/ → pivot: watchTowr FAQ https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/ → pivot: RavenAI https://ravenai.sh/blog/four-requests-to-shell-cacti → pivot: THN https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html → primary: researcher write-up (WebFetch) https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell; fix check: WebFetch of github.com/Cacti/cacti/releases and /security/advisories on 2026-11-28 showed v1.2.31 (15 Jun) as Latest and no advisory for this flaw (listing pages, not cited)"
+    summary: |
+      A researcher using the handle ek0ms savi0r (Church of Malware) published a write-up and proof of concept on 2026-11-26 for unauthenticated command execution on Cacti Core 1.2.31, the latest release, in four HTTP requests. BleepingComputer relays the researcher's statement that the flaw was not reported to Cacti before release; there is no CVE (THN) and no fixed version (watchTowr), and watchTowr and BleepingComputer report no exploitation as of 2026-11-27.
+      The chain, as RavenAI and THN describe it: a guest session is obtained from auth_profile.php (request 1); a POST to auth_profile.php?action=update_data stores a SQL fragment in the preview_graphs_per_page setting, which is not forced to be an integer (request 2); graph_view.php?action=preview reads that stored value as the default page size and concatenates it into a LIMIT clause passed to get_allowed_graphs(), and the PDO path accepts a stacked statement, so an UPDATE rewrites a poller_item row's command argument (request 3); graph_realtime.php?action=init then reaches cmd_realtime.php, exec_poll() and popen(), which runs the altered command (request 4). The researcher's demo stages a PHP shell this way.
+      Preconditions stated by the sources: the Cacti guest account must be enabled (THN: it is disabled by default since 0.8.7; the researcher had it enabled in the lab); only 1.2.31 was tested and other versions are unverified; the command runs as the web-server or poller account, which watchTowr says is often a low-privileged web user rather than root. Cacti stores SNMP communities and device logins, so watchTowr and THN treat the server as a pivot into the monitored network.
+      Interim mitigation per watchTowr and BleepingComputer: disable the guest account, restrict the web interface to trusted networks, review poller_item command values and watch the application log for warnings about non-numeric graph display values.
+    region_nexus: "global; no Switzerland-specific reporting. The technology class (a network-monitoring server holding device credentials) is common in administrations' network operations, but exposure depends on the guest account being enabled."
+    primary_sector_nexus: "indirect (technology-class exposure; no sector targeting reported)"
+    sector: "technology"
+    cves: []
+    techniques: [T1190, T1059, T1505.003]
+    affected_products: ["Cacti Core"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:cacti", type: product, name: "Cacti", aliases: ["Cacti Core"], summary: "Open-source network monitoring and graphing tool that polls routers, switches and servers and stores SNMP and device credentials (watchTowr, 2026-11-26)." }
+      - { key: "tool:4http2root", type: tool, name: "4HTTP2ROOT", aliases: ["4HTTP2SHELL"], summary: "Public proof-of-concept chain by ek0ms savi0r (Church of Malware, 2026-11-26) from a Cacti guest session to command execution via stored SQL injection and the realtime poller; no CVE assigned (THN)." }
+    relation_suggestions:
+      - { subject: "tool:4http2root", object: "product:cacti", basis: "watchTowr and THN: 4HTTP2ROOT is the name of the unauthenticated RCE chain in Cacti Core 1.2.31 (2026-11-26/27)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    suggested_classification: { reliability: B, credibility: 2, note: "technical claim rests on one researcher's lab test of 1.2.31 restated by watchTowr, RavenAI, BleepingComputer and THN; no vendor confirmation yet" }
+    suggested_priority: notable
+    novelty: new
+    evidence:
+      - quote: "Cacti has not published a fixed version for this vulnerability"
+        attribution: "watchTowr"
+        source_url: "https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/"
+      - quote: "As of November 27, 2026, no exploitation in the wild has been reported."
+        attribution: "watchTowr"
+        source_url: "https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/"
+      - quote: "The attack requires the Cacti guest account to be enabled but does not require attackers to possess valid credentials."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/"
+      - quote: "I found a path from a fresh, unauthenticated HTTP session to command execution as the Cacti server user in four requests."
+        attribution: "ek0ms savi0r (Church of Malware)"
+        source_url: "https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell"
+    extended_notes: |
+      Exposure check: Cacti Core version in the console footer or cacti.net release file (only 1.2.31 is named as tested), and whether the guest user is enabled (User Management, guest). Hunt/detection telemetry: web-server access logs for a guest-session sequence auth_profile.php update_data, then graph_view.php action=preview, then graph_realtime.php action=init from one client in seconds; application log warnings about a non-numeric value in a graph display setting (watchTowr: the request still succeeds); the database row poller_item.arg1 holding anything other than a normal poller command; new files or shells written by the poller process; unusual child processes of the Cacti web or poller user (sh, curl, wget) with a PHP or poller parent. Triage: the log warning alone also appears with a mistyped or legitimate non-numeric profile value, so the poller_item change and the realtime-graph request that follows are the discriminators.
+      Post-fix note: the project has no release after 1.2.31 as of the 2026-11-28 WebFetch of its releases page. Both the vendor GitHub listing pages were read by WebFetch only (summary), so treat "no fix" as watchTowr's statement plus that read.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 2. NEW: FreeRADIUS 3.0.29 / 3.2.11
+  # ---------------------------------------------------------------------------
+  - title: "FreeRADIUS 3.0.29 and 3.2.11 fix a Critical unauthenticated use-after-free in the default-enabled EAP-TTLS module, eight High flaws in EAP-FAST, EAP-SIM, EAP-MSCHAPv2, TEAP and DHCP code, and TEAP bugs that return Access-Accept to an unauthenticated peer; no CVE ids yet"
+    sources:
+      - { url: "https://freeradius.org/security/", publisher: "FreeRADIUS project (security notifications, 2026.11.25)", date: "2026-11-25", role: "primary" }
+      - { url: "https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1632/", publisher: "CERT-FR (CERTFR-2026-AVI-1632)", date: "2026-11-27", role: "corroborating" }
+    discovery_trace: "first seen at: cert-fr bridge (python3 tools/fetch_source.py cert-fr avis-recent 25), URL https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1632/ (FreeRADIUS, 2026-11-27) → primary: vendor security page https://freeradius.org/security/ (fetched with extract; the 2026.11.25 block read in full); EUVD search (api/search?text=FreeRADIUS, 2026-11-20..28) returned 0 records; WebSearch found no independent coverage"
+    summary: |
+      FreeRADIUS released 3.0.29 and 3.2.11 on 2026-11-25 "to fix various overflows and memory leaks" and says everyone on earlier versions should upgrade; the project's page lists 21 issues (1 Critical, 8 High, 5 Medium, 7 Low) grouped by module, each fixed by a commit on both branches where both are affected. CERT-FR's advisory of 2026-11-27 restates that some allow remote code execution, remote denial of service and loss of data confidentiality. No CVE ids are assigned yet (CERT-FR lists none; ENISA EUVD returned no FreeRADIUS record on 2026-11-28).
+      The Critical one is a use-after-free in the TTLS module, which the project says is enabled in the default configuration: an unauthenticated user can start an EAP-TTLS session and send invalid inner-tunnel data, and with heap shaping an attacker can write a heap pointer to a chosen address, so code execution may be possible. EAP-TLS, TTLS and PEAP are the default-enabled TLS-based methods. The eight High issues are in code that is off by default: an unauthenticated out-of-bounds write in the DHCP option encoder, three EAP-FAST flaws (weak randomness exposing the PAC, a stack overflow, TLV bounds checks), EAP-MSCHAPv2 response length checks, EAP-SIM identity length, and two TEAP flaws (TLV bounds, an infinite loop). Three Medium TEAP flaws let an unauthenticated peer obtain Access-Accept: missing Basic-Password checks, a Crypto-Binding check missing in production builds, and an unexpected Crypto-Binding TLV that short-circuits authentication; TEAP is not enabled by default. The project credits Anthropic, using agents with Ada Logics, for two of the EAP-FAST findings (the weak randomness and the stack overflow) and Ozgun Kultekin, who also reported the RealVNC flaw, for the TTLS one.
+      Not stated by the sources: any proof of concept, exploitation, or which network position reaches the listener. Mechanically, an EAP-TTLS session is opened by a supplicant through a network access server, so the attacker needs a path that lets 802.1X (or a RADIUS proxy chain) traffic reach the server.
+    region_nexus: "global; no Switzerland-specific reporting. RADIUS servers commonly authenticate Wi-Fi, wired 802.1X and VPN access in administrations (context, not from the sources)."
+    primary_sector_nexus: "indirect (authentication infrastructure; no sector targeting reported)"
+    sector: "technology"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["FreeRADIUS"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:freeradius", type: product, name: "FreeRADIUS", aliases: ["FreeRADIUS Server"], summary: "Open-source RADIUS authentication server; versions before 3.0.29 and 3.2.11 carry the 2026-11-25 batch of overflow and authentication flaws (FreeRADIUS project, 2026-11-25)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 2, note: "vendor/project first-party disclosure restated by CERT-FR (not an independent observation); no exploitation or PoC stated" }
+    suggested_priority: notable
+    novelty: new
+    evidence:
+      - quote: "We have released 3.0.29 and 3.2.11 to fix various overflows and memory leaks. We recommend that everyone using earlier versions of FreeRADIUS upgrade to one of these new releases."
+        attribution: "FreeRADIUS project"
+        source_url: "https://freeradius.org/security/"
+      - quote: "The TTLS module is enabled in the default configuration."
+        attribution: "FreeRADIUS project"
+        source_url: "https://freeradius.org/security/"
+      - quote: "An unauthenticated user could start an EAP-TTLS session, then send invalid “inner-tunnel” data. This could cause a “use after free” issue in the TTLS module."
+        attribution: "FreeRADIUS project"
+        source_url: "https://freeradius.org/security/"
+      - quote: "With heap shaping, an attacker can cause a write of a heap pointer to a chosen address. Code execution may be possible."
+        attribution: "FreeRADIUS project"
+        source_url: "https://freeradius.org/security/"
+      - quote: "An unauthenticated user could start a TEAP session, and send unexpected Crypto-Binding TLV, causing the server to return an Access-Accept."
+        attribution: "FreeRADIUS project"
+        source_url: "https://freeradius.org/security/"
+    extended_notes: |
+      Exposure: FreeRADIUS before 3.0.29 or 3.2.11 (radiusd -v); the default-enabled paths are EAP-TLS, TTLS and PEAP, so a stock install is in scope for the TTLS use-after-free; TEAP, EAP-FAST, EAP-SIM and DHCP are off by default, so check whether the eap module or a dhcp listener enables them. Detection concept: radiusd crashes or restarts coinciding with EAP-TTLS handshakes (process-crash and service-restart events, core dumps), and on TEAP-enabled servers Access-Accept responses for TEAP sessions with no successful inner-method authentication in the authentication detail log (an inference from the stated mechanism, not a source-supplied rule). Post-patch compromise check: heap-corruption exploitation may leave only a crash; review radiusd restarts and RADIUS accounting gaps in the days before the upgrade. Hardening: upgrade both branches; disable unused EAP methods; limit which NAS and proxy addresses may reach the listener.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 3. NEW: RealVNC CVE-2026-137738
+  # ---------------------------------------------------------------------------
+  - title: "RealVNC CVE-2026-137738 (RVNC-2026-001, CVSS 9.8): pre-authentication memory-safety flaw in UDP-based connections can give remote code execution, as root on some platforms, in Server, Viewer and Connect; fixed in Server 7.19.1, no exploitation reported"
+    sources:
+      - { url: "https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability", publisher: "RealVNC (advisory RVNC-2026-001)", date: "2026-11-20", role: "primary" }
+      - { url: "https://www.heise.de/news/RealVNC-Sicherheitsleck-ermoeglicht-Schadcode-Schmuggel-ohne-Anmeldung-11540429.html", publisher: "heise online", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137042", publisher: "ENISA EUVD (EUVD-2026-137042)", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-137738", publisher: "CVE Program record (MITRE CNA)", date: "2026-11-27", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd bridge (url --direct https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-26&toDate=2026-11-28&page=0&size=100), record EUVD-2026-137042 → primary: RealVNC advisory https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability (extract fell through to the jina reader) → corroboration: heise https://www.heise.de/news/RealVNC-Sicherheitsleck-ermoeglicht-Schadcode-Schmuggel-ohne-Anmeldung-11540429.html (found in the heise feed) and the CVE record https://cveawg.mitre.org/api/cve/CVE-2026-137738"
+    summary: |
+      RealVNC's advisory RVNC-2026-001 (published 2026-11-20) fixes CVE-2026-137738, rated Critical, CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N): a memory-safety flaw in UDP-based connections that can be exploited before authentication to run code remotely, as root on certain platforms, or to crash the software. The vendor says it affects customers using its cloud-hosted connectivity and manually configured direct connections, including offline-licensed and on-premises deployments, and that TCP-only direct connections are not exposed; it says it is not aware of active exploitation. The CVE record (MITRE as CNA) and ENISA's EUVD entry appeared on 2026-11-27, and heise reported the flaw the same day; the advisory was not covered before. The reporter is Ozgun Kultekin of Wakefield (the CVE record points to wakefield.co/research, no technical write-up was found).
+      Affected (vendor): Server 6.4.0 to 7.19.0, Viewer 8.4.0 to 8.6.1, Classic Viewer 6.4.0 to 7.18.2, Connect App 8.6.1 and earlier, On-Demand Assist 3.4.1 and earlier, iOS and iPadOS Viewer 3.7.0 to 4.9.5, Android Viewer 3.5.0 to 4.9.5, iOS Server 2.8.1 and earlier, Android Server 2.8.3 and earlier. Fixed: Server 7.19.1, Viewer 8.6.2, Connect app 8.6.2, Classic Viewer 7.18.3, On-Demand Assist 3.5.0, iOS and iPadOS Viewer 4.9.6, Android Viewer 4.9.6, iOS and iPadOS Server 2.8.2, Android Server 2.8.4. The vendor names updating as the only remedy; downloaded On-Demand Assist copies must be deleted and replaced. EPSS 0.0067 on 2026-11-27 (FIRST); not in CISA KEV.
+    region_nexus: "global; no Switzerland-specific reporting. heise (Germany) calls RealVNC remote-maintenance software used by thousands of organisations worldwide."
+    primary_sector_nexus: "indirect (remote-access software class; no sector targeting reported)"
+    sector: "technology"
+    cves: [CVE-2026-137738]
+    techniques: [T1190]
+    affected_products: ["RealVNC Server", "RealVNC Viewer", "RealVNC Classic Viewer", "RealVNC Connect", "RealVNC On-Demand Assist"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:realvnc-server", type: product, name: "RealVNC Server", aliases: ["VNC Server (RealVNC)"], summary: "RealVNC's remote-access server; versions 6.4.0 to 7.19.0 are affected by the pre-authentication UDP-connection flaw CVE-2026-137738 (RealVNC, 2026-11-20)." }
+      - { key: "product:realvnc-viewer", type: product, name: "RealVNC Viewer", aliases: ["RealVNC Connect Viewer"], summary: "RealVNC's viewer applications (desktop and mobile); versions 8.4.0 to 8.6.1 on desktop are affected by CVE-2026-137738 (RealVNC, 2026-11-20)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 2, note: "vendor first-party advisory plus CVE/EUVD records and heise; no independent technical validation, no PoC and no exploitation stated" }
+    suggested_priority: notable
+    novelty: new
+    evidence:
+      - quote: "It could potentially be exploited to execute code remotely or cause the software to crash, pre-authentication."
+        attribution: "RealVNC"
+        source_url: "https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability"
+      - quote: "TCP-only direct connections are not exposed."
+        attribution: "RealVNC"
+        source_url: "https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability"
+      - quote: "At the time of publication, RealVNC is not aware of any active exploitation in the wild."
+        attribution: "RealVNC"
+        source_url: "https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability"
+      - quote: "Aktive Angriffe sind laut Hersteller bislang nicht bekannt."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/RealVNC-Sicherheitsleck-ermoeglicht-Schadcode-Schmuggel-ohne-Anmeldung-11540429.html"
+    extended_notes: |
+      Freshness note: the vendor advisory predates the window by 7 days; the in-window signals are the CVE record and EUVD entry (2026-11-27 05:52Z) and heise (2026-11-27). Nothing earlier in prior coverage mentions RealVNC. Exposure: inventory RealVNC Server, Viewer, Connect App and On-Demand Assist builds against the vendor's fixed versions; direct-connection (manually configured) and cloud-brokered sessions are exposed, TCP-only direct connections are not. Detection concept: crashes or restarts of the RealVNC Server service and unexpected root-owned child processes on Linux or macOS hosts running it; UDP traffic to the server from addresses that are not the broker or known viewers (the advisory does not name a port). Triage: a server crash alone is also produced by ordinary instability, so correlate it with inbound UDP from unfamiliar sources. Hardening: update; where UDP connectivity is not needed, the advisory gives no switch, so the lever is the update plus network scoping of the listener.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 4. UPDATE-OF: Mitel OpenScape 4000 CVE ids assigned
+  # ---------------------------------------------------------------------------
+  - title: "Mitel OpenScape 4000 and OpenScape 4000 Manager (MISA-2026-0013): the three Platform flaws now have CVE ids, CVE-2026-137724, CVE-2026-137721 and CVE-2026-137723, published 2026-11-27 with CVSS 3.1 10.0, 10.0 and 9.6"
+    sources:
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137039", publisher: "ENISA EUVD (EUVD-2026-137039, CVE-2026-137724)", date: "2026-11-27", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137044", publisher: "ENISA EUVD (EUVD-2026-137044, CVE-2026-137721)", date: "2026-11-27", role: "primary" }
+      - { url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137037", publisher: "ENISA EUVD (EUVD-2026-137037, CVE-2026-137723)", date: "2026-11-27", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-137724", publisher: "CVE Program record (MITRE CNA)", date: "2026-11-27", role: "corroborating" }
+      - { url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0013", publisher: "Mitel (MISA-2026-0013, still revision 1.0)", date: "2026-11-18", role: "context" }
+    discovery_trace: "first seen at: enisa-euvd bridge (url --direct https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10&fromDate=2026-11-26&toDate=2026-11-28&page=0&size=100) → EUVD-2026-137044/-137039/-137037 each cite MTLVULN ids → CVE records fetched at https://cveawg.mitre.org/api/cve/CVE-2026-137724, -137721 and -137723 (all PUBLISHED 2026-11-27, assigner mitre) → Mitel advisory re-fetched at https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0013 (still Revision 1.0, Last Updated 2026-11-18, 'A CVE identifier has been requested but is not yet assigned')"
+    summary: |
+      The covered entry says Mitel's MISA-2026-0013 carries no CVE ids. On 2026-11-27 the CVE Program (MITRE as CNA) and ENISA's EUVD published them, each description naming Mitel's internal id: CVE-2026-137724 is MTLVULN-1785 (unauthenticated improper authentication, CVSS 3.1 10.0, AV:N/AC:L/PR:N/UI:N/S:C), CVE-2026-137721 is MTLVULN-1786 (command injection from insufficient parameter sanitization, 10.0), and CVE-2026-137723 is MTLVULN-1793 (command injection reachable from the adjacent network, 9.6, AV:A). The affected ranges match the advisory: OpenScape 4000 V11 R0.22 through V11 R2.11 and V10 R1.68 and earlier, OpenScape 4000 Manager V11 R0.22 through V11 R2.11 and V10 R1.34 through V10 R1.68. Mitel's advisory page is still at revision 1.0 without the ids when fetched on 2026-11-28; the fixed releases and the Security Mode restricted-access workaround are unchanged. EPSS 0.0054, 0.0280 and 0.0263 (FIRST, 2026-11-27); none is in CISA KEV and no exploitation is stated.
+    region_nexus: "global; Mitel OpenScape 4000 is a telephony platform (entry already carries sector public-sector)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-137724, CVE-2026-137721, CVE-2026-137723]
+    techniques: [T1190]
+    affected_products: ["Mitel OpenScape 4000", "Mitel OpenScape 4000 Manager"]
+    entity_keys: ["product:mitel-openscape-4000", "product:mitel-openscape-4000-manager"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "CVE Program and EUVD records restate Mitel's own MTLVULN ids and scores; two independent registries" }
+    novelty: "update-of:2026-11-20/mitel-openscape-4000-misa-2026-0013-unauth-cvss-10"
+    update_fields_hint: [cves, title, headline, summary, sourcing_note, evidence, body]
+    evidence:
+      - quote: "This is MTLVULN-1785."
+        attribution: "ENISA EUVD (CVE-2026-137724)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137039"
+      - quote: "This is MTLVULN-1786."
+        attribution: "ENISA EUVD (CVE-2026-137721)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137044"
+      - quote: "This is MTLVULN-1793."
+        attribution: "ENISA EUVD (CVE-2026-137723)"
+        source_url: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137037"
+      - quote: "A CVE identifier has been requested but is not yet assigned"
+        attribution: "Mitel"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0013"
+    extended_notes: |
+      CVE-to-id mapping confirmed by the 'This is MTLVULN-nnnn' sentence in each record. CVSS vectors from EUVD: -137724 and -137721 CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H (10.0); -137723 CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H (9.6). Note the CVE text for -137721 and -137723 says 'an attacker' while Mitel's advisory says unauthenticated for MTLVULN-1786 and unauthenticated adjacent for -1793; the entry's wording follows Mitel.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 5. UPDATE-OF: Cisco nginx advisory v1.6 + Fortinet timeline
+  # ---------------------------------------------------------------------------
+  - title: "nginx flaws (NGINX2root): Cisco's advisory reaches version 1.6 on 2026-11-27 with Catalyst Center now affected and new fixed-release dates for NX-OS and ISE, while Fortinet now clears FortiManager, FortiAnalyzer, FortiADC, FortiWeb and FortiSIEM, still has 29 product names under investigation and says only its FortiVoice Cloud and FortiEdge Cloud services needed (server-side) remediation"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s", publisher: "Cisco PSIRT (cisco-sa-nginx-nov-2026-e8jska2s, revision 1.6)", date: "2026-11-27", role: "primary" }
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279", publisher: "Fortinet PSIRT (FG-IR-26-279)", date: "2026-11-26", role: "corroborating" }
+    discovery_trace: "first seen at: cisco-psirt feed (python3 tools/fetch_source.py feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml 30; item dated 2026-11-27 20:04) → primary: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s (extract, revision table read) → Fortinet https://fortiguard.fortinet.com/psirt/FG-IR-26-279 (extract, timeline read)"
+    summary: |
+      The covered entry reports Cisco's nginx advisory up to version 1.5 only in summary terms ("changes several product statuses and fixed releases") and its body still says Catalyst Center was listed as not affected at version 1.0. Version 1.6 of 2026-11-27 ("Updated affected products") reads as follows. Catalyst Center is now listed with bugs CSCwx92298 and CSCwx92322 and first fixed releases 3.3.3 and 3.4.1, both dates still TBD (version 1.5 of 2026-11-26 says it updated the Catalyst Center status and fixed-release information). Identity Services Engine is affected only on release 3.5, fixed in 3.5 Patch 5 (December 2026). Nexus 3000/9000 in standalone NX-OS mode lists 10.3.11 and 10.5.7 and 10.7.1 (December 2026), 10.4.9 (January 2027) and 10.6.5 (February 2027); the entry's earlier figure was 10.7.2F. UCS Director and Unified Contact Center Express remain affected with release TBD, IOS XE is Not affected and IOS XR is Under investigation. Other affected rows include Crosswork Hierarchical Controller (11.0.4 and 12.0.1, November 2026), Secure Endpoint Private Cloud (PC 4.2.10, December 2026), Vulnerability Management (1.30.7, November 2026), Webex Assistant for Meetings (1.15.16, November 2026), Smart PHY (27.1.0, March 2027) and Finesse and Unified Intelligence Center (15.0(1)SU3, TBD). The security impact rating moved from Critical to High at version 1.2 (2026-11-23). Cisco's PSIRT is aware of proof-of-concept code and not aware of malicious use.
+      Fortinet's FG-IR-26-279 timeline shows its not-impacted list updated on 2026-11-21, 23, 24 and 26. The page now confirms FortiManager, FortiAnalyzer, FortiADC, FortiWeb, FortiSIEM, FortiMail, FortiOS, FortiProxy, FortiNAC and FortiPAM among others as not impacted; 29 product names remain under investigation (among them FortiAuthenticator, FortiClient EMS, FortiSOAR, FortiWeb Manager, FortiVoice, FortiEDR and FortiSASE); it says Fortinet has remediated the issue in FortiVoice Cloud and FortiEdge Cloud so customers need no action, lists no on-premises product as affected, and says none of its products uses NGINX Plus. The covered entry's last Fortinet figure was 51 names under investigation with FortiManager, FortiAnalyzer, FortiADC, FortiWeb and FortiSIEM among them (2026-11-22).
+    region_nexus: "global; Cisco Catalyst Center, ISE, Nexus and Webex components are common in administrations' network estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Cisco Catalyst Center", "Cisco Identity Services Engine", "Cisco NX-OS Software", "Cisco UCS Director", "Cisco Unified Contact Center Express", "Cisco Crosswork Hierarchical Controller"]
+    entity_keys: ["product:cisco-catalyst-center", "product:cisco-identity-services-engine", "product:cisco-nx-os-software", "product:cisco-ucs-director", "product:cisco-unified-contact-center-express", "product:f5-nginx-open-source"]
+    new_entities:
+      - { key: "product:cisco-crosswork-hierarchical-controller", type: product, name: "Cisco Crosswork Hierarchical Controller", aliases: [], summary: "Cisco network-orchestration product listed as affected by the nginx flaws, fixed in 11.0.4 and 12.0.1 (Cisco PSIRT cisco-sa-nginx-nov-2026-e8jska2s v1.6, 2026-11-27)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "two vendor PSIRTs each first-party for their own products" }
+    novelty: "update-of:2026-11-19/nginx-nginx2root-five-unauth-memory-corruption-flaws"
+    update_fields_hint: [affected_products, entities, sources, evidence, body, actions]
+    evidence:
+      - quote: "Updated Cisco Catalyst Center status and fixed release information, and updated Cisco Finesse fixed release number."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s"
+      - quote: "The Cisco PSIRT is aware that proof-of-concept exploit code is available for the vulnerabilities that are described in this advisory. The Cisco PSIRT is not aware of any malicious use of the vulnerabilities that are described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-nginx-nov-2026-e8jska2s"
+      - quote: "Fortinet is currently investigating the impact of these CVEs over Fortinet Products."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279"
+      - quote: "Fortinet has remediated this issue in FortiVoice Cloud and FortiEdge Cloud and hence the customers need not perform any action."
+        attribution: "Fortinet PSIRT"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-279"
+    extended_notes: |
+      Read from the extract text, where the Cisco table rows run together; the Catalyst Center row shows two bug ids and '3.3.3 (TBD) 3.4.1 (TBD)' under the priority-products table, and 'Not affected' no longer appears for it. If the composer wants to state 'affected' for Catalyst Center it rests on the bug ids plus the version 1.5 history line. The Cisco table is long; a raw `url` read of the advisory would confirm row boundaries.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 6. UPDATE-OF: Cisco Expressway advisory revision 1.1
+  # ---------------------------------------------------------------------------
+  - title: "Cisco Expressway CVE-2026-76466: Cisco's advisory is revised to 1.1 on 2026-11-23 to record the CISA KEV listing while still stating it has no direct evidence of active exploitation"
+    lookback: true
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t", publisher: "Cisco PSIRT (cisco-sa-vcs-static-cred-hr7EWZ8t, revision 1.1)", date: "2026-11-23", role: "primary" }
+    discovery_trace: "first seen at: cisco-psirt feed (python3 tools/fetch_source.py feed https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml 30; item dated 2026-11-23 15:51) → primary: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t (extract; revision table read). In window only by the cisco-psirt 168 h lookback"
+    summary: |
+      The covered entry says Cisco's advisory "was still at its initial version as of 2026-11-21" and says Cisco's PSIRT is not aware of malicious use, which CISA's listing and F6's incident contradict. Cisco revised the advisory on 2026-11-23 (version 1.1, "Updated to state that this vulnerability was added to the CISA KEV. Cisco does not have direct evidence of active exploitation"). The advisory now says that in November 2026 the flaw was added to CISA's KEV catalog and that Cisco continues to strongly recommend upgrading; so the vendor acknowledges the listing but still states no direct evidence of exploitation, leaving F6's report as the only account of an actual intrusion. Fixed releases (X15.5.20 for X15.5.3 and earlier, migrate from X14 and earlier), the clustering precondition, CVSS 9.8 and the absence of a workaround are unchanged. Cisco credits Stefan Aleksic of Jane Street.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-76466]
+    techniques: [T1190]
+    affected_products: ["Cisco Expressway Series"]
+    entity_keys: ["product:cisco-expressway-series"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "vendor first-party revision of its own advisory" }
+    novelty: "update-of:2026-10-22/cve-2026-76466-cisco-expressway-cluster-unauth-root-rce"
+    update_fields_hint: [summary, sources, evidence, sourcing_note, body]
+    evidence:
+      - quote: "Updated to state that this vulnerability was added to the CISA KEV. Cisco does not have direct evidence of active exploitation."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t"
+      - quote: "In November 2026, this vulnerability was added to the Known Exploited Vulnerability (KEV) database of the U.S. Cybersecurity and Infrastructure Security Agency (CISA)."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t"
+    extended_notes: |
+      Replaces the entry's statement that the advisory is at its initial version and carries no exploitation note; the sourcing note's contradiction between Cisco and CISA/F6 narrows to Cisco's 'no direct evidence' wording.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 7. UPDATE-OF: GeoServer KEV listing
+  # ---------------------------------------------------------------------------
+  - title: "GeoServer: CISA adds CVE-2026-120705 (XML injection) and CVE-2026-129243 (incorrect authorization) to KEV on 2026-11-27, federal due date 2026-11-30, settling which chain flaws are exploited"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert, 2026-11-27)", date: "2026-11-27", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev; catalogVersion 2026.11.27, dateAdded 2026-11-27) and work/2026-11-28T0355Z-intel/kev-window.txt → primary: CISA alert https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog (WebFetch; href taken from the cisa.gov alerts listing)"
+    summary: |
+      The covered entry says watchTowr is the only observer of exploitation, that NCSC Switzerland rates the chain actively exploited, and that "the sources name different flaws as exploited"; it records no CISA listing. CISA added two of the five chain flaws to its Known Exploited Vulnerabilities catalog on 2026-11-27: CVE-2026-120705, "OSGeo GeoServer XML Injection Vulnerability" (an unauthenticated attacker can make the server read local text files or fetch attacker-chosen HTTP or HTTPS URLs through a crafted ID parameter in the WFS 2.0 GetFeatureById stored query) and CVE-2026-129243, "OSGeo GeoServer Incorrect Authorization Vulnerability" (a prefixed service parameter bypasses service-level role checks). The KEV text says each can be chained with CVE-2026-129244, CVE-2026-129245 and CVE-2026-129242 for unauthenticated remote code execution, and sets a due date of 2026-11-30; the KEV record's forensic-triage flag is No for both and its notes point to GeoServer's 2026-11-23 advisory. The other three chain flaws (CVE-2026-129244, CVE-2026-129245, CVE-2026-129242) and CVE-2026-120704 are not in the catalog on 2026-11-28.
+    region_nexus: "global; NCSC.ch advisory 13242 already rates the chain actively exploited (entry cites it)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-120705, CVE-2026-129243]
+    techniques: [T1190]
+    affected_products: ["OSGeo GeoServer"]
+    entity_keys: ["product:geoserver"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "CISA KEV is first-party for its own listing; entry already carries watchTowr and NCSC.ch exploitation reporting" }
+    novelty: "update-of:2026-11-25/geoserver-five-step-unauthenticated-rce-chain-public-poc"
+    update_fields_hint: [cves, tags, summary, evidence, sourcing_note, sources, body]
+    evidence:
+      - quote: "CISA has added three new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "OSGeo GeoServer XML Injection Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "OSGeo GeoServer Incorrect Authorization Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      The KEV-record specifics (chain statement, due date 2026-11-30, forensicTriage No, notes URLs) come from the cisa-kev bridge JSON, not from the alert page; the alert page itself carries only the catalog names and the BOD 26-04 boilerplate. New KEV field to know: 'forensicTriage' (Yes/No) tied to BOD 26-04 'Forensics Triage Requirements'; it is Yes for Drupal CVE-2026-136716, Xen Orchestra CVE-2026-133469, Idunno AntiCsrf CVE-2026-131914 and MONAI Label CVE-2026-133968, No for the two GeoServer flaws.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 8. UPDATE-OF: Drupal KEV listing (CVE-2026-136716)
+  # ---------------------------------------------------------------------------
+  - title: "Drupal core: CISA adds the second installer flaw CVE-2026-136716 to KEV on 2026-11-27 with a forensic-triage requirement, due 2026-11-30"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert, 2026-11-27)", date: "2026-11-27", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge (catalogVersion 2026.11.27, CVE-2026-136716 dateAdded 2026-11-27) and kev-window.txt → primary: CISA alert https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog (WebFetch)"
+    summary: |
+      The covered entry (updated 2026-11-26) records CISA's listing of CVE-2026-132165 on 2026-11-24 and Drupal's statement that SA-CORE-2026-019 (CVE-2026-136716) is exploited, but not a CISA listing of the second flaw. CISA added CVE-2026-136716, "Drupal Core Improper Check for Unusual or Exceptional Conditions Vulnerability", on 2026-11-27 with a due date of 2026-11-30. The KEV text says it lets an unauthenticated remote attacker take over a site through the exposed installer when the site is in one of the affected unusual or incomplete installation states, and the record's forensic-triage flag is Yes, meaning CISA's BOD 26-04 forensics triage requirements apply on top of patching (the entry already says patching does not undo a takeover). Fixed releases are unchanged (11.4.14, 11.3.23, 10.6.23, then update.php).
+    region_nexus: "global; Swiss federal and cantonal sites run Drupal (context); NCSC.ch and NCSC-NL advisories already in the entry"
+    primary_sector_nexus: "direct (CMS used by public administrations)"
+    sector: "public-sector"
+    cves: [CVE-2026-136716]
+    techniques: [T1190]
+    affected_products: ["Drupal Core"]
+    entity_keys: ["product:drupal-core"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "CISA KEV listing is first-party; Drupal's own statement already in the entry" }
+    novelty: "update-of:2026-11-18/drupal-core-critical-release-2026-11-18-psa-2026-11-16"
+    update_fields_hint: [cves, tags, summary, evidence, sources, body]
+    evidence:
+      - quote: "CISA has added three new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "Drupal Core Improper Check for Unusual or Exceptional Conditions Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      'region_nexus' wording about Swiss Drupal use is context from the constituency profile, not from CISA. The forensicTriage=Yes and due-date facts come from the cisa-kev bridge JSON (record CVE-2026-136716: dueDate 2026-11-30, forensicTriage Yes, notes pointing to https://www.drupal.org/sa-core-2026-019). The 2026-11-24 listing of CVE-2026-132165 was the same family; the entry's cves[] status for CVE-2026-136716 lacks cisa-kev.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 9. UPDATE-OF: Xen Orchestra KEV listing (lookback)
+  # ---------------------------------------------------------------------------
+  - title: "Xen Orchestra CVE-2026-133469: CISA adds the empty-token authentication bypass to KEV on 2026-11-25, due 2026-11-28, forensic triage required"
+    lookback: true
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert, 2026-11-25)", date: "2026-11-25", role: "primary" }
+      - { url: "https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/", publisher: "Vates (VSA-2026-062, updated 2026-11-25)", date: "2026-11-25", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (dateAdded 2026-11-25 for CVE-2026-133469) and a cross-check of covered entries' cves[] status fields against KEV → primary: CISA alert https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog (WebFetch) → Vates advisory https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/ (extract; shows Updated 2026-11-25). Outside window_hours; inside the 72 h developing window"
+    summary: |
+      The covered entry (2026-11-11, never updated) records Vates' own statement of active exploitation and the CVE record but no CISA listing. CISA added CVE-2026-133469, "Vates Xen Orchestra Improper Validation of Specified Type of Input Vulnerability", to KEV on 2026-11-25 with a due date of 2026-11-28 and its forensic-triage flag set to Yes: an unauthenticated attacker bypasses authentication and acts with administrative privileges through a crafted authentication token containing an empty JSON object. Vates' advisory shows an update dated 2026-11-25; its mitigation section (do not expose Xen Orchestra to the internet, block the actor's infrastructure, block the empty-token cookie patterns in a WAF or reverse proxy, rotate all secrets after a compromise, reinstall instead of cleaning) matches what the entry carries. EPSS 0.3177 (FIRST, 2026-11-27).
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-133469]
+    techniques: [T1190]
+    affected_products: ["Vates Xen Orchestra"]
+    entity_keys: ["product:xen-orchestra-appliance"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "CISA KEV plus Vates first-party exploitation statement" }
+    novelty: "update-of:2026-11-11/vates-xen-orchestra-vsa-2026-062-auth-bypass-exploited"
+    update_fields_hint: [tags, cves, summary, evidence, sources, body]
+    evidence:
+      - quote: "CISA has added 10 new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog"
+      - quote: "Vates Xen Orchestra Improper Validation of Specified Type of Input Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog"
+      - quote: "This vulnerability is actively exploited by a threat actor operating intially from"
+        attribution: "Vates"
+        source_url: "https://docs.vates.tech/security-advisories/advisories/2026/vates-sa-2026-062/"
+    extended_notes: |
+      Dueness: this KEV addition falls before window_hours; it surfaces only because a status-field check showed the entry never recorded cisa-kev. The kev_window_diff COVERED verdict matches on CVE id alone; see self-evolution note. The Vates quote is verbatim including its 'intially' typo.
+    borderline: false
+
+  # ---------------------------------------------------------------------------
+  # 10. BORDERLINE UPDATE-OF: Idunno AntiCsrf KEV
+  # ---------------------------------------------------------------------------
+  - title: "Idunno.AntiCsrf CVE-2026-131914: CISA added the deserialization flaw to KEV on 2026-11-24 (EoL component, no patch), due 2026-11-27, forensic triage required"
+    lookback: true
+    borderline: true
+    borderline_reason: "KEV listing dated 2026-11-24, outside the 72 h developing window; the covered entry already says exploited with no patch, so the delta is only the KEV status and the forensic-triage flag"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert, 2026-11-24)", date: "2026-11-24", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge (dateAdded 2026-11-24) and a status-field cross-check of covered entries against KEV → primary: CISA alert https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog (WebFetch)"
+    summary: |
+      CISA listed CVE-2026-131914, "Idunno AntiCsrf Deserialization of Untrusted Data Vulnerability", on 2026-11-24 (due 2026-11-27, forensic triage Yes). The KEV text says an unauthenticated remote attacker can run arbitrary code via object injection and that the product could be end-of-life, so users should discontinue use or move to a supported version. The covered entry says exploited with no patch, citing Mandiant, but records no CISA listing; EPSS 0.0424 (FIRST, 2026-11-27).
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-131914]
+    techniques: [T1190]
+    affected_products: ["Idunno.AntiCsrf"]
+    entity_keys: ["product:idunno-anticsrf"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "CISA KEV listing first-party" }
+    novelty: "update-of:2026-11-19/idunno-anticsrf-cve-2026-131914-exploited-no-patch-w3wp-rce"
+    update_fields_hint: [tags, cves, evidence, sources, body]
+    evidence:
+      - quote: "CISA has added three new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "Idunno AntiCsrf Deserialization of Untrusted Data Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+
+  # ---------------------------------------------------------------------------
+  # 11. BORDERLINE UPDATE-OF: MONAI Label KEV
+  # ---------------------------------------------------------------------------
+  - title: "MONAI Label CVE-2026-133968: CISA added the path-traversal flaw to KEV on 2026-11-23, due 2026-11-26, forensic triage required"
+    lookback: true
+    borderline: true
+    borderline_reason: "KEV listing dated 2026-11-23, outside the developing window; the covered entry already says exploited and patched, so the delta is only the KEV status and forensic-triage flag"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/11/23/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV alert, 2026-11-23)", date: "2026-11-23", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev bridge (dateAdded 2026-11-23) and a status-field cross-check of covered entries against KEV → primary: CISA alert https://www.cisa.gov/news-events/alerts/2026/11/23/cisa-adds-two-known-exploited-vulnerabilities-catalog (WebFetch)"
+    summary: |
+      CISA listed CVE-2026-133968, "Project MONAI MONAI Label Path Traversal Vulnerability", on 2026-11-23 (due 2026-11-26, forensic triage Yes): an unauthenticated remote attacker can write arbitrary files outside the intended datastore directory, potentially leading to remote code execution. The covered entry (fixed in 0.8.6, authentication off by default) records exploitation but no CISA listing; EPSS 0.2716 (FIRST, 2026-11-27).
+    region_nexus: "global; medical-imaging AI annotation server (no Swiss-specific reporting)"
+    primary_sector_nexus: "indirect"
+    sector: "healthcare"
+    cves: [CVE-2026-133968]
+    techniques: [T1190]
+    affected_products: ["MONAI Label"]
+    entity_keys: ["product:monai-label"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 1, note: "CISA KEV listing first-party" }
+    novelty: "update-of:2026-11-22/monai-label-path-traversal-zero-day-found-by-cairn-ai-agents"
+    update_fields_hint: [tags, cves, evidence, sources, body]
+    evidence:
+      - quote: "Project MONAI MONAI Label Path Traversal Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/11/23/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+
+  # ---------------------------------------------------------------------------
+  # 12. BORDERLINE NEW: OTRS unauthenticated SQLi
+  # ---------------------------------------------------------------------------
+  - title: "OTRS OSA-2026-19 (CVE-2026-93584, CVSS 3.1 8.6): unauthenticated SQL injection in the external Survey endpoint of OTRS 2024.3.1 to 2026.8.1, fixed in 2026.8.2"
+    borderline: true
+    borderline_reason: "vendor advisory 2026-11-23 and NCSC-NL relay 2026-11-25 are outside the 26 h window; not in prior coverage; non-default Survey package, no exploitation stated; ticketing systems are common in administrations"
+    sources:
+      - { url: "https://otrs.com/release-notes/otrs-security-advisory-2026-19/", publisher: "OTRS (OSA-2026-19)", date: "2026-11-23", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/2026/ncsc-2026-0515.html", publisher: "NCSC-NL (NCSC-2026-0515)", date: "2026-11-25", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl bridge (python3 tools/fetch_source.py ncsc-nl recent 15; NCSC-2026-0515) → NCSC-NL page https://advisories.ncsc.nl/2026/ncsc-2026-0515.html (extract) → primary: vendor advisory https://otrs.com/release-notes/otrs-security-advisory-2026-19/ (extract)"
+    summary: |
+      OTRS advisory OSA-2026-19 of 2026-11-23 rates CVSS 3.1 8.6 (vector AV:N/AC:L/PR:N/UI:N/S:C/C:H) an unauthenticated SQL injection in Kernel::System::Survey::Request::RequestGet(), which builds a SQL query from an attacker-controlled survey key without parameterised statements. Exploitation needs no authentication, no valid survey key and no existing survey request, but the external frontend must be reachable; an attacker can read ticket information and run boolean-based or time-based blind injection to extract data readable by the OTRS database account. Affected: OTRS 2024.3.1 through 2026.8.1 with the Survey package (the vendor table says the default status is unaffected); fixed in OTRS 2026.8.2. NCSC-NL relayed it on 2026-11-25. No exploitation is stated.
+    region_nexus: "global; NCSC-NL (Netherlands) advisory; no Switzerland-specific reporting"
+    primary_sector_nexus: "indirect (helpdesk and ticketing system class)"
+    sector: "technology"
+    cves: [CVE-2026-93584]
+    techniques: [T1190, T1213]
+    affected_products: ["OTRS"]
+    entity_keys: []
+    new_entities:
+      - { key: "product:otrs", type: product, name: "OTRS", aliases: ["EasyVista-OTRS", "OTRS Community Edition"], summary: "Ticketing and service-desk system from EasyVista-OTRS GmbH (formerly OTRS AG); 2024.3.1 to 2026.8.1 with the Survey package are affected by the unauthenticated SQL injection OSA-2026-19 (OTRS, 2026-11-23)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 2, note: "vendor first-party plus national CERT relay; not independently reproduced" }
+    suggested_priority: routine
+    novelty: new
+    evidence:
+      - quote: "An SQL injection vulnerability in OTRS versions 2024.3.1 through 2026.8.1 allows unauthenticated remote attackers to inject arbitrary SQL expressions through the Survey endpoint."
+        attribution: "OTRS"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-19/"
+      - quote: "Exploitation does not require authentication, a valid survey key, or an existing survey request. The external frontend must be accessible."
+        attribution: "OTRS"
+        source_url: "https://otrs.com/release-notes/otrs-security-advisory-2026-19/"
+    extended_notes: |
+      Exposure: OTRS version and whether the Survey package is installed and the external (customer or public) frontend is internet-reachable. Detection concept: web-server access logs for requests to the survey external frontend (public survey request URL) whose key parameter contains SQL metacharacters or time-delay patterns, and slow responses from those requests; database-account queries with unusual UNION or SLEEP constructs. Znuny (an OTRS fork) lists no matching advisory (ZSA list newest 2026-10-14). Not in prior coverage.
+
+  # ---------------------------------------------------------------------------
+  # 13. BORDERLINE NEW: Apache Tomcat release (critical cluster flaw unfixed)
+  # ---------------------------------------------------------------------------
+  - title: "Apache Tomcat 11.0.29, 10.1.62 and 9.0.124 fix four Important flaws but leave CVE-2026-133325 (Critical, TLS-PSK clusters on TLS 1.3 accept an unauthenticated node) for 11.0.30, 10.1.63 and 9.0.125; switch such clusters to TLS 1.2"
+    borderline: true
+    borderline_reason: "Critical rating applies only to clustered Tomcat using TLS-PSK on TLS 1.3 (11.0.28 to 11.0.29 per the project) and no fix exists yet; the Important flaws are DoS, an access-flow bypass in RewriteValve and cache-header removal; Tomcat is ubiquitous in Java application estates; vendor dates 2026-11-13 to 2026-11-19, in-window source is heise 2026-11-27"
+    sources:
+      - { url: "https://tomcat.apache.org/security-11.html", publisher: "Apache Tomcat project (security page, Tomcat 11.x)", date: "2026-11-19", role: "primary" }
+      - { url: "https://www.heise.de/news/Diverse-Schwachstellen-in-Apache-Tomcat-11540730.html", publisher: "heise online", date: "2026-11-27", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec feed (python3 tools/fetch_source.py feed https://www.heise.de/security/feed.xml 20), URL https://www.heise.de/news/Diverse-Schwachstellen-in-Apache-Tomcat-11540730.html → primary: https://tomcat.apache.org/security-11.html (extract; Tomcat 10.1 and 9.0 pages not fetched)"
+    summary: |
+      The Tomcat project's security page for 11.x lists, under 11.0.29 (dated 2026-11-13, issues made public 2026-11-19), four Important flaws (a memory leak with the OWB WebSocket module and an HTTP/2 initial-connection resource leak, both denial of service; RewriteValve [F]/[G]/[R] rules that do not stop processing after a redirect or error response, CVE-2026-118028; ExpiresFilter removing a Cache-Control: private header set by the authentication layer, CVE-2026-121649), plus Moderate and Low items; the EncryptInterceptor weaknesses (CVE-2026-95517) are not fixed but the component is deprecated in favour of TLS-PSK. The one Critical, CVE-2026-133325, is a key exchange without entity authentication: an unauthenticated node can join a cluster secured with TLS 1.3 and TLS-PSK; the page lists it under the not-yet-released 11.0.30 and affected versions 11.0.28 to 11.0.29, and recommends TLS 1.2 until then. heise (2026-11-27) reports the same for the 10.1 and 9.0 branches (fixes in 10.1.63 and 9.0.125, not yet released; 11.0.29, 10.1.62, 9.0.124 are the current fixed releases for the rest). No exploitation is stated.
+    region_nexus: "global; no Switzerland-specific reporting"
+    primary_sector_nexus: "indirect"
+    sector: "technology"
+    cves: [CVE-2026-133325, CVE-2026-118028, CVE-2026-121649, CVE-2026-116600, CVE-2026-116830]
+    techniques: [T1190]
+    affected_products: ["Apache Tomcat"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    suggested_classification: { reliability: A, credibility: 2, note: "project first-party page plus heise; exploitation and PoC not stated" }
+    suggested_priority: routine
+    novelty: new
+    evidence:
+      - quote: "A key exchange without entity authentication vulnerability in allowed an unauthenticated node to join a cluster when the cluster was secured with TLS 1.3 and TLS-PSK."
+        attribution: "Apache Tomcat project"
+        source_url: "https://tomcat.apache.org/security-11.html"
+      - quote: "Until Tomcat 11.0.30 is available, users are recommended to switch to TLS 1.2."
+        attribution: "Apache Tomcat project"
+        source_url: "https://tomcat.apache.org/security-11.html"
+    extended_notes: |
+      Exposure: only Tomcat clusters that use TLS-PSK with TLS 1.3, at 11.0.28 to 11.0.29 on the 11.x line per the project; other deployments are outside the Critical. Not in prior coverage; Apache httpd and nginx are covered separately.
+
+# -----------------------------------------------------------------------------
+# S1 cve_table (structured input for vulnerability entries / cves_seen)
+# -----------------------------------------------------------------------------
+cve_table:
+  - { cve: CVE-2026-137738, product: "RealVNC Server/Viewer/Connect/On-Demand Assist", cvss: "9.8 (CVSS 3.1)", epss: 0.00671, kev: false, exploited: "no (vendor: not aware)", affected: "Server 6.4.0-7.19.0; Viewer 8.4.0-8.6.1; Classic Viewer 6.4.0-7.18.2; Connect App <=8.6.1; On-Demand Assist <=3.4.1; iOS Viewer 3.7.0-4.9.5; Android Viewer 3.5.0-4.9.5; iOS Server <=2.8.1; Android Server <=2.8.3", fixed: "Server 7.19.1; Viewer 8.6.2; Connect app 8.6.2; Classic Viewer 7.18.3; On-Demand Assist 3.5.0; iOS/iPadOS Viewer 4.9.6; Android Viewer 4.9.6; iOS/iPadOS Server 2.8.2; Android Server 2.8.4", type: "rce (memory safety, UDP connections)", vector: "network, UDP-based connections (TCP-only direct connections not exposed)", auth: "pre-auth", source: "https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability" }
+  - { cve: CVE-2026-137724, product: "Mitel OpenScape 4000 / 4000 Manager", cvss: "10.0 (CVSS 3.1)", epss: 0.0054, kev: false, exploited: "no (none stated)", affected: "OpenScape 4000 V11 R0.22-V11 R2.11 and V10 R1.68 and earlier; Manager V11 R0.22-V11 R2.11 and V10 R1.34-V10 R1.68", fixed: "V11 R2.14; PLT HF5 on V11 R1.26; patch for V10 R0.28 to V11 R0.22 (Manager V10 R1.34 to V11 R0.22)", type: "improper authentication (MTLVULN-1785)", vector: "network", auth: "pre-auth", source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137039" }
+  - { cve: CVE-2026-137721, product: "Mitel OpenScape 4000 / 4000 Manager", cvss: "10.0 (CVSS 3.1)", epss: 0.02801, kev: false, exploited: "no (none stated)", affected: "same as CVE-2026-137724", fixed: "same as CVE-2026-137724", type: "command injection (MTLVULN-1786)", vector: "network", auth: "pre-auth (per Mitel advisory)", source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137044" }
+  - { cve: CVE-2026-137723, product: "Mitel OpenScape 4000 / 4000 Manager", cvss: "9.6 (CVSS 3.1)", epss: 0.02627, kev: false, exploited: "no (none stated)", affected: "same as CVE-2026-137724", fixed: "same as CVE-2026-137724", type: "command injection (MTLVULN-1793)", vector: "adjacent network", auth: "pre-auth (per Mitel advisory)", source: "https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-137037" }
+  - { cve: CVE-2026-120705, product: "OSGeo GeoServer", cvss: "8.6", epss: null, kev: true, exploited: "yes (CISA KEV 2026-11-27; watchTowr; NCSC.ch)", affected: "GeoServer 3.0.0 to 3.0.1, 2.28.0 to 2.28.5, 2.27.6 and earlier", fixed: "3.0.2, 2.28.6, 2.27.7", type: "xml injection / ssrf (WFS 2.0 GetFeatureById)", vector: "network", auth: "pre-auth", source: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-129243, product: "OSGeo GeoServer", cvss: "8.8", epss: null, kev: true, exploited: "yes (CISA KEV 2026-11-27)", affected: "GeoServer 3.0.0 to 3.0.1, 2.28.0 to 2.28.5, 2.27.6 and earlier", fixed: "3.0.2, 2.28.6, 2.27.7", type: "incorrect authorization (prefixed service parameter)", vector: "network", auth: "pre-auth", source: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-136716, product: "Drupal Core", cvss: "n/a (Highly critical 21/25)", epss: 0.01212, kev: true, exploited: "yes (Drupal; CISA KEV 2026-11-27)", affected: "<10.6.23, >=11.0.0 <11.3.23, >=11.4.0 <11.4.14", fixed: "11.4.14, 11.3.23, 10.6.23", type: "installer takeover (improper check for unusual conditions)", vector: "network", auth: "pre-auth", source: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-133469, product: "Vates Xen Orchestra", cvss: "9.8 (CVSS 3.1)", epss: 0.31768, kev: true, exploited: "yes (Vates; CISA KEV 2026-11-25)", affected: "xen-orchestra before 6.9.2 (stable) and 6.10.1 (latest)", fixed: "6.9.2 and 6.10.1 (xo-server 5.211.2, 5.213.1)", type: "auth bypass (empty-object token)", vector: "network", auth: "pre-auth", source: "https://www.cisa.gov/news-events/alerts/2026/11/25/cisa-adds-10-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-131914, product: "Idunno.AntiCsrf", cvss: "9.3 (CVSS 4.0)", epss: 0.04238, kev: true, exploited: "yes (Mandiant; CISA KEV 2026-11-24)", affected: "Idunno.AntiCsrf.dll 0.9.1.0 and earlier", fixed: "none (EoL)", type: "deserialization", vector: "network", auth: "pre-auth", source: "https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-133968, product: "Project MONAI MONAI Label", cvss: "9.8", epss: 0.27157, kev: true, exploited: "yes (CISA KEV 2026-11-23)", affected: "through 0.8.5", fixed: "0.8.6", type: "path traversal / arbitrary file write", vector: "network", auth: "pre-auth (authentication off by default)", source: "https://www.cisa.gov/news-events/alerts/2026/11/23/cisa-adds-two-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-93584, product: "OTRS (Survey package)", cvss: "8.6 (CVSS 3.1)", epss: null, kev: false, exploited: "no (none stated)", affected: "OTRS 2024.3.1 through 2026.8.1 with Survey package", fixed: "OTRS 2026.8.2", type: "sql injection (unauthenticated, Survey endpoint)", vector: "network", auth: "pre-auth", source: "https://otrs.com/release-notes/otrs-security-advisory-2026-19/" }
+
+# -----------------------------------------------------------------------------
+# KEV additions in the window (since 2026-11-27) and the 72 h tail, with disposition
+# -----------------------------------------------------------------------------
+kev_dispositions:
+  - { cve: CVE-2026-120705, added: "2026-11-27", product: "OSGeo GeoServer", disposition: "COVERED by 2026-11-25/geoserver-five-step-unauthenticated-rce-chain-public-poc; entry lacks cisa-kev status -> update-of item 7" }
+  - { cve: CVE-2026-129243, added: "2026-11-27", product: "OSGeo GeoServer", disposition: "COVERED by the same entry; KEV status missing -> update-of item 7" }
+  - { cve: CVE-2026-136716, added: "2026-11-27", product: "Drupal Core", disposition: "COVERED by 2026-11-18/drupal-core-critical-release-2026-11-18-psa-2026-11-16; KEV status missing -> update-of item 8" }
+  - { cve: CVE-2026-133469, added: "2026-11-25", product: "Vates Xen Orchestra", disposition: "COVERED by 2026-11-11/vates-xen-orchestra-vsa-2026-062-auth-bypass-exploited; KEV status missing -> update-of item 9 (lookback, before window)" }
+  - { cve: CVE-2026-131914, added: "2026-11-24", product: "Idunno AntiCsrf", disposition: "COVERED by 2026-11-19/idunno-anticsrf-...; KEV status missing -> borderline update-of item 10" }
+  - { cve: CVE-2026-133968, added: "2026-11-23", product: "MONAI Label", disposition: "COVERED by 2026-11-22/monai-label-...; KEV status missing -> borderline update-of item 11" }
+  - { cve: "CVE-2026-103406, CVE-2026-133275, -133303, -133311, -133323, -133324, CVE-2025-41450, CVE-2023-25914, CVE-2023-25915, CVE-2026-132165, CVE-2026-132224, CVE-2026-134624, CVE-2026-129448, CVE-2026-123890, CVE-2025-42884, CVE-2026-76466", added: "2026-11-20 to 2026-11-25", product: "Juniper Session Smart, Mitel MiCollab, Danfoss AK-SM, Drupal, Optimizely, N-able Mail Assure, Apache Roller, VMware vCenter, SAP NetWeaver, Cisco Expressway", disposition: "COVERED and the covering entries' cves[] status already carries cisa-kev (cross-checked against entries/); no action. Cisco Expressway has the separate revision-1.1 update-of item 6" }
+
+scheduled_release_dispositions:
+  - { release: "Microsoft Patch Tuesday 2026-11-10 (MSRC 2026-Nov)", disposition: "outside window; MSRC SUG OData shows 1 exploited row (CVE-2026-124194 Outlook spoofing, KEV 2026-11-10) and 0 non-Mariner CVE revisions since 2026-11-26 (latestRevisionDate filter); nothing new" }
+  - { release: "GitLab scheduled patch 19.6.2 / 19.5.9 / 19.4.11 and extended backports (2026-11-25)", disposition: "9 fixes, highest CVSS 6.7 (CVE-2026-119452 session cookie exposure to a Maintainer); also Git CVE-2026-105437 and Ruby CVE-2026-132825 backports (already in entries), GPGME double free CVE-2026-129975 and nginx 1.31.9 in the Linux package; dropped, nothing exploited or pre-auth. 19.6.1 critical (2026-11-20, Ruby only) already covered by 2026-11-20/ruby-4-0-10-..." }
+  - { release: "Adobe bulletins APSB26-104 (AEM) and APSB26-194 (Campaign Classic) of 2026-11-24, Priority 2; APSB26-126 InDesign Priority 3; APSB26-208 Animate 2026-11-19 Priority 1", disposition: "dropped: AEM/Campaign are XSS/privilege-class per NCSC-NL (99 CVEs for AEM); Animate's Priority 1 bulletin only updates the bundled Oracle JDK for CVE-2026-114938 (Java4Shell, already covered) and is outside the Adobe 168 h lookback; nothing exploited" }
+  - { release: "Cisco bulletin cycle (2026-11-20 to 2026-11-27: nginx, Java4Shell, PHP, ClamAV, Node.js/Brotli, Expressway, UCS UEFI Secure Boot bypass, eMudhra distrust)", disposition: "nginx v1.6 and Expressway rev 1.1 returned as update-of items; the rest are third-party-component impact tables or local/physical-access class; UCS UEFI Shell Secure Boot bypass (2026-11-25) and the eMudhra CA distrust notice not read in full, dropped as outside the bar" }
+  - { release: "Mozilla Firefox 161 / ESR 153.8 / ESR 115.46 / Thunderbird 161 (MFSA, ~2026-11-24; MS-ISAC advisory 2026-141 of 2026-11-25)", disposition: "dropped: routine monthly release, MS-ISAC says no reports of exploitation; outside window" }
+  - { release: "Google Chrome 158.0.8127.88 stable (2026-11-23, one Critical Variations bug found by Google); ChromeOS LTS-150 update (2026-11-27) carrying CVE-2026-125350 and two Criticals (CVE-2026-126885, CVE-2026-126895)", disposition: "dropped: no exploitation stated for the new items; the LTS update only extends the already-covered CVE-2026-125350 fix to ChromeOS LTS (niche); the CVE-2026-125350 entry is not touched" }
+  - { release: "Android Security Bulletin", disposition: "December 2026 edition not yet published (index lists November, 2026-11-02, as newest)" }
+  - { release: "Fortinet (2026-11-10 monthly), Ivanti (2026-11-10 monthly), Palo Alto (2026-11-11 monthly plus PAN-SA-2026-0015 of 2026-11-24); Oracle and SAP not rechecked beyond the covered entries", disposition: "no scheduled release landed in the window; Fortinet PSIRT RSS newest item FG-IR-26-279 (2026-11-20, timeline folded into update-of item 5), Palo Alto newest 2026-11-24 and its CVE-2026-109618 JSON timeline ends 2026-10-29 (no revision); Ivanti blog newest is the 2026-11-10 monthly post" }
+  - { release: "Joomla 5.4.11 / 6.2.1 (2026-11-24, 58 core advisories), JetBrains TeamCity 2026.1.3 / 2025.11.7 (21 fixes, details published about 2026-11-17/18, NCSC-NL relay 2026-11-26), SolarWinds Serv-U 2026.x (16 advisories 2026-11-24, 7 rated 9.1), Mozilla, Xen XSA-535 (2026-11-26), MongoDB, SPIP, Synology SA_26_22 (2026-11-24)", disposition: "dropped: Joomla's RCE (CVE-2026-129393, media field parameters) is rated Severity Low and Probability Low by the project and the rest is ACL/XSS; TeamCity RCEs are low-privilege authenticated with no exploitation and the fixed build is months old; Serv-U Criticals all need domain-administrator rights; Xen, MongoDB, SPIP and Synology (PHP-related CVEs already in the PHP 8.5.13 entry) not read beyond the CERT-FR summary" }
+
+dropped:
+  - { item: "India's DIGIT e-government platform SQL injection (The Register, 2026-11-27)", reason: "no constituency nexus (deployments in India and other Global South states), article body not retrievable beyond the headline" }
+  - { item: "Traefik CVE-2026-137481 (sanitizePath dot-segment authorization bypass, before 2.11.62 / 3.7.18), Keycloak CVE-2026-137435 (case-distinct SAML NameID account match, needs case-insensitive DB collation), Siemens Mendix OIDC Provider CVE-2026-124981 (needs an active token's jti), Canonical LXD CVE-2026-135384 (needs a token from the configured IdP), FreeRDP batch (Red Hat, 2026-11-26), Budibase/ToolJet/Parse Server/Frappe/Coder auth-bypass and prototype-pollution CVEs, Joomla ChronoForms CVE-2026-133336 (EPSS 0.61, vendor-extension file upload), GKE Fleet / Vertex AI / Application Integration cloud-side fixes", reason: "EUVD 9.0+ or Red Hat window rows reviewed; each is conditional (privileged/IdP/config preconditions), cloud-side, niche, or has no exploitation; none clears the strict gate" }
+  - { item: "QNAP Plex2Shell notice (2026-11-06) and QSA-26-21", reason: "outside the QNAP 168 h lookback; no new QNAP advisory in the window" }
+  - { item: "AWS bulletins 2026-194 to 2026-203 (AWS-LC OOB write CVE-2026-134056, SSM Agent default key CVE-2026-134069, OpenSearch SSRF CVE-2026-135414, others)", reason: "customer-action-free service fixes or local/privileged preconditions; none exploited" }
+  - { item: "Hex.pm CVSS 10 RCE exploited against registry servers (THN 2026-11-25), SAP and Todoist incidents, 1Password, FIFA, UK DWP", reason: "published before the window or incident/breach class (S4 domain); not S1" }
+  - { item: "Check Point SK sk185222 (CVE-2026-18574)", reason: "record URL is a static SK of 2026-08-01; GT13 Check Point campaign already covered in 2026-11-25/greynoise-gt13-check-point-management-servers" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist is configured in config/org-profile.yaml, so the sweep is a no-op; general coverage rules applied"
+
+candidate_sources:
+  - id: freeradius-security
+    publisher: "FreeRADIUS project (security notifications)"
+    url: "https://freeradius.org/security/"
+    category: vendor-psirt
+    why: "first-party disclosure page for the RADIUS server behind many 802.1X, Wi-Fi and VPN authentications; the 2026-11-25 batch carries a default-enabled Critical use-after-free and TEAP Access-Accept bypasses; extract reads the page with newest block first"
+  - id: otrs-security-advisories
+    publisher: "OTRS / EasyVista-OTRS security advisories (OSA)"
+    url: "https://otrs.com/release-notes/otrs-security-advisory-2026-19/"
+    category: vendor-psirt
+    why: "first-party advisories for a ticketing system common in administrations (and the base of Znuny); OSA-2026-19 is an unauthenticated SQL injection; pin the OSA listing path when one is found (only the advisory page was fetched)"
+  - id: apache-tomcat-security
+    publisher: "Apache Tomcat security pages (per branch)"
+    url: "https://tomcat.apache.org/security-11.html"
+    category: vendor-psirt
+    why: "authoritative per-CVE record with severity and affected versions for Tomcat 11.x (security-10.html and security-9.html are the sibling branches); Tomcat sits under many Java application estates; extract reads it"
+  - id: realvnc-security-advisories
+    publisher: "RealVNC Help Center security advisories"
+    url: "https://help.realvnc.com/hc/en-us/articles/40824627217949-Security-Advisory-UDP-based-connection-vulnerability"
+    category: vendor-psirt
+    why: "first-party advisory RVNC-2026-001 for remote-access software; only readable through the jina reader (extract fell through to it), so keep as jina-method"
+
+coverage_gaps:
+  - { source_id: plone-security-announcements, reason: "record URL https://community.plone.org/t/plone-security-hotfix-20261110/23313 is a single topic; the security category path guessed as /c/security/22 returned 'page doesn't exist' (via the reader); the real category is /c/announcements/security/37 per the site's own topic list; newest security post still 2026-11-10 (0 in horizon). Recipe: extract the topic URLs from the popular-topics block or pin https://community.plone.org/c/announcements/security/37" }
+  - { source_id: checkpoint-support, reason: "record URL sk185222 is one static SK (created 2026-08-01, CVE-2026-18574); it is not a listing, so the record cannot show new Check Point advisories. extract returns the raw HTML with __NEXT_DATA__ (parse props.pageProps.data); a security-alerts index SK should be pinned instead" }
+  - { source_id: qnap-security-advisories, reason: "https://www.qnap.com/en/security-news/2026 answers HTTP 202 with an empty body on url --direct; extract reads it through the jina reader (credit); RSS feed newest is QSA-26-21 (2026-11-13), so no gap in coverage this run" }
+  - { source_id: balbooa-blog, reason: "extract reads the Newsroom (newest security post 2026-11-04; a Black Friday promo 2026-11-27); no in-horizon security item" }
+  - { source_id: cisa-kev, reason: "WebFetch of cisa.gov alert pages worked as documented; `cisa page <alert URL>` also returned the full alert text this run (via the reader, which still had a working key at 04:2x UTC)" }
+
+self_evolution:
+  - "kev_window_diff.py reports COVERED when the CVE id merely appears in an entry; a status-field cross-check this run (entries/*/ cves[].status vs the KEV catalogue for 2026-11-20 onward) found six covered CVEs whose entry never recorded cisa-kev (GeoServer CVE-2026-120705 and CVE-2026-129243, Drupal CVE-2026-136716, Xen Orchestra CVE-2026-133469, Idunno AntiCsrf CVE-2026-131914, MONAI Label CVE-2026-133968). Suggest a COVERED-NO-KEV-STATUS verdict that fires when the covering entry's status list for that CVE lacks cisa-kev."
+  - "CISA KEV now carries a forensicTriage field (Yes/No) tied to BOD 26-04 'Forensics Triage Requirements' (BOD 26-04 replaces the BOD 22-01 wording in alert text); Drupal CVE-2026-136716, Xen Orchestra CVE-2026-133469, Idunno AntiCsrf and MONAI Label are Yes, the two GeoServer CVEs No. Worth a line in the actionability contract for KEV-listed entries (post-patch compromise check is mandatory for Yes rows)."
+  - "FIRST EPSS API path is https://api.first.org/data/v1/epss?cve=A,B,C (v1, not 1.1); reads with `url --direct`; brand-new CVE ids may be missing (GeoServer pair returned no row)."
+  - "MSRC SUG OData: $orderby=latestRevisionDate desc returns only isMariner (Azure Linux third-party) noise at the top; the filter `latestRevisionDate ge 2026-11-26T00:00:00Z and isMariner eq false` is accepted and is the right revised-CVE sweep (0 rows this run). `exploited eq 'Yes'` works with a releaseNumber filter."
+  - "Red Hat Product Security CVE feed has a working structured recipe: `url --direct 'https://access.redhat.com/hydra/rest/securitydata/cve.json?after=YYYY-MM-DD&per_page=100'` returns severity, public_date and bugzilla description (27 rows since 2026-11-26)."
+  - "Adobe chimera collection API returns modifiedDate, cardDate and the bulletin id/priority in contentArea (title, description 'Priority N Security update'); per-bulletin pages read raw with `url --direct` and parse as text; the newest cards this run were APSB26-104/-194/-126 (2026-11-24) and APSB26-208 (2026-11-19)."
+  - "Cisco PSIRT advisory pages read with `extract` including the revision-history table and the affected-products table (rows run together; use a raw `url --direct` read if row boundaries matter). `feed ...CiscoSecurityAdvisory.xml 30` lists Interim revisions with dates and is the way to catch revisions like the Expressway 1.1 and nginx 1.6 updates."
+  - "Jina reader pool: several keys answered HTTP 402 (exhausted) this run but the fetch rotated to a working key for extract/cisa page; informational, not a fetch failure."
+  - "heise security feed (https://www.heise.de/security/feed.xml, direct) carried the in-window RealVNC and Tomcat items that the EUVD/KEV sweeps did not surface as news; useful as a same-day German-language corroborator for vendor advisories."
+
+source_ledger:
+  - { id: cisa-kev, tier: essential, attempted: true, transport: "bridge:cisa-kev + WebFetch cisa.gov alerts + cisa page", horizon_hours: 26, in_horizon_items: 3, returned: 2, note: "3 KEV adds in window all COVERED; 2 update-of items (GeoServer, Drupal) plus 3 lookback KEV-status deltas (Xen Orchestra, AntiCsrf, MONAI)" }
+  - { id: enisa-euvd, tier: essential, attempted: true, transport: "url --direct api/search 9.0+ (2026-11-26..28, 56 records) + enisa-euvd recent exploited + enisa-euvd advisory + cveawg records", horizon_hours: 26, in_horizon_items: 56, returned: 2, note: "Mitel OpenScape CVE assignment (update-of) and RealVNC; the rest dropped per `dropped`; no new exploited rows (4 exploited rows are Drupal and Mitel MiCollab, covered)" }
+  - { id: fortinet-psirt, tier: essential, attempted: true, transport: "feed (RSS)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest FG-IR-26-279 (2026-11-20); its timeline (updated 2026-11-26) folded into the nginx update-of item" }
+  - { id: msrc-update-guide, tier: essential, attempted: true, transport: "msrc recent + SUG OData (url --direct) revised-CVE and exploited filters", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "no non-Mariner revisions since 2026-11-26; Nov release exploited row is CVE-2026-124194 (2026-11-10)" }
+  - { id: paloalto-psirt, tier: essential, attempted: true, transport: "feed (RSS) + /json/CVE-2026-109618", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "newest items 2026-11-24 (PAN-SA-2026-0015, CVE-2026-123633 portfolio status) already in the nginx and PHP2Shell entries; CVE-2026-109618 timeline last entry 2026-10-29" }
+  - { id: php-net-news, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest security release PHP 8.5.13/8.4.28/8.3.37/8.2.36 (2026-11-19) already covered by 2026-11-20/php-8-5-13-..." }
+  - { id: plone-security-announcements, tier: standard, attempted: true, transport: "extract (reader)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "record URL/category path gap logged in coverage_gaps; newest security post 2026-11-10" }
+  - { id: adobe-psirt, tier: standard, attempted: true, transport: "url --direct chimera collection API + per-bulletin raw page", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "APSB26-104, -194, -126 (2026-11-24) XSS/priority 2-3 class; APSB26-208 Animate (2026-11-19) is Java4Shell dependency; dispositions in scheduled_release_dispositions" }
+  - { id: broadcom-vmware-security-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "VMSA-2026-0009.1 revision (2026-11-20) unchanged vs covered entry; listing shows no VMSA newer than VMSA-2026-0011 (covered)" }
+  - { id: dotnet-blog, tier: standard, attempted: true, transport: "feed (RSS)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "no servicing/security post since the 2026-11-10 November servicing post" }
+  - { id: github-blog-git, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest Git security post 'Git security vulnerabilities announced' about 2026-11-10 (Git CVE-2026-105437 covered)" }
+  - { id: gitlab-security, tier: standard, attempted: true, transport: "feed + extract x2", horizon_hours: 168, in_horizon_items: 2, returned: 0, note: "19.6.1 (2026-11-20) and 19.6.2 (2026-11-25) read; covered or below the bar (see scheduled_release_dispositions)" }
+  - { id: ivanti-psirt, tier: standard, attempted: true, transport: "feed (RSS)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest item is the 2026-11-10 monthly security update post" }
+  - { id: qnap-security-advisories, tier: standard, attempted: true, transport: "feed (RSS) + newsroom via extract (reader)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest QSA-26-21 (2026-11-13); newsroom newest relevant notice is the 2026-11-06 Plex2Shell one" }
+  - { id: redhat-product-security-cve, tier: standard, attempted: true, transport: "url --direct hydra CVE API (27 CVEs since 2026-11-26)", horizon_hours: 168, in_horizon_items: 27, returned: 0, note: "highest important/8.8 (FreeRDP); none exploited; Keycloak/Traefik/screen/tuned/PAM rows listed in `dropped`" }
+  - { id: znuny-advisories, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest ZSA-2026-16 (2026-10-14); OTRS OSA-2026-19 (borderline item 12) has no Znuny counterpart listed" }
+  - { id: android-security-bulletin, tier: standard, attempted: true, transport: "extract (bulletin overview)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest edition November 2026 (2026-11-02, revised 2026-11-05)" }
+  - { id: aws-security-bulletins, tier: standard, attempted: true, transport: "feed + extract x3", horizon_hours: 168, in_horizon_items: 10, returned: 0, note: "2026-194 to 2026-203 reviewed; none clears the bar" }
+  - { id: balbooa-blog, tier: standard, attempted: true, transport: "extract", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest security post 2026-11-04 (Gridbox 2.20.5.0)" }
+  - { id: checkpoint-support, tier: standard, attempted: true, transport: "extract (raw HTML, __NEXT_DATA__)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "static SK of 2026-08-01; recipe gap in coverage_gaps" }
+  - { id: cisco-psirt, tier: standard, attempted: true, transport: "feed (30 items) + extract x2", horizon_hours: 168, in_horizon_items: 9, returned: 2, note: "nginx v1.6 (2026-11-27) in window; Expressway rev 1.1 (2026-11-23) via lookback; others covered or below the bar" }
+
+other_collection:
+  - "Open-web / news sweeps (BleepingComputer, THN, SecurityWeek, Help Net Security, The Register, SecurityAffairs, heise, golem, CIS MS-ISAC, NCSC-NL, CERT-FR, NCSC.ch Security Hub, watchTowr, Rapid7, GreyNoise, ZDI, CISA CSAF ICS recent, chromereleases) were used as leads; they produced Cacti, FreeRADIUS (via CERT-FR), RealVNC and Tomcat (via heise), OTRS (via NCSC-NL). CISA CSAF ICS recent newest is 2026-11-24 (nothing in window)."

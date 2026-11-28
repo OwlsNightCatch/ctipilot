@@ -1,0 +1,156 @@
+---
+title: "CVE-2026-123633 Portfolio Status: Impact of NGINX Vulnerabilities (CVE-2026-123633, CVE-2026-123007) on Palo Alto Networks Products"
+author: PAN PSIRT
+url: https://security.paloaltonetworks.com/CVE-2026-123633
+hostname: paloaltonetworks.com
+description: "Palo Alto Networks is aware of the two Critical Severity vulnerabilities in NGINX: CVE-2026-123633, CVE-2026-123007. CVE-2026-123633 is a use-after-free vulnerability in NGINX HTTP/2 proxy handling w..."
+sitename: Palo Alto Networks Product Security Assurance
+date: "2026-11-21"
+tags: ['psirt', 'PANW', 'PAN', 'CVE', 'Report Vulnerabilities', 'Palo Alto Networks']
+fingerprint: ad7ab7f3d1b2cb82
+language: en
+image: https://security.paloaltonetworks.com/CRITICAL.png
+pagetype: article
+filedate: "2026-11-28"
+---
+[Palo Alto Networks Security Advisories](https://security.paloaltonetworks.com/)/
+
+[CVE-2026-123633]
+
+## CVE-2026-123633 Portfolio Status: Impact of NGINX Vulnerabilities (CVE-2026-123633, CVE-2026-123007) on Palo Alto Networks Products
+
+**N/A**
+
+**MODERATE**
+
+**USER**
+
+**CONCENTRATED**
+
+**NETWORK**
+
+**HIGH**
+
+**NONE**
+
+**YES**
+
+**NONE**
+
+**HIGH**
+
+**HIGH**
+
+**HIGH**
+
+**NONE**
+
+**NONE**
+
+**NONE**
+
+**NONE**
+
+### Description
+
+Palo Alto Networks is aware of the two Critical Severity vulnerabilities in NGINX: CVE-2026-123633, CVE-2026-123007.
+
+CVE-2026-123633 is a use-after-free vulnerability in NGINX HTTP/2 proxy handling where active connections fail to clear their reusable state. When worker connection slots run low, NGINX can prematurely close and free memory for connections still actively proxying requests to upstream servers. This allows an unauthenticated remote attacker to crash worker processes or execute arbitrary code.
+
+CVE-2026-123007 is an integer underflow vulnerability in NGINX HTTP/2 flow control where the flow-control window can exceed its allowed threshold. A remote unauthenticated attacker can send malicious HTTP/2 traffic to trigger a heap-based buffer overflow, crashing the worker process or executing arbitrary code.
+
+*Palo Alto Networks has completed its assessment and remediation for this NGINX vulnerability. Only on-premise products are called out below; any on-premise product not listed has been reviewed and determined to be unaffected. For cloud offerings, refer to the SaaS Products (No Customer Action Required) section.*
+
+### Product Status
+
+| Versions | Affected | Unaffected | 
+|---|---|---|
+| [PAN-OS 12.2](https://www.paloaltonetworks.com/network-security/pan-os) | \< 12.2.4-h3 | >= 12.2.4-h3 | 
+| [PAN-OS 12.1](https://www.paloaltonetworks.com/network-security/pan-os) | >= 12.1.5 \< 12.1.7-h15 \< 12.1.10-h6 | \< 12.1.5 >= 12.1.7-h15 >= 12.1.10-h6 | 
+| [PAN-OS 11.2](https://www.paloaltonetworks.com/network-security/pan-os) | >= 11.2.8 \< 11.2.10-h19 \< 11.2.13-h6 \< 11.2.16-h3 | \< 11.2.8 >= 11.2.10-h19 >= 11.2.13-h6 >= 11.2.16-h3 | 
+| [PAN-OS 11.1](https://www.paloaltonetworks.com/network-security/pan-os) | None | All | 
+| [PAN-OS 10.2](https://www.paloaltonetworks.com/network-security/pan-os) | None | All | 
+
+#### SaaS Products (No Customer Action Required)
+
+Palo Alto Networks is directly managing the backend rollout of fixes for SaaS products.
+
+### Required Configuration for Exposure
+
+This issue only impacts customers who enable [HTTP/2](https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-networking-admin/manage-http-2-network-support) on PAN-OS and Panorama. This does not impact customers who don’t have the [HTTP/2](https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-networking-admin/manage-http-2-network-support) option enabled.
+
+### Severity: CRITICAL, Suggested Urgency: MODERATE
+
+Vendor
+
+CVSS-B: 9.2 ([CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/AU:Y/R:U/V:C/RE:M/U:Amber](https://www.first.org/cvss/calculator/4.0#CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N/AU:Y/R:U/V:C/RE:M/U:Amber))
+
+### Exploitation Status
+
+Palo Alto Networks is not aware of any malicious exploitation of this issue.
+
+### Weakness Type and Impact
+
+[CWE-191 Integer Underflow (Wrap or Wraparound)](https://cwe.mitre.org/data/definitions/191)
+
+[CAPEC-130 Excessive Allocation](https://capec.mitre.org/data/definitions/130)
+
+### Solution
+
+| Version | Minor Version | Suggested Solution | 
+|---|---|---|
+| PAN-OS 12.2 | 12.2.0 through 12.2.4-h\* | Upgrade to 12.2.4-h3 or later. | 
+| PAN-OS 12.1 | 12.1.8 through 12.1.10-h\* | Upgrade to 12.1.10-h6 or later. | 
+|  | 12.1.5 through 12.1.7-h\* | Upgrade to 12.1.7-h15 or 12.1.10-h6 or later. | 
+|  | 12.1.2 through 12.1.4-h\* | No action needed. | 
+| PAN-OS 11.2 | 11.2.15 through 11.2.16-h\* | Upgrade to 11.2.16-h3 or later. | 
+|  | 11.2.11 through 11.2.13-h\* | Upgrade to 11.2.13-h6 or 11.2.16-h3 or later. | 
+|  | 11.2.8 through 11.2.10-h\* | Upgrade to 11.2.10-h19 or 11.2.16-h3 or later. | 
+|  | 11.2.0 through 11.2.7-h\* | No action needed. | 
+| PAN-OS 11.1 | 11.1.0 through 11.1.\* | No action needed. | 
+| PAN-OS 10.2 | 10.2.0 through 10.2.\* | No action needed. | 
+
+### Workarounds and Mitigations
+
+Customers can disable the HTTP/2 option on PAN-OS and Panorama. For more information, refer to the official [Palo Alto Networks Documentation](https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-networking-admin/manage-http-2-network-support).
+
+### Frequently Asked Questions
+
+#### Q. Is Panorama impacted?
+
+> This issue affects Panorama (virtual and M-Series).
+
+#### Q. Which products are impacted by CVE-2026-121810, CVE-2026-123634, and CVE-2026-113425?
+
+> The impacted products for CVE-2026-121810, CVE-2026-123634, and CVE-2026-113425 affecting NGINX are the same as those listed in this advisory for CVE-2026-123633 and CVE-2026-123007. For affected versions and remediation details, refer to the Workarounds, Product Status table and the Solution section of this advisory.
+
+### CPEs
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.4:h2:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.4:h1:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.4:-:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.3:\*:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.2.2:\*:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.10:h4:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.10:h3:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.10:h2:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.10:-:\*:\*:\*:\*:\*:\*
+
+cpe:2.3:o:palo\_alto\_networks:pan-os:12.1.9:\*:\*:\*:\*:\*:\*:\*
+
+### CPE Applicability
+
+- cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.2.4 **and** up to (excluding)12.2.4-h3
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.1.10 **and** up to (excluding)12.1.10-h6
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)12.1.7 **and** up to (excluding)12.1.7-h15
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.16 **and** up to (excluding)11.2.16-h3
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.13 **and** up to (excluding)11.2.13-h6
+- **OR**cpe:2.3:o:palo\_alto\_networks:pan-os:\*:\*:\*:\*:\*:\*:\*:\* **is vulnerable** from (including)11.2.10 **and** up to (excluding)11.2.10-h19

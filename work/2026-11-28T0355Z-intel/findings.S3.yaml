@@ -1,0 +1,211 @@
+# work/2026-11-28T0355Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-11-28T0355Z-intel
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: 2026-11-28T03:57:34Z
+ended_at: 2026-11-28T04:16:28Z
+duration_seconds: 1134
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 11
+  bridge_fetches: 190   # approximate: 101-feed sweep + ~85 extract/url/feed calls
+window_note: >
+  Window since 2026-11-27T01:55Z (26 h). The slice is thin because 2026-11-26 was US Thanksgiving: every
+  major-lab feed (GTIG, Talos, Unit 42, Check Point, ESET, Kaspersky, SentinelOne, Proofpoint, Trend, Project Zero,
+  Microsoft TI index) has nothing newer than 2026-11-25, and everything dated 2026-11-24/25 was already seen by the
+  2026-11-25 to 2026-11-27 fires (Talos 'The Great Escape', Unit 42 agentic web-shell post, Microsoft ARTEX defender
+  guide, Check Point Volant Manticore). Items below are one in-window lookback hit from a slice record (Hunt.io),
+  two in-window posts from non-slice sweeps (Kudelski, Huntback) and one lookback hit from a slice record (Akamai).
+items:
+  # ------------------------------------------------------------------ 1
+  - title: "Hunt.io: three exposed attacker directories show a crew staging 'a Swiss tax office' domain-controller database through ntdsutil install-from-media, a malicious JDBC service provider that loads an Apollo payload, and an exploit kit for Citrix, FortiGate, Exchange, PHP and FreePBX edges"
+    sources:
+      - { url: "https://hunt.io/blog/open-directory-us-hospital-manufacturer-law-firms", publisher: "Hunt.io", date: "2026-11-25", role: "primary" }
+    discovery_trace: "first seen at: hunt-io, URL https://hunt.io/blog (WebFetch listing, post shown as 'Nov 25, 2026'; the extract metadata date 2026-11-24 is the crawl date per the record's 2026-10-04 note) -> primary (no pivot needed): https://hunt.io/blog/open-directory-us-hospital-manufacturer-law-firms (extract, full body read). Corroboration attempted and not found: WebSearch ('Hunt.io open directory Swiss tax office ntdsutil IFM Apollo Poseidon JDBC TlsChannelFix hospital law firms') and WebSearch ('Steueramt Cyberangriff Schweiz Kanton Domain Controller Daten abgegriffen November 2026') returned no Swiss or second-source reporting."
+    summary: |
+      Hunt.io recovered the contents of three exposed open directories (two on one rented server, one on a separate host whose link to the first two Hunt.io deliberately leaves open) and assesses from the operators' own files that they belong to a financially motivated, Chinese-speaking, Southeast-Asia-based crew running a Russian-authored exploit and command-and-control kit; it declines to name a group and says nothing points to a state sponsor. The files include a domain-controller workflow against "a Swiss tax office": a log of ntdsutil install-from-media creation and a script that copies the Active Directory database and the SYSTEM and SECURITY registry hives from a controller share to a staging area, XOR-decodes the bytes and then requests removal of the install-from-media set. Hunt.io states complete off-host transfer is not independently confirmed, that an NTLM-relay run against an internal LDAP service belongs to the same environment, and that the Swiss material begins after code execution was already available, so how the crew first got in is not shown. Elsewhere the files hold a US hospital system's staff credential material, a US manufacturer's Azure storage container listed with a live SAS token (names listed, not downloaded) and a Bangladeshi university's exported Kerberos keys; law firms and federal agencies appear only as reconnaissance targets, which Hunt.io separates from confirmed breaches. The kit includes a class registered as a java.sql.Driver service provider and posing as Microsoft's SQL Server JDBC driver, whose boot routine runs when an application loads the JAR and either polls an HTTPS endpoint for commands passed to cmd.exe or decodes a packed file into an Apollo-derived Windows executable written under the Windows temp directory and started from Java; a Poseidon-derived Linux implant behind a Mythic-labelled server; a commercial employee-monitoring product's agent used as a command channel over authenticated SOCKS relays; and chunked exfiltration inside GET request paths. The staged exploits target remote-access and web edges (Citrix NetScaler CVE-2025-5777 and CVE-2019-19781, FreePBX CVE-2025-57819, PHP2Shell CVE-2026-109618 and CVE-2026-109619, an Exchange MRSProxy proof of concept for CVE-2026-62911, a FortiOS LDAP empty-password bypass probe for CVE-2026-22153) plus Active Directory coercion and relay tooling; Hunt.io says their presence establishes availability, not successful operation. Hunt.io notified CISA before publishing; no Swiss authority statement or second source corroborates the Swiss victim, who is unnamed.
+    region_nexus: "Switzerland (an unnamed Swiss tax office's domain-controller data staged, per Hunt.io, uncorroborated); also US, Bangladesh. Crew assessed by Hunt.io as Southeast-Asia-based."
+    primary_sector_nexus: "direct if the tax office is a cantonal, communal or federal body (not identified); remaining victims US healthcare, manufacturing, legal"
+    sector: "public-sector"
+    cves: [CVE-2025-5777, CVE-2019-19781, CVE-2025-57819, CVE-2026-109618, CVE-2026-109619, CVE-2026-62911, CVE-2026-22153]
+    techniques: [T1190, T1110.004, T1003.003, T1039, T1555, T1557.001, T1136.001, T1219, T1572, T1090, T1530, T1071.001, T1041, T1059.003, T1587.001]
+    affected_products: ["Active Directory Domain Services", "Citrix NetScaler", "Microsoft Exchange Server", "Fortinet FortiOS", "FreePBX", "Microsoft JDBC Driver for SQL Server", "Net Monitor for Employees Professional"]
+    entity_keys: ["tool:php2shell"]
+    new_entities:
+      - { key: "tool:mythic", type: tool, name: "Mythic", aliases: ["Mythic C2", "Mythic framework"],
+          summary: "Open-source red-team command-and-control framework; Hunt.io recovered an Apollo-derived .NET Windows agent and a Poseidon-derived Go Linux agent, both tied to a Mythic-labelled server, in an intrusion crew's open directories (Hunt.io, 2026-11-25)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "A Swiss tax office (internal domain TABT, 192.168.151.x) is covered by the IFM (install-from-media) workflow."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/open-directory-us-hospital-manufacturer-law-firms"
+      - quote: "a script copies the domain database and registry hives from a controller share to staging, XOR-decoding bytes with 0xA5, then requests IFM removal."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/open-directory-us-hospital-manufacturer-law-firms"
+      - quote: "Complete off-host transfer is not independently confirmed."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/open-directory-us-hospital-manufacturer-law-firms"
+      - quote: "We read this as a Chinese-speaking, Southeast Asia-based cybercrime operation running a Russian-authored toolkit."
+        attribution: "Hunt.io"
+        source_url: "https://hunt.io/blog/open-directory-us-hospital-manufacturer-law-firms"
+    extended_notes: |
+      Why it matters for the constituency: it is the only in-window public statement that an intrusion crew holds domain-controller material from a Swiss public body. The victim is identified only as "a Swiss tax office" with an internal domain label and private addressing in the report (the label is a victim-side identifier, kept out of this return's summary; the composer decides whether to carry it); no Swiss authority or other outlet corroborates, and a federal, cantonal or communal tax authority cannot be told apart from the text. Treat the Swiss victim claim as Hunt.io's reading of recovered files, not a confirmed breach: the report itself says complete transfer is unconfirmed and gives no initial-access route for that environment.
+
+      Behavioural reading for detection (telemetry classes first; platform artifacts as anchors): (1) on a domain controller, process-creation events for ntdsutil.exe that create install-from-media output outside a domain-controller build or disaster-recovery window, followed within minutes by SMB reads of the resulting database and SYSTEM/SECURITY hive copies by a non-DC host and then deletion of the media folder; file-creation and file-audit events on the DC for an NTDS database copy; (2) NTLM-relay and coercion activity against domain controllers (LDAP signing and channel-binding enforcement are the hardening levers Hunt.io names, with SMB signing); (3) Java application servers: a JAR whose META-INF/services/java.sql.Driver names a class in the com.microsoft.sqlserver.jdbc namespace but does not match a vendor build, java.exe or javaw.exe writing an executable under the Windows temp directory and then creating a child process, and Java processes launching cmd.exe /c from a polling loop; (4) egress: HTTPS polling from application servers to bare servers on TCP 8443, and GET requests whose paths carry long base64 chunks (a proxy that logs request paths keeps both the host label and the data). Benign lookalike for the first item: legitimate install-from-media creation during domain-controller promotion or restore tests, performed by a named administrator from a known host under a change record; the discriminator in this crew's workflow is the staging to a share, the read by another host, and the removal request that follows.
+
+      Hunt.io's hardening list (verbatim intent): inventory and lock down the remote-access edge (NetScaler, FortiGate SSL VPN, Exchange/OWA, VPN portals, SSO); enforce MFA and alert on NetScaler 4009 bursts and spray patterns; scope and rotate Azure SAS tokens and alert on bulk blob enumeration; enforce SMB signing and LDAP channel binding; review Java servers for unexpected JDBC providers.
+
+      Caveats worth keeping: the kit's CVE list is availability, not success; CVE-2026-62911 is an authentication bypass that Microsoft and ZDI class as elevation of privilege (the store already carries it, 2026-08-29), not a standalone pre-auth RCE, whatever label the PoC file carries. The attribution is Hunt.io's assessment from language and timezone indicators ("language and timezone in code tell you who wrote and ran the code, not a nationality"), not a validated attribution. Admiralty suggestion: source B, credibility 3 for the Swiss claim (first-hand recovered files, single source, transfer unconfirmed), 2 for the crew's toolkit facts.
+    borderline: false
+  # ------------------------------------------------------------------ 2
+  - title: "Kudelski Security: an offensive-AI-driven intrusion at a European insurer abused onboarding, identity migration and a retired API in one night, with no malware"
+    sources:
+      - { url: "https://kudelskisecurity.com/research/the-rise-of-offensive-ai-frameworks-when-business-logic-becomes-the-attack-surface", publisher: "Kudelski Security", date: "2026-11-27", role: "primary" }
+    discovery_trace: "first seen at: standing sweep of non-slice research listings (kudelski-security record), URL https://kudelskisecurity.com/research-blog (extract listing, post dated November 27, 2026) -> primary (no pivot needed): https://kudelskisecurity.com/research/the-rise-of-offensive-ai-frameworks-when-business-logic-becomes-the-attack-surface (extract, full body read). The post compares the case with SOCRadar's BabidiGhost report, already in the store (2026-11-24/babidighost-jailbroken-ai-agent-belgium-france-switzerland). The identity-provider advisory it cites (GHSA-qqv8-37gw-ww2q) could not be resolved: github.com/advisories returned 404 and WebSearch found nothing."
+    summary: |
+      Kudelski Security's incident-response team, working from perimeter, application and identity-provider logs plus endpoint hunting, describes a one-night intrusion at an unnamed European insurer: about three million identification requests in under nine hours, about 30 legitimate customer identities identified, more than a dozen customer accounts created in those customers' names without their passwords, identity-verification and authentication workflows compromised, and more than one hundred documents with sensitive customer data extracted. Kudelski found no malware and no compromise of the servers hosting the customer portal; it says the attacker chained deficiencies in application lifecycle management, identity verification, customer onboarding and authentication, and that an identity-provider vulnerability (GHSA-qqv8-37gw-ww2q) was one component of a longer chain. Its stated lessons are that user-controlled information inherited verified status, that identity migration between a legacy platform and a modern provider did not preserve account activation states, that retiring a front end left its supporting APIs reachable, and that rate limiting, CAPTCHA and server-side validation may be configured without being effective. What held, per Kudelski: the network perimeter, server-side authorization (each forged account could read only its own customer's data), administrative protections and conventional injection defences. Kudelski assesses with high confidence that an offensive AI framework was used, from correlated indicators, infrastructure, attack patterns, machine-speed execution, application-specific reconnaissance and automated handling of complex identity workflows; it does not name the framework, discloses no indicators, and could not establish how much human supervision there was. It says the attack produced several detectable signals before data collection began (abnormal request volumes, extensive authentication failures, suspicious reconnaissance) and still ran through the night. It frames BabidiGhost (many organisations, shallow) and this case (one organisation, deep) as the horizontal and vertical halves of the same capability.
+    region_nexus: "Europe (insurer unnamed); Kudelski Security is Swiss-headquartered; transferable to Swiss citizen and e-government portals that run identity onboarding, migration and recovery workflows"
+    primary_sector_nexus: "indirect (the victim is a private insurer; the abused mechanism is identity-lifecycle business logic that public-sector portals share)"
+    sector: "finance"
+    cves: []
+    techniques: [T1190, T1136, T1078, T1213]
+    affected_products: []
+    entity_keys: ["actor:babidighost"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Kudelski Security assesses with high confidence that an offensive AI framework was leveraged during this intrusion."
+        attribution: "Kudelski Security"
+        source_url: "https://kudelskisecurity.com/research/the-rise-of-offensive-ai-frameworks-when-business-logic-becomes-the-attack-surface"
+      - quote: "No malware was identified, and no compromise of the servers hosting the individual customer portal was observed."
+        attribution: "Kudelski Security"
+        source_url: "https://kudelskisecurity.com/research/the-rise-of-offensive-ai-frameworks-when-business-logic-becomes-the-attack-surface"
+      - quote: "The identity of the specific framework and its associated indicators are not disclosed in this publication."
+        attribution: "Kudelski Security"
+        source_url: "https://kudelskisecurity.com/research/the-rise-of-offensive-ai-frameworks-when-business-logic-becomes-the-attack-surface"
+      - quote: "The absence of malware should never be interpreted as evidence that no compromise occurred."
+        attribution: "Kudelski Security"
+        source_url: "https://kudelskisecurity.com/research/the-rise-of-offensive-ai-frameworks-when-business-logic-becomes-the-attack-surface"
+    extended_notes: |
+      Telemetry and triage reading (from the post's own list, no invention): the evidence that mattered was application, API-gateway, WAF, identity-provider, onboarding, account-recovery and document-management logs, not endpoint telemetry. Sequence to look for: a burst of identification or lookup requests against onboarding endpoints (millions in hours), then account creation for people who already hold customer records and who never reset a password, then bulk document retrieval by those new accounts. A single new account that satisfies the registration rules is legitimate-looking; the discriminator is the sequence, the volume and the identity-verification state the account was created with. Hardening named by Kudelski: never let user-supplied attributes inherit verified status; validate tokens for signature, issuer, audience and expiry; keep activation state across identity migration; decommission APIs when retiring a front end; test that rate limiting, CAPTCHA and server-side validation still work after each change; after an identity-provider compromise, remove unauthorized authenticators, sessions and tokens and verify against provider records.
+
+      Overlap and fold guidance: the store's BabidiGhost entry (2026-11-24) already carries the SOCRadar account (an insurer's Metabase-based theft, municipal archives, MFA and allow-lists held) and the ARTEX/CyberStrikeAI entries carry agent mechanics. This is a distinct incident with first-hand logs from a Swiss-based IR team, but its novelty is the business-logic and identity-lifecycle angle, not the agent mechanics; the composer may prefer a short entry linked to the BabidiGhost entry through references[], or an update on that entry.
+    borderline: true
+    borderline_reason: "single vendor IR account, framework and indicators undisclosed, AI-use is an assessment; value is the identity-lifecycle lesson for e-government portals and a Swiss-based lab's first-hand telemetry, but heavy AI-agent coverage is already in the store"
+  # ------------------------------------------------------------------ 3
+  - title: "Huntback: an exposed PentAGI console shows an operator rehearsing the NetScaler CVE-2026-88771 exploit on a self-built lab and cataloguing 487 PaperCut servers, at least 138 with school or student-printing names"
+    sources:
+      - { url: "https://huntback.io/blog/pentagi-netscaler-lab-cve-2026-88771", publisher: "Huntback", date: "2026-11-27", role: "primary" }
+    discovery_trace: "first seen at: huntback (non-slice sweep), URL https://huntback.io/blog (extract listing, newest card dated '27 Nov 2026') -> primary (no pivot needed): https://huntback.io/blog/pentagi-netscaler-lab-cve-2026-88771 (extract, full body read). Related store coverage: PaperCut entry 2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce; NetScaler entry 2026-09-28/cve-2026-88771-citrix-netscaler-preauth-rce-zero-day-kev; Puppet entry 2026-11-18/cve-2026-115731-puppet-enterprise-report-deserialization-rce (same operator infrastructure, updated 2026-11-27)."
+    summary: |
+      Huntback reports that a PentAGI (public multi-agent penetration-testing framework) console on one server was left exposed because the operator's own NetScaler lab published a throwaway Python web server from /tmp through a load balancer on a public port; from 21 November anyone could list the working directory. The files show a model stack in which every agent role is routed through a LiteLLM gateway to open-weight models labelled "uncensored", with Russian-language configuration comments, and a NetScaler 14.1-72.61 virtual appliance the operator built under QEMU/KVM on the same server and configured by typing console commands through the QEMU monitor and reading screenshots back. Huntback says the lab served as a test bench for CVE-2026-88771: scripts restart appliance services and then look for marker files named for the CVE, an older and a newer copy of the same appliance component sit side by side (the kind of pair used to see what a vendor update changed), and an out-of-band callback collector runs behind a Cloudflare quick tunnel. The second workload is a PaperCut MF census: candidate address lists on ports 9191 to 9196, fingerprinting that records edition, build number and page title, 487 confirmed servers across two runs, and at least 138 of the 377 confirmed in the first run carrying a school, college or student-printing name; Huntback ties the PaperCut flaw to CISA's KEV catalogue and a short list of Puppet Servers to the operator whose CVE-2026-115731 chain it published on 2026-11-19. Huntback links this console's address pool to the earlier one through a shared callback egress and an SMB test connection. Huntback's own checklist: apply the NetScaler fix, then look for unexpected files in /tmp and /var/tmp, emptied log files, changes to /etc/hosts or trusted certificate bundles, and API file reads from addresses other than management hosts; keep PaperCut ports 9191 and 9192 off the internet and review configuration-editor changes to external user lookup and database settings.
+    region_nexus: "global; PaperCut census is school-heavy, which matters for cantonal and communal schools and administrations that run PaperCut for student and staff printing"
+    primary_sector_nexus: "indirect (public-sector education and administration use PaperCut and NetScaler widely; no named Swiss victim)"
+    sector: "public-sector"
+    cves: [CVE-2026-88771, CVE-2026-81578, CVE-2026-82078, CVE-2026-115731]
+    techniques: [T1595.002, T1587.004, T1190]
+    affected_products: ["Citrix NetScaler", "PaperCut MF", "Puppet Server"]
+    entity_keys: ["tool:artex"]
+    new_entities:
+      - { key: "tool:pentagi", type: tool, name: "PentAGI", aliases: [],
+          summary: "Public multi-agent penetration-testing framework; Huntback found an operator running it against NetScaler, PaperCut and Puppet Server targets with open-weight 'uncensored' models (Huntback, 2026-11-27), and Huntback notes CERT-In lists it among tools seen in the Crafty Falcon intrusions against India's financial sector." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-29/papercut-ng-mf-tapestry-request-confusion-preauth-rce"
+    evidence:
+      - quote: "A PaperCut MF census recorded 487 confirmed PaperCut servers with their build numbers."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/pentagi-netscaler-lab-cve-2026-88771"
+      - quote: "At least 138 of them carry a school, college or student-printing name in the page title."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/pentagi-netscaler-lab-cve-2026-88771"
+      - quote: "The lab was used to test CVE-2026-88771: the scripts restart appliance services and then look for marker files named"
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/pentagi-netscaler-lab-cve-2026-88771"
+      - quote: "Schools using PaperCut for student printing are well represented in this census."
+        attribution: "Huntback"
+        source_url: "https://huntback.io/blog/pentagi-netscaler-lab-cve-2026-88771"
+    extended_notes: |
+      Delta against the store: the PaperCut and NetScaler entries already carry the flaws, the KEV listings and the AI-agent mass-exploitation context; what is new is (a) first-hand evidence that a PentAGI operator rehearses NetScaler exploitation against a built replica and keeps appliance-component pairs for update diffing, (b) a school-weighted PaperCut target census, and (c) a link between the NetScaler password-guessing, the Puppet chain and this console through one address pool. Fixed-release conflict to resolve before carrying Huntback's PaperCut line: Huntback lists 26.0.5, 25.0.13 and 24.1.10 as fixed releases, while the existing PaperCut entry records that PaperCut's September bulletin, revised 2026-10-13, now names 24.1.11 for v24; use the vendor bulletin, not Huntback, for versions. Huntback is a decoy and honeypot vendor with a record status of candidate (Admiralty B); this post is a single-source reading of an exposed operator server. Fold options: update on the PaperCut entry (census), or on the Puppet entry that already carries the same operator infrastructure.
+    borderline: true
+    borderline_reason: "single-source honeypot-vendor reading; the flaws, KEV listings and agent context are already covered, and the delta is targeting and rehearsal evidence rather than a new technique or an in-the-wild victim"
+  # ------------------------------------------------------------------ 4
+  - title: "Akamai: Kyverno before 1.19.2 lets a namespace-scoped policy author read other namespaces and cluster-scoped objects through a URL-parser mismatch in the apiCall path check (GHSA-pcx2-xcq4-65vf, no CVE)"
+    sources:
+      - { url: "https://www.akamai.com/blog/security-research/2026/nov/url-parser-differential-broke-kyvernos-namespace-isolation", publisher: "Akamai Security Intelligence Group", date: "2026-11-24", role: "primary" }
+      - { url: "https://github.com/kyverno/kyverno/security/advisories/GHSA-pcx2-xcq4-65vf", publisher: "Kyverno project (GitHub security advisory)", date: "2026-10-21", role: "primary" }
+    discovery_trace: "first seen at: akamai-sirt, URL https://feeds.feedburner.com/akamai/blog (feed, item dated 2026-11-24T16:00Z) -> primary: https://www.akamai.com/blog/security-research/2026/nov/url-parser-differential-broke-kyvernos-namespace-isolation (extract, full body read) -> pivot: https://github.com/kyverno/kyverno/security/advisories/GHSA-pcx2-xcq4-65vf (WebFetch: affected 'all versions', patched 1.19.2, published 2026-10-21 by the project, reporter at Akamai)."
+    summary: |
+      Akamai researchers and the Kyverno project's GitHub advisory describe a namespace-isolation bypass in Kyverno, the CNCF Kubernetes policy engine: a user allowed to create namespaced Kyverno Policies (a normal privilege in multi-tenant clusters) can put a foreign namespace into the query string of an apiCall urlPath, because validation cleans the path with file-path logic and extracts the namespace with a regular expression while the Kubernetes client later parses the same string as a URL and sends the request to a cluster-scoped or other-namespace endpoint with Kyverno's own high privileges. A policy written to always fail then returns the fetched data in the admission-denial message, so the attacker reads, for example, ConfigMaps in kube-system. The advisory lists all versions as affected and 1.19.2 as the fix and states it undermines the fix for the earlier CVE-2026-22039; Akamai calls it CVSS 10.0 and says its telemetry found 4% of enterprise networks running vulnerable Kyverno (the advisory page shows no vector). The advisory was published 2026-10-21 with no CVE and no workaround; Akamai's write-up followed on 2026-11-24. Neither source reports exploitation. This is a confused-deputy escalation from a tenant to cluster-wide read access, relevant only where several teams or suppliers share a cluster and tenants may author Kyverno policies.
+    region_nexus: "global; relevant to Swiss federal, cantonal and supplier Kubernetes platforms that use Kyverno with tenant-authored policies"
+    primary_sector_nexus: "indirect (shared-cluster platform teams; no sector-specific targeting)"
+    sector: "technology"
+    cves: []
+    techniques: [T1068, T1552.007]
+    affected_products: ["Kyverno"]
+    entity_keys: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    lookback: true
+    evidence:
+      - quote: "The vulnerability allows a restricted tenant scoped to a single namespace to craft malicious API requests that access cluster-scoped resources or other namespaces, bypassing policy validation."
+        attribution: "Akamai Security Intelligence Group"
+        source_url: "https://www.akamai.com/blog/security-research/2026/nov/url-parser-differential-broke-kyvernos-namespace-isolation"
+      - quote: "The flaw was patched in version 1.19.2."
+        attribution: "Akamai Security Intelligence Group"
+        source_url: "https://www.akamai.com/blog/security-research/2026/nov/url-parser-differential-broke-kyvernos-namespace-isolation"
+      - quote: "According to Akamai’s telemetry, 4% of enterprise networks were running vulnerable instances of Kyverno."
+        attribution: "Akamai Security Intelligence Group"
+        source_url: "https://www.akamai.com/blog/security-research/2026/nov/url-parser-differential-broke-kyvernos-namespace-isolation"
+    extended_notes: |
+      Exposure check (vendor-documented): read the deployed Kyverno version (Helm chart or image tag, below 1.19.2 is affected) and check whether tenants can create namespaced Kyverno Policy objects. Hunt idea derived from the mechanism, not from a source's detection list: in Kubernetes API-server audit logs, requests made by Kyverno's service account to cluster-scoped list endpoints or to other namespaces' resources shortly after a tenant creates or triggers a policy, and namespaced policies whose apiCall urlPath contains a question mark; admission-denial messages that contain interpolated API response data are the leak channel Akamai points to. Hardening: upgrade to 1.19.2 or later, limit who may author namespaced policies that use apiCall, and avoid returning raw API data in policy messages. Prerequisite is an authenticated tenant with policy-authoring rights, which limits exposure to multi-tenant platforms; patch has been available since 2026-10-21.
+    borderline: true
+    borderline_reason: "authenticated multi-tenant prerequisite, no exploitation reported, no CVE, patch available since October; relevance depends on Kyverno-based shared clusters in the constituency"
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: ox-security
+    reason: "Feed https://www.ox.security/feed/ works but carries only the opening lines of each post; the post body (e.g. the 2026-11-23 'Plug and Pray' analysis of 542,207 components across npm, PyPI, MCP servers and Agent Skills) returns HTTP 403 to both extract and WebFetch. A vendor statistic with no readable method: dropped, not verified."
+  - source_id: checkpoint-research
+    reason: "Non-slice standing check. Direct feed GET answered HTTP 202 (challenge) and the jina pool answered 402 (credits exhausted) at 2026-11-28 ~04:20Z, although the same feed read cleanly earlier in the same run window; `extract https://research.checkpoint.com/` returns raw HTML. Newest known item 2026-11-24 (Volant Manticore, seen by the 2026-11-25 fire). Intermittent bot challenge, not a dead host."
+  - source_id: sans-isc
+    reason: "Non-slice. https://isc.sans.edu/rssfeed.xml returns invalid XML ('syntax error: line 1, column 0'); `extract https://isc.sans.edu/` returns the front page with the latest diary titles (newest 2026-11-25). Suggest pointing the record's working recipe at the extract of the front page."
+  - source_id: lab52
+    reason: "Non-slice. https://lab52.io/blog/feed/ unreadable on the direct transport and the jina pool is exhausted (HTTP 402 on all three keys)."
+  - source_id: watchtowr
+    reason: "Recipe note: the labs RSS carries no FAQ pages; `extract https://watchtowr.com/intelligence/` lists FAQ and rapid-reaction titles without dates or links, the links come from `url https://watchtowr.com/intelligence/` (href regex), and the per-page publication time comes from the page's datePublished field in the raw HTML (4HTTP2ROOT FAQ: 2026-11-26T20:09:54Z). The `watchtowr-intelligence` record in sources.json already pins the index."
+  - source_id: huntback
+    reason: "Recipe note: `extract https://huntback.io/blog` lists title, slug and a displayed date per post (newest card showed '27 Nov 2026'); posts read cleanly with extract."
+  - source_id: kudelski-security
+    reason: "Recipe note: `extract https://kudelskisecurity.com/research-blog` lists posts with dates; post URLs come from `url` HTML hrefs (/research/<slug>); posts read cleanly with extract (note the extract title field can show a neighbouring post's title, so trust the H1)."
+notes:
+  re_checked_and_not_returned:
+    - "Cacti Core 1.2.31 '4HTTP2ROOT' (watchTowr FAQ, published 2026-11-26T20:09:54Z, last statement dated 2026-11-27: no exploitation reported, no fixed version, guest account must be enabled): the main agent dropped it yesterday as borderline (S1.2); re-checked for a new development (second source, CVE, vendor advisory, exploitation) and found none: WebSearch for '4HTTP2ROOT' and for the researcher handle returned nothing, and the Cacti GitHub advisory list shows no advisory after 2026-07-27. Not returned."
+    - "StepSecurity PolinRider post (2026-11-26, updated 2026-11-27 with three Jaeger pull-request branches): the store's PolinRider entry already carries the AsyncAPI, CircuitVerse and Open Food Facts findings (update 2026-11-26T05:07Z); the Jaeger additions are a minor delta."
+    - "OpenSourceMalware 'How a Fake Job Interview Led to the $6.34 Billion Binance Theft' (2026-11-26): analysis layered on Binance's own report and the FBI statement the store already carries (2026-11-04 entry); its three-phase reading is the lab's inference. WalletGuard (GitHub-issue phishing of 200+ crypto repositories, 2026-11-25) and Enterotoxin (npm RAT, 2026-11-24) target crypto developers, no constituency nexus."
+    - "Truesec 'ARTEX and the Attacks That Never Take a Weekend Off' (2026-11-27): synthesis of Microsoft, Check Point and AhnLab reporting already in the store; no new telemetry."
+    - "Malwarebytes: Drupal follow-up flaw (CVE-2026-136716 exploited, SA-CORE-2026-019) is already inside the Drupal entry's CVE set and yesterday's Drupal update; Remus Gmail-extension persistence (Gen Threat Labs/Hudson Rock, 2026-11-24) is consumer infostealer persistence with no constituency nexus; Anthropic 'Siren' sandbox-escape evaluation is model-safety research, not threat reporting."
+    - "Apiiro MIOU malicious MCP servers (published 2026-11-26, outside the 26 h window; crypto-wallet stealer and clipper delivered when a coding agent starts a cloned GitHub MCP server): well-sourced primary, no constituency nexus; flagged only so a later fire can pick it up if MCP-server supply chain becomes a standing interest."
+    - "Netcraft GTA VI lure post (updated 2026-11-25) and Black Friday impersonation posts: consumer scam lures, no constituency nexus. Picus resource listing: CVE explainers already covered (nginx2root, Idunno.AntiCsrf)."
+    - "Annual or periodic reports: none published in window (Trellix CyberThreat Report was 2026-11-04, Check Point State of Ransomware Q3 2026-11-17, ENISA Threat Landscape 2026-09)."
+source_ledger:
+  - { id: watchtowr, tier: essential, attempted: true, transport: "feed + extract + url (/intelligence index)", horizon_hours: 26, in_horizon_items: 0, returned: 0, note: "labs feed newest 2026-11-05; 4HTTP2ROOT FAQ published 2026-11-26T20:09Z (about 6 h before the window) and already dropped yesterday as borderline; no new development" }
+  - { id: zscaler-threatlabz, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-11-19 (Java4Shell, Optimizely), both already covered" }
+  - { id: acronis-tru, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-11-17" }
+  - { id: akamai-sirt, tier: standard, attempted: true, transport: "feed + extract + WebFetch (GHSA)", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "Kyverno GHSA-pcx2 research 2026-11-24 returned as borderline lookback; other posts product marketing; Java4Shell posts of 11-17/11-19 already covered" }
+  - { id: hunt-io, tier: standard, attempted: true, transport: "WebFetch listing + extract", horizon_hours: 168, in_horizon_items: 1, returned: 1, note: "2026-11-25 open-directory report with the Swiss tax office material; the 11-18 post is outside the lookback" }
+  - { id: malwarebytes, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 5, returned: 0, note: "Drupal follow-up already covered, Remus Gmail extension and Siren have no constituency nexus, rest consumer" }
+  - { id: midnight-blue-blog, tier: standard, attempted: true, transport: "extract + url (hrefs)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest posts are TETRA authentication flaws (October 2026), THSR TETRA incident part 1 (May 2026), Danfoss AK-SM 800A (already in store); nothing in the lookback" }
+  - { id: netcraft, tier: standard, attempted: true, transport: "url (/resources/blog)", horizon_hours: 168, in_horizon_items: 3, returned: 0, note: "GTA VI lures, Black Friday impersonation, web-server survey; no constituency nexus" }
+  - { id: offseq, tier: standard, attempted: true, transport: "feed", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest 2026-11-14 (Mirage exploitation snapshot)" }
+  - { id: opensourcemalware, tier: standard, attempted: true, transport: "feed + extract", horizon_hours: 168, in_horizon_items: 4, returned: 0, note: "Binance analysis already covered; WalletGuard and Enterotoxin target crypto developers; weekly shows are digests" }
+  - { id: ox-security, tier: standard, attempted: true, transport: "feed (extract and WebFetch 403)", horizon_hours: 168, in_horizon_items: 1, returned: 0, note: "2026-11-23 'Plug and Pray' is teaser-only (body 403); unverifiable vendor statistic" }
+  - { id: picus-security-blog, tier: standard, attempted: true, transport: "extract (/resource)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "listing carries CVE explainers for nginx2root and Idunno.AntiCsrf (already covered) and non-research items; no dates exposed" }
+  - { id: project-discovery, tier: standard, attempted: true, transport: "url (/blog/stories/1)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "newest card 2026-11-10" }
+  - { id: redcanary, tier: standard, attempted: true, transport: "feed (zscaler cybersecurity-best-practices)", horizon_hours: 168, in_horizon_items: 0, returned: 0, note: "SASE design series, OT microsegmentation, NYDFS; no threat research (newest 2026-11-25)" }

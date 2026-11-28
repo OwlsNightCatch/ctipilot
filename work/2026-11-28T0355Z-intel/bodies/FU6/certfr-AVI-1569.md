@@ -1,0 +1,46 @@
+---
+title: Avis du CERT-FR
+url: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1569/
+hostname: cyber.gouv.fr
+sitename: cert.cyber.gouv.fr
+date: "2024-04-08"
+fingerprint: "3cf5cf36a7a8a31f"
+language: fr
+filedate: "2026-11-28"
+---
+# Avis du CERT-FR
+
+Objet : Multiples vulnérabilités dans les produits Mitel
+
+## Gestion du document
+
+Une gestion de version détaillée se trouve à la fin de ce document.
+
+## Risques
+
+- Atteinte à l'intégrité des données
+- Atteinte à la confidentialité des données
+- Contournement de la politique de sécurité
+- Déni de service à distance
+- Exécution de code arbitraire à distance
+
+## Systèmes affectés
+
+- OpenScape 4000 Manager versions antérieures à V11 R2.14
+- OpenScape 4000 Manager versions V10 R0.22 à V11 R1.34 sans le dernier correctif de sécurité
+- OpenScape 4000 Manager versions V11 R1.x antérieures à V11 R1.26 sans le correctif de sécurité PLT HF5
+- OpenScape 4000 versions antérieures à V11 R2.14
+- OpenScape 4000 versions V10 R0.28 à V11 R0.22 sans le dernier correctif de sécurité
+- OpenScape 4000 versions V11 R1.x antérieures à V11 R1.26 sans le correctif de sécurité PLT HF5
+
+## Résumé
+
+De multiples vulnérabilités ont été découvertes dans les produits Mitel. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance, un déni de service à distance et une atteinte à la confidentialité des données.
+
+## Solutions
+
+Se référer au bulletin de sécurité de l'éditeur pour l'obtention des correctifs (cf. section Documentation).
+
+## Documentation
+
+- Bulletin de sécurité Mitel 2026-0013 du 18 novembre 2026 [https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0013](https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0013)

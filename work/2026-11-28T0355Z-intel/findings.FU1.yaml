@@ -1,0 +1,1594 @@
+domain: FU1
+run_id: 2026-11-28T0355Z-intel
+task: Deep verbatim read of the Cacti Core 1.2.31 unauthenticated RCE zero-day 4HTTP2ROOT / 4HTTP2SHELL (no CVE)
+model: Sonnet 5.5
+model_id: claude-sonnet-5-5
+started_at: '2026-11-28T04:29:22Z'
+ended_at: '2026-11-28T04:42:54Z'
+duration_seconds: 812
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 4
+  bridge_fetches: 47
+headline_deltas_vs_sweep:
+- 'NEW: the Cacti project merged unreleased hardening commits on 2026-11-28 (develop PR #9015 at 01:24:05Z, 1.2.x PR #9014 at 01:28:13Z) that cover every stage of the chain by function; no release, no advisory, no mention of the disclosure (details: points.3_fix).'
+- 'UPDATED: Previdian tracker (updated 28 Nov) now shows 216 attempts / 21 unique IPs / 9 countries / 1 honeypot sensor, first 27 Nov, last 28 Nov, success unconfirmed; the blog and the S2 draft carry only 22 attempts from one IP.'
+- 'NEW: Previdian tracker states CVSS 9.8 (AI-generated estimate); the blog says official score unavailable; BSI says only kritisch.'
+- 'SETTLED: Cacti documentation says guest/anonymous access is disabled by default and needs the Guest user enabled and designated in Authentication Settings.'
+- 'GAP: BSI summary omits the guest precondition; nobody settles earlier 1.2.x or the 1.3 line.'
+points:
+  1_guest_account:
+    status: SETTLED (requirement) / SETTLED from vendor docs (default)
+    answer: 'The chain needs the guest account enabled. The researcher''s lab had it enabled; watchTowr, BleepingComputer, The Hacker News and Previdian all state it is a prerequisite. Cacti''s own User Management documentation (Cacti/documentation develop branch, footer ''Copyright (c) 2004-2026 The Cacti Group'') says guest/anonymous access is disabled by default, that the ''guest'' user is not enabled by default since 0.8.7, that a pre-created guest user exists, and that anonymous access works only when the Guest user is enabled AND set as the guest user in Authentication Settings (two settings). The researcher''s wording ''the default guest surface'' does not claim guest is enabled by default. Not settled by any source: the actual guest state of upgraded legacy installs, and whether the per-user ''modify defaults'' switch the docs call ''important for the guest account'' blocks the profile write (no source ties it to this chain; do not present it as a mitigation).'
+    claim_ids:
+    - B1
+    - B2
+    - B3
+    - B4
+    - B5
+    - B6
+    - B7
+    - B8
+    - B9
+    - B10
+    - B11
+    - B12
+    - B13
+    - B14
+  2_versions:
+    status: PARTLY SETTLED (tested/affected = 1.2.31 only; everything else unknown)
+    answer: 'Every source names only Cacti Core 1.2.31 as tested/affected (researcher lab, watchTowr table, BSI CSAF known_affected with CPE for 1.2.31 only, Previdian ''Confirmed Affected Version'', The Hacker News). Earlier 1.2.x: BleepingComputer ''unclear whether earlier versions are also vulnerable''; RavenAI ''does not establish whether other versions, guest configurations, or database settings are exploitable''; Previdian ''full affected version range has not yet been established''. No secondary source mentions the 1.3 branch. Repository evidence only: the develop branch (version file 1.3.0.-1) already carried bounded page-size/column validators from commit ae54a2a55 (2026-08-17, after the 1.2.31 release of 2026-06-15), and the develop companion PR says it leaves lib/html_graph.php untouched for that reason. That is a contributor statement about develop code, not a Cacti statement that 1.3 is unaffected, and develop has no release.'
+    claim_ids:
+    - C1
+    - C2
+    - C3
+    - C4
+    - C5
+    - C6
+    - C7
+    - C8
+    - C8b
+    - C8c
+    - C9
+    - C9b
+  3_fix:
+    status: 'SETTLED: no fixed release and no advisory; BUT unreleased hardening commits were merged on 2026-11-28 (new delta since the sweep)'
+    answer: 'As of 2026-11-28 about 04:40 UTC: https://github.com/Cacti/cacti/releases lists v1.2.31 (published 2026-06-15T23:35:24Z) as the newest release, the tags API''s newest tag is release/1.2.31, and the security advisories listing has nothing published after 2026-07-27 and no entry for this flaw (67 published advisories by API). No fix listed on those pages as of 2026-11-28. HOWEVER the project merged source changes that cover every stage of the chain: PR #9015 on develop at 2026-11-28T01:24:05Z and PR #9014 on 1.2.x at 2026-11-28T01:28:13Z (merge commit 49fd19b5, 8 files). Per the PR text they (a) reject Guest account mutations with HTTP 403 in the profile handlers including update_data, (b) schema-validate user settings and validate preview_graphs_per_page, and clamp the graphs/page values before the SQL LIMIT clause in graph_view.php (1.2.x only; develop already had it), (c) enforce is_graph_allowed() before the realtime poller shell_exec and block Guest writes in graph_realtime.php.
+      The PRs, commit messages and the maintainer review do not mention the disclosure, a researcher, a CVE or an advisory; the match to 4HTTP2ROOT is by scope only (setting name, guest writes, realtime access). The maintainer review (TheWitness, 01:28:03Z) says ''Seems hackish, but letting it go.'' The 1.2.x branch version file reads 1.2.32, which has no release. All secondary sources (watchTowr, BleepingComputer, THN, Previdian, BSI) predate these commits and say ''no fixed version''; none mentions them. So: no release and no advisory, but a public source-level fix exists on 1.2.x and develop; nobody has stated that it closes this issue.'
+    claim_ids:
+    - D1
+    - D2
+    - D3
+    - D4
+    - D4b
+    - D5
+    - D5b
+    - D6
+    - D6b
+    - D6c
+    - D6d
+    - D6e
+    - D6f
+    - D7
+    - D7b
+    - D8
+    - D9
+    - D10
+    - D11
+    - D12
+    - D13
+    - D13b
+  4_exploitation:
+    status: SETTLED for Previdian (counts differ between two Previdian pages); no other party found
+    answer: 'Previdian (honeypot vendor, tracker VULN-2026-0010, Admiralty C in sources.json): blog (published 2026-11-26; update 27 Nov): 22 SQL-injection attempts from a single source IP on 27 Nov against its real Cacti application honeypots, time-based payloads ''designed to test whether the newly disclosed vulnerability was exploitable'', successful command execution NOT confirmed, first attempts about 14 h after it added the issue to its Watch (26 Nov). Tracker page (footer ''Updated 28 Nov 2026'', fetched ~04:35 UTC 28 Nov): 216 attempts, 21 unique attacker IPs, 9 countries, 1 sensor, first observed 27 Nov, last 28 Nov, ''They do not show that the target was vulnerable or that the attempt succeeded''; payloads, paths, User-Agents and IPs are behind an Enterprise tier, so what was requested cannot be read. The tracker still also carries the earlier ''22 attempts from 1 IP'' sentence. The tracker''s ''Confirmed'' confidence refers to observed attempts, not to successful compromise. Other
+      parties: watchTowr and BleepingComputer say no exploitation reported as of 27 Nov; Brandefense''s ''14 dark chat posts'' is a keyword count, not exploitation; CISA KEV (2026.11.27) has no entry (only CVE-2022-46169 for Cacti); four web searches found no GreyNoise, Shadowserver, SANS or other report. Not seen by anyone: a successful compromise, a post-exploitation observation, or an actor attribution (watchTowr: ''No attribution has been made public'').'
+    claim_ids:
+    - E1
+    - E2
+    - E3
+    - E4
+    - E5
+    - E6
+    - E7
+    - E8
+    - E9
+    - E10
+    - E11
+    - E12
+  5_chain_and_telemetry:
+    status: SETTLED as the researcher and RavenAI describe it; telemetry beyond what they state is labelled inference
+    answer: 'See chain_steps below. All four requests use one guest session (the README: ''The realtime poller is reachable from the same guest session'').'
+    claim_ids:
+    - F1
+    - F1b
+    - F1c
+    - F2
+    - F2b
+    - F3
+    - F3b
+    - F4
+    - F4b
+    - F4c
+    - F5
+    - F5b
+    - F5c
+    - F5d
+    - F6
+    - F6b
+    - F7
+  6_mitigations:
+    status: SETTLED (who says what); the vendor has given none
+    answer: 'watchTowr, BleepingComputer, The Hacker News and Previdian all give: disable the guest account; restrict the web interface to trusted networks. watchTowr/BC/THN add: review poller entries for unexpected command values; watchTowr/BC add: watch application logs for non-numeric display-setting warnings. Previdian adds: remove the designated Guest User in Authentication Settings and disable the guest account under Console > Configuration > Users, verify an unauthenticated session no longer reaches protected functions, run Cacti web and poller processes without root, and rotate stored device credentials if compromise is suspected; it calls guest-disable ''an interim mitigation, not a fix''. RavenAI gives code-level fixes (integer validation on write and read, bound LIMIT values, restrict guest profile writes, authorize and monitor poller_item.arg1). Brandefense restates watchTowr as an ordering (entry condition, reachability, evidence). Cacti (the vendor) gives no interim mitigation
+      or advisory; its only public action is the unreleased source change in point 3.'
+    claim_ids:
+    - G1
+    - G2
+    - G3
+    - G4
+    - G5
+    - G6
+    - G7
+    - G8
+    - B12
+    - B13
+  7_severity:
+    status: SETTLED (who rates what)
+    answer: 'BSI WID-SEC-2026-4845: aggregate severity ''kritisch'' (critical); RSS title ''[NEU] [UNGEPATCHT] [kritisch] Cacti: Schwachstelle ermöglicht Codeausführung''; CSAF carries no CVE, no CVSS score or vector, no remediation, one affected product ''Open Source Cacti 1.2.31''. BSI summary wording: ''Ein entfernter, anonymer Angreifer kann eine Schwachstelle in Cacti ausnutzen, um SQL-Injection durchzuführen und beliebigen Code mit den Berechtigungen des betroffenen Anwendungsprozesses auszuführen.'' (it omits the guest-account precondition). Previdian''s tracker states CVSS 9.8 Critical (vector AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), labelled ''AI-generated. Assessed 27 Nov 2026'' (its sample API record says cvss_estimated false); Previdian''s blog the same day says ''Official CVSS score unavailable''. No CVSS or severity appears in the researcher''s README, watchTowr, RavenAI, BleepingComputer, THN or Brandefense, and Cacti has issued none. EPSS: none (Previdian null).'
+    claim_ids:
+    - H1
+    - H1b
+    - H1c
+    - H2
+    - H3
+    - H4
+    - H5
+chain_steps:
+- step: 1
+  request: GET auth_profile.php?tab=general&header=false from a client with no cookie (lab base path /cacti)
+  app_behaviour: Returns HTTP 200 'User Profile (Edit)' for the anonymous visitor, sets the session cookie 'Cacti' and a CSRF token (csrfMagicToken) in the page; works only because a guest user is enabled and designated (README, RavenAI; Cacti docs).
+  web_access_log: 'source-stated: nothing exotic; README: the whole chain has ''no authentication event''. Inference: a GET of auth_profile.php with no prior session and no login POST, from a client that never loaded the login page.'
+  app_log: none stated
+  database: none stated
+  processes: none stated
+  claim_ids:
+  - F1
+  - F1b
+  - F1c
+- step: 2
+  request: POST auth_profile.php?tab=general&action=update_data&header=false with form fields __csrf_magic, name=preview_graphs_per_page and value=<non-integer text>
+  app_behaviour: Stores the value in the settings_user table via a prepared statement with no integer validation; the HTTP response is normal.
+  web_access_log: 'source-stated: a guest-session profile update. Inference (general logging behaviour, not in sources): the SQL-bearing value travels in the POST body, which default web access logs do not record, so the access-log line shows only POST ...action=update_data.'
+  app_log: none stated
+  database: 'source-stated: the guest user''s preview_graphs_per_page setting holds non-numeric text (Previdian: ''Investigate unexpected changes to user settings'').'
+  processes: none
+  claim_ids:
+  - F2
+  - F2b
+  - F1c
+- step: 3
+  request: GET graph_view.php?action=preview&page=1&clear=1 (same session)
+  app_behaviour: Reads the stored value as the default of the 'graphs' filter, concatenates it into the LIMIT clause passed to get_allowed_graphs() (graph_view.php:657, lib/auth.php:1574-1578); PDO runs the stacked statement; the page renders normally.
+  web_access_log: 'source-stated: a graph preview request; the URL carries no payload (README: ''no exploit payload in a URL that looks like a shell'').'
+  app_log: 'source-stated (README, RavenAI, watchTowr): a PHP warning about a non-numeric value in a graph display setting; the request still succeeds. Exact warning text is not quoted by any source.'
+  database: 'source-stated: a poller_item row''s arg1 (and, in the PoC, host_id and action) is overwritten; RavenAI: row identifiers are lab values.'
+  processes: none
+  claim_ids:
+  - F3
+  - F3b
+  - F5
+  - F5b
+  - F5c
+- step: 4
+  request: GET graph_realtime.php?action=init&local_graph_id=<id>&ds_step=10&size=90 (same session)
+  app_behaviour: Calls poller_realtime.php, which calls cmd_realtime.php; exec_poll() passes poller_item.arg1 to popen(), which runs it through the shell inside the same HTTP request; response is a JSON object with a graph image. Graph id and poller item must be valid.
+  web_access_log: 'source-stated: a realtime graph initialisation from the same session seconds after the preview request; no payload in the URL.'
+  app_log: none stated
+  database: 'the altered poller_item row remains as the evidence (watchTowr: unexpected commands in poller settings); whether it persists or is regenerated is not stated.'
+  processes: 'Inference from README plus pre-fix code context in the vendor commit: web-server PHP worker -> php -q poller_realtime.php --graph --interval --poller_id (shell_exec) -> shell via popen() running the stored command. Source-stated artifact: files written by the poller/web account (the lab marker file was served back from the Cacti webroot; the demo stages a PHP shell).'
+  claim_ids:
+  - F4
+  - F4b
+  - F4c
+  - F5d
+claim_table:
+- claim_id: A1
+  point: provenance
+  claim: The write-up is signed ek0ms savi0r, Church of Malware, dated 26 Nov 2026; the repo directory's first public upload is 2026-11-26T01:34:40Z and the README was renamed from 4HTTP2ROOT to 4HTTP2SHELL on 2026-11-27T02:29:28Z.
+  publisher: ek0ms savi0r (GitHub README) + GitHub commit history
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - '**ek0ms savi0r** · Church of Malware · Nov. 26, 2026'
+  grep_F_verified: true
+- claim_id: A1b
+  point: provenance
+  claim: 'GitHub commit history of the 4http2shell directory: two uploads on 2026-11-26 (01:34:40Z and 17:19:42Z) and the rename commit on 2026-11-27 (02:29:28Z).'
+  publisher: GitHub (commit history of ekomsSavior/Sad-Girls-0day-Club, path 4http2shell)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/commits/main/4http2shell
+  body_file: bodies/FU1/gh-api-commits-4http2shell.json
+  kind: quote
+  verbatim_passages:
+  - '"message":"Rename 4HTTP2ROOT to 4HTTP2SHELL in README'
+  - '2026-11-27T02:29:28Z'
+  - '2026-11-26T01:34:40Z'
+  - '2026-11-26T17:19:42Z'
+  grep_F_verified: true
+- claim_id: A2
+  point: provenance
+  claim: 'BleepingComputer: the exploit is named 4HTTP2SHELL (previously 4HTTP2ROOT) and was published on Thanksgiving Day by ek0ms savi0r of the Church of Malware.'
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - (previously 4HTTP2ROOT), was published on Thanksgiving Day by a cybersecurity researcher known as ek0ms savi0r from the Church of Malware
+  grep_F_verified: true
+- claim_id: A3
+  point: provenance
+  claim: BleepingComputer relays (from an Instagram post it links; not fetched here) that the researcher said the flaw was not reported to Cacti before release. Single relayed statement, not independently read.
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - the researcher shared a video demonstration of the PoC and said that the vulnerability was not reported to Cacti before being released.
+  grep_F_verified: true
+- claim_id: A4
+  point: provenance
+  claim: 'No CVE id: The Hacker News says none assigned; Previdian lists CVE as not publicly assigned.'
+  publisher: The Hacker News; Previdian Research
+  source_url: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html
+  body_file: bodies/FU1/thehackernews.md
+  kind: quote
+  verbatim_passages:
+  - which has yet to be assigned a CVE identifier
+  - has been tracked as **4HTTP2SHELL** and **4HTTP2ROOT**
+  grep_F_verified: true
+- claim_id: A4b
+  point: provenance
+  claim: 'Previdian at-a-glance table: CVE not publicly assigned.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - '| **CVE** | Not publicly assigned |'
+  grep_F_verified: true
+- claim_id: A5
+  point: provenance
+  claim: BSI WID-SEC-2026-4845 first release 2026-11-26T23:00:00Z, single revision ('Initiale Fassung'), status final.
+  publisher: BSI (CERT-Bund WID-SEC-2026-4845, CSAF)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  kind: quote
+  verbatim_passages:
+  - '"initial_release_date": "2026-11-26T23:00:00.000+00:00",'
+  - '"summary": "Initiale Fassung"'
+  - '"status": "final",'
+  grep_F_verified: true
+- claim_id: A6
+  point: provenance
+  claim: BSI's WID entry is published as an RSS item titled [NEU] [UNGEPATCHT] [kritisch], pubDate Fri, 27 Nov 2026 11:00:46 GMT; the 'UNGEPATCHT' tag is in the RSS title, the CSAF has no remediation or fixed-version field.
+  publisher: BSI (CERT-Bund WID RSS)
+  source_url: https://wid.cert-bund.de/content/public/securityAdvisory/rss
+  body_file: bodies/FU1/bsi-rss.xml
+  kind: quote
+  verbatim_passages:
+  - '[NEU] [UNGEPATCHT] [kritisch] Cacti: Schwachstelle ermöglicht Codeausführung'
+  - <pubDate>Fri, 27 Nov 2026 11:00:46 GMT</pubDate>
+  grep_F_verified: true
+- claim_id: B1
+  point: '1'
+  claim: 'Researcher''s lab: Cacti Core 1.2.31 on an isolated host, guest account enabled, web tier and poller as root; on a normal deployment the chain runs as the web user (www-data / apache).'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - The target is current version Cacti Core 1.2.31 on an isolated lab host. The guest account was
+  - enabled. The web tier and poller ran as root in this lab; on a normal
+  - deployment the same chain runs as the Cacti web user, usually `www-data` or
+  grep_F_verified: true
+- claim_id: B2
+  point: '1'
+  claim: The researcher calls the entry surface 'the default guest surface' (does not state that the guest account is enabled by default; the lab statement is that it 'was enabled').
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - Just four HTTP requests against the default guest surface.
+  grep_F_verified: true
+- claim_id: B3
+  point: '1'
+  claim: 'watchTowr: the guest account must be enabled because the whole chain runs through the unauthenticated guest session.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - '- The guest account must be enabled, since the entire chain runs through the unauthenticated guest session.'
+  grep_F_verified: true
+- claim_id: B4
+  point: '1'
+  claim: 'BleepingComputer: attack requires the guest account enabled, no valid credentials.'
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - The attack requires the Cacti guest account to be enabled but does not require attackers to possess valid credentials.
+  grep_F_verified: true
+- claim_id: B5
+  point: '1'
+  claim: 'The Hacker News: affects 1.2.31 when the guest account is enabled; guest is disabled by default since 0.8.7 (THN links docs.cacti.net, which returned HTTP 403 here; the same docs source on GitHub was read instead, see B7-B11).'
+  publisher: The Hacker News
+  source_url: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html
+  body_file: bodies/FU1/thehackernews.md
+  kind: quote
+  verbatim_passages:
+  - when the guest account is enabled. It's worth noting that the [guest account is disabled by default](https://docs.cacti.net/User-Management.md) starting with Cacti version 0.8.7.
+  grep_F_verified: true
+- claim_id: B6
+  point: '1'
+  claim: 'Previdian, citing Cacti''s documentation: anonymous guest access is disabled by default but can be enabled.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - anonymous guest access is disabled by default but can be enabled to provide unauthenticated access to monitoring graphs.
+  grep_F_verified: true
+- claim_id: B7
+  point: '1'
+  claim: 'Cacti''s own documentation (User Management, develop branch): guest/anonymous access is disabled by default.'
+  publisher: Cacti documentation (Cacti/documentation, User-Management.md)
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  kind: quote
+  verbatim_passages:
+  - By default, Guest or Anonymous access is disabled in Cacti.
+  grep_F_verified: true
+- claim_id: B8
+  point: '1'
+  claim: 'Cacti documentation: since 0.8.7 the ''guest'' user is not enabled, which disables unauthenticated access.'
+  publisher: Cacti documentation
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  kind: quote
+  verbatim_passages:
+  - By default in 0.8.7 and later, the "guest" user is not enabled, effectively disabling "guest" (Unauthenticated) access to Cacti.
+  grep_F_verified: true
+- claim_id: B9
+  point: '1'
+  claim: 'Cacti documentation: two things make anonymous access work: the Guest user must be enabled AND be set as the guest user under Authentication Settings.'
+  publisher: Cacti documentation
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  kind: quote
+  verbatim_passages:
+  - you need to tell Cacti what the "Guest" user is. This is done by updating the Authentication Settings and selecting the "Guest" user you have designated.
+  - The "Guest" user must be enabled and be set as the guest user for anonymous access to work.
+  grep_F_verified: true
+- claim_id: B10
+  point: '1'
+  claim: 'Cacti documentation: a guest user account ships pre-created (graphs only), so the account exists on a default install while being disabled.'
+  publisher: Cacti documentation
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  kind: quote
+  verbatim_passages:
+  - To enable guest access, you first need a designated "Guest" user. Cacti by default comes with one already created that has access to only graphs.
+  grep_F_verified: true
+- claim_id: B11
+  point: '1'
+  claim: 'Cacti documentation: the default guest user has access to all graphs on the system.'
+  publisher: Cacti documentation
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  kind: quote
+  verbatim_passages:
+  - It is important to note that the default guest user has access to all graphs on the system.
+  grep_F_verified: true
+- claim_id: B12
+  point: '1'
+  claim: Cacti documentation names a per-user switch for modifying defaults (General tab of User Management) and calls it important for the guest account. No source connects this switch to the 4HTTP2ROOT chain; whether it blocks the profile write is NOT established.
+  publisher: Cacti documentation
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  kind: quote
+  verbatim_passages:
+  - defaults from the `General` **User Management** tab. This is important for the
+  - '`guest` account for example.'
+  grep_F_verified: true
+- claim_id: B13
+  point: '1'
+  claim: 'Previdian''s disable procedure: remove the designated Guest User in Authentication Settings and disable the guest account under Console > Configuration > Users.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - Remove the designated Guest User in Cacti's Authentication Settings and disable the guest account under Console > Configuration > Users.
+  grep_F_verified: true
+- claim_id: B14
+  point: '1'
+  claim: 'Brandefense restates watchTowr (not independent): enabled guest account is the entry condition; version alone does not prove exposure.'
+  publisher: Brandefense
+  source_url: https://brandefense.io/security-news/cacti-4http2root-guest-access-defense/
+  body_file: bodies/FU1/brandefense.md
+  kind: quote
+  verbatim_passages:
+  - watchTowr identifies the enabled guest account as the entry condition for this chain.
+  - A version number alone does not prove the same exposure in every deployment.
+  grep_F_verified: true
+- claim_id: C1
+  point: '2'
+  claim: 'watchTowr affected-version table: Cacti Core 1.2.31 only; fixed version not yet available.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - '| Cacti Core | 1.2.31 | Not yet available |'
+  grep_F_verified: true
+- claim_id: C2
+  point: '2'
+  claim: 'watchTowr: the researcher tested 1.2.31 in an isolated lab.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - '- The researcher tested the chain against Cacti Core version 1.2.31 in an isolated lab.'
+  grep_F_verified: true
+- claim_id: C3
+  point: '2'
+  claim: 'BleepingComputer: tested on 1.2.31; unclear whether earlier versions are vulnerable.'
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - The researcher tested the exploit against Cacti Core 1.2.31, but it is unclear whether earlier versions are also vulnerable.
+  grep_F_verified: true
+- claim_id: C4
+  point: '2'
+  claim: 'RavenAI: validated on the researcher''s 1.2.31 lab; other versions, guest configurations or database settings not established.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - Ek0ms validated the chain against her Cacti 1.2.31 lab. The supplied research does not establish whether other versions, guest configurations, or database settings are exploitable.
+  grep_F_verified: true
+- claim_id: C5
+  point: '2'
+  claim: 'Previdian: confirmed affected version 1.2.31; full affected range not established; Previdian verified the PoC in its own lab.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - '| **Confirmed Affected Version** | 1.2.31 |'
+  - The full affected version range has not yet been established.
+  - Previdian has verified the PoC in a lab environment.
+  grep_F_verified: true
+- claim_id: C6
+  point: '2'
+  claim: 'BSI lists exactly one affected product: Open Source Cacti 1.2.31 (CPE cpe:/a:cacti:cacti:1.2.31), status known_affected; no other version or branch.'
+  publisher: BSI (CERT-Bund WID-SEC-2026-4845, CSAF)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  kind: quote
+  verbatim_passages:
+  - '"name": "Open Source Cacti 1.2.31",'
+  - '"cpe": "cpe:/a:cacti:cacti:1.2.31"'
+  - '"known_affected": ['
+  grep_F_verified: true
+- claim_id: C7
+  point: '2'
+  claim: 'The Hacker News: affects 1.2.31, the latest version.'
+  publisher: The Hacker News
+  source_url: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html
+  body_file: bodies/FU1/thehackernews.md
+  kind: quote
+  verbatim_passages:
+  - The shortcoming affects Cacti Core 1.2.31, the [latest version](https://github.com/Cacti/cacti/releases)
+  grep_F_verified: true
+- claim_id: C8
+  point: '2'
+  claim: 'Cacti develop branch (1.3 line, version file 1.3.0.-1): the contributor''s develop PR says lib/html_graph.php is left untouched because commit ae54a2a55 already validates preview pagination on develop; that commit (2026-08-17) says graph page size and column settings use bounded validators. This is a contributor statement about the develop code, not a Cacti statement that the 1.3 line is or is not affected by this chain; no secondary source mentions the 1.3 branch.'
+  publisher: 'Cacti/cacti PR #9015 body; commit ae54a2a55 message'
+  source_url: https://github.com/Cacti/cacti/pull/9015
+  body_file: bodies/FU1/cacti-pr-9015-body.txt
+  kind: quote
+  verbatim_passages:
+  - leaves `lib/html_graph.php` untouched since `ae54a2a55` already validates preview pagination on `develop`
+  grep_F_verified: true
+- claim_id: C8b
+  point: '2'
+  claim: 'Commit ae54a2a55 message (develop, committed 2026-08-17T00:21:07Z): graph page size and column settings use bounded validators.'
+  publisher: Cacti/cacti commit ae54a2a55
+  source_url: https://github.com/Cacti/cacti/commit/ae54a2a552737e862da7ca5f37e6bf15eca9b1ea
+  body_file: bodies/FU1/cacti-commit-ae54a2a55-message.txt
+  kind: quote
+  verbatim_passages:
+  - graph page size and column settings use bounded validators.
+  grep_F_verified: true
+- claim_id: C8c
+  point: '2'
+  claim: Commit ae54a2a55 date.
+  publisher: Cacti/cacti commit ae54a2a55
+  source_url: https://github.com/Cacti/cacti/commit/ae54a2a552737e862da7ca5f37e6bf15eca9b1ea
+  body_file: bodies/FU1/cacti-api-commit-ae54a2a55.json
+  kind: quote
+  verbatim_passages:
+  - '2026-08-17T00:21:07Z'
+  grep_F_verified: true
+- claim_id: C9
+  point: '2'
+  claim: 'Branch version files (read via the reader fallback): develop carries 1.3.0.-1, 1.2.x carries 1.2.32 (development values, no 1.2.32 release exists).'
+  publisher: Cacti/cacti include/cacti_version
+  source_url: https://raw.githubusercontent.com/Cacti/cacti/develop/include/cacti_version
+  body_file: bodies/FU1/cacti-raw-cacti_version-develop
+  kind: quote
+  verbatim_passages:
+  - 1.3.0.-1
+  grep_F_verified: true
+- claim_id: C9b
+  point: '2'
+  claim: 1.2.x branch version file.
+  publisher: Cacti/cacti include/cacti_version
+  source_url: https://raw.githubusercontent.com/Cacti/cacti/1.2.x/include/cacti_version
+  body_file: bodies/FU1/cacti-raw-cacti_version-1.2.x
+  kind: quote
+  verbatim_passages:
+  - 1.2.32
+  grep_F_verified: true
+- claim_id: D1
+  point: '3'
+  claim: Cacti GitHub releases page lists v1.2.31 as the newest release (heading 'Releases' then '## v1.2.31'); no release after it.
+  publisher: Cacti/cacti releases
+  source_url: https://github.com/Cacti/cacti/releases
+  body_file: bodies/FU1/cacti-releases-page.md
+  kind: quote
+  verbatim_passages:
+  - '# Releases'
+  - '## v1.2.31'
+  - '# Release of Cacti 1.2.31'
+  grep_F_verified: true
+- claim_id: D2
+  point: '3'
+  claim: 'Releases API, first (newest) object: tag release/1.2.31, published 2026-06-15T23:35:24Z, not draft, not prerelease; next is release/1.2.30 (2025-03-23).'
+  publisher: GitHub API (Cacti/cacti releases)
+  source_url: https://github.com/Cacti/cacti/releases
+  body_file: bodies/FU1/cacti-api-releases.json
+  kind: quote
+  verbatim_passages:
+  - '"tag_name":"release/1.2.31","target_commitish":"develop","name":"v1.2.31","draft":false,"immutable":false,"prerelease":false,"created_at":"2026-06-14T22:32:08Z","updated_at":"2026-06-15T23:35:53Z","published_at":"2026-06-15T23:35:24Z"'
+  grep_F_verified: true
+- claim_id: D3
+  point: '3'
+  claim: 'Tags API: newest tag is release/1.2.31.'
+  publisher: GitHub API (Cacti/cacti tags)
+  source_url: https://github.com/Cacti/cacti/tags
+  body_file: bodies/FU1/cacti-api-tags.json
+  kind: quote
+  verbatim_passages:
+  - '[{"name":"release/1.2.31"'
+  grep_F_verified: true
+- claim_id: D4
+  point: '3'
+  claim: Cacti security advisories page (first page, 10 items) shows nothing newer than GHSA-c4qp-j9r9-fq24 published Jul 27, 2026; the full API listing (67 published advisories) has max published_at 2026-07-27T09:07:05Z. No advisory for this flaw is listed as of 2026-11-28 (~04:40 UTC).
+  publisher: Cacti/cacti security advisories
+  source_url: https://github.com/Cacti/cacti/security/advisories
+  body_file: bodies/FU1/cacti-security-advisories-page.md
+  kind: quote
+  verbatim_passages:
+  - GHSA-c4qp-j9r9-fq24 publishedJul 27, 2026 by[somethingwithproof](https://github.com/somethingwithproof) High
+  grep_F_verified: true
+- claim_id: D4b
+  point: '3'
+  claim: 'API listing: record for GHSA-c4qp-j9r9-fq24 with published_at 2026-07-27T09:07:05Z is the maximum of 67 records (computed).'
+  publisher: GitHub API (Cacti/cacti security-advisories)
+  source_url: https://github.com/Cacti/cacti/security/advisories
+  body_file: bodies/FU1/cacti-api-advisories-p1-100.json
+  kind: quote
+  verbatim_passages:
+  - '"ghsa_id":"GHSA-c4qp-j9r9-fq24","cve_id":"CVE-2026-39902"'
+  - '"published_at":"2026-07-27T09:07:05Z"'
+  grep_F_verified: true
+- claim_id: D5
+  point: '3'
+  claim: 'Cacti PR #9014 (base 1.2.x) opened 2026-11-28T01:06:06Z and merged 2026-11-28T01:28:13Z; merge commit 49fd19b5. PR #9015 (base develop) merged 2026-11-28T01:24:05Z; commit e23470d8.'
+  publisher: GitHub API (Cacti/cacti PR 9014, 9015)
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-api-pull-9014.json
+  kind: quote
+  verbatim_passages:
+  - '"created_at":"2026-11-28T01:06:06Z"'
+  - '"merged_at":"2026-11-28T01:28:13Z"'
+  - '"merge_commit_sha":"49fd19b5eb81c550225a6a3475c6f10384be37dc"'
+  grep_F_verified: true
+- claim_id: D5b
+  point: '3'
+  claim: 'PR #9015 merged on develop at 2026-11-28T01:24:05Z.'
+  publisher: GitHub API (Cacti/cacti PR 9015)
+  source_url: https://github.com/Cacti/cacti/pull/9015
+  body_file: bodies/FU1/cacti-api-pull-9015.json
+  kind: quote
+  verbatim_passages:
+  - '"merged_at":"2026-11-28T01:24:05Z"'
+  grep_F_verified: true
+- claim_id: D6
+  point: '3'
+  claim: 'PR #9014 title/scope as the PR states it: hardens user-preference validation, Guest account write restrictions, graph preview/tree pagination bounds and realtime graph access control on 1.2.x.'
+  publisher: 'Cacti/cacti PR #9014'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  kind: quote
+  verbatim_passages:
+  - Hardens user-preference validation, Guest account write restrictions, graph preview/tree pagination bounds, and realtime graph access control on `1.2.x`.
+  grep_F_verified: true
+- claim_id: D6b
+  point: '3'
+  claim: 'PR #9014 rejects Guest account mutations with HTTP 403 across profile handlers including update_data (the endpoint request 2 of the chain uses).'
+  publisher: 'Cacti/cacti PR #9014'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  kind: quote
+  verbatim_passages:
+  - Rejects Guest account mutations with HTTP 403 across profile handlers (`logout_everywhere`, `clear_user_settings`, `reset_default`, `update_data`, `save`) and returns early in `save_user_settings()`.
+  grep_F_verified: true
+- claim_id: D6c
+  point: '3'
+  claim: 'PR #9014 validates preview_graphs_per_page and clamps the graphs/page values before the SQL LIMIT clause in graph_view.php (the stage of request 3).'
+  publisher: 'Cacti/cacti PR #9014'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  kind: quote
+  verbatim_passages:
+  - validates `preview_graphs_per_page` and `num_columns` defaults.
+  - Validates and clamps `$graphs` and `$page` as positive integers before constructing the SQL `LIMIT` clause in `graph_view.php`
+  grep_F_verified: true
+- claim_id: D6d
+  point: '3'
+  claim: 'PR #9014 enforces is_graph_allowed() before the realtime poller shell_exec and blocks Guest writes in graph_realtime.php (the stage of request 4).'
+  publisher: 'Cacti/cacti PR #9014'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  kind: quote
+  verbatim_passages:
+  - Enforces `is_graph_allowed($local_graph_id)` returning HTTP 403 before invoking `shell_exec()` and before reading cached files in `case 'view'`.
+  - and blocks Guest writes to `set_user_setting()`.
+  grep_F_verified: true
+- claim_id: D6e
+  point: '3'
+  claim: 'Commit 49fd19b5 (1.2.x) title and message: harden user settings validation, Guest write restrictions, realtime graph access; 8 files changed (auth_profile.php, graph_realtime.php, graph_view.php, lib/functions.php, lib/html_graph.php, lib/html_tree.php, lib/user_setting_validation.php, one test).'
+  publisher: Cacti/cacti commit 49fd19b5
+  source_url: https://github.com/Cacti/cacti/commit/49fd19b5eb81c550225a6a3475c6f10384be37dc
+  body_file: bodies/FU1/cacti-commit-49fd19b5-message.txt
+  kind: quote
+  verbatim_passages:
+  - 'fix(security): [1.2.x] harden user settings validation, Guest writes, and realtime graph access (#9014)'
+  - Enforce is_graph_allowed() before realtime poller execution and cache
+  grep_F_verified: true
+- claim_id: D6f
+  point: '3'
+  claim: Commit e23470d8 (develop) message.
+  publisher: Cacti/cacti commit e23470d8
+  source_url: https://github.com/Cacti/cacti/commit/e23470d817222387f3f41139e014ad21135b171e
+  body_file: bodies/FU1/cacti-commit-e23470d8-message.txt
+  kind: quote
+  verbatim_passages:
+  - 'fix(security): [develop] harden user settings validation, Guest writes, and realtime graph access (#9015)'
+  grep_F_verified: true
+- claim_id: D7
+  point: '3'
+  claim: 'The maintainer review on PR #9014 (TheWitness, who speaks for The Cacti Group in the 1.2.31 release notes) at 2026-11-28T01:28:03Z: ''Seems hackish, but letting it go.'' and that textbox forms need types; ''we can do this for now''.'
+  publisher: 'Cacti/cacti PR #9014 review'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-reviews.txt
+  kind: quote
+  verbatim_passages:
+  - Seems hackish, but letting it go.
+  grep_F_verified: true
+- claim_id: D7b
+  point: '3'
+  claim: TheWitness is the voice of The Cacti Group in the 1.2.31 release notes.
+  publisher: Cacti/cacti release 1.2.31 notes
+  source_url: https://github.com/Cacti/cacti/releases
+  body_file: bodies/FU1/cacti-releases-page.md
+  kind: quote
+  verbatim_passages:
+  - Learning of Jeff's passing was humbling and sad moment for us at The Cacti Group.
+  grep_F_verified: true
+- claim_id: D8
+  point: '3'
+  claim: 'Neither PR #9014/#9015 nor the commit messages nor the review mention the disclosure (no occurrence of 4http2, ek0ms, savi0r, CVE-, advisory, zero-day, disclos, reported, church); no CVE or advisory is attached. Absence check by grep -ci over the saved bodies = 0 for each term. The PR does not state that it fixes 4HTTP2ROOT; the match is by scope (the setting name preview_graphs_per_page, Guest write rejection and realtime access control in the PR text).'
+  publisher: 'Cacti/cacti PR #9014, #9015 (absence check)'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  kind: absence
+  verbatim_passage: 'ABSENCE CHECK: grep -ciF over the 5 saved bodies (PR #9014 body, PR #9015 body, both commit messages, PR #9014 reviews) for the terms 4http2, ek0ms, savi0r, CVE-, advisory, zero-day, disclos, reported, church returned 0 in every file.'
+  absence_counts:
+    4http2:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    ek0ms:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    savi0r:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    CVE-:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    advisory:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    zero-day:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    disclos:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    reported:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+    church:
+      cacti-pr-9014-body.txt: 0
+      cacti-pr-9015-body.txt: 0
+      cacti-commit-49fd19b5-message.txt: 0
+      cacti-commit-e23470d8-message.txt: 0
+      cacti-pr-9014-reviews.txt: 0
+- claim_id: D9
+  point: '3'
+  claim: 'Project issue/PR search for preview_graphs_per_page in Cacti/cacti returns 3 items; the only 2026 hit is PR #9014 (created 2026-11-28T01:06:06Z).'
+  publisher: GitHub API (search issues)
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-api-issues-search.json
+  kind: quote
+  verbatim_passages:
+  - '"total_count":3'
+  grep_F_verified: true
+- claim_id: D10
+  point: '3'
+  claim: 'watchTowr (updated page, ''as of Nov 27''): Cacti has not published a fixed version; mitigation until an official patch appears.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - Cacti has not published a fixed version for this vulnerability
+  grep_F_verified: true
+- claim_id: D11
+  point: '3'
+  claim: 'Previdian blog as of 26 Nov: no official patch identified; Cacti 1.2.31 latest stable and affected. (Predates the 2026-11-28 source commits; the blog does not mention them.)'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - As of 26 November 2026, no official patch addressing 4HTTP2ROOT has been identified.
+  grep_F_verified: true
+- claim_id: D12
+  point: '3'
+  claim: 'BleepingComputer/THN: users advised to wait for a patch while applying mitigations.'
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - Until a patch is released, administrators are advised to deactivate the Cacti guest account and restrict access to the application's web interface to trusted networks.
+  grep_F_verified: true
+- claim_id: D13
+  point: context
+  claim: 'Cacti 1.2.31 (June 2026) itself shipped fixes for guest-reachable pre-auth SQL injection in graph_view.php (GHSA-69gg-mjfm-jjpc, CVE-2026-39893, vulnerable <= 1.2.30, patched 1.2.31): the guest surface of graph_view.php has a recent history.'
+  publisher: Cacti/cacti GHSA-69gg-mjfm-jjpc
+  source_url: https://github.com/Cacti/cacti/security/advisories/GHSA-69gg-mjfm-jjpc
+  body_file: bodies/FU1/cacti-ghsa-69gg-description.txt
+  kind: quote
+  verbatim_passages:
+  - The endpoint does not require authentication (graph viewing supports guest access via the configured guest user), so the SQLi was reachable pre-auth on installs with guest viewing enabled.
+  grep_F_verified: true
+- claim_id: D13b
+  point: context
+  claim: 'GHSA-69gg-mjfm-jjpc record: CVE-2026-39893, vulnerable <= 1.2.30, patched 1.2.31.'
+  publisher: GitHub API (Cacti/cacti security-advisories)
+  source_url: https://github.com/Cacti/cacti/security/advisories/GHSA-69gg-mjfm-jjpc
+  body_file: bodies/FU1/cacti-api-advisories-p1-100.json
+  kind: quote
+  verbatim_passages:
+  - '"ghsa_id":"GHSA-69gg-mjfm-jjpc","cve_id":"CVE-2026-39893"'
+  grep_F_verified: true
+- claim_id: E1
+  point: '4'
+  claim: 'Previdian blog (author Ryan Dewhurst): exploitation attempts observed on 27 Nov 2026, under 24 h after public disclosure; the header says Last Updated 26 November while its Updates section carries a 27 November entry.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - Previdian observed exploitation attempts targeting the vulnerability on 27 November 2026, less than 24 hours after public disclosure.
+  - '**Published:** 26 November 2026 | **Last Updated:** 26 November 2026 (UTC)'
+  - '- **27 November 2026:** Previdian observed exploitation attempts against our real Cacti application honeypots, approximately 14 hours after adding the vulnerability to Watch. Added to Previdian KEV.'
+  grep_F_verified: true
+- claim_id: E2
+  point: '4'
+  claim: 'Previdian blog: 22 SQL-injection attempts from a single source IP against Previdian''s real Cacti application honeypots on 27 Nov 2026; time-based SQL-injection payloads designed to test exploitability; successful remote command execution NOT confirmed; first attempts ~14 h after Previdian added the CVE-less issue to its Watch on 26 Nov.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - Yes. On 27 November 2026, Previdian observed 22 SQL injection attempts originating from a single source IP against our real Cacti application honeypots.
+  - The requests contained time-based SQL injection payloads designed to test whether the newly disclosed vulnerability was exploitable. Successful remote command execution has not been confirmed.
+  - Previdian added the vulnerability to its autonomous Watch on 26 November, approximately 14 hours before the first observed exploitation attempts.
+  grep_F_verified: true
+- claim_id: E3
+  point: '4'
+  claim: 'Previdian blog lists as unknown: whether exploitation has occurred in production environments.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - '- Whether exploitation has occurred in production environments.'
+  grep_F_verified: true
+- claim_id: E4
+  point: '4'
+  claim: 'Previdian tracker page VULN-2026-0010 (page footer ''Updated 28 Nov 2026''; fetched 2026-11-28 ~04:35 UTC): 216 attempts, 21 unique attacker IPs, 9 countries, first observed Nov 27, last observed Nov 28, confidence ''confirmed''. This is a materially larger count than the blog''s 22 / 1 IP.'
+  publisher: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  kind: quote
+  verbatim_passages:
+  - Yes. Previdian sensors have observed 216 exploitation attempts, 21 unique attacker IPs, and 9 countries targeting VULN-2026-0010. First observed Nov 27, 2026; last observed Nov 28, 2026. Confidence is confirmed.
+  - Updated 28 Nov 2026
+  grep_F_verified: true
+- claim_id: E5
+  point: '4'
+  claim: 'Previdian tracker: the attempts come from a single Previdian sensor (sample API record shows sensors: 1); attempts are not shown to have succeeded or to have hit a vulnerable target.'
+  publisher: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  kind: quote
+  verbatim_passages:
+  - '"sensor_telemetry": { "attempts": 216, "sensors": 1 }'
+  - Exploitation attempts observed by Previdian sensors. They do not show that the target was vulnerable or that the attempt succeeded.
+  grep_F_verified: true
+- claim_id: E6
+  point: '4'
+  claim: 'Previdian tracker still carries the earlier text: 22 exploitation attempts from 1 unique attacker IP beginning 2026-11-27, not listed in CISA KEV; first sensor entry 2026-11-27 11:59 UTC (the timeline lists ''Observed by Previdian sensors'' at 08:48 UTC without a date; blog implies ~08:43 UTC on 27 Nov).'
+  publisher: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  kind: quote
+  verbatim_passages:
+  - Previdian sensors recorded 22 exploitation attempts from 1 unique attacker IP beginning on 2026-11-27; the vulnerability is not listed in CISA KEV.
+  - '| Previdian Sensors First | 2026-11-27 11:59 UTC |'
+  - '3. 08:48 UTC ### Observed by Previdian sensors Previdian sensors observed exploitation attempts targeting this vulnerability.'
+  grep_F_verified: true
+- claim_id: E7
+  point: '4'
+  claim: 'Previdian tracker is a vendor-run product page: assessment is labelled AI-generated; raw IPs, paths, User-Agents and payloads sit behind an Enterprise tier, so the observed requests cannot be read.'
+  publisher: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  kind: quote
+  verbatim_passages:
+  - AI-generated. Assessed 27 Nov 2026.
+  - Enterprise includes sensor region and window summaries, plus raw IPs, paths, User-Agents, and payloads.
+  grep_F_verified: true
+- claim_id: E8
+  point: '4'
+  claim: 'watchTowr: as of 27 Nov 2026 no exploitation in the wild reported; no attribution public.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - As of November 27, 2026, no exploitation in the wild has been reported.
+  - No attribution has been made public.
+  grep_F_verified: true
+- claim_id: E9
+  point: '4'
+  claim: 'BleepingComputer: as of 27 Nov no reports of exploitation.'
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - As of November 27, there have been no reports of the vulnerability being exploited in attacks.
+  grep_F_verified: true
+- claim_id: E10
+  point: '4'
+  claim: Brandefense counted 14 dark-chat posts matching the word Cacti (29 Aug to 27 Nov 2026) from its own tool; it states the unit is posts matching a search term, not verified attempts. Not exploitation evidence.
+  publisher: Brandefense
+  source_url: https://brandefense.io/security-news/cacti-4http2root-guest-access-defense/
+  body_file: bodies/FU1/brandefense.md
+  kind: quote
+  verbatim_passages:
+  - Brandefense Blackhole counted 14 dark chat posts matching “Cacti” from August 29 through November 27, 2026.
+  - The measured unit is posts matching that search term, not verified 4HTTP2ROOT attempts.
+  grep_F_verified: true
+- claim_id: E11
+  point: '4'
+  claim: 'CISA KEV catalogue 2026.11.27 (released 2026-11-27T18:03Z, 1808 entries): the only Cacti entry is CVE-2022-46169; nothing for this flaw (no CVE exists). Derived extract of the fetched catalogue.'
+  publisher: CISA KEV (cisa-kev bridge)
+  source_url: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+  body_file: bodies/FU1/cisa-kev-cacti-extract.derived.txt
+  kind: derived
+  verbatim_passages:
+  - "CVE-2022-46169\t2023-02-16\tCacti\tCacti"
+  grep_F_verified: true
+- claim_id: E12
+  point: '4'
+  claim: 'Web searches (4 queries: names, researcher handle, English and German ''unpatched Cacti zero-day'') found no other party reporting exploitation and no Cacti, GreyNoise, Shadowserver or SANS item. Absence result, search snippets are leads only.'
+  publisher: WebSearch (not citable)
+  source_url: n/a
+  body_file: n/a
+  kind: absence
+  verbatim_passage: 'ABSENCE: WebSearch queries run: "Cacti 4HTTP2ROOT OR 4HTTP2SHELL exploitation CVE patch"; "Cacti zero-day guest account SQL injection RCE GreyNoise OR Shadowserver OR SANS OR Cacti statement fix 1.2.32"; "ek0ms savi0r Cacti"; "Cacti Zero-Day Gastzugang Codeausführung ungepatcht November 2026". None returned a page about this flaw, a Cacti statement, a release or another exploitation report (results were older Cacti CVEs).'
+- claim_id: F1
+  point: '5'
+  claim: 'Request 1: a fresh visitor with no credentials opens the profile page and receives a session cookie and a CSRF token; the response is HTTP 200 titled ''User Profile (Edit)'' (README). The README says the whole chain involves ''no authentication event''.'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - Cacti hands a fresh visitor a guest session from `auth_profile.php`. No
+  - 'The response contains a valid session and a CSRF token:'
+  - <title>User Profile (Edit)</title>
+  grep_F_verified: true
+- claim_id: F1b
+  point: '5'
+  claim: 'RavenAI''s request table (summary of the PoC): endpoints and guest actions of the four requests.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - '| 1 | Open `auth_profile.php` | Receive a guest session and CSRF token without credentials |'
+  - '| 2 | POST `auth_profile.php?action=update_data` | Store a SQL fragment in `preview_graphs_per_page` |'
+  - '| 3 | Open `graph_view.php?action=preview` | Use the stored value in `LIMIT`; execute a stacked `UPDATE` against `poller_item` |'
+  - '| 4 | Open `graph_realtime.php?action=init` | Run the altered poller command through `popen()` |'
+  grep_F_verified: true
+- claim_id: F1c
+  point: '5'
+  claim: Request paths and query strings as RavenAI reproduces them from the PoC (lab base path /cacti).
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - GET  /cacti/auth_profile.php?tab=general&header=false
+  - POST /cacti/auth_profile.php?tab=general&action=update_data&header=false
+  - name=preview_graphs_per_page
+  - GET /cacti/graph_view.php?action=preview&page=1&clear=1
+  - GET /cacti/graph_realtime.php?action=init&local_graph_id=1&ds_step=10&size=90
+  grep_F_verified: true
+- claim_id: F2
+  point: '5'
+  claim: 'Request 2: the guest-writable per-user setting preview_graphs_per_page is stored in the settings_user table through a prepared statement, with no integer validation; the storage layer is safe, the later consumer is not. The PoC''s UPDATE sets host_id, action and arg1 on one poller_item row chosen by local_data_id (README lines 86-87; payload line not reproduced).'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - The endpoint stores the value in `settings_user`. The write itself is a
+  - 'prepared statement. That is the detail that makes this bug fun: the storage'
+  - '`preview_graphs_per_page` is supposed to be a page size. It is not validated'
+  - as an integer. The guest controls it.
+  grep_F_verified: true
+- claim_id: F2b
+  point: '5'
+  claim: 'RavenAI on request 2: prepared-statement write without integer enforcement; row identifiers in the PoC are lab values, the hex value stands for the command placed in arg1.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - The profile write uses a prepared statement, but it does not enforce an integer value. The database faithfully stores the attacker's string; the vulnerability appears when another code path reads it back.
+  - The row identifiers above are from the lab, not universal Cacti constants. The hex value represents the command placed in `arg1`.
+  grep_F_verified: true
+- claim_id: F3
+  point: '5'
+  claim: 'Request 3: graph_view.php?action=preview reads the stored default for the graphs filter and builds the LIMIT clause (graph_view.php:657, lib/auth.php:1574-1578); the request-side FILTER_VALIDATE_INT never sees the database default; PDO sends a multi-statement query, the UPDATE executes, the response is a normal preview page with no obvious error.'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - '`graph_view.php?action=preview` reads the stored default and builds the limit:'
+  - graph_view.php:657
+  - lib/auth.php:1574-1578
+  - The `graphs` value comes from the stored guest setting, not from the request.
+  - PDO sends the whole string as a multi-statement query. The `UPDATE` executes.
+  - The HTTP response is still a normal preview page. There is no obvious error.
+  grep_F_verified: true
+- claim_id: F3b
+  point: '5'
+  claim: 'RavenAI on request 3: the value is concatenated into a LIMIT fragment passed to get_allowed_graphs(); in the researcher''s test PDO accepted the stacked statement; the appended UPDATE changed poller_item.arg1.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - The preview action loads `preview_graphs_per_page` as the default `graphs` value. The request-side integer filter does not cover that database-sourced default. The value is then concatenated into a `LIMIT` fragment passed to `get_allowed_graphs()`.
+  - Ek0ms reports that the PDO path in her test accepted the stacked statement. The appended `UPDATE` changed `poller_item.arg1`, while the HTTP response still rendered a preview page. Her writeup notes a PHP warning about a nonnumeric value, but no obvious failure in the browser response.
+  grep_F_verified: true
+- claim_id: F4
+  point: '5'
+  claim: 'Request 4: graph_realtime.php?action=init calls poller_realtime.php, which calls cmd_realtime.php (line 221, exec_poll on poller_item.arg1), which reaches popen() in lib/poller.php (lines 32-56); popen() runs the command through the shell in the same HTTP request; the response is a JSON object with a graph image.'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - 'That calls `poller_realtime.php`, which calls `cmd_realtime.php`, which reaches:'
+  - cmd_realtime.php:221
+  - lib/poller.php:32-56
+  - '`poller_item.arg1` is the command I wrote in request 2. `popen()` runs it'
+  - through the shell. The HTTP response is a JSON object with a graph image; the
+  - command executes in the same request.
+  grep_F_verified: true
+- claim_id: F4b
+  point: '5'
+  claim: 'RavenAI: the graph ID and poller item must be valid for the target; the demo stages a PHP shell and checks it with id/whoami; the lab screenshot shows a root shell in the root-run configuration.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - The graph ID and poller item must be valid for the target.
+  - uses the four-request route to stage a PHP shell, then validates it with commands such as `id` and `whoami`.
+  grep_F_verified: true
+- claim_id: F4c
+  point: '5'
+  claim: 'Process lineage (vendor code, pre-fix 1.2.x as shown in the unified-diff context of commit 49fd19b5): graph_realtime.php runs the PHP binary on poller_realtime.php with --graph, --interval and --poller_id arguments via shell_exec; the poller path then reaches popen. Inference from this context line plus the README: web-server PHP worker -> php -q poller_realtime.php -> sh -c <stored command>. No source lists child processes explicitly.'
+  publisher: Cacti/cacti commit 49fd19b5 (diff context)
+  source_url: https://github.com/Cacti/cacti/commit/49fd19b5eb81c550225a6a3475c6f10384be37dc
+  body_file: bodies/FU1/cacti-api-commit-49fd19b5.json
+  kind: inference
+  verbatim_passages:
+  - shell_exec($php_binary . ' -q ' . $script_path . ' ' . $args);
+  grep_F_verified: true
+- claim_id: F5
+  point: '5'
+  claim: 'Detectability per the researcher: every step looks normal (guest session, profile update, preview, realtime graph request); no upload, no shell-looking URL, no authentication event; the loudest artifact is a PHP warning about a non-numeric value.'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-tree.md
+  kind: quote
+  verbatim_passages:
+  - The four-request path is also quiet. A guest session is normal. A profile update is normal. A preview request is normal. A realtime graph request is normal. There is no upload, no exploit payload in a URL that looks like a shell, and no authentication event. The loudest artifact is a PHP warning about a non-numeric value, and most teams do not alert on that.
+  grep_F_verified: true
+- claim_id: F5b
+  point: '5'
+  claim: 'RavenAI: observable trail = guest profile update, graph preview, realtime graph initialization; stronger pivots than HTTP status codes: the malformed page-size value, a non-numeric PHP warning, a change to poller_item.arg1, any newly written shell or marker.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - 'The observable trail is correspondingly mundane: a guest profile update, a graph preview, and a realtime graph initialization. The malformed page-size value, a nonnumeric PHP warning, a change to `poller_item.arg1`, and any newly written shell or marker are stronger investigation pivots than the HTTP status codes alone.'
+  grep_F_verified: true
+- claim_id: F5c
+  point: '5'
+  claim: 'watchTowr: the log signal is a warning about a non-numeric value in a graph display setting that appears although the request still succeeds; unexpected commands in poller settings and new files created by the poller process are further signs.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - Administrators can watch for warning messages in Cacti's logs about a non-numeric value in a graph display setting, which the research describes as appearing even though the request still succeeds. Unexpected commands configured in poller settings, or new files created by the poller process, are further signs that the chain has run.
+  grep_F_verified: true
+- claim_id: F5d
+  point: '5'
+  claim: 'The PoC leaves a file written by the poller user in the lab (marker file that the researcher then fetched over HTTP from the Cacti webroot): ''The same file was served back over HTTP from the Cacti webroot.'''
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - The same file was served back over HTTP from the Cacti webroot. That is not a
+  grep_F_verified: true
+- claim_id: F6
+  point: '5'
+  claim: 'Payoff per the researcher and watchTowr: a Cacti host holds SNMP community strings, device credentials, SSH keys or service accounts, database credentials in include/config.php, mail relay credentials and access to management networks.'
+  publisher: ek0ms savi0r (GitHub README)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  kind: quote
+  verbatim_passages:
+  - '- SNMP community strings for network devices;'
+  - '- device credentials in the database;'
+  - '- database credentials in `include/config.php`;'
+  grep_F_verified: true
+- claim_id: F6b
+  point: '5'
+  claim: 'watchTowr: Cacti often stores credentials and connection details for routers, switches and servers; command execution gives a foothold beyond the monitoring server; privilege equals the web/poller account, often a low-privileged web user.'
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - Because Cacti often stores credentials and connection details for routers, switches, servers, and other devices across a network, an attacker who reaches this level of command execution can gain a foothold reaching far beyond the monitoring server itself.
+  - '- The privilege gained matches whichever account runs the Cacti web server and poller process, often a low privileged web user rather than root.'
+  grep_F_verified: true
+- claim_id: F7
+  point: '5'
+  claim: 'Persistence of the poller_item change: no source states whether the altered row persists or is regenerated by the poller cache rebuild; sources only say to review poller entries for unexpected command values (watchTowr) and to detect changes to poller_item.arg1 (RavenAI).'
+  publisher: n/a (gap)
+  source_url: n/a
+  body_file: n/a
+  kind: absence
+  verbatim_passage: 'GAP: no saved body states whether the altered poller_item row persists across poller runs or a cache rebuild.'
+- claim_id: G1
+  point: '6'
+  claim: watchTowr interim mitigations (steps 1-4) and the vendor-patch step.
+  publisher: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  kind: quote
+  verbatim_passages:
+  - 1. Disable the guest account within Cacti's user administration settings to remove the chain's entry point.
+  - 2. Restrict network access to the Cacti web interface to trusted internal networks only.
+  - 3. Review poller configuration entries for unexpected command values that do not match normal polling setup.
+  - 4. Watch application logs for warnings about non-numeric values in display settings, which the chain produces.
+  - 5. Apply the vendor's fixed version for Cacti Core as soon as one becomes available.
+  grep_F_verified: true
+- claim_id: G2
+  point: '6'
+  claim: 'BleepingComputer: until a patch, deactivate the guest account, restrict web access to trusted networks, review poller configurations and application logs (warnings on non-numeric values in graph display settings).'
+  publisher: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  kind: quote
+  verbatim_passages:
+  - Administrators should also review poller configurations for unexpected commands and examine application logs for warnings involving non-numeric values in graph display settings, which could indicate attempted exploitation.
+  grep_F_verified: true
+- claim_id: G3
+  point: '6'
+  claim: 'The Hacker News: disable the guest account, restrict web access, review poller entries for unexpected command values, apply fixes when available.'
+  publisher: The Hacker News
+  source_url: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html
+  body_file: bodies/FU1/thehackernews.md
+  kind: quote
+  verbatim_passages:
+  - In the absence of a fix, users are advised to disable the guest account and restrict access to the Cacti web interface to mitigate potential risks. It's also essential to review poller configuration entries for unexpected command values and apply the fixes as soon as they become available.
+  grep_F_verified: true
+- claim_id: G4
+  point: '6'
+  claim: 'Previdian: disabling guest access is an interim mitigation, not a fix for the underlying SQL injection; also restrict exposure, least privilege (no root), hunt, and rotate stored device credentials if compromise is suspected.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - Disabling guest access removes a prerequisite of the publicly demonstrated unauthenticated exploit chain. This should be considered an interim mitigation, not a fix for the underlying SQL injection vulnerability.
+  - '- **Restrict network exposure:** Limit Cacti access to trusted management networks or authenticated VPN users.'
+  - '- **Enforce least privilege:** Ensure Cacti''s application and polling processes do not unnecessarily run as root.'
+  - If compromise is suspected, assess the exposure of network device credentials stored within Cacti and rotate potentially compromised credentials.
+  grep_F_verified: true
+- claim_id: G5
+  point: '6'
+  claim: 'RavenAI''s code-level fix list (for the vendor): validate the setting as an integer on write and read, bind pagination values, restrict guest profile writes, authorize poller command inputs and detect poller_item.arg1 changes.'
+  publisher: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  kind: quote
+  verbatim_passages:
+  - Treat these as separate boundaries. Validate `preview_graphs_per_page` as an integer on write and on read. Bind numeric pagination values instead of concatenating them into SQL; reject stacked statements where the database driver permits configuration. Restrict guest profile writes to settings the guest actually needs. Keep poller command inputs under explicit authorization and detect unexpected changes to `poller_item`, especially `arg1`.
+  grep_F_verified: true
+- claim_id: G6
+  point: '6'
+  claim: 'Brandefense (a restatement of watchTowr, its own playbook): order = remove the entry condition, reduce reachability, then look for evidence of use; label ''operational recommendations, not a vendor incident report''.'
+  publisher: Brandefense
+  source_url: https://brandefense.io/security-news/cacti-4http2root-guest-access-defense/
+  body_file: bodies/FU1/brandefense.md
+  kind: quote
+  verbatim_passages:
+  - First, remove the entry condition; next, reduce reachability; then, look for evidence of use.
+  - the local checks are operational recommendations, not a vendor incident report.
+  grep_F_verified: true
+- claim_id: G7
+  point: '6'
+  claim: 'Brandefense: the outcome is command execution under the web/poller account and not automatically root.'
+  publisher: Brandefense
+  source_url: https://brandefense.io/security-news/cacti-4http2root-guest-access-defense/
+  body_file: bodies/FU1/brandefense.md
+  kind: quote
+  verbatim_passages:
+  - It is not automatically root access, despite the research name.
+  grep_F_verified: true
+- claim_id: G8
+  point: '6'
+  claim: Cacti itself recommends no interim mitigation for this issue anywhere read here (no advisory, no release note, no statement); the upstream source change is a code merge to 1.2.x and develop (see D5-D8) with no release.
+  publisher: n/a (gap)
+  source_url: n/a
+  body_file: n/a
+  kind: absence
+  verbatim_passage: 'GAP: the Cacti releases page, advisories listing, PR #9014/#9015 and commit messages contain no mitigation or advisory text for this issue (see D8 absence counts).'
+- claim_id: H1
+  point: '7'
+  claim: 'BSI classification: aggregate severity ''kritisch'' (critical), RSS title tags [NEU] [UNGEPATCHT] [kritisch]; no CVE, no CVSS score or vector, no remediation, TLP:WHITE, German-language CSAF.'
+  publisher: BSI (CERT-Bund WID-SEC-2026-4845, CSAF)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  kind: quote
+  verbatim_passages:
+  - '"text": "kritisch"'
+  - '"label": "WHITE",'
+  grep_F_verified: true
+- claim_id: H1b
+  point: '7'
+  claim: 'BSI summary text (''Angriff''): a remote anonymous attacker can exploit a Cacti vulnerability to perform SQL injection and run arbitrary code with the privileges of the affected application process. The BSI summary does not mention the guest-account precondition.'
+  publisher: BSI (CERT-Bund WID-SEC-2026-4845, CSAF)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  kind: quote
+  verbatim_passages:
+  - '"text": "Ein entfernter, anonymer Angreifer kann eine Schwachstelle in Cacti ausnutzen, um SQL-Injection durchzuführen und beliebigen Code mit den Berechtigungen des betroffenen Anwendungsprozesses auszuführen.",'
+  grep_F_verified: true
+- claim_id: H1c
+  point: '7'
+  claim: 'BSI references the watchTowr FAQ, the Previdian blog (''Predivian'' sic) and a Brandefense article; BSI''s affected operating systems: Sonstiges, UNIX, Windows.'
+  publisher: BSI (CERT-Bund WID-SEC-2026-4845, CSAF)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  kind: quote
+  verbatim_passages:
+  - '"summary": "Predivian Research vom 2026-11-26",'
+  - '"summary": "watchTowr Advisory vom 2026-11-26",'
+  - '"text": "- Sonstiges\n- UNIX\n- Windows",'
+  grep_F_verified: true
+- claim_id: H2
+  point: '7'
+  claim: Previdian tracker rates it CVSS 9.8 Critical with vector CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, labelled as an AI-generated assessment dated 27 Nov; the sample API record says cvss_estimated false and EPSS null.
+  publisher: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  kind: quote
+  verbatim_passages:
+  - VULN-2026-0010 is an unauthenticated second-order SQL injection vulnerability in Cacti Cacti that can lead to arbitrary operating system command execution when guest access is enabled; it has a CVSS score of 9.8.
+  - '`CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H`'
+  - '"cvss_estimated": false,'
+  - '"epss_score": null,'
+  grep_F_verified: true
+- claim_id: H3
+  point: '7'
+  claim: 'Previdian blog (same vendor, earlier): ''Official CVSS score unavailable''.'
+  publisher: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  kind: quote
+  verbatim_passages:
+  - '| **Severity** | Official CVSS score unavailable |'
+  grep_F_verified: true
+- claim_id: H4
+  point: '7'
+  claim: No CVSS or severity rating appears in the researcher's README, watchTowr, RavenAI, BleepingComputer, The Hacker News or Brandefense (grep -ci cvss = 0 on each saved body).
+  publisher: absence check
+  source_url: n/a
+  body_file: n/a
+  kind: absence
+  verbatim_passage: 'ABSENCE CHECK: grep -ci cvss = 0 on github-4http2shell-README.raw.md, watchtowr-faq.md, ravenai.md, bleepingcomputer.md, thehackernews.md, brandefense.md'
+  absence_counts:
+    github-4http2shell-README.raw.md: 0
+    watchtowr-faq.md: 0
+    ravenai.md: 0
+    bleepingcomputer.md: 0
+    thehackernews.md: 0
+    brandefense.md: 0
+- claim_id: H5
+  point: '7'
+  claim: 'Vendor (Cacti) severity: none. The Cacti GitHub advisories listing carries no entry for this flaw (see D4).'
+  publisher: n/a (gap)
+  source_url: n/a
+  body_file: n/a
+  kind: absence
+  verbatim_passage: 'GAP: no Cacti severity rating exists on the advisories listing (see D4/D4b).'
+- claim_id: A7
+  point: provenance
+  claim: BSI CSAF contains no CVE, no CVSS/score, no remediation and no fixed-version field (absence check on the decoded CSAF).
+  publisher: BSI (CERT-Bund WID-SEC-2026-4845, CSAF)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  kind: absence
+  verbatim_passage: 'ABSENCE CHECK: grep -ciF returned 0 for each of cve, cvss, remediation, known_not_affected, fixed, "score in the decoded CSAF.'
+  absence_counts:
+    cve: 0
+    cvss: 0
+    remediation: 0
+    known_not_affected: 0
+    fixed: 0
+    '"score': 0
+evidence:
+- quote: Just four HTTP requests against the default guest surface.
+  attribution: ek0ms savi0r (Church of Malware)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-README.raw.md
+  grep_F_verified: true
+- quote: I found a path from a fresh, unauthenticated HTTP session to command execution as the Cacti server user in four requests.
+  attribution: ek0ms savi0r (Church of Malware)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-tree.md
+  grep_F_verified: true
+- quote: The four-request path is also quiet. A guest session is normal. A profile update is normal. A preview request is normal. A realtime graph request is normal. There is no upload, no exploit payload in a URL that looks like a shell, and no authentication event. The loudest artifact is a PHP warning about a non-numeric value, and most teams do not alert on that.
+  attribution: ek0ms savi0r (Church of Malware)
+  source_url: https://github.com/ekomsSavior/Sad-Girls-0day-Club/tree/main/4http2shell
+  body_file: bodies/FU1/github-4http2shell-tree.md
+  grep_F_verified: true
+- quote: Cacti has not published a fixed version for this vulnerability
+  attribution: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  grep_F_verified: true
+- quote: As of November 27, 2026, no exploitation in the wild has been reported.
+  attribution: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  grep_F_verified: true
+- quote: '- The guest account must be enabled, since the entire chain runs through the unauthenticated guest session.'
+  attribution: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  grep_F_verified: true
+- quote: '- The privilege gained matches whichever account runs the Cacti web server and poller process, often a low privileged web user rather than root.'
+  attribution: watchTowr
+  source_url: https://watchtowr.com/intelligence/4http2root-cacti-zero-day-faq/
+  body_file: bodies/FU1/watchtowr-faq.md
+  grep_F_verified: true
+- quote: The researcher tested the exploit against Cacti Core 1.2.31, but it is unclear whether earlier versions are also vulnerable.
+  attribution: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  grep_F_verified: true
+- quote: the researcher shared a video demonstration of the PoC and said that the vulnerability was not reported to Cacti before being released.
+  attribution: BleepingComputer
+  source_url: https://www.bleepingcomputer.com/news/security/unpatched-cacti-zero-day-with-public-poc-gives-remote-code-execution/
+  body_file: bodies/FU1/bleepingcomputer.md
+  grep_F_verified: true
+- quote: Yes. On 27 November 2026, Previdian observed 22 SQL injection attempts originating from a single source IP against our real Cacti application honeypots.
+  attribution: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  grep_F_verified: true
+- quote: The requests contained time-based SQL injection payloads designed to test whether the newly disclosed vulnerability was exploitable. Successful remote command execution has not been confirmed.
+  attribution: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  grep_F_verified: true
+- quote: Yes. Previdian sensors have observed 216 exploitation attempts, 21 unique attacker IPs, and 9 countries targeting VULN-2026-0010. First observed Nov 27, 2026; last observed Nov 28, 2026. Confidence is confirmed.
+  attribution: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  grep_F_verified: true
+- quote: Exploitation attempts observed by Previdian sensors. They do not show that the target was vulnerable or that the attempt succeeded.
+  attribution: Previdian (VULN-2026-0010 tracker page)
+  source_url: https://previdian.com/VULN-2026-0010
+  body_file: bodies/FU1/previdian-VULN-2026-0010.md
+  grep_F_verified: true
+- quote: The full affected version range has not yet been established.
+  attribution: Previdian Research
+  source_url: https://blog.previdian.com/cacti-zero-day-what-we-know-so-far/
+  body_file: bodies/FU1/previdian.md
+  grep_F_verified: true
+- quote: By default, Guest or Anonymous access is disabled in Cacti.
+  attribution: Cacti documentation (User-Management.md)
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  grep_F_verified: true
+- quote: The "Guest" user must be enabled and be set as the guest user for anonymous access to work.
+  attribution: Cacti documentation (User-Management.md)
+  source_url: https://github.com/Cacti/documentation/blob/develop/User-Management.md
+  body_file: bodies/FU1/cacti-gh-user-management.md
+  grep_F_verified: true
+- quote: Hardens user-preference validation, Guest account write restrictions, graph preview/tree pagination bounds, and realtime graph access control on `1.2.x`.
+  attribution: 'Cacti/cacti PR #9014 (author handle somethingwithproof)'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  grep_F_verified: true
+- quote: Rejects Guest account mutations with HTTP 403 across profile handlers (`logout_everywhere`, `clear_user_settings`, `reset_default`, `update_data`, `save`) and returns early in `save_user_settings()`.
+  attribution: 'Cacti/cacti PR #9014 (author handle somethingwithproof)'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  grep_F_verified: true
+- quote: Enforces `is_graph_allowed($local_graph_id)` returning HTTP 403 before invoking `shell_exec()` and before reading cached files in `case 'view'`.
+  attribution: 'Cacti/cacti PR #9014 (author handle somethingwithproof)'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-body.txt
+  grep_F_verified: true
+- quote: Seems hackish, but letting it go.
+  attribution: 'TheWitness (maintainer review on Cacti PR #9014)'
+  source_url: https://github.com/Cacti/cacti/pull/9014
+  body_file: bodies/FU1/cacti-pr-9014-reviews.txt
+  grep_F_verified: true
+- quote: '"text": "kritisch"'
+  attribution: BSI (CERT-Bund WID-SEC-2026-4845 CSAF, aggregate_severity)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  grep_F_verified: true
+- quote: Ein entfernter, anonymer Angreifer kann eine Schwachstelle in Cacti ausnutzen, um SQL-Injection durchzuführen und beliebigen Code mit den Berechtigungen des betroffenen Anwendungsprozesses auszuführen.
+  attribution: BSI (CERT-Bund WID-SEC-2026-4845)
+  source_url: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-4845.json
+  body_file: bodies/FU1/bsi-wid-sec-2026-4845.csaf.decoded.json
+  grep_F_verified: true
+- quote: '[NEU] [UNGEPATCHT] [kritisch] Cacti: Schwachstelle ermöglicht Codeausführung'
+  attribution: BSI (CERT-Bund WID RSS item title)
+  source_url: https://wid.cert-bund.de/content/public/securityAdvisory/rss
+  body_file: bodies/FU1/bsi-rss.xml
+  grep_F_verified: true
+- quote: 'The observable trail is correspondingly mundane: a guest profile update, a graph preview, and a realtime graph initialization. The malformed page-size value, a nonnumeric PHP warning, a change to `poller_item.arg1`, and any newly written shell or marker are stronger investigation pivots than the HTTP status codes alone.'
+  attribution: RavenAI
+  source_url: https://ravenai.sh/blog/four-requests-to-shell-cacti
+  body_file: bodies/FU1/ravenai.md
+  grep_F_verified: true
+contradictions:
+- 'NAME: 4HTTP2ROOT (watchTowr, RavenAI, Previdian, BSI-cited sources, the README title ''Four Requests to Root'') vs 4HTTP2SHELL (current README body; the repo commit 7b0bb86d of 2026-11-27T02:29:28Z ''Rename 4HTTP2ROOT to 4HTTP2SHELL in README''; BleepingComputer ''previously 4HTTP2ROOT''; THN lists both). Same issue; key both names.'
+- 'EXPLOITATION: watchTowr and BleepingComputer, ''no exploitation in the wild reported'' as of 27 Nov, vs Previdian honeypot attempts from 27 Nov. Scopes differ (reports of in-the-wild victims vs attempts at one vendor''s honeypots) and watchTowr''s FAQ is a live page (''updated as details emerge''); not a hard conflict, but an entry must not say ''no exploitation'' without the Previdian observation or ''exploited'' without ''attempts at honeypots, success unconfirmed''.'
+- 'PREVIDIAN NUMBERS: blog 22 attempts / one source IP (27 Nov) vs the same vendor''s tracker 216 attempts / 21 IPs / 9 countries / 1 sensor (updated 28 Nov), while the tracker page body still repeats the 22/1-IP sentence. The S2 draft (findings.S2.yaml item 3) carries only the stale 22/one-IP figure.'
+- 'PREVIDIAN CVSS: blog ''Official CVSS score unavailable'' vs tracker ''CVSS 9.8 Critical'' (labelled AI-generated, ''cvss_estimated: false'' in the sample API). A vendor-computed estimate, not an official score; BSI says only ''kritisch''; no CVSS from Cacti, watchTowr, NVD or CISA.'
+- 'PATCH STATUS: five sources dated 26-27 Nov say no fix, and the Cacti releases/advisories pages show none, vs the unreleased fix commits merged to 1.2.x and develop on 2026-11-28 (01:24-01:28Z) that none of those sources could have seen. Both statements hold: no release/advisory, but a public source fix exists. Previdian''s tracker also says ''Patch immediately'' while stating no patch has been identified.'
+- 'GUEST DEFAULT: the researcher''s ''default guest surface'' (README) vs Cacti documentation ''By default, Guest or Anonymous access is disabled in Cacti.'' The README does not say guest is on by default; it says ''The guest account was enabled'' in the lab.'
+- 'BSI vs LABS: BSI''s summary says a ''remote, anonymous attacker'' without the guest-account precondition that watchTowr, BC, THN, Previdian and the researcher state.'
+- 'PREVIDIAN TIMING: blog header ''Last Updated: 26 November 2026'' while its Updates list a 27 November entry; tracker ''Previdian Sensors First 2026-11-27 11:59 UTC'' vs timeline ''Observed by Previdian sensors 08:48 UTC'' (undated) vs blog ''approximately 14 hours'' after the 26 Nov 18:43 UTC watchlist entry (about 08:43 UTC 27 Nov). Treat the first-observation time as ''on 27 Nov''.'
+- 'PUBLICATION TIME: GitHub tree-page metadata date 2026-11-25 and BSI''s 2026-11-26T23:00Z release vs the README date ''Nov. 26, 2026''; the commit history shows uploads at 2026-11-26T01:34:40Z and 17:19:42Z (the first upload is the earliest public trace; which upload held the PoC script is not established because the script and transcript were deliberately not read). Previdian''s timeline lists ''Public PoC available'' at 19:44 UTC, which lags the 17:19Z upload.'
+- 'SWEEP DRAFTS vs BODIES: S1 item 1 is consistent with the bodies except that it predates the fix-commit finding (it read the Cacti releases/advisories pages by WebFetch and found no release, which remains true). S2 item 3 states the Previdian figure as 22 attempts from one IP (stale vs the tracker), calls the item ''Previdian sees probing'' (correct), and proposes a different entity key (trend:4http2root-cacti-guest-sqli-rce) from S1''s (tool:4http2root + product:cacti); registry has no Cacti or 4HTTP2 record.'
+caveats_for_composer:
+- 'The fix-commit scope match is the reader''s inference from the PR text (vendor-side wording names preview_graphs_per_page-class settings, Guest writes, realtime graph access); do not write ''Cacti fixed 4HTTP2ROOT''. Safe wording: ''Cacti merged unreleased hardening commits on 2026-11-28 that touch the code paths the write-up uses; the project has published no release, advisory or statement linking them to the disclosure''.'
+- Previdian is a commercial honeypot vendor (sources.json reliability C); its tracker is live-updated and labelled AI-generated, so counts will keep moving; cite the fetch time (2026-11-28 ~04:35 UTC).
+- 'RavenAI, Brandefense and (largely) BleepingComputer/THN restate the researcher and watchTowr; the independent first-hand observations are: the researcher''s lab test, Previdian''s lab verification of the PoC, Previdian''s honeypot counts, BSI''s classification (itself a restatement of watchTowr/Previdian per its references) and the Cacti repository facts.'
+- 'Technique mapping supported by the sources: T1190 (public-facing web application, unauthenticated), T1059 (command execution through popen/shell; T1059.004 Unix Shell is the mechanical mapping on Linux but no source names a sub-technique), T1505.003 only for the demo''s staged PHP shell (RavenAI), not the core chain; T1078.001 (Default Accounts) is arguable for the guest session but no source frames it so.'
+not_readable:
+- 'docs.cacti.net/User-Management.md (the page THN links): HTTP 403 ''I''m a teapot'' via the reader fallback; the same documentation source was read from github.com/Cacti/documentation (blob page via extract, raw via url).'
+- 'ek0ms savi0r''s Instagram post (BleepingComputer''s source for ''not reported to Cacti before release''): not fetched (social, login-walled); the statement rests on BleepingComputer''s relay alone.'
+- 'Researcher''s PoC shell script, demo transcript, final-db-state dump and mp4 video in the same GitHub directory: deliberately not read or kept (exploit artifacts not needed for an awareness entry; the README and four secondary write-ups carry the full request sequence). The two I had already downloaded were deleted from bodies/FU1.'
+- 'Previdian Enterprise-tier detail (request targets, User-Agents, payloads, IPs, WAF rules): paywalled; only counts are visible.'
+- 'BSI portal page (wid.cert-bund.de/portal/...): Angular shell with no text; the CSAF JSON and the RSS item carry the content.'
+- github.com/Cacti/cacti/security/advisories HTML (extract) returned only the first page of 10 items; the complete 67-record list came from the GitHub API. Draft/private advisories are invisible by design.
+- 'Not checked: cacti.net news pages and forums.cacti.net (no routine fetch path; GitHub is the project''s release channel). Cacti''s published release notes are only the GitHub release text.'
+- Jina reader pool is exhausted (HTTP 402 on every key); two API reads and the two version-file reads fell through it and still returned content; everything else used direct transports (extract/url/bsi-csaf/cisa-kev). WebFetch was not needed.
+entity_notes:
+  registry_check: entities/registry.yaml has no Cacti, 4HTTP2ROOT, ek0ms savi0r or Church of Malware record; prior_coverage.json has no Cacti entry (checked 2026-11-28).
+  proposals_to_reconcile: 'S1 proposes product:cacti + tool:4http2root (aliases 4HTTP2SHELL); S2 proposes trend:4http2root-cacti-guest-sqli-rce (alias VULN-2026-0010). One finding, one key set: suggest product:cacti (Cacti Core) plus a single tool/vulnerability-name key carrying both names and Previdian id VULN-2026-0010 as an alias; the researcher (handle ek0ms savi0r, Church of Malware) is a person/handle, not an actor in the threat sense: a reference, not an actor key.'
+  relation_suggestions:
+  - 'product:cacti <- 4HTTP2ROOT/4HTTP2SHELL exploits-class relation: stated by watchTowr, Previdian and the researcher (quote B1/F1b rows); no attribution to any threat actor exists (watchTowr: No attribution has been made public).'
+candidate_sources: []
+candidate_source_note: 'previdian is already an active record in sources/sources.json; recipe addition for the main agent: CVE-less issues get a VULN-YYYY-NNNN tracker page (here https://previdian.com/VULN-2026-0010, read by extract, trafilatura-direct); page is live-updated and its date metadata is stale (2026-11-26 vs content updated 2026-11-28).'
+coverage_gaps:
+- source_id: cacti-docs-net
+  reason: docs.cacti.net returns 403 (teapot) on the reader fallback; Cacti/documentation on github.com read instead.
+- source_id: github-api
+  reason: unauthenticated GitHub API (60 requests/hour) used for releases/tags/advisories/PR/commit JSON; about 20 calls spent, no rate-limit failure seen.
+fetch_failures: []
+bodies_manifest:
+- bleepingcomputer.err
+- bleepingcomputer.md
+- brandefense.err
+- brandefense.md
+- bsi-rss.err
+- bsi-rss.xml
+- bsi-wid-sec-2026-4845.csaf.decoded.json
+- bsi-wid-sec-2026-4845.csaf.json
+- bsi-wid-sec-2026-4845.err
+- bsi-wid-sec-2026-4845.portal.err
+- bsi-wid-sec-2026-4845.portal.md
+- cacti-advisories-listing.derived.txt
+- cacti-api-advisories-p1-100.json
+- cacti-api-advisories-p1-100.json.err
+- cacti-api-branches.json
+- cacti-api-branches.json.err
+- cacti-api-commit-49fd19b5.json
+- cacti-api-commit-49fd19b5.json.err
+- cacti-api-commit-ae54a2a55.err
+- cacti-api-commit-ae54a2a55.json
+- cacti-api-commit-e23470d8.json
+- cacti-api-commit-e23470d8.json.err
+- cacti-api-commits-1.2.x-latest.json
+- cacti-api-commits-1.2.x-latest.json.err
+- cacti-api-commits-1.2.x.json
+- cacti-api-commits-1.2.x.json.err
+- cacti-api-commits-develop.json
+- cacti-api-commits-develop.json.err
+- cacti-api-issues-search.json
+- cacti-api-issues-search.json.err
+- cacti-api-pull-9014-issuecomments.json
+- cacti-api-pull-9014-issuecomments.json.err
+- cacti-api-pull-9014-reviews.json
+- cacti-api-pull-9014-reviews.json.err
+- cacti-api-pull-9014.json
+- cacti-api-pull-9014.json.err
+- cacti-api-pull-9015.json
+- cacti-api-pull-9015.json.err
+- cacti-api-releases.json
+- cacti-api-releases.json.err
+- cacti-api-tags.json
+- cacti-api-tags.json.err
+- cacti-commit-49fd19b5-message.txt
+- cacti-commit-49fd19b5-page.md
+- cacti-commit-49fd19b5-page.md.err
+- cacti-commit-ae54a2a55-message.txt
+- cacti-commit-e23470d8-message.txt
+- cacti-commits-1.2.x-listing.derived.txt
+- cacti-docs-user-management.md
+- cacti-docs-user-management.md.err
+- cacti-gh-user-management.md
+- cacti-gh-user-management.md.err
+- cacti-ghsa-69gg-description.txt
+- cacti-ghsa-69gg-page.md
+- cacti-ghsa-69gg-page.md.err
+- cacti-pr-9014-body.txt
+- cacti-pr-9014-page.md
+- cacti-pr-9014-page.md.err
+- cacti-pr-9014-reviews.txt
+- cacti-pr-9015-body.txt
+- cacti-pr-9015-page.md
+- cacti-pr-9015-page.md.err
+- cacti-raw-User-Management.md
+- cacti-raw-User-Management.md.err
+- cacti-raw-cacti_version-1.2.x
+- cacti-raw-cacti_version-1.2.x.err
+- cacti-raw-cacti_version-develop
+- cacti-raw-cacti_version-develop.err
+- cacti-releases-listing.derived.txt
+- cacti-releases-page.md
+- cacti-releases-page.md.err
+- cacti-security-advisories-page.md
+- cacti-security-advisories-page.md.err
+- cacti-tags-listing.derived.txt
+- cisa-kev-cacti-extract.derived.txt
+- cisa-kev.err
+- gh-4http2shell-commits-listing.derived.txt
+- gh-api-commits-4http2shell.err
+- gh-api-commits-4http2shell.json
+- gh-api-contents-4http2shell.err
+- gh-api-contents-4http2shell.json
+- gh-commits-page-4http2shell.err
+- gh-commits-page-4http2shell.md
+- github-4http2shell-README.raw.err
+- github-4http2shell-README.raw.md
+- github-4http2shell-tree.err
+- github-4http2shell-tree.md
+- github-sad_girls_0day_article.raw.md
+- github-sad_girls_0day_article.raw.md.err
+- previdian-VULN-2026-0010.md
+- previdian-VULN-2026-0010.md.err
+- previdian.err
+- previdian.md
+- ravenai.err
+- ravenai.md
+- thehackernews.err
+- thehackernews.md
+- watchtowr-faq.err
+- watchtowr-faq.md

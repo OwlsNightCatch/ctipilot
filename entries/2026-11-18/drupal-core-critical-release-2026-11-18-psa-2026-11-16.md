@@ -42,7 +42,7 @@ cves:
     type: auth-bypass
     vector: zero-click
     auth: pre-auth
-    status: [exploited, patch-available]
+    status: [exploited, cisa-kev, patch-available]
     affected: "<10.6.23 || >=11.0.0 <11.3.23 || >=11.4.0 <11.4.14"
     fixed: "11.4.14, 11.3.23, 10.6.23"
 sources:
@@ -82,6 +82,10 @@ sources:
     publisher: "StepSecurity"
     date: "2026-11-26"
     role: corroborating
+  - url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+    publisher: "CISA"
+    date: "2026-11-27"
+    role: corroborating
 closed_sources: []
 evidence:
   - quote: "The Drupal Security Team urges you to reserve time for core updates at that time because exploits might be developed within hours or days."
@@ -105,6 +109,9 @@ evidence:
   - quote: "This is being exploited in the wild. Any site that left its installer remotely accessible following SA-CORE-2026-017 may still have been compromised."
     publisher: "Drupal Security Team (SA-CORE-2026-019)"
     source_url: "https://www.drupal.org/sa-core-2026-019"
+  - quote: "CISA has added three new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+    publisher: "CISA"
+    source_url: "https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog"
 verification: multi-source
 sourcing_note: >
   The Drupal Security Team is the disclosing party and the source for both exploitation reports (SA-CORE-2026-017 from 2026-11-19 and SA-CORE-2026-019); CISA's catalogue lists CVE-2026-132165 as exploited and names no actor or victim. StepSecurity reproduced the installer re-entry in its own lab on 11.4.12 and not on 11.4.13, and Searchlight Cyber's write-up gives the technique; neither reports observing exploitation itself. StepSecurity's statement that the stock .htaccess rule is unchanged in the fixed releases is one lab's test, and no source tests it on 11.4.14, 11.3.23 or 10.6.23. StepSecurity says no CVSS score exists yet, so none is recorded.
@@ -147,6 +154,14 @@ updates:
       CVE-2026-132165 as exploited on 2026-11-24, and Searchlight Cyber and StepSecurity published the technique and a
       reproduction.
     fields: [title, headline, summary, tags, cves, sources, evidence, verification, sourcing_note, classification, actions, body, updated_at]
+  - at: "2026-11-28T07:33:12Z"
+    run_id: 2026-11-28T0355Z-intel
+    type: improvement
+    summary: >
+      CISA added CVE-2026-136716 to its Known Exploited Vulnerabilities catalog on 2026-11-27 on evidence
+      of active exploitation it does not describe, so the entry's statement that the newer flaw was not on
+      the list no longer holds; Drupal already reported the flaw exploited.
+    fields: [cves, sources, evidence, body]
 migrated_from: null
 ---
 
@@ -171,3 +186,7 @@ Drupal revised SA-CORE-2026-017 after the release: it now rates CVE-2026-132165 
 ## Update — 2026-11-26T05:06:50Z
 
 Drupal published SA-CORE-2026-019 on 2026-11-25: CVE-2026-136716, Highly critical 21 of 25, a second installer flaw under which sites in unusual or incomplete install states stay open to takeover after the first fix, exploited in the wild according to Drupal, with 11.4.14, 11.3.23 and 10.6.23 as the fixed releases and a required update.php run ([Drupal Security Team, 2026-11-25](https://www.drupal.org/sa-core-2026-019)). CISA added CVE-2026-132165 to its Known Exploited Vulnerabilities catalogue on 2026-11-24, and the newer flaw is not on the list ([CISA, 2026-11-24](https://www.cisa.gov/news-events/alerts/2026/11/24/cisa-adds-three-known-exploited-vulnerabilities-catalog)). Searchlight Cyber published the technique on 2026-11-24 and StepSecurity published its reproduction of the installer re-entry on 2026-11-26, and neither reports observing exploitation itself (their statements repeat Drupal's report) ([Searchlight Cyber, 2026-11-24](https://www.slcyber.io/research/fail2install-system-limits-pre-auth-rce-drupal); [StepSecurity, 2026-11-26](https://www.stepsecurity.io/blog/fail2install-cve-2026-132165)).
+
+## Improvement — 2026-11-28T07:33:12Z
+
+CISA added CVE-2026-136716 to its Known Exploited Vulnerabilities catalogue on 2026-11-27, in an alert that says the additions rest on evidence of active exploitation and does not describe that exploitation, so the statement in the 2026-11-26 section that the newer flaw is not on the list no longer holds ([CISA, 2026-11-27](https://www.cisa.gov/news-events/alerts/2026/11/27/cisa-adds-three-known-exploited-vulnerabilities-catalog)). Drupal had already reported the flaw exploited in the wild, so the catalogue listing adds federal remediation tracking and no new exploitation detail.
